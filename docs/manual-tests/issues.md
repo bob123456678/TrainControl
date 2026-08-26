@@ -325,6 +325,18 @@ comment at that line.
 
 Please confirm on the current build; if it is greyed, this closes as a duplicate of MT-179.
 
+### OB-111 - 2026-08-25 - A test rewrites the real layout folder with identical content
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-25  
+
+During a full battery, cs2_sample_layout/config/autonomy/setup.json and configuration-Main.json are rewritten. The CONTENT is unchanged - they differ only in line endings, LF where git checked them out CRLF - so no data is lost and battery.sh's fingerprint correctly stays quiet about it, because it strips carriage returns before hashing and a guard that fires every run is one nobody reads.
+
+What it costs is that 'git status' shows the operator's real railway as modified after every battery. On 2026-08-25 that masked a genuine change he had made himself while testing: three files showed as modified, and telling his edit apart from the churn took reading the JSON semantically rather than trusting the status.
+
+The fixture separation of b87c4f05 moved the suite onto test_layout for this reason and something still reaches the live folder. Worth finding which class, and pointing it at a copy.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
