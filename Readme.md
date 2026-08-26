@@ -419,6 +419,12 @@ Tab icons provided by Freepik.
           changed.  The list of locomotives excluded from a station came out in a different order
           every time, so the file looked edited on every start
         - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why is it not moving?" tool that answers the same question on the diagram: click the square a train is standing on, and every route it could take is drawn on the track while the reasons for the rest are listed underneath
+        - The setup checks now warn about a place where trains turn round that leads nowhere.  Marking a square "trains may change direction here" is what the editor suggests when a train could reach somewhere and then not leave, and taking that advice quietened the warning whether or not the way ahead was ever opened - so a railway could be left with a turning point no train could get anywhere from, and nothing said so
+        - The right-click menu on the track diagram now says which square it is about, at the top, in the same way the autonomy editor's menu does
+        - The Autonomy Setup menu on the diagram now has a way straight into the full editor, on the page and the square you right-clicked.  It is greyed, with the reason on it, whenever the editor would refuse to open
+        - "Unavailable while occupied" can now be answered by clicking the square on the diagram instead of finding it in a list, in the same way a station's signal is paired.  A square picked this way does not need a name first - the click is what identifies it
+        - The autonomy editor's station labels now show the station's name rather than whichever train happens to be parked there, which is what that window is for.  A switch beside the other view controls puts the trains back, and it is remembered
+        - The track diagram editor no longer draws station labels at all.  They cannot be edited from that window, they cover the squares being moved, and that editor is about where the rails are
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
         - Fixed bug where clearing a station's priority stopped that train from ever being sent anywhere again for the rest of the session, and made the layout impossible to save.  Emptying the priority box is the obvious way to say "no priority", and it left the station in a state nothing could read
@@ -437,8 +443,13 @@ Tab icons provided by Freepik.
         - You can now pick out several squares at once in the track diagram editor.  Shift-click picks a square, shift-click again unpicks it, and Escape lets everything go; a picked group can then be dragged, copied, pasted, rotated or deleted as one, and one press of undo takes the whole thing back.  A group dragged or pasted past the edge of the diagram is refused rather than losing the part that would fall off
         - The editor now has a matching pair of size controls: one adds a column on the right and a row at the top and bottom, the other takes the same three away.  Shrinking is refused if any of those edges still holds track
         - Removed the "paste entire row" and "paste entire column" options, and the four options that shifted the whole diagram from a chosen square.  Picking the squares you mean and dragging them does the same job, visibly, and can be corrected before it happens rather than after
-    - Track Diagrams
+        - Station labels are now blue ovals with white lettering rather than names in square brackets, and the direction a train is facing is drawn as an arrow instead of a chevron.  They land just below an east-west track and across a north-south one, so they sit beside the railway rather than on top of it, and they can be turned light grey if a busy page has too much blue on it
+        - A small locomotive now marks the sensor a train is actually running over, facing the way it is going.  A train that has stopped keeps the plain dot it always had, so a glance at the diagram says which trains are moving and which are waiting.  The picture is a file - src/org/traincontrol/gui/resources/running_train.png - and can be replaced with any other
+        - Placing track in the editor no longer makes the diagram flicker.  Every placement rebuilds the diagram, and it used to be taken off the screen and put back while that happened
         - A track diagram page can now be saved as a picture.  The Layout menu offers the page you are looking at in one click, or any other page if you ask, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it
+    - Interface
+        - The seven sidebar icons have been redrawn as plain, flat marks in the theme's own blue
+        - Station labels can be drawn in light grey instead of blue, under Interface - Layouts - Grey Station Labels.  It is remembered between sessions
     - Central Station Sync
         - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, and a second sync started while one is running is turned away rather than run alongside it
     - Central Station Bug Fixes

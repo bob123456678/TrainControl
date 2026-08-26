@@ -79,7 +79,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-199](#mt-199) | 2026-08-26 | What the captions say in each editor | needs test | FR-030 |
 | [MT-200](#mt-200) | 2026-08-26 | Grey station labels | needs test | FR-031 |
 
-Everything else - 135 of 200 - is **fixed validated** and needs nothing from you unless the
+Everything else - 137 of 200 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -2492,7 +2492,7 @@ carries no name and press it: nothing should happen and the log should say why.
 
 ### MT-043 - 2026-08-22 - A sensor nudged onto its own label
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** LT-A9  
 **Written:** 2026-08-22
 
@@ -8829,7 +8829,7 @@ together they say the difference is the ORDER and nothing else, which is the who
 
 ### MT-177 - 2026-08-24 - Four menu and window details from the testing round
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-093, OB-094, OB-095, OB-096
 **Written:** 2026-08-24
 
@@ -9048,7 +9048,7 @@ when a track diagram has no autonomy, and we import from a legacy file, there is
 
 ### MT-179 - 2026-08-25 - Nothing that needs a Central Station is offered without one
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** OB-098, OB-100, OB-101, OB-104
 **Written:** 2026-08-25
 

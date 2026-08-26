@@ -55,6 +55,16 @@ public class testTimetableCaptureThroughARealRun
 
     private static final long RUN_MS = 45000;
 
+    /**
+     * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).
+     *
+     * Far above what a dispatch takes - it is a path search and a speed command - and deliberately not
+     * derived from RUN_MS, which is how long a run is watched for rather than how long it takes to
+     * start. The two were the same number, and the day a battery ran while the application was open
+     * the wait ran out before the railway had moved.
+     */
+    private static final long STARTUP_CEILING_MS = 90000;
+
     private static MarklinControlStation model;
 
     @BeforeClass
@@ -177,20 +187,37 @@ public class testTimetableCaptureThroughARealRun
         model.go();
         layout.runLocomotives();
 
+        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114).
+        //
+        // This polled for half the run length and then asserted that something had moved. On a loaded
+        // machine - a full battery, the application open, several JVMs at once - autonomy does not
+        // always dispatch anything in that window, and the test failed on its own precondition: "no
+        // locomotive moved, so nothing was declined and nothing is proved". That is an honest failure
+        // of a test that could not reach its subject, but it fails a whole battery to say so, and it
+        // made the same suite say different things depending on what else the machine was doing.
+        //
+        // So the wait ends when the railway does something rather than when the clock does, with a
+        // ceiling far above what a dispatch takes even on a busy machine. Nothing is skipped: a
+        // minute of nothing moving is a real fault worth failing for, and a skip that fires routinely
+        // is a test nobody notices has stopped running.
         boolean moved = false;
 
-        long deadline = System.currentTimeMillis() + (RUN_MS / 2);
+        long deadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
 
-        while (System.currentTimeMillis() < deadline)
+        while (!moved && System.currentTimeMillis() < deadline)
         {
             if (!layout.getActiveLocomotives().isEmpty()) moved = true;
-
-            Thread.sleep(200);
+            else Thread.sleep(200);
         }
+
+        // And then let it actually run for a while, which is the part capture would have recorded.
+        if (moved) Thread.sleep(RUN_MS / 2);
 
         layout.stopLocomotives();
 
-        assertTrue(moved, "no locomotive moved, so nothing was declined and nothing is proved");
+        assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
+            + "nothing was declined and nothing is proved. That is long enough that a busy machine is "
+            + "no longer the explanation - look at why autonomy dispatched nothing");
 
         assertTrue(layout.getTimetable().isEmpty(),
             "trains ran with capture switched OFF and the timetable filled anyway, so the flag is "

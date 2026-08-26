@@ -117,6 +117,7 @@
 
         <test-one-class class="testAccessory"/>
         <test-one-class class="testDiagramLooksRight"/>
+        <test-one-class class="testSidebarIcons"/>
         <test-one-class class="testTheWaitMarkIsAnHourglass"/>
         <test-one-class class="testLocIconCrop"/>
         <test-one-class class="testTheGoldenLayoutHoldsTogether"/>
