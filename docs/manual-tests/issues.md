@@ -285,6 +285,46 @@ twelve settings-matrix tests. A site re-inlined with identical behaviour fails t
 else - which is the case the textual guard exists for and the behavioural one is blind to.
 
 **State:** fixed unvalidated.
+
+### OB-109 - 2026-08-25 - flicker when placing tiles in editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 18:05  
+**Build:** commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when placing new tiles in the track diagram editor, the diagram sometimes flickers
+
+### FR-025 - 2026-08-25 - visually choose station exclusion
+
+**Kind:** feature request  
+**Raised from:** MT-188 (The blocked-points picker names what it is offering)  
+**Filed:** 2026-08-25 18:14  
+**Build:** commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the "unavailable when occupied" dialog should allow users to select a s88 tile by clicking, similar to the signal guard popup
+
+### OB-110 - 2026-08-25 - switch to central station layout
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 18:16  
+**Build:** commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+switch to central station layout is still not greyed out in debug mode/when not connected to central station
+
+**Claude, 2026-08-25. Already fixed - this needs re-testing, not work.**
+
+This is [MT-179](tests.md#mt-179) again, and it was filed against a build that predates the fix: the
+header above records commit `11b9ded6`, compiled 18:03, and the fix landed later that day. The tree now
+has `switchCSLayoutMenuItem.setEnabled(connected)`, where `connected` is `isCentralStationConnected()` -
+which asks BOTH halves, because the first attempt asked `getNetworkCommState()` alone and that reports
+whether the last sync succeeded. A sync reads through `CS2File`, which reads a local layout folder
+perfectly happily, so a simulated session called itself connected. Your exact wording is quoted in the
+comment at that line.
+
+Please confirm on the current build; if it is greyed, this closes as a duplicate of MT-179.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

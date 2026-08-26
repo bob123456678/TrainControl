@@ -9444,6 +9444,12 @@ Four automated tests, seven mutations. Two of them were rewritten after the firs
 passed under its own stated mutation - a single absent page cannot tell a selective prune from an
 emptying one.
 
+**Adam, 2026-08-25 (triage).** Could not run this.
+
+make a test case for this.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-186"></a>
@@ -9480,6 +9486,10 @@ Its test was found by breaking it: swapping the two route numbers on the way in 
 the store's own class and all 9 in the settings matrix, because every fixture in the repository used
 route 0,0 - a pair that reads the same either way round. Step 2 above is the hands-on version of the
 test that closed that hole.
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9535,6 +9545,12 @@ actually refuses the leg. Against: the sensor rule is the planner's only protect
 two trains on one detection section, and watched squares - approach guards, yard throats - are exactly
 where sensors get shared. A test pins it in both directions, so it cannot drift while you decide.
 
+**Adam, 2026-08-25 (triage).** Could not run this.
+
+Make a test case for this.  Also, make a test case for the route executed during autonomy, by having a long route and manually triggering autonomy to a desgination that has the same switches.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-188"></a>
@@ -9560,6 +9576,12 @@ name it had just established was absent, which renders as a blank tick box.
 
 A source rule now pins all three of the picker's surviving filters, so this cannot be undone quietly.
 Mutation-checked: putting the old label back fails it.
+
+**Adam, 2026-08-25 (triage).** Works.
+
+Filed from this test: FR-025 (feature request - visually choose station exclusion).  They are in `issues.md` until they are picked up.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9666,15 +9688,36 @@ The guard is asked again before each accessory now, and when it trips the two hu
 question they were asked before the route started. The answer holds for the rest of that route rather
 than being asked per command. The s88 door stops without asking. Steps 8 and 9 are that.
 
-**The exact logic, since you asked for it.** An accessory is guarded when it is commanded by an edge
-that (a) is on a path a running locomotive holds, and (b) that locomotive's train has not yet cleared.
-Cleared means the train's LENGTH has gone past it, not its front - so a turnout under the middle of a
-train is still guarded. Where no tile lengths are configured the railway treats an edge as clear once
-the front passes, which is the same trade it has always made for unlocking. Plus the protecting signals
-of squares a locomotive is currently standing on.
+**The exact logic, since you asked for it.** Restated in full, because it has moved three times since
+you were first given it and a stale answer to "tell me the rule so I can check it is not too strict"
+is worse than none.
 
-Steps 4, 5 and 8 are the controls. A guard that simply refused routes during autonomy would pass steps
-2, 6 and 7 and be useless.
+An accessory command is refused when **either** of these is true at the moment it is about to be sent:
+
+1. **It is on track a train is crossing.** The accessory is commanded by an edge that (a) is on a path
+   a running locomotive holds, and (b) that locomotive's train has not yet cleared. Cleared means the
+   train's LENGTH has gone past it, not its front - so a turnout under the middle of a train is still
+   guarded. Where no tile lengths are configured the railway treats an edge as clear once the front
+   passes, which is the same trade it has always made for unlocking.
+2. **It would take protection off a platform with a train at it.** The accessory is a protecting signal
+   of a square a locomotive is currently standing on, AND the command would set it to something other
+   than red. Setting such a signal red is what protection itself commands, so it is never refused.
+
+Asked **again immediately before every accessory command**, not once before the route starts - a route
+takes seconds and a dispatch can lock a path while it is part way through.
+
+What happens when it trips depends on who is there. At the routes tab and the diagram's route tile you
+are asked, and your answer holds for the rest of that route. At the s88 trigger door there is nobody to
+ask, so it stops setting accessories for the rest of that route and logs. Either way, everything in the
+route that is not an accessory - the emergency stop, functions off, lights, locomotive speeds, chained
+routes - still runs.
+
+Steps 4, 5, 5b and 10 are the controls. A guard that simply refused routes during autonomy would pass
+steps 2, 6, 7, 8 and 9 and be useless.
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9710,6 +9753,10 @@ Your own rule, quoted inside that method: "The same thing should happen in manua
 the same switches and signals set, and guards applied."
 
 ---
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9783,3 +9830,8 @@ that happened with an editor open, the note that editor wrote on the way in woul
 on mid-edit. The revert would then undo the work in progress, which is the loss this exists to
 prevent, caused by the thing preventing it. If you can contrive that - open the editor, move
 something, then do whatever re-reads the pages wholesale - your edit should still be there.
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
