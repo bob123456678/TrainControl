@@ -153,6 +153,102 @@ public class testLocIconCrop
     }
 
     /**
+     * A reshaped frame still writes an icon-sized picture, padded with white.
+     *
+     * Adam: "lets make the aspect of the image editable. if the uses adjusts the aspect of the frame,
+     * fill the rest of the displayed icon with a white background."
+     *
+     * Two things have to hold at once and only one of them is obvious. The file must still be exactly
+     * the size the icon is drawn at, or every consumer of it is wrong - that is the property the test
+     * above this one guards, and reshaping the frame is a new way to break it. And what the picture
+     * does not cover has to be WHITE, not transparent: the icon is drawn onto a coloured button, so
+     * transparent padding shows the button through and reads as the crop having failed.
+     *
+     * The corners are the honest place to look. A frame made taller than the icon leaves white down
+     * the left and right, so the middle of the left edge is white while the centre is not - and
+     * checking a corner alone would pass on a picture that was simply blank.
+     *
+     * MUTATION: filling the padded image with `new Color(0, 0, 0, 0)` instead of white - which is
+     * what leaving it unfilled amounts to - fails this test.
+     */
+    @Test
+    public void testAReshapedFrameIsPaddedWithWhite()
+    {
+        // A source with no transparency anywhere, so anything transparent or white in the result was
+        // added by the padding rather than carried in from the picture.
+        BufferedImage source = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D paint = source.createGraphics();
+        paint.setColor(new java.awt.Color(20, 90, 200));
+        paint.fillRect(0, 0, 1200, 900);
+        paint.dispose();
+
+        LocIconCropDialog.CropPanel panel = new LocIconCropDialog.CropPanel(source, OUT_W, OUT_H);
+        panel.setSize(800, 500);
+
+        assertTrue(panel.isIconShaped(), "the frame must start at the icon's own shape");
+
+        // Much TALLER than the icon, so the padding lands on the left and right.
+        panel.setFrameAspect(0.5);
+
+        assertFalse(panel.isIconShaped(), "the fixture did not take: the frame is still icon-shaped");
+
+        BufferedImage out = panel.getCroppedImage();
+
+        assertEquals(out.getWidth(), OUT_W, "a reshaped frame changed the icon's width");
+        assertEquals(out.getHeight(), OUT_H, "a reshaped frame changed the icon's height");
+
+        // The middle of the left edge: outside the fitted picture, inside the icon.
+        java.awt.Color leftEdge = new java.awt.Color(out.getRGB(1, OUT_H / 2), true);
+
+        assertEquals(leftEdge.getAlpha(), 255,
+            "the padding is transparent. The icon is drawn onto a coloured button, so this shows the "
+            + "button through and reads as the crop having gone wrong");
+
+        assertEquals(leftEdge.getRed(), 255, "the padding is not white");
+        assertEquals(leftEdge.getGreen(), 255, "the padding is not white");
+        assertEquals(leftEdge.getBlue(), 255, "the padding is not white");
+
+        // And the middle still holds the picture, or the assertions above are describing a blank.
+        java.awt.Color middle = new java.awt.Color(out.getRGB(OUT_W / 2, OUT_H / 2), true);
+
+        assertEquals(middle.getBlue(), 200,
+            "the middle of the icon is not the picture, so this test is checking a blank image");
+    }
+
+    /**
+     * At the icon's own shape nothing is added at all.
+     *
+     * The control for the test above, and the one that matters for everybody who never touches the
+     * frame: this dialog wrote a picture that filled the icon exactly and kept its transparency, and
+     * it still has to. The Central Station's own locomotive pictures are transparent, and padding
+     * them onto white would put a white box behind every one of them.
+     *
+     * MUTATION: removing the `isIconShaped()` early return from `getCroppedImage` - so everything
+     * goes through the padding - fails this test.
+     */
+    @Test
+    public void testAnUnchangedFrameAddsNothing()
+    {
+        LocIconCropDialog.CropPanel panel = panel(1200, 900);
+
+        assertTrue(panel.isIconShaped(), "the frame must start at the icon's own shape");
+
+        BufferedImage out = panel.getCroppedImage();
+
+        assertEquals(out.getWidth(), OUT_W, "the icon changed width");
+        assertEquals(out.getHeight(), OUT_H, "the icon changed height");
+
+        // The source in `panel` is a blank ARGB image - every pixel transparent - so anything opaque
+        // here was invented by the padding.
+        java.awt.Color corner = new java.awt.Color(out.getRGB(0, 0), true);
+
+        assertEquals(corner.getAlpha(), 0,
+            "a frame nobody reshaped came back with an opaque corner, so the padding ran for a crop "
+            + "that fills the icon exactly. Every transparent icon would gain a white box");
+    }
+
+    /**
      * Whether the picture, as currently placed, covers the whole crop window.
      *
      * Asked of `sourceRect`, which is the rectangle actually cut. That is the honest place to ask it,

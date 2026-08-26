@@ -282,6 +282,50 @@ public class LocIconCropDialog extends JDialog
          */
         private double zoomFraction = 0.0;
 
+        /**
+         * The shape of the crop window, as width over height.
+         *
+         * Starts at the icon's own shape, which is what it used to be locked to. The user can pull an
+         * edge or a corner to change it, and then the picture no longer fills the icon - what is left
+         * over is filled with white by {@link #getCroppedImage}.
+         *
+         * Held as a RATIO rather than as two pixel counts because the panel is resizable, and a shape
+         * means the same thing at any panel size where a pair of pixel counts does not.
+         */
+        private double frameAspect;
+
+        /**
+         * How big the crop window is, as a fraction of the largest window of its shape that fits.
+         *
+         * 1.0 - the default, and what it always was - is a window that touches the available area on
+         * two sides. Pulling an edge inward makes this smaller; pulling it outward grows the shape
+         * instead, because there is nowhere further to go.
+         */
+        private double frameSize = 1.0;
+
+        /**
+         * Which part of the window the current drag grabbed, or null when the drag is a pan.
+         */
+        private String dragEdge = null;
+
+        /**
+         * How close to an edge counts as grabbing it, in panel pixels.
+         *
+         * Generous, because the alternative to hitting it is panning the picture by accident - and a
+         * mis-grab that pans is much cheaper to undo than one that reshapes the frame.
+         */
+        private static final int GRIP = 10;
+
+        /**
+         * Half the side of the square in the middle that pans the picture.
+         *
+         * Adam asked for this: "drag frame, but add a control in the middle to move it around, so the
+         * aspect change becomes deliberate." Before, dragging anywhere panned; adding edge dragging on
+         * top of that would have made every drag near an edge ambiguous. Separating the two by WHERE
+         * you take hold is what makes reshaping something you meant to do.
+         */
+        private static final int PAN_GRIP = 26;
+
         private ZoomObserver zoomObserver = null;
 
         private boolean syncingZoom = false;
@@ -308,6 +352,8 @@ public class LocIconCropDialog extends JDialog
             this.source = source;
             this.outWidth = Math.max(1, outWidth);
             this.outHeight = Math.max(1, outHeight);
+
+            this.frameAspect = (double) this.outWidth / this.outHeight;
 
             this.centerX = source.getWidth() / 2.0;
             this.centerY = source.getHeight() / 2.0;
@@ -342,11 +388,28 @@ public class LocIconCropDialog extends JDialog
 
             addMouseListener(new MouseAdapter()
             {
+                /**
+                 * Decided once, when the button goes down, and held for the whole drag.
+                 *
+                 * Asking again on every drag event would mean the gesture could change halfway
+                 * through: reshape the frame until its edge slides under the pointer, and the rest of
+                 * the same drag becomes a pan.
+                 */
                 @Override
                 public void mousePressed(MouseEvent e)
                 {
+                    String grabbed = CropPanel.this.grabAt(e.getX(), e.getY());
+
+                    CropPanel.this.dragEdge = grabbed == null || "pan".equals(grabbed) ? null : grabbed;
+
                     CropPanel.this.dragFromX = e.getX();
                     CropPanel.this.dragFromY = e.getY();
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e)
+                {
+                    CropPanel.this.dragEdge = null;
                 }
             });
 
@@ -355,11 +418,28 @@ public class LocIconCropDialog extends JDialog
                 @Override
                 public void mouseDragged(MouseEvent e)
                 {
+                    if (CropPanel.this.dragEdge != null)
+                    {
+                        CropPanel.this.resizeTo(CropPanel.this.dragEdge, e.getX(), e.getY());
+
+                        return;
+                    }
+
                     CropPanel.this.panBy(e.getX() - CropPanel.this.dragFromX,
                         e.getY() - CropPanel.this.dragFromY);
 
                     CropPanel.this.dragFromX = e.getX();
                     CropPanel.this.dragFromY = e.getY();
+                }
+
+                /**
+                 * The cursor is the only thing that says an edge can be pulled before somebody tries.
+                 */
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    setCursor(java.awt.Cursor.getPredefinedCursor(
+                        CropPanel.cursorFor(CropPanel.this.grabAt(e.getX(), e.getY()))));
                 }
             });
 
@@ -372,6 +452,33 @@ public class LocIconCropDialog extends JDialog
 
                 if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
             });
+        }
+
+        /**
+         * The pointer shape for whatever is under it.
+         *
+         * @param grabbed what grabAt returned
+         * @return a java.awt.Cursor constant
+         */
+        private static int cursorFor(String grabbed)
+        {
+            if (grabbed == null || "pan".equals(grabbed))
+            {
+                return java.awt.Cursor.MOVE_CURSOR;
+            }
+
+            switch (grabbed)
+            {
+                case "N": return java.awt.Cursor.N_RESIZE_CURSOR;
+                case "S": return java.awt.Cursor.S_RESIZE_CURSOR;
+                case "E": return java.awt.Cursor.E_RESIZE_CURSOR;
+                case "W": return java.awt.Cursor.W_RESIZE_CURSOR;
+                case "NE": return java.awt.Cursor.NE_RESIZE_CURSOR;
+                case "NW": return java.awt.Cursor.NW_RESIZE_CURSOR;
+                case "SE": return java.awt.Cursor.SE_RESIZE_CURSOR;
+                case "SW": return java.awt.Cursor.SW_RESIZE_CURSOR;
+                default: return java.awt.Cursor.MOVE_CURSOR;
+            }
         }
 
         /**
@@ -413,22 +520,178 @@ public class LocIconCropDialog extends JDialog
          */
         public Rectangle cropWindow()
         {
+            Rectangle biggest = largestWindow(this.frameAspect);
+
+            int width = Math.max(1, (int) Math.round(biggest.width * this.frameSize));
+            int height = Math.max(1, (int) Math.round(biggest.height * this.frameSize));
+
+            return new Rectangle((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+        }
+
+        /**
+         * The largest window of a given shape that fits inside the panel's margins.
+         *
+         * This is what cropWindow was, with the shape as a parameter rather than fixed to the icon's.
+         * Kept separate because the resize needs it too: pulling an edge outward past the edge of the
+         * panel has to stop somewhere, and this is where.
+         *
+         * @param aspect width over height
+         * @return the window at that shape, centred, never empty
+         */
+        private Rectangle largestWindow(double aspect)
+        {
             int availableWidth = Math.max(1, getWidth() - 2 * WINDOW_MARGIN);
             int availableHeight = Math.max(1, getHeight() - 2 * WINDOW_MARGIN);
 
             int width = availableWidth;
-            int height = (int) Math.round(width * (double) this.outHeight / this.outWidth);
+            int height = (int) Math.round(width / aspect);
 
             if (height > availableHeight)
             {
                 height = availableHeight;
-                width = (int) Math.round(height * (double) this.outWidth / this.outHeight);
+                width = (int) Math.round(height * aspect);
             }
 
             width = Math.max(1, width);
             height = Math.max(1, height);
 
             return new Rectangle((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+        }
+
+        /**
+         * Whether the crop window is still the shape the icon is drawn at.
+         *
+         * The whole of what changes downstream hangs off this: at the icon's own shape the picture
+         * fills the icon exactly and nothing is added, which is what this dialog has always done. Once
+         * it differs, the picture is fitted inside the icon and the rest is white.
+         *
+         * A tolerance rather than an equality test, because the shape arrives through pixel arithmetic
+         * on a resizable panel and lands a thousandth away from where it started.
+         *
+         * @return true when no white will be added
+         */
+        public boolean isIconShaped()
+        {
+            return Math.abs(this.frameAspect - (double) this.outWidth / this.outHeight) < 0.002;
+        }
+
+        /**
+         * Which part of the crop window is under a point.
+         *
+         * @param x panel x
+         * @param y panel y
+         * @return "pan" for the control in the middle, otherwise the edges being grabbed as some
+         *         combination of N, S, E and W, or null for anywhere else
+         */
+        private String grabAt(int x, int y)
+        {
+            Rectangle w = cropWindow();
+
+            if (Math.abs(x - w.getCenterX()) <= PAN_GRIP && Math.abs(y - w.getCenterY()) <= PAN_GRIP)
+            {
+                return "pan";
+            }
+
+            // Only along the side it belongs to, so the corners are the only place two of them meet.
+            boolean nearLeft = Math.abs(x - w.x) <= GRIP && y >= w.y - GRIP && y <= w.y + w.height + GRIP;
+            boolean nearRight = Math.abs(x - (w.x + w.width)) <= GRIP
+                && y >= w.y - GRIP && y <= w.y + w.height + GRIP;
+            boolean nearTop = Math.abs(y - w.y) <= GRIP && x >= w.x - GRIP && x <= w.x + w.width + GRIP;
+            boolean nearBottom = Math.abs(y - (w.y + w.height)) <= GRIP
+                && x >= w.x - GRIP && x <= w.x + w.width + GRIP;
+
+            String edge = (nearTop ? "N" : nearBottom ? "S" : "")
+                + (nearLeft ? "W" : nearRight ? "E" : "");
+
+            return edge.isEmpty() ? null : edge;
+        }
+
+        /**
+         * Reshapes the crop window because an edge was dragged to a point.
+         *
+         * The window stays CENTRED and grows or shrinks symmetrically, so pulling the right edge moves
+         * the left one too. That is the behaviour a centred frame has to have - the alternative is the
+         * frame wandering off the middle of the panel, and the middle is where the picture under it
+         * is being judged.
+         *
+         * @param edge which edges are being dragged, from grabAt
+         * @param x panel x of the pointer
+         * @param y panel y of the pointer
+         */
+        private void resizeTo(String edge, int x, int y)
+        {
+            Rectangle w = cropWindow();
+
+            double width = w.width;
+            double height = w.height;
+
+            if (edge.contains("E")) width = 2 * (x - w.getCenterX());
+            if (edge.contains("W")) width = 2 * (w.getCenterX() - x);
+            if (edge.contains("S")) height = 2 * (y - w.getCenterY());
+            if (edge.contains("N")) height = 2 * (w.getCenterY() - y);
+
+            // A floor rather than a clamp to the panel: a window a few pixels across is not a crop,
+            // and one that can reach zero divides by it.
+            width = Math.max(2 * GRIP + 2 * PAN_GRIP, width);
+            height = Math.max(2 * GRIP + 2 * PAN_GRIP, height);
+
+            this.frameAspect = width / height;
+
+            Rectangle biggest = largestWindow(this.frameAspect);
+
+            // Measured against the biggest window of the NEW shape, so pulling outward stops at the
+            // panel edge instead of pretending the window is larger than it is drawn.
+            this.frameSize = Math.max(0.05, Math.min(1.0,
+                biggest.width == 0 ? 1.0 : width / biggest.width));
+
+            clampCenter();
+
+            repaint();
+        }
+
+        /**
+         * Puts the crop window back to the icon's own shape, filling the panel.
+         */
+        /**
+         * Sets the shape of the crop window directly.
+         *
+         * The dialog reshapes it by dragging an edge; this is the same change without a pointer, which
+         * is what makes the arithmetic underneath testable and is how the padding is checked.
+         *
+         * @param aspect width over height; zero and negatives are ignored rather than throwing,
+         *        because they can only arrive from arithmetic that has already gone wrong elsewhere
+         */
+        public void setFrameAspect(double aspect)
+        {
+            if (aspect <= 0 || Double.isNaN(aspect)) return;
+
+            this.frameAspect = aspect;
+
+            // The window is the largest of its shape that fits, which is what a drag to the edge of
+            // the panel would have produced. The drag path sets a size of its own; this one has no
+            // pointer to take it from.
+            this.frameSize = 1.0;
+
+            clampCenter();
+
+            repaint();
+        }
+
+        /**
+         * The shape of the crop window.
+         * @return width over height
+         */
+        public double getFrameAspect()
+        {
+            return this.frameAspect;
+        }
+
+        public void resetFrame()
+        {
+            this.frameAspect = (double) this.outWidth / this.outHeight;
+            this.frameSize = 1.0;
+
+            clampCenter();
         }
 
         /**
@@ -498,6 +761,10 @@ public class LocIconCropDialog extends JDialog
             this.zoomFraction = 0.0;
             this.centerX = this.source.getWidth() / 2.0;
             this.centerY = this.source.getHeight() / 2.0;
+
+            // The frame's shape too, because it is now something the user can get wrong and this is
+            // the only way back to the icon's own shape without eyeballing it.
+            resetFrame();
 
             clampCenter();
 
@@ -632,11 +899,106 @@ public class LocIconCropDialog extends JDialog
 
                 g2.setColor(WINDOW_EDGE);
                 g2.drawRect(window.x, window.y, window.width - 1, window.height - 1);
+
+                paintHandles(g2, window);
+
+                paintPanGrip(g2, window);
             }
             finally
             {
                 g2.dispose();
             }
+        }
+
+        /**
+         * The eight blocks on the frame's edges and corners that can be pulled.
+         *
+         * Drawn because an invisible affordance is not one. The frame was fixed in shape until now, so
+         * nobody has any reason to try dragging it, and the cursor only says so once the pointer is
+         * already there.
+         *
+         * @param g2 the graphics to paint into
+         * @param window the crop window
+         */
+        private void paintHandles(Graphics2D g2, Rectangle window)
+        {
+            final int arm = 14;
+            final int thick = 3;
+
+            g2.setColor(WINDOW_EDGE);
+
+            int midX = window.x + window.width / 2;
+            int midY = window.y + window.height / 2;
+
+            // Corners drawn as two short arms rather than a square: a square at the corner of a frame
+            // reads as a selection handle you can drag anywhere, and these only move two edges.
+            for (int cx : new int[] {window.x, window.x + window.width - arm})
+            {
+                for (int cy : new int[] {window.y, window.y + window.height - thick})
+                {
+                    g2.fillRect(cx, cy, arm, thick);
+                }
+            }
+
+            for (int cx : new int[] {window.x, window.x + window.width - thick})
+            {
+                for (int cy : new int[] {window.y, window.y + window.height - arm})
+                {
+                    g2.fillRect(cx, cy, thick, arm);
+                }
+            }
+
+            // And one on the middle of each side, which is where somebody reaches to change only the
+            // width or only the height.
+            g2.fillRect(midX - arm / 2, window.y, arm, thick);
+            g2.fillRect(midX - arm / 2, window.y + window.height - thick, arm, thick);
+            g2.fillRect(window.x, midY - arm / 2, thick, arm);
+            g2.fillRect(window.x + window.width - thick, midY - arm / 2, thick, arm);
+        }
+
+        /**
+         * The control in the middle that moves the picture.
+         *
+         * Adam: "add a control in the middle to move it around, so the aspect change becomes
+         * deliberate." Dragging anywhere else inside the frame still pans, so nothing anybody already
+         * knows how to do stops working - this is what makes panning findable now that the edges mean
+         * something different.
+         *
+         * A four-way arrow, because that is what it does and it needs no words in eight languages.
+         *
+         * @param g2 the graphics to paint into
+         * @param window the crop window
+         */
+        private void paintPanGrip(Graphics2D g2, Rectangle window)
+        {
+            int cx = (int) window.getCenterX();
+            int cy = (int) window.getCenterY();
+
+            int half = PAN_GRIP - 8;
+
+            g2.setColor(WINDOW_SHADOW);
+            g2.fillRoundRect(cx - half - 1, cy - half - 1, half * 2 + 3, half * 2 + 3, 8, 8);
+
+            g2.setColor(new Color(255, 255, 255, 210));
+            g2.fillRoundRect(cx - half, cy - half, half * 2, half * 2, 7, 7);
+
+            g2.setColor(new Color(40, 42, 46));
+
+            int arm = half - 4;
+            int head = 3;
+
+            g2.drawLine(cx - arm, cy, cx + arm, cy);
+            g2.drawLine(cx, cy - arm, cx, cy + arm);
+
+            // Arrowheads, so it reads as "move" rather than as a target or a crosshair.
+            g2.drawLine(cx - arm, cy, cx - arm + head, cy - head);
+            g2.drawLine(cx - arm, cy, cx - arm + head, cy + head);
+            g2.drawLine(cx + arm, cy, cx + arm - head, cy - head);
+            g2.drawLine(cx + arm, cy, cx + arm - head, cy + head);
+            g2.drawLine(cx, cy - arm, cx - head, cy - arm + head);
+            g2.drawLine(cx, cy - arm, cx + head, cy - arm + head);
+            g2.drawLine(cx, cy + arm, cx - head, cy + arm - head);
+            g2.drawLine(cx, cy + arm, cx + head, cy + arm - head);
         }
 
         /**
@@ -679,7 +1041,53 @@ public class LocIconCropDialog extends JDialog
             BufferedImage cut = ImageUtil.toTransparentBufferedImage(
                 this.source.getSubimage(region.x, region.y, region.width, region.height));
 
-            return ImageUtil.getScaledImage(cut, this.outWidth, this.outHeight);
+            // Unchanged at the icon's own shape, deliberately.
+            //
+            // That is what this dialog did before the frame could be reshaped, and it is still the
+            // common case - so the common case keeps its transparency and gains no border. Padding
+            // everything onto white would flatten the transparent icons the Central Station itself
+            // supplies, for the benefit of a case the user has not asked for.
+            if (isIconShaped())
+            {
+                return ImageUtil.getScaledImage(cut, this.outWidth, this.outHeight);
+            }
+
+            // The frame is a different shape from the icon, so the picture cannot fill it. Fitted
+            // whole and centred, with the remainder white (Adam: "if the user adjusts the aspect of
+            // the frame, fill the rest of the displayed icon with a white background").
+            //
+            // Fitted rather than stretched: the point of choosing a shape is to keep what is inside it
+            // looking right, and stretching it back to the icon's shape would undo exactly that.
+            double fit = Math.min((double) this.outWidth / cut.getWidth(),
+                (double) this.outHeight / cut.getHeight());
+
+            int drawWidth = Math.max(1, (int) Math.round(cut.getWidth() * fit));
+            int drawHeight = Math.max(1, (int) Math.round(cut.getHeight() * fit));
+
+            BufferedImage scaled = ImageUtil.getScaledImage(cut, drawWidth, drawHeight);
+
+            BufferedImage padded = new BufferedImage(this.outWidth, this.outHeight,
+                BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = padded.createGraphics();
+
+            try
+            {
+                // Painted rather than left transparent. White is what was asked for, and it is also
+                // the honest answer: the icon is drawn onto a coloured button, so transparent padding
+                // would show the button through and read as the crop having gone wrong.
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, this.outWidth, this.outHeight);
+
+                g.drawImage(scaled, (this.outWidth - drawWidth) / 2,
+                    (this.outHeight - drawHeight) / 2, null);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            return padded;
         }
 
         /**
