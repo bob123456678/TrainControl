@@ -104,7 +104,18 @@ public class LocIconCropDialog extends JDialog
         JPanel content = new JPanel(new BorderLayout());
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel instructions = new JLabel(I18n.t("loc.ui.cropInstructions"));
+        // WRAPPED, because a JLabel does not and this one is three sentences long.
+        //
+        // A plain JLabel reports whatever width its text needs on one line - 1247 pixels for this
+        // text, measured - and pack() then makes the whole dialog that wide. Adam: "the window is
+        // still too wide (wider than the main window)". The picture panel asks for 600 and was being
+        // overruled by a sentence.
+        //
+        // An explicit width in the HTML rather than a fixed pixel size on the label: the text differs
+        // in every language - German is reliably the longest - so what has to be pinned is how far it
+        // runs before wrapping, not how tall it ends up being.
+        JLabel instructions = new JLabel("<html><body style='width:420px'>"
+            + I18n.t("loc.ui.cropInstructions") + "</body></html>");
         instructions.setBorder(BorderFactory.createEmptyBorder(0, 2, 8, 2));
         content.add(instructions, BorderLayout.NORTH);
 

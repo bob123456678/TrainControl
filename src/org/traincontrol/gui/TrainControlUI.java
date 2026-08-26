@@ -20576,12 +20576,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             crop.setToolTipText(I18n.t("loc.ui.tooltip.cropCheckbox"));
 
-            JPanel accessory = new JPanel();
-            accessory.setLayout(new javax.swing.BoxLayout(accessory, javax.swing.BoxLayout.Y_AXIS));
-            accessory.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 4));
-            accessory.add(crop);
+            // UNDER the file name, not in the accessory panel (Adam: "is there a way to put the
+            // checkbox in a more organic place?").
+            //
+            // setAccessory hangs a component off the right-hand side of the chooser, beside the file
+            // list - which is where a preview pane belongs, and reads as something bolted on when it
+            // holds one tick box. Along the bottom of the chooser is where a file dialog's options
+            // live everywhere else.
+            //
+            // **SOUTH, and the constraint is the whole of it.** A JFileChooser is laid out with a
+            // BorderLayout whose CENTER holds the entire browser - the places list, the file list,
+            // the name field and the buttons, all of it. `fc.add(row)` with no constraint means
+            // CENTER, so the tick box REPLACED the browser: the dialog came up with the shortcuts
+            // down the side, one checkbox, and nothing else.
+            //
+            // I wrote that first, from a guess about the layout being vertical - which is what the
+            // comment here used to claim. Rendering the chooser to a PNG showed it in a second; the
+            // guess had survived a compile and a commit message.
+            //
+            // NORTH, SOUTH, EAST and WEST are all free, so this displaces nothing.
+            JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+            row.setBorder(BorderFactory.createEmptyBorder(0, 2, 4, 2));
+            row.add(crop);
 
-            fc.setAccessory(accessory);
+            fc.add(row, java.awt.BorderLayout.SOUTH);
 
             int i = fc.showOpenDialog(source);
 
