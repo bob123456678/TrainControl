@@ -461,7 +461,10 @@ Tab icons provided by Freepik.
         - Placing track in the editor no longer makes the diagram flicker.  Every placement rebuilds the diagram, and it used to be taken off the screen and put back while that happened
         - A track diagram page can now be saved as a picture.  The Layout menu offers the page you are looking at in one click, or any other page if you ask, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it
     - Interface
-        - The seven sidebar icons have been redrawn as plain, flat marks in the theme's own blue
+        - The seven sidebar icons have been redrawn as plain, flat marks in dark grey.  The autonomy
+          tab is now a play symbol rather than a diagram of the old autonomy graph, and the routes tab
+          shows a path with an arrow on it rather than a set of points.  The locomotive is drawn larger
+          so that the keyboard page number sitting on top of it can be read
         - Station labels can be drawn in light grey instead of blue, under Interface - Layouts - Grey Station Labels.  It is remembered between sessions
     - Central Station Sync
         - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, and a second sync started while one is running is turned away rather than run alongside it
