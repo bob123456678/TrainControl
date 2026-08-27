@@ -2706,8 +2706,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         editPageMenu.setToolTipText(
             AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipEditLayoutPage")));
 
-        java.util.List<String> pages = this.model == null
-            ? new java.util.ArrayList<String>() : this.model.getLayoutList();
+        List<String> pages = this.model == null ? new ArrayList<>() : this.model.getLayoutList();
 
         for (final String page : pages)
         {
@@ -4141,17 +4140,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // from the font rather than pictures: they survive being packed two-to-a-caption by
         // crowdedLabel, they scale with the caption's font, and they need no artwork to go missing.
         //
-        // U+25BA and U+25C4, the POINTERS, and not U+25B6/U+25C0, the triangles that would be the
-        // obvious partners of the two below.  Segoe UI has no glyph for either of those: the
-        // first rendering of this drew a tofu box for every train facing east or west and proper
-        // triangles for the two facing north and south, which is the sort of thing that reads as
-        // a broken font rather than as a wrong codepoint.  testCaptionArrowsCanBeDrawn pins it.
+        // The arrows come from StationCaption, which chooses them with the font they are drawn in
+        // (OB-116).
+        //
+        // They used to be U+25BA and U+25C4, the POINTERS, because the geometric triangles U+25B6
+        // and U+25C0 come out as empty boxes in Segoe UI. The cost of that was a left and right
+        // arrow half the height of the up and down ones - 70 by 35 against 78 by 70 - which is
+        // exactly what Adam saw. The answer turned out to be the font rather than the character:
+        // Segoe UI Symbol has all four, draws every word identically to Segoe UI, and its
+        // horizontal triangles are the exact transpose of its vertical ones.
         switch (facing)
         {
-            case N: return " \u25B2";
-            case S: return " \u25BC";
-            case E: return " \u25BA";
-            case W: return " \u25C4";
+            case N: return " " + StationCaption.ARROW_N;
+            case S: return " " + StationCaption.ARROW_S;
+            case E: return " " + StationCaption.ARROW_E;
+            case W: return " " + StationCaption.ARROW_W;
             default: return "";
         }
     }
@@ -4241,10 +4244,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // crowdedLabel, they scale with the caption's font, and they need no artwork to go missing.
         switch (facing)
         {
-            case N: return " \u25B2";
-            case S: return " \u25BC";
-            case E: return " \u25BA";
-            case W: return " \u25C4";
+            case N: return " " + StationCaption.ARROW_N;
+            case S: return " " + StationCaption.ARROW_S;
+            case E: return " " + StationCaption.ARROW_E;
+            case W: return " " + StationCaption.ARROW_W;
             default: return "";
         }
     }
@@ -5900,6 +5903,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.stats = new LocomotiveStats(this);
         this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
         
+        // Routes before signals and switches (Adam, 2026-08-27: "swap the position of the route tab
+        // with the keyboard tab").
+        //
+        // Moved HERE rather than in the designer.  The tab strip is built in the generated block, and
+        // that block is not ours to edit - so the order it produces is taken as given and corrected
+        // once, in one place, before anything below addresses a tab by number.
+        //
+        // Everything that follows is written against the order this leaves behind:
+        //
+        //     0 control   1 diagram   2 autonomy   3 ROUTES   4 KEYBOARD   5 stats   6 log
+        //
+        // The two handlers that ask which tab is showing are unaffected either way - one tests for the
+        // diagram at 1 and one for autonomy at 2, and the statistics refresh counts back from the end
+        // rather than naming an index.
+        java.awt.Component routes = this.KeyboardTab.getComponentAt(4);
+
+        this.KeyboardTab.remove(4);
+        this.KeyboardTab.insertTab("Rout", null, routes, null, 3);
+
         // Set pane icons   
         // this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
         // this.KeyboardTab.setToolTipTextAt(0, "Locomotive Control");
@@ -5910,18 +5932,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             I18n.t("ui.tooltip.Layout")
         );
         this.KeyboardTab.setTitleAt(1, "");
-        this.KeyboardTab.setIconAt(4, TAB_ICON_ROUTES);
-        this.KeyboardTab.setToolTipTextAt(
-            4,
-            I18n.t("ui.tooltip.Routes")
-        );
-        this.KeyboardTab.setTitleAt(4, "");
-        this.KeyboardTab.setIconAt(3, TAB_ICON_KEYBOARD);
+        this.KeyboardTab.setIconAt(3, TAB_ICON_ROUTES);
         this.KeyboardTab.setToolTipTextAt(
             3,
-            I18n.t("ui.tooltip.SignalsAndSwitches")
+            I18n.t("ui.tooltip.Routes")
         );
         this.KeyboardTab.setTitleAt(3, "");
+        this.KeyboardTab.setIconAt(4, TAB_ICON_KEYBOARD);
+        this.KeyboardTab.setToolTipTextAt(
+            4,
+            I18n.t("ui.tooltip.SignalsAndSwitches")
+        );
+        this.KeyboardTab.setTitleAt(4, "");
         this.KeyboardTab.setIconAt(2, TAB_ICON_AUTONOMY);
         this.KeyboardTab.setToolTipTextAt(
             2,
@@ -8293,6 +8315,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jScrollPane4 = new javax.swing.JScrollPane();
         autoRouteList = new javax.swing.JList<>();
         jLabel52 = new javax.swing.JLabel();
+        editAutonomyFromSettings = new javax.swing.JButton();
         KeyboardPanel = new javax.swing.JPanel();
         KeyboardLabel = new javax.swing.JLabel();
         keyboardButtonPanel = new javax.swing.JPanel();
@@ -10988,6 +11011,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel52.setForeground(new java.awt.Color(0, 0, 115));
         jLabel52.setText(bundle.getString("autolayout.ui.linkedRoutesLabel")); // NOI18N
 
+        editAutonomyFromSettings.setFont(new java.awt.Font("Segoe UI", 1, 11)); // NOI18N
+        editAutonomyFromSettings.setText(bundle.getString("autolayout.ui.editFromDiagram")); // NOI18N
+        editAutonomyFromSettings.setToolTipText(bundle.getString("autolayout.ui.editFromDiagramTooltip")); // NOI18N
+        editAutonomyFromSettings.setFocusPainted(false);
+        editAutonomyFromSettings.setFocusable(false);
+        editAutonomyFromSettings.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editAutonomyFromSettingsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout autoSettingsPanelLayout = new javax.swing.GroupLayout(autoSettingsPanel);
         autoSettingsPanel.setLayout(autoSettingsPanelLayout);
         autoSettingsPanelLayout.setHorizontalGroup(
@@ -10995,13 +11029,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(autoSettingsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 493, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel51))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel52)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(autoSettingsPanelLayout.createSequentialGroup()
+                        .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 493, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel51))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel52)
+                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(editAutonomyFromSettings))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
         autoSettingsPanelLayout.setVerticalGroup(
             autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -11014,7 +11051,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(autoSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(94, 94, 94))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(editAutonomyFromSettings)
+                .addGap(59, 59, 59))
         );
 
         locCommandPanels.addTab(bundle.getString("ui.main.autoSettings"), autoSettingsPanel); // NOI18N
@@ -20514,6 +20553,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         requestReturnToHome();
     }//GEN-LAST:event_returnHomeButtonActionPerformed
 
+    private void editAutonomyFromSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editAutonomyFromSettingsActionPerformed
+        editLayoutButtonActionPerformed(evt);
+    }//GEN-LAST:event_editAutonomyFromSettingsActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -21954,6 +21997,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem downloadCSLayoutMenuItem;
     private javax.swing.JMenuItem downloadUpdateMenuItem;
     private javax.swing.JMenuItem duplicateLayoutMenuItem;
+    private javax.swing.JButton editAutonomyFromSettings;
     private javax.swing.JMenuItem editCurrentPageActionPerformed;
     private javax.swing.JButton editLayoutButton;
     private javax.swing.JCheckBoxMenuItem enhancedPathValidationMenuItemCheckbox;
