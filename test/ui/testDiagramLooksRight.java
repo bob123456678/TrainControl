@@ -787,6 +787,99 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A placeholder is drawn dimmer than a name, on either pill.
+     *
+     * The editors say "this square is a PLACEHOLDER, not an answer" with grey: an unnamed station's
+     * em-dash, a yard name that is not what the autonomy editor is for. On a white label that reads
+     * exactly as intended. On a pill it did not read at all - grey is not red, so `onPill` let it fall
+     * through to `readableOn`, and `readableOn` answers by the FILL, so a placeholder and a name came
+     * back the same white on navy and the same black on grey.
+     *
+     * The comment in LayoutGrid beside the call said the opposite - "a placeholder is drawn dimmer than
+     * a station that has one" - and said it for two days. A reviewer disbelieved it, wrote a probe
+     * against the compiled tree, and got white and white. This file is full of comments that are
+     * treated as load-bearing; one of them was load-bearing and false.
+     *
+     * Both fills, because they are the two the operator can actually choose and the answer has to hold
+     * on each: on navy the readable colour is white and dimming moves it DOWN towards the fill, on pale
+     * grey it is black and dimming moves it UP. A rule that only dimmed one way would look right to
+     * whoever wrote it and wrong to whoever had the other preference set.
+     *
+     * The separation is asserted as a distance and not as a constant. What matters is that the two are
+     * far enough apart to see and that the placeholder is still legible; the exact blend is a taste
+     * question and pinning it here would make every future adjustment a test edit.
+     *
+     * MUTATION: returning `readableOn(fill)` for grey - which is what it did - fails the first
+     * assertion on both fills.
+     */
+    @Test
+    public void testAPlaceholderStaysDimmerThanAName()
+    {
+        // The grey LayoutGrid writes out longhand wherever it means "placeholder".
+        java.awt.Color placeholder = new java.awt.Color(150, 150, 150);
+
+        for (java.awt.Color fill : new java.awt.Color[] {
+            org.traincontrol.gui.StationCaption.PILL_AT_REST,
+            org.traincontrol.gui.StationCaption.PILL_GREY })
+        {
+            java.awt.Color name = org.traincontrol.gui.StationCaption.onPill(
+                fill, java.awt.Color.BLACK);
+
+            java.awt.Color dim = org.traincontrol.gui.StationCaption.onPill(fill, placeholder);
+
+            assertNotEquals(dim, name,
+                "a placeholder and a name came back the same colour on " + fill + ", so the two "
+                + "states the editor draws are one state on the screen");
+
+            // Dimmer means NEARER THE PILL, which is a different sentence on each fill: darker on the
+            // navy, lighter on the pale grey.  Distance to the fill is the one way to say it that is
+            // true of both.
+            assertTrue(distance(dim, fill) < distance(name, fill),
+                "the placeholder is further from the pill than the name is on " + fill + ", which is "
+                + "the opposite of dim");
+
+            // And still readable.  Dimming that goes all the way to the fill is not dimming, it is
+            // erasing - an unnamed station would vanish rather than look unfinished.
+            assertTrue(distance(dim, fill) > 40,
+                "the placeholder is within 40 of the pill colour on " + fill + " and has effectively "
+                + "disappeared into it");
+        }
+
+        // The ANSWER colours are not dimmed.  Black and white are what an ordinary caption asks for,
+        // and a rule keyed on "all three channels equal" catches both unless it says otherwise.
+        assertEquals(
+            org.traincontrol.gui.StationCaption.onPill(
+                org.traincontrol.gui.StationCaption.PILL_AT_REST, java.awt.Color.BLACK),
+            org.traincontrol.gui.StationCaption.readableOn(
+                org.traincontrol.gui.StationCaption.PILL_AT_REST),
+            "a plain caption was dimmed, so every station name on the diagram is now a placeholder");
+
+        // And red still means red, which is the distinction that already worked.
+        java.awt.Color notReached = org.traincontrol.gui.StationCaption.onPill(
+            org.traincontrol.gui.StationCaption.PILL_AT_REST, new java.awt.Color(255, 0, 0));
+
+        assertTrue(notReached.getRed() > notReached.getGreen() + 60,
+            "red stopped being red on the pill - that is the timetable's \"not reached yet\", and it "
+            + "was working before this rule was added beside it");
+    }
+
+    /**
+     * How far apart two colours are, plainly.
+     *
+     * @param one a colour
+     * @param other another
+     * @return the straight-line distance between them in RGB
+     */
+    private double distance(java.awt.Color one, java.awt.Color other)
+    {
+        int r = one.getRed() - other.getRed();
+        int g = one.getGreen() - other.getGreen();
+        int b = one.getBlue() - other.getBlue();
+
+        return Math.sqrt(r * r + g * g + b * b);
+    }
+
+    /**
      * Captions are left off the track editor and nowhere else.
      *
      * FR-030. Adam: "in the track diagram editor, hide autonomy labels completely."  Three of the four

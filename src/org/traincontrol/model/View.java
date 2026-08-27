@@ -103,9 +103,12 @@ public interface View
      *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
+     * @param reason the message key the route would have logged for this refusal, so the question
+     *  names the right one of the two: a turnout on a locked path, or a signal protecting a
+     *  platform with a train parked at it
      * @return true to set it anyway and finish the route, false to leave the rest of its accessories
      */
-    public boolean confirmRouteConflictMidway(Route r, String accessory);
+    public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 
     /**
      * Shows a non-blocking alert dialog to the user (used by autonomy to report a path that could not

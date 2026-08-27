@@ -1198,6 +1198,84 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The way OUT of the editor does what every other way out does.
+     *
+     * A track-diagram edit has two halves in two places. The diagram is discarded by
+     * `layoutEditingComplete` re-reading the pages from disk; the autonomy setup those same gestures
+     * wrote - dragging a captioned tile writes it immediately, per gesture - is put back by
+     * `undoAutonomyEdits`, and that is the CALLER'S job. The sidebar switch does it. The editor's own
+     * X does it, under a comment reading "Both halves of the edit, or neither".
+     *
+     * Closing the APPLICATION did not. `maySettleBeforeExit` was a bare delegation to
+     * `settleUnsavedWork`, which completes a Discard by itself only in autonomy mode - so answering
+     * Discard on the way out put the diagram back and left the caption on the square it had been
+     * dragged to. The two then described different railways, and the next reconciling save resolved
+     * that by pruning the entries that no longer matched anything: the precise loss the pre-edit note
+     * exists to prevent.
+     *
+     * It was unreachable until it was not. Before application exit began disposing the editor, the note
+     * was left behind on disk and the NEXT start completed the discard by accident. The fix for a real
+     * defect removed the accident that had been covering this one.
+     *
+     * **This reads the source, and that is a weaker thing than running it.** `settleUnsavedWork` puts a
+     * modal dialog on the screen and there is no seam to answer it from here; nothing in the suite
+     * builds a LayoutEditor. The behaviour is MT-201, by hand. What this catches is a reader deciding
+     * the method looks over-complicated and giving it back its one line.
+     *
+     * MUTATION: taking the `settledByDiscarding` test out of `completeExitDiscard`, or calling it from
+     * `maySettleBeforeExit` again, each fails one of these.
+     */
+    @Test
+    public void testLeavingCompletesBothHalvesOfADiscard() throws Exception
+    {
+        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String asks = withoutComments(bodyOf(editor, "public boolean maySettleBeforeExit()"));
+
+        assertTrue(asks.contains("settleUnsavedWork()"),
+            "the exit path stopped asking about unsaved work at all, which is worse than what this "
+            + "test was written for");
+
+        String completes = withoutComments(bodyOf(editor, "public void completeExitDiscard()"));
+
+        assertTrue(completes.contains("undoAutonomyEdits()"),
+            "the exit path settles the diagram and not the setup it shares with it. Answer Discard "
+            + "while the TRACK editor is open and the diagram goes back while the autonomy setup "
+            + "keeps the edit - and the next save prunes whatever no longer matches");
+
+        // In TRACK mode only.  Autonomy mode completes its own discard inside settleUnsavedWork, and
+        // undoing there as well would put back a setup the user may have just chosen to keep.
+        assertTrue(completes.contains("!isAutonomyMode()"),
+            "the setup is put back in both modes now. The autonomy editor discards its own edits "
+            + "already, so this undoes them twice - and after a Save it would undo the save");
+
+        // And only when the user actually said Discard.
+        //
+        // The first version undid whenever settleUnsavedWork returned true, which it also does when
+        // there was nothing to settle and nothing was asked - so closing the application with a clean
+        // editor open rewound the setup to the editor-open snapshot, losing whatever autonomy had
+        // done since. A reviewer found it by asking what the method does when `unsaved` is false.
+        assertTrue(completes.contains("settledByDiscarding"),
+            "the exit path undoes on \"nothing needed settling\" as well as on Discard, which "
+            + "rewinds a setup nobody chose to discard");
+
+        // AFTER everything that can refuse the exit.
+        //
+        // It was called from maySettleBeforeExit, the first thing the exit does - so the rewind
+        // happened, the trains dialog then said no, and the application carried on running with the
+        // undo already spent.
+        String exit = withoutComments(bodyOf(ui, "private void WindowClosed("));
+
+        assertTrue(exit.indexOf("completeExitDiscard()") > exit.indexOf("maySettleBeforeExit()"),
+            "the discard is completed before the exit is certain. Anything between those two can "
+            + "still return, and then the setup has been rewound and the application is still up");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)

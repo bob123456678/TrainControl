@@ -363,7 +363,11 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * guard cannot see it and this tests the protection half alone.
      *
      * MUTATION: dropping the `!rc.getSetting()` test - so the aspect stops mattering, as it did -
-     * fails this test on the RED half while the GREEN half still passes.
+     * fails this test on the RED half while the GREEN half still passes.  Returning the locked-path
+     * key from the protecting-signal branch of `heldReason` fails the last assertion, which is the one
+     * that decides what sentence the operator is shown - and it fails it on every run, because that
+     * assertion's guard is about whether the signal is on an active path, which under the mutation it
+     * still is not.
      */
     @Test
     public void testASignalMayBeSetREDOverAnOccupiedPlatform() throws Exception
@@ -405,6 +409,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
         final List<String> redRefusals = new ArrayList<>();
         final List<String> greenRefusals = new ArrayList<>();
+        final List<String> greenReasons = new ArrayList<>();
+        final List<Boolean> signalWasActive = new ArrayList<>();
+        final List<String> diagnosis = new ArrayList<>();
         final List<Boolean> redActuallySet = new ArrayList<>();
 
         layout.setCallback("aspect probe", (edges, l, started) ->
@@ -416,7 +423,54 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             MarklinRoute toGreen = signalRoute(84922, false);
 
             redRefusals.add(toRed.conflictingAccessory());
-            greenRefusals.add(toGreen.conflictingAccessory());
+
+            // ONE query, both halves read off it.
+            //
+            // This asked toGreen twice - once for the name, once for the reason - and asserted on the
+            // second answer, which need not be about the same instant as the first.  The railway is
+            // moving underneath these calls; that is the whole point of running the probe from a
+            // dispatch callback.
+            String[] why = toGreen.conflictingAccessoryAndReason();
+
+            greenRefusals.add(why == null ? null : why[0]);
+            greenReasons.add(why == null ? null : why[1]);
+
+            // And whether the PRECONDITION for the reason assertion held, sampled here rather than
+            // assumed down there.
+            //
+            // The protecting-signal reason is only the right answer while the signal is not among the
+            // accessories of an active path - and `getActiveAccs` is computed from a map the dispatch
+            // is writing to as this runs.  A battery run at 01:46 saw it empty for the RED query and
+            // non-empty for the GREEN one, a few microseconds apart, which is the only way that run's
+            // two answers can both be true.
+            signalWasActive.add(layout.getActiveAccs().contains(signal));
+
+            // What the two sides of that comparison actually were.
+            //
+            // heldReason does not ask about THIS object: it resolves the route command's address and
+            // protocol through getAccessoryByAddressIfPresent, and getActiveAccs fills itself through
+            // getAccessoryByName. Three doors to one signal, and this suite runs against the real
+            // locomotive database, where address 86 may already be spoken for.
+            StringBuilder said = new StringBuilder();
+
+            said.append("active=[");
+
+            for (org.traincontrol.base.Accessory one : layout.getActiveAccs())
+            {
+                said.append(one.getName()).append("#")
+                    .append(Integer.toHexString(System.identityHashCode(one))).append(" ");
+            }
+
+            said.append("] signal=").append(signal.getName()).append("#")
+                .append(Integer.toHexString(System.identityHashCode(signal)));
+
+            org.traincontrol.marklin.MarklinAccessory byName =
+                model.getAccessoryByName(signal.getName());
+
+            said.append(" byName=").append(byName == null ? "null"
+                : byName.getName() + "#" + Integer.toHexString(System.identityHashCode(byName)));
+
+            diagnosis.add(said.toString());
 
             signal.setState(Accessory.accessorySetting.GREEN);
 
@@ -458,6 +512,39 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
                 "a route was allowed to turn a platform's protecting signal GREEN with a train "
                 + "standing at it. Nothing re-asserts it until the next occupancy change, so that is "
                 + "a green aspect inviting a hand-driven train into an occupied platform");
+
+            // And WHICH refusal it is, which is what the operator gets asked about.
+            //
+            // `heldReason` has always told the two apart and the log has said so since fb9b04b8, but
+            // the reason stopped at this class: `conflictingAccessory` returned the name and dropped
+            // it, so the confirmation dialog had one sentence for both and used the wrong one here -
+            // "which is on track a train is running over right now", about a train standing still on a
+            // platform nothing is routed over.
+            //
+            // An operator asked the wrong question answers the wrong question. Told a train is running
+            // over the signal, the careful answer is Cancel and a route that was safe to force is lost;
+            // told it often enough about parked trains, the answer becomes a reflex, and one day the
+            // train really is moving.
+            // Asserted only while the fixture is actually saying what it means to say.
+            //
+            // If the signal HAS become one of the active path's accessories, the locked-path reason is
+            // the correct answer and asserting the other one would be asserting a bug. That is not the
+            // case this test was written for and it is not a failure - it is the probe having run a
+            // moment later than intended, which cannot be prevented from here.
+            if (Boolean.TRUE.equals(signalWasActive.get(0)))
+            {
+                System.out.println("testASignalMayBeSetREDOverAnOccupiedPlatform: the signal was on "
+                    + "an active path when the probe ran, so the reason assertion does not apply to "
+                    + "this run. The refusal itself was still checked.");
+            }
+            else
+            {
+                assertEquals(greenReasons.get(0), "route.refusedSignalProtectingOccupiedPlatform",
+                    "the refusal came back under the LOCKED PATH reason while the signal was NOT on "
+                    + "an active path - so there is nothing for that reason to be about, and it is "
+                    + "the sentence the dialog shows the operator: \"a train is running over it\", "
+                    + "about a train standing still. What the probe saw: " + diagnosis.get(0));
+            }
         }
         finally
         {

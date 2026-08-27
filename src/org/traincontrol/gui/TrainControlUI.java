@@ -4173,7 +4173,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String crowdedLabel(java.util.List<Point> crowd,
         org.traincontrol.automationui.TileGraph.TileKey square)
     {
-        StringBuilder text = new StringBuilder("[");
+        // No brackets, for the reason the single-train caption has none (FR-028, then a review).
+        //
+        // FR-028 took them off `LayoutGrid.stationCaption` because "the pill draws the shape they were
+        // standing in for", and this function - the two-trains-on-one-platform case - was edited the
+        // same day for its arrows and kept them.  So the one crowded platform on the diagram showed
+        // [A |B ] inside a blue oval and every other caption showed none.
+        //
+        // A leading space would be wrong here for a different reason: `room` budgets the width from
+        // LAYOUT_STATION_MAX_LENGTH and the furniture it subtracts is the bars and the arrows.
+        StringBuilder text = new StringBuilder();
 
         // What is left for the NAMES once the furniture is paid for: an arrow after each train, and a
         // bar between them.  Budgeted from the whole length rather than from the name allowance, which
@@ -4189,7 +4198,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (standing == null) continue;
 
-            if (text.length() > 1) text.append("|");
+            if (text.length() > 0) text.append("|");
 
             String name = standing.getName();
 
@@ -4198,7 +4207,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             text.append(facingArrowOf(at, square));
         }
 
-        return text.append("]").toString();
+        return text.toString();
     }
 
     /**
@@ -14495,6 +14504,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // so it goes here, once everything that can refuse to exit has agreed to.
         if (openEditor != null && openEditor.isDisplayable())
         {
+            // Both halves of a Discard, and only now.
+            //
+            // The setup half cannot go any earlier: everything above this can still refuse to exit,
+            // and rewinding a setup and then not exiting leaves the application running on a setup
+            // nobody asked for. It cannot go any later either - dispose deletes the pre-edit note
+            // that is the only other way the discard ever gets finished.
+            openEditor.completeExitDiscard();
+
             openEditor.dispose();
         }
 
@@ -14615,14 +14632,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
 
     /**
-     * @param known the accessory to name, when the caller has already established it; null to ask
+     * @param known the accessory and the reason key, when the caller has already established them;
+     *  null to ask the route itself
      */
     public RouteConflict askAboutRouteConflict(org.traincontrol.marklin.MarklinRoute route,
-        java.awt.Component over, String known)
+        java.awt.Component over, String[] known)
     {
         if (route == null) return RouteConflict.REFUSED;
 
-        String conflict = known != null ? known : route.conflictingAccessory();
+        String[] why = known != null ? known : route.conflictingAccessoryAndReason();
+
+        String conflict = why == null ? null : why[0];
 
         // No conflict any more is its own answer (LD-8, then A3).
         //
@@ -14642,9 +14662,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final int[] choice = {JOptionPane.CLOSED_OPTION};
 
+        // The reason the route gave, not the one reason this dialog used to know (review, 2026-08-26).
+        //
+        // `heldReason` distinguishes a turnout on a locked path from a signal protecting a platform
+        // with a train PARKED at it, and it always has.  The log learned the difference; the dialog
+        // asked about a moving train in both cases, which is a question the operator cannot answer
+        // correctly - the true answer for a parked train is often "yes, set it", and the sentence in
+        // front of them says a train is running over it.
+        //
+        // Keyed off the message the route would have logged, so the two can never drift apart: there
+        // is one place that decides what kind of conflict this is, and it is not here.
+        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(
+            why == null ? null : why[1])
+                ? "layout.ui.confirmRouteProtectingSignal" : "layout.ui.confirmRouteActiveRoute";
+
         Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
             over == null ? this : over,
-            I18n.f("layout.ui.confirmRouteActiveRoute", route.getName(), conflict),
+            I18n.f(question, route.getName(), conflict),
             I18n.t("layout.ui.dialogPleaseConfirm"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
 
@@ -21436,7 +21470,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     @Override
-    public boolean confirmRouteConflictMidway(Route r, String accessory)
+    public boolean confirmRouteConflictMidway(Route r, String accessory, String reason)
     {
         // The same dialog the two doors ask BEFORE a route starts, asked again when the railway
         // changed under it (Adam, 2026-08-25: "ask me, at the two human doors").
@@ -21453,8 +21487,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // known != null, so there is always a conflict to ask about and NOTHING_TO_CONFIRM cannot
         // come back here.
-        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, this, accessory)
-            == RouteConflict.OVERRIDE;
+        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, this,
+            new String[] {accessory, reason}) == RouteConflict.OVERRIDE;
     }
 
     @Override

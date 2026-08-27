@@ -400,6 +400,13 @@ Tab icons provided by Freepik.
           diagram you are asked whether to go ahead anyway; a route fired by a sensor stops, because
           there is nobody there to ask.  Routes that touch nothing a train is using run exactly as
           before, and nothing changes at all when autonomy is stopped
+        - The same applies to a signal protecting a platform somebody is standing at: a route will no
+          longer turn it green underneath them.  Nothing puts that signal back until the train moves,
+          so a green there is an invitation into an occupied platform that stays up for as long as the
+          train stays put.  Setting such a signal to RED is always allowed - that is what the
+          protection would do anyway - and the question you are asked says which of the two situations
+          it is, since a train parked at a platform and a train running over the track are not the
+          same thing to answer
         - Dispatching a train by hand now sets the protecting signals of trains already standing
           about, which is what starting autonomy and executing a timetable already did.  A train put
           on a protected platform by hand made no signal move - correctly, because nothing was

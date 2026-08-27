@@ -4368,69 +4368,77 @@ public class Layout
         // Nested under autonomy, which has already counted its own thread, so this can only reach zero
         // when the LAST thing finishes - and reaching zero announces the end of the run, which is how
         // the interface learns to re-enable what it disabled.
-        this.locomotiveThreads.incrementAndGet();
+        // Captured HERE, at the increment, not re-read later (a review of the relocation below).
+        //
+        // The signal sweep asks "am I the first thing running".  It used to be able to: the test was
+        // the increment itself.  Moving the sweep past the eight validations - which was right, they
+        // can refuse - left the increment here and the question down there, and two near-simultaneous
+        // first dispatches can both increment before either reads.  Both then see two, NEITHER sweeps,
+        // and a hand-placed train's platform signal stays green for the whole run: AU-B7 again, in a
+        // window a few instructions wide.
+        final boolean firstOnTheRailway = this.locomotiveThreads.incrementAndGet() == 1;
 
         try
         {
-        try
-        {
-            return executePathInternal(path, loc, speed, ttp);
-        }
-        catch (RuntimeException e)
-        {
-            // An unexpected failure part way through a path used to leave the locomotive registered in
-            // activeLocomotives for the rest of the session.  Nothing else clears that map, so
-            // isRunning() - which is "running || !activeLocomotives.isEmpty()" - stayed true forever,
-            // and with it every guard built on it: autonomy could not be started, simulation could not
-            // be toggled, and locomotives could not be edited or deleted.  Only reloading the graph, or
-            // restarting, recovered.
-            //
-            // Three things this deliberately does NOT do:
-            //
-            //  - It does not use finally.  The version fence returns normally when a path is abandoned
-            //    after the layout is replaced, and that path leaves the entry in place on purpose - it
-            //    belongs to a Layout that is being discarded.  A finally would fire there too.
-            //  - It does not swallow the exception.  executeTimetable catches around executePath and
-            //    responds by stopping the run; returning false instead would feed its retry loop, which
-            //    would spin on a permanent fault rather than halting.
-            //  - It does not unlock the path.  The locomotive may be physically standing on those edges,
-            //    and releasing them would let another train be routed into occupied track.  Leaving them
-            //    locked is degraded but safe, and a graph reload resets them.
-            synchronized (this.activeLocomotives)
-            {
-                this.activeLocomotives.remove(loc);
-                this.locomotiveMilestones.remove(loc);
-                this.clearedEdges.remove(loc);
-            }
-
-            // And any unfinished claim on a slot, for the same reason the registration is cleared:
-            // one left behind lowers the cap for good.
-            this.takingPath.remove(loc);
-
-            // And the sensor this locomotive was said to be heading for.  A route condition asking
-            // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
-            // failure is one nothing will ever clear: the thread evaluating that route parks until
-            // the locomotive happens to be dispatched again, which after a timetable failure is
-            // never.  notifyAll inside releases anyone already waiting.
-            updatePendingS88(loc, null);
-
-            // Stopping matters more than the bookkeeping: the locomotive is somewhere on the path with
-            // nothing left tracking it.  Guarded so that a second failure here cannot replace the
-            // exception that actually explains what went wrong.
             try
             {
-                loc.setSpeed(0);
+                return executePathInternal(path, loc, speed, ttp, firstOnTheRailway);
             }
-            catch (RuntimeException stopFailure)
+            catch (RuntimeException e)
             {
-                this.control.log(stopFailure);
+                // An unexpected failure part way through a path used to leave the locomotive registered in
+                // activeLocomotives for the rest of the session.  Nothing else clears that map, so
+                // isRunning() - which is "running || !activeLocomotives.isEmpty()" - stayed true forever,
+                // and with it every guard built on it: autonomy could not be started, simulation could not
+                // be toggled, and locomotives could not be edited or deleted.  Only reloading the graph, or
+                // restarting, recovered.
+                //
+                // Three things this deliberately does NOT do:
+                //
+                //  - It does not use finally.  The version fence returns normally when a path is abandoned
+                //    after the layout is replaced, and that path leaves the entry in place on purpose - it
+                //    belongs to a Layout that is being discarded.  A finally would fire there too.
+                //  - It does not swallow the exception.  executeTimetable catches around executePath and
+                //    responds by stopping the run; returning false instead would feed its retry loop, which
+                //    would spin on a permanent fault rather than halting.
+                //  - It does not unlock the path.  The locomotive may be physically standing on those edges,
+                //    and releasing them would let another train be routed into occupied track.  Leaving them
+                //    locked is degraded but safe, and a graph reload resets them.
+                synchronized (this.activeLocomotives)
+                {
+                    this.activeLocomotives.remove(loc);
+                    this.locomotiveMilestones.remove(loc);
+                    this.clearedEdges.remove(loc);
+                }
+
+                // And any unfinished claim on a slot, for the same reason the registration is cleared:
+                // one left behind lowers the cap for good.
+                this.takingPath.remove(loc);
+
+                // And the sensor this locomotive was said to be heading for.  A route condition asking
+                // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
+                // failure is one nothing will ever clear: the thread evaluating that route parks until
+                // the locomotive happens to be dispatched again, which after a timetable failure is
+                // never.  notifyAll inside releases anyone already waiting.
+                updatePendingS88(loc, null);
+
+                // Stopping matters more than the bookkeeping: the locomotive is somewhere on the path with
+                // nothing left tracking it.  Guarded so that a second failure here cannot replace the
+                // exception that actually explains what went wrong.
+                try
+                {
+                    loc.setSpeed(0);
+                }
+                catch (RuntimeException stopFailure)
+                {
+                    this.control.log(stopFailure);
+                }
+
+                this.control.log(e);
+
+                throw e;
             }
-
-            this.control.log(e);
-
-            throw e;
-        }
-        }
+            }
         finally
         {
             // In a finally for the reason runLocomotive's is: a thread killed by anything at all still
@@ -4449,9 +4457,12 @@ public class Layout
      * @param loc
      * @param speed
      * @param ttp
+     * @param firstOnTheRailway whether the caller's own increment was the one that took the count
+     *  from zero to one - the fact, as it was at that instant, rather than the counter to ask again
      * @return 
      */
-    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
+    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
+        boolean firstOnTheRailway)
     {    
         // Sanity check
         if (!this.isValid())
@@ -4566,7 +4577,12 @@ public class Layout
         // Only when this is the first thing running, and only outside autonomy: autonomy swept at its
         // own start, and sweeping per dispatch would command every signal on the layout each time a
         // path begins.
-        if (this.locomotiveThreads.get() == 1 && !isAutoRunning()) refreshAllProtectingSignals();
+        //
+        // The fact is CARRIED DOWN from the increment rather than asked of the counter again.  Asked
+        // here, two dispatches starting together could both increment before either read, both see two,
+        // and neither sweep - which is the very defect the sweep was added for, restored by the move
+        // that fixed a different one.
+        if (firstOnTheRailway && !isAutoRunning()) refreshAllProtectingSignals();
 
         boolean result;
         

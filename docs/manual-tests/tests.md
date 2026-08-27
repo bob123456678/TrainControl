@@ -78,6 +78,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-198](#mt-198) | 2026-08-26 | The sidebar icons | needs test | FR-029 |
 | [MT-199](#mt-199) | 2026-08-26 | What the captions say in each editor | needs test | FR-030 |
 | [MT-200](#mt-200) | 2026-08-26 | Grey station labels | needs test | FR-031 |
+| [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
+| [MT-202](#mt-202) | 2026-08-26 | Which conflict the route question is about | fixed unvalidated | LR-2 (2026-08-26 last-reviewer pass) |
 
 Everything else - 137 of 200 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -10171,6 +10173,13 @@ about.
    the other, that is the interesting case.
 4. **The arrows.** A train facing each of the four ways should show a solid triangle, not a box.
    A box means the font has no glyph for it, which is the thing that went wrong first.
+4. **A station with no name yet** shows a dash, and it should be visibly DIMMER than a station that has
+   one - that is the editor saying "this is a placeholder, not the answer". Check it on the grey pill
+   as well as the blue: the two dim in opposite directions, and a rule that only worked one way would
+   look right to whoever wrote it. It should still be readable, not faded into the oval.
+4. **Two trains on one platform.** If you can arrange it, the caption shows both names with a bar
+   between them and no square brackets - the same as every other caption. The brackets were removed
+   from the single-train caption when these became ovals and were left on this one.
 5. **The states, which are still doing their old jobs in a new shape.** The destination is a yellow
    oval with black text; where the train started is grey; a station on the route it has not reached
    yet has red text; one it is passing through shows three dots; an empty station shows a dash.
@@ -10215,6 +10224,15 @@ dumps every component's bounds for both builds and diffs them. Its verdict on th
 placements differ" on all ten page-and-size combinations, with every difference a caption. The control
 that made it trustworthy was running the same build twice - which disagreed with itself about forty
 tiles until it learnt to wait for the tile images.
+
+**Adam, 2026-08-26 (triage).** Works, with notes.
+
+Looks ok, but:
+move ovals 5px down
+change gray option to be default, blue to be via the setting
+move setting under the autonomy option category
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -10284,9 +10302,118 @@ that leaves is whether the rule is asked the right question, so a second test re
 it must ask whether this grid is in an editor and whether that editor is the autonomy one, because
 `layout.getEdit()` is true in BOTH and has been wrong here before.
 
+**Adam, 2026-08-26 (triage).** Does not work.
+
+Still don't like them. on order from first to last:
+1. locomotive icon needs a plow at the front
+2. track needs to be symmetrical.  no line on top or bottom, some track should protrude on both sides
+3. OK, maybe add a white inner outline for a nicer look
+4. signal still not symmetrical.  convert to old fashioned style wing signal icon
+5. good idea, make it summetrical by stretching the top arm
+6. good!
+7. good!
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-200"></a>
+
+### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard
+
+**Disposition:** fixed unvalidated
+**From:** LR-1 (2026-08-26 last-reviewer pass)
+**Written:** 2026-08-26
+
+**Take a copy of your `config` folder before this one.** It is a data-safety test and the failing
+version loses autonomy settings; a copy makes the difference between checking a fix and finding out.
+
+1. Load a setup that has station captions on it. Note where a few of them are.
+2. Open the **track diagram** editor - the one for moving rails about, not the autonomy editor.
+3. **Drag a captioned square one square across.** The caption follows the rails; that much is the
+   feature working, and the setup behind it is written the moment you do it.
+4. Now close **TrainControl itself** by the window's X - not the editor's X, the application's.
+5. Answer **Discard** to the question about unsaved work.
+6. Start TrainControl again and load the same setup.
+
+The diagram should be as it was before step 3, **and so should the caption** - both halves of the edit
+gone, which is what Discard means. The failing version put the diagram back and left the caption on the
+square you dragged it to, so the two described different railways; the next save then quietly removed
+the entries that no longer matched anything.
+
+7. **The control, which matters more than the test.** Do the same thing again and answer **Save**. The
+   move should be kept - diagram and caption both, on the square you dragged it to. A fix for step 6
+   that also undid a Save would be worse than the defect.
+8. And once more with the **autonomy** editor open instead, answering Discard. Unchanged from before:
+   that path always completed its own discard.
+
+#### Comments
+
+**Claude, 2026-08-26.** Worth knowing where this came from, because it is a fix that created a defect.
+
+Before application exit started disposing the editor, this case worked by accident: the discard was
+half done, a pre-edit note was left behind on disk, and the NEXT start finished the job by picking that
+note up. Disposing the editor on exit was right - it is what closes the session properly - and it
+deleted the note, so the accident that had been covering this stopped. The half-discard had been there
+the whole time.
+
+The exit path now does what the editor's own X has always done. Nothing in the test suite touched that
+method at all, which is why a review found it and not a test.
+
+### MT-202 - 2026-08-26 - Which conflict the route question is about
+
+**Disposition:** fixed unvalidated
+**From:** LR-2 (2026-08-26 last-reviewer pass)
+**Written:** 2026-08-26
+
+Two different situations stop a route, and until now the question on screen described the first one in
+both cases.
+
+1. Set up a station with a **protecting signal** paired to it, and a route that turns that signal
+   **green**.
+2. Start autonomy. Get a train to **stand at that station** - parked, not moving. Nothing else needs to
+   be running.
+3. Run the route from the **Routes tab**.
+
+You should be asked about a signal **protecting a platform where a train is standing**. The failing
+version said the accessory "is on track a train is running over right now", about a train sitting
+still on a platform nothing was routed over.
+
+4. Answer **Cancel**. The signal stays as it was. Nothing is written to the log, which is what has
+   always happened at this door - you were asked, you decided, and the railway did nothing.
+5. Run it again and answer **OK**. The signal goes green, and the log should carry **no** refusal line
+   for it. This is the half that changed: the failing version wrote "the route did not switch it"
+   before asking, so a route you went on to allow was permanently recorded as refused.
+6. **The other door, which is where a line does get written.** Start the route while nothing is
+   standing at the station, and get a train to arrive at it while the route is part way through - a
+   route with long waits between its commands makes this easier to arrange. You are asked the same
+   question mid-route; answer **Cancel** and the log carries one line, once, naming the signal.
+7. **The other situation, which must still read the way it did.** With a train actually running over a
+   stretch of track, run a route that would throw a switch on it. That question should still say a
+   train is running over it, because there it is true.
+8. **The sensor door is unchanged.** A route fired by an s88 trigger with either conflict present still
+   stops, whole, without asking - there is nobody there to ask.
+
+#### Comments
+
+**Claude, 2026-08-26.** The two reasons have been told apart since the log learned the difference; the
+reason simply stopped at the route class and never reached the window, so the dialog had one sentence
+and used it for both.
+
+It matters in both directions. Told a train is running over a signal when none is, the careful answer
+is Cancel - and a route that was perfectly safe to force is lost, which is the over-strictness Adam has
+twice said he would rather not have. Told it often enough about parked trains, the answer becomes a
+reflex OK, and one day the train really is moving.
+
+The log line moved at the same time, from before the question to the branch where the answer was no.
+Both of those messages end by saying the route did not switch the accessory, which was a claim about a
+decision nobody had made yet.
+
+One thing that did NOT change, and is worth a ruling: cancelling at the door BEFORE a route starts
+writes nothing to the log at all. That is how it has always been, and there is an argument for it - you
+were asked, you decided, and the railway did nothing worth recording. There is also an argument the
+other way, since your log is the record of what the railway was asked to do and not only of what it
+did. Left alone rather than changed quietly; say the word either way.
 
 ### MT-200 - 2026-08-26 - Grey station labels
 
@@ -10315,3 +10442,8 @@ paired with it by hand. That is why the grey takes black text and the blue takes
 choosing, and it is also why the grey cannot be darkened much without the text following it - which a
 test says out loud, because a grey a few shades darker would leave black text on a dark ground and
 nobody would notice until they looked at a diagram.
+
+**Adam, 2026-08-26 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+

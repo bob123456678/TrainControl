@@ -375,6 +375,17 @@ public class LayoutEditor extends PositionAwareJFrame
     private org.json.JSONObject autonomyAsOpened;
 
     /**
+     * Whether the last `settleUnsavedWork` ended in the user choosing Discard.
+     *
+     * The exit path needs to complete a track-mode discard, and "settleUnsavedWork returned true" is
+     * not the same fact: it returns true when there was nothing to settle and nothing was asked. A
+     * first version undid on that, so closing the application with a clean editor open rewound the
+     * setup to whatever it was when the editor opened - throwing away anything autonomy had done
+     * since, which is train positions and facings.
+     */
+    private boolean settledByDiscarding;
+
+    /**
      * The session the disk half of the undo point was written through, so dispose can give it back
      * without asking for one.
      */
@@ -4552,6 +4563,40 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
+     * Completes a track-mode Discard, once the exit is certain.
+     *
+     * A track-diagram edit has two halves in two places. The diagram is discarded by
+     * `layoutEditingComplete` re-reading the pages from disk; the autonomy setup those same gestures
+     * wrote - dragging a captioned tile writes it immediately, per gesture - is put back by
+     * `undoAutonomyEdits`, and that is the CALLER'S job. The sidebar switch does it, and so does the
+     * editor's own X, under a comment reading "Both halves of the edit, or neither". Application exit
+     * did not, so answering Discard on the way out put the diagram back and left the caption on the
+     * square it had been dragged to - and the next reconciling save pruned whatever no longer matched.
+     *
+     * It was unreachable until it was not: before exit began disposing the editor, the pre-edit note
+     * was left on disk and the NEXT start completed the discard by accident.
+     *
+     * TWO conditions, and the first version of this fix had neither right.
+     *
+     * It ran on "settleUnsavedWork returned true", which is also what a clean editor returns - so with
+     * nothing edited at all it rewound the setup to the editor-open snapshot, discarding whatever
+     * autonomy had done in the meantime. `settledByDiscarding` is the actual question.
+     *
+     * And it ran from `maySettleBeforeExit`, which is the FIRST thing the exit does - before the
+     * dialog that asks about running trains, which can still refuse. So the rewind happened and then
+     * the application carried on, with `autonomyAsOpened` consumed and the editor's own Cancel left
+     * with nothing to put back. It is called from the exit path now, beside the dispose, once
+     * everything that can say no has said yes.
+     *
+     * Safe after a Save: saving nulls `autonomyAsOpened`, so this cannot put back a setup the user has
+     * just chosen to keep - and `settledByDiscarding` is false there anyway.
+     */
+    public void completeExitDiscard()
+    {
+        if (this.settledByDiscarding && !isAutonomyMode()) undoAutonomyEdits();
+    }
+
+    /**
      * Save, discard, or stay - asked once, wherever a page is being left with work on it.
      *
      * Three answers, not two. Closing offers two because closing is final: the window is going whatever
@@ -4575,6 +4620,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     private boolean settleUnsavedWork()
     {
         boolean unsaved = isAutonomyMode() ? autonomyPanel.isDirty() : canUndo();
+
+        // Cleared at the top, so a run that asks nothing cannot leave a Discard from last time behind.
+        this.settledByDiscarding = false;
 
         if (unsaved)
         {
@@ -4614,6 +4662,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // opens next is looking at the same session, so edits left in it would survive a discard.
             // Discarding the DIAGRAM happens by itself - layoutEditingComplete re-reads the pages from
             // disk, and undoAutonomyEdits below puts the setup back as it was found.
+            this.settledByDiscarding = answer == 1;
+
             if (answer == 1 && isAutonomyMode())
             {
                 String failed = autonomyPanel.discardEdits();

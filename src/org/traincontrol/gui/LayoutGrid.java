@@ -555,14 +555,18 @@ public class LayoutGrid
 
                     // Autonomy station caption, live.
                     //
-                    // Not on a page autonomy has been told to ignore.  There is no Point behind the
-                    // caption there - the graph is built without that page entirely - so the label
-                    // would sit waiting for a state that never arrives, and clicking it would go
-                    // looking for something that was never built.  The name is still drawn, below, as
-                    // ordinary text: leaving the platform nameless would be a stranger answer than
-                    // leaving it unwired.
-                    if (captioned != null && !inEditor
-                        && !ui.isPageExcludedFromAutonomy(layout.getName()))
+                    // An excluded page is already gone by here, and the clause that used to say so has
+                    // been removed with this comment (review, 2026-08-26).  `hidesStationCaptions`
+                    // takes the decision once, three hundred lines up, and nulls `captioned` for an
+                    // excluded page - so asking again was dead, and the dead half of a condition is
+                    // where a rule quietly stops being enforced when the live half changes.
+                    //
+                    // This also used to promise "the name is still drawn, below, as ordinary text",
+                    // which stopped being true when B6 routed exclusion through that one decision:
+                    // nothing autonomy knows is drawn on an excluded page now, which is what Adam asked
+                    // for ("hide captions", 2026-08-25).  Writing of the user's OWN is untouched - it
+                    // was never autonomy's to hide.
+                    if (captioned != null && !inEditor)
                     {
                         // Blank until autonomy says otherwise.
                         //
@@ -783,8 +787,14 @@ public class LayoutGrid
                         text.setBackground(StationCaption.restingFill());
                         // onPill and not readableOn: the branches above choose a grey for a
                         // placeholder and a black for a name, deliberately, and readableOn threw both
-                        // away because its condition is a superset of all of them. The distinction
-                        // survives now - a placeholder is drawn dimmer than a station that has one.
+                        // away because its condition is a superset of all of them.
+                        //
+                        // This said "the distinction survives now" for two days before it was true.
+                        // onPill kept RED and let grey fall through to the same readableOn, so a
+                        // placeholder and a name came out the identical colour - found by a review that
+                        // did not believe the comment and ran it.  onPill dims a neutral grey towards
+                        // the pill now, and `testAPlaceholderStaysDimmerThanAName` is what keeps this
+                        // sentence honest.
                         text.setForeground(
                             StationCaption.onPill(StationCaption.restingFill(), labelColour));
 

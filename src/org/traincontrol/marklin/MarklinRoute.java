@@ -322,9 +322,30 @@ public class MarklinRoute extends Route
      */
     public String conflictingAccessory()
     {
-        String[] why = accessoryHeldByAutonomy();
+        String[] why = conflictingAccessoryAndReason();
 
         return why == null ? null : why[0];
+    }
+
+    /**
+     * The same question, answered with the REASON as well as the name.
+     *
+     * `heldReason` has always distinguished the two - a turnout on a locked path is not a signal
+     * protecting a platform somebody is parked at, and the comment beside it says so in as many words.
+     * The log has told them apart since fb9b04b8.  The DIALOG did not: this class had no way to hand
+     * the reason to the interface, so every confirmation said "which is on track a train is running
+     * over right now", including for a train that was standing still.
+     *
+     * An operator asked the wrong question answers the wrong question.  Told a train is running over
+     * the accessory when none is, the cautious answer is Cancel, and the route that would have been
+     * safe to force is refused; told it about a parked train often enough, the answer becomes reflexive
+     * OK, and one day the train really is moving.
+     *
+     * @return the accessory's name and the message key for the refusal, or null when it is safe
+     */
+    public String[] conflictingAccessoryAndReason()
+    {
+        return accessoryHeldByAutonomy();
     }
     
     /**
@@ -554,12 +575,23 @@ public class MarklinRoute extends Route
 
                     String[] conflict = override ? null : accessoryHeldByAutonomy();
 
-                    if (conflict != null)
+                    if (conflict != null && auto)
                     {
                         // The reason comes back with the accessory, because the two reasons are not
                         // the same sentence.  "A train is running over it" is true of a locked path
                         // and false of a platform with a train parked at it, and the log said the
                         // first for both.
+                        //
+                        // AND ONLY AT THE UNATTENDED DOOR, because only there is this line true when
+                        // it is written.  Both of these messages end "The rest of the route ran" or
+                        // "Nothing further was switched either" - they are records of a REFUSAL.  At a
+                        // human door nothing has been refused yet: the operator has not been asked.
+                        // Logged here, one conflict wrote the refusal twice (again from the per-command
+                        // check below), and if the operator then clicked OK the log kept a permanent
+                        // record of the route not switching an accessory it went straight on to switch.
+                        //
+                        // The per-command check writes it at the human doors, in the branch where the
+                        // answer was no.
                         this.network.logf(conflict[1], this.getName(), conflict[0]);
                     }
 
@@ -619,8 +651,6 @@ public class MarklinRoute extends Route
 
                                 if (now != null)
                                 {
-                                    this.network.logf(now[1], this.getName(), now[0]);
-
                                     // Asked, if there is somebody to ask (Adam, 2026-08-25: "ask me,
                                     // at the two human doors").
                                     //
@@ -637,12 +667,20 @@ public class MarklinRoute extends Route
                                     // route end up half in each state anyway.
                                     if (!auto && this.network.getGUI() != null
                                         && this.network.getGUI().confirmRouteConflictMidway(
-                                            this, now[0]))
+                                            this, now[0], now[1]))
                                     {
                                         override = true;
                                     }
                                     else
                                     {
+                                        // The log line goes HERE, where the refusal happens.
+                                        //
+                                        // Both of these messages say the route did not switch the
+                                        // accessory.  Written before the question, that was a claim
+                                        // about a decision nobody had made yet, and clicking OK left it
+                                        // standing as the only record of a command that did go out.
+                                        this.network.logf(now[1], this.getName(), now[0]);
+
                                         // Every LATER accessory too, so the route does not go on
                                         // setting some of its ironwork and not the rest as conditions
                                         // change under it.

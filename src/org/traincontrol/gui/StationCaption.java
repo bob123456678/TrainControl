@@ -287,7 +287,18 @@ public class StationCaption extends JLabel
      * reached yet, and plain for one it has. Those were chosen against a white label. On a navy pill
      * plain black is invisible and red is nearly so, and simply forcing white would throw away the
      * distinction rather than redraw it - so red stays red and is lightened or darkened until it can
-     * be read, and everything else becomes whichever of black or white the fill allows.
+     * be read.
+     *
+     * GREY is the third thing, and it survives for the same reason (review, 2026-08-26). The editors
+     * grey a square that is a PLACEHOLDER rather than an answer - an unnamed station's em-dash, a yard
+     * name that is not what this editor is for - and grey is not red, so it fell through to
+     * `readableOn` and came back the identical white or black a NAME comes back as. Two states drawn
+     * one way, under a comment in LayoutGrid asserting the opposite, which a review verified by
+     * running it: navy pill, placeholder white, name white, no difference at all.
+     *
+     * Redrawn rather than forced: a neutral grey comes back as the readable colour carried part of the
+     * way back towards the pill, which is dimmer than a name on any fill and still legible on both -
+     * the same move the red branch makes, for the same reason.
      *
      * @param fill the pill colour
      * @param wanted the colour the caller asked for
@@ -295,7 +306,9 @@ public class StationCaption extends JLabel
      */
     public static Color onPill(Color fill, Color wanted)
     {
-        boolean dark = readableOn(fill) == Color.WHITE;
+        Color readable = readableOn(fill);
+
+        boolean dark = readable == Color.WHITE;
 
         if (wanted != null && wanted.getRed() > 150
             && wanted.getGreen() < 100 && wanted.getBlue() < 100)
@@ -304,7 +317,51 @@ public class StationCaption extends JLabel
             return dark ? new Color(255, 150, 150) : new Color(150, 0, 0);
         }
 
-        return readableOn(fill);
+        if (isNeutralGrey(wanted))
+        {
+            // Still dimmer than a name, on whichever ground.  Not so far towards the pill that it
+            // stops being readable: a bit under halfway keeps a usable separation on both the navy and
+            // the pale grey resting fills, which are the only two this is ever asked about.
+            return blend(readable, fill, 0.45);
+        }
+
+        return readable;
+    }
+
+    /**
+     * Whether a colour is one of the greys the editors use to mean "this is a placeholder".
+     *
+     * By the shape of the colour rather than by an equality test against the one constant, because
+     * that constant is written out longhand at four places in LayoutGrid and a fifth would not be
+     * surprising. Black and white are excluded: they are the ANSWER colours, and a rule that dimmed
+     * them would dim every ordinary caption on the diagram.
+     *
+     * @param wanted the colour the caller asked for
+     * @return whether it is a neutral grey
+     */
+    private static boolean isNeutralGrey(Color wanted)
+    {
+        if (wanted == null) return false;
+
+        int r = wanted.getRed();
+
+        return r == wanted.getGreen() && r == wanted.getBlue() && r > 60 && r < 220;
+    }
+
+    /**
+     * A colour moved part of the way towards another.
+     *
+     * @param from the colour to start at
+     * @param towards the colour to move towards
+     * @param howFar 0 for `from` unchanged, 1 for `towards`
+     * @return the blended colour
+     */
+    private static Color blend(Color from, Color towards, double howFar)
+    {
+        return new Color(
+            (int) Math.round(from.getRed() + (towards.getRed() - from.getRed()) * howFar),
+            (int) Math.round(from.getGreen() + (towards.getGreen() - from.getGreen()) * howFar),
+            (int) Math.round(from.getBlue() + (towards.getBlue() - from.getBlue()) * howFar));
     }
 
     @Override
