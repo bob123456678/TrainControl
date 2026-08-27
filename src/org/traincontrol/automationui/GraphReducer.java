@@ -423,6 +423,24 @@ public class GraphReducer
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn)
     {
+        return findPath(from, to, mayTurn, mustTurn, Collections.<TileKey, Set<Side>>emptyMap());
+    }
+
+    /**
+     * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).
+     *
+     * The BUILD has always obeyed these: `AutonomyBuilder.arrivalAllowed` does not emit the barred copy
+     * of a split square, so no run through it exists for the railway to pick. This walk did not, so the
+     * editor drew routes a train would never be offered - which is the one thing a path test must not
+     * do, its whole purpose being to report what a train would find.
+     *
+     * The START is exempt, as it is in the build: a train standing at a square did not arrive there by
+     * any side, and refusing it would make a restricted station unable to SEND trains rather than
+     * unable to receive them.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
+    {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
 
         if (from.equals(to)) return new ArrayList<ReducedEdge>();
@@ -486,6 +504,10 @@ public class GraphReducer
                     }
                 }
 
+                // The red arrows (OB-120).  A square that refuses arrivals by this side is a square
+                // no train can be sent to this way, so the move does not exist.
+                if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
+
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 
                 if (arrivedBy.containsKey(next)) continue;
@@ -515,6 +537,29 @@ public class GraphReducer
     }
 
     /**
+     * Whether a square refuses trains arriving by a given side (OB-120).
+     *
+     * The same test `AutonomyBuilder.arrivalAllowed` makes when it decides which copies of a split
+     * square to emit, written once here so the two cannot drift: a run this walk allows and the build
+     * refuses is a route the editor draws and the railway will never take.
+     *
+     * A null side is the starting square, which has no arrival and is never barred.
+     *
+     * @param barred square to the sides it refuses, never null
+     * @param tile the square being arrived at
+     * @param by the side it is being arrived by
+     * @return true when the arrival is not allowed
+     */
+    private boolean refusesArrival(java.util.Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
+    {
+        if (by == null || barred == null || barred.isEmpty()) return false;
+
+        Set<Side> sides = barred.get(tile);
+
+        return sides != null && sides.contains(by);
+    }
+
+    /**
      * The sides a train that arrived at this square by the given side can carry on out of - the track it
      * is actually standing on, rather than every side the square happens to have.
      *
@@ -537,6 +582,16 @@ public class GraphReducer
      * @return the tiles reachable, including {@code from} itself
      */
     public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
+    {
+        return reachableTiles(from, mayTurn, mustTurn, Collections.<TileKey, Set<Side>>emptyMap());
+    }
+
+    /**
+     * @param barred the sides each square refuses arrivals by (OB-120), as findPath takes them - so the
+     *        two walks cannot disagree about which runs exist
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        java.util.Map<TileKey, Set<Side>> barred)
     {
         Set<TileKey> reached = new java.util.LinkedHashSet<>();
 
@@ -590,6 +645,10 @@ public class GraphReducer
                         continue;
                     }
                 }
+
+                // The red arrows again, and for the reason the turn sets are shared: the findings
+                // panel and the path test must not disagree about which runs exist (OB-120).
+                if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
 
                 reached.add(edge.getEnd());
 

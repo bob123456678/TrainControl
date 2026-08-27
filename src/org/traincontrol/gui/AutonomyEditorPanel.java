@@ -348,6 +348,9 @@ public class AutonomyEditorPanel extends JPanel
 
         add(buildTools(), BorderLayout.NORTH);
 
+        // After buildTools, which is what fills toolButtons (OB-119).
+        installEscape();
+
         // The findings are built here but mounted by the WINDOW, across the bottom and the full width.
         // In this column they were a narrow box with sentences wrapped to four words a line, beside a
         // diagram they are describing - and the diagram is where the reader has to look to act on them.
@@ -657,16 +660,8 @@ public class AutonomyEditorPanel extends JPanel
             }
 
             tool = button.isSelected() ? which : Tool.NONE;
-            pendingPortal = null;
-            selection.clear();
-            testFrom = null;
-            traces.clear();
 
-            // A one-way run waiting for its far end survived this, so the next click anywhere was
-            // swallowed by a gesture the user had already moved on from.
-            oneWayFrom = null;
-            signalFor = null;
-            blockingFor = null;
+            clearGesture();
 
             say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
@@ -677,6 +672,74 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         return button;
+    }
+
+    /**
+     * Lets go of any half-finished gesture, without changing which tool is armed.
+     *
+     * Was written out inside the tool buttons' listener, which is the only place that needed it until
+     * Escape did.
+     *
+     * A one-way run waiting for its far end is the case that shows why it has to be complete: left
+     * behind, the next click anywhere was swallowed by a gesture the user had already moved on from.
+     */
+    private void clearGesture()
+    {
+        pendingPortal = null;
+        selection.clear();
+        testFrom = null;
+        traces.clear();
+        oneWayFrom = null;
+        signalFor = null;
+        blockingFor = null;
+    }
+
+    /**
+     * Puts every tool down (OB-119).
+     *
+     * Adam: "escape should turn off test a path in the autonomy editor."
+     *
+     * Every tool rather than that one.  A user who armed the wrong tool presses Escape whichever it
+     * was, and a key that works for one of five is worse than a key that works for none: it teaches a
+     * rule and then breaks it.
+     *
+     * The BUTTONS come up too, which is the half that is easy to leave out.  The track editor's own
+     * Escape carries a note about exactly that - "letting go of the squares but not of the mode is the
+     * half of Escape nobody asks for" - and a tool left looking armed while the panel thinks nothing is
+     * armed is worse still: the next click falls through to `cycle()`, which CHANGES a square, so a
+     * read-only inspection tool that appeared to be armed would silently edit the railway.
+     */
+    public void putToolsDown()
+    {
+        for (JToggleButton other : toolButtons)
+        {
+            other.setSelected(false);
+        }
+
+        tool = Tool.NONE;
+
+        clearGesture();
+
+        say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
+
+        refresh();
+    }
+
+    /**
+     * Binds Escape to putting the tools down.
+     *
+     * WHEN_IN_FOCUSED_WINDOW, because the click that armed the tool leaves focus on the diagram rather
+     * than on this panel - a binding that needed focus here would work only if the user had happened to
+     * click a control in this column first, which is the opposite of what a get-me-out key is for.
+     *
+     * Dialogs are separate windows and register their own Escape on their own root panes, so this
+     * cannot reach inside one of them.
+     */
+    private void installEscape()
+    {
+        registerKeyboardAction(e -> putToolsDown(),
+            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
     private JScrollPane buildFindings()
@@ -4909,6 +4972,13 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
 
+        // The red arrows, so the routes drawn here are routes a train would actually be offered
+        // (OB-120).  This tool answers "where could it go"; drawing a run into a station that refuses
+        // arrivals from that side answers it wrongly, and in the direction that wastes the most time -
+        // the user goes looking for why the railway will not do something it was never going to do.
+        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred =
+            session.barredArrivals();
+
         // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
         // keyed by the running graph's Points, and a square is several of those - so a derived-graph
         // station appeared three times over, under generated names the user never chose.
@@ -4929,7 +4999,7 @@ public class AutonomyEditorPanel extends JPanel
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && session.getReducer() != null)
                 {
-                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn), tile, true);
+                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred), tile, true);
                 }
             }
             else
@@ -5142,13 +5212,17 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
 
+        // The red arrows, from the same place the build reads them (OB-120).
+        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred =
+            session.barredArrivals();
+
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null
-                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn);
+                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred);
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
             session.getReducer() == null ? null
-                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn);
+                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred);
 
         traces.clear();
 

@@ -40,6 +40,96 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class testAutonomyDiagramReducer
 {
     /**
+     * A barred arrival is not a route, for either walk (OB-120).
+     *
+     * Adam: "test a path should respect all red arrow restrictions."
+     *
+     * The red arrows are barred arrivals - the sides a station refuses to let trains reach it by. The
+     * BUILD has always obeyed them: `AutonomyBuilder.arrivalAllowed` does not emit the barred copy of a
+     * split square, so no run through it exists for the railway to pick. The reducer's walks did not,
+     * so the editor's path test drew routes a train would never be offered - the one thing a path test
+     * must not do, since its whole purpose is to report what a train would find.
+     *
+     * **Both walks, and that is the half worth testing.** `applyTest` says in as many words that it
+     * shares its turn sets with the reachability check "so the path test and the findings panel cannot
+     * disagree about which way a train may go". Teaching findPath about the arrows and not
+     * reachableTiles would have broken that quietly: the test would refuse a run the findings panel
+     * went on counting as reachable, and the two screens would contradict each other with no error
+     * anywhere.
+     *
+     * The START is exempt, as it is in the build - a train standing on a square did not arrive there by
+     * any side, and refusing it would make a restricted station unable to SEND trains rather than
+     * unable to receive them. The last case here is that one.
+     *
+     * MUTATION: dropping the `refusesArrival` test from either walk fails its half of this.
+     */
+    @Test
+    public void testTheWalksObeyTheRedArrows() throws IOException
+    {
+        // Three sensors in a row, A - B - C, the same shape the connectivity tests use.
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        TileKey a = key("main", 1, 1);
+        TileKey b = key("main", 3, 1);
+        TileKey c = key("main", 5, 1);
+
+        Set<TileKey> none = Collections.emptySet();
+
+        // Nothing barred: the run exists, which is the control - without it a fault that broke the
+        // walk entirely would read as this test passing.
+        assertNotNull(reducer.findPath(a, c, none, none), "the plain run should exist");
+
+        assertTrue(reducer.reachableTiles(a, none, none).contains(c),
+            "the plain run should be reachable too");
+
+        // Now C refuses trains arriving by the side this run reaches it from.
+        Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
+
+        barred.put(c, java.util.EnumSet.of(arrivalSideAt(reducer, b, c)));
+
+        assertNull(reducer.findPath(a, c, none, none, barred),
+            "the path test found a run into a station that refuses arrivals from that side - a route "
+            + "the railway will never offer, drawn on the diagram as though it would");
+
+        assertFalse(reducer.reachableTiles(a, none, none, barred).contains(c),
+            "the reachability walk still counts a barred station as reachable, so the findings panel "
+            + "and the path test now disagree about the same run");
+
+        // And the start is exempt: A may still SEND trains even if A refuses arrivals.
+        Map<TileKey, Set<Side>> barredStart = new java.util.LinkedHashMap<>();
+
+        barredStart.put(a, java.util.EnumSet.allOf(Side.class));
+
+        assertNotNull(reducer.findPath(a, c, none, none, barredStart),
+            "a station that refuses every arrival can no longer send a train anywhere. A train "
+            + "standing there did not arrive by any side, and the build exempts the start for exactly "
+            + "this reason");
+    }
+
+    /**
+     * The side a run from one square arrives at the next by.
+     *
+     * Read off the reducer rather than assumed, so this test does not have to know which way the
+     * fixture happens to lay its track out.
+     */
+    private Side arrivalSideAt(GraphReducer reducer, TileKey from, TileKey to)
+    {
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            if (edge.getStart().equals(from) && edge.getEnd().equals(to)) return edge.getEntrySide();
+        }
+
+        throw new IllegalStateException("no edge from " + from + " to " + to + " in the fixture");
+    }
+
+    /**
      * Every feedback tile becomes a Point without anyone asking, and a run of plain track between two of
      * them collapses to exactly one edge each way.
      */

@@ -1276,6 +1276,69 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Escape puts the autonomy editor's tools down, and brings their buttons up with them.
+     *
+     * OB-119. Adam: "escape should turn off test a path in the autonomy editor."
+     *
+     * The track editor has done this for a while and its own comment says why in a sentence worth
+     * keeping: Escape "lets go of everything the editor is holding ... the picked squares, the copied
+     * group, the armed tool - and the picking MODE, which stayed on afterwards with its button still
+     * pressed. Letting go of the squares but not of the mode is the half of Escape nobody asks for."
+     *
+     * The autonomy panel had none of it, and the button half matters more here than in the track
+     * editor. A tool left LOOKING armed while the panel thinks nothing is armed sends the next click to
+     * `cycle()`, which changes a square's direction - so a read-only inspection tool that appeared to
+     * be armed would silently edit the railway. That exact fault has been fixed here once already, when
+     * a second tool button arrived without a button group.
+     *
+     * Read rather than run: the panel needs a session, a page and a live diagram to stand up, and the
+     * binding is WHEN_IN_FOCUSED_WINDOW so there is no component to send a key to in a headless test.
+     * What this catches is the parts being separated - the binding removed, or the buttons stopped
+     * being cleared with the tool.
+     *
+     * MUTATION: dropping the `setSelected(false)` loop from `putToolsDown`, or the `installEscape()`
+     * call from the constructor, each fails one of these.
+     */
+    @Test
+    public void testEscapePutsTheAutonomyToolsDown() throws Exception
+    {
+        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String install = withoutComments(bodyOf(panel, "private void installEscape()"));
+
+        assertTrue(install.contains("VK_ESCAPE"),
+            "the autonomy editor no longer binds Escape at all");
+
+        assertTrue(install.contains("putToolsDown()"),
+            "Escape is bound to something other than putting the tools down");
+
+        assertTrue(install.contains("WHEN_IN_FOCUSED_WINDOW"),
+            "Escape is bound only while this panel has focus. The click that armed the tool leaves "
+            + "focus on the diagram, so the key would work only if the user had happened to click a "
+            + "control in this column first");
+
+        // And that anybody installs it.
+        assertTrue(withoutComments(bodyOf(panel, "public AutonomyEditorPanel(")).contains(
+            "installEscape()"),
+            "nothing calls installEscape, so the binding exists and is never made");
+
+        String down = withoutComments(bodyOf(panel, "public void putToolsDown()"));
+
+        assertTrue(down.contains("setSelected(false)"),
+            "the tool buttons are left looking pressed after Escape. The panel then thinks no tool is "
+            + "armed while the button says one is, and the next click falls through to cycle(), which "
+            + "CHANGES a square - a read-only tool silently editing the railway");
+
+        assertTrue(down.contains("Tool.NONE"), "Escape does not actually disarm the tool");
+
+        assertTrue(down.contains("clearGesture()"),
+            "a half-finished gesture survives Escape - a one-way run waiting for its far end would "
+            + "swallow the next click anywhere on the diagram");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)
