@@ -880,6 +880,217 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The four facing arrows are rotations of each other, not two pairs of different shapes.
+     *
+     * OB-116. Adam: "while the up and down arrows look good, the left and right arrows on autonomy
+     * labels are too wide for how short they are.  make them look more symmetrical and a hair taller."
+     *
+     * That was a measurement, not an impression. In Segoe UI the up arrow U+25B2 is 78.3 by 70.0 and
+     * the right arrow U+25BA is 70.0 by 35.5 - half the height. And there was nothing better to reach
+     * for: those two are the ONLY horizontal triangles Segoe UI can draw, which is why they were
+     * chosen in the first place, U+25B6 and U+25C0 having come out as empty boxes.
+     *
+     * The font was the answer rather than the character. This asserts the property that matters - that
+     * a left or right arrow is about as tall as an up or down one - rather than pinning the code
+     * points, so the arrows can be changed again without editing a test, as long as they still match.
+     *
+     * SKIPPED where the matched font is not installed, which is the same condition the code uses to
+     * decide whether to use it. On such a machine the squat pointers are deliberately still in use,
+     * because a squat arrow beats an empty box, and asserting otherwise would fail for being right.
+     *
+     * MUTATION: putting U+25BA and U+25C4 back fails the height comparison at better than three to
+     * one.
+     */
+    @Test
+    public void testTheFourFacingArrowsAreOneMatchedSet()
+    {
+        if (!"Segoe UI Symbol".equals(org.traincontrol.gui.StationCaption.LABEL_FONT))
+        {
+            throw new SkipException("Segoe UI Symbol is not installed, so the pointers are correct "
+                + "here - the arrows only have to match on a machine that can draw the triangles");
+        }
+
+        java.awt.Font font = new java.awt.Font(
+            org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 100);
+
+        java.awt.font.FontRenderContext frc =
+            new java.awt.font.FontRenderContext(null, true, true);
+
+        double up = height(font, frc, org.traincontrol.gui.StationCaption.ARROW_N);
+        double down = height(font, frc, org.traincontrol.gui.StationCaption.ARROW_S);
+        double east = height(font, frc, org.traincontrol.gui.StationCaption.ARROW_E);
+        double west = height(font, frc, org.traincontrol.gui.StationCaption.ARROW_W);
+
+        assertTrue(up > 1 && down > 1 && east > 1 && west > 1,
+            "one of the arrows has no shape at all, which is what an empty box measures as: "
+            + up + " " + down + " " + east + " " + west);
+
+        assertEquals(east, west, 0.01, "the left and right arrows are different sizes");
+        assertEquals(up, down, 0.01, "the up and down arrows are different sizes");
+
+        // The complaint, as a number.  A horizontal arrow half the height of a vertical one is what
+        // this test exists to stop coming back; a fifth either way is the tolerance.
+        assertTrue(east > up * 0.8 && east < up * 1.25,
+            "the sideways arrow is " + east + " tall against the up arrow's " + up + ", which is the "
+            + "mismatch OB-116 was filed for - it reads as too wide for its height");
+    }
+
+    /**
+     * How tall a string is drawn, ignoring the space the font reserves around it.
+     */
+    private double height(java.awt.Font font, java.awt.font.FontRenderContext frc, String text)
+    {
+        return font.createGlyphVector(frc, text.trim()).getVisualBounds().getHeight();
+    }
+
+    /**
+     * A tile lifted for a running train stays BELOW the station captions.
+     *
+     * OB-117. Adam: "on route departure from 1016 as the origin station, the locomotive icon covers the
+     * autonomy label with a blank white space."
+     *
+     * The lift exists because he asked for the opposite of a different overlap - "make sure it renders
+     * on top of the S88's" - and z-order 0 does that. It also puts the tile over the station captions,
+     * and a tile is OPAQUE: it does not merely draw a locomotive across a caption, it paints out every
+     * pixel of the caption inside that square. The white he saw is the tile's own background.
+     *
+     * Swing has one ordering and no layers, so this cannot be declared, only arranged - and a rule
+     * that has to be arranged is a rule that can be forgotten. Hence a test on the arrangement itself,
+     * built from plain components: no railway is needed to establish what the order has to be.
+     *
+     * MUTATION: dropping the `keepCaptionsInFront` call from the lift fails the LAST assertion - and
+     * only the last one. The first three exercise the rule directly and survived that mutation, which
+     * is why the last one is here.
+     */
+    @Test
+    public void testTheTrainIconDoesNotPaintOutACaption() throws Exception
+    {
+        javax.swing.JPanel grid = new javax.swing.JPanel(null);
+
+        // A caption, an address label, and the tile that will be lifted.  The address label is added
+        // LAST and pushed to the front, which is the order LayoutGrid builds them in.
+        org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+
+        javax.swing.JLabel tile = new javax.swing.JLabel("tile");
+        javax.swing.JLabel address = new javax.swing.JLabel("86");
+
+        grid.add(caption);
+        grid.add(tile);
+        grid.add(address);
+
+        grid.setComponentZOrder(caption, 0);
+        grid.setComponentZOrder(address, 0);
+
+        // What the lift does: take the front, then hand it back to the captions.
+        grid.setComponentZOrder(tile, 0);
+
+        assertTrue(grid.getComponentZOrder(tile) < grid.getComponentZOrder(address),
+            "the lifted tile is behind the address label, so the locomotive would be hidden by the "
+            + "sensor number - which is the fault the lift was added to fix");
+
+        org.traincontrol.gui.LayoutLabel.keepCaptionsInFront(grid);
+
+        assertTrue(grid.getComponentZOrder(caption) < grid.getComponentZOrder(tile),
+            "the lifted tile is in front of the station caption. A tile is opaque, so that does not "
+            + "put a locomotive over a name - it paints the name out and leaves the tile's own "
+            + "background, which is the blank white space in OB-117");
+
+        assertTrue(grid.getComponentZOrder(tile) < grid.getComponentZOrder(address),
+            "putting the captions back also gave the address label the front again, so the fix for "
+            + "OB-117 has undone the reason the lift exists");
+
+        // AND THAT THE LIFT ACTUALLY CALLS IT.
+        //
+        // Everything above tests the rule; none of it tests that anybody asks. Deleting the call from
+        // `liftAboveLabels` left all three assertions passing, because they reach the helper directly
+        // - the defect simply moved from the rule to its one call site, which is where extracting a
+        // rule always moves it.
+        //
+        // Read rather than run, and that is a weaker thing: `liftAboveLabels` is private, fires off
+        // the autonomy monitor's worker thread, and needs a live grid with a moving train to reach.
+        // What this catches is the call being dropped or moved out of the lifting branch, which is
+        // the whole of what a reader can break here.
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutLabel.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int lift = source.indexOf("private void liftAboveLabels(");
+
+        assertTrue(lift > 0, "liftAboveLabels has been renamed; this test is looking for nothing");
+
+        // Bounded by the NEXT member rather than by a closing brace.
+        //
+        // Looking for a line separator plus a brace assumed the file's line endings; it is written
+        // with LF and System.lineSeparator() is CRLF here, so the search found nothing and the
+        // substring threw. Two members is a bound that does not care.
+        int next = source.length();
+
+        for (String start : new String[] {"    private ", "    public ", "    static "})
+        {
+            int at = source.indexOf(start, lift + 10);
+
+            if (at > 0 && at < next) next = at;
+        }
+
+        String body = source.substring(lift, next);
+
+        assertTrue(body.contains("keepCaptionsInFront("),
+            "the lift no longer puts the station captions back in front of the tile it raised. The "
+            + "rule above still works and nothing calls it, so a running train paints out the name "
+            + "of the station it is standing at - which is OB-117 exactly");
+    }
+
+    /**
+     * An empty caption sits over the middle of its square, not at the left of it.
+     *
+     * OB-118. Adam: "when a position is empty, try to better center it over the track."
+     *
+     * The placement arithmetic only ever subtracted. It took half of the caption's OVERFLOW past one
+     * tile and shifted left by that much - so a caption WIDER than its square was centred, and a
+     * caption NARROWER than its square was left exactly where its cell began, hard against the left
+     * edge. An empty station shows a dash and is narrow; the locomotive name that replaces it a moment
+     * later is wide. So the same caption was centred or not depending on whether a train was there.
+     *
+     * The two cases are one question with a difference that is negative half the time, and the fix is
+     * to stop clamping it to zero before using it.
+     *
+     * MUTATION: restoring `Math.max(0, (wide - tile) / 2)` and subtracting it fails the dash case
+     * while leaving the long-name case passing.
+     */
+    @Test
+    public void testAnEmptyCaptionIsCentredOnItsSquare()
+    {
+        int tile = 60;
+        int backShift = tile;
+
+        org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+
+        caption.setPill(true);
+        caption.setFont(new java.awt.Font(
+            org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2));
+
+        // Empty: the dash a station shows when no train is standing on it.
+        caption.setText(org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY);
+        caption.setTileGeometry(tile, backShift, 0);
+
+        int dash = caption.getBorder().getBorderInsets(caption).left;
+
+        assertTrue(dash > backShift,
+            "an empty caption starts at " + dash + " with its square beginning at " + backShift
+            + ", so it is hard against the left edge of the square rather than over the middle of it");
+
+        // And a LONG name still behaves as it did - centred by pulling left, clamped at the cell.
+        caption.setText("Hauptbahnhof Nord 12");
+
+        int name = caption.getBorder().getBorderInsets(caption).left;
+
+        assertTrue(name < dash,
+            "a caption too wide for its square is placed further right than a narrow one, which is "
+            + "backwards - a wide one has to pull LEFT to stay centred");
+
+        assertTrue(name >= 0, "a caption was placed before the start of its own cell");
+    }
+
+    /**
      * Captions are left off the track editor and nowhere else.
      *
      * FR-030. Adam: "in the track diagram editor, hide autonomy labels completely."  Three of the four
@@ -1181,9 +1392,40 @@ public class testDiagramLooksRight
                 "at " + tile + "px an east-west caption sits on the rail rather than below it - its "
                 + "middle is at " + (across + line / 2) + " and the rail is at " + rail);
 
-            assertTrue(Math.abs(up + line / 2 - rail) <= 2,
-                "at " + tile + "px a north-south caption is not on the track it is meant to lie "
-                + "across - its middle is at " + (up + line / 2) + " and the rail is at " + rail);
+            // A LITTLE BELOW the rail, not centred on it (Adam, 2026-08-27: "the station labels need
+            // to sit lower vertically - about 5 px down").
+            //
+            // This asserted centred to within two pixels, which was right until he looked at it on a
+            // running diagram: a caption centred exactly on a rail reads as sitting on top of the
+            // track rather than as a label for it. The tolerance is not widened to let the new
+            // placement through - that would leave the test agreeing with anything from a couple of
+            // pixels high to a couple low. It asserts the offset, and that the caption still overlaps
+            // the rail it belongs to, which is the property that stops the nudge growing until the
+            // label floats free of its own track.
+            int below = up + line / 2 - rail;
+
+            assertTrue(below > 0,
+                "at " + tile + "px a north-south caption is centred on its rail or above it, and it "
+                + "is meant to sit a little below - its middle is at " + (up + line / 2)
+                + " and the rail is at " + rail);
+
+            // A CAP, not a restatement of the offset.
+            //
+            // This was tile/10, which was just over the nudge when the nudge was a twelfth; asking for
+            // four more pixels took the two past each other and this failed at 20px by one. Widened
+            // rather than re-derived from the constant: a test that computes the same expression as
+            // the code agrees with it by construction and can never disagree, which is no test at all.
+            // What it is for is stopping the nudge growing without anybody looking, and a fifth of the
+            // tile is far enough away to leave room for another adjustment or two.
+            //
+            // The assertion below is the real guard anyway - it does not care about numbers.
+            assertTrue(below <= Math.max(4, tile / 5),
+                "at " + tile + "px a north-south caption sits " + below + " below its rail, which is "
+                + "far enough to stop reading as a label for that track");
+
+            assertTrue(up < rail && up + line > rail,
+                "at " + tile + "px a north-south caption no longer covers the rail at all - it lies "
+                + "across the track by design, and " + up + ".." + (up + line) + " misses " + rail);
 
             assertTrue(across >= 0 && up >= 0,
                 "at " + tile + "px a caption is pushed off the top of its own square");

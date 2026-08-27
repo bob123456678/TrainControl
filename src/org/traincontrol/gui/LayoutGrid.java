@@ -775,7 +775,9 @@ public class LayoutGrid
 
                     text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
-                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
+                    // StationCaption.LABEL_FONT, not "Segoe UI" - it is the same typeface for every
+                    // word on a diagram and additionally has the four matched arrows (OB-116).
+                    text.setFont(new Font(StationCaption.LABEL_FONT, Font.PLAIN, size / 2));
 
                     // A caption is a pill; writing of the user's own is not (FR-028).
                     //

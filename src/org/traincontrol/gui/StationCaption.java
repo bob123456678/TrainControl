@@ -189,13 +189,25 @@ public class StationCaption extends JLabel
 
         int wide = width();
 
-        // Half the overflow, and never more than the cell was moved back by. Clamped rather than
-        // allowed to run: a caption that started before its cell would be laid out at the cell's edge
-        // anyway, and the clamp is what keeps a long name at the left edge of the diagram from being
-        // treated differently from one in the middle.
-        int half = Math.max(0, (wide - tile) / 2);
-
-        int left = Math.max(0, backShift - Math.min(half, backShift));
+        // CENTRED ON THE SQUARE, whichever way the difference goes (OB-118).
+        //
+        // Adam: "when a position is empty, try to better center it over the track."  An empty station
+        // shows a dash, which is narrower than a tile - and the old arithmetic only ever subtracted.
+        // It took half of the caption's OVERFLOW and shifted left by that, so a caption wider than its
+        // square was centred and a caption narrower than its square was left exactly where the cell
+        // started, hard against the left edge. A dash therefore sat at the left of its square while
+        // the locomotive name that replaced it a moment later sat in the middle of it.
+        //
+        // One expression covers both, because they were always the same question - where does this
+        // square's centre line fall? - asked with a difference that happens to be negative half the
+        // time:
+        //
+        //     left = backShift + (tile - wide) / 2
+        //
+        // Wider than the tile, `(tile - wide) / 2` is minus half the overflow and this is the old
+        // formula exactly, clamp included. Narrower, it is the padding that centres it. The clamp
+        // stays for the same reason it was there: a caption cannot start before its own cell.
+        int left = Math.max(0, backShift + (tile - wide) / 2);
 
         setBorder(javax.swing.BorderFactory.createEmptyBorder(down, left, 0, 0));
     }
@@ -254,9 +266,36 @@ public class StationCaption extends JLabel
     {
         if (line <= 0) return 0;
 
-        if (northSouth) return Math.max(0, (tile - line) / 2);
+        if (northSouth) return Math.max(0, (tile - line) / 2) + nudge(tile);
 
-        return Math.max(0, Math.min(line, tile));
+        return Math.max(0, Math.min(line, tile)) + nudge(tile);
+    }
+
+    /**
+     * How far below where the geometry puts it a caption actually sits.
+     *
+     * Adam, 2026-08-27, looking at a running diagram: "the station labels need to sit lower vertically
+     * - about 5 px down."
+     *
+     * Then, having looked at it: "down 4 more pixels and we should be good." So nine at the sixty-pixel
+     * view, which is where he was measuring both times.
+     *
+     * Written as a FRACTION OF THE TILE rather than as the pixels he counted. He was looking at one
+     * tile size, and everything else about a caption - its font, its offset, the room at the ends of
+     * its pill - is derived from the tile; a constant nine would be a seventh of the gap at one size
+     * and half of it at another, and would be the only number here that did not scale.
+     *
+     * It is deliberately applied to BOTH orientations. The east-west case clears the rail by a line
+     * and now clears it by a little more; the north-south case lies across the rail and now lies
+     * slightly below its centre, which is what he is asking for - a caption centred exactly on a rail
+     * reads as sitting on top of the track rather than being a label for it.
+     *
+     * @param tile the tile size in pixels
+     * @return the extra offset
+     */
+    private static int nudge(int tile)
+    {
+        return Math.max(1, tile * 3 / 20);
     }
 
     /**
@@ -278,6 +317,63 @@ public class StationCaption extends JLabel
             (0.299 * fill.getRed() + 0.587 * fill.getGreen() + 0.114 * fill.getBlue()) / 255.0;
 
         return brightness > 0.6 ? Color.BLACK : Color.WHITE;
+    }
+
+    /**
+     * The font the diagram's labels are drawn in, and the four arrows that go in them (OB-116).
+     *
+     * Adam: "while the up and down arrows look good, the left and right arrows on autonomy labels are
+     * too wide for how short they are.  make them look more symmetrical and a hair taller."
+     *
+     * He is describing a real measurement rather than an impression. In Segoe UI:
+     *
+     *     U+25B2 up      78.3 x 70.0     w/h 1.119
+     *     U+25BA right   70.0 x 35.5     w/h 1.970     <- half the height of the up arrow
+     *
+     * And there is no better character to reach for: U+25BA and U+25C4 are the ONLY horizontal
+     * triangles Segoe UI can draw at all. U+25B6 and U+25C0, the geometric ones that would be the
+     * right shape, come out as empty boxes - which is how they were found and rejected when these
+     * labels were first written.
+     *
+     * The font is the thing to change, not the character. `Segoe UI Symbol` draws every word this
+     * application puts on a diagram at EXACTLY the same size as Segoe UI - checked across names,
+     * locomotive names, both alphabets, the digits, the em-dash and the bullets, every one identical
+     * to two decimal places - and it also has the geometric triangles:
+     *
+     *     U+25B2 up      78.3 x 70.0     w/h 1.119
+     *     U+25B6 right   70.0 x 78.3     w/h 0.894     <- the exact transpose
+     *
+     * So the four arrows become one matched set, rotations of each other, and no station name changes
+     * shape by a pixel.
+     *
+     * Chosen once, at class load, and guarded: on a machine without that font the pointers stay, since
+     * a squat arrow is a great deal better than an empty box.
+     */
+    public static final String LABEL_FONT;
+
+    /** North. */
+    public static final String ARROW_N = "\u25B2";
+
+    /** South. */
+    public static final String ARROW_S = "\u25BC";
+
+    /** East, and west - the pair that depends on which font is available. */
+    public static final String ARROW_E;
+
+    /** West. */
+    public static final String ARROW_W;
+
+    static
+    {
+        java.awt.Font symbol = new java.awt.Font("Segoe UI Symbol", java.awt.Font.PLAIN, 12);
+
+        boolean matched = symbol.canDisplay(0x25B6) && symbol.canDisplay(0x25C0)
+            && symbol.canDisplay(0x25B2) && symbol.canDisplay(0x25BC);
+
+        LABEL_FONT = matched ? "Segoe UI Symbol" : "Segoe UI";
+
+        ARROW_E = matched ? "\u25B6" : "\u25BA";
+        ARROW_W = matched ? "\u25C0" : "\u25C4";
     }
 
     /**

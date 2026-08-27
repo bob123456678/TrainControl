@@ -1031,6 +1031,23 @@ public final class LayoutLabel extends JLabel
     private boolean liftedForTrain = false;
 
     /**
+     * Puts every station caption in a container back in front of everything else.
+     *
+     * Public and static so the rule can be given a container and asked what it does with it -
+     * `testTheTrainIconDoesNotPaintOutACaption` builds one out of plain components and checks the
+     * order, which is the whole of what this has to get right and needs no railway to establish.
+     *
+     * @param parent the container holding the tiles and their labels
+     */
+    public static void keepCaptionsInFront(java.awt.Container parent)
+    {
+        for (java.awt.Component one : parent.getComponents())
+        {
+            if (one instanceof StationCaption) parent.setComponentZOrder(one, 0);
+        }
+    }
+
+    /**
      * Brings this tile in front of the address and caption labels, or puts it back behind them.
      *
      * Adam, looking at the locomotive icon: "make sure it renders on top of the S88's.  Right now,
@@ -1066,6 +1083,28 @@ public final class LayoutLabel extends JLabel
             try
             {
                 parent.setComponentZOrder(this, lift ? 0 : parent.getComponentCount() - 1);
+
+                // And the station captions back above it (OB-117).
+                //
+                // Adam: "on route departure from 1016 as the origin station, the locomotive icon covers
+                // the autonomy label with a blank white space."
+                //
+                // What he asked for when this lift was written was that the locomotive clear the S88
+                // ADDRESS labels, and index 0 does that. It also clears the station captions, which he
+                // did not ask for and which is worse than what it fixed: a tile is opaque, so a lifted
+                // one does not merely draw its locomotive over a caption, it paints out every pixel of
+                // the caption that lies within the square - the "blank white space", which is this
+                // tile's own background.
+                //
+                // Swing has one ordering and no notion of layers, so "above the addresses but below
+                // the captions" has to be arranged rather than declared: take the front, then hand it
+                // straight back to the captions. They end up at 0..n-1 and this tile at n, which is
+                // above every address label and every other tile.
+                //
+                // Cheap enough to do plainly: the lift is edge-triggered - it runs when a train starts
+                // or stops moving on this square, not on every repaint - and captions do not overlap
+                // each other, so the order they end up in among themselves does not matter.
+                if (lift) keepCaptionsInFront(parent);
 
                 // The PARENT, not this tile: the labels that were covering it have moved too, and a
                 // repaint of one component cannot clean up where another one used to be.
