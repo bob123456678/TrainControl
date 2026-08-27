@@ -59,42 +59,6 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-116 - 2026-08-26 - left and right arrows on autonomy labels
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 22:56  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 22:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-while the up and down arrows look good, the left and right arrows on autonomy labels are too wide for how short they are.  make them look more symmetrical and a hair taller.
-
-### OB-117 - 2026-08-26 - route departure icon oddness
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 22:58  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 22:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-on route departure from 1016 as the origin station, the locomotive icon covers the autonomy label with a blank white space.
-
-### OB-118 - 2026-08-26 - label positioning on vertical tracks
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 23:23  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 23:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when a position is empty, try to better center it over the track.
-
-### FR-032 - 2026-08-27 - crop image without reselecting
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 00:58  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 00:54 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-once a custom icon is set, make it possible to crop/pan without first reselecting the source. an you add a hover crop icon to the opper-right of the big locomotive image when hovered?
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -107,6 +71,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-27 | OB-120 | bug | Test a path drew routes into stations that refuse arrivals from that side | fixed unvalidated | - |
+| 2026-08-27 | OB-119 | bug | Escape did not put the autonomy editor's tools down | fixed unvalidated | - |
+| 2026-08-27 | FR-032 | feature request | Crop or pan an icon again without reselecting the source | - | [MT-203](tests.md#mt-203) |
+| 2026-08-27 | OB-118 | bug | An empty station's caption sat at the left of its square rather than over the track | fixed unvalidated | - |
+| 2026-08-27 | OB-117 | bug | The running-train tile painted out the station caption underneath it | fixed unvalidated | - |
+| 2026-08-27 | OB-116 | bug | The left and right facing arrows were half the height of the up and down ones | fixed unvalidated | - |
 | 2026-08-26 | LR-6 | bug | A comment describing behaviour that changed under it, and the dead half of the condition beside it | fixed validated | - |
 | 2026-08-26 | LR-5 | bug | The first-dispatch signal sweep asked the counter again instead of remembering it had been first | fixed unvalidated | - |
 | 2026-08-26 | LR-4 | bug | Two trains on one platform still drew brackets inside the pill | - | [MT-197](tests.md#mt-197) |

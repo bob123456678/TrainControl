@@ -80,6 +80,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-200](#mt-200) | 2026-08-26 | Grey station labels | needs test | FR-031 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-202](#mt-202) | 2026-08-26 | Which conflict the route question is about | fixed unvalidated | LR-2 (2026-08-26 last-reviewer pass) |
+| [MT-203](#mt-203) | 2026-08-27 | Cropping an icon again without reselecting it | fixed unvalidated | FR-032 |
 
 Everything else - 137 of 200 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -10342,6 +10343,58 @@ it must ask whether this grid is in an editor and whether that editor is the aut
 `layout.getEdit()` is true in BOTH and has been wrong here before.
 
 ---
+
+<a id="mt-203"></a>
+
+### MT-203 - 2026-08-27 - Cropping an icon again without reselecting it
+
+**Disposition:** fixed unvalidated
+**From:** FR-032
+**Written:** 2026-08-27
+
+**Take a copy of `tc_loc_icons` before this one.** It is where your crops live and several steps here
+delete files in it.
+
+1. Pick a locomotive and set a local icon from a photograph, with the crop box ticked. Crop it.
+2. **Hover the big locomotive picture.** A small crop mark appears in the MIDDLE of it. It is in the
+   middle because there is nowhere else - a cropped icon fills the whole label - so it is deliberate
+   rather than a corner badge that slipped.
+3. Click it. The crop window opens on **the original photograph**, not on the crop - so you can pan
+   back out to parts of the picture the first crop cut off. That is the whole point of the ticket.
+4. Adjust and accept. The icon changes; the old crop file disappears from `tc_loc_icons`.
+5. **Right-click the mark.** That should open "set local icon" - the same as right-clicking anywhere
+   else on the picture. It is a separate control sitting on top, so it has to hand the click on.
+6. **Switch to a locomotive with no local icon.** The mark should not appear over its picture. Switch
+   by KEYBOARD as well as by clicking, which is the case that used to leave it stranded.
+7. Page 1 of the keyboard should show a plain locomotive on its tab; pages 2 to 10 a blue capsule with
+   the number in white. Check 10 in particular - it is the only two-digit one.
+
+8. **The case worth going out of your way for.** Put a photograph on a USB drive or in a folder that
+   OneDrive can take offline. Crop an icon from it. Now make the photograph unreachable - unplug the
+   drive - and re-crop the icon: it should still work, cropping the icon itself, and say in the log
+   that it could not reach the original. Plug the drive back in and re-crop again: it should be back to
+   cropping the PHOTOGRAPH.
+
+   That last step is a data-safety check. The first version of this lost the path to the original
+   permanently the moment you re-cropped with the drive out, and there was no way to get it back.
+
+#### Comments
+
+**Claude, 2026-08-27.** A crop keeps a small note beside it - `<crop>.png.source` - holding the path of
+the photograph it came from, which is what lets step 3 work. Delete an icon and the note goes with it.
+
+Three things that are deliberate rather than accidental, in case they look wrong:
+
+The mark is in the middle of the picture, per step 2. A cropped icon is exactly 296 by 114 in a 296 by
+116 label, so every position inside it is over the photograph; a badge clipping a corner reads as a
+mistake, the same badge centred reads as a button.
+
+Re-cropping a crop can only ever go tighter - the picture outside the last crop is gone - which is why
+step 8 checks the log message rather than expecting to pan out.
+
+And an icon cropped before this feature existed has no note, so it re-crops from itself and says so.
+That is not a failure; it is the honest answer, and it is why the message does not claim the original
+"could not be found" when there was never a record of one.
 
 <a id="mt-201"></a>
 
