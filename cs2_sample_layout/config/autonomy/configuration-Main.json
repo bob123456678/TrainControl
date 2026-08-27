@@ -37,7 +37,9 @@
       "priority": -1
     },
     "1 - Main:19,14": {
+      "loc": {"name": "EN57-947"},
       "maxTrainLength": 0,
+      "facing": "E",
       "priority": 2,
       "canReverse": true
     },
@@ -83,7 +85,7 @@
     "1 - Main:1,10": {
       "loc": {"name": "EN57-203"},
       "maxTrainLength": 0,
-      "facing": "N",
+      "facing": "E",
       "priority": -2
     },
     "2 - Bottom:16,9": {
@@ -123,7 +125,10 @@
       "autoDestination": false
     },
     "1 - Main:10,7": {"speedMultiplier": 0.9},
-    "1 - Main:12,11": {"maxTrainLength": 0},
+    "1 - Main:12,11": {
+      "maxTrainLength": 0,
+      "facing": "W"
+    },
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {"maxTrainLength": 0},
@@ -138,7 +143,6 @@
     "1 - Main:9,13": {},
     "1 - Main:6,7": {
       "maxTrainLength": 0,
-      "facing": "N",
       "priority": -2
     },
     "1 - Main:4,9": {},
@@ -167,12 +171,16 @@
       "maxTrainLength": 0,
       "active": false
     },
-    "2 - Bottom:19,0": {"maxTrainLength": 0},
+    "2 - Bottom:19,0": {
+      "loc": {"name": "75 407 DB"},
+      "maxTrainLength": 0,
+      "facing": "W"
+    },
     "2 - Bottom:22,10": {},
     "1 - Main:3,3": {},
     "1 - Main:1,3": {},
     "1 - Main:5,4": {
-      "loc": {"name": "EN57-947"},
+      "loc": {"name": "ET22-245"},
       "maxTrainLength": 0,
       "facing": "N",
       "priority": 1
@@ -206,7 +214,6 @@
     "2 - Bottom:11,13": {},
     "1 - Main:8,12": {},
     "1 - Main:13,3": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 0,
       "facing": "E",
       "excludedLocs": [
