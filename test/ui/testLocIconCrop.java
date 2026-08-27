@@ -53,10 +53,6 @@ public class testLocIconCrop
 
         // A crop of OURS is the only kind that carries a note - `cropSourceOf` asks isLocIconFile
         // first, and a picture in the user's own folder is never ours to annotate.
-        assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
-            "a file outside the application's own icon folder came back with a source, which would "
-            + "mean writing notes beside the user's own pictures");
-
         // The round trip, in the folder crops actually live in.
         // A name of its own, because tc_loc_icons is the REAL folder and already holds Adam's crops
         // (C3).  A fixed name races any other run - the battery runs this class while anything else
@@ -71,6 +67,11 @@ public class testLocIconCrop
 
         try
         {
+            // Inside the try, so a failure here is tidied up like everything else (validator).
+            assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
+                "a file outside the application's own icon folder came back with a source, which "
+                + "would mean writing notes beside the user's own pictures");
+
             write(ours, "not really a png either");
 
             ui.rememberCropSource(ours, source);
@@ -126,8 +127,25 @@ public class testLocIconCrop
                 "re-crop no longer looks for the original picture, so it always crops the crop");
 
             assertTrue(recrop.contains("cropSourceNoteOf("),
-                "re-crop no longer carries forward a note whose picture is temporarily missing - an "
-                + "unplugged drive would lose the path to the original for good");
+                "re-crop no longer READS the note when the picture is missing");
+
+            // AND WRITES IT BACK, which is the half that carries the path.
+            //
+            // Checking only the read did not bind: a validator replaced the write-back with an empty
+            // block and this test passed, with the data-loss defect fully restored - the old note is
+            // still deleted, and the fresh one still names the crop. Reading a value and then not using
+            // it is precisely the shape of that defect, so a test that only proves the read happened
+            // proves nothing about it.
+            assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
+                "re-crop reads the old note and never writes it over the fresh one, so the fresh note "
+                + "names the crop this was cut from and the path to the photograph is gone the moment "
+                + "the old crop is deleted - which is the whole of the defect this exists to stop");
+
+            // In that ORDER: written after the new crop exists, before the old one is deleted.
+            assertTrue(recrop.indexOf("rememberCropSource(fresh, remembered)")
+                    < recrop.indexOf("deleteLocIconFile("),
+                "the old crop is deleted before its note is carried forward, so the note being copied "
+                + "is read from a file that has already gone");
 
             assertTrue(recrop.contains("deleteLocIconFile("),
                 "re-crop leaves the crop it replaced behind, so the icon folder grows by one file "

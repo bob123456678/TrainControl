@@ -969,17 +969,30 @@ public class testDiagramLooksRight
 
         // A caption, an address label, and the tile that will be lifted.  The address label is added
         // LAST and pushed to the front, which is the order LayoutGrid builds them in.
+        // THREE captions, not one.
+        //
+        // With a single caption, walking the list forwards and backwards are indistinguishable - which
+        // a validator demonstrated by reverting the loop and watching this pass. The order among the
+        // captions is half of what `keepCaptionsInFront` has to get right: pushing each to the front in
+        // turn reverses them, and every piece of text on a diagram is a StationCaption, the user's own
+        // writing included.
         org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+        org.traincontrol.gui.StationCaption second = new org.traincontrol.gui.StationCaption();
+        org.traincontrol.gui.StationCaption third = new org.traincontrol.gui.StationCaption();
 
         javax.swing.JLabel tile = new javax.swing.JLabel("tile");
         javax.swing.JLabel address = new javax.swing.JLabel("86");
 
         grid.add(caption);
         grid.add(tile);
+        grid.add(second);
         grid.add(address);
+        grid.add(third);
 
         grid.setComponentZOrder(caption, 0);
-        grid.setComponentZOrder(address, 0);
+        grid.setComponentZOrder(second, 1);
+        grid.setComponentZOrder(third, 2);
+        grid.setComponentZOrder(address, 3);
 
         // What the lift does: take the front, then hand it back to the captions.
         grid.setComponentZOrder(tile, 0);
@@ -998,6 +1011,13 @@ public class testDiagramLooksRight
         assertTrue(grid.getComponentZOrder(tile) < grid.getComponentZOrder(address),
             "putting the captions back also gave the address label the front again, so the fix for "
             + "OB-117 has undone the reason the lift exists");
+
+        // And in the order they were built, not reversed.
+        assertTrue(grid.getComponentZOrder(caption) < grid.getComponentZOrder(second)
+                && grid.getComponentZOrder(second) < grid.getComponentZOrder(third),
+            "the captions came back in reverse order. Pushing each one to the front in turn does that, "
+            + "and these are not only the station pills - every piece of text on a diagram is one, the "
+            + "user's own writing included, and those can overlap each other");
 
         // AND THAT THE LIFT ACTUALLY CALLS IT.
         //

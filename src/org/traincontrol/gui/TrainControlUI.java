@@ -5936,13 +5936,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // panel it means.
         int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
 
-        if (routesAt >= 0)
+        // The icons below are numbered for the order this produces, so skipping the move quietly would
+        // leave routes wearing the signals icon and tooltip and vice versa - every icon on the wrong
+        // tab, nothing thrown, nothing logged (validator).  The old hard-coded version would at least
+        // have thrown.  If the panel is not in the strip at all there is nothing this method can do
+        // that is right, and saying so beats carrying on.
+        if (routesAt < 0)
         {
-            java.awt.Component routes = this.KeyboardTab.getComponentAt(routesAt);
-
-            this.KeyboardTab.remove(routesAt);
-            this.KeyboardTab.insertTab("Rout", null, routes, null, 3);
+            throw new IllegalStateException("the routes panel is not in the sidebar, so the tab order "
+                + "and the icons below cannot be made to agree");
         }
+
+        java.awt.Component routes = this.KeyboardTab.getComponentAt(routesAt);
+
+        this.KeyboardTab.remove(routesAt);
+        this.KeyboardTab.insertTab("Rout", null, routes, null, 3);
 
         // Set pane icons   
         // this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
@@ -7815,7 +7823,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                 // decided on hover alone, so hovering one locomotive and then switching by
                                                 // keyboard left the mark standing over a picture it had nothing to do with -
                                                 // and clicking it did nothing at all, silently.
-                                                showCropOverlay();
+                                                // On the EDT (validator).  This block runs on
+                                                // ImageLoaderLoc's pool, and getMousePosition takes
+                                                // the AWT tree lock and can throw HeadlessException -
+                                                // a RuntimeException the enclosing catch(IOException)
+                                                // would not stop, killing the pool task.
+                                                javax.swing.SwingUtilities.invokeLater(
+                                                    () -> showCropOverlay());
                                             }
                                         }
                                         catch (IOException e)
@@ -20884,12 +20898,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             @Override
             public void mouseReleased(java.awt.event.MouseEvent evt)
             {
-                // LEFT only (C7).  The mark swallows the events over its own fifteen pixels, and the
-                // label underneath opens "set icon" on a RIGHT click - so without this test, right
-                // clicking those fifteen pixels did the one thing the rest of the picture does not.
-                if (!SwingUtilities.isLeftMouseButton(evt)) return;
+                if (activeLoc == null) return;
 
-                if (activeLoc != null) recropLocIcon(activeLoc, TrainControlUI.this);
+                // LEFT re-crops; RIGHT does what the picture underneath does (C7, then its own
+                // review).
+                //
+                // The mark has a listener of its own, so Swing targets IT and never passes the event
+                // on to locIcon - `locIconMouseReleased`, which opens "set icon", simply does not run
+                // over these fifteen pixels. The first version of this guard returned on a right click
+                // and stopped there, which removed the wrong behaviour without putting the right one
+                // back: a fifteen-pixel hole where right-clicking the locomotive did nothing at all.
+                //
+                // And the hole is not in a corner any more. The mark was moved to the MIDDLE of the
+                // picture in the same round, which is exactly where a person aims when they right-click
+                // it. Two fixes that were each right on their own, wrong together.
+                if (SwingUtilities.isLeftMouseButton(evt))
+                {
+                    recropLocIcon(activeLoc, TrainControlUI.this);
+                }
+                else if (SwingUtilities.isRightMouseButton(evt))
+                {
+                    setLocIcon(activeLoc);
+                }
             }
         });
 
@@ -21278,7 +21308,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        rememberCropSource(target, chosen);
+        // Not when the picture cropped was itself one of our crops (validator).
+        //
+        // A crop with no note - anything made before FR-032 - re-crops from the crop itself, and this
+        // line would then write a note naming that crop, which the caller deletes three lines later.
+        // The note would name a file that no longer exists, be believed by the next re-crop, and be
+        // carried forward for ever. A note that is wrong is worse than no note: no note degrades to
+        // "crop the crop", which is correct, and says so.
+        if (!Util.isLocIconFile(chosen.toPath().toUri().toString()))
+        {
+            rememberCropSource(target, chosen);
+        }
 
         return target.toPath().toUri().toString();
     }
@@ -21447,6 +21487,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Told, because the difference matters and is invisible: re-cropping a crop cannot pan
             // back out to anything the previous crop threw away.
+            // The fallback message does not claim to know WHY there was no original, because there
+            // are two reasons and it cannot tell them apart from here: the note named a file that is
+            // not there today, or there was never a note - which is every crop made before FR-032.
+            // It said "could not be found" for both (validator).
             this.model.logf(fromOriginal ? "loc.ui.infoRecroppedFromOriginal"
                 : "loc.ui.infoRecroppedFromCrop", l.getName());
 
