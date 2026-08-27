@@ -351,6 +351,9 @@ public class StationCaption extends JLabel
      */
     public static final String LABEL_FONT;
 
+    /** The font that has the matched arrows, if this machine has it. */
+    private static final String SYMBOL_FONT = "Segoe UI Symbol";
+
     /** North. */
     public static final String ARROW_N = "\u25B2";
 
@@ -365,12 +368,45 @@ public class StationCaption extends JLabel
 
     static
     {
-        java.awt.Font symbol = new java.awt.Font("Segoe UI Symbol", java.awt.Font.PLAIN, 12);
+        // INSTALLED, and then able - in that order, because the second question does not imply the
+        // first (C1).
+        //
+        // `new Font("no such family", ...)` does not fail: it resolves to Dialog, and `canDisplay`
+        // then answers for DIALOG. So the first version of this guard asked a font that was not there
+        // whether it could draw a triangle, was told yes, and set LABEL_FONT to the missing name -
+        // which meant every label on every diagram silently rendered in Dialog, in different Latin
+        // glyphs, on exactly the machines the guard existed to protect. Verified by a reviewer, who
+        // asked `Font("No Such Font Family Zzz").canDisplay(0x25B6)` and got true.
+        //
+        // The family list is the only thing that answers "is it installed", and it is read once here
+        // rather than per label: on some systems enumerating fonts is slow enough to notice.
+        java.awt.Font symbol = new java.awt.Font(SYMBOL_FONT, java.awt.Font.PLAIN, 12);
 
-        boolean matched = symbol.canDisplay(0x25B6) && symbol.canDisplay(0x25C0)
+        boolean installed = false;
+
+        try
+        {
+            for (String family : java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getAvailableFontFamilyNames())
+            {
+                if (SYMBOL_FONT.equalsIgnoreCase(family))
+                {
+                    installed = true;
+
+                    break;
+                }
+            }
+        }
+        catch (RuntimeException headless)
+        {
+            // No graphics environment at all, which is a machine with no diagram to draw on either.
+            installed = false;
+        }
+
+        boolean matched = installed && symbol.canDisplay(0x25B6) && symbol.canDisplay(0x25C0)
             && symbol.canDisplay(0x25B2) && symbol.canDisplay(0x25BC);
 
-        LABEL_FONT = matched ? "Segoe UI Symbol" : "Segoe UI";
+        LABEL_FONT = matched ? SYMBOL_FONT : "Segoe UI";
 
         ARROW_E = matched ? "\u25B6" : "\u25BA";
         ARROW_W = matched ? "\u25C0" : "\u25C4";

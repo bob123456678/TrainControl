@@ -1041,9 +1041,17 @@ public final class LayoutLabel extends JLabel
      */
     public static void keepCaptionsInFront(java.awt.Container parent)
     {
-        for (java.awt.Component one : parent.getComponents())
+        java.awt.Component[] all = parent.getComponents();
+
+        // BACKWARDS, so the labels keep the order they were built in (D2).
+        //
+        // Pushing each one to the front in turn reverses them, and `StationCaption` is not only the
+        // pills - LayoutGrid builds every piece of text on a diagram as one, including the user's own
+        // writing. Going the other way round leaves the first-built label at the front, which is where
+        // it started.
+        for (int at = all.length - 1; at >= 0; at--)
         {
-            if (one instanceof StationCaption) parent.setComponentZOrder(one, 0);
+            if (all[at] instanceof StationCaption) parent.setComponentZOrder(all[at], 0);
         }
     }
 
@@ -1101,9 +1109,14 @@ public final class LayoutLabel extends JLabel
                 // straight back to the captions. They end up at 0..n-1 and this tile at n, which is
                 // above every address label and every other tile.
                 //
-                // Cheap enough to do plainly: the lift is edge-triggered - it runs when a train starts
-                // or stops moving on this square, not on every repaint - and captions do not overlap
-                // each other, so the order they end up in among themselves does not matter.
+                // Cheap enough to do plainly: the lift is edge-triggered - it runs when a train
+                // starts or stops moving on this square, not on every repaint.
+                //
+                // The order among the labels themselves DOES matter, which the first version of this
+                // comment denied on the grounds that captions do not overlap. Pills do not; but every
+                // piece of text on a diagram is a StationCaption, the user's own writing included, and
+                // that can overlap a neighbour. So the loop walks backwards and the built order
+                // survives.
                 if (lift) keepCaptionsInFront(parent);
 
                 // The PARENT, not this tile: the labels that were covering it have moved too, and a

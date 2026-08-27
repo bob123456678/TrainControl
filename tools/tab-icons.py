@@ -86,43 +86,26 @@ def s(*values):
 
 # ---------------------------------------------------------------- locomotive
 #
-# A classic steam outline, which is what the ORIGINAL icon drew and what Adam asked to come back to:
-# "the front of the locomotive now appears cut off.  try to give the whole thing a classic steam engine
-# icon shape, similar to the old icon / the one on the graph."
+# ONE OUTLINE, filled - not a pile of parts (Adam: "you need to update your tracing strategy and focus
+# on filling a simple outline instead of recreating each component").
 #
-# It was cut off because it had no front.  The boiler was a rounded rectangle ending at 476, the
-# footplate at 484, and the pilot at 484 - three things all stopping within thirty of the canvas edge,
-# with nothing rounding them off.  What the old drawing has and this did not is a SMOKEBOX: the boiler
-# ends in a dome, and the stack and the steam dome sit on top of it.  Those three shapes are the whole
-# reason a side-on black blob reads as a steam engine.
+# Eight passes, and only the first few were about which parts to draw. Every early version was built by
+# stacking primitives: a rounded rectangle for the cab, another for the boiler, a polygon for the
+# stack, discs for the wheels. Overlapping rounded rectangles do not add up to a profile - they add up
+# to a heap of rectangles, and the eye reads the heap. Each fix moved one lump somewhere else.
 #
-# The front is pulled back to 470 as well, so the shape ends inside the drawing rather than against it.
+# The points below walk the outline once, from the bottom of the cab up its back, over the roof, down
+# to the boiler, over the dome, up and around the stack, over the headlamp, round the smokebox nose,
+# forward along the running board, down the cowcatcher and back along the frame. Nothing overlaps
+# anything, so nothing can merge with anything.
 #
-# One constraint this outline is not free of: the keyboard PAGE NUMBER is merged over the centre of
-# this icon in white, so the middle has to stay solid.  The cab and the boiler between them cover it,
-# and `testTheLocomotiveIsSolidWhereThePageNumberSits` is what says so out loud.
-image, d = canvas()
-
-# ONE OUTLINE, filled - not a pile of parts (Adam: "you need to update your tracing strategy and
-# focus on filling a simple outline instead of recreating each component").
+# The wheels are separate because they genuinely are - they hang below the frame - and they are SOLID:
+# they were hollowed for a while, and that did make the drawing read, but the outline was what fixed
+# it, and Adam had them filled once the shape was right.
 #
-# Four versions of this icon were built by stacking primitives: a rounded rectangle for the cab,
-# another for the boiler, a polygon for the stack, discs for the wheels. Every one of them came back
-# lumpy, and the reason is structural rather than a matter of which parts were chosen. Overlapping
-# rounded rectangles do not add up to a profile - they add up to a heap of rectangles, and the eye
-# reads the heap. Each fix moved one lump somewhere else.
-#
-# A silhouette is a single closed path. The points below walk the outline of the engine once, from the
-# bottom of the cab up its back, over the roof, down to the boiler, over the dome, up and around the
-# stack, over the headlamp, round the smokebox nose, forward along the running board, down the
-# cowcatcher and back along the frame. Nothing overlaps anything, so nothing can merge with anything.
-#
-# The wheels stay separate because they genuinely are - they hang below the frame - and they are
-# hollowed, which is the other half of what the reference does: it is a solid shape with white BETWEEN
-# its parts, and the hubs are the clearest case of it.
-#
-# One constraint this outline is not free of: the keyboard PAGE NUMBER is merged over the centre of
-# this icon in white, so the middle has to stay solid.
+# The page number used to be merged over the CENTRE of this icon in white, which is why an earlier
+# version was drawn deliberately solid through the middle and its cab window moved out of the way. It
+# is a badge in the corner now, so that constraint is gone and this shape is free of it.
 image, d = canvas()
 
 BODY = [

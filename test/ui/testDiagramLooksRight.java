@@ -1438,43 +1438,40 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Every arrow a caption can carry has a glyph in the font the caption is drawn in.
+     * The four arrows a caption can end in can all be drawn in the font captions are drawn in.
      *
-     * FR-028 replaced the chevrons - > < ^ v - with geometric triangles, and the obvious four are
-     * U+25B6 U+25C0 U+25B2 U+25BC. **Segoe UI has the last two and not the first two.** The first
-     * rendering drew proper triangles for trains facing north and south and a tofu box for every train
-     * facing east or west, which reads as a broken font rather than as a wrong codepoint - and reads
-     * that way on the diagram, where nobody is looking for it.
+     * A tofu box on a diagram is the failure this exists to stop, and it is exactly the failure the
+     * first version of these arrows had - U+25B6 and U+25C0 are the obvious geometric triangles and
+     * Segoe UI cannot draw either.
      *
-     * The pointers U+25BA and U+25C4 are in the font and match the two that were already right, so
-     * those are what the captions use. This exists so that swapping in a prettier codepoint fails here
-     * rather than on the railway.
+     * **It asks StationCaption for both halves, and that is the point.** This test used to name the
+     * font and the codepoints itself, so when OB-116 fixed the mismatched arrows by changing the FONT
+     * rather than the character, the test went on happily checking a font the captions no longer used.
+     * It even closed with an assertion arguing against making that change. A test that names its own
+     * constants is a test that watches something other than the code.
      *
-     * Found by rendering the labels to a picture and looking at it, which is the only way this kind of
-     * fault is ever found.
-     *
-     * MUTATION: putting U+25B6 or U+25C0 back fails this.
+     * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw fails this.
      */
     @Test
     public void testCaptionArrowsCanBeDrawn()
     {
-        java.awt.Font font = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 20);
+        java.awt.Font font = new java.awt.Font(
+            org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20);
 
-        String[] arrows = { "\u25BA", "\u25C4", "\u25B2", "\u25BC" };
+        String[] arrows = {
+            org.traincontrol.gui.StationCaption.ARROW_N,
+            org.traincontrol.gui.StationCaption.ARROW_S,
+            org.traincontrol.gui.StationCaption.ARROW_E,
+            org.traincontrol.gui.StationCaption.ARROW_W
+        };
 
         for (String arrow : arrows)
         {
             assertTrue(font.canDisplay(arrow.codePointAt(0)),
-                "the caption font has no glyph for U+" + Integer.toHexString(arrow.codePointAt(0))
-                + ", so every train facing that way draws a tofu box on the diagram");
+                "the caption font " + org.traincontrol.gui.StationCaption.LABEL_FONT + " has no glyph "
+                + "for U+" + Integer.toHexString(arrow.codePointAt(0)) + ", so every train facing that "
+                + "way draws a tofu box on the diagram");
         }
-
-        // And the two that look like the obvious choice and are not, so that the comment explaining
-        // why they were not chosen cannot quietly stop being true.
-        assertFalse(font.canDisplay(0x25B6) && font.canDisplay(0x25C0),
-            "Segoe UI has grown glyphs for U+25B6 and U+25C0, so the pointers this uses instead could "
-            + "now be the triangles that match the other two exactly. Worth changing, and worth "
-            + "checking on the machines this actually runs on before doing it");
     }
 
     /**

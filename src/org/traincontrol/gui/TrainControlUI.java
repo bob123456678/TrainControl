@@ -20893,13 +20893,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 4, 4));
+        // CENTRED, because out of the way is not available (Adam, 2026-08-27: "either move it so it
+        // doesn't overlap at all (more up, more right), or center it over the middle if that's
+        // impossible").
+        //
+        // It is impossible.  A cropped icon is exactly LOC_ICON_WIDTH by LOC_ICON_HEIGHT - 296 by 114
+        // - and this label is 296 by 116, so the picture fills it but for a pixel top and bottom.
+        // There is no corner to retreat to: every position inside the label is over the photograph.
+        //
+        // So the mark goes in the middle, where an overlap reads as deliberate. A badge clipping the
+        // corner of a picture looks like a mistake; the same badge centred looks like a button, which
+        // is what it is - the same reason a video thumbnail puts its play symbol in the middle rather
+        // than tucking it into an edge.
+        JPanel middle = new JPanel(new java.awt.GridBagLayout());
 
-        row.setOpaque(false);
-        row.add(cropOverlay);
+        middle.setOpaque(false);
+        middle.add(cropOverlay);
 
         locIcon.setLayout(new java.awt.BorderLayout());
-        locIcon.add(row, java.awt.BorderLayout.NORTH);
+        locIcon.add(middle, java.awt.BorderLayout.CENTER);
 
         java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter()
         {
