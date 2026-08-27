@@ -110,6 +110,78 @@ public class testSidebarIcons
     }
 
     /**
+     * Each tab's icon is set on the tab that icon is for.
+     *
+     * The sidebar is built by the GUI designer, which fixes the order the panels are added in, and the
+     * icons are then applied afterwards BY INDEX. Nothing connects the two: the panel at index 3 and
+     * `setIconAt(3, ...)` agree only because somebody counted, and they stay agreeing only as long as
+     * nobody moves a tab without recounting.
+     *
+     * Adam asked for exactly that move on 2026-08-27 - "swap the position of the route tab with the
+     * keyboard tab" - which is done by lifting the routes panel out and putting it back one place
+     * earlier. Get that right and forget the icons, and the routes tab wears the signal icon and the
+     * signal tab wears the routes one, with correct tooltips on both. Nothing throws, nothing looks
+     * broken, and every icon is wrong.
+     *
+     * **This reads the source, which is weaker than running it, and the reason is worth recording.**
+     * The reorder happens in `setViewListener`, not in the constructor, so a window built the way the
+     * other tests here build one has the DESIGNER's order and not this one. Reaching the real order
+     * would mean standing up a model and a control station to hand it. What this checks instead is the
+     * one thing that can silently drift: that the index a tab is moved to is the index its icon is set
+     * on.
+     *
+     * MUTATION: swapping either the two `insertTab` positions or the two `setIconAt` indices - but not
+     * both - fails this.
+     */
+    @Test
+    public void testEachTabIconIsOnTheTabItNames() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        // Where the routes panel is put back, and where the routes icon is put.
+        java.util.regex.Matcher moved = java.util.regex.Pattern
+            .compile("insertTab\\(\"Rout\"[^;]*?(\\d+)\\);").matcher(source);
+
+        assertTrue(moved.find(), "the routes tab is no longer moved at all - if the designer's order "
+            + "is wanted again, this test and the reorder should go together");
+
+        int routesAt = Integer.parseInt(moved.group(1));
+
+        assertEquals(iconIndex(source, "TAB_ICON_ROUTES"), routesAt,
+            "the routes panel is moved to tab " + routesAt + " and the routes icon is put on a "
+            + "different one, so the routes tab is wearing somebody else's picture");
+
+        // And the keyboard tab, which is the one the routes tab displaced.
+        int keyboardAt = iconIndex(source, "TAB_ICON_KEYBOARD");
+
+        assertNotEquals(keyboardAt, routesAt,
+            "the routes icon and the keyboard icon are both set on tab " + routesAt + ", so one of "
+            + "them is overwriting the other and a tab is left with no icon at all");
+
+        // The two that were never asked to move, as a control: if this test only proved things about
+        // the pair that changed, it would pass just as happily on a sidebar where everything else had
+        // been renumbered.
+        assertEquals(iconIndex(source, "TAB_ICON_LAYOUT"), 1, "the diagram tab has moved");
+        assertEquals(iconIndex(source, "TAB_ICON_AUTONOMY"), 2, "the autonomy tab has moved");
+    }
+
+    /**
+     * Which tab index an icon constant is applied to.
+     *
+     * @param source TrainControlUI's text
+     * @param icon the constant's name
+     * @return the index, or -1 when it is never applied
+     */
+    private int iconIndex(String source, String icon)
+    {
+        java.util.regex.Matcher at = java.util.regex.Pattern
+            .compile("setIconAt\\((\\d+), " + icon + "\\)").matcher(source);
+
+        return at.find() ? Integer.parseInt(at.group(1)) : -1;
+    }
+
+    /**
      * The locomotive has ink where the page number goes.
      *
      * `TrainControlUI` merges the keyboard page number over TAB_ICON_CONTROL - white, with a black

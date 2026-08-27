@@ -30,6 +30,7 @@ to sit on, and at #333 it now has it.
 **Only the silhouette survives.** getTabIcon scales these to 30 pixels tall. Anything finer than about
 a fortieth of the canvas is gone at that size, which is what STROKE is for.
 """
+import math
 import os
 import sys
 from PIL import Image, ImageDraw
@@ -85,37 +86,119 @@ def s(*values):
 
 # ---------------------------------------------------------------- locomotive
 #
-# Bigger, and centre-heavy, because the page number is drawn over the middle of it.
+# A classic steam outline, which is what the ORIGINAL icon drew and what Adam asked to come back to:
+# "the front of the locomotive now appears cut off.  try to give the whole thing a classic steam engine
+# icon shape, similar to the old icon / the one on the graph."
+#
+# It was cut off because it had no front.  The boiler was a rounded rectangle ending at 476, the
+# footplate at 484, and the pilot at 484 - three things all stopping within thirty of the canvas edge,
+# with nothing rounding them off.  What the old drawing has and this did not is a SMOKEBOX: the boiler
+# ends in a dome, and the stack and the steam dome sit on top of it.  Those three shapes are the whole
+# reason a side-on black blob reads as a steam engine.
+#
+# The front is pulled back to 470 as well, so the shape ends inside the drawing rather than against it.
+#
+# One constraint this outline is not free of: the keyboard PAGE NUMBER is merged over the centre of
+# this icon in white, so the middle has to stay solid.  The cab and the boiler between them cover it,
+# and `testTheLocomotiveIsSolidWhereThePageNumberSits` is what says so out loud.
 image, d = canvas()
 
-d.rounded_rectangle(s(40, 74, 300, 306), radius=28 * SS, fill=INK)       # cab
-d.rounded_rectangle(s(250, 136, 476, 306), radius=48 * SS, fill=INK)     # boiler
-d.rounded_rectangle(s(28, 306, 484, 358), radius=18 * SS, fill=INK)      # footplate
-d.rounded_rectangle(s(388, 40, 452, 146), radius=14 * SS, fill=INK)      # chimney
+# ONE OUTLINE, filled - not a pile of parts (Adam: "you need to update your tracing strategy and
+# focus on filling a simple outline instead of recreating each component").
+#
+# Four versions of this icon were built by stacking primitives: a rounded rectangle for the cab,
+# another for the boiler, a polygon for the stack, discs for the wheels. Every one of them came back
+# lumpy, and the reason is structural rather than a matter of which parts were chosen. Overlapping
+# rounded rectangles do not add up to a profile - they add up to a heap of rectangles, and the eye
+# reads the heap. Each fix moved one lump somewhere else.
+#
+# A silhouette is a single closed path. The points below walk the outline of the engine once, from the
+# bottom of the cab up its back, over the roof, down to the boiler, over the dome, up and around the
+# stack, over the headlamp, round the smokebox nose, forward along the running board, down the
+# cowcatcher and back along the frame. Nothing overlaps anything, so nothing can merge with anything.
+#
+# The wheels stay separate because they genuinely are - they hang below the frame - and they are
+# hollowed, which is the other half of what the reference does: it is a solid shape with white BETWEEN
+# its parts, and the hubs are the clearest case of it.
+#
+# One constraint this outline is not free of: the keyboard PAGE NUMBER is merged over the centre of
+# this icon in white, so the middle has to stay solid.
+image, d = canvas()
 
-d.ellipse(s(60, 338, 196, 474), fill=INK)                               # driver
-d.ellipse(s(212, 338, 348, 474), fill=INK)                              # driver
+BODY = [
+    (26, 326), (26, 289),                                   # frame, at the back
+    (36, 289), (36, 99),                                   # up the back of the cab
+    (21, 99), (21, 74), (203, 74), (203, 99),             # the cab roof, overhanging both ways
+    (185, 99), (185, 184),                                 # down the front of the cab
+    (209, 184), (209, 147), (252, 147), (252, 184),         # the steam dome
+    (266, 184), (239, 82),                                 # up the flare of the balloon stack
+    (237, 82), (237, 62), (352, 62), (352, 82),           # its cap
+    (350, 82), (323, 184),                                 # down the other side of the flare
+    (354, 184), (354, 133), (408, 133), (408, 184),         # the headlamp
+    (415, 187), (425, 210), (426, 235), (425, 261), (415, 284),   # the smokebox nose, rounded
+    (419, 289),                                             # forward along the running board
+    (480, 413),                                             # ONE slope: its front edge and the plow's
+    (376, 413),                                             # the plow's bottom, level with the wheels
+    (376, 326),                                             # and straight up its back
+]
 
-# The plow (Adam: "locomotive icon needs a plow at the front").
-#
-# It hangs from the UNDERSIDE of the footplate at the front - the right, the end the chimney is on -
-# with its top edge exactly on the footplate's bottom edge so the two read as one casting, and its
-# deepest point at the front, level with the bottom of the wheels.
-#
-# Two attempts to get here.  The first was a wedge beside the wheels whose top sat at the footplate's
-# TOP, touching nothing, and it read as a fin bolted to the engine.  The second hung correctly but
-# tapered to a point that hung BACKWARDS, which at thirty pixels is a tail.  A pilot gets deeper
-# towards the front - that is the whole shape of it - so the deep end has to be the leading one.
-#
-# It also takes the place of the pony truck.  Three round wheels and a blade inside thirty pixels is
-# more than the silhouette can hold, and the pony was the least of them.
-d.polygon([s(376, 356), s(484, 356), s(484, 466)], fill=INK)
+d.polygon([s(*point) for point in BODY], fill=INK)
 
-# Cab window, punched out - small, and kept hard left of the middle.
+# The cowcatcher, settled on the fifth attempt by drawing the candidates and letting Adam name one
+# (2026-08-27): "2, with the bottom edge matching the bottom of the small wheel on the y axis, and
+# with the angled part starting where the gray starts to angle."
 #
-# The number's box reaches in to about x=153 once the icon is 30 pixels wide, and a hole under a white
-# digit is the thing this whole drawing was rearranged to avoid.
-d.rounded_rectangle(s(66, 100, 148, 186), radius=14 * SS, fill=HOLE)
+# Three constraints, and between them they leave no room for interpretation - which is the point. Four
+# earlier goes were built from descriptions that each had two readings ("pointy at the front", "the
+# inverse of that", a corner list whose axis direction I had to guess), and I picked wrong every time.
+#
+# What they describe is not a separate part at all: the running board's front edge and the plow's face
+# are ONE line, from where the board starts to angle at 466 down to the bottom of the leading wheel at
+# 405. That is why every version of this drawn as its own shape looked stuck on - it was being given a
+# top edge that should not exist.
+#
+# The FACE ANGLE and the vertical back are Adam's, settled by drawing the candidates rather than by
+# describing them; what was left was how much flat bottom sits between the two, and he picked 92 out
+# of the 147 it had ("imagine cutting off a rectangle from the middle of the trapezoid, and then
+# shifting the whole thing back.  the angles are right now, we just need to remove the extra width").
+#
+# Taken out of the MIDDLE, which is the part worth keeping in mind if it is ever changed again: the
+# face slides back as a whole and keeps its rake, where trimming the front corner instead would stand
+# it up steeper and lose the shape. So the two points that move are the face's top and bottom, by the
+# same amount, and nothing else in the outline changes at all.
+#
+# The running board shortens with it, because the face's top corner is where the board stops. That is
+# the "shifting the whole thing back" half of it, and it is one number rather than two by construction.
+
+# The wheels: two drivers and ONE leading wheel, hung below the frame.
+#
+# There were two small ones, as there are on the reference - a 4-4-0 has a four-wheel truck, and half
+# of it is hidden by the other half from the side anyway.  At thirty pixels the pair merged into a
+# single oval and read as one badly drawn wheel, which is worse than the honest simplification.
+# The leading wheel is pulled BACK from where it was, to leave the cowcatcher its own room: at 376 it
+# ran under the plow's back edge, and two filled shapes overlapping is how every earlier version of
+# this icon turned into a lump.
+WHEELS = ((65, 302, 177, 415, 32), (191, 302, 304, 415, 32),
+          (304, 352, 365, 413, 18))
+
+for left, top, right, bottom, hub in WHEELS:
+    d.ellipse(s(left, top, right, bottom), fill=INK)
+
+# Solid, not hollowed (Adam, 2026-08-27: "fill in the wheels").
+#
+# They were rimmed with a punched hub, and that was the change that finally made this icon read - but
+# it read as a wheel because the OUTLINE was right by then, not because of the hole. With the body
+# traced as one path there is already a clear edge where each wheel meets the frame, so the hubs were
+# doing nothing except adding three more small features to a drawing thirty pixels tall.
+#
+# The `hub` figure stays in the table rather than being deleted: it is the one number to reach for if
+# they are ever wanted back.
+
+# The rail it stands on.
+d.rounded_rectangle(s(14, 423, 498, 450), radius=8 * SS, fill=INK)
+
+# Cab window, punched out - kept hard left of the middle, where the page number goes.
+d.rounded_rectangle(s(55, 121, 131, 196), radius=10 * SS, fill=HOLE)
 
 save(image, 'loc')
 
@@ -133,19 +216,24 @@ save(image, 'loc')
 # rail at each end.
 image, d = canvas()
 
-MARGIN, HALF = 40 * SS, 22 * SS
+MARGIN, HALF = 38 * SS, 24 * SS
 
-FIRST = PAD + MARGIN + HALF
-LAST = BIG - PAD - MARGIN - HALF
+FIRST = 42 * SS + MARGIN + HALF
+LAST = BIG - 42 * SS - MARGIN - HALF
 
 SLEEPERS = tuple(FIRST + (LAST - FIRST) * n // 3 for n in range(4))
 
-for x in (150, 362):
-    d.rounded_rectangle((x * SS - STROKE // 2, PAD, x * SS + STROKE // 2, BIG - PAD),
+# A little larger than the last pass (Adam: "looks good now, make it slightly bigger"), taken off the
+# margins rather than out of the proportions: RAIL_PAD replaces PAD here and the sleepers reach nearer
+# the sides, so the drawing grows without the rails getting heavier relative to the sleepers.
+RAIL_PAD, SIDE = 42 * SS, 60 * SS
+
+for x in (148, 364):
+    d.rounded_rectangle((x * SS - STROKE // 2, RAIL_PAD, x * SS + STROKE // 2, BIG - RAIL_PAD),
         radius=12 * SS, fill=INK)
 
 for y in SLEEPERS:
-    d.rounded_rectangle((72 * SS, y - HALF, BIG - 72 * SS, y + HALF), radius=10 * SS, fill=INK)
+    d.rounded_rectangle((SIDE, y - HALF, BIG - SIDE, y + HALF), radius=10 * SS, fill=INK)
 
 save(image, 'track')
 
@@ -158,7 +246,9 @@ image, d = canvas()
 
 # Centred on the canvas, then nudged a little right: a triangle's weight sits behind its point, so a
 # play symbol whose bounding box is exactly centred reads as leaning left.
-PLAY = [s(110, 64), s(110, 448), s(422, 256)]
+# A touch smaller than the last pass (Adam: "looks good, make it slightly smaller"), shrunk about its
+# own centre so the deliberate 110/90 lean survives the change.
+PLAY = [s(124, 82), s(124, 430), s(407, 256)]
 
 d.polygon(PLAY, fill=INK)
 
@@ -173,11 +263,22 @@ d.polygon(PLAY, fill=INK)
 # The width is not a taste decision.  At thirty pixels the whole icon is thirty pixels, so a keyline
 # thinner than about 24 here lands under one device pixel and either vanishes or shimmers as the
 # scaler rounds it.
+# Drawn as two nested triangles rather than as a stroked outline.
+#
+# The stroked version left a nub at the top corner - the point where the closed path met itself, which
+# `joint='curve'` rounds but does not remove, and which at thirty pixels is a stray pixel hanging off
+# the corner.  Filling a hole and then filling the middle of it back in has no joints at all, because
+# nothing is being stroked.
 CENTRE = (sum(p[0] for p in PLAY) / 3.0, sum(p[1] for p in PLAY) / 3.0)
 
-INSET = [(CENTRE[0] + (x - CENTRE[0]) * 0.68, CENTRE[1] + (y - CENTRE[1]) * 0.68) for x, y in PLAY]
 
-d.line(INSET + [INSET[0]], fill=HOLE, width=24 * SS, joint='curve')
+def scaled(factor):
+    return [(CENTRE[0] + (x - CENTRE[0]) * factor, CENTRE[1] + (y - CENTRE[1]) * factor)
+            for x, y in PLAY]
+
+
+d.polygon(scaled(0.74), fill=HOLE)
+d.polygon(scaled(0.60), fill=INK)
 
 save(image, 'autonomy')
 
@@ -196,34 +297,95 @@ save(image, 'autonomy')
 # the finial over the post and the base under it.
 image, d = canvas()
 
-POST = 186                              # the mast's centre line
+POST = 201                              # the mast's centre line
 
-d.rounded_rectangle(s(POST - 26, 101, POST + 26, 425), radius=14 * SS, fill=INK)     # post
-d.ellipse(s(POST - 38, 47, POST + 38, 123), fill=INK)                               # finial
-d.rounded_rectangle(s(POST - 84, 421, POST + 84, 465), radius=16 * SS, fill=INK)     # base
+# A little larger than the last pass (Adam: "make it slightly larger"), and with room kept on the
+# right for the movement arrow below.
+d.rounded_rectangle(s(POST - 33, 88, POST + 33, 443), radius=16 * SS, fill=INK)      # post
+d.ellipse(s(POST - 47, 37, POST + 47, 114), fill=INK)                               # finial
+d.rounded_rectangle(s(POST - 103, 439, POST + 103, 486), radius=18 * SS, fill=INK)   # base
 
-# The arm, horizontal - which on a semaphore is DANGER, and is the aspect worth drawing: a signal at
-# clear is a signal nobody needs to look at.
+# The arm, RAISED 40 degrees (Adam: "angle the signal arm 40 degrees higher").
 #
-# SHORT and DEEP.  The first version was 200 long and 64 deep, and at thirty pixels that is twelve by
-# four - the proportions of a pennant, so it read as a flag on a pole and not as a signal at all. An
-# arm that is nearer half its length in depth cannot be mistaken for cloth.
-ARM_TOP, ARM_BOTTOM = 143, 227
-
-d.rounded_rectangle(s(POST - 12, ARM_TOP, 410, ARM_BOTTOM), radius=12 * SS, fill=INK)
-
-# SQUARE at the outer end, and striped.
+# Which is what an upper-quadrant semaphore does: horizontal is danger, and the arm rises to clear.
+# Drawn at clear, with the arrow below showing the way back down - so the icon carries both positions
+# at once, which a horizontal arm and a downward arrow did not: that pair said the arm falls BELOW
+# horizontal, which no upper-quadrant signal does.
 #
-# The version before this had a fishtail notch cut into the far end, on the reasoning that a notch is
-# what distinguishes a semaphore from a plain bar.  It is - on a distant signal, at full size.  At
-# thirty pixels a tapering end is a pennant, and the whole icon read as a flag on a pole for the second
-# time running.  A signal arm ends square and carries a stripe across it near the tip; that pair is
-# what says "signal", and neither of them tapers.
-d.rounded_rectangle(s(360, ARM_TOP + 12, 386, ARM_BOTTOM - 12), radius=8 * SS, fill=HOLE)
+# Everything from here is computed about the pivot rather than typed as corners, because a rotated
+# rectangle has no axis-aligned coordinates to type.
+ARM_ANGLE = -40                         # degrees; negative is up, since y grows downwards
+ARM_LENGTH = 242
+ARM_DEPTH = 90
 
-# The spectacle - the round lens where the arm meets the post - punched out so the arm reads as an
-# arm, and large enough to survive the scale down as a hole rather than a smudge.
-d.ellipse(s(POST + 26, ARM_TOP + 14, POST + 96, ARM_BOTTOM - 14), fill=HOLE)
+PIVOT = (POST, 216)
+
+rad = math.radians(ARM_ANGLE)
+
+along = (math.cos(rad), math.sin(rad))
+across = (-math.sin(rad), math.cos(rad))
+
+
+def on_arm(distance, offset):
+    """A point `distance` along the arm from the pivot and `offset` across it."""
+    return (PIVOT[0] + along[0] * distance + across[0] * offset,
+            PIVOT[1] + along[1] * distance + across[1] * offset)
+
+
+def bar(start_at, end_at, half):
+    """The four corners of a rectangle lying along the arm."""
+    return [s(*on_arm(start_at, -half)), s(*on_arm(end_at, -half)),
+            s(*on_arm(end_at, half)), s(*on_arm(start_at, half))]
+
+
+# Starting AHEAD of the pivot, not behind it (Adam: "move the signal arm slightly to the right, so
+# it doesn't extend beyond the vertical stem").
+#
+# It began at -24 so that it would tuck into the post, but the arm is 90 deep and angled: its rear top
+# corner came out 45 to the left of the pivot, which is past the post's own edge, and the arm looked
+# hung on the wrong side of its mast.
+d.polygon(bar(18, ARM_LENGTH, ARM_DEPTH // 2), fill=INK)
+
+# The stripe near the tip, and the spectacle where the arm meets the post.  A signal arm ends square
+# and carries a stripe; that pair is what says "signal" rather than "flag".
+d.polygon(bar(ARM_LENGTH - 62, ARM_LENGTH - 34, ARM_DEPTH // 2 - 14), fill=HOLE)
+
+lens = on_arm(56, 0)
+
+d.ellipse(s(lens[0] - 34, lens[1] - 34, lens[0] + 34, lens[1] + 34), fill=HOLE)
+
+# WHICH WAY IT MOVES, struck about the pivot from TWO THIRDS along the arm (Adam: "move the arrow to
+# start from 2/3 up the arm and point down as currently").
+#
+# On the arc the tip of the arm actually travels, so it begins on the arm itself and sweeps down
+# through where the arm will be.  Starting at two thirds keeps it inside the arm's own reach, which is
+# what stops it reading as a second, shorter arm.
+RADIUS = ARM_LENGTH * 2 // 3
+
+box = s(PIVOT[0] - RADIUS, PIVOT[1] - RADIUS, PIVOT[0] + RADIUS, PIVOT[1] + RADIUS)
+
+# ONE WIDTH the whole way (Adam: "align the arrow so it has a consistent width but is arched, as
+# before").  The band and the head are both derived from BAND, so the head cannot drift out of
+# proportion with the curve it sits on the end of.
+BAND = 26
+
+d.arc(box, ARM_ANGLE + 4, 30, fill=INK, width=BAND * SS)
+
+
+def at(degrees, radius):
+    return (PIVOT[0] + radius * math.cos(math.radians(degrees)),
+            PIVOT[1] + radius * math.sin(math.radians(degrees)))
+
+
+# The head: a triangle standing on the arc, its base square across the curve and its point carrying on
+# round it, so the two read as one stroke that happens to end in an arrow.
+HEAD = 22                               # degrees of sweep the head occupies
+
+tip = at(30 + HEAD, RADIUS)
+far = at(30, RADIUS + BAND * 1.7)
+near = at(30, RADIUS - BAND * 1.7)
+
+d.polygon([s(*tip), s(*far), s(*near)], fill=INK)
 
 save(image, 'signal')
 
@@ -241,34 +403,52 @@ image, d = canvas()
 # carries far less ink than its neighbours and looked faint beside them.
 WIDE = STROKE + 30 * SS
 
-# EQUAL ARMS (Adam: "good idea, make it symmetrical by stretching the top arm").
+# A SYMMETRICAL S (Adam: "this is the problematic one - the arrow now touches the middle.  I wanted a
+# symmetrical S, now it isn't an S any more").
 #
-# The top arm was 90 long against the bottom's 188, because most of its length had been given to the
-# arrowhead - so the shape was an S with one stroke of it missing.  Both arms are the same run now,
-# measured the same way: from the turn to the thing that ends it, the dot at one end and the point of
-# the arrow at the other.
+# He is right, and the previous pass caused it.  Making the two arms equal fixed the wrong measurement:
+# the ARMS matched, but each arm ends in something - a dot at the bottom, an arrowhead at the top - and
+# the arrowhead was 126 long against the dot's 108 diameter, and it ate its arm from the outside in.
+# The head started 30 past the turn, so there was almost no stroke between the corner and the point,
+# and the top of the S was a corner with an arrow stuck to it.
 #
-# Written as one number so they cannot come apart again.
-TURN_X, LOW_Y, HIGH_Y = 283, 400, 152
-ARM = 156
+# What has to match for this to read as an S is not the arms but the STROKE either side of the turn -
+# the part that is actually a line.  So it is measured from the turn to where the terminal begins:
+#
+#     RUN         the visible line, the same going out as coming in
+#     TERMINAL    how much the dot or the head then adds beyond it
+#
+# and the dot's radius and the head's length are both set from TERMINAL, so neither can grow into its
+# own arm again.
+TURN_X, LOW_Y, HIGH_Y = 243, 384, 154
 
-START_X = TURN_X - ARM
-TIP_X = TURN_X + ARM
+RUN, TERMINAL = 70, 104
 
-d.line([s(START_X, LOW_Y), s(TURN_X, LOW_Y)], fill=INK, width=WIDE)
+# The arrow's arm runs a little longer than the dot's (Adam: "stretch the arm with the arrow
+# slightly").
+#
+# An optical correction rather than a change of mind about the symmetry.  The two ends carry different
+# weight - a solid disc reads as a full stop, an arrowhead reads as a continuation - so arms that are
+# equal by measurement look unequal, with the arrow end the shorter of the two.
+TOP_RUN = RUN + 26
+
+d.line([s(TURN_X - RUN - TERMINAL // 2, LOW_Y), s(TURN_X, LOW_Y)], fill=INK, width=WIDE)
 d.line([s(TURN_X, LOW_Y), s(TURN_X, HIGH_Y)], fill=INK, width=WIDE)
-d.line([s(TURN_X, HIGH_Y), s(TIP_X - 74, HIGH_Y)], fill=INK, width=WIDE)
+d.line([s(TURN_X, HIGH_Y), s(TURN_X + TOP_RUN, HIGH_Y)], fill=INK, width=WIDE)
 
 # Rounded corners, so the turns do not come out mitred into points.
 for corner in (s(TURN_X, LOW_Y), s(TURN_X, HIGH_Y)):
     d.ellipse((corner[0] - WIDE // 2, corner[1] - WIDE // 2,
                corner[0] + WIDE // 2, corner[1] + WIDE // 2), fill=INK)
 
-# Where it starts.
-d.ellipse(s(START_X - 54, LOW_Y - 54, START_X + 54, LOW_Y + 54), fill=INK)
+# Where it starts: a dot whose OUTER edge is TERMINAL past the end of the run.
+DOT = TERMINAL // 2
 
-# Where it ends.
-d.polygon([s(TIP_X - 126, HIGH_Y - 94), s(TIP_X - 126, HIGH_Y + 94), s(TIP_X, HIGH_Y)], fill=INK)
+d.ellipse(s(TURN_X - RUN - TERMINAL, LOW_Y - DOT, TURN_X - RUN, LOW_Y + DOT), fill=INK)
+
+# Where it ends: a head of the same reach, so the two ends balance and neither reaches the turn.
+d.polygon([s(TURN_X + TOP_RUN, HIGH_Y - 78), s(TURN_X + TOP_RUN, HIGH_Y + 78),
+           s(TURN_X + TOP_RUN + TERMINAL, HIGH_Y)], fill=INK)
 
 save(image, 'route')
 
