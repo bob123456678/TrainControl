@@ -1339,6 +1339,111 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The grid actually asks the caption rules, and asks them the right things.
+     *
+     * Three rules were lifted out of the constructor so they could be tested without building a window
+     * - `captionOffset`, `runsNorthSouth` and `onPill` - and all three got a test of the rule. None got
+     * a test that the grid still calls it, which is the half that has cost this project four defects,
+     * three of them in the last week.
+     *
+     * The javadoc on `hidesStationCaptions` states the price plainly: "what that leaves uncovered is
+     * whether the caller passes the right two booleans, which is the usual price of pulling a rule out
+     * of its call site". That rule has had a call-site check since the day it was written. Its three
+     * neighbours did not, and there is no reason for the difference beyond nobody having noticed.
+     *
+     * Read rather than run, for the reason the one above it is: the constructor needs a diagram, a
+     * window and a UI to reach, and what can silently break here is the call being dropped or handed
+     * the wrong argument - both visible in the text.
+     *
+     * MUTATION: passing `true` instead of `runsNorthSouth(c)` fails the second assertion; swapping
+     * `onPill` back to `readableOn` fails the third.
+     */
+    @Test
+    public void testTheGridAsksTheCaptionRulesItsQuestions() throws Exception
+    {
+        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        assertTrue(grid.contains("StationCaption.captionOffset("),
+            "nothing asks captionOffset where a caption goes, so the rule is computed by something "
+            + "else - or by nothing, and every caption sits wherever the layout drops it");
+
+        // The ORIENTATION, which is the argument that can be wrong without anything failing.
+        assertTrue(grid.contains("runsNorthSouth(c)"),
+            "captionOffset is called without asking which way the rails run on THIS square. Pass a "
+            + "constant and every caption is placed for the same orientation: half of them lie across "
+            + "track that runs the other way");
+
+        // And the caption's OWN line height, not the tile size or a guess.
+        assertTrue(grid.contains("text.lineHeight()"),
+            "captionOffset is no longer given the caption's line height, so where a caption sits stops "
+            + "depending on how tall its text actually is");
+
+        // onPill and not readableOn, at BOTH places that colour a caption.
+        //
+        // The first version of this asserted that onPill appears somewhere in the file, and there are
+        // two call sites - so swapping one of them back to readableOn left it green. That is the same
+        // looseness this whole test exists to remove, committed inside the test removing it.
+        int asks = 0;
+
+        for (int at = grid.indexOf("StationCaption.onPill("); at >= 0;
+            at = grid.indexOf("StationCaption.onPill(", at + 1))
+        {
+            asks++;
+        }
+
+        assertEquals(asks, 2,
+            "the grid colours captions through onPill at " + asks + " places, and there are two: the "
+            + "resting pill and the one under a standing train. A caption coloured any other way gets "
+            + "its placeholder and its name in the same colour");
+
+        assertFalse(grid.contains("readableOn("),
+            "the grid asks readableOn directly. It answers by the FILL alone, so a placeholder and a "
+            + "name come back identical - which is exactly the defect a reviewer found by disbelieving "
+            + "the comment above this call and running it");
+    }
+
+    /**
+     * The excluded-locomotives prompt still asks whether it is breaking a home.
+     *
+     * `homeBrokenBy` was made static and public so its rule could be tested without a window, and it
+     * has a test. Nothing tested that `promptLocomotives` calls it - so excluding a locomotive from
+     * the station it is homed to would go through silently, with no warning, and the rule would sit
+     * there passing its own test.
+     *
+     * The warning is the whole feature. The comment beside the call says it is "warned rather than
+     * refused, like the home warning: an operator may well mean it" - which is only true if the
+     * operator is told.
+     *
+     * MUTATION: deleting the `homeBrokenBy` call from `promptLocomotives` fails this.
+     */
+    @Test
+    public void testExcludingALocomotiveStillWarnsAboutItsHome() throws Exception
+    {
+        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String prompt = withoutComments(bodyOf(panel, "private void promptLocomotives("));
+
+        assertTrue(prompt.contains("homeBrokenBy("),
+            "the excluded-locomotives prompt no longer asks whether the exclusion breaks a home, so "
+            + "excluding a locomotive from the station it is homed to happens silently");
+
+        assertTrue(prompt.contains("confirmExcludingHome"),
+            "the prompt asks homeBrokenBy and then does not warn about the answer, which is the same "
+            + "as not asking");
+
+        // And the other side of the same pair, which is where the rule is shared from.
+        String home = withoutComments(bodyOf(panel, "private void promptHome("));
+
+        assertTrue(home.contains("homeChoices("),
+            "the home prompt builds its list some other way than homeChoices, so the two sides of "
+            + "this pairing can now disagree about which locomotives may be offered");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)

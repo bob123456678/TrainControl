@@ -20806,11 +20806,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * **Page one wears nothing**, which is the point of it: most people never leave page one, and a
      * badge that is always there says nothing. It appears when there is something to say.
      *
-     * **Double digits stretch the circle into a capsule** rather than shrinking the type. Ten is the
-     * only two-digit page there can be and it is the one a person is most likely to be hunting for; at
-     * this size the difference between an 11-point digit and a 9-point one is the difference between
-     * reading it and guessing. The capsule is a circle for every single digit, which is nine pages out
-     * of ten.
+     * **More than one digit stretches the circle into a capsule** rather than shrinking the type. At
+     * this size the difference between a ten-point digit and an eight-point one is the difference
+     * between reading it and guessing, so the shape gives way instead of the type.
+     *
+     * There is NO CAP on the number of pages - `addLocMappingPage` simply increments, and only the
+     * floor of two is enforced - so this cannot assume two digits, which an earlier version of this
+     * comment did on the strength of the default being ten. Checked by rendering: 100 and 999 both fit
+     * and stay legible, the capsule growing to about two thirds of the icon. Past that the digits
+     * would start to crowd, and nothing stops a person getting there; it would be a badge covering a
+     * locomotive rather than anything broken.
+     *
+     * **Centred on the icon**, which is where it ended up after being tried in the corner. It covers
+     * part of the locomotive either way - the drawing fills its square - so the choice is only about
+     * which part, and the middle is where the eye already is.
      *
      * The badge is drawn onto a COPY. The tab icon is a static shared between every use of it, and
      * painting the number onto it would put page 4's badge on the locomotive panel and everywhere else
@@ -20843,23 +20852,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         g.drawImage(icon, 0, 0, null);
 
-        g.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        g.setFont(new Font("Segoe UI", Font.BOLD, 10));
 
-        java.awt.FontMetrics metrics = g.getFontMetrics();
+        // The digits' INK, not their font metrics.
+        //
+        // Centring on `stringWidth` and `getHeight()` put them a pixel low every time, and a pixel left
+        // on one digit and a pixel right on two - measured, not guessed. Both are the usual causes:
+        // getHeight() includes leading, which is space below the descent that no digit occupies, and
+        // stringWidth includes the side bearings, which differ between "2" and "10".
+        //
+        // The visual bounds are what is actually drawn, so centring on them centres what the eye sees.
+        java.awt.font.GlyphVector glyphs =
+            g.getFont().createGlyphVector(g.getFontRenderContext(), text);
 
-        int tall = 15;
-        int wide = Math.max(tall, metrics.stringWidth(text) + 8);
+        java.awt.geom.Rectangle2D ink = glyphs.getVisualBounds();
 
-        // Hard into the top right corner, and clamped: an icon narrower than its own badge would
-        // otherwise be drawn off its left edge.
-        int x = Math.max(0, out.getWidth() - wide);
+        int tall = 13;
+        int wide = Math.max(tall, (int) Math.ceil(ink.getWidth()) + 7);
+
+        // CENTRED over the locomotive (Adam, 2026-08-27, having seen it in the corner).
+        //
+        // Clamped at zero for the same reason it was clamped in the corner: an icon narrower than its
+        // own badge would otherwise start off the left edge.
+        int x = Math.max(0, (out.getWidth() - wide) / 2);
+        int y = Math.max(0, (out.getHeight() - tall) / 2);
 
         g.setColor(PAGE_BADGE_BLUE);
-        g.fillRoundRect(x, 0, wide, tall, tall, tall);
+        g.fillRoundRect(x, y, wide, tall, tall, tall);
 
         g.setColor(Color.WHITE);
-        g.drawString(text, x + (wide - metrics.stringWidth(text)) / 2,
-            (tall - metrics.getHeight()) / 2 + metrics.getAscent());
+        g.drawString(text,
+            (float) (x + (wide - ink.getWidth()) / 2 - ink.getX()),
+            (float) (y + (tall - ink.getHeight()) / 2 - ink.getY()));
 
         g.dispose();
 
@@ -20923,25 +20947,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        // CENTRED, because out of the way is not available (Adam, 2026-08-27: "either move it so it
-        // doesn't overlap at all (more up, more right), or center it over the middle if that's
-        // impossible").
+        // UPPER RIGHT (Adam, 2026-08-27, having seen it centred).
         //
-        // It is impossible.  A cropped icon is exactly LOC_ICON_WIDTH by LOC_ICON_HEIGHT - 296 by 114
-        // - and this label is 296 by 116, so the picture fills it but for a pixel top and bottom.
-        // There is no corner to retreat to: every position inside the label is over the photograph.
+        // It does overlap the picture - a cropped icon is exactly LOC_ICON_WIDTH by LOC_ICON_HEIGHT,
+        // 296 by 114 in a 296 by 116 label, so every position inside is over the photograph. Centred
+        // was the answer to that; in the corner is what he wants having looked at both, and a corner
+        // takes less of the picture than the middle does whatever it overlaps.
         //
-        // So the mark goes in the middle, where an overlap reads as deliberate. A badge clipping the
-        // corner of a picture looks like a mistake; the same badge centred looks like a button, which
-        // is what it is - the same reason a video thumbnail puts its play symbol in the middle rather
-        // than tucking it into an edge.
-        JPanel middle = new JPanel(new java.awt.GridBagLayout());
+        // Hard into the corner, with no gap: the label has a pixel of slack top and bottom and none at
+        // the sides, so any inset here spends picture rather than margin.
+        JPanel corner = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
 
-        middle.setOpaque(false);
-        middle.add(cropOverlay);
+        corner.setOpaque(false);
+        corner.add(cropOverlay);
 
         locIcon.setLayout(new java.awt.BorderLayout());
-        locIcon.add(middle, java.awt.BorderLayout.CENTER);
+        locIcon.add(corner, java.awt.BorderLayout.NORTH);
 
         java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter()
         {
