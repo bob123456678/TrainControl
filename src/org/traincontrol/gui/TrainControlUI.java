@@ -3688,6 +3688,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void setEditLayoutEnabled(boolean enabled)
     {
         this.editLayoutButton.setEnabled(enabled);
+
+        // The button on the autonomy settings panel goes with it (C9).
+        //
+        // Both open the same editor and both already ASK the same guard - the settings one delegates
+        // through `editLayoutButton.isEnabled()`, so it refused correctly. What it did not do was look
+        // refused: it stayed lit while an editor was open and answered a click with a dialog saying no.
+        //
+        // Adam's own rule, from OB-057 and OB-090: the control that offers an action asks the guard's
+        // own predicate. Asking it and then not showing the answer is half of that.
+        //
+        // Set HERE rather than beside each of the four places that enable the layout button, and those
+        // four now come through this method. A rule applied at four points of use is a rule with four
+        // chances to be forgotten, and this file has form - the same reasoning as `hidesStationCaptions`
+        // one window ago.
+        if (this.editAutonomyFromSettings != null)
+        {
+            this.editAutonomyFromSettings.setEnabled(enabled);
+        }
     }
 
     /**
@@ -3841,7 +3859,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        this.editLayoutButton.setEnabled(false);
+        setEditLayoutEnabled(false);
 
         // the editor edits one page, so the page has to be selected before it is opened
         if (page != null) this.LayoutList.setSelectedItem(page);
@@ -3892,7 +3910,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // The button was disabled before the editor was asked for, so a failure here has to give
                 // it back or autonomy setup is unreachable until the application is restarted.
-                this.editLayoutButton.setEnabled(true);
+                setEditLayoutEnabled(true);
 
                 if (this.model.isDebug()) this.model.log(e);
             }
@@ -4586,7 +4604,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reapplies the stored preference, which is what the diagram path does here too
         windowAlwaysOnTopMenuItemActionPerformed(null);
 
-        this.editLayoutButton.setEnabled(true);
+        setEditLayoutEnabled(true);
 
         repaintLayout();
 
@@ -5499,18 +5517,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.f("loc.ui.tooltip.locomotiveControlPage", this.locMappingNumber)
             );
 
-            // Add page number to icon
-            BufferedImage textImage = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.WHITE, new Font("Segoe UI", Font.BOLD, 16), 
-                30, 30, 0, 0);
-
-            BufferedImage textImage2 = ImageUtil.generateImageWithText(Integer.toString(this.locMappingNumber), Color.BLACK, new Font("Segoe UI", Font.BOLD, 16), 
-                30, 30, 1, 1);
-
-            ImageIcon ic = new javax.swing.ImageIcon(
-                ImageUtil.mergeImages(ImageUtil.mergeImages(ImageUtil.convertIconToBufferedImage((ImageIcon) TAB_ICON_CONTROL), textImage2), textImage)
-            );
-
-            this.KeyboardTab.setIconAt(0, ic);
+            // The page number as a badge in the corner, not a digit across the middle.
+            this.KeyboardTab.setIconAt(0, new javax.swing.ImageIcon(withPageBadge(
+                ImageUtil.convertIconToBufferedImage((ImageIcon) TAB_ICON_CONTROL),
+                this.locMappingNumber)));
        }
        else 
        {
@@ -5917,10 +5927,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The two handlers that ask which tab is showing are unaffected either way - one tests for the
         // diagram at 1 and one for autonomy at 2, and the statistics refresh counts back from the end
         // rather than naming an index.
-        java.awt.Component routes = this.KeyboardTab.getComponentAt(4);
+        // Found by IDENTITY rather than counted to (C8).
+        //
+        // `getComponentAt(4)` was right only because the designer happens to add the tabs in a
+        // particular order and the statistics tab is inserted above this: a reorder in the form editor
+        // would move some other panel to 3, every assertion in the guard test would still pass, and
+        // the sidebar would be quietly wrong. Asking for the RoutePanel cannot be wrong about which
+        // panel it means.
+        int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
 
-        this.KeyboardTab.remove(4);
-        this.KeyboardTab.insertTab("Rout", null, routes, null, 3);
+        if (routesAt >= 0)
+        {
+            java.awt.Component routes = this.KeyboardTab.getComponentAt(routesAt);
+
+            this.KeyboardTab.remove(routesAt);
+            this.KeyboardTab.insertTab("Rout", null, routes, null, 3);
+        }
 
         // Set pane icons   
         // this.KeyboardTab.setIconAt(0, TAB_ICON_CONTROL);
@@ -5963,6 +5985,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         this.KeyboardTab.setTitleAt(6, "");
         
+        // FR-032's hover crop mark, which needs locIcon to exist and so cannot be in the designer.
+        buildCropOverlay();
+
         // Remove the default action for the up/down arrow keys
         InputMap inputMap = this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED);
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "none");
@@ -7785,6 +7810,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                 locIcon.setIcon(icon);      
                                                 locIcon.setText("");
                                                 locIcon.setVisible(true);
+
+                                                // And whether the mark belongs on THIS locomotive (C6).  Visibility was
+                                                // decided on hover alone, so hovering one locomotive and then switching by
+                                                // keyboard left the mark standing over a picture it had nothing to do with -
+                                                // and clicking it did nothing at all, silently.
+                                                showCropOverlay();
                                             }
                                         }
                                         catch (IOException e)
@@ -7923,6 +7954,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         locIcon.setIcon(null);
                         locIcon.setText("");
+
+                        // The mark belongs to the picture that was there; a locomotive with no icon
+                        // has nothing to re-crop (FR-032).
+                        if (cropOverlay != null) cropOverlay.setVisible(false);
 
                         this.ActiveLocLabel.setText(
                             I18n.t("loc.ui.labelNoLocomotiveClickHere")
@@ -17746,7 +17781,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void layoutEditingComplete(Runnable after)
     {
-        this.editLayoutButton.setEnabled(false);
+        setEditLayoutEnabled(false);
 
         // Which tab the user was on, put back at the end.
         //
@@ -17823,7 +17858,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.updatePopups(true);
         
-        this.editLayoutButton.setEnabled(true);
+        setEditLayoutEnabled(true);
         
         // Revert preference
         windowAlwaysOnTopMenuItemActionPerformed(null);
@@ -20739,6 +20774,235 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * The blue this application picks things out in.
+     *
+     * FlatLightLaf's accent, written down rather than asked of UIManager: the key that holds it has
+     * changed name between FlatLaf releases, and a badge that silently comes back null and paints
+     * nothing is worse than one that is a shade off after an upgrade.
+     */
+    private static final Color PAGE_BADGE_BLUE = new Color(0x26, 0x75, 0xBF);
+
+    /**
+     * Draws the keyboard page number in the corner of the locomotive tab icon.
+     *
+     * Adam, 2026-08-27: "show the page number instead in a circle to the upper right of the
+     * locomotive, in blue bg color matching the theme and white font.  manage double digits.  hide it
+     * if the page number is 1."
+     *
+     * **Page one wears nothing**, which is the point of it: most people never leave page one, and a
+     * badge that is always there says nothing. It appears when there is something to say.
+     *
+     * **Double digits stretch the circle into a capsule** rather than shrinking the type. Ten is the
+     * only two-digit page there can be and it is the one a person is most likely to be hunting for; at
+     * this size the difference between an 11-point digit and a 9-point one is the difference between
+     * reading it and guessing. The capsule is a circle for every single digit, which is nine pages out
+     * of ten.
+     *
+     * The badge is drawn onto a COPY. The tab icon is a static shared between every use of it, and
+     * painting the number onto it would put page 4's badge on the locomotive panel and everywhere else
+     * the same image is drawn.
+     *
+     * This replaces a merge of two text layers - white with a black shadow one pixel down and right -
+     * centred over the whole icon. That is why the locomotive was drawn solid through the middle and
+     * why its cab window was moved out of the way: white text on the empty part of an icon is white
+     * text on the tab strip. None of that constraint survives this, and the drawing is free of it.
+     *
+     * @param icon the tab icon to badge, not modified
+     * @param page the keyboard page number
+     * @return a new image, or the one passed in when there is nothing to show
+     */
+    private BufferedImage withPageBadge(BufferedImage icon, int page)
+    {
+        if (icon == null || page <= 1) return icon;
+
+        String text = Integer.toString(page);
+
+        BufferedImage out = new BufferedImage(icon.getWidth(), icon.getHeight(),
+            BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        g.drawImage(icon, 0, 0, null);
+
+        g.setFont(new Font("Segoe UI", Font.BOLD, 11));
+
+        java.awt.FontMetrics metrics = g.getFontMetrics();
+
+        int tall = 15;
+        int wide = Math.max(tall, metrics.stringWidth(text) + 8);
+
+        // Hard into the top right corner, and clamped: an icon narrower than its own badge would
+        // otherwise be drawn off its left edge.
+        int x = Math.max(0, out.getWidth() - wide);
+
+        g.setColor(PAGE_BADGE_BLUE);
+        g.fillRoundRect(x, 0, wide, tall, tall, tall);
+
+        g.setColor(Color.WHITE);
+        g.drawString(text, x + (wide - metrics.stringWidth(text)) / 2,
+            (tall - metrics.getHeight()) / 2 + metrics.getAscent());
+
+        g.dispose();
+
+        return out;
+    }
+
+    /**
+     * Puts the hover crop mark on the big locomotive picture (FR-032).
+     *
+     * Adam: "can you add a hover crop icon to the upper-right of the big locomotive image when
+     * hovered?"
+     *
+     * Built here rather than in the designer, which owns `locIcon` and whose generated block is not
+     * ours to edit. A JLabel has no layout of its own, so it is given one - the label goes on painting
+     * its picture underneath either way, and children are drawn over it.
+     *
+     * **Only when there is something to re-crop.** The mark is hidden when the locomotive has no local
+     * icon at all, because there would be nothing for it to open; the right-click that sets one in the
+     * first place is unchanged and is still the way in.
+     *
+     * The hover test is `getMousePosition(true)` and the `true` is the whole of it: moving the pointer
+     * onto a CHILD fires mouseExited on its parent, so the obvious version hides the mark at the
+     * moment the user reaches for it, and it flickers instead of being clickable.
+     */
+    private void buildCropOverlay()
+    {
+        cropOverlay = new JLabel(new CropMark());
+
+        cropOverlay.setToolTipText(I18n.t("loc.ui.tooltip.recrop"));
+        cropOverlay.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        cropOverlay.setVisible(false);
+        cropOverlay.setOpaque(false);
+
+        cropOverlay.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt)
+            {
+                // LEFT only (C7).  The mark swallows the events over its own fifteen pixels, and the
+                // label underneath opens "set icon" on a RIGHT click - so without this test, right
+                // clicking those fifteen pixels did the one thing the rest of the picture does not.
+                if (!SwingUtilities.isLeftMouseButton(evt)) return;
+
+                if (activeLoc != null) recropLocIcon(activeLoc, TrainControlUI.this);
+            }
+        });
+
+        JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 4, 4));
+
+        row.setOpaque(false);
+        row.add(cropOverlay);
+
+        locIcon.setLayout(new java.awt.BorderLayout());
+        locIcon.add(row, java.awt.BorderLayout.NORTH);
+
+        java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt)
+            {
+                showCropOverlay();
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt)
+            {
+                // Still inside, counting children: entering the mark itself is an exit from the label.
+                if (locIcon.getMousePosition(true) == null) cropOverlay.setVisible(false);
+            }
+        };
+
+        locIcon.addMouseListener(hover);
+        cropOverlay.addMouseListener(hover);
+    }
+
+    /**
+     * Shows the crop mark, if this locomotive has an icon that can be re-cropped.
+     */
+    private void showCropOverlay()
+    {
+        if (cropOverlay == null) return;
+
+        // Only while the pointer is actually over the picture, and only when there is an icon of our
+        // own to re-crop.  Called from the repaint path as well as from hover, so it cannot assume it
+        // is being called because the pointer just arrived.
+        cropOverlay.setVisible(activeLoc != null && activeLoc.getLocalImageURL() != null
+            && locIcon.getMousePosition(true) != null);
+    }
+
+    /**
+     * The crop mark itself, drawn rather than loaded.
+     *
+     * Two overlapping right angles, which is what every photo tool uses for this and what nothing else
+     * in the application looks like. Drawn because it is eleven pixels of two lines: a PNG would want
+     * a size, a folder, a name, and a test that it is still there.
+     *
+     * A white line is laid under the dark one so it reads on a photograph of any colour, which is the
+     * same problem the running-train marker on the diagram has and the same answer.
+     */
+    private static final class CropMark implements javax.swing.Icon
+    {
+        private static final int SIZE = 15;
+
+        private static final int INSET = 4;
+
+        @Override
+        public int getIconWidth()
+        {
+            return SIZE;
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return SIZE;
+        }
+
+        @Override
+        public void paintIcon(java.awt.Component host, java.awt.Graphics g, int x, int y)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
+                    : new java.awt.Color(51, 51, 51));
+                g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
+                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+                int near = INSET;
+                int far = SIZE - INSET;
+
+                // The top-left angle, and the bottom-right one, each overshooting the other's corner -
+                // which is what makes the pair read as crop marks rather than as a box.
+                g2.drawLine(x + near, y + 1, x + near, y + far);
+                g2.drawLine(x + 1, y + near, x + far, y + near);
+
+                g2.drawLine(x + far, y + near, x + far, y + SIZE - 1);
+                g2.drawLine(x + near, y + far, x + SIZE - 1, y + far);
+            }
+
+            g2.dispose();
+        }
+    }
+
+    /**
+     * What is appended to a crop's own name to make the name of the note beside it (FR-032).
+     *
+     * Deliberately not a picture extension: `Util.isLocIconFile` and the file chooser's filter both
+     * work by extension, and a note that looked like an image would turn up as one.
+     */
+    private static final String CROP_SOURCE_SUFFIX = ".source";
+
+    /**
      * Removes the local icon override, so the Central Station's own picture is shown again.
      * @param l the locomotive
      */
@@ -21002,7 +21266,193 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
+        rememberCropSource(target, chosen);
+
         return target.toPath().toUri().toString();
+    }
+
+    /**
+     * Notes, beside a crop, which picture it was cut out of (FR-032).
+     *
+     * Re-cropping needs the ORIGINAL. Cropping a crop can only ever go tighter - the picture outside
+     * the last crop is gone - so "crop/pan without reselecting the source" would have meant panning in
+     * one direction only, which is not panning.
+     *
+     * A sidecar file rather than anywhere cleverer. The alternatives were all worse: a second field on
+     * Locomotive means the model, its copy constructor and its serialisation for something only the
+     * interface cares about; a preference keyed by locomotive name breaks the first time one is
+     * renamed, which this application has a whole class of repairs for already; and PNG metadata
+     * survives none of the ordinary things a person does to a file.
+     *
+     * Best-effort by design. If it cannot be written the crop still works and re-cropping falls back
+     * to the crop itself, so nothing here is worth interrupting the user for.
+     *
+     * Public, with `cropSourceOf`, so the round trip they make between them can be run
+     * without standing up a window: what goes in one has to come out of the other, and everything
+     * else about FR-032 rests on that.
+     *
+     * @param crop the crop that was just written
+     * @param source the picture it was cut from
+     */
+    public void rememberCropSource(File crop, File source)
+    {
+        try
+        {
+            Util.writeAtomically(new File(crop.getAbsolutePath() + CROP_SOURCE_SUFFIX),
+                out -> out.write(source.getAbsolutePath().getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8)));
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // Untidy, not broken.  Re-cropping will use the crop itself.
+        }
+    }
+
+    /**
+     * The picture a crop was cut from, if it is still there.
+     *
+     * @param url the icon currently set on the locomotive
+     * @return the original file, or null when there is no note or the file it names has gone
+     */
+    public File cropSourceOf(String url)
+    {
+        File note = cropSourceNoteOf(url);
+
+        // The photograph may have been moved, renamed or deleted since - it is the user's file in the
+        // user's folder, and nothing here has any claim on it.
+        return note != null && note.isFile() ? note : null;
+    }
+
+    /**
+     * What a crop's note SAYS, whether or not the file it names is there right now.
+     *
+     * The distinction is the whole of a defect a reviewer found in the first version of this (C5), and
+     * it is a data-loss one.  `cropSourceOf` answered null for both "there is no note" and "the note
+     * names a photograph I cannot see at the moment", and re-crop treated the two the same: it fell
+     * back to cropping the crop, wrote a NEW note naming that crop, and then deleted the old crop and
+     * the old note with it.
+     *
+     * So one re-crop attempted while an external drive was unplugged, or while a OneDrive folder had
+     * not finished coming online - which is exactly where this user keeps his pictures - would throw
+     * away the only record of where the photograph was, permanently, and leave behind a note pointing
+     * at a file it had just deleted.  The icon would never be pannable again.
+     *
+     * Carrying the old note forward costs nothing and loses nothing: at worst it names a file that
+     * never comes back, which is the state the crop was already in.
+     *
+     * @param url the icon currently set on the locomotive
+     * @return the file the note names, existing or not, or null when there is no note to read
+     */
+    private File cropSourceNoteOf(String url)
+    {
+        if (!Util.isLocIconFile(url)) return null;
+
+        File crop = fileOf(url);
+
+        if (crop == null) return null;
+
+        File note = new File(crop.getAbsolutePath() + CROP_SOURCE_SUFFIX);
+
+        if (!note.exists()) return null;
+
+        try
+        {
+            String path = new String(java.nio.file.Files.readAllBytes(note.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8).trim();
+
+            return path.isEmpty() ? null : new File(path);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Crops the icon a locomotive already has, without asking for the file again (FR-032).
+     *
+     * Adam: "once a custom icon is set, make it possible to crop/pan without first reselecting the
+     * source."
+     *
+     * Works from the original photograph when the crop remembers one, and from the crop itself when it
+     * does not - which is the honest fallback rather than a refusal, since tightening a crop is still
+     * a useful thing to be able to do.
+     *
+     * Everything after the dialog is what `setLocIcon` does with a freshly chosen file, and for the
+     * same reasons: read the superseded URL BEFORE assigning so a failure in between cannot leave the
+     * locomotive pointing at a deleted file, and only ever delete files inside our own folder.
+     *
+     * @param l the locomotive whose icon is being re-cropped
+     * @param parent the component the dialog should centre on
+     */
+    public void recropLocIcon(Locomotive l, java.awt.Component parent)
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (l == null || l.getLocalImageURL() == null) return;
+
+            File source = cropSourceOf(l.getLocalImageURL());
+
+            boolean fromOriginal = source != null;
+
+            // What the note SAID, kept even when the file it names is not there today (C5).  Cropping
+            // the crop must not be allowed to forget where the photograph was: the drive comes back,
+            // and the icon should still be pannable when it does.
+            File remembered = fromOriginal ? null : cropSourceNoteOf(l.getLocalImageURL());
+
+            if (source == null) source = fileOf(l.getLocalImageURL());
+
+            if (source == null || !source.isFile())
+            {
+                this.model.logf("ui.errorFailedToLoadImage", String.valueOf(l.getLocalImageURL()));
+
+                return;
+            }
+
+            boolean[] cancelled = {false};
+
+            String cropped = cropLocIcon(parent, l, source, cancelled);
+
+            if (cancelled[0] || cropped == null) return;
+
+            String superseded = l.getLocalImageURL();
+
+            l.setLocalImageURL(cropped);
+
+            // The old note wins over the one just written, which names the crop this was cut from
+            // rather than the photograph behind it (C5).
+            if (remembered != null)
+            {
+                File fresh = fileOf(cropped);
+
+                if (fresh != null) rememberCropSource(fresh, remembered);
+            }
+
+            if (!cropped.equals(superseded) && Util.isLocIconFile(superseded))
+            {
+                deleteLocIconFile(superseded);
+            }
+
+            // Told, because the difference matters and is invisible: re-cropping a crop cannot pan
+            // back out to anything the previous crop threw away.
+            this.model.logf(fromOriginal ? "loc.ui.infoRecroppedFromOriginal"
+                : "loc.ui.infoRecroppedFromCrop", l.getName());
+
+            this.repaintLoc(true, null);
+            this.repaintMappings(Collections.singletonList(l), true);
+            this.selector.refreshLocSelectorList();
+        });
+    }
+
+    /**
+     * A way in for the test, which cannot reach the private one - the tests live in their own
+     * packages, so package-visible is not enough.
+     *
+     * @param url the URL of the file to remove
+     */
+    public void deleteLocIcon(String url)
+    {
+        deleteLocIconFile(url);
     }
 
     /**
@@ -21019,7 +21469,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            new File(new java.net.URI(url)).delete();
+            File file = new File(new java.net.URI(url));
+
+            // The note about where it came from goes with it (FR-032).  Left behind it would be a file
+            // in our own folder that nothing points at and nothing would ever remove.
+            new File(file.getAbsolutePath() + CROP_SOURCE_SUFFIX).delete();
+
+            file.delete();
         }
         catch (URISyntaxException | RuntimeException e)
         {
@@ -22109,6 +22565,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
+
+    /** The hover crop mark drawn over locIcon (FR-032); null until the window is built. */
+    private javax.swing.JLabel cropOverlay;
     private javax.swing.JTabbedPane locKeyTabs;
     private javax.swing.JLabel locMappingLabel;
     private javax.swing.JMenu locomotiveControlMenu;

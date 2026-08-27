@@ -182,62 +182,6 @@ public class testSidebarIcons
     }
 
     /**
-     * The locomotive has ink where the page number goes.
-     *
-     * `TrainControlUI` merges the keyboard page number over TAB_ICON_CONTROL - white, with a black
-     * shadow one pixel down and right - and `ImageUtil.generateImageWithText` CENTRES it. The
-     * locomotive used to sit in the bottom two thirds of its canvas with the middle empty, so the
-     * white number was drawn on transparency: white text on whatever the tab strip happens to be
-     * painted, which on a light theme is white on nearly white.
-     *
-     * Adam: "the locomotive is too small - make it bigger so the overlaid page number is more clearly
-     * visible." The size was the symptom; the empty middle was the cause.
-     *
-     * So this asserts the thing that actually matters: the centre of the icon, at the size the number
-     * occupies, is mostly solid. Nothing else here can catch it - the flat-colour test passes happily
-     * on an icon that is entirely in one corner.
-     *
-     * MUTATION: moving the locomotive back down the canvas - raising the body's top edge from 108 to
-     * 250, as it was - fails this.
-     */
-    @Test
-    public void testTheLocomotiveIsSolidWhereThePageNumberSits() throws Exception
-    {
-        BufferedImage source =
-            ImageIO.read(TrainControlUI.class.getResource("resources/tabs/loc.png"));
-
-        BufferedImage small = new BufferedImage(30, 30, BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = small.createGraphics();
-
-        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-            java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-
-        g.drawImage(source, 0, 0, 30, 30, null);
-        g.dispose();
-
-        // The box a 16pt bold digit lands in, centred in the 30x30 icon.  Generous rather than exact:
-        // what is being asserted is "there is something dark behind the number", not a font metric.
-        int covered = 0;
-        int looked = 0;
-
-        for (int x = 9; x < 21; x++)
-        {
-            for (int y = 8; y < 22; y++)
-            {
-                looked++;
-
-                if (((small.getRGB(x, y) >>> 24) & 0xFF) > 100) covered++;
-            }
-        }
-
-        assertTrue(covered * 100 / looked > 70,
-            "only " + (covered * 100 / looked) + "% of the middle of loc.png has any ink in it, and "
-            + "the keyboard page number is drawn there in WHITE. On a light tab strip that is white "
-            + "on white: the number is why this icon is not free to be any shape it likes");
-    }
-
-    /**
      * And they still say something at the size they are actually drawn.
      *
      * An icon that is legible at 512 pixels and a grey smudge at 30 is the commonest way this kind of
