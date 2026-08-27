@@ -88,17 +88,20 @@ def s(*values):
 # Bigger, and centre-heavy, because the page number is drawn over the middle of it.
 image, d = canvas()
 
-d.rounded_rectangle(s(40, 108, 300, 340), radius=28 * SS, fill=INK)      # cab
-d.rounded_rectangle(s(250, 170, 476, 340), radius=48 * SS, fill=INK)     # boiler
-d.rounded_rectangle(s(28, 340, 484, 392), radius=18 * SS, fill=INK)      # footplate
-d.rounded_rectangle(s(388, 74, 452, 180), radius=14 * SS, fill=INK)      # chimney
+d.rounded_rectangle(s(40, 74, 300, 306), radius=28 * SS, fill=INK)       # cab
+d.rounded_rectangle(s(250, 136, 476, 306), radius=48 * SS, fill=INK)     # boiler
+d.rounded_rectangle(s(28, 306, 484, 358), radius=18 * SS, fill=INK)      # footplate
+d.rounded_rectangle(s(388, 40, 452, 146), radius=14 * SS, fill=INK)      # chimney
 
-d.ellipse(s(72, 372, 208, 508), fill=INK)                               # driver
-d.ellipse(s(228, 372, 364, 508), fill=INK)                              # driver
-d.ellipse(s(384, 404, 480, 500), fill=INK)                              # pony
+d.ellipse(s(72, 338, 208, 474), fill=INK)                               # driver
+d.ellipse(s(228, 338, 364, 474), fill=INK)                              # driver
+d.ellipse(s(384, 370, 480, 466), fill=INK)                              # pony
 
-# Cab window, punched out - and kept OUT of the middle, where the number goes.
-d.rounded_rectangle(s(80, 146, 200, 244), radius=16 * SS, fill=HOLE)
+# Cab window, punched out - small, and kept hard left of the middle.
+#
+# The number's box reaches in to about x=153 once the icon is 30 pixels wide, and a hole under a white
+# digit is the thing this whole drawing was rearranged to avoid.
+d.rounded_rectangle(s(66, 100, 148, 186), radius=14 * SS, fill=HOLE)
 
 save(image, 'loc')
 
@@ -127,7 +130,9 @@ save(image, 'track')
 # the thing this release deprecated, and what the tab does is START the railway running.
 image, d = canvas()
 
-d.polygon([s(140, 64), s(140, 448), s(452, 256)], fill=INK)
+# Centred on the canvas, then nudged a little right: a triangle's weight sits behind its point, so a
+# play symbol whose bounding box is exactly centred reads as leaning left.
+d.polygon([s(110, 64), s(110, 448), s(422, 256)], fill=INK)
 
 save(image, 'autonomy')
 
@@ -159,20 +164,20 @@ image, d = canvas()
 # carries far less ink than its neighbours and looked faint beside them.
 WIDE = STROKE + 30 * SS
 
-d.line([s(112, 424), s(300, 424)], fill=INK, width=WIDE)
-d.line([s(300, 424), s(300, 168)], fill=INK, width=WIDE)
-d.line([s(300, 168), s(390, 168)], fill=INK, width=WIDE)
+d.line([s(96, 404), s(284, 404)], fill=INK, width=WIDE)
+d.line([s(284, 404), s(284, 148)], fill=INK, width=WIDE)
+d.line([s(284, 148), s(374, 148)], fill=INK, width=WIDE)
 
 # Rounded corners, so the turns do not come out mitred into points.
-for corner in (s(300, 424), s(300, 168)):
+for corner in (s(284, 404), s(284, 148)):
     d.ellipse((corner[0] - WIDE // 2, corner[1] - WIDE // 2,
                corner[0] + WIDE // 2, corner[1] + WIDE // 2), fill=INK)
 
 # Where it starts.
-d.ellipse(s(58, 370, 166, 478), fill=INK)
+d.ellipse(s(42, 350, 150, 458), fill=INK)
 
 # Where it ends.
-d.polygon([s(360, 74), s(360, 262), s(486, 168)], fill=INK)
+d.polygon([s(344, 54), s(344, 242), s(470, 148)], fill=INK)
 
 save(image, 'route')
 
