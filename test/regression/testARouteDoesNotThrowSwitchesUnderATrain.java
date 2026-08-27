@@ -630,7 +630,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * asked, and call this when the answer is yes.
      *
      * This tests the MODEL half - that saying yes really does set the accessory. The dialog itself is
-     * `TrainControlUI.confirmRouteOverActivePath`, and it is one method for both doors so they cannot
+     * `TrainControlUI.askAboutRouteConflict`, and it is one method for both doors so they cannot
      * drift; MT-189 checks it by hand.
      *
      * MUTATION: making `execRouteOverridingConflicts` pass `false` - so the override does nothing -

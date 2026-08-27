@@ -14490,8 +14490,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // start. dispose()'s own javadoc lists seven ways this window closes and says the note is
         // cleared down all of them; application exit was an eighth.
         //
-        // Before saveState below it would be wrong - the editor may still have something to settle -
-        // and after System.exit it would never run at all, so it goes here.
+        // Before maySettleBeforeExit it would be wrong - the editor may still have something to
+        // settle, and Cancel there aborts the exit - and after System.exit it would never run at all,
+        // so it goes here, once everything that can refuse to exit has agreed to.
         if (openEditor != null && openEditor.isDisplayable())
         {
             openEditor.dispose();
@@ -14612,30 +14613,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         REFUSED
     }
 
-    /**
-     * Asks before running a route that would set an accessory a train is running over.
-     *
-     * The same question clicking that accessory's own tile has always asked, at the door that had no
-     * question at all. Adam, 2026-08-25: "conflicting routes should still be executable in case of a
-     * transient accessory failure.  Add a confirmation dialog to the UI similar to how individual
-     * clicks currently work when an accessory has an active route."
-     *
-     * The case is real and is why refusing outright was wrong: a turnout that did not take the
-     * command, or that reports the wrong position, is exactly when somebody needs to set it - and
-     * exactly when it will be on a locked path, because the path is what commanded it.
-     *
-     * Silent for a route that conflicts with nothing, which is almost every route. The s88 trigger
-     * door does not come through here and still refuses, because there is nobody to ask.
-     *
-     * @param route the route about to be run
-     * @param over what to hang the dialog off
-     * @return true when the route should run regardless of the conflict, false to leave it alone
-     */
-    public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
-        java.awt.Component over)
-    {
-        return askAboutRouteConflict(route, over, null) == RouteConflict.OVERRIDE;
-    }
 
     /**
      * @param known the accessory to name, when the caller has already established it; null to ask

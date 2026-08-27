@@ -105,7 +105,12 @@ public class testEditorSurfaceRules
 
                 boolean rebuilt = false;
 
-                for (int k = j; k < Math.min(lines.size(), j + 40); k++)
+                // Sixty, not forty.  The method grew an error guard - C11, it called its action
+                // bare where its sibling wraps one - and the rebuild moved from line 20 to line 53,
+                // past a window that had been generous when it was written. Sixty still stops inside
+                // this method, which ends at 59 lines, so it cannot borrow a placementChanged() from
+                // whatever comes next; that is the property worth keeping, not the number.
+                for (int k = j; k < Math.min(lines.size(), j + 60); k++)
                 {
                     if (lines.get(k).contains("placementChanged()")) rebuilt = true;
                 }
@@ -1103,6 +1108,93 @@ public class testEditorSurfaceRules
         assertTrue(route.contains("this.execRoute(true)"),
             "the s88 trigger door no longer calls execRoute(true), so whatever it is now, it is not "
             + "the door the rule above is about");
+    }
+
+    /**
+     * The two rules that take the gaps out of a right-click menu, each asked its own question.
+     *
+     * `tidy` is what stops a menu assembled from a dozen independent blocks showing the dividers of
+     * the blocks that had nothing to offer. It has two rules and they are NOT the same question:
+     *
+     *   - a DIVIDER has nothing to separate when nothing follows it, or when a divider does;
+     *   - a HEADING is followed by its own divider always, because title() writes the pair together,
+     *     so for a heading the question has to be asked one component further along.
+     *
+     * Those shared one variable for a day. Widening it for the heading - which is what OB-112 needed -
+     * quietly narrowed it for the divider, and two dividers in a row stopped being collapsed unless a
+     * THIRD followed. That is the empty band between two lines that OB-054 was filed for, put back by
+     * the fix for something else, in the same method, on the same day I wrote a commit message about
+     * rules being right where they are written and wrong one level out.
+     *
+     * **A reviewer then found that mutating the divider half back left the whole suite green**: no
+     * fixture menu produces two adjacent dividers, so the rule that OB-054 exists for was correct and
+     * completely uncovered. Which is how it came back the first time.
+     *
+     * MUTATION: giving the two rules one shared condition again fails the first case here.
+     */
+    @Test
+    public void testTidyCollapsesTheGapsItWasWrittenFor()
+    {
+        // OB-054 itself: a block that had nothing to offer left its divider behind, next to another.
+        assertEquals(shapeAfterTidy("I--I"), "I-I",
+            "two dividers in a row were left as two, which is an empty band between two lines - the "
+            + "exact thing OB-054 was filed for");
+
+        assertEquals(shapeAfterTidy("I---I"), "I-I", "three in a row were not collapsed either");
+
+        assertEquals(shapeAfterTidy("-I"), "I", "a divider at the top has nothing above it to divide");
+
+        assertEquals(shapeAfterTidy("I-"), "I",
+            "a divider at the bottom has nothing below it to divide");
+
+        // And the heading rule, which is the one the shared condition was widened for.
+        assertEquals(shapeAfterTidy("H-I"), "H-I",
+            "a heading with something under it was removed - that is a heading doing its job");
+
+        assertEquals(shapeAfterTidy("H-"), "",
+            "a heading over an empty section was kept. title() writes the heading and its divider "
+            + "together, so a heading followed by a divider and nothing else is a title for nothing");
+
+        assertEquals(shapeAfterTidy("I-H-"), "I",
+            "a heading over an empty section at the END of a menu was kept, along with the divider "
+            + "that was only there to separate it");
+    }
+
+    /**
+     * Builds a menu of the given shape, tidies it, and reads the shape back.
+     *
+     * `I` an item, `-` a divider, `H` a heading - a disabled item, which is what title() leaves
+     * behind and what tidy recognises one by.
+     */
+    private String shapeAfterTidy(String shape)
+    {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        for (char part : shape.toCharArray())
+        {
+            if (part == '-')
+            {
+                menu.addSeparator();
+                continue;
+            }
+
+            javax.swing.JMenuItem item = new javax.swing.JMenuItem(String.valueOf(part));
+
+            item.setEnabled(part != 'H');
+
+            menu.add(item);
+        }
+
+        org.traincontrol.gui.AutonomyEditorPanel.tidy(menu);
+
+        StringBuilder out = new StringBuilder();
+
+        for (java.awt.Component one : menu.getComponents())
+        {
+            out.append(one instanceof javax.swing.JSeparator ? '-' : one.isEnabled() ? 'I' : 'H');
+        }
+
+        return out.toString();
     }
 
     /**

@@ -435,9 +435,13 @@ public class MarklinRoute extends Route
      *
      * By RESOLVING the names rather than comparing the strings.
      *
-     * A configuration says "Signal 12" or "Switch 12" or just "12", and the accessory database is
-     * keyed by one of those - `MarklinControlStation.getAccessoryByName` exists precisely to fall back
-     * across that difference, and every other consumer of these lists goes through it. This one
+     * A configuration says "Signal 12" or "Switch 12", and the accessory database is keyed by one of
+     * those - `MarklinControlStation.getAccessoryByName` exists precisely to fall back across that
+     * difference, and every other consumer of these lists goes through it.
+     *
+     * A bare "12" resolves to nothing, here and in Layout.refreshProtectingSignal alike. That is not a
+     * hazard, because it means neither half of the feature works for such a name and there is no
+     * asymmetry to be caught out by - but it is not matched, and this said it was. This one
      * compared the raw string, so a setup pairing a platform with a name spelled the other way got
      * working protection from the layout and no refusal from the route: the guard simply never
      * matched, silently, on exactly the configurations most likely to be hand-written or imported.
@@ -559,7 +563,7 @@ public class MarklinRoute extends Route
                         this.network.logf(conflict[1], this.getName(), conflict[0]);
                     }
 
-                    // NOT a decision, only a note (B7).
+                    // A decision only at the door with NOBODY AT IT (B7, then its own review).
                     //
                     // This used to set skipAccessories, and the loop below skips every accessory
                     // before the per-command check can ask about any of them. So the same conflict
@@ -569,11 +573,24 @@ public class MarklinRoute extends Route
                     // route must stay executable "in case of a transient accessory failure", and
                     // dropping four turnouts silently is the version of that with no way past it.
                     //
-                    // The per-command check makes the decision for both cases now, and it asks at most
-                    // ONCE per route: yes turns the override on for the rest of the run, no skips the
-                    // rest. So this costs exactly one dialog in the case that used to cost four
-                    // turnouts and a log line nobody was looking at.
-                    boolean skipAccessories = false;
+                    // The per-command check makes the decision at the two HUMAN doors now, and it
+                    // asks at most ONCE per route: yes turns the override on for the rest of the run,
+                    // no skips the rest. So this costs exactly one dialog in the case that used to
+                    // cost four turnouts and a log line nobody was looking at.
+                    //
+                    // The s88 door keeps the old whole-route refusal, and the first version of this
+                    // change took that away without noticing. There is nobody there to ask, so the
+                    // per-command check can only refuse - and refusing per command means the route
+                    // sets every accessory AHEAD of the conflicting one and drops the rest. That
+                    // contradicts the rule written forty lines above this: "REFUSED rather than
+                    // confirmed, and refused WHOLE ... a route half executed leaves the layout in a
+                    // state nobody chose." A four-turnout safety route fired by a sensor would have
+                    // set two and dropped two.
+                    //
+                    // A conflict appearing PART WAY through still leaves the earlier ones set, at
+                    // every door. That is unavoidable - they were sent before it existed - and it is
+                    // why the per-command check exists at all.
+                    boolean skipAccessories = auto && conflict != null;
 
                     for (RouteCommand rc : this.route)
                     {

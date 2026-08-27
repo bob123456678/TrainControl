@@ -1483,9 +1483,13 @@ public class AutonomyEditorPanel extends JPanel
      * removed.  Repeated until nothing changes, so removing a heading can collapse the dividers that
      * were around it.
      *
+     * Public so its two rules can be given a menu and asked what they do with it. They are about the
+     * SHAPE of a list of components and nothing else - no session, no window, no railway - and the
+     * half of them that matters most is the half the real menus happen never to produce.
+     *
      * @param menu the menu to tidy, in place
      */
-    private static void tidy(javax.swing.JPopupMenu menu)
+    public static void tidy(javax.swing.JPopupMenu menu)
     {
         boolean again = true;
 
@@ -1731,7 +1735,22 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException ex)
             {
-                if (session != null && session.getStore() != null) say(hint, String.valueOf(ex));
+                // SAID, the way item() says it.
+                //
+                // The first version of this guard wrote to the hint line and only when there was a
+                // session - so it removed the stack trace its own comment called the inadequate trace,
+                // and replaced it with nothing at all in the case where the session is null. A guard
+                // that makes a failure quieter than it was is not a guard.
+                //
+                // The class as well as the message, for the reason item() gives: a
+                // NullPointerException has no message, and a dialog whose whole content is the word
+                // "null" tells nobody anything.
+                String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
+                    ? ex.getClass().getSimpleName() : ex.getMessage();
+
+                JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", said));
+
+                say(hint, said);
             }
 
             // placementChanged, not refresh (TD-1).
