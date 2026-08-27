@@ -10292,6 +10292,10 @@ Still don't like them. on order from first to last:
 
 *Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-26.**
+
+Fifth pass, against the ruling of 2026-08-26. (1) The locomotive has a pilot now - a wedge hanging from the underside of the footplate at the chimney end, deepest at the front, level with the bottom of the wheels. It took the pony truck's place: three round wheels and a blade inside thirty pixels is more than the silhouette holds. (2) Track has no bar at either end and 40 of bare rail showing past the outermost sleeper at both, worked out from one margin so the two cannot drift apart - the previous version answered the lopsidedness by adding end bars, which made it even and also made it a ladder. (3) The play triangle carries a keyline. It is punched rather than painted white, because these files are one flat colour on transparency and a second colour would be wrong on any background but this theme's. Play only, by your ruling. (4) The signal is a semaphore: post, finial, base, and a horizontal arm - danger, the aspect worth drawing. The fishtail notch is gone; at thirty pixels a tapering end is a pennant, which is why it read as a flag twice. It ends square with a stripe near the tip and the spectacle punched out at the post. (5) Route arms are equal, both 156 from the turn, written as one number. Every icon now sits within a pixel or two of centre in both axes except stats, which is 96/56 because those are bars on a baseline, and the play triangle, which is 110/90 on purpose - a triangle's weight sits behind its point.
+
 <a id="mt-199"></a>
 
 ### MT-199 - 2026-08-26 - What the captions say in each editor
