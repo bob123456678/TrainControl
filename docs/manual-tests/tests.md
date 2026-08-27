@@ -10234,6 +10234,10 @@ move setting under the autonomy option category
 
 *Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-27.**
+
+Two changes on 2026-08-27 that show on this screen. Station captions sit lower - nine pixels at the sixty-pixel view, written as three twentieths of a tile so it holds at every size - because centred exactly on a rail they read as sitting on top of the track rather than labelling it. And an empty station's dash is now centred on its square; the old arithmetic only ever subtracted, so a caption wider than its square was centred and a narrower one was left hard against the left edge, which meant the same caption moved as a train arrived and left.
+
 ---
 
 <a id="mt-198"></a>
@@ -10295,6 +10299,14 @@ Still don't like them. on order from first to last:
 **Claude, 2026-08-26.**
 
 Fifth pass, against the ruling of 2026-08-26. (1) The locomotive has a pilot now - a wedge hanging from the underside of the footplate at the chimney end, deepest at the front, level with the bottom of the wheels. It took the pony truck's place: three round wheels and a blade inside thirty pixels is more than the silhouette holds. (2) Track has no bar at either end and 40 of bare rail showing past the outermost sleeper at both, worked out from one margin so the two cannot drift apart - the previous version answered the lopsidedness by adding end bars, which made it even and also made it a ladder. (3) The play triangle carries a keyline. It is punched rather than painted white, because these files are one flat colour on transparency and a second colour would be wrong on any background but this theme's. Play only, by your ruling. (4) The signal is a semaphore: post, finial, base, and a horizontal arm - danger, the aspect worth drawing. The fishtail notch is gone; at thirty pixels a tapering end is a pennant, which is why it read as a flag twice. It ends square with a stripe near the tip and the spectacle punched out at the post. (5) Route arms are equal, both 156 from the turn, written as one number. Every icon now sits within a pixel or two of centre in both axes except stats, which is 96/56 because those are bars on a baseline, and the play triangle, which is 110/90 on purpose - a triangle's weight sits behind its point.
+
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-27.**
+
+Settled 2026-08-27 after eight passes. The locomotive is now ONE closed path walked around the outline, not a stack of primitives - that change is what fixed it, and it came from Adam's diagnosis rather than from any choice of parts. The plow took four passes on its own, all four lost to ambiguous wording on my side; drawing the candidates and having him name one settled it in two rounds, first the shape then how much flat bottom sits between its angles. Worth reusing. Final set: locomotive with a raked plow and filled wheels; track with rail showing past the sleepers at both ends; a play triangle with a punched keyline; an upper-quadrant semaphore raised 40 degrees with an arrow on the arc its tip travels; a symmetrical S for routes; stats and log untouched. Every icon sits within a pixel or two of centre in both axes except stats (bars on a baseline) and the play triangle (a deliberate 124/105 lean - a triangle's weight sits behind its point). The routes and keyboard tabs are also swapped, which is worth a look in its own right: the order is now control, diagram, autonomy, ROUTES, KEYBOARD, stats, log, and each tab should wear its own icon and tooltip.
 
 <a id="mt-199"></a>
 
@@ -10464,4 +10476,8 @@ nobody would notice until they looked at a diagram.
 **Adam, 2026-08-26 (triage).** Works.
 
 *Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
