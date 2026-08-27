@@ -10279,6 +10279,21 @@ that icon in white; the old drawing left the middle empty, so the number was whi
 Dark grey is safe here only because the application has one look and feel - `FlatLightLaf`, with no
 dark variant. If a dark theme is ever added, these need revisiting.
 
+**Adam, 2026-08-26 (triage).** Does not work.
+
+Still don't like them. on order from first to last:
+1. locomotive icon needs a plow at the front
+2. track needs to be symmetrical.  no line on top or bottom, some track should protrude on both sides
+3. OK, maybe add a white inner outline for a nicer look
+4. signal still not symmetrical.  convert to old fashioned style wing signal icon
+5. good idea, make it summetrical by stretching the top arm
+6. good!
+7. good!
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+<a id="mt-199"></a>
+
 ### MT-199 - 2026-08-26 - What the captions say in each editor
 
 **Disposition:** needs test
@@ -10310,22 +10325,9 @@ that leaves is whether the rule is asked the right question, so a second test re
 it must ask whether this grid is in an editor and whether that editor is the autonomy one, because
 `layout.getEdit()` is true in BOTH and has been wrong here before.
 
-**Adam, 2026-08-26 (triage).** Does not work.
-
-Still don't like them. on order from first to last:
-1. locomotive icon needs a plow at the front
-2. track needs to be symmetrical.  no line on top or bottom, some track should protrude on both sides
-3. OK, maybe add a white inner outline for a nicer look
-4. signal still not symmetrical.  convert to old fashioned style wing signal icon
-5. good idea, make it summetrical by stretching the top arm
-6. good!
-7. good!
-
-*Run against commit 309b984f, build\classes, compiled 26 Aug 22:08 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
-
 ---
 
-<a id="mt-200"></a>
+<a id="mt-201"></a>
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard
 
@@ -10367,6 +10369,8 @@ the whole time.
 
 The exit path now does what the editor's own X has always done. Nothing in the test suite touched that
 method at all, which is why a review found it and not a test.
+
+<a id="mt-202"></a>
 
 ### MT-202 - 2026-08-26 - Which conflict the route question is about
 
@@ -10422,6 +10426,8 @@ writes nothing to the log at all. That is how it has always been, and there is a
 were asked, you decided, and the railway did nothing worth recording. There is also an argument the
 other way, since your log is the record of what the railway was asked to do and not only of what it
 did. Left alone rather than changed quietly; say the word either way.
+
+<a id="mt-200"></a>
 
 ### MT-200 - 2026-08-26 - Grey station labels
 
