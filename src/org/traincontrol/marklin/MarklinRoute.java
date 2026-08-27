@@ -421,13 +421,48 @@ public class MarklinRoute extends Route
         // review, which reproduced it with no path locked anywhere.
         //
         // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
-        if (!rc.getSetting() && protecting.contains(accessory.getName()))
+        if (!rc.getSetting() && isOneOf(protecting, accessory))
         {
             return new String[] {accessory.getName(),
                 "route.refusedSignalProtectingOccupiedPlatform"};
         }
 
         return null;
+    }
+
+    /**
+     * Whether an accessory is one of the ones named in a setup's protecting-signal list (C9).
+     *
+     * By RESOLVING the names rather than comparing the strings.
+     *
+     * A configuration says "Signal 12" or "Switch 12" or just "12", and the accessory database is
+     * keyed by one of those - `MarklinControlStation.getAccessoryByName` exists precisely to fall back
+     * across that difference, and every other consumer of these lists goes through it. This one
+     * compared the raw string, so a setup pairing a platform with a name spelled the other way got
+     * working protection from the layout and no refusal from the route: the guard simply never
+     * matched, silently, on exactly the configurations most likely to be hand-written or imported.
+     *
+     * The literal comparison is kept as the first test because it is the common case and costs
+     * nothing.
+     *
+     * @param protecting the names the setup recorded
+     * @param accessory the accessory a command is about to move
+     * @return whether they are the same device
+     */
+    private boolean isOneOf(java.util.Set<String> protecting, MarklinAccessory accessory)
+    {
+        if (accessory == null || protecting.isEmpty()) return false;
+
+        if (protecting.contains(accessory.getName())) return true;
+
+        for (String name : protecting)
+        {
+            MarklinAccessory named = this.network.getAccessoryByName(name);
+
+            if (named != null && named.equals(accessory)) return true;
+        }
+
+        return false;
     }
 
     /**

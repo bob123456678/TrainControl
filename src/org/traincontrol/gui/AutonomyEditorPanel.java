@@ -1714,7 +1714,25 @@ public class AutonomyEditorPanel extends JPanel
 
         menuItem.addActionListener(e ->
         {
-            action.accept(menuItem.isSelected());
+            // Guarded, as `item` beside it is (C11).
+            //
+            // Its sibling wraps the action and goes on to redraw regardless, and the comment there
+            // records what the missing guard cost. This one called the action bare - so a
+            // RuntimeException out of setBarredArrivals, setPortalDisabled or setAutoDestination
+            // skipped placementChanged entirely: the box showed the new state, the setup kept the old
+            // one, the findings list and the error count were never recomputed, and the only trace was
+            // a stack on stderr that nobody is watching.
+            //
+            // The redraw happens either way, which is the point: a menu that has thrown is a menu
+            // whose picture of the setup is least likely to be right.
+            try
+            {
+                action.accept(menuItem.isSelected());
+            }
+            catch (RuntimeException ex)
+            {
+                if (session != null && session.getStore() != null) say(hint, String.valueOf(ex));
+            }
 
             // placementChanged, not refresh (TD-1).
             //

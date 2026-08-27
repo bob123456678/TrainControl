@@ -419,10 +419,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         );
                         menuItem.addActionListener(event ->
                         {
+                            // PURGE, as the editor's own Remove does (C15).
+                            //
+                            // The two doors that take a train off a square passed different answers to
+                            // the same question. Without the purge the locomotive stays in the list of
+                            // trains to run while standing nowhere: it goes on showing in the Autonomy
+                            // tab, and runLocomotives logs it as started and spawns a thread that idles
+                            // for the rest of the session. Nothing stalls - it has no destination to
+                            // yield to anybody - but the railway is keeping a place for a train that is
+                            // not on it.
                             ui.getModel().getAutoLayout().moveLocomotive(
                                 null,
                                 current.getName(),
-                                false
+                                true
                             );
 
                             // The setup as well, or the next build puts the train back: the
