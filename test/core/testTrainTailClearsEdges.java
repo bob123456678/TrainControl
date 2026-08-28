@@ -174,4 +174,97 @@ public class testTrainTailClearsEdges
             "an entry is queued without room for the edge counter, so it is either missing or being "
             + "read from somewhere that does not hold it");
     }
+
+    /**
+     * Two standards of proof, and the case where they must disagree.
+     *
+     * The release does two things. Reporting an edge CLEAR moves a signal behind a train that has gone
+     * by, and being early about it costs a signal. UNLOCKING it lets another route be sent onto that
+     * edge, and being early about it puts a second train on track the first is standing on.
+     *
+     * The escape for unmeasured track is a guess - it fires because the last edge had no length, which
+     * says nothing about where the tail is. I wired it into both, and the validator caught it. It now
+     * decides only the first.
+     *
+     * MUTATION: giving `tailHasProvablyPassed` the same escape, or writing it as
+     * `return !tailMayStillBeOn(...)`, fails the first block. Removing the gate at the call site fails
+     * the second.
+     */
+    @Test
+    public void testOnlyProofUnlocksTrack() throws Exception
+    {
+        // THE DEFECT. Edges [100, 100, 0], train of 250: when the head finishes the unmeasured third
+        // edge, edge 0 has 100 behind it and the escape fires - with 150 of the train still on it.
+        assertFalse(Layout.tailMayStillBeOn(200, 100, 2, 0, 250),
+            "the unmeasured-track escape no longer clears, so a signal behind a train that has gone "
+            + "by stays refused on a railway with lengths in some places and not others");
+
+        assertFalse(Layout.tailHasProvablyPassed(200, 100, 250),
+            "100 measured behind a 250 train counts as PROOF the tail is past, so non-atomic mode "
+            + "unlocks an edge with 150 of the train standing on it and another route may be sent "
+            + "into it");
+
+        // Said once more as the disagreement it is, so that making the two agree cannot pass.
+        assertTrue(Layout.tailHasProvablyPassed(200, 100, 250)
+                != !Layout.tailMayStillBeOn(200, 100, 2, 0, 250),
+            "the guess and the proof now answer alike for [100, 100, 0] with a train of 250 - one of "
+            + "them has been made to delegate to the other, and whichever way round that happened "
+            + "either the signals stopped moving or the locks stopped waiting");
+
+        // PROOF, when the measurement really does cover the train.
+        assertTrue(Layout.tailHasProvablyPassed(500, 200, 150),
+            "200 measured behind a 150 train is not enough to unlock, so an edge the train has "
+            + "provably left is held to the end of the route");
+
+        assertTrue(Layout.tailHasProvablyPassed(500, 150, 150),
+            "exactly the train's length behind is not enough to unlock - the tail sits on the "
+            + "boundary and the edge is never released early");
+
+        // The unmeasured-path fallback is NOT the same kind of guess and stays on both sides: where
+        // nothing has a length, distance can never accumulate and holding would hold to the end of
+        // every route, which is how this railway ran before any of the bookkeeping existed.
+        for (Integer length : new Integer[] { null, 0, 150, 400 })
+        {
+            assertTrue(Layout.tailHasProvablyPassed(0, 0, length),
+                "a path with no measured lengths anywhere no longer unlocks as it goes, so on the "
+                + "ordinary unmeasured railway every edge of every route is now held until the route "
+                + "ends - which is a heavier regression than the one being fixed");
+        }
+    }
+
+    /**
+     * The call site gates the UNLOCK on proof, and does not gate the clear.
+     *
+     * Both halves matter and they fail in opposite directions, so both are asserted. Extracting a rule
+     * moves the bug to the call.
+     */
+    @Test
+    public void testTheUnlockBranchWaitsForProof() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int clears = source.indexOf("if (cleared != null) cleared.add(path.get(waiting[0]));");
+        int proves = source.indexOf("if (!tailHasProvablyPassed(travelledOnThisPath, waiting[1],");
+        int unlocks = source.indexOf("path.get(waiting[0]).setLockedEdgeUnoccupied();");
+
+        // BOTH PRESENT before either is ordered: indexOf answers -1 for something absent, and -1 is
+        // less than every real index, so an ordering test alone passes when the thing it is protecting
+        // has been deleted outright.
+        assertTrue(clears >= 0, "the clearing loop no longer reports any edge clear");
+        assertTrue(unlocks >= 0, "the clearing loop no longer unlocks any edge");
+
+        assertTrue(proves >= 0,
+            "the unlock is no longer gated on tailHasProvablyPassed, so the guess about unmeasured "
+            + "track decides a lock again and another train can be routed onto track this one is "
+            + "still standing on");
+
+        assertTrue(clears < proves,
+            "the clear now happens after the proof gate, so signals behind the train stay refused on "
+            + "unmeasured track - which is the FR this was written for");
+
+        assertTrue(proves < unlocks,
+            "the proof gate no longer stands in front of the unlock");
+    }
 }

@@ -519,12 +519,6 @@ public class GraphReducer
                 //
                 // So the refusal belongs on the DESTINATION hop, which is what OB-120 was filed about:
                 // "Test a path drew routes INTO stations that refuse arrivals from that side."
-                if (edge.getEnd().equals(to)
-                    && refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
-                {
-                    continue;
-                }
-
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 
                 if (arrivedBy.containsKey(next)) continue;
@@ -534,7 +528,19 @@ public class GraphReducer
                 tileOf.put(next, edge.getEnd());
                 sideOf.put(next, edge.getEntrySide());
 
-                if (edge.getEnd().equals(to))
+                // ARRIVED, unless the square refuses to be arrived at that way.
+                //
+                // Tested HERE and not at the hop above (validator, 2026-08-28). Refusing the hop threw
+                // away the search state for this square entirely, so the track BEYOND it was never
+                // explored either - and a station reached first by a barred side and afterwards by an
+                // open one, which is any station with a reversing point past it, became unroutable.
+                // `reachableTiles` gates only its `reached.add` and walks on, so the two answered
+                // differently about the same railway, which is the thing OB-120 was filed to stop.
+                //
+                // The search continues through this square below either way; what is refused is
+                // stopping here by this side.
+                if (edge.getEnd().equals(to)
+                    && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     List<ReducedEdge> path = new ArrayList<>();
 

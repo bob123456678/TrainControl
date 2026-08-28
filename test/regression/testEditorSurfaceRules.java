@@ -2017,4 +2017,73 @@ public class testEditorSurfaceRules
             + "(RA-C2).  describeTile falls back to the s88 address and then to the coordinates");
     }
 
+
+    /**
+     * EVERY branch that raises the latch, not just the one that was looked at.
+     *
+     * `leaveFor` returns from two places and both raise `changingPage`. The repair that moved the raise
+     * down to sit immediately before the posted work was applied to both, and its comment was pasted
+     * onto both - but only the track branch actually got the guarantee the comment describes, from
+     * `layoutEditingCompleteThen`. The autonomy branch called `autonomyEditorClosed()` bare, with the
+     * post that lowers the latch after it in the same lambda, so a throw in a method that parses the
+     * configuration and rebuilds the graph left the latch up for the life of the window (validator,
+     * 2026-08-28).
+     *
+     * MUTATION: unwrapping either branch's guarantee fails this. So does adding a third raise without
+     * one.
+     */
+    @Test
+    public void testEveryLatchRaiseHasAWayDown() throws Exception
+    {
+        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String leave = withoutComments(bodyOf(editor,
+            "private void leaveFor(String page, boolean autonomy)"));
+
+        java.util.List<Integer> raises = new java.util.ArrayList<>();
+
+        for (int at = leave.indexOf("changingPage = true"); at >= 0;
+            at = leave.indexOf("changingPage = true", at + 1))
+        {
+            raises.add(at);
+        }
+
+        // The loop above asserts nothing if it runs over nothing.
+        assertTrue(raises.size() >= 2,
+            "leaveFor no longer has two branches that raise the switch latch - it had one per mode, "
+            + "and this check is written per raise so that a branch added without a way to lower it "
+            + "fails. Found " + raises.size());
+
+        for (int i = 0; i < raises.size(); i++)
+        {
+            int from = raises.get(i);
+            int to = i + 1 < raises.size() ? raises.get(i + 1) : leave.length();
+
+            String branch = leave.substring(from, to);
+
+            assertTrue(branch.contains("arriveAt(page, autonomy)"),
+                "a branch of leaveFor raises the switch latch and never posts arriveAt, which is the "
+                + "only thing that lowers it - that window would refuse every page and mode change "
+                + "for the rest of its life, in silence");
+
+            // Directly, or through the helper whose finally does it for the caller.
+            assertTrue(branch.contains("finally") || branch.contains("layoutEditingCompleteThen"),
+                "a branch of leaveFor posts arriveAt only if the work before it returns normally, so "
+                + "a throw in that work strands the latch up - which is a worse fault than the "
+                + "overlapping switches the latch exists to stop, and is the fault it was already "
+                + "fixed for once on the other branch");
+        }
+
+        // The helper the track branch leans on really does make that promise.
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String helper = withoutComments(bodyOf(ui, "public void layoutEditingCompleteThen(Runnable after)"));
+
+        assertTrue(helper.contains("finally"),
+            "layoutEditingCompleteThen no longer runs its continuation from a finally, so the track "
+            + "branch of leaveFor lost the guarantee it delegates - and the check above accepts that "
+            + "branch on the strength of calling this method");
+    }
 }

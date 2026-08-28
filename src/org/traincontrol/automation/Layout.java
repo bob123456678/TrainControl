@@ -3392,14 +3392,23 @@ public class Layout
      * here answered "not less than zero" and the whole rule was dead in the suite. That is how the
      * regression this fixes reached a commit.
      *
+     * Two standards of proof, because the answer decides two different things (validator, 2026-08-28).
+     * `tailHasProvablyPassed` is what may release a LOCK: get it wrong in non-atomic mode and another
+     * train is routed onto track this one is standing on. This method adds a guess on top of it, and
+     * that guess may only decide whether an edge is reported CLEAR - a signal moving behind a train
+     * that has gone by, which is the thing Adam asked for and which costs nothing when it is early.
+     *
      * Three ways an edge is let go, and the third is the one that was lost:
      *
      *   - nothing on this path has a measured length at all, which is most railways: holding would
      *     hold for ever, so the railway clears the moment the front passes, as it always has;
      *   - the head has travelled the train's whole length since the end of it, so the tail is past;
-     *   - nothing MEASURABLE has happened since it was queued, though the head has moved on. Where the
-     *     tail is cannot be known, and this is the same trade the first case makes, applied to a
-     *     stretch of unmeasured track rather than to a whole path of it.
+     *   - THE EDGE JUST TRAVERSED had no length, though the head has moved on. Where the tail is
+     *     cannot be known over that stretch. This one is a guess and is treated as one: it clears, it
+     *     does not unlock. Its scope is also narrower than the bullet above it used to claim - it
+     *     asks about the last edge, not about whether anything measurable has accrued at all, so it
+     *     fires with distance already banked. Edges [100, 100, 0] and a train of 250 release edge 0
+     *     with 150 of the train still on it, which is exactly why it may not decide a lock.
      *
      * Before this, the second and third were one test against a path-long accumulator: once any
      * measured edge had been traversed the escape could never fire again, and on a path of mixed
@@ -3412,16 +3421,27 @@ public class Layout
      * @param trainLength the train's length, or null
      * @return whether to keep holding it
      */
-    public static boolean tailMayStillBeOn(int travelledOnThisPath, int behind, int edgesSince,
-        int justTravelled, Integer trainLength)
+    public static boolean tailHasProvablyPassed(int travelledOnThisPath, int behind,
+        Integer trainLength)
     {
         // Nothing measured ANYWHERE on this path yet, including the edge just left.
-        if (travelledOnThisPath <= 0) return false;
+        //
+        // Not a guess of the same kind as the one in `tailMayStillBeOn`: on a path where nothing has a
+        // length, distance can never accumulate, so holding would hold until the route ended. That is
+        // how this railway behaved before any of the tail bookkeeping existed, and it is why this
+        // clause is allowed to decide an unlock while that one is not.
+        if (travelledOnThisPath <= 0) return true;
 
         int length = trainLength == null ? 0 : trainLength;
 
-        // The tail is provably past, which is the whole point of the bookkeeping.
-        if (behind >= length) return false;
+        // Measured, and the measurement covers the whole train.
+        return behind >= length;
+    }
+
+    public static boolean tailMayStillBeOn(int travelledOnThisPath, int behind, int edgesSince,
+        int justTravelled, Integer trainLength)
+    {
+        if (tailHasProvablyPassed(travelledOnThisPath, behind, trainLength)) return false;
 
         // THE EDGE JUST TRAVERSED had no length, and the head has moved on.
         //
@@ -4869,13 +4889,32 @@ public class Layout
                                 continue;
                             }
 
+                            // CLEARED on the looser rule: a signal behind the train may move.
                             Set<Edge> cleared = this.clearedEdges.get(loc);
 
                             if (cleared != null) cleared.add(path.get(waiting[0]));
 
-                            pending.remove();
+                            if (this.atomicRoutes)
+                            {
+                                pending.remove();
+                                continue;
+                            }
 
-                            if (this.atomicRoutes) continue;
+                            // UNLOCKED only on proof.
+                            //
+                            // Past here another train may be routed onto this edge, so the guess about
+                            // unmeasured track is not good enough: it can fire with most of the train
+                            // still standing on the edge. Where proof never arrives the entry simply
+                            // stays pending - `unlockPath` releases it with the rest of the path when
+                            // the route ends, which is what happened on that stretch before any of
+                            // this bookkeeping existed. Holding is conservative, never permanent.
+                            if (!tailHasProvablyPassed(travelledOnThisPath, waiting[1],
+                                loc.getTrainLength()))
+                            {
+                                continue;
+                            }
+
+                            pending.remove();
 
                             synchronized (this.activeLocomotives)
                             {

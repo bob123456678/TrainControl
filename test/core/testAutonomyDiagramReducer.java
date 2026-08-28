@@ -1029,4 +1029,77 @@ public class testAutonomyDiagramReducer
             "2 for the track between them and 5 for the platform arrived at");
     }
 
+
+    /**
+     * A station reached by a barred side first, and an open one after turning past it.
+     *
+     * The gap between the two tests above: one bars the middle of a journey, one bars its end. Neither
+     * has the destination appear TWICE in the same search - once the wrong way round, once the right
+     * way - which is what every station with a reversing point beyond it looks like.
+     *
+     *     A ---- X ---- R      X refuses arrivals from A's side; R is a reversing point.
+     *
+     * A train runs A to X the wrong way round, carries on to R, turns, and comes back into X by its
+     * other side, where it is allowed to stop. `reachableTiles` walks exactly that and says X is
+     * reachable. `findPath` refused the first hop into X outright, so R was never reached, the turn
+     * never happened, and "Test a path" drew nothing (validator, 2026-08-28).
+     *
+     * MUTATION: moving the refusal back onto the hop - which is what shipped - fails this.
+     */
+    @Test
+    public void testAStationReachableOnlyByTurningPastIt() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        TileKey a = key("main", 1, 1);
+        TileKey x = key("main", 3, 1);
+        TileKey r = key("main", 5, 1);
+
+        Set<TileKey> none = Collections.emptySet();
+        Set<TileKey> mayTurn = java.util.Collections.singleton(r);
+
+        // CONTROL. Without it a fault that breaks the fixture rather than the rule reads as a pass.
+        assertNotNull(reducer.findPath(a, x, mayTurn, none),
+            "A cannot reach X at all with nothing barred, so this fixture proves nothing about "
+            + "barring - check the page and the reversing point before reading anything below");
+
+        Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
+
+        barred.put(x, java.util.EnumSet.of(arrivalSideAt(reducer, a, x)));
+
+        // The two walks, asked the same question about the same railway.
+        boolean walked = reducer.findPath(a, x, mayTurn, none, barred) != null;
+        boolean counted = reducer.reachableTiles(a, mayTurn, none, barred).contains(x);
+
+        assertTrue(counted,
+            "the findings walk no longer reaches X by turning at R, so this test is not asking what "
+            + "it was written to ask");
+
+        assertEquals(walked, counted,
+            "the path test and the findings panel disagree about X: findings say " + counted
+            + ", the path test says " + walked + ". Two files carry a comment promising they cannot "
+            + "- Adam edits his diagram on the strength of the findings, then finds the route he was "
+            + "told exists cannot be drawn");
+
+        assertTrue(walked,
+            "no route from A to X, although a train runs to R, turns, and comes back into X by a side "
+            + "it is allowed to stop at - the barred hop threw away the search state for X, so the "
+            + "track beyond it was never explored");
+
+        // And the bar still means something: barred BOTH ways, X is not a destination at all.
+        Map<TileKey, Set<Side>> shut = new java.util.LinkedHashMap<>();
+
+        shut.put(x, java.util.EnumSet.allOf(Side.class));
+
+        assertNull(reducer.findPath(a, x, mayTurn, none, shut),
+            "a station that refuses arrivals from every side is still offered as a destination, so "
+            + "the refusal has been dropped rather than moved");
+    }
 }

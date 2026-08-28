@@ -199,4 +199,46 @@ public class testLocIconCrop
         java.nio.file.Files.write(where.toPath(),
             what.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
+
+    /**
+     * An unreadable picture is refused whether or not Crop is ticked.
+     *
+     * The guard for this shipped inside the `if (crop.isSelected())` branch, so untick Crop and pick a
+     * CMYK JPEG or a `.png` that is really something else - both get past the chooser's extension
+     * filter - and nothing read the file at all: it was assigned, and the crop it superseded was
+     * deleted. The note recording this bug was sitting on that same unguarded branch (validator,
+     * 2026-08-28).
+     *
+     * MUTATION: moving the call back inside the crop branch fails this, and so does removing it.
+     */
+    @Test
+    public void testAnUnreadablePictureIsRefusedWithoutCropping() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int asks = source.indexOf("pictureCanBeRead(f, source)");
+        int ticked = source.indexOf("if (crop.isSelected())");
+
+        // Both present before either is ordered - indexOf answers -1 for something absent, and -1 is
+        // less than every real index, so the ordering alone passes when the guard is deleted outright.
+        assertTrue(asks >= 0,
+            "nothing asks whether the picked picture can be read, so a file that renders as nothing "
+            + "is assigned to the locomotive and the crop it replaces is deleted");
+
+        assertTrue(ticked >= 0,
+            "the crop branch has moved or been renamed, so this check can no longer tell which side "
+            + "of it the guard is on - look at setLocIcon before trusting anything here");
+
+        assertTrue(asks < ticked,
+            "the readability guard is inside the crop branch again, so it only runs when Crop is "
+            + "ticked - untick it and the locomotive is pointed at an unreadable file and the crop it "
+            + "had is deleted, which is the whole defect one checkbox away from where it was fixed");
+
+        // And the note that recorded the bug is not left standing over the fixed code.
+        assertFalse(source.contains("clear icon setting if load failed"),
+            "the note describing this bug is still in setLocIcon - either it was never closed, or it "
+            + "has been quoted back into a comment where the next reader will take it for an open one");
+    }
 }

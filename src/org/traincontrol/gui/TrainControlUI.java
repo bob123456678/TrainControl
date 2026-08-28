@@ -21501,6 +21501,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // method had before FR-022 rather than on no icon at all.
                 String chosenURL = Paths.get(f.getAbsolutePath()).toUri().toString();
 
+                // READABLE AT ALL, whether or not it is going to be cropped.
+                //
+                // The guard for this used to live inside the branch below, so it only ran when Crop
+                // was ticked - while the TODO at the foot of this method, which is this same bug
+                // written down, sits on the path where it is not (validator, 2026-08-28). Untick Crop,
+                // pick a CMYK JPEG or a `.png` that is really something else - both get past the
+                // extension filter - and the locomotive is pointed at a file that renders as nothing
+                // and the crop it had is deleted on the way.
+                //
+                // Costs a decode of a picture that is about to be decoded again by the crop dialog or
+                // by the icon itself. That is a one-off on a file the user just picked by hand.
+                if (!pictureCanBeRead(f, source)) return;
+
                 if (crop.isSelected())
                 {
                     // Cancel is not a failure, and treating it as one was destructive (LD-6).
@@ -21550,9 +21563,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLoc(true, null);
                 this.repaintMappings(Collections.singletonList(l), true);
                 this.selector.refreshLocSelectorList();
-                // TODO - clear icon setting if load failed
+
+                // The note that stood here - clear the icon setting if the load failed - is done, and
+                // is deleted rather than quoted so no marker is left behind. Nothing unreadable
+                // reaches this point on either branch, so there is no failed load to clear up after.
             }
         });
+    }
+
+    /**
+     * Whether a picture the user picked can actually be displayed, complaining if it cannot.
+     *
+     * The file chooser filters on the NAME. A `.png` that is really something else, a CMYK JPEG, a
+     * HEIC renamed, a cloud-backed file that is not on this machine - all get past it, and every one
+     * of them ends as a locomotive pointing at a file that renders as nothing.
+     *
+     * Asked before anything is assigned or deleted, because the deletion is the part that cannot be
+     * undone: the crop being replaced is a file this application made and the user cannot get back.
+     *
+     * @param chosen the picture the user picked, opened for reading and nothing else
+     * @param parent the component to complain on
+     * @return whether it read as an image
+     */
+    private boolean pictureCanBeRead(File chosen, Component parent)
+    {
+        try
+        {
+            // ImageIO answers null rather than throwing for a file no reader claims, so both.
+            if (ImageIO.read(chosen) != null) return true;
+        }
+        catch (IOException | RuntimeException failed)
+        {
+            this.model.log(failed);
+        }
+
+        this.model.logf("ui.errorFailedToLoadImage", chosen.getAbsolutePath());
+
+        JOptionPane.showMessageDialog(parent,
+            I18n.f("loc.ui.errorPictureCouldNotBeRead", chosen.getName()));
+
+        return false;
     }
 
     /**
@@ -21602,7 +21652,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Falling back to the picture the user chose is right when the picture is good and only
             // the crop failed. It is the worst of both when the picture cannot be read: the locomotive
             // is pointed at a file that renders as nothing, and the crop it had is deleted on the way.
-            if (cancelled != null && cancelled.length > 1) cancelled[1] = true;
+            if (cancelled != null) cancelled[1] = true;
 
             JOptionPane.showMessageDialog(parent,
                 I18n.f("loc.ui.errorPictureCouldNotBeRead", chosen.getName()));
@@ -21815,7 +21865,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            boolean[] cancelled = {false};
+            // Two slots, the same as the other call site.
+            //
+            // This passed one to a method that writes slot 1, and was saved only by that method
+            // guarding with `cancelled.length > 1` - which silences the mismatch instead of catching
+            // it, and leaves the next reader of `cancelled[1]` here with an index out of bounds.
+            boolean[] cancelled = {false, false};
 
             String cropped = cropLocIcon(parent, l, source, cancelled);
 

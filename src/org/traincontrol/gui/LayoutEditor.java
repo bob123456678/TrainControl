@@ -4912,9 +4912,21 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                parent.autonomyEditorClosed();
-
-                javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy));
+                // POSTED FROM A FINALLY, like the other branch gets from layoutEditingCompleteThen.
+                //
+                // The comment above was pasted onto both branches; only the other one had the
+                // guarantee it describes (validator, 2026-08-28). autonomyEditorClosed reaches
+                // rebuildRunningLayoutFromSetup, which parses the configuration and rebuilds the
+                // graph - the same class of work as the undoAutonomyEdits the raise was moved ahead
+                // of - and a throw in it left the latch up with nothing on its way to lower it.
+                try
+                {
+                    parent.autonomyEditorClosed();
+                }
+                finally
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy));
+                }
             });
 
             return;
