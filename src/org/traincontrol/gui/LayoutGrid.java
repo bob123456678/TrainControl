@@ -340,6 +340,20 @@ public class LayoutGrid
         {
             if (child instanceof LayoutLabel && child.getBounds().contains(at))
             {
+                // NOT the spacers, which are not squares (reviewer, 2026-08-27).
+                //
+                // The grid ends in a dummy row and a dummy column that exist to stop long labels
+                // misaligning it, and they are LayoutLabels with real bounds like any other. A label
+                // dropped on one was accepted - the drop mark even showed GREEN, because the spacer
+                // carries no component and a square with nothing on it may hold a caption - and the
+                // caption was then stored against a square the drawing loop skips before it ever looks
+                // for one. It vanished, and the setup carried an entry nothing could show.
+                //
+                // The strip along the bottom runs the full width of the diagram, directly under the
+                // last row of track, which is exactly where somebody would drop a label for a station
+                // on that row.
+                if (((LayoutLabel) child).isSpacer()) continue;
+
                 return (LayoutLabel) child;
             }
         }

@@ -2944,7 +2944,9 @@ public class AutonomySession
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
-            stationsWithNoSignal(), facingsThatCannotBeHeld());
+            stationsWithNoSignal(), facingsThatCannotBeHeld(),
+            // The red arrows, so the findings walk the railway a train can actually use (OB-120).
+            barredArrivals());
     }
 
     /**
@@ -3932,6 +3934,54 @@ public class AutonomySession
     }
 
     /**
+     * Which way each route across a square runs, as marks to draw (FR-037).
+     *
+     * Lifted out of the autonomy editor so that the editor and the ordinary track diagram cannot come
+     * to different conclusions about which way a piece of track runs. They draw the same arrows for
+     * different reasons - one is being edited, the other watched - and two spellings of "which way does
+     * this go" would eventually disagree about a railway that has only one answer.
+     *
+     * WHAT DID NOT COME WITH IT, deliberately: every reason the editor has for staying quiet. A square
+     * it is ignoring, the greying while a signal is being picked, a tile that merely follows its run,
+     * and the flow-mark fallback that gives a bare layout one arrow per run. Those are about the
+     * editor's own gestures and about a diagram being configured; on the running diagram they would
+     * either say nothing or say something false.
+     *
+     * The hardware correction stays, because it is a fact about the railway rather than about either
+     * window: a route the blades restrict is one-way whichever direction was authored, and a drawing
+     * that showed the authored answer would be showing something a train cannot do.
+     *
+     * @param tile the square
+     * @return one mark per route, never null, empty when the square has no routes or no graph
+     */
+    public List<TileAnnotation.Mark> directionMarks(TileKey tile)
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        if (graph == null || tile == null) return marks;
+
+        for (Map.Entry<TileGraph.RouteId, TilePorts.Route> entry : getRoutes(tile).entrySet())
+        {
+            TilePorts.Route route = entry.getValue();
+
+            TileGraph.Direction direction = graph.getDirection(tile, entry.getKey());
+
+            // A route the hardware restricts is one-way whatever the user chose: the graph leaves the
+            // authored direction BOTH there (see defaultDirection), but a train still cannot pass
+            // against the blades, and the drawing has to say what a train can actually do.
+            if (route.getDirectedToward() != null && direction != TileGraph.Direction.NONE)
+            {
+                direction = route.getDirectedToward() == route.getA()
+                    ? TileGraph.Direction.TOWARD_A : TileGraph.Direction.TOWARD_B;
+            }
+
+            marks.add(new TileAnnotation.Mark(route.getA(), route.getB(), direction));
+        }
+
+        return marks;
+    }
+
+    /**
      * What the setup says about one square, for drawing on the ordinary track diagram.
      *
      * Points only - no direction arrows at all.  The diagram tab is where trains are WATCHED, and the
@@ -3960,7 +4010,26 @@ public class AutonomySession
             return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false, null, true);
         }
 
-        if (!reducer.getPoints().containsKey(tile)) return null;
+        // The one-way arrows, when the operator has asked for them (FR-037).
+        //
+        // BEFORE the Point test, which is where this went wrong first time: that test is about whether
+        // a square deserves a BADGE, and a restriction is not a fact about sensors. It is a fact about
+        // TRACK - straights, curves, the squares either side of a switch - and almost none of those
+        // carry a sensor, so the option appeared to do nothing at all.
+        boolean arrows = org.traincontrol.gui.TrainControlUI.diagramShowsRestrictionArrows();
+
+        List<TileAnnotation.Mark> marks = arrows ? directionMarks(tile)
+            : new ArrayList<TileAnnotation.Mark>();
+
+        // Track that is not a Point, but is restricted.
+        //
+        // It still returns null when there is nothing to say, so a diagram with the option off - or a
+        // railway with no restrictions on it - is exactly as bare as it was.
+        if (!reducer.getPoints().containsKey(tile))
+        {
+            return marks.isEmpty() ? null
+                : new TileAnnotation(marks, -1, false, null, false, false, false, null, arrows, null);
+        }
 
         String name = store.getPointName(tile);
 
@@ -3975,7 +4044,18 @@ public class AutonomySession
         // about behaviour that nothing on the tile shows.
         boolean worthABadge = store.isStation(tile) || isTurnAround(tile);
 
-        return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false,
+        // The marks worked out above, alongside whatever badge this Point earns.
+        //
+        // Handed over WHOLE, with `blockedOnly` below saying which of them to draw. The annotation is
+        // what knows how to filter a mark down to the restricted ones, and it already does that for
+        // the editor's own restrictions view - deciding it a second time here is how the two drawings
+        // would come to disagree about what counts as a restriction.
+        //
+        // Nothing here asks whether autonomy is running. That is settled before this is ever called:
+        // showStaticAutonomyLayer clears the whole layer and returns when autonomy is not showing,
+        // when there is no session or graph, and when no configuration is loaded. An arrow is a
+        // statement about a setup, and with no setup there is nothing to state.
+        return new TileAnnotation(marks, -1, false,
             !worthABadge ? null : new TileAnnotation.Badge(
                 store.isStation(tile),
                 store.isStation(tile) && isTurnAround(tile),
@@ -3985,7 +4065,12 @@ public class AutonomySession
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile)),
-            false, false, false, null, false,
+            false, false, false, null,
+            // RESTRICTED ONLY, which is the whole of what was asked for: "show RESTRICTION arrows".
+            // A run that is open both ways is the majority of any layout and is also the default, so
+            // drawing those here would put an arrow on nearly every square - which is the clutter that
+            // kept directions out of this diagram to begin with.
+            arrows,
             // Only where something is actually restricted.  A station that takes trains from anywhere
             // has nothing to say here, and saying it on every platform of the layout would be the
             // clutter this mark exists to avoid.

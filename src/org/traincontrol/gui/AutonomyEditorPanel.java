@@ -5690,42 +5690,22 @@ public class AutonomyEditorPanel extends JPanel
 
         if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower)
         {
-            Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
-
-            // more than one route means a switch, a crossing or a double curve - somewhere a train has
-            // a choice, and somewhere the user needs to see every option rather than only the closed
-            boolean branching = routes.size() > 1;
-
-            for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
-                : routes.entrySet())
-            {
-                org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
-
-                Direction direction = session.getGraph().getDirection(tile, entry.getKey());
-
-                // A route the hardware restricts is one-way whatever the user chose: the graph leaves the
-                // authored direction BOTH there (see defaultDirection), but a train still cannot pass
-                // against the blades, and the drawing has to say what a train can actually do.
-                if (route.getDirectedToward() != null && direction != Direction.NONE)
-                {
-                    direction = route.getDirectedToward() == route.getA()
-                        ? Direction.TOWARD_A : Direction.TOWARD_B;
-                }
-
-                // Every state is drawn, both-ways included.
-                //
-                // It used to be hidden on plain track - both ways is the majority of a layout and is
-                // also the default, so drawing it put an arrow on every square - and that was tolerable
-                // only while the checkbox that turned it back on existed.  With the checkbox gone,
-                // "runs both ways" became the one state of four that looked like nothing at all: a
-                // square cycled from one-way, to the other way, to closed, to BLANK, and there was no
-                // way to tell the blank apart from a square nobody had touched.
-                //
-                // A run that is open both ways is a decision like any other, and the run marker below
-                // already keeps a bare layout from being a field of arrows.
-                marks.add(new org.traincontrol.automationui.TileAnnotation.Mark(
-                    route.getA(), route.getB(), direction));
-            }
+            // Asked of the SESSION since FR-037, so this window and the ordinary track diagram cannot
+            // disagree about which way a piece of track runs.  What stayed here is every reason this
+            // window has for saying nothing at all - see the condition above and the fallback below.
+            //
+            // Every state is drawn, both-ways included.
+            //
+            // It used to be hidden on plain track - both ways is the majority of a layout and is also
+            // the default, so drawing it put an arrow on every square - and that was tolerable only
+            // while the checkbox that turned it back on existed.  With the checkbox gone, "runs both
+            // ways" became the one state of four that looked like nothing at all: a square cycled from
+            // one-way, to the other way, to closed, to BLANK, and there was no way to tell the blank
+            // apart from a square nobody had touched.
+            //
+            // A run that is open both ways is a decision like any other, and the run marker below
+            // already keeps a bare layout from being a field of arrows.
+            marks.addAll(session.directionMarks(tile));
 
             // ...but a bare layout cannot answer "does this sensor reach that one, and which way", so
             // each run of track between two sensors carries one arrow in the middle of it.

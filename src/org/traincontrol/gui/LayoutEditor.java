@@ -5543,7 +5543,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         minusButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        TrainControlUI.applyWindowIcon(this);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(750, 650));
         addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {

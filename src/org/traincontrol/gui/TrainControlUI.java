@@ -188,6 +188,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String STATION_LABELS_GREY = "StationLabelsGrey";
 
     /**
+     * Whether the ordinary track diagram draws the one-way arrows (FR-037).
+     *
+     * Adam, 2026-08-27: "option to show RESTRICTION arrows in track diagram view mode - add this to the
+     * layout preferences jmenu."
+     *
+     * OFF by default, which is the answer `staticAnnotationFor` gave for everybody until now: the
+     * diagram tab is where trains are watched, and a page of arrows over a railway nobody is
+     * configuring was the reason directions were kept to the editor in the first place. This makes it
+     * available to somebody who wants it rather than making it the default for everybody.
+     */
+    public static final String DIAGRAM_RESTRICTION_ARROWS = "DiagramRestrictionArrows";
+
+    /**
      * How many locomotive mapping pages this installation has - see numLocMappings.
      *
      * Per FOLDER, like every other preference that describes one: the pages it counts live in that
@@ -373,6 +386,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The Interface menu's switch for grey station captions (FR-031).  Built by hand - see where.
      */
     private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
+
+    /** FR-037: whether the ordinary diagram draws one-way arrows. */
+    private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -838,7 +854,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         buildPathPreferenceMenu();
-        buildShowInactiveLabelsMenu();
+        buildDiagramDrawingMenu();
         buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
@@ -868,26 +884,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The station-caption colour, and the menu item that sets it (FR-031).
         //
-        // Built here rather than in the form: the form is generated, and a hand-written item in a
-        // generated block is a change the next round trip through the designer would silently drop.
-        this.greyStationLabelsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
-
-        this.greyStationLabelsMenuItem.setToolTipText(
-            I18n.t("ui.main.toolbar.tooltip.greyStationLabels"));
-
-        this.greyStationLabelsMenuItem.setSelected(prefs.getBoolean(STATION_LABELS_GREY, false));
-
-        this.greyStationLabelsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(STATION_LABELS_GREY, this.greyStationLabelsMenuItem.isSelected());
-
-            // The grid, not a repaint: a caption's colour is chosen when it is built, in the same
-            // breath as its text, so nothing changes on screen until the diagram is built again.
-            repaintLayout();
-        });
-
-        this.layoutMenuItem.add(this.greyStationLabelsMenuItem);
  
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
@@ -1616,6 +1612,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.buttonMapping.put(KeyEvent.VK_Z, ZButton);
     }
         
+    /**
+     * Whether the ordinary track diagram should draw one-way arrows (FR-037).
+     *
+     * Asked at the moment a square is described rather than read once into a field, exactly as
+     * `stationLabelsAreGrey` is: a preference that needs the application restarted is not what a tick
+     * box in a menu means.
+     *
+     * This answers only the PREFERENCE. Whether there is an autonomy setup to describe at all is
+     * decided by `refreshDiagramAnnotations`, which clears every annotation and returns when autonomy
+     * is not showing, when there is no session or graph, or when no configuration is loaded - so a
+     * railway being driven by hand shows no restrictions however this is set.
+     *
+     * @return whether the option is on
+     */
+    public static boolean diagramShowsRestrictionArrows()
+    {
+        return getPrefs().getBoolean(DIAGRAM_RESTRICTION_ARROWS, false);
+    }
+
     /**
      * Whether station captions should be light grey rather than the theme blue (FR-031).
      *
@@ -7330,38 +7345,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.ImageLoader;
     }
 
-    /**
-     * "Show Inactive Labels" on the Autonomy menu.
-     *
-     * Built here rather than in the form, for the reason buildPathPreferenceMenu gives beside it: the
-     * generated block belongs to the GUI builder and hand edits to it do not survive the next time
-     * somebody opens the form.
-     *
-     * On by default. A caption vanishing is a worse surprise than a crowded diagram, and somebody who
-     * has not asked for this should see the railway as they drew it.
-     */
-    private void buildShowInactiveLabelsMenu()
-    {
-        if (autonomyToolbarMenu == null) return;
-
-        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
-            I18n.t("autolayout.ui.menuShowInactiveLabels"),
-            prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
-
-        show.setToolTipText(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels"));
-
-        show.addActionListener(event ->
-        {
-            prefs.putBoolean(SHOW_INACTIVE_LABELS_PREF, show.isSelected());
-
-            // Applied to what is already drawn, not left for the next rebuild.  The grid rebuilds for
-            // a dozen reasons and none of them is this one, so without this the setting appeared to do
-            // nothing until something unrelated happened to redraw the diagram.
-            refreshCaptionVisibility();
-        });
-
-        autonomyToolbarMenu.add(show);
-    }
 
     /**
      * Re-applies the caption rule to every label the diagram currently holds.
@@ -7536,6 +7519,104 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             syncInFlight.set(false);
         }
+    }
+
+    /**
+     * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram.
+     *
+     * Adam, 2026-08-27: "move 'Grey Station Labels' into the Autonomy Preferences menu subsection,
+     * group with the new one and with Show Inactive Labels, and add a divider above."
+     *
+     * They belong together because they answer one question, and two of them were in different menus.
+     * Grey Station Labels sat under Layout, which is where the DIAGRAM is configured - but the colour
+     * of a station caption is not a fact about the diagram, it is a fact about what autonomy puts on
+     * top of one.
+     *
+     * One method rather than three, so the divider and the items it introduces cannot drift apart, and
+     * so the order of the group is written here rather than being whatever order three unrelated calls
+     * happened to run in.
+     *
+     * NONE OF THEM NEEDS A SETUP TO BE LOADED. `repaintLayout` rebuilds a diagram that exists either
+     * way; `refreshCaptionVisibility` walks the captions currently held, of which there are none; and
+     * the arrows go through `showStaticAutonomyLayer`, which clears the whole layer and returns when
+     * there is no session, no graph or no configuration. Each is handed the state it should act on
+     * rather than an assumption that autonomy is there.
+     */
+    private void buildDiagramDrawingMenu()
+    {
+        if (autonomyToolbarMenu == null) return;
+
+        // The divider Adam asked for, above the group rather than inside it.
+        autonomyToolbarMenu.addSeparator();
+
+        // Built here rather than in the form: the form is generated, and a hand-written item in a
+        // generated block is a change the next round trip through the designer would silently drop.
+        //
+        // On by default. A caption vanishing is a worse surprise than a crowded diagram, and somebody
+        // who has not asked for this should see the railway as they drew it.
+        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
+            I18n.t("autolayout.ui.menuShowInactiveLabels"),
+            prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
+
+        show.setToolTipText(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels"));
+
+        show.addActionListener(event ->
+        {
+            prefs.putBoolean(SHOW_INACTIVE_LABELS_PREF, show.isSelected());
+
+            // Applied to what is already drawn, not left for the next rebuild.  The grid rebuilds for
+            // a dozen reasons and none of them is this one, so without this the setting appeared to do
+            // nothing until something unrelated happened to redraw the diagram.
+            refreshCaptionVisibility();
+        });
+
+        autonomyToolbarMenu.add(show);
+
+        this.greyStationLabelsMenuItem =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
+
+        this.greyStationLabelsMenuItem.setToolTipText(
+            I18n.t("ui.main.toolbar.tooltip.greyStationLabels"));
+
+        this.greyStationLabelsMenuItem.setSelected(prefs.getBoolean(STATION_LABELS_GREY, false));
+
+        this.greyStationLabelsMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(STATION_LABELS_GREY, this.greyStationLabelsMenuItem.isSelected());
+
+            // The grid, not a repaint: a caption's colour is chosen when it is built, in the same
+            // breath as its text, so nothing changes on screen until the diagram is built again.
+            repaintLayout();
+        });
+
+        autonomyToolbarMenu.add(this.greyStationLabelsMenuItem);
+
+        this.restrictionArrowsMenuItem =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
+
+        this.restrictionArrowsMenuItem.setToolTipText(
+            I18n.t("ui.main.toolbar.tooltip.restrictionArrows"));
+
+        this.restrictionArrowsMenuItem.setSelected(
+            prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, false));
+
+        this.restrictionArrowsMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(DIAGRAM_RESTRICTION_ARROWS,
+                this.restrictionArrowsMenuItem.isSelected());
+
+            // The ANNOTATION layer, not the grid: an arrow is drawn over a tile that is already built.
+            //
+            // Handed the OVERLAY'S OWN STATE rather than true, which is what makes this safe with no
+            // setup loaded. showStaticAutonomyLayer clears the layer and returns when there is no
+            // session, no graph or no active configuration - and asking it to show nothing, because
+            // the overlay is off or has not been built yet, lands in exactly the same place. The
+            // expression is the one the autonomy refresh uses for the same reason.
+            showStaticAutonomyLayer(
+                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
+        });
+
+        autonomyToolbarMenu.add(this.restrictionArrowsMenuItem);
     }
 
     /**
@@ -8715,7 +8796,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
-        applyWindowIcon(this);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(1110, 619));
         setResizable(false);
         setSize(new java.awt.Dimension(1110, 619));

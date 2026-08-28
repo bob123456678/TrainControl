@@ -278,6 +278,66 @@ public class testStationLabelDrag
             + "diagram");
     }
 
+    /**
+     * A label cannot be dropped on the grid's spacers, which are not squares.
+     *
+     * Found by a reviewer. The grid ends in a dummy row and a dummy column that stop long labels
+     * misaligning it, and they are LayoutLabels with real bounds like every tile - so the drop
+     * accepted them. Worse, the mark showed GREEN first: a spacer carries no component, and a square
+     * with nothing on it may legitimately hold a caption. The label was then stored against a square
+     * the drawing loop skips before it ever looks for one, so it simply vanished, and the setup kept an
+     * entry nothing could draw.
+     *
+     * The strip along the bottom runs the whole width of the diagram, directly below the last row of
+     * track - exactly where somebody would drop a label for a station on that row.
+     *
+     * Read rather than run: reaching `tileUnder` needs a built grid, a window and a drag in progress.
+     * What can silently go wrong is the test being deleted, which is visible.
+     *
+     * MUTATION: removing the spacer check from tileUnder fails this.
+     */
+    @Test
+    public void testTheGridsSpacersAreNotDropTargets() throws Exception
+    {
+        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
+
+        String under = bodyOf(grid, "private static LayoutLabel tileUnder(");
+
+        assertFalse(under.isEmpty(), "cannot find tileUnder - has it been renamed?");
+
+        assertTrue(under.contains("isSpacer()"),
+            "the search for the tile under the pointer no longer skips the grid's spacers, so a "
+            + "station label dropped on the strip along the bottom or the right edge is accepted - "
+            + "the drop mark even shows green - and then stored against a square the diagram never "
+            + "draws, where it vanishes");
+    }
+
+    /**
+     * A method, from its declaration to its closing brace.
+     */
+    private String bodyOf(String source, String declaration)
+    {
+        int at = source.indexOf(declaration);
+
+        if (at < 0) return "";
+
+        int open = source.indexOf('{', at + declaration.length());
+
+        if (open < 0) return "";
+
+        int depth = 0;
+
+        for (int i = open; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
+        }
+
+        return "";
+    }
+
     private String read(String path) throws Exception
     {
         return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),

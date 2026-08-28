@@ -59,24 +59,6 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### FR-036 - 2026-08-27 - layout/autonomy editor page scrolling
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 23:26  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-make the +/- keys scroll through pages in the layout/autonomy editor.  just have them call existing components to reuse the same guards/warnings.
-
-### FR-037 - 2026-08-27 - option to show RESTRICTION arrows in track diagram view mode
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 23:27  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-option to show RESTRICTION arrows in track diagram view mode - add this to the layout preferences jmenu
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -89,6 +71,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-27 | FR-036 | feature request | Plus and minus walk through the pages, through the switch that already existed | fixed unvalidated | - |
+| 2026-08-27 | FR-037 | feature request | Travel restrictions can be drawn on the ordinary track diagram, on by default | fixed unvalidated | - |
 | 2026-08-27 | OB-122 | bug | Not a defect: the warning was right, and the track diagram was the thing at fault | fixed validated | - |
 | 2026-08-27 | OB-123 | bug | A reversing point is judged by where a train could go, not by what arrives | fixed unvalidated | - |
 | 2026-08-27 | OB-124 | bug | Four windows had no application icon, and the rule was written seven times | fixed unvalidated | - |

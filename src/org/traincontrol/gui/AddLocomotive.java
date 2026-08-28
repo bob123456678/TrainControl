@@ -62,7 +62,7 @@ public class AddLocomotive extends javax.swing.JFrame
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/traincontrol/resources/messages"); // NOI18N
         setTitle(bundle.getString("loc.ui.addLocomotive")); // NOI18N
         setBackground(new java.awt.Color(238, 238, 238));
-        TrainControlUI.applyWindowIcon(this);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setResizable(false);
 
         jPanel2.setBackground(new java.awt.Color(245, 245, 245));

@@ -167,7 +167,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         jScrollPane1 = new javax.swing.JScrollPane();
         ExtLayoutPanel = new javax.swing.JPanel();
 
-        TrainControlUI.applyWindowIcon(this);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMinimumSize(new java.awt.Dimension(150, 150));
         addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {

@@ -183,7 +183,7 @@ public class UsageHistogram extends javax.swing.JFrame
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Cumulative Locomotive Runtime - Past 30 Days");
         setBackground(new java.awt.Color(246, 246, 246));
-        TrainControlUI.applyWindowIcon(this);
+        setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
         setMaximumSize(new java.awt.Dimension(960, 332));
         setMinimumSize(new java.awt.Dimension(960, 332));
         setPreferredSize(new java.awt.Dimension(960, 332));

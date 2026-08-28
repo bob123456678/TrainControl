@@ -62,7 +62,16 @@ public class testEveryWindowWearsTheIcon
 
             if (excused(source.getName())) continue;
 
-            if (!body.contains("applyWindowIcon")) naked.add(source.getName());
+            // The FORM's own code counts as covered.
+            //
+            // A window laid out in the GUI builder carries its icon as a property of the form, and the
+            // initComponents block that sets it is GENERATED - regenerated whenever anybody opens the
+            // form in the designer. Editing that block to call the helper is how this test was first
+            // satisfied, and it was wrong: the designer would put it back, and for the helper's own
+            // file nothing would ever notice.
+            if (generatedCode(body).contains("setIconImage")) continue;
+
+            if (!withoutGeneratedCode(body).contains("applyWindowIcon")) naked.add(source.getName());
         }
 
         assertTrue(naked.isEmpty(),
@@ -90,10 +99,15 @@ public class testEveryWindowWearsTheIcon
         {
             String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
 
-            if (!body.contains("locicon.png")) continue;
+            // Hand-written code only.  A window laid out in the designer carries the icon as a form
+            // property, and the block that sets it is regenerated from the .form - so naming the
+            // resource there is the designer's doing rather than a copy somebody made.
+            String written = withoutGeneratedCode(body);
+
+            if (!written.contains("locicon.png")) continue;
 
             // The one place that is allowed to name it is the helper's own file.
-            if (body.contains("public static void applyWindowIcon(")) continue;
+            if (written.contains("public static void applyWindowIcon(")) continue;
 
             spelling.add(source.getName());
         }
@@ -102,6 +116,95 @@ public class testEveryWindowWearsTheIcon
             "these files load the window icon for themselves rather than calling applyWindowIcon: "
             + spelling + ". That is how the rule came to be written seven times and missed four, "
             + "which is OB-124");
+    }
+
+    /**
+     * A dialog built inline is a window too, and is asked about ONE AT A TIME.
+     *
+     * The first version asked per FILE, which is not the same question: one `applyWindowIcon` anywhere
+     * in TrainControlUI.java excused every window built in it. Two of the four windows OB-124 was
+     * about are inline dialogs in files that already call the helper elsewhere - so the check that
+     * found them would not have found the next one.
+     *
+     * MUTATION: adding a `new JDialog(...)` with no icon call after it fails this.
+     */
+    @Test
+    public void testEveryInlineDialogAsksForItself() throws Exception
+    {
+        List<String> naked = new ArrayList<>();
+
+        for (File source : javaUnder(new File("src")))
+        {
+            String body = withoutGeneratedCode(
+                new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+
+            for (String made : new String[] {"new JDialog(", "new javax.swing.JDialog("})
+            {
+                for (int at = body.indexOf(made); at >= 0; at = body.indexOf(made, at + 1))
+                {
+                    // Within reach of the construction, which is where a window is dressed.
+                    String after = body.substring(at, Math.min(body.length(), at + REACH));
+
+                    if (!after.contains("applyWindowIcon")) naked.add(source.getName());
+                }
+            }
+        }
+
+        assertTrue(naked.isEmpty(),
+            "these dialogs are built without asking for the application's icon, so they open with "
+            + "Java's: " + naked + ". A dialog does not reliably inherit its owner's icon, which is "
+            + "what made OB-124 invisible from the code");
+    }
+
+    /** How far after a dialog is constructed its icon call may sit. */
+    private static final int REACH = 900;
+
+    /**
+     * Everything between GEN-BEGIN and GEN-END, which belongs to the GUI builder and not to us.
+     */
+    private String generatedCode(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (int at = body.indexOf("GEN-BEGIN"); at >= 0; at = body.indexOf("GEN-BEGIN", at + 1))
+        {
+            int end = body.indexOf("GEN-END", at);
+
+            out.append(body, at, end < 0 ? body.length() : end);
+
+            if (end < 0) break;
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * The file with its generated blocks removed, so a check reads what a person actually wrote.
+     */
+    private String withoutGeneratedCode(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        int from = 0;
+
+        while (true)
+        {
+            int at = body.indexOf("GEN-BEGIN", from);
+
+            if (at < 0) break;
+
+            out.append(body, from, at);
+
+            int end = body.indexOf("GEN-END", at);
+
+            if (end < 0) return out.toString();
+
+            from = end;
+        }
+
+        out.append(body.substring(from));
+
+        return out.toString();
     }
 
     private boolean isAWindow(String body)

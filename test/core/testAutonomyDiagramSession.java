@@ -872,8 +872,210 @@ public class testAutonomyDiagramSession
 
         assertFalse(reported.contains("LowerBack"),
             "a square with two ways in and one way out was called a place where every train turns "
-            + "round anyway. The train that arrived from the EAST can carry on west; only the one "
-            + "that came from the west is forced to turn. Reported: " + reported);
+            + "round anyway. The western half runs one way EASTWARD, so the train that arrived from "
+            + "the west can carry on east; only the one that came from the east is forced to turn - "
+            + "it cannot go back west. Reported: " + reported);
+    }
+
+    /**
+     * The findings walk the railway a TRAIN can use, red arrows included (OB-120).
+     *
+     * Found by a reviewer, and it is this project's most familiar defect wearing my own handwriting.
+     * When OB-120 taught the graph about barred arrivals I gave `reachableTiles` an overload that takes
+     * them, wrote a comment on it saying it existed "so the two walks cannot disagree", tested the
+     * reducer - and changed neither caller. Both went on asking the barred-less form. The test I wrote
+     * even says in its javadoc that teaching findPath and not reachableTiles "would have broken that
+     * quietly", which is exactly what shipped.
+     *
+     * What it cost: bars only ever REMOVE runs, so the findings saw more railway than a train can use.
+     * A station reachable only by a side that refuses arrivals counted as reachable, and the warning
+     * that would have said so stayed silent - while the path test on the same screen refused that very
+     * run. OB-122 is the ticket where Adam confirmed these warnings tell the truth and went and fixed
+     * his diagram on the strength of one.
+     *
+     * The two halves are asserted together on purpose: without the bar the station is fine, with it
+     * the station is stranded. Either alone could pass for the wrong reason.
+     *
+     * MUTATION: dropping `barred` at either reachableTiles call site fails this.
+     */
+    @Test
+    public void testTheFindingsObeyTheRedArrows() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("OB120", null);
+        session.getStore().setActiveConfiguration("OB120");
+
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+
+        session.setStation(east, true);
+        session.setPointName(east, "EastEnd");
+
+        session.rebuild();
+
+        // A railway where the two stations can reach each other is the control: without it, a finding
+        // that fires for some unrelated reason would look like the bar working.
+        assertFalse(subjectsOf(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING)
+            .contains("WestEnd"),
+            "precondition: the west end already reaches nothing before anything was barred, so this "
+            + "fixture cannot show what barring does");
+
+        // Now shut the only way into the east end.
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
+            session.arrivalSides(east);
+
+        assertFalse(ways.isEmpty(), "precondition: the east end has no arrival sides to bar");
+
+        session.setBarredArrivals(east, new java.util.LinkedHashSet<>(ways));
+
+        session.rebuild();
+
+        java.util.List<String> stranded =
+            subjectsOf(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING);
+
+        java.util.List<String> terminus =
+            subjectsOf(org.traincontrol.automationui.AutonomyChecks.TERMINUS_STRANDED);
+
+        assertTrue(stranded.contains("WestEnd") || terminus.contains("WestEnd"),
+            "the west end can now reach no station a train may actually enter - every way into the "
+            + "east end is barred - and nothing said so. The findings are walking runs the railway "
+            + "refuses, which is the half of OB-120 that never reached its call sites. Reported: "
+            + stranded + " / " + terminus);
+    }
+
+    /**
+     * BOTH walks in the findings honour the red arrows, not just the one a fixture happens to drive.
+     *
+     * The test above proves it for the station walk, by running a railway. It does not reach
+     * `checkReversingGoesSomewhere`, which walks the same graph for a different question - and the
+     * mutation run showed that: dropping `barred` from that second call site left the suite green.
+     *
+     * Which is the very shape this whole ticket is about. OB-120 added an overload, tested the
+     * overload, and left both callers asking the old one. Fixing one caller and testing only that one
+     * would have left the other exactly where it was.
+     *
+     * Read rather than run, and that is a real limit: building a reversing point whose reachable
+     * stations depend on a bar needs a fixture this class does not have. What this catches is a call
+     * site quietly losing its bars, which is how the defect arrived both times.
+     *
+     * MUTATION: dropping `barred` from either reachableTiles call fails this.
+     */
+    @Test
+    public void testBothFindingWalksAreGivenTheRedArrows() throws Exception
+    {
+        String checks = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automationui/AutonomyChecks.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int asked = 0;
+        int withBars = 0;
+
+        for (int at = checks.indexOf("reachableTiles("); at >= 0;
+            at = checks.indexOf("reachableTiles(", at + 1))
+        {
+            asked++;
+
+            // To the end of the STATEMENT, not to the first closing bracket.
+            //
+            // `reachableTiles(station.getTile(), ...)` closes an inner bracket first, so stopping
+            // there read a perfectly correct call as missing its bars - this check failed on code that
+            // was right, which is the other way for a test to be wrong and just as expensive.
+            int end = checks.indexOf(';', at);
+
+            if (end > at && checks.substring(at, end).contains("barred")) withBars++;
+        }
+
+        assertTrue(asked > 0, "nothing in the findings walks the graph any more");
+
+        assertEquals(withBars, asked,
+            "only " + withBars + " of the " + asked + " reachability walks in the findings are given "
+            + "the barred arrivals. Bars only ever REMOVE runs, so a walk without them sees more "
+            + "railway than a train can use - and the warning that a station reaches nothing stays "
+            + "silent about a station reachable only through a side that refuses arrivals");
+    }
+
+    /**
+     * A restricted piece of TRACK gets its arrow on the ordinary diagram, not only a sensor (FR-037).
+     *
+     * Adam: "the arrows are not showing up for me when I toggle the option."  They were - on the few
+     * squares that happen to be Points, which on a real railway is not where a restriction lives. A
+     * one-way run is a property of track: straights, curves, the squares either side of a switch, and
+     * almost none of those carry a sensor.
+     *
+     * **This is the test that was missing rather than the one that failed.** The four I wrote for
+     * FR-037 checked the preference, the guards, the menu grouping and the refresh call. Every one was
+     * true, and not one of them could notice that the arrows never reached any track. Asking "does a
+     * restricted straight get a mark" would have failed the moment it was written.
+     *
+     * The option is set through the preference the code reads, and put back afterwards, so this cannot
+     * leave the running application drawing arrows nobody asked for.
+     *
+     * MUTATION: computing the marks after the Point test - which is what shipped - fails this.
+     */
+    @Test
+    public void testARestrictedStraightGetsAnArrowOnTheDiagram() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("FR037", null);
+        session.getStore().setActiveConfiguration("FR037");
+
+        // A STRAIGHT, deliberately: the feedbacks are at 1, 3 and 5, so this square is track and
+        // nothing else - exactly the kind the option appeared not to work on.
+        TileKey straight = new TileKey("main", 2, 1);
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        assertFalse(session.getReducer().getPoints().containsKey(straight),
+            "precondition: the square being tested is a Point, so it would have drawn an arrow even "
+            + "with the defect this test is about");
+
+        assertTrue(session.setOneWayRun(west, east) > 0,
+            "precondition: the run could not be made one-way, so there is no restriction to draw");
+
+        session.rebuild();
+
+        boolean was = org.traincontrol.gui.TrainControlUI.getPrefs().getBoolean(
+            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+
+        try
+        {
+            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+
+            org.traincontrol.automationui.TileAnnotation off = session.staticAnnotationFor(straight);
+
+            assertTrue(off == null || off.isBlank(),
+                "a plain piece of track is described on the diagram with the option OFF, so the "
+                + "default has stopped being a bare diagram");
+
+            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+
+            org.traincontrol.automationui.TileAnnotation on = session.staticAnnotationFor(straight);
+
+            assertNotNull(on,
+                "a one-way straight is described as nothing at all with the option ON - which is what "
+                + "Adam saw: the arrows were added after the test that returns null for anything that "
+                + "is not a sensor, and a restriction is a fact about track");
+
+            assertFalse(on.isBlank(),
+                "the annotation for a one-way straight carries nothing to draw, so the square stays "
+                + "as bare as it was with the option off");
+        }
+        finally
+        {
+            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, was);
+        }
     }
 
     /**

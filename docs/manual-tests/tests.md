@@ -10425,6 +10425,10 @@ You can't "un crop" again later- it only shows the cropped image post crop.  The
 
 *Run against commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-28.**
+
+Diagnosed 2026-08-28, not yet fixed. Adam's icon file was inspected directly: the crop in tc_loc_icons has no .source note beside it, and FR-032 landed at 02:15 on 2026-08-27 - so the ORIGINAL crop was made before the feature existed and never got one. Re-cropping a note-less crop deliberately writes no note (see the comment in cropLocIcon: a note naming the crop itself would be believed forever and is worse than none), so every subsequent re-crop produces another note-less crop and the icon can never regain its original. That is why panning out is impossible for this icon and would be for any icon cropped before 2026-08-27. THE DEFECT IS THAT IT FAILS SILENTLY: the code logs infoRecroppedFromCrop rather than infoRecroppedFromOriginal, but a log line is not something anybody sees, so asking to pan out simply does the only thing available and says nothing. Proposed fix, not yet built: when there is no original to go back to, say so and offer to choose one - the right-click path already picks a source file, so the pieces exist. Adam said 'MT-203 looks good' on 2026-08-28, which I read as accepting this diagnosis rather than as the feature working; the verdict is left at Does not work until he says otherwise.
+
 <a id="mt-201"></a>
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard
