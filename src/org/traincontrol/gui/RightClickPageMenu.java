@@ -101,8 +101,21 @@ public class RightClickPageMenu extends MouseAdapter
             menuItem = new JMenuItem(
                 I18n.t("page.ui.menuAddPage")
             );
-            menuItem.addActionListener(event -> ui.addLocMappingPage());
-            menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
+            // Greyed at the ceiling, with the reason on it - the same shape Delete uses below, and for
+            // the reason written there: an item that appears and disappears reads as an interface that
+            // cannot make up its mind; one that is greyed with an explanation says what to do.
+            if (ui.canAddLocMappingPage())
+            {
+                menuItem.addActionListener(event -> ui.addLocMappingPage());
+                menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
+            }
+            else
+            {
+                menuItem.setEnabled(false);
+                menuItem.setToolTipText(
+                    I18n.f("page.ui.errorTooManyPages", TrainControlUI.MAX_LOC_MAPPINGS));
+            }
+
             add(menuItem);
 
             // Offered and refused rather than hidden, with the reason on it.  An item that appears

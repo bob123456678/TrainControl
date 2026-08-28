@@ -335,6 +335,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int MIN_LOC_MAPPINGS = 2;
 
     /**
+     * The most locomotive mapping pages that may be ADDED.
+     *
+     * Adam, 2026-08-27: "add a cap of 50 pages for now (not 99)."  There was no ceiling at all before
+     * this - `addLocMappingPage` incremented and nothing looked - which came up when the page number
+     * became a badge and the badge's own comment claimed ten was the largest page there could be.
+     *
+     * Fifty rather than the ninety-nine the badge can still draw: the badge is the constraint that can
+     * be measured, not the one that matters. A person with fifty pages of keyboard mappings has
+     * already lost track of them, and the number is easy to raise if that turns out to be somebody.
+     *
+     * Not applied when LOADING, which is the important half - see `addLocMappingPage`.
+     */
+    public static final int MAX_LOC_MAPPINGS = 50;
+
+    /**
      * How many pages THIS installation has.
      *
      * Was a constant, and is now a preference: a user with four locomotives does not want ten pages
@@ -1315,14 +1330,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether another page may be added (Adam, 2026-08-27).
+     *
+     * Public and asked by the menu that offers the action, which is the shape `canDeleteCurrentPage`
+     * settled on: the item is greyed with the reason on it rather than disappearing, because an item
+     * that comes and goes reads as an interface that cannot make up its mind.
+     *
+     * @return whether the ceiling has room
+     */
+    public boolean canAddLocMappingPage()
+    {
+        return this.numLocMappings < MAX_LOC_MAPPINGS;
+    }
+
+    /**
      * Adds a page at the end and goes to it.
      *
      * At the end rather than after the current one, because the pages are reached by NUMBER - the
      * digit keys switch between them - and inserting in the middle renumbers every page after it.
      * Somebody who wanted page 4 would find their page 4 had become page 5.
+     *
+     * Capped at MAX_LOC_MAPPINGS, and capped HERE ONLY. `setViewListener` grows the count past it
+     * without asking, on purpose: a saved state can hold more pages than the preference knows about,
+     * and the comment beside that loop gives the reason - the alternative to growing is silently
+     * dropping every mapping past the last page the preference admits to.
+     *
+     * So the two look inconsistent and must stay that way. Clamping on load would throw away the
+     * mappings on every page past the fiftieth: the same data loss `canDeleteCurrentPage` refuses to
+     * allow one page at a time, done wholesale and without being asked. Nothing is lost by refusing
+     * to ADD, which is why that is the only side that refuses.
      */
     public void addLocMappingPage()
     {
+        // Refused HERE as well as greyed in the menu that offers it.
+        //
+        // The menu asks `canAddLocMappingPage` and greys itself, which is where a person meets this -
+        // but this method is public and the greying is one caller's manners, not the rule. A guard
+        // that lives only in the interface is a guard the next caller does not have.
+        if (!canAddLocMappingPage())
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("page.ui.errorTooManyPages", MAX_LOC_MAPPINGS));
+
+            return;
+        }
+
         this.numLocMappings++;
 
         this.locMapping.add(new HashMap<>());
@@ -5743,6 +5795,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The count used to be fixed, so a state could never hold more than it - now it can, and the
         // alternative to growing is silently dropping every mapping past the tenth.  The last entry
         // is the page names rather than a page, hence the -1.
+        //
+        // NOT SUBJECT TO MAX_LOC_MAPPINGS, and this is the half of that cap worth protecting.  Adding
+        // a page stops at fifty (2026-08-27); loading pages that already exist does not stop at all,
+        // because the only way to honour a ceiling here is to drop what is above it.  The two rules
+        // read as an oversight and are not one - see `addLocMappingPage`.
         boolean grew = false;
 
         while (saveStates.size() - 1 > this.numLocMappings)
@@ -20810,12 +20867,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * this size the difference between a ten-point digit and an eight-point one is the difference
      * between reading it and guessing, so the shape gives way instead of the type.
      *
-     * There is NO CAP on the number of pages - `addLocMappingPage` simply increments, and only the
-     * floor of two is enforced - so this cannot assume two digits, which an earlier version of this
-     * comment did on the strength of the default being ten. Checked by rendering: 100 and 999 both fit
-     * and stay legible, the capsule growing to about two thirds of the icon. Past that the digits
-     * would start to crowd, and nothing stops a person getting there; it would be a badge covering a
-     * locomotive rather than anything broken.
+     * **Two digits is the most this has to draw**, and it is a cap rather than an assumption: Adam
+     * asked for a ceiling of fifty pages on 2026-08-27 and `MAX_LOC_MAPPINGS` enforces it. An earlier
+     * version of this comment assumed two digits on the strength of the default being ten, which was
+     * false at the time - the assumption is only safe now because something checks it.
+     *
+     * It is not written to NEED that, though. Checked by rendering before the cap existed: 100 and 999
+     * both fit and stay legible, the capsule growing to about two thirds of the icon. So a state saved
+     * before today - which is not capped, see `addLocMappingPage` - still draws its page number.
      *
      * **Centred on the icon**, which is where it ended up after being tried in the corner. It covers
      * part of the locomotive either way - the drawing fills its square - so the choice is only about

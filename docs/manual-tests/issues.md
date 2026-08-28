@@ -59,6 +59,14 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### FR-033 - 2026-08-27 - Cap locomotive mapping pages at 50
+
+**Kind:** feature request  
+**Raised from:** the triage API  
+**Filed:** 2026-08-27  
+
+Adam, 2026-08-27: "add a cap of 50 pages for now (not 99) and associated error message if exceeded." There was no ceiling before this: addLocMappingPage simply incremented. Implemented as MAX_LOC_MAPPINGS = 50 in TrainControlUI, with canAddLocMappingPage() asked by the page right-click menu (Add New Page greys at the ceiling, with the limit in its tooltip) and enforced again inside addLocMappingPage itself, which refuses with page.ui.errorTooManyPages in all eight languages. LOADING IS DELIBERATELY NOT CAPPED: setViewListener grows the page count to fit a saved state, and clamping there would silently drop the mappings on every page above the fiftieth. Covered by ui.testLocMappingPages (4 tests, 5 mutations verified biting).
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
