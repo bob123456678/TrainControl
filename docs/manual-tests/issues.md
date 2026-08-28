@@ -59,32 +59,23 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-122 - 2026-08-27 - autonomy warning error
+### FR-036 - 2026-08-27 - layout/autonomy editor page scrolling
 
-**Kind:** bug  
+**Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 21:55  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-27 23:26  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-"No train can leave ParkingTrack10 for any other station.  Check the directions on the track leading away from it." - this warning does not consider what happens when the train follows the link.  Make that be part of the check.
+make the +/- keys scroll through pages in the layout/autonomy editor.  just have them call existing components to reuse the same guards/warnings.
 
-### OB-123 - 2026-08-27 - autonomy warning error 2
+### FR-037 - 2026-08-27 - option to show RESTRICTION arrows in track diagram view mode
 
-**Kind:** bug  
+**Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 22:04  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-27 23:27  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-this is wrong: the train can continue or reverse.  It should test for two outgoing paths, not two incoming. "LowerBack is set to "trains may change direction here", but only one line runs into it - so there is nothing to carry on to and every train turns round anyway.  "Must" says the same thing plainly."
-
-### OB-124 - 2026-08-27 - crop window doesn't have traincontrol icon
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 22:15  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the popup window for cropping images doesn't have the traincontrol icon in the title bar.  add it back, and check for other popups with the same issue.
+option to show RESTRICTION arrows in track diagram view mode - add this to the layout preferences jmenu
 
 ## What has been picked up
 
@@ -98,6 +89,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-27 | OB-122 | bug | Not a defect: the warning was right, and the track diagram was the thing at fault | fixed validated | - |
+| 2026-08-27 | OB-123 | bug | A reversing point is judged by where a train could go, not by what arrives | fixed unvalidated | - |
+| 2026-08-27 | OB-124 | bug | Four windows had no application icon, and the rule was written seven times | fixed unvalidated | - |
 | 2026-08-27 | FR-033 | feature request | Fifty locomotive mapping pages, refused in the method and greyed in the menu | fixed unvalidated | - |
 | 2026-08-27 | OB-121 | bug | The + row in the conditions list was handed the previous cell’s grey by a recycled renderer | fixed unvalidated | - |
 | 2026-08-27 | FR-034 | feature request | The label chooser opens on the nearest station, and the last-clicked one is spent after one use | fixed unvalidated | - |

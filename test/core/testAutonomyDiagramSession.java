@@ -748,6 +748,149 @@ public class testAutonomyDiagramSession
             "a square with neither a name nor a sensor has only where it is");
     }
 
+    /**
+     * "May change direction here" is judged by where a train can GO, not by what arrives (OB-123).
+     *
+     * Adam, 2026-08-27: "this is wrong: the train can continue or reverse.  It should test for two
+     * outgoing paths, not two incoming."
+     *
+     * The check counted ARRIVAL sides and called the setting pointless below two. Carrying on is a
+     * DEPARTURE, so a square a train can only enter from one side but leave by either offers exactly
+     * the choice the setting describes, and was being told the choice did not exist.
+     *
+     * That shape needs a one-way run to build - a plain feedback tile has two symmetric sides - which
+     * is also how it arises on a real railway: directions are set along a stretch of track, and the
+     * square at the end of that stretch can then be entered from one side while still being left by
+     * either.
+     *
+     * BOTH halves in one test, because `hasFinding` asks by message key and not by square: a check
+     * that fired about some other square would look exactly like the one under test passing. So the
+     * far end of the line is set reversing too, as a control - it is a genuine dead end and must still
+     * be reported - and the subjects are read to say which is which.
+     *
+     * MUTATION: putting `arrivalSides(tile).size() < 2` back reports the middle square and fails.
+     */
+    @Test
+    public void testMayTurnIsJudgedByWhereATrainCanGo() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("OB123", null);
+        session.getStore().setActiveConfiguration("OB123");
+
+        TileKey middle = new TileKey("main", 3, 1);
+        TileKey east = new TileKey("main", 5, 1);
+        TileKey west = new TileKey("main", 1, 1);
+
+        session.setPointName(middle, "LowerBack");
+        session.setPointName(west, "Stub");
+
+        session.setPointFlag(middle, AutonomyBuilder.CAN_REVERSE, true);
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
+
+        session.rebuild();
+
+        // Precondition: with track running both ways the middle is not the case under test at all.
+        assertEquals(session.arrivalSides(middle).size(), 2,
+            "precondition: the middle square does not have two arrivals to begin with, so making it "
+            + "one-way below proves nothing");
+
+        // Trains may run only eastward over the second half.
+        assertTrue(session.setOneWayRun(middle, east) > 0,
+            "precondition: the run east could not be made one-way, so the shape this test is about "
+            + "was never built");
+
+        session.rebuild();
+
+        assertEquals(session.arrivalSides(middle).size(), 1,
+            "precondition: the middle square still has two arrival sides after the run was made "
+            + "one-way, so this is not the one-in-two-out case Adam described");
+
+        java.util.List<String> reported = subjectsOf(
+            org.traincontrol.automationui.AutonomyChecks.MAY_TURN_ON_DEAD_END);
+
+        // THE CASE. One way in, and still somewhere to carry on to.
+        assertFalse(reported.contains("LowerBack"),
+            "the square a train can enter from one side and leave by either was reported as a place "
+            + "where \"every train turns round anyway\" - it can carry on east, which is the whole "
+            + "of OB-123. Reported: " + reported);
+
+        // THE CONTROL, which is what stops this passing by the check having been switched off.
+        assertTrue(reported.contains("Stub"),
+            "the end of the line - one way in, and the only way out is back the way you came - is no "
+            + "longer reported, so the check has stopped saying anything rather than saying the right "
+            + "thing. Reported: " + reported);
+    }
+
+    /**
+     * Two ways in and one way out is still a real choice, for the train that came the other way.
+     *
+     * The case that separates the rule from the shortcut. Adam put it as "test for two outgoing
+     * paths", and counting departures gets almost everything right - but a square with two arrivals
+     * and ONE departure forces a turn on the train that arrived by the departure side and offers a
+     * genuine choice to the one that did not. So "may change direction here" means what it says there,
+     * and a departure count would call it pointless.
+     *
+     * Written because the mutation run found it: with only the one-in-two-out fixture, replacing the
+     * per-arrival rule with `departures.size() < 2` passed. The refinement I had argued for in the
+     * comments was not actually being tested by anything.
+     *
+     * MUTATION: `return departures.size() < 2` in place of the per-arrival answer fails this.
+     */
+    @Test
+    public void testTwoWaysInAndOneOutIsStillAChoice() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("OB123b", null);
+        session.getStore().setActiveConfiguration("OB123b");
+
+        TileKey middle = new TileKey("main", 3, 1);
+        TileKey west = new TileKey("main", 1, 1);
+
+        session.setPointName(middle, "LowerBack");
+
+        session.setPointFlag(middle, AutonomyBuilder.CAN_REVERSE, true);
+
+        // Trains may run only EASTWARD over the western half, so the middle square can be arrived at
+        // from the west but not departed to it.
+        assertTrue(session.setOneWayRun(west, middle) > 0,
+            "precondition: the western run could not be made one-way");
+
+        session.rebuild();
+
+        assertEquals(session.arrivalSides(middle).size(), 2,
+            "precondition: the middle square no longer has two arrivals, so this is not the "
+            + "two-in-one-out case this test is about");
+
+        java.util.List<String> reported = subjectsOf(
+            org.traincontrol.automationui.AutonomyChecks.MAY_TURN_ON_DEAD_END);
+
+        assertFalse(reported.contains("LowerBack"),
+            "a square with two ways in and one way out was called a place where every train turns "
+            + "round anyway. The train that arrived from the EAST can carry on west; only the one "
+            + "that came from the west is forced to turn. Reported: " + reported);
+    }
+
+    /**
+     * The squares a given check named, so a test can tell which one it fired about.
+     */
+    private java.util.List<String> subjectsOf(String messageKey)
+    {
+        java.util.List<String> subjects = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getMessageKey().equals(messageKey)) subjects.add(finding.getSubject());
+        }
+
+        return subjects;
+    }
+
     private boolean hasFinding(String messageKey)
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
