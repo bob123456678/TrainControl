@@ -4105,6 +4105,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Puts the application's icon on a window (OB-124).
+     *
+     * Adam: "the popup window for cropping images doesn't have the traincontrol icon in the title bar.
+     * add it back, and check for other popups with the same issue."  There were four without one.
+     *
+     * The seven windows that DID have it each spelled the same three-part line out for themselves -
+     * resource, toolkit, setIconImage - which is a rule written seven times, and a rule written seven
+     * times is one the eighth window does not get. It is written once here now.
+     *
+     * A dialog does not reliably inherit its owner's icon, which is why the omissions were invisible
+     * from the code and plain on screen.
+     *
+     * Failure is swallowed on purpose. A missing icon is a cosmetic fault and this runs while windows
+     * are being built; throwing here would turn it into a window that does not open.
+     *
+     * @param window the window to mark
+     */
+    public static void applyWindowIcon(java.awt.Window window)
+    {
+        if (window == null) return;
+
+        try
+        {
+            java.net.URL icon = TrainControlUI.class.getResource("resources/locicon.png");
+
+            if (icon != null) window.setIconImage(Toolkit.getDefaultToolkit().getImage(icon));
+        }
+        catch (RuntimeException e)
+        {
+            // Cosmetic.  A window with the wrong icon is better than one that fails to open.
+        }
+    }
+
+    /**
      * What to write on a caption when no train is standing there - the station’s own name.
      *
      * @param station the sensor’s square
@@ -8681,7 +8715,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setAlwaysOnTop(true);
         setBackground(new java.awt.Color(255, 255, 255));
         setFocusable(false);
-        setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
+        applyWindowIcon(this);
         setMinimumSize(new java.awt.Dimension(1110, 619));
         setResizable(false);
         setSize(new java.awt.Dimension(1110, 619));
@@ -20822,6 +20856,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JDialog dialog = new JDialog(sourceWindow, 
                                          I18n.f("loc.ui.dialogEditLocomotiveFunctions", l.getName()), 
                                          Dialog.ModalityType.APPLICATION_MODAL);
+
+            // OB-124.
+            applyWindowIcon(dialog);
             dialog.getContentPane().add(edit);
             dialog.pack();
             dialog.setLocationRelativeTo(sourceWindow);

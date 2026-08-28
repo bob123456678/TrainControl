@@ -4081,6 +4081,9 @@ public class AutonomyEditorPanel extends JPanel
             I18n.t("autosetup.ui.menuPairSignal"),
             java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
+        // OB-124: built here rather than being a class of its own, and just as much a window.
+        TrainControlUI.applyWindowIcon(dialog);
+
         final javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
         final javax.swing.JList<String> list = new javax.swing.JList<>(model);
         final javax.swing.JLabel heading = new javax.swing.JLabel();

@@ -10419,6 +10419,12 @@ And an icon cropped before this feature existed has no note, so it re-crops from
 That is not a failure; it is the honest answer, and it is why the message does not claim the original
 "could not be found" when there was never a record of one.
 
+**Adam, 2026-08-27 (triage).** Does not work.
+
+You can't "un crop" again later- it only shows the cropped image post crop.  The rest works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 <a id="mt-201"></a>
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard

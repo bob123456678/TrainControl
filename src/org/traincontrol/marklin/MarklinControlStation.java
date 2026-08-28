@@ -3577,17 +3577,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             // started. Every other window in the project sets this same icon.
                             //
                             // Quietly, if at all: an icon is decoration, and a missing resource must
-                            // not stop the application asking for an IP address.
+                            // not stop the application asking for an IP address.  That care now lives
+                            // inside applyWindowIcon, which swallows its own failures - so the guard
+                            // and the resource lookup that used to be here are gone (OB-124).
                             try
                             {
-                                java.net.URL icon = org.traincontrol.gui.TrainControlUI.class
-                                    .getResource("resources/locicon.png");
-
-                                if (icon != null)
-                                {
-                                    dialog.setIconImage(
-                                        java.awt.Toolkit.getDefaultToolkit().getImage(icon));
-                                }
+                                org.traincontrol.gui.TrainControlUI.applyWindowIcon(dialog);
                             }
                             catch (RuntimeException noIcon)
                             {

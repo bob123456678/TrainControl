@@ -77,6 +77,15 @@ looked, so I know this is not already here."
 
 this is wrong: the train can continue or reverse.  It should test for two outgoing paths, not two incoming. "LowerBack is set to "trains may change direction here", but only one line runs into it - so there is nothing to carry on to and every train turns round anyway.  "Must" says the same thing plainly."
 
+### OB-124 - 2026-08-27 - crop window doesn't have traincontrol icon
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-27 22:15  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the popup window for cropping images doesn't have the traincontrol icon in the title bar.  add it back, and check for other popups with the same issue.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

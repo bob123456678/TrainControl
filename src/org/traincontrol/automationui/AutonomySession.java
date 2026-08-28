@@ -2733,6 +2733,66 @@ public class AutonomySession
     }
 
     /**
+     * Whether every train arriving at this square is forced to turn round (OB-123).
+     *
+     * The question behind "may change direction here": the setting offers a choice only if a train
+     * that has arrived could instead CARRY ON, and carrying on means leaving by some side other than
+     * the one it came in by.
+     *
+     * True only when that is impossible from every direction. One arrival with somewhere to go is
+     * enough to make the setting mean what it says, and the warning would then be telling the operator
+     * their railway is something it is not - which is worse than staying quiet, because they would
+     * change it.
+     *
+     * Departures are gathered the way `departureSides` gathers them, the same way the trapped-arrival
+     * check twenty lines below does: it is the same question about the same square, and two spellings
+     * of it would eventually disagree.
+     *
+     * @param graph the tile graph
+     * @param reducer the reduced graph, for the edges
+     * @param tile the square
+     * @return whether turning is the only thing any arriving train can do
+     */
+    private boolean everyArrivalMustTurn(TileGraph graph, GraphReducer reducer, TileKey tile)
+    {
+        Set<Side> departures = new LinkedHashSet<>();
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            if (edge.getStart().equals(tile) && edge.getExitSide() != null)
+            {
+                departures.add(edge.getExitSide());
+            }
+        }
+
+        java.util.Collection<Side> arrivals = arrivalSides(tile);
+
+        // Nothing arrives here at all, so there is no train to be offered a choice. Left to the checks
+        // that are about unreachable squares rather than reported as a pointless setting.
+        if (arrivals.isEmpty()) return false;
+
+        for (Side arrival : arrivals)
+        {
+            Set<Side> onwards = new LinkedHashSet<>();
+
+            for (TileGraph.Exit exit : graph.exits(tile, arrival))
+            {
+                if (exit.getSide() != null && departures.contains(exit.getSide()))
+                {
+                    onwards.add(exit.getSide());
+                }
+            }
+
+            onwards.remove(arrival);
+
+            // One way on, from one direction, and the setting means what it says.
+            if (!onwards.isEmpty()) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * The squares an authored home locomotive lives at.
      */
     private java.util.Set<TileKey> homeTiles()
@@ -2787,21 +2847,31 @@ public class AutonomySession
             if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        // "May turn round here" on a square with one way in cannot mean what it says: there is no
-        // straight on to carry on to, so every train turns whatever the setting.
+        // "May turn round here" where no arriving train could do anything else (OB-123).
         //
-        // Through arrivalSides rather than by walking the edges here, which is what this used to do.
-        // The walk and the door differ on exactly one case - a square an edge lands at having arrived
-        // by no side of the grid, where the door declines to split the square at all and the walk
-        // silently dropped that edge and split on the rest - and the answer has to be the BUILD's,
-        // because the build is what the user is being told about (DR-B6/DD-A7).
+        // Adam, 2026-08-27: "this is wrong: the train can continue or reverse.  It should test for two
+        // outgoing paths, not two incoming."  This counted ARRIVAL sides and called the setting
+        // pointless below two, which asks the wrong half of the question: carrying on is a DEPARTURE,
+        // so a square with one way in and two ways out offers every arriving train exactly the choice
+        // the setting describes and was being told the choice did not exist.
+        //
+        // Per ARRIVAL rather than by counting departures, which is his rule made exact. A plain count
+        // gets one case wrong: two arrivals and one departure forces a turn on the train that arrived
+        // by the departure side and offers a genuine choice to the one that did not, so the setting is
+        // not pointless there. It is pointless only when EVERY arrival is a forced turn - which is
+        // what "every train turns round anyway" already claims.
+        //
+        // Arrivals still come from arrivalSides rather than a walk of our own: the walk and the door
+        // differ on one case - a square an edge lands at having arrived by no side of the grid - and
+        // the answer has to be the BUILD's, because the build is what the user is being told about
+        // (DR-B6/DD-A7).
         Set<TileKey> pointless = new LinkedHashSet<>();
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
             if (!isTurnAround(tile) || isMustTurnAround(tile)) continue;
 
-            if (arrivalSides(tile).size() < 2) pointless.add(tile);
+            if (everyArrivalMustTurn(graph, reducer, tile)) pointless.add(tile);
         }
 
         // Squares a train can reach and then not leave: it arrived by one side, the only way on is back

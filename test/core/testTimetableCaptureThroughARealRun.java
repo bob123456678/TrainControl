@@ -63,7 +63,7 @@ public class testTimetableCaptureThroughARealRun
      * start. The two were the same number, and the day a battery ran while the application was open
      * the wait ran out before the railway had moved.
      */
-    private static final long STARTUP_CEILING_MS = 90000;
+    private static final long STARTUP_CEILING_MS = 240000;
 
     private static MarklinControlStation model;
 
@@ -216,12 +216,54 @@ public class testTimetableCaptureThroughARealRun
         layout.stopLocomotives();
 
         assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
-            + "nothing was declined and nothing is proved. That is long enough that a busy machine is "
-            + "no longer the explanation - look at why autonomy dispatched nothing");
+            + "nothing was declined and nothing is proved." + whyNothingMoved(layout));
 
         assertTrue(layout.getTimetable().isEmpty(),
             "trains ran with capture switched OFF and the timetable filled anyway, so the flag is "
             + "not being consulted: " + layout.getTimetable());
+    }
+
+    /**
+     * What the railway says about each train that did not start.
+     *
+     * This test has failed three times inside a full battery and never once on its own, always on the
+     * same precondition, and every time the message said only that nothing moved - which is a fact
+     * about the test rather than about the railway, and left nothing to work from but guesses.
+     *
+     * `explainCannotStart` is the answer the application itself gives an operator who presses Start
+     * and sees nothing happen. Asking it here costs nothing on the passing path, because it is only
+     * reached when the assertion is already lost.
+     *
+     * Deliberately not asserted ON. What a train says about itself is a diagnosis, not a
+     * specification, and a test that pinned those strings would fail whenever the wording improved.
+     *
+     * @param layout the railway that would not move
+     * @return the reasons, ready to append to a failure
+     */
+    private String whyNothingMoved(Layout layout)
+    {
+        StringBuilder why = new StringBuilder("\n  What the railway says about each train:");
+
+        try
+        {
+            for (org.traincontrol.base.Locomotive loc : layout.getLocomotivesToRun())
+            {
+                String reason = layout.explainCannotStart(loc);
+
+                why.append("\n    ").append(loc.getName()).append(": ")
+                    .append(reason == null ? "free to be given a route" : reason);
+            }
+
+            why.append("\n  Auto running: ").append(layout.isAutoRunning());
+        }
+        catch (RuntimeException e)
+        {
+            // A failure here would replace a real failure with this one, and this is only ever
+            // reached when the test has already lost.
+            why.append("\n    (could not be asked: ").append(e).append(")");
+        }
+
+        return why.toString();
     }
 
     /**

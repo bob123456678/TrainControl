@@ -207,8 +207,7 @@ public class RouteEditorFrame extends JFrame
             }
         });
 
-        setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(
-            TrainControlUI.class.getResource("resources/locicon.png")));
+        TrainControlUI.applyWindowIcon(this);
 
         // In words rather than in constants.  CLEAR_THEN_OCCUPIED is precise and says nothing to
         // somebody who has not read the code: what it means on a railway is that a train arrived.

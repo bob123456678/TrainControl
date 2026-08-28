@@ -33,6 +33,9 @@ public final class BusyDialog extends JDialog
     {
         super(parent, Dialog.ModalityType.APPLICATION_MODAL);
 
+        // OB-124, found by sweeping the others after the crop window.
+        TrainControlUI.applyWindowIcon(this);
+
         setUndecorated(true);
         setResizable(false);
 
