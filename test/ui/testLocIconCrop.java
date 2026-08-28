@@ -241,4 +241,206 @@ public class testLocIconCrop
             "the note describing this bug is still in setLocIcon - either it was never closed, or it "
             + "has been quoted back into a comment where the next reader will take it for an open one");
     }
+
+    /**
+     * The note carries the view, and an older note still reads as a path (OB-125).
+     *
+     * Adam: "if an image is cropped, upon re edit, the crop editor initially shows the default
+     * zoom/crop instead of the active crop."
+     *
+     * The compatibility half is the part worth writing down. Every note FR-032 wrote is a bare path
+     * with no second line, and every crop Adam already has carries one - so a reader that needs two
+     * lines would have quietly broken re-cropping for the whole existing set.
+     *
+     * MUTATION: reading the note with `trim()` over the whole file rather than taking the first line
+     * fails the path assertion, because the view line comes back as part of the filename.
+     */
+    @Test
+    public void testACropRemembersTheViewItWasTakenAt() throws Exception
+    {
+        final TrainControlUI[] built = new TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+
+        TrainControlUI ui = built[0];
+
+        File folder = java.nio.file.Files.createTempDirectory("ob125").toFile();
+
+        folder.deleteOnExit();
+
+        File source = new File(folder, "photograph.jpg");
+
+        write(source, "not really a jpeg");
+
+        File ours = org.traincontrol.util.Util.getLocIconFile(
+            "ob125_test_" + java.util.UUID.randomUUID() + ".png");
+
+        if (ours == null)
+        {
+            throw new org.testng.SkipException("the icon folder could not be created here");
+        }
+
+        try
+        {
+            write(ours, "not really a png");
+
+            String url = ours.toPath().toUri().toString();
+
+            // AN OLDER NOTE - a bare path, which is every note written before this.
+            ui.rememberCropSource(ours, source);
+
+            assertEquals(ui.cropSourceOf(url), source,
+                "a note without a view no longer reads back as a path, so every crop made before "
+                + "this change has lost the photograph behind it");
+
+            assertNull(ui.cropViewOf(url),
+                "a note with no view line answered with one anyway, so the panel would be opened on "
+                + "numbers nobody wrote");
+
+            // AND ONE WITH A VIEW.
+            double[] view = { 250.5, 200.25, 0.4, 2.5, 0.7 };
+
+            ui.rememberCropSource(ours, source, view);
+
+            assertEquals(ui.cropSourceOf(url), source,
+                "the path no longer reads back once a view is stored beside it - the whole file is "
+                + "being taken for a filename, so re-crop would look for a photograph whose name has "
+                + "the view appended to it");
+
+            double[] read = ui.cropViewOf(url);
+
+            assertNotNull(read, "the view was written and did not come back");
+
+            for (int i = 0; i < 5; i++)
+            {
+                assertEquals(read[i], view[i], 1e-9,
+                    "the view came back changed at position " + i + " - it was written as "
+                    + view[i] + " and read as " + read[i]);
+            }
+
+            // A note that says something else on its second line is not a view.
+            ui.rememberCropSource(ours, source);
+
+            assertNull(ui.cropViewOf(url),
+                "re-recording the source without a view left the OLD view in place, so the panel "
+                + "would open on where a crop that no longer exists was taken");
+        }
+        finally
+        {
+            ui.deleteLocIcon(ours.toPath().toUri().toString());
+        }
+    }
+
+    /**
+     * The panel opens on the view it is given, and on the covering crop when it is given none.
+     *
+     * Driven with no display, which the panel is built for - "it can be constructed, given a size and
+     * painted into a BufferedImage with no display attached". `getScale` is what settles the opening
+     * view, so asking for it is what makes this happen.
+     *
+     * The control matters more than the assertion here: without it, a `setView` that did nothing at
+     * all would pass if the default happened to be close.
+     *
+     * MUTATION: applying the view in `setView` rather than deferring it to `startAtCover` fails this,
+     * because the opening view then lands on top of it - which is the defect `setZoomFraction`
+     * already carries a comment about.
+     */
+    @Test
+    public void testTheCropPanelOpensOnARememberedView() throws Exception
+    {
+        java.awt.image.BufferedImage picture =
+            new java.awt.image.BufferedImage(800, 600, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        double[] wanted = { 250.5, 200.25, 0.4, 2.5, 0.7 };
+
+        org.traincontrol.gui.LocIconCropDialog.CropPanel restored =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        restored.setSize(600, 420);
+        restored.setView(wanted);
+        restored.getScale();
+
+        double[] got = new double[5];
+
+        restored.copyViewInto(got);
+
+        // THE CONTROL: what the same panel does with no view to open on.
+        org.traincontrol.gui.LocIconCropDialog.CropPanel plain =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        plain.setSize(600, 420);
+        plain.getScale();
+
+        double[] byDefault = new double[5];
+
+        plain.copyViewInto(byDefault);
+
+        boolean differs = false;
+
+        for (int i = 0; i < 5; i++)
+        {
+            if (Math.abs(byDefault[i] - wanted[i]) > 1e-6) differs = true;
+        }
+
+        assertTrue(differs,
+            "the view being asked for is the one the panel opens on anyway, so this test would pass "
+            + "with setView doing nothing at all - pick a view that is not the default");
+
+        for (int i = 0; i < 5; i++)
+        {
+            assertEquals(got[i], wanted[i], 1e-6,
+                "the panel did not open on the remembered view at position " + i + ": asked for "
+                + wanted[i] + ", opened on " + got[i] + " (the default there is " + byDefault[i]
+                + "). Re-editing a crop therefore starts from the default framing again, which is "
+                + "OB-125");
+        }
+
+        // An unusable view is ignored rather than believed.
+        org.traincontrol.gui.LocIconCropDialog.CropPanel nonsense =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        nonsense.setSize(600, 420);
+        nonsense.setView(new double[] { 1, 2, Double.NaN, 4, 5 });
+        nonsense.getScale();
+
+        double[] fallback = new double[5];
+
+        nonsense.copyViewInto(fallback);
+
+        for (int i = 0; i < 5; i++)
+        {
+            assertEquals(fallback[i], byDefault[i], 1e-6,
+                "a view with a NaN in it was applied rather than ignored, so a half-written note "
+                + "opens the panel on nothing at position " + i);
+        }
+    }
+
+    /**
+     * The view is handed in only when the re-crop works from the photograph it was measured over.
+     *
+     * The fallback crops the crop itself. The same numbers point somewhere else in that picture, so
+     * opening on them would be worse than opening on the default - and the note rewritten in that
+     * branch names the photograph, not the crop, so no view may be stored against it either.
+     */
+    @Test
+    public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
+    {
+        String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(wiring.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
+            "re-crop no longer asks for the stored view, or asks for it whatever it is cropping - "
+            + "either the editor opens on the default again, or it opens the crop at coordinates "
+            + "measured on the photograph behind it");
+
+        assertTrue(wiring.contains("rememberCropSource(fresh, remembered)"),
+            "the fallback branch now stores a view against the note it rewrites - that note names "
+            + "the photograph, and the view was measured over the crop, so the next re-crop of the "
+            + "original would open somewhere arbitrary");
+
+        assertTrue(wiring.contains("rememberCropSource(target, chosen, view)"),
+            "the crop no longer records the view it was taken at, so nothing is ever stored and "
+            + "re-editing always opens on the default");
+    }
 }

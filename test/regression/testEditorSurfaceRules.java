@@ -881,9 +881,31 @@ public class testEditorSurfaceRules
             if (to > from) refusals.add(opener.substring(from, to));
         }
 
-        assertTrue(refusals.size() >= 4,
-            "openLayoutEditor shows fewer messages than the four refusals it had when this was "
-            + "written, so what this test is matching against has changed shape: " + refusals);
+        // THREE LITERALS AND ONE INDIRECTION since OB-126.
+        //
+        // The fourth refusal used to be a literal here. It now goes through
+        // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of greyness and this
+        // door was naming the first one whatever was true - telling somebody with no layout loaded to
+        // close an editor they do not have.
+        //
+        // The count is kept as a shape check, at the shape it now is: it exists to notice a refusal
+        // being added or removed without this test being looked at, and lowering it without putting
+        // the indirection below in its place would have been the test quietly checking less.
+        assertTrue(refusals.size() >= 3,
+            "openLayoutEditor shows fewer messages than the refusals it had when this was written, "
+            + "so what this test is matching against has changed shape: " + refusals);
+
+        assertTrue(opener.contains("reasonLayoutIsNotEditable()"),
+            "openLayoutEditor no longer asks which of the Edit button's three reasons applies, so "
+            + "either a refusal has gone or it is back to naming one reason whatever is true "
+            + "(OB-126)");
+
+        // And the case that indirection covers still has an answer in the menu's predicate, which is
+        // what this whole test is about: a live menu item that leads to an error box.
+        assertTrue(predicate.contains("autosetup.ui.errorEditorAlreadyOpen"),
+            "openLayoutEditor can still refuse because an editor is open, and "
+            + "whyAutonomyEditorCannotOpen no longer has anything to say about it - the shortcut "
+            + "would be live and then complain");
 
         for (String key : refusals)
         {
@@ -2085,5 +2107,89 @@ public class testEditorSurfaceRules
             "layoutEditingCompleteThen no longer runs its continuation from a finally, so the track "
             + "branch of leaveFor lost the guarantee it delegates - and the check above accepts that "
             + "branch on the strength of calling this method");
+    }
+
+    /**
+     * The grey Edit Layout button explains WHICH of its reasons applies (OB-126).
+     *
+     * OB-126 gave the button two more causes - no layout loaded, and a Central Station layout - and
+     * both doors that ask whether it is grey went on showing the message for the first one. So the
+     * answer to "why can I not edit?" was "close the editor you already have open", given to somebody
+     * with no editor and no layout (validator, 2026-08-28).
+     *
+     * That is the same fault OB-126 itself was: a predicate that gained a second meaning and kept its
+     * first answer. This checks the pairing rather than the sentence, because the sentence is only
+     * ever wrong when the pairing is.
+     *
+     * MUTATION: hard-coding either dialog back to a single key fails this. So does dropping a branch
+     * from the explanation while leaving it in the rule.
+     */
+    @Test
+    public void testTheGreyEditButtonSaysWhyItIsGrey() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        // THE TWO DOORS both ask, rather than assuming.
+        for (String door : new String[] {
+            "private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt)",
+            "public void openLayoutEditor(String page, Boolean autonomy,"
+                + "\n        final org.traincontrol.automationui.TileGraph.TileKey reveal, "
+                + "boolean remember)" })
+        {
+            String body = withoutComments(bodyOf(ui, door));
+
+            assertTrue(body.contains("reasonLayoutIsNotEditable()"),
+                "a door that refuses because the Edit button is grey no longer asks which of the "
+                + "three reasons applies, so it is back to naming one of them whatever is true: "
+                + door);
+
+            assertFalse(body.contains("\"autosetup.ui.errorEditorAlreadyOpen\""),
+                "a door names the already-open message directly again, so somebody with no layout "
+                + "loaded is told to close an editor that does not exist: " + door);
+        }
+
+        // THE EXPLANATION covers every branch of the RULE.
+        String rule = withoutComments(bodyOf(ui, "private boolean layoutCanBeEdited()"));
+        String why = withoutComments(bodyOf(ui, "public String whyLayoutCannotBeEdited()"));
+
+        assertTrue(rule.contains("getLayoutList().isEmpty()") && rule.contains("isLocalLayout()"),
+            "layoutCanBeEdited has been rewritten, so the pairing below is comparing against "
+            + "something else - read it before trusting this test");
+
+        assertTrue(why.contains("getLayoutList().isEmpty()"),
+            "the explanation no longer has an answer for \"no layout loaded\", which is one of the "
+            + "reasons the rule greys the button for");
+
+        assertTrue(why.contains("isLocalLayout()"),
+            "the explanation no longer has an answer for a Central Station layout, which is the "
+            + "reason OB-126 was filed about");
+
+        assertTrue(why.contains("noEditorOpen"),
+            "the explanation no longer has an answer for an editor already being open, which is the "
+            + "other half of what makes the button grey");
+
+        // And each answer is a key that exists.
+        String bundle = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/resources/messages.properties")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        java.util.regex.Matcher keys =
+            java.util.regex.Pattern.compile("\"([a-z]+\\.[a-zA-Z.]+)\"").matcher(why);
+
+        int found = 0;
+
+        while (keys.find())
+        {
+            found++;
+
+            assertTrue(bundle.contains("\n" + keys.group(1) + "="),
+                "whyLayoutCannotBeEdited answers with " + keys.group(1) + ", which is not a key in "
+                + "messages.properties - the dialog would show the key itself");
+        }
+
+        assertEquals(found, 3,
+            "expected three message keys in whyLayoutCannotBeEdited, one per reason the button is "
+            + "grey, and found " + found);
     }
 }

@@ -59,24 +59,6 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-125 - 2026-08-28 - crop editor quirk
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-28 01:25  
-**Build:** commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-if an image is cropped, upon re edit, the crop editor initially shows the default zoom/crop instead of the active crop.
-
-### OB-126 - 2026-08-28 - edit layout and manage layout graying
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-28 01:35  
-**Build:** commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-these must be greyed when using a CS layout or when there is no layout loaded.
-
 ### OB-127 - 2026-08-28 - model error when cs layout fails to load
 
 **Kind:** bug  
@@ -98,6 +80,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-28 | OB-126 | bug | The grey Edit Layout button named one of its three reasons whatever was true | fixed unvalidated | - |
+| 2026-08-28 | OB-125 | bug | The crop editor reopens where the crop was taken, not on the default view | fixed unvalidated | - |
 | 2026-08-28 | FR-038 | feature request | Mis-filed: the crop editor quirk is a bug, re-filed as OB-125 | cancelled | - |
 | 2026-08-28 | FR-039 | feature request | The request to cancel FR-038, which is done - nothing of its own to work | cancelled | - |
 | 2026-08-27 | FR-036 | feature request | Plus and minus walk through the pages, through the switch that already existed | fixed unvalidated | - |

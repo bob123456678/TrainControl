@@ -260,6 +260,28 @@ public class LocIconCropDialog extends JDialog
     public static BufferedImage crop(Component parent, BufferedImage source, int outWidth,
         int outHeight)
     {
+        return crop(parent, source, outWidth, outHeight, null);
+    }
+
+    /**
+     * The same, opening on a remembered view and reporting back the one the user settled on (OB-125).
+     *
+     * One array in both directions because it is one thing - the view - and two arrays that could
+     * describe different views would be a trap for whoever wired them up. It is read on the way in and
+     * overwritten on the way out, and only when there is a result: cancelling must change nothing at
+     * all, including what the caller is about to store.
+     *
+     * @param parent the component to centre on
+     * @param source the picture to crop
+     * @param outWidth width of the icon to produce
+     * @param outHeight height of the icon to produce
+     * @param view five numbers to open on, and where the view used is written back; may be null, and
+     *        is ignored on the way in when it does not describe a view
+     * @return the cropped icon, or null if the user cancelled
+     */
+    public static BufferedImage crop(Component parent, BufferedImage source, int outWidth,
+        int outHeight, double[] view)
+    {
         if (source == null) return null;
 
         Window owner = parent == null ? null : SwingUtilities.getWindowAncestor(parent);
@@ -267,7 +289,11 @@ public class LocIconCropDialog extends JDialog
         LocIconCropDialog dialog = new LocIconCropDialog(owner, I18n.t("loc.ui.cropTitle"), source,
             outWidth, outHeight);
 
+        dialog.cropPanel.setView(view);
+
         dialog.setVisible(true);
+
+        if (dialog.result != null) dialog.cropPanel.copyViewInto(view);
 
         return dialog.result;
     }
@@ -317,6 +343,20 @@ public class LocIconCropDialog extends JDialog
          * Whether the opening zoom has been chosen yet - see {@link #startAtCover}.
          */
         private boolean viewStarted = false;
+
+        /**
+         * A view handed in to open on, waiting for the panel to have a size (OB-125).
+         *
+         * Not applied when it arrives. The panel has no width until it is laid out, and every one of
+         * these numbers is interpreted against the crop window, which is derived from that width - so
+         * a view set on a panel of zero width clamps against nothing and is then replaced by the
+         * opening view the moment the panel is measured. `setZoomFraction` carries a comment about
+         * exactly that happening to a single number.
+         *
+         * Held here and taken up in {@link #startAtCover}, which is where the opening view is decided
+         * and the first place the size is known.
+         */
+        private double[] pendingView = null;
 
         /**
          * The shape of the crop window, as width over height.
@@ -754,6 +794,68 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
+         * Opens on a view taken from a previous crop, rather than on the covering centre one (OB-125).
+         *
+         * Ignored rather than rejected when it does not describe a view: the note it comes from is a
+         * best-effort sidecar that anything may have written over, and the covering crop is a perfectly
+         * good answer when it cannot be read.
+         *
+         * @param view five numbers as {@link #copyViewInto} writes them, or null for the default
+         */
+        public void setView(double[] view)
+        {
+            if (!viewIsUsable(view)) return;
+
+            this.pendingView = view.clone();
+
+            // So it is taken up the next time the panel is measured, whether or not an opening view
+            // has already been chosen.
+            this.viewStarted = false;
+        }
+
+        /**
+         * The view as it stands, for storing against the crop about to be written.
+         *
+         * @param out five numbers: where in the source picture the middle of the crop window sits (x,
+         *        y), the zoom fraction, and the shape and size of the window
+         */
+        public void copyViewInto(double[] out)
+        {
+            if (out == null || out.length < 5) return;
+
+            out[0] = this.centerX;
+            out[1] = this.centerY;
+            out[2] = this.zoomFraction;
+            out[3] = this.frameAspect;
+            out[4] = this.frameSize;
+        }
+
+        /**
+         * Whether five numbers describe a view this panel could open on.
+         *
+         * The centre is deliberately NOT range-checked against the picture: a view stored over a
+         * photograph that has since been edited can name a point outside the one there now, and
+         * `clampCenter` turns that into a nearby framing, which is a better answer than discarding
+         * the whole view.
+         *
+         * @param view the numbers to check, may be null
+         * @return whether they can be used
+         */
+        public static boolean viewIsUsable(double[] view)
+        {
+            if (view == null || view.length < 5) return false;
+
+            for (int i = 0; i < 5; i++)
+            {
+                if (Double.isNaN(view[i]) || Double.isInfinite(view[i])) return false;
+            }
+
+            // Zoom is a fraction; the two frame numbers are ratios and cannot be zero or negative
+            // without making the crop window degenerate.
+            return view[2] >= 0.0 && view[2] <= 1.0 && view[3] > 0.0 && view[4] > 0.0;
+        }
+
+        /**
          * The shape of the crop window.
          * @return width over height
          */
@@ -852,6 +954,33 @@ public class LocIconCropDialog extends JDialog
             if (this.viewStarted || getWidth() <= 0) return;
 
             this.viewStarted = true;
+
+            // A REMEMBERED VIEW instead of the covering crop (OB-125).
+            //
+            // Shape and zoom first, then the centre: the window is derived from the shape and the
+            // scale from the zoom, so clamping a centre before them clamps it against the wrong
+            // rectangle.
+            if (this.pendingView != null)
+            {
+                double[] view = this.pendingView;
+
+                this.pendingView = null;
+
+                this.frameAspect = view[3];
+                this.frameSize = view[4];
+                this.zoomFraction = view[2];
+                this.centerX = view[0];
+                this.centerY = view[1];
+
+                // The photograph may not be the one this view was taken over - it is the user's file
+                // and they may have edited or replaced it. Clamping is what makes that a slightly
+                // wrong framing rather than a blank white rectangle.
+                clampCenter();
+
+                if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
+
+                return;
+            }
 
             Rectangle window = cropWindow();
 

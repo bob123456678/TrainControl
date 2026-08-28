@@ -3823,6 +3823,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.model != null && !this.model.getLayoutList().isEmpty() && isLocalLayout();
     }
 
+    /**
+     * Why the Edit Layout button is grey, as a message key - or null when it is not (OB-126).
+     *
+     * The button had one cause and one message. OB-126 gave it three - an editor already open, no
+     * layout loaded, a Central Station layout - and both doors that ask whether it is grey went on
+     * showing the first message, so somebody with no layout loaded was told to close a window that
+     * does not exist. The right message for a Central Station layout was already written and sitting
+     * unreachable below one of those checks.
+     *
+     * Asked in `layoutCanBeEdited`'s own order, and paired with it deliberately: a guard and the
+     * explanation of that guard have to ask the same question or they drift, which is the commonest
+     * defect in this window's history and the reason `whyAutonomyEditorCannotOpen` exists next door.
+     *
+     * @return the key of the reason, or null when the layout can be edited
+     */
+    private String reasonLayoutIsNotEditable()
+    {
+        String why = whyLayoutCannotBeEdited();
+
+        // The callers only ask when the button is grey, so this should never be null - but a dialog
+        // showing the word "null" would be worse than a slightly wrong sentence, and the two rules
+        // are separate methods that can disagree.
+        return why != null ? why : "autosetup.ui.errorEditorAlreadyOpen";
+    }
+
+    public String whyLayoutCannotBeEdited()
+    {
+        if (this.model == null || this.model.getLayoutList().isEmpty())
+        {
+            return "layout.ui.errorNoLayoutLoaded";
+        }
+
+        if (!isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
+
+        // Last, because it is the only one of the three that is about a window rather than about the
+        // layout - and the only one the caller may answer by bringing that window forward instead.
+        if (!this.noEditorOpen) return "autosetup.ui.errorEditorAlreadyOpen";
+
+        return null;
+    }
+
     /** Whether no editor window is currently open - the caller's half of the availability answer. */
     private boolean noEditorOpen = true;
 
@@ -3973,7 +4014,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorEditorAlreadyOpen"));
+            // WHICH of the three reasons (OB-126). The already-open case is handled just above by
+            // bringing that window forward, so reaching here means the button is grey for one of the
+            // other two - and saying "close the editor" to somebody who has none is what this said.
+            JOptionPane.showMessageDialog(this, I18n.t(reasonLayoutIsNotEditable()));
             return;
         }
 
@@ -18188,7 +18232,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // where a disabled button says nothing at all, and a second editor opened over the first.
         if (!this.editLayoutButton.isEnabled())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorEditorAlreadyOpen"));
+            // WHICH of the three reasons, not always the first one (OB-126).
+            //
+            // The `!isLocalLayout()` message below this block is the right answer for one of them and
+            // was unreachable, because this check returns first.
+            JOptionPane.showMessageDialog(this, I18n.t(reasonLayoutIsNotEditable()));
 
             return;
         }
@@ -21370,6 +21418,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final String CROP_SOURCE_SUFFIX = ".source";
 
     /**
+     * What the second line of a crop's note starts with, when it has one (OB-125).
+     *
+     * Prefixed rather than positional so that a note whose second line is something else - an older
+     * format, a stray newline, a file half-written by something that died - is ignored rather than
+     * parsed into a view.
+     */
+    private static final String CROP_VIEW_PREFIX = "view=";
+
+    /**
      * Removes the local icon override, so the Central Station's own picture is shown again.
      * @param l the locomotive
      */
@@ -21530,7 +21587,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Two answers, not one: was it cancelled, and was the picture unreadable.
                     boolean[] cancelled = {false, false};
 
-                    String cropped = cropLocIcon(source, l, f, cancelled);
+                    String cropped = cropLocIcon(source, l, f, cancelled, null);
 
                     // Nothing is assigned and nothing is deleted: the locomotive keeps the icon it
                     // had, which is what cancelling a dialog means.
@@ -21628,8 +21685,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *         the picture could not be read, or the folder could not be written - in which case the
      *         caller must fall back to the uncropped original
      */
-    private String cropLocIcon(Component parent, Locomotive l, File chosen, boolean[] cancelled)
+    private String cropLocIcon(Component parent, Locomotive l, File chosen, boolean[] cancelled,
+        double[] opening)
     {
+        // One array, in and out: what to open on, and afterwards what the user settled on (OB-125).
+        // Allocated here when the caller has nothing to open on, because the note still wants
+        // recording either way.
+        double[] view = opening != null ? opening
+            : new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+
         BufferedImage picture;
 
         try
@@ -21661,7 +21725,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         BufferedImage cropped = LocIconCropDialog.crop(parent, picture, LOC_ICON_WIDTH,
-            LOC_ICON_HEIGHT);
+            LOC_ICON_HEIGHT, view);
 
         // The dialog returns null only when the user said no - Cancel, Escape, or the close box. Its
         // own javadoc calls that "leave everything exactly as it was, not a failure", and the caller
@@ -21721,7 +21785,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // "crop the crop", which is correct, and says so.
         if (!Util.isLocIconFile(chosen.toPath().toUri().toString()))
         {
-            rememberCropSource(target, chosen);
+            rememberCropSource(target, chosen, view);
         }
 
         return target.toPath().toUri().toString();
@@ -21752,16 +21816,106 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void rememberCropSource(File crop, File source)
     {
+        rememberCropSource(crop, source, null);
+    }
+
+    /**
+     * The same, also recording WHERE in that picture the crop was taken from (OB-125).
+     *
+     * A second line, so that a note written before this version - which is every note FR-032 wrote -
+     * still reads correctly as a bare path, and so that a note written here read by anything older is
+     * a path with a line after it that nothing looks at.
+     *
+     * @param crop the crop that was just written
+     * @param source the picture it was cut from
+     * @param view the view the user settled on, or null to record only the source
+     */
+    public void rememberCropSource(File crop, File source, double[] view)
+    {
+        final String body = source.getAbsolutePath()
+            + (LocIconCropDialog.CropPanel.viewIsUsable(view)
+                ? "\n" + CROP_VIEW_PREFIX + view[0] + "," + view[1] + "," + view[2] + ","
+                    + view[3] + "," + view[4]
+                : "");
+
         try
         {
             Util.writeAtomically(new File(crop.getAbsolutePath() + CROP_SOURCE_SUFFIX),
-                out -> out.write(source.getAbsolutePath().getBytes(
-                    java.nio.charset.StandardCharsets.UTF_8)));
+                out -> out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         }
         catch (IOException | RuntimeException e)
         {
             // Untidy, not broken.  Re-cropping will use the crop itself.
         }
+    }
+
+    /**
+     * The view a crop was taken at, when its note records one (OB-125).
+     *
+     * Answers null for everything unreadable - no note, no view line, the wrong number of values,
+     * something that is not a number - because there is a perfectly good fallback in the covering
+     * centre crop and nothing here is worth interrupting the user for.
+     *
+     * @param url the icon currently set on the locomotive
+     * @return five numbers as the crop panel writes them, or null
+     */
+    public double[] cropViewOf(String url)
+    {
+        String line = cropNoteLine(url, CROP_VIEW_PREFIX);
+
+        if (line == null) return null;
+
+        String[] parts = line.split(",");
+
+        if (parts.length != 5) return null;
+
+        double[] view = new double[5];
+
+        try
+        {
+            for (int i = 0; i < 5; i++) view[i] = Double.parseDouble(parts[i].trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return null;
+        }
+
+        return LocIconCropDialog.CropPanel.viewIsUsable(view) ? view : null;
+    }
+
+    /**
+     * A line of a crop's note that begins with a given prefix, with the prefix taken off.
+     *
+     * @param url the icon currently set on the locomotive
+     * @param prefix what the line starts with
+     * @return the rest of that line, or null when there is no note or no such line
+     */
+    private String cropNoteLine(String url, String prefix)
+    {
+        if (!Util.isLocIconFile(url)) return null;
+
+        File crop = fileOf(url);
+
+        if (crop == null) return null;
+
+        File note = new File(crop.getAbsolutePath() + CROP_SOURCE_SUFFIX);
+
+        if (!note.exists()) return null;
+
+        try
+        {
+            for (String line : new String(java.nio.file.Files.readAllBytes(note.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8).split("\n"))
+            {
+                if (line.trim().startsWith(prefix)) return line.trim().substring(prefix.length());
+            }
+        }
+        catch (IOException | RuntimeException unreadable)
+        {
+            return null;
+        }
+
+        return null;
     }
 
     /**
@@ -21813,8 +21967,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            String path = new String(java.nio.file.Files.readAllBytes(note.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8).trim();
+            // THE FIRST LINE. A note may now carry a view on a second one (OB-125), and trimming the
+            // whole file and calling it a path would hand back both lines as a filename.
+            String body = new String(java.nio.file.Files.readAllBytes(note.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            String path = body.split("\n")[0].trim();
 
             return path.isEmpty() ? null : new File(path);
         }
@@ -21872,7 +22030,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // it, and leaves the next reader of `cancelled[1]` here with an index out of bounds.
             boolean[] cancelled = {false, false};
 
-            String cropped = cropLocIcon(parent, l, source, cancelled);
+            // ONLY when working from the photograph the view was measured over (OB-125).
+            //
+            // The fallback crops the crop itself, where these coordinates describe somewhere else
+            // entirely - the picture underneath them is a different picture.
+            String cropped = cropLocIcon(parent, l, source, cancelled,
+                fromOriginal ? cropViewOf(l.getLocalImageURL()) : null);
 
             if (cancelled[0] || cropped == null) return;
 
@@ -21882,6 +22045,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // The old note wins over the one just written, which names the crop this was cut from
             // rather than the photograph behind it (C5).
+            //
+            // No view goes with it. This branch cropped the CROP, so the view describes a point in
+            // that crop, while the note names the photograph behind it - storing one against the
+            // other would open the next re-crop of the original at coordinates measured on something
+            // else (OB-125).
             if (remembered != null)
             {
                 File fresh = fileOf(cropped);
