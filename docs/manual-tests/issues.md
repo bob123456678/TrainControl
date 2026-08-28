@@ -67,6 +67,33 @@ looked, so I know this is not already here."
 
 Adam, 2026-08-27: "add a cap of 50 pages for now (not 99) and associated error message if exceeded." There was no ceiling before this: addLocMappingPage simply incremented. Implemented as MAX_LOC_MAPPINGS = 50 in TrainControlUI, with canAddLocMappingPage() asked by the page right-click menu (Add New Page greys at the ceiling, with the limit in its tooltip) and enforced again inside addLocMappingPage itself, which refuses with page.ui.errorTooManyPages in all eight languages. LOADING IS DELIBERATELY NOT CAPPED: setViewListener grows the page count to fit a saved state, and clamping there would silently drop the mappings on every page above the fiftieth. Covered by ui.testLocMappingPages (4 tests, 5 mutations verified biting).
 
+### OB-121 - 2026-08-27 - route editor condition shading
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-27 18:49  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the route editor, remove the shading in the condition row with the +
+
+### FR-034 - 2026-08-27 - default label in autonomy diagram
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-27 18:53  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when using the show station label here option, prefill it with the label of the nearest station by tile distance.  change to current behavior: only prefill the last clicked station for one right click somewhere else- the revert to the distance.
+
+### FR-035 - 2026-08-27 - draggable station labels
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-27 19:01  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy editor ONLY, make it possible to move around station labels (only) by clicking and dragging them.  do not make tiles or anything else movable.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

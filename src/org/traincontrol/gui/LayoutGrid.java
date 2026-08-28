@@ -846,8 +846,14 @@ public class LayoutGrid
                         // BASELINE_LEADING lines up every component anchored that way, so a caption
                         // whose height changed moved the row's baseline and took its neighbours with
                         // it - three pixels, on labels nobody had touched (OB-115).
-                        int down = StationCaption.captionOffset(
-                            size, text.lineHeight(), runsNorthSouth(c));
+                        // ROTATED for track that runs up the square (Adam, 2026-08-27), which is
+                        // also what decides which way the caption is centred and which way it is
+                        // offset - so the orientation is asked once, here, and the caption is told.
+                        boolean onEnd = runsNorthSouth(c);
+
+                        text.setRotated(onEnd);
+
+                        int offset = StationCaption.captionOffset(size, text.lineHeight());
 
                         // A column of room to the left, so the caption can be CENTRED on its square
                         // rather than starting at it. Centring means beginning left of the square, and
@@ -856,11 +862,21 @@ public class LayoutGrid
                         //
                         // Not at the left edge, where there is no column to move into: a caption there
                         // starts at its own square exactly as it did before.
-                        int backShift = x > 0 ? size : 0;
+                        int backShift = onEnd || x == 0 ? 0 : size;
+
+                        // And a row of room ABOVE for a rotated one, which is the same trick turned a
+                        // quarter: it is centred along a rail that runs up the square, so centring
+                        // means starting above that square, and insets cannot say that either.
+                        //
+                        // Only one of the two is ever bought. A flat caption needs no vertical room
+                        // and a rotated one needs no horizontal room, and buying both would move the
+                        // cell diagonally away from the square it names.
+                        int upShift = onEnd && y > 0 ? size : 0;
 
                         gbc.gridx = x - (backShift > 0 ? 1 : 0);
+                        gbc.gridy = y - (upShift > 0 ? 1 : 0);
 
-                        text.setTileGeometry(size, backShift, down);
+                        text.setTileGeometry(size, backShift, upShift, offset);
 
                         gbc.anchor = GridBagConstraints.NORTHWEST;
                     }
@@ -915,7 +931,12 @@ public class LayoutGrid
                     // with the address labels switched OFF, so it measured a diagram this cannot
                     // happen on and reported that nothing had moved. A harness only answers about the
                     // diagram you point it at.
+                    //
+                    // gridy is paid back for exactly the same reason, and was added with the rotation
+                    // that first moved it (2026-08-27). The bug above is what this line is: a shift
+                    // taken out for the caption and left in the constraints for whoever came next.
                     gbc.gridx = x;
+                    gbc.gridy = y;
                 }
                 
                 // Show address labels

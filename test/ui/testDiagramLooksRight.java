@@ -1090,7 +1090,7 @@ public class testDiagramLooksRight
 
         // Empty: the dash a station shows when no train is standing on it.
         caption.setText(org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY);
-        caption.setTileGeometry(tile, backShift, 0);
+        caption.setTileGeometry(tile, backShift, 0, 0);
 
         int dash = caption.getBorder().getBorderInsets(caption).left;
 
@@ -1379,22 +1379,23 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption lands on the right side of the rail whatever size the tiles are.
+     * A caption sits clear of its rail at every tile size, whichever way the rail runs.
      *
-     * Adam: "land them so that they align just below straight tracks if the track goes east to west,
-     * or centered over the track if north to south", and then "remember to adjust for the 60px view".
-     * The diagram is drawn at whatever size the operator picked, so an offset that is right at one
-     * size and wrong at another is a feature that works on my machine.
+     * One rule since 2026-08-27. It used to be two, and this test used to assert the second of them -
+     * that a north-south caption lies ACROSS its rail - which is exactly what Adam asked to stop:
+     * "rotate them 90 degrees counterclockwise so they land just to the right of the tile, similar to
+     * how horizontal labels land between tracks". A caption that lies across the track it names is the
+     * one caption on the diagram that covers its own subject.
      *
-     * The rail runs across the middle of the square, so the whole of this is where the caption's own
-     * middle falls relative to the square's. Below it for an east-west run, which is what "just below
-     * the track" means; on it for a north-south one, where the rail goes up the square and the caption
-     * lies across it.
+     * So the property is now the same in both directions and stated once: the caption starts past the
+     * rail, and not so far past it that it stops reading as a label for that track. The second half is
+     * the one that matters - it is what stops the offset being increased a few pixels at a time until
+     * the captions float free of the diagram, which is a thing that has already happened twice.
      *
-     * Line heights are taken as three fifths of the tile, which is what Segoe UI at the caption's size
-     * comes out at - close enough for a proportion, and the assertions below are about proportions.
+     * Line heights are taken as three fifths of the tile, which is what the caption font comes out at.
      *
-     * MUTATION: returning a fixed number of pixels from captionOffset fails this at every size but one.
+     * MUTATION: returning a fixed number of pixels from captionOffset fails this at every size but
+     * one; dropping the nudge fails the first assertion at 20px.
      */
     @Test
     public void testACaptionSitsRightAtEveryTileSize()
@@ -1405,54 +1406,28 @@ public class testDiagramLooksRight
 
             int rail = tile / 2;
 
-            int across = org.traincontrol.gui.StationCaption.captionOffset(tile, line, false);
-            int up = org.traincontrol.gui.StationCaption.captionOffset(tile, line, true);
+            int offset = org.traincontrol.gui.StationCaption.captionOffset(tile, line);
 
-            assertTrue(across + line / 2 > rail,
-                "at " + tile + "px an east-west caption sits on the rail rather than below it - its "
-                + "middle is at " + (across + line / 2) + " and the rail is at " + rail);
+            // PAST the rail, so the caption is beside the track rather than on it.
+            assertTrue(offset > rail,
+                "at " + tile + "px a caption starts at " + offset + " and the rail is at " + rail
+                + ", so it is drawn over the track it names rather than beside it");
 
-            // A LITTLE BELOW the rail, not centred on it (Adam, 2026-08-27: "the station labels need
-            // to sit lower vertically - about 5 px down").
+            // And not so far past that it has left its own square behind.
             //
-            // This asserted centred to within two pixels, which was right until he looked at it on a
-            // running diagram: a caption centred exactly on a rail reads as sitting on top of the
-            // track rather than as a label for it. The tolerance is not widened to let the new
-            // placement through - that would leave the test agreeing with anything from a couple of
-            // pixels high to a couple low. It asserts the offset, and that the caption still overlaps
-            // the rail it belongs to, which is the property that stops the nudge growing until the
-            // label floats free of its own track.
-            int below = up + line / 2 - rail;
+            // A cap rather than a restatement of the offset: a test that computes the same expression
+            // as the code agrees with it by construction and can never disagree, which is no test at
+            // all. What this is for is stopping the offset growing without anybody looking.
+            assertTrue(offset <= tile + line,
+                "at " + tile + "px a caption starts " + offset + " past its square's edge, which is "
+                + "far enough from the tile it belongs to that it reads as a label for the next one");
 
-            assertTrue(below > 0,
-                "at " + tile + "px a north-south caption is centred on its rail or above it, and it "
-                + "is meant to sit a little below - its middle is at " + (up + line / 2)
-                + " and the rail is at " + rail);
-
-            // A CAP, not a restatement of the offset.
-            //
-            // This was tile/10, which was just over the nudge when the nudge was a twelfth; asking for
-            // four more pixels took the two past each other and this failed at 20px by one. Widened
-            // rather than re-derived from the constant: a test that computes the same expression as
-            // the code agrees with it by construction and can never disagree, which is no test at all.
-            // What it is for is stopping the nudge growing without anybody looking, and a fifth of the
-            // tile is far enough away to leave room for another adjustment or two.
-            //
-            // The assertion below is the real guard anyway - it does not care about numbers.
-            assertTrue(below <= Math.max(4, tile / 5),
-                "at " + tile + "px a north-south caption sits " + below + " below its rail, which is "
-                + "far enough to stop reading as a label for that track");
-
-            assertTrue(up < rail && up + line > rail,
-                "at " + tile + "px a north-south caption no longer covers the rail at all - it lies "
-                + "across the track by design, and " + up + ".." + (up + line) + " misses " + rail);
-
-            assertTrue(across >= 0 && up >= 0,
-                "at " + tile + "px a caption is pushed off the top of its own square");
+            assertTrue(offset >= 0,
+                "at " + tile + "px a caption is pushed off the leading edge of its own square");
         }
 
         // And the degenerate case, because a caption whose font has not been set yet asks this.
-        assertEquals(org.traincontrol.gui.StationCaption.captionOffset(40, 0, false), 0,
+        assertEquals(org.traincontrol.gui.StationCaption.captionOffset(40, 0), 0,
             "a caption with no line height is given an offset, which is an opinion about a label "
             + "whose size is not known yet");
     }
@@ -1492,6 +1467,177 @@ public class testDiagramLooksRight
                 + "for U+" + Integer.toHexString(arrow.codePointAt(0)) + ", so every train facing that "
                 + "way draws a tofu box on the diagram");
         }
+    }
+
+    /**
+     * A rotated caption's arrow still points where the train is going.
+     *
+     * Adam, 2026-08-27: "then we just need to also apply the same logical rotation to the arrow."
+     *
+     * This is the assertion the rest of the rotation cannot make. Turning the drawing turns everything
+     * in it, so an arrow keeps its meaning only if the GLYPH is chosen for where it will end up: a
+     * quarter turn anticlockwise sends right to up, so a caption that means north is drawn with the
+     * east glyph. Get that backwards and every caption is in exactly the right place with every train
+     * appearing to run the other way, and no check on an inset would see it.
+     *
+     * Decided by painting and reading the ink, because it is a question about the picture. A triangle
+     * pointing up has its widest row at the BOTTOM of its ink; one pointing down has it at the top.
+     * That holds for either pair of glyphs, which matters - which pair gets used depends on the fonts
+     * installed on the machine.
+     *
+     * MUTATION: cycling the arrows the other way - north to west rather than north to east - swaps
+     * both answers and fails both halves. Not rotating them at all fails both as well: an unturned
+     * north glyph is drawn pointing left.
+     */
+    @Test
+    public void testARotatedArrowStillPointsWhereTheTrainIsGoing() throws Exception
+    {
+        int up = widestInkRow(org.traincontrol.gui.StationCaption.ARROW_N);
+        int down = widestInkRow(org.traincontrol.gui.StationCaption.ARROW_S);
+
+        // 0 is the top of the ink, 100 the bottom.
+        assertTrue(up > 55,
+            "a caption meaning NORTH draws an arrow whose widest part is " + up + "% down its ink, so "
+            + "it is not a triangle pointing up - the rotation has been applied to the arrow the "
+            + "wrong way round, or not at all, and every train on a vertical track now appears to be "
+            + "running the other way");
+
+        assertTrue(down < 45,
+            "a caption meaning SOUTH draws an arrow whose widest part is " + down + "% down its ink, "
+            + "so it is not a triangle pointing down");
+
+        assertTrue(up > down,
+            "north and south draw the same arrow once rotated, so the caption says nothing about "
+            + "which way the train is going");
+    }
+
+    /**
+     * A rotated caption is stood on end, and takes the mouse only where it is drawn.
+     *
+     * Two things that have to agree with a third. Painting, sizing and hit-testing all ask
+     * `pillBounds` for one rectangle, and the reason they do is the defect that turned up when they
+     * did not: the flat pill was painted inside its insets and hit-tested over the whole component,
+     * and swallowed every click on the tile it had borrowed centring room from. A rotated caption
+     * borrows a whole ROW instead, so the same mistake would eat a click on the square above.
+     *
+     * MUTATION: having `contains` fall back to `super.contains` fails the last assertion; returning
+     * the flat preferred size when rotated fails the first.
+     */
+    @Test
+    public void testARotatedCaptionStandsOnEnd() throws Exception
+    {
+        org.traincontrol.gui.StationCaption pill = onEnd("Ostbahnhof");
+
+        java.awt.Dimension size = pill.getPreferredSize();
+
+        assertTrue(size.height > size.width,
+            "a rotated caption asks for a box " + size.width + " by " + size.height + ", which is "
+            + "wider than it is tall - it is being measured along its text as though it were flat, "
+            + "and will draw itself straight out of the bottom of the room it was given");
+
+        org.traincontrol.gui.StationCaption flat = new org.traincontrol.gui.StationCaption();
+
+        flat.setPill(true);
+        flat.setFont(pill.getFont());
+        flat.setText("Ostbahnhof");
+
+        java.awt.Dimension across = flat.getPreferredSize();
+
+        assertTrue(across.width > across.height,
+            "a caption that was NOT rotated is taller than it is wide, so the rotation is being "
+            + "applied to every caption rather than to the ones on north-south track");
+
+        // The pill is one line THICK, wherever the insets put it - so a point a good way past that
+        // thickness is not on the caption, and the tile there belongs to the diagram.
+        int left = pill.getInsets().left;
+
+        assertTrue(pill.contains(left + pill.lineHeight() / 2, pill.getInsets().top + 5),
+            "the middle of the drawn pill does not take the mouse, so a caption cannot be clicked");
+
+        assertFalse(pill.contains(left + pill.lineHeight() + 8, pill.getInsets().top + 5),
+            "a rotated caption takes the mouse well past the pill it draws, on track that belongs to "
+            + "the diagram underneath - which is how a switch stops throwing when it is clicked");
+    }
+
+    /**
+     * A rotated caption carrying one arrow, painted, with the row of its ink that is widest.
+     *
+     * @param arrow the direction the caption means
+     * @return where the widest row of ink falls, 0 at the top of the ink and 100 at the bottom
+     */
+    private int widestInkRow(String arrow) throws Exception
+    {
+        org.traincontrol.gui.StationCaption pill = onEnd(arrow);
+
+        java.awt.Dimension size = pill.getPreferredSize();
+
+        pill.setBounds(0, 0, size.width, size.height);
+
+        BufferedImage image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        pill.paint(g);
+
+        g.dispose();
+
+        int[] perRow = new int[size.height];
+
+        int first = -1, last = -1;
+
+        for (int y = 0; y < size.height; y++)
+        {
+            for (int x = 0; x < size.width; x++)
+            {
+                int argb = image.getRGB(x, y);
+
+                // The TEXT, which is white on a navy pill - not the pill itself.
+                if (((argb >>> 24) & 0xFF) > 200 && ((argb >> 16) & 0xFF) > 200
+                    && ((argb >> 8) & 0xFF) > 200 && (argb & 0xFF) > 200)
+                {
+                    perRow[y]++;
+                }
+            }
+
+            if (perRow[y] > 0)
+            {
+                if (first < 0) first = y;
+
+                last = y;
+            }
+        }
+
+        assertTrue(first >= 0 && last > first,
+            "nothing was drawn for " + arrow + " at all, so this measures an empty picture");
+
+        int widest = first;
+
+        for (int y = first; y <= last; y++)
+        {
+            if (perRow[y] > perRow[widest]) widest = y;
+        }
+
+        return (widest - first) * 100 / (last - first);
+    }
+
+    /**
+     * A caption stood on end, coloured so its text can be told from its pill.
+     */
+    private org.traincontrol.gui.StationCaption onEnd(String text)
+    {
+        org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+        pill.setPill(true);
+        pill.setRotated(true);
+        pill.setFont(new java.awt.Font(
+            org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 24));
+        pill.setBackground(org.traincontrol.gui.StationCaption.PILL);
+        pill.setForeground(java.awt.Color.WHITE);
+        pill.setText(text);
+        pill.setTileGeometry(60, 0, 60,
+            org.traincontrol.gui.StationCaption.captionOffset(60, pill.lineHeight()));
+
+        return pill;
     }
 
     /**

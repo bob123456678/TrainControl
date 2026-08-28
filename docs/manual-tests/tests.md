@@ -3099,7 +3099,7 @@ nothing left to do and nothing left to check.
 
 ### MT-060 - 2026-08-22 - testAutoDetect needs a Central Station
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** hands-on testing  
 **Written:** 2026-08-22
 
@@ -3111,6 +3111,17 @@ defect, and is why it is excluded from the fast battery.
 
 **Claude, 2026-08-22.** Carried over from the "Still untested, and known" list at the bottom of
 the old file. It has been red in every run this week for this reason.
+
+**Adam, 2026-08-27 (triage).** Does not work.
+
+it works 9 out of 10 times.  sometimes I see this without a positive detection: 192.168.50.25 is reachable
+.......... and then it just goes on.  if I try again, it gets redetected.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-27.**
+
+Fixed 2026-08-27. The message Adam quoted - '192.168.50.25 is reachable' - is printed the instant a ping succeeds, so the host answered and was then dropped by the web check that follows. The asymmetry was sitting in CSDetect: isReachable retries PING_RETRY times, checkWebServer got a single 500ms connect-and-read, swallowed the exception and returned false. One transient timeout therefore threw away a station that had just proved it was there, and the scan walked past it - which is exactly the one-in-ten Adam measured, and exactly why retrying the whole detect finds it. WEB_RETRY = 3 now, and the retry lives INSIDE the two-argument checkWebServer that both callers already use, so there is no new call site to remember. Costs nothing on the ~250 dead addresses: the web check only runs on hosts that already answered a ping. Covered by core.testCentralStationDetection, which stands up a real HTTP server that is slow once and fine afterwards; all three mutations bite, including WEB_RETRY=1, which reproduces the original bug deterministically. Still needs Adam's hands: the fix cannot be proved on the real railway from here.
 
 ---
 
@@ -10239,6 +10250,10 @@ move setting under the autonomy option category
 
 Two changes on 2026-08-27 that show on this screen. Station captions sit lower - nine pixels at the sixty-pixel view, written as three twentieths of a tile so it holds at every size - because centred exactly on a rail they read as sitting on top of the track rather than labelling it. And an empty station's dash is now centred on its square; the old arithmetic only ever subtracted, so a caption wider than its square was centred and a narrower one was left hard against the left edge, which meant the same caption moved as a train arrived and left.
 
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-198"></a>
@@ -10309,6 +10324,10 @@ Fifth pass, against the ruling of 2026-08-26. (1) The locomotive has a pilot now
 
 Settled 2026-08-27 after eight passes. The locomotive is now ONE closed path walked around the outline, not a stack of primitives - that change is what fixed it, and it came from Adam's diagnosis rather than from any choice of parts. The plow took four passes on its own, all four lost to ambiguous wording on my side; drawing the candidates and having him name one settled it in two rounds, first the shape then how much flat bottom sits between its angles. Worth reusing. Final set: locomotive with a raked plow and filled wheels; track with rail showing past the sleepers at both ends; a play triangle with a punched keyline; an upper-quadrant semaphore raised 40 degrees with an arrow on the arc its tip travels; a symmetrical S for routes; stats and log untouched. Every icon sits within a pixel or two of centre in both axes except stats (bars on a baseline) and the play triangle (a deliberate 124/105 lean - a triangle's weight sits behind its point). The routes and keyboard tabs are also swapped, which is worth a look in its own right: the order is now control, diagram, autonomy, ROUTES, KEYBOARD, stats, log, and each tab should wear its own icon and tooltip.
 
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 <a id="mt-199"></a>
 
 ### MT-199 - 2026-08-26 - What the captions say in each editor
@@ -10341,6 +10360,10 @@ applied at the point of use is a rule with four chances to be forgotten, and thi
 that leaves is whether the rule is asked the right question, so a second test reads the call itself -
 it must ask whether this grid is in an editor and whether that editor is the autonomy one, because
 `layout.getEdit()` is true in BOTH and has been wrong here before.
+
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

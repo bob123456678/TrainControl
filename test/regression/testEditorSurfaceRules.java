@@ -1370,10 +1370,66 @@ public class testEditorSurfaceRules
             + "else - or by nothing, and every caption sits wherever the layout drops it");
 
         // The ORIENTATION, which is the argument that can be wrong without anything failing.
+        //
+        // It moved on 2026-08-27, from captionOffset to setRotated: rotating the north-south captions
+        // made the offset the same for both, so the orientation now decides which WAY a caption is
+        // turned rather than how far down it sits. Still asked of THIS square, and still the thing
+        // that can be a constant without anything falling over.
         assertTrue(grid.contains("runsNorthSouth(c)"),
-            "captionOffset is called without asking which way the rails run on THIS square. Pass a "
-            + "constant and every caption is placed for the same orientation: half of them lie across "
-            + "track that runs the other way");
+            "the grid no longer asks which way the rails run on THIS square. Pass a constant and every "
+            + "caption is turned the same way: half of them read upwards along track that runs across");
+
+        // The ANSWER and not just the call.  `setRotated(` alone would be satisfied by
+        // `setRotated(false)`, which is the whole defect with the guard still in place - and it is
+        // the mistake this morning's onPill assertion made, so it is not a hypothetical one.
+        assertTrue(grid.contains("setRotated(onEnd)"),
+            "the caption is not told what runsNorthSouth answered - pass a constant and either every "
+            + "caption stands on end or none does, and half of them lie across the rail they name, "
+            + "which is what the rotation was asked for to stop");
+
+        assertTrue(grid.contains("onEnd = runsNorthSouth(c)"),
+            "what the caption is told to do is no longer THIS square's orientation, so the rotation "
+            + "and the placement can now disagree about which way the rails run");
+
+        // BOTH shifts are paid back before the constraints are used again.
+        //
+        // A caption borrows room to centre itself - a column to the left when flat, a row above when
+        // stood on end - by moving gbc, and gbc is then REUSED by the address label for the same
+        // square. Leaving the shift in draws that label a whole tile away, over its neighbour's. That
+        // is not hypothetical: it happened with gridx, fifteen times on one page of Adam's layout, and
+        // the bounds harness could not see it because it built its grids with addresses switched off.
+        //
+        // gridy joined it on 2026-08-27 with the rotation, and the mutation proved the point - taking
+        // the payback out again left the whole suite green.
+        //
+        // Read rather than run, and that is a real limitation: the behavioural version needs a square
+        // that carries BOTH an autonomy caption and an address label, which means standing up an
+        // autonomy graph. What this catches is the payback being dropped, which is how the bug
+        // actually arrived both times.
+        // Asserted by POSITION, not by counting.
+        //
+        // Counting was the first attempt and it was worthless: both statements appear three times in
+        // this file, so dropping one left two and the check passed. Both mutations survived it. The
+        // property was never "it appears often enough" - it is that the shift is undone in the window
+        // between adding the caption and the next thing that reads gbc.
+        int added = grid.indexOf("container.add(text, gbc);");
+        int reused = grid.indexOf("getShowAddress()");
+
+        assertTrue(added >= 0 && reused > added,
+            "cannot find the caption being added and the address label reading the constraints after "
+            + "it, so this check cannot see the window it is about");
+
+        String between = grid.substring(added, reused);
+
+        assertTrue(between.contains("gbc.gridx = x;"),
+            "the column a caption borrows is never given back before the constraints are reused, so "
+            + "the address label for a captioned square is drawn a tile to the LEFT, on top of its "
+            + "neighbour's - fifteen of them on one page of Adam's layout the last time");
+
+        assertTrue(between.contains("gbc.gridy = y;"),
+            "the row a rotated caption borrows is never given back, so the address label for that "
+            + "square is drawn a whole tile ABOVE it - the same defect gridx already had, in the "
+            + "direction the rotation just added");
 
         // And the caption's OWN line height, not the tile size or a guess.
         assertTrue(grid.contains("text.lineHeight()"),
