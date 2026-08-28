@@ -1876,6 +1876,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Map<String, String> renamedFromTo,
         java.util.Collection<String> deliberatelyRemoved)
     {
+        // NO LOCAL LAYOUT, nothing to reconcile (OB-127).
+        //
+        // All three page writers come through here - this method's javadoc says so, and it is why the
+        // index-readability check below sits here rather than at three doors. It is the same single
+        // place for this.
+        //
+        // Without it, a failed switch to a Central Station layout left the layout list empty while an
+        // index was still readable somewhere, and every page in that index was reported absent: the
+        // operator is asked whether five pages they were looking at a moment ago have been deleted,
+        // and answering wrongly retires the ids their autonomy settings hang off.
+        if (!isLocalLayout())
+        {
+            showOnTheEventThread(I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"));
+
+            return null;
+        }
+
         final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
             this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
 
@@ -23320,9 +23337,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
     
+    /**
+     * The folder the local layout lives in, or null when the layout is not a local one (OB-127).
+     *
+     * NULL FOR THE EMPTY STRING, which is what switching to a Central Station layout stores. This used
+     * to read the preference with a null default and hand the stored empty string straight back, so it
+     * disagreed with `isLocalLayout` - which reads the same preference with an empty-string default
+     * and calls that "not local" - about the one value the switch actually writes.
+     *
+     * An empty path is not nothing: `new File("")` is the working directory, and that is where
+     * `readLayoutIndexIds` then looked for an index. With the layout list just cleared by the switch,
+     * every page such an index lists comes back as absent, which is the warning listing pages that
+     * were loaded a moment ago.
+     *
+     * Three of this method's callers already defended against the empty string by hand and five did
+     * not. A value that has to be remembered at eight call sites belongs behind one.
+     *
+     * @return the folder, or null when there is no local layout
+     */
     private String getLocalLayoutPath()
     {
-        return prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
+        String path = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
+
+        return path == null || path.isEmpty() ? null : path;
     }
     
     public void showFileExplorer(File path)

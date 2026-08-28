@@ -217,6 +217,7 @@
         <test-one-class class="testMockCentralStation"/>
         <test-one-class class="testNoSelfRecursiveWrappers"/>
         <test-one-class class="testEditorSurfaceRules"/>
+        <test-one-class class="testSwitchingToACentralStationLayout"/>
         <test-one-class class="testErrorsStopTheSetupRunning"/>
         <test-one-class class="testRenameRoundTripThroughTheUIPath"/>
         <test-one-class class="testTimetableCaptureThroughARealRun"/>
