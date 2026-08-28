@@ -4868,8 +4868,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         // Committed: from here the switch is going to happen, and nothing else may start one until it
         // has (FR-036 follow-up).  After the question, so answering "stay here" leaves this alone.
-        changingPage = true;
-
         // The window STAYS.
         //
         // Everything above this line is unchanged - the same three answers, the same save, the same
@@ -4904,6 +4902,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         {
             layout.setEdit(false);
 
+            // Raised HERE, immediately before the work is posted.
+            //
+            // It used to go up as soon as the switch was committed, with `undoAutonomyEdits` - which parses
+            // every page - still to run. A throw there left it up with nothing on its way to lower it, and
+            // the editor then refused every page and mode change in silence until it was closed and
+            // reopened: a worse fault than the overlapping switches it exists to stop.
+            changingPage = true;
+
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 parent.autonomyEditorClosed();
@@ -4917,8 +4923,16 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // Both halves of the edit, or neither - see confirmExit
         undoAutonomyEdits();
 
+        // Raised HERE, immediately before the work is posted.
+        //
+        // It used to go up as soon as the switch was committed, with `undoAutonomyEdits` - which parses
+        // every page - still to run. A throw there left it up with nothing on its way to lower it, and
+        // the editor then refused every page and mode change in silence until it was closed and
+        // reopened: a worse fault than the overlapping switches it exists to stop.
+        changingPage = true;
+
         javax.swing.SwingUtilities.invokeLater(() ->
-            parent.layoutEditingComplete(() ->
+            parent.layoutEditingCompleteThen(() ->
                 javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy))));
     }
 

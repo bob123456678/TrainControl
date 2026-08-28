@@ -4726,7 +4726,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public boolean isLayoutEditorOpen()
     {
-        return editLayoutButton != null && !editLayoutButton.isEnabled();
+        // THE EDITOR, not the button that opens it.
+        //
+        // This used to read `!editLayoutButton.isEnabled()`, which was true for as long as the button
+        // being grey had exactly one cause. OB-126 gave it a second - there is no local layout to edit
+        // - and six callers went on reading it as "an editor is open": every item in the Layout menu
+        // greyed itself on a Central Station layout, including the ones that switch back, and the
+        // Autonomy menu did the same. Both escape hatches were inside the dead menus.
+        //
+        // This is the question the other places that ask it use, and it was already three lines from
+        // where that change was made.
+        return openEditor != null && openEditor.isDisplayable();
     }
 
     /**
@@ -6516,6 +6526,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         this.model.logf("layout.ui.infoLayoutInitializedAt", path);
                         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+
+                        // The editing controls answer differently now (OB-126): this is what decides whether
+                        // there is a layout of his own to edit.
+                        applyLayoutEditingAvailability();
 
                         this.syncWithCS2();
                         this.repaintLoc();
@@ -17408,6 +17422,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 String filepath = f.getPath();
 
                 prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+
+                // The editing controls answer differently now (OB-126): this is what decides whether
+                // there is a layout of his own to edit.
+                applyLayoutEditingAvailability();
                 
                 this.initializeLocalLayoutMenuItem.setEnabled(false);
 
@@ -17429,6 +17447,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, fc.getSelectedFile().getPath());
+
+        // The editing controls answer differently now (OB-126): this is what decides whether
+        // there is a layout of his own to edit.
+        applyLayoutEditingAvailability();
 
         // Behind a spinner, and split in two.
         //
@@ -18113,6 +18135,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Revert preference for graph UI
 
         if (after != null) after.run();
+    }
+
+    /**
+     * The same, with the caller's continuation guaranteed to run.
+     *
+     * `after` is what an editor uses to finish a page switch, and above it is the last statement of a
+     * dozen - so anything throwing on the way skipped it, and the editor was left with its switch
+     * latch raised, refusing every further page and mode change in silence for the life of the
+     * window. Found by a threading sweep.
+     *
+     * A `finally`, which is what `BusyDialog.run` does with its own continuation and for the same
+     * reason: the work can fail, and the thing that puts the window back together afterwards must not
+     * fail with it.
+     *
+     * @param after what to run when the refresh has finished, failed, or thrown
+     */
+    public void layoutEditingCompleteThen(Runnable after)
+    {
+        try
+        {
+            layoutEditingComplete(null);
+        }
+        finally
+        {
+            if (after != null) after.run();
+        }
     }
     
     /**
@@ -20513,6 +20561,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         // Load the layout
                         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
+
+                        // The editing controls answer differently now (OB-126): this is what decides whether
+                        // there is a layout of his own to edit.
+                        applyLayoutEditingAvailability();
                         this.syncWithCS2();
                         this.repaintLayout();
                         this.KeyboardTab.setSelectedIndex(1);
@@ -23103,12 +23155,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Adam: "switch to central station layout is NOT greyed out in debug/simulate mode."
             final boolean connected = isCentralStationConnected();
 
+            // Manage Pages is NOT set here any more (reviewer, 2026-08-28).
+            //
+            // This method used to decide it from `isLocalLayout()` alone, which is half the question -
+            // a local folder with nothing readable in it is still local - and it runs from
+            // `repaintLayout`, so it re-enabled the item moments after the rule below had greyed it.
+            // Two writers of one property, disagreeing.
+            applyLayoutEditingAvailability();
+
             // Set UI label
             if (!isLocalLayout())
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
-                this.modifyLocalLayoutMenu.setEnabled(false);
                 this.downloadCSLayoutMenuItem.setEnabled(connected
                     && !this.model.getLayoutList().isEmpty());
                 this.popUpAllMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
@@ -23117,7 +23176,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
                 this.switchCSLayoutMenuItem.setEnabled(connected);
-                this.modifyLocalLayoutMenu.setEnabled(true);
                 this.downloadCSLayoutMenuItem.setEnabled(false);
                 this.popUpAllMenuItem.setEnabled(true);
             }

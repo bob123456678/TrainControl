@@ -46,29 +46,29 @@ public class testTrainTailClearsEdges
         // A measured path: 200 has been travelled, and this edge was left 40 ago.
         for (int length : new int[] { 60, 150, 400 })
         {
-            assertTrue(Layout.tailMayStillBeOn(200, 40, 1, length),
+            assertTrue(Layout.tailMayStillBeOn(200, 40, 1, 40, length),
                 "a train " + length + " long was let off an edge only 40 behind its head, so a "
                 + "turnout under the middle of it could be thrown");
         }
 
         // Far enough back for a short train, not for a long one.
-        assertFalse(Layout.tailMayStillBeOn(500, 200, 3, 150),
+        assertFalse(Layout.tailMayStillBeOn(500, 200, 3, 60, 150),
             "a 150 train is still held 200 behind the head, so nothing behind a short train is ever "
             + "released and its signals stay refused");
 
-        assertTrue(Layout.tailMayStillBeOn(500, 200, 3, 400),
+        assertTrue(Layout.tailMayStillBeOn(500, 200, 3, 60, 400),
             "a 400 train was released with only 200 behind the head - its tail is still there");
 
         // The boundary: the tail ends exactly at the join.
-        assertFalse(Layout.tailMayStillBeOn(500, 150, 2, 150),
+        assertFalse(Layout.tailMayStillBeOn(500, 150, 2, 50, 150),
             "a train exactly its own length behind the head is still held, so an edge is never "
             + "released at the moment the tail clears it");
 
         // A train with no length recorded is not a reason to hold anything.
-        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, 0),
+        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, 0, 0),
             "an edge is held for a train whose length nobody has entered");
 
-        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, null),
+        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, 0, null),
             "a null train length throws or holds, when it means the same as not knowing");
     }
 
@@ -93,12 +93,12 @@ public class testTrainTailClearsEdges
         // green. The edge the head has only just left is the one that needs this clause.
         for (int length : new int[] { 60, 150, 400 })
         {
-            assertFalse(Layout.tailMayStillBeOn(0, 0, 0, length),
+            assertFalse(Layout.tailMayStillBeOn(0, 0, 0, 0, length),
                 "a path with no measured lengths held the edge the head had just left, for a "
                 + length + " train - so on a railway where nobody has measured anything the first "
                 + "edge behind the train is never released");
 
-            assertFalse(Layout.tailMayStillBeOn(0, 0, 1, length),
+            assertFalse(Layout.tailMayStillBeOn(0, 0, 1, 0, length),
                 "a path with no measured lengths held an edge for a " + length + " train, so on a "
                 + "railway where nobody has measured anything nothing behind a train is ever released");
         }
@@ -107,16 +107,30 @@ public class testTrainTailClearsEdges
         // head has moved on over track nobody has measured, so where the tail is cannot be known.
         for (int length : new int[] { 60, 150, 400 })
         {
-            assertFalse(Layout.tailMayStillBeOn(200, 0, 1, length),
+            assertFalse(Layout.tailMayStillBeOn(200, 0, 1, 0, length),
                 "an edge is held although nothing measurable has happened since the head left it - a "
                 + "path with lengths on its platforms and nowhere else therefore holds every edge "
                 + "after the first measured one until the run ends, and with atomic routes on that "
                 + "leaves every signal behind the train refused");
         }
 
+        // THE CASE A REVIEWER FOUND, which the first version of this rule got wrong.
+        //
+        // Some distance has accrued - short of the train - and then the head runs on over unmeasured
+        // track. Asking the running total, as the first version did, could only ever escape while that
+        // total had stayed at zero, so this held for the rest of the run. Edges [1, 1, 0, 0, 0] with a
+        // train of 3, which is a combination his own railway has.
+        for (int length : new int[] { 60, 150, 400 })
+        {
+            assertFalse(Layout.tailMayStillBeOn(200, 40, 3, 0, length),
+                "an edge with some distance behind it - short of a " + length + " train - is held "
+                + "although the edge just travelled was unmeasured. Every later unmeasured edge "
+                + "leaves the distance exactly where it was, so this is held until the run ends");
+        }
+
         // But an edge the head has only JUST left is a different thing: no distance yet because
         // nothing has happened, not because nothing is measured.
-        assertTrue(Layout.tailMayStillBeOn(200, 0, 0, 150),
+        assertTrue(Layout.tailMayStillBeOn(200, 0, 0, 90, 150),
             "the edge the head has only just left is released immediately, so a turnout directly "
             + "under the train can be thrown");
     }
@@ -137,11 +151,19 @@ public class testTrainTailClearsEdges
             "src/org/traincontrol/automation/Layout.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(source.contains(
-            "tailMayStillBeOn(travelledOnThisPath, waiting[1], waiting[2],"),
+        assertTrue(source.contains("tailMayStillBeOn(travelledOnThisPath, waiting[1], waiting[2],"),
             "the clearing loop no longer asks tailMayStillBeOn with the path total, the distance "
             + "behind and how many edges ago - so the rule is tested here and something else decides "
             + "what actually happens on the railway");
+
+        // AND the edge just travelled, which is the argument the escape actually turns on.
+        //
+        // Without it the rule is back to asking a running total that never resets - the fault a
+        // reviewer found in the first version of this fix, which is the same fault the fix was for.
+        assertTrue(source.contains("justTravelled, loc.getTrainLength()"),
+            "the rule is no longer told the length of the edge just travelled, so its escape is back "
+            + "to reading an accumulator that never resets - and an edge with some distance behind it "
+            + "is held for the rest of the run");
 
         assertTrue(source.contains("waiting[2]++"),
             "nothing counts how many edges have passed since an entry was queued, so the rule cannot "

@@ -1752,6 +1752,43 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * "Is an editor open" is asked of the EDITOR, not of the button that opens one.
+     *
+     * This was `!editLayoutButton.isEnabled()`, which was a true answer for as long as the button
+     * being grey had exactly one cause. OB-126 gave it a second - there is no local layout to edit -
+     * and six callers went on reading it as "an editor is open". Switching to a Central Station layout
+     * therefore greyed every item in the Layout menu, including the ones that switch back, and did the
+     * same to the Autonomy menu. Both escape hatches were inside the dead menus: restart required,
+     * from a change meant to stop the application offering an editor it could not open.
+     *
+     * A reviewer found it within the hour. Nothing tested the predicate, which is how a proxy for a
+     * fact gets a second job and nobody notices.
+     *
+     * MUTATION: deriving it from the button again fails this.
+     */
+    @Test
+    public void testWhetherAnEditorIsOpenIsAskedOfTheEditor() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String open = withoutComments(bodyOf(ui, "public boolean isLayoutEditorOpen()"));
+
+        assertFalse(open.isEmpty(), "cannot find isLayoutEditorOpen - has it been renamed?");
+
+        assertTrue(open.contains("openEditor"),
+            "whether an editor is open is decided without looking at the editor, so anything else "
+            + "that greys the Edit button - such as there being no local layout - now reads as an "
+            + "editor being open, and every menu that guards on it greys itself");
+
+        assertFalse(open.contains("editLayoutButton"),
+            "the answer is read off the Edit button again. The button's greyness has more than one "
+            + "cause now, so it cannot stand for this one: on a Central Station layout the Layout and "
+            + "Autonomy menus both go dead, with the way back inside them");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)

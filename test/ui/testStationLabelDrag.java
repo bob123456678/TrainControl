@@ -303,6 +303,23 @@ public class testStationLabelDrag
         assertTrue(pressed.contains("isLeftMouseButton"),
             "any mouse button now starts a station-label drag, so a right-press that wanders a few "
             + "pixels moves the label and swallows the menu that was being asked for");
+
+        assertTrue(pressed.contains("dragging[0] = false"),
+            "a press of the wrong button clears the start point but leaves the drag armed, so the "
+            + "ghost freezes and the eventual release still commits a move");
+
+        // AND THE RELEASE, which is where the move is actually committed.
+        //
+        // The first version of this test asserted a token in mousePressed and never mentioned this
+        // method - so a right-release part way through a left-drag still dropped the label, at
+        // wherever the pointer had reached, with no drop mark having been shown there.
+        String released = bodyOf(grid, "public void mouseReleased(MouseEvent e)");
+
+        assertFalse(released.isEmpty(), "the drag no longer handles the mouse coming up");
+
+        assertTrue(released.contains("isLeftMouseButton"),
+            "the release commits a caption move whatever button was let go, so pressing another "
+            + "button mid-drag - which is how a person cancels - drops the label instead");
     }
 
     /**

@@ -195,7 +195,14 @@ public class LayoutGrid
                 // well, which looked like a menu that failed to appear".
                 if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
                 {
+                    // BOTH cleared, not just the start point.
+                    //
+                    // Clearing only `began` left `dragging` true, so a right-press part way through a
+                    // left-drag froze the ghost and the drop mark - `mouseDragged` returns on a null
+                    // start - while the right RELEASE still committed the move, at wherever the pointer
+                    // had got to. Pressing the other button mid-drag is what a person does to cancel.
                     began[0] = null;
+                    dragging[0] = false;
 
                     return;
                 }
@@ -236,6 +243,23 @@ public class LayoutGrid
             @Override
             public void mouseReleased(MouseEvent e)
             {
+                // The LEFT button finishes a drag; any other one cancels it.
+                //
+                // This had no button test at all: the guard went on `mousePressed` only, so a release
+                // of some other button still read `dragging` and committed the drop. Found by a
+                // reviewer, and neither of the tests written with that guard could see it - both
+                // asserted the presence of a token in `mousePressed` and neither mentioned this method.
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
+                {
+                    began[0] = null;
+                    dragging[0] = false;
+
+                    editor.hideCaptionGhost();
+                    editor.clearCaptionDropTarget();
+
+                    return;
+                }
+
                 boolean moved = dragging[0];
 
                 began[0] = null;

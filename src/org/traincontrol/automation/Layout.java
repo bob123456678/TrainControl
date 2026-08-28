@@ -3413,9 +3413,9 @@ public class Layout
      * @return whether to keep holding it
      */
     public static boolean tailMayStillBeOn(int travelledOnThisPath, int behind, int edgesSince,
-        Integer trainLength)
+        int justTravelled, Integer trainLength)
     {
-        // A railway where nobody has measured anything.
+        // Nothing measured ANYWHERE on this path yet, including the edge just left.
         if (travelledOnThisPath <= 0) return false;
 
         int length = trainLength == null ? 0 : trainLength;
@@ -3423,8 +3423,18 @@ public class Layout
         // The tail is provably past, which is the whole point of the bookkeeping.
         if (behind >= length) return false;
 
-        // The head has moved on and nothing measurable came with it, so this cannot be answered.
-        if (behind == 0 && edgesSince > 0) return false;
+        // THE EDGE JUST TRAVERSED had no length, and the head has moved on.
+        //
+        // Asked of that edge rather than of the running total, which is the correction a reviewer
+        // found within the hour. `behind` accumulates and never resets, so a test on it could only
+        // ever fire while it had stayed at zero - and once any measured edge put it above zero but
+        // short of the train, every later unmeasured edge left it exactly there. Edges [1, 1, 0, 0, 0]
+        // with a train of 3: held, held, and then held for the rest of the run.
+        //
+        // That is the same never-resetting-accumulator fault as the defect this method was written to
+        // fix, one scope narrower, and his own railway has the combination - sixty edges at zero,
+        // thirty measured, trains of two, three and four.
+        if (justTravelled == 0 && edgesSince > 0) return false;
 
         return true;
     }
@@ -4842,7 +4852,7 @@ public class Layout
                             // whole run. The old code expressed the same escape as "the batch sums to
                             // zero"; this expresses it as "nothing on this path has a length".
                             if (tailMayStillBeOn(travelledOnThisPath, waiting[1], waiting[2],
-                                loc.getTrainLength()))
+                                justTravelled, loc.getTrainLength()))
                             {
                                 // Still under the train.  In atomic mode nothing was going to be
                                 // unlocked anyway, so this only reports in the mode it can happen in.
