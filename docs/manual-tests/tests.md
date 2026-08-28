@@ -10519,6 +10519,10 @@ were asked, you decided, and the railway did nothing worth recording. There is a
 other way, since your log is the record of what the railway was asked to do and not only of what it
 did. Left alone rather than changed quietly; say the word either way.
 
+**Adam, 2026-08-27 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 <a id="mt-200"></a>
 
 ### MT-200 - 2026-08-26 - Grey station labels

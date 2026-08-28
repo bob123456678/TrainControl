@@ -122,6 +122,9 @@
         <test-one-class class="testLocIconCrop"/>
         <test-one-class class="testLocMappingPages"/>
         <test-one-class class="testCentralStationDetection"/>
+        <test-one-class class="testRouteEditorShading"/>
+        <test-one-class class="testStationLabelPrefill"/>
+        <test-one-class class="testStationLabelDrag"/>
         <test-one-class class="testTheGoldenLayoutHoldsTogether"/>
         <test-one-class class="testARouteDoesNotThrowSwitchesUnderATrain"/>
         <test-one-class class="testDeleteAndInsertKeepTheSetup"/>

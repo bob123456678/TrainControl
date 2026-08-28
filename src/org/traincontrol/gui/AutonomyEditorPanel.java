@@ -1977,6 +1977,119 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether a dragged station label may land here (FR-035).
+     *
+     * The predicate the drag mark asks WHILE dragging and `moveCaption` asks on release, so what is
+     * shown green is exactly what will be accepted. A highlight with a rule of its own is the fault
+     * behind OB-057 and OB-090 and one of this morning's review findings: a control that offers what
+     * the action then refuses.
+     *
+     * @param from the square the label is on now
+     * @param to the square under the pointer
+     * @param onTarget what is drawn there
+     * @return whether the drop would work
+     */
+    public boolean canDropCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
+    {
+        return refuseCaptionDrop(from, to, onTarget) == null;
+    }
+
+    /**
+     * Why a dragged label may not land here, as something to say, or null when it may.
+     *
+     * One method rather than a boolean and a separate message, because a refusal and its reason go
+     * out of step the moment they are written twice - and a drag that snapped back saying the wrong
+     * thing would be worse than one that said nothing.
+     *
+     * Returns the EMPTY STRING for the one refusal with nothing to report: a label dropped back on the
+     * square it came from. That is not a mistake, and telling somebody off for it would be noise.
+     *
+     * @param from the square the label is on now
+     * @param to the square under the pointer
+     * @param onTarget what is drawn there
+     * @return the message, "" for a silent no, or null for yes
+     */
+    private String refuseCaptionDrop(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
+    {
+        if (session == null || from == null) return "";
+
+        // Nothing to move.
+        if (session.getCaptionTarget(from) == null) return "";
+
+        // Dropped outside the diagram, which is a slip rather than an instruction.
+        if (to == null) return I18n.t("autosetup.ui.errorDropOffDiagram");
+
+        // Put back where it started.
+        if (to.equals(from)) return "";
+
+        if (from.getPage() == null || !from.getPage().equals(to.getPage()))
+        {
+            return I18n.t("autosetup.ui.errorDropOffDiagram");
+        }
+
+        // A control, where a click throws real ironwork and a name would sit in the way of it.
+        if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
+
+        // REFUSED rather than replaced.  The name already there would disappear with nothing on the
+        // diagram to say it ever existed, and the operator would be looking at the label they had just
+        // dragged, wondering what became of the other one.
+        if (session.getCaptionTarget(to) != null)
+        {
+            return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
+        }
+
+        return null;
+    }
+
+    /**
+     * Moves a station label from one square to another (FR-035).
+     *
+     * Adam: "it is equivalent to just adding the label at the destination when the mouse is released,
+     * since the command is wired."  So this is the caption command run twice - cleared where it was,
+     * set where it landed - and NOT a new stored position. That is what keeps a dragged label out of
+     * the paths where things here usually break: there is no extra field to carry through a page move,
+     * a rename, an insert or an undo, because there is no extra field.
+     *
+     * Every refusal is spoken. A drag that snapped back without saying anything would be
+     * indistinguishable from one the window had failed to notice.
+     *
+     * The landing rule is `mayCarryACaption`, which is the same method the right-click menu asks
+     * before offering the item at all. Two spellings of "where may a name go" would eventually
+     * disagree, and the disagreement would be invisible: the menu would offer what the drag refused.
+     *
+     * @param from the square the label is on now
+     * @param to the square it was dropped on
+     * @param onTarget what is drawn on that square
+     * @return whether the label moved
+     */
+    public boolean moveCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
+    {
+        String refused = refuseCaptionDrop(from, to, onTarget);
+
+        if (refused != null)
+        {
+            // The empty string is the silent refusal - dropped back where it started, which is not a
+            // mistake and has nothing to say about itself.
+            if (!refused.isEmpty()) say(hint, refused);
+
+            return false;
+        }
+
+        TileKey station = session.getCaptionTarget(from);
+
+        session.setCaption(from, null);
+        session.setCaption(to, station);
+
+        if (onDiagramChanged != null) onDiagramChanged.run();
+
+        say(hint, I18n.f("autosetup.ui.setStationLabel", describeTile(station)));
+
+        refresh();
+
+        return true;
+    }
+
+    /**
      * The station most recently clicked or right-clicked, so a label knows what it is probably for.
      *
      * Naming a square is a two-step job: look at the station, then put its name on a square beside
@@ -1986,6 +2099,90 @@ public class AutonomyEditorPanel extends JPanel
      * are standing next to buried somewhere in it.
      */
     private TileKey lastStationTouched;
+
+    /**
+     * The station nearest this square, by tile distance (FR-034).
+     *
+     * Adam: "prefill it with the label of the nearest station by tile distance."  A label is put on a
+     * square near the station it names - that is what makes it readable - so the nearest station is
+     * the answer often enough to be the default, and unlike the last-clicked memory it is right
+     * without anybody having done anything first.
+     *
+     * ON THIS PAGE ONLY. A page is a separate drawing with its own coordinates, so the distance
+     * between a square here and a station on another page is not a distance at all - it is two
+     * unrelated pairs of numbers subtracted. A page with no stations gets no default rather than a
+     * meaningless one.
+     *
+     * Squared distance, because only the ORDER matters and the square root does not change it.
+     * Straight-line rather than counting steps along the track: the label is being placed by eye, on
+     * the diagram, and what the eye means by "that station there" is how far across the page it is.
+     *
+     * Ties are broken by whichever the store lists first, and deliberately not by name. Two stations
+     * exactly equidistant from a square is a genuine toss-up, and sorting it would only make the
+     * answer look considered.
+     *
+     * @param from the square the label would go on
+     * @return the nearest station on the same page, or null when there is none
+     */
+    private TileKey nearestStation(TileKey from)
+    {
+        if (from == null || session == null || session.getReducer() == null) return null;
+
+        java.util.List<TileKey> stations = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
+            : session.getReducer().getPoints().values())
+        {
+            if (point.isStation() && point.getName() != null && point.getTile() != null)
+            {
+                stations.add(point.getTile());
+            }
+        }
+
+        return nearestOf(from, stations);
+    }
+
+    /**
+     * The nearest of a set of squares, by straight-line distance on the same page (FR-034).
+     *
+     * Public and taking squares rather than a session so the rule can be checked without an autonomy
+     * graph, a window or a railway - which is the only way the interesting cases get tested at all:
+     * a station on another page, a tie, and nothing on the page.
+     *
+     * The caller is what turns the graph into a list of squares; this is what picks one.
+     *
+     * @param from the square the label would go on
+     * @param stations the squares to choose between
+     * @return the nearest on the same page, or null when there is none
+     */
+    public static TileKey nearestOf(TileKey from, java.util.Collection<TileKey> stations)
+    {
+        if (from == null || from.getPage() == null || stations == null) return null;
+
+        TileKey best = null;
+        long closest = Long.MAX_VALUE;
+
+        for (TileKey at : stations)
+        {
+            // ANOTHER PAGE is not further away - it is not on the same drawing at all, and
+            // subtracting its coordinates from these would be arithmetic on unrelated numbers.
+            if (at == null || !from.getPage().equals(at.getPage())) continue;
+
+            long dx = at.getX() - from.getX();
+            long dy = at.getY() - from.getY();
+
+            // Squared: only the ORDER matters, and the square root does not change it.
+            long away = dx * dx + dy * dy;
+
+            if (away < closest)
+            {
+                closest = away;
+                best = at;
+            }
+        }
+
+        return best;
+    }
 
     /**
      * Notes a square if it is a station, so the next label offered defaults to it.
@@ -2063,7 +2260,21 @@ public class AutonomyEditorPanel extends JPanel
         // rather than an answer to be confirmed.
         TileKey showing = session.getCaptionTarget(tile);
 
-        if (showing == null) showing = lastStationTouched;
+        // The station just clicked, and ONLY for the next square (FR-034).
+        //
+        // Taken rather than read: it is consumed here whether or not it turns out to be usable, so a
+        // click on a platform defaults the one label that follows it and nothing after that. It used
+        // to persist for the rest of the session, which meant a station touched once kept winning
+        // labels on the far side of the diagram, long after anybody remembered clicking it.
+        if (showing == null)
+        {
+            showing = lastStationTouched;
+
+            lastStationTouched = null;
+        }
+
+        // Failing both, the station this square is actually next to.
+        if (showing == null) showing = nearestStation(tile);
 
         // Matched by SQUARE rather than by name, which is why the default never appeared.
         //

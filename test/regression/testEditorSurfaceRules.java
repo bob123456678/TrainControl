@@ -1500,6 +1500,167 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Hovering a station label outlines its square, once.
+     *
+     * Adam, 2026-08-27: "make sure hovering the label triggers the cell hover effect (blue outline)."
+     *
+     * A caption is a component stacked on top of its square, so moving the pointer onto the name sends
+     * the square a mouseExited and the outline goes out - on the larger and more obvious of the two
+     * things to aim at.
+     *
+     * Two things are asserted and the second matters as much as the first. The label forwards to
+     * `receiveMoveEvent`, which is the method the tiles themselves call, so the outline is the same
+     * one rather than a second drawn to look like it - two appearances would drift. And it forwards
+     * ONLY from the caption: on the square this is already happening, and forwarding again would draw
+     * the same outline twice for one movement.
+     *
+     * MUTATION: dropping the `handle != square` test makes the square forward for itself and fails
+     * the second assertion; drawing a border here instead of forwarding fails the first.
+     */
+    @Test
+    public void testHoveringANameOutlinesItsSquare() throws Exception
+    {
+        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        assertTrue(grid.contains("editor.receiveMoveEvent(e, square)"),
+            "hovering a station label no longer tells the editor where the pointer is, so the blue "
+            + "outline goes out as soon as the pointer moves onto the name - which is the bigger of "
+            + "the two things to point at");
+
+        // EACH handler, asked separately.
+        //
+        // Counting them, and looking for the guard anywhere, was the first version and a mutation
+        // walked through it: taking the guard off mouseEntered alone left it on mouseMoved, so the
+        // name was still in the file and the count was still right. That is the third assertion this
+        // week satisfied by one of two sites, so each one is now asked about itself.
+        for (String handler : new String[] { "mouseEntered", "mouseMoved" })
+        {
+            String body = withoutComments(bodyOf(grid, "public void " + handler + "(MouseEvent e)"));
+
+            assertFalse(body.isEmpty(), "the drag no longer handles " + handler);
+
+            assertTrue(body.contains("editor.receiveMoveEvent(e, square)"),
+                handler + " no longer tells the editor where the pointer is, so the blue outline "
+                + (handler.equals("mouseEntered") ? "never appears when the pointer moves onto a name"
+                    : "goes out as soon as the pointer moves along the name it is already on"));
+
+            assertTrue(body.contains("if (handle != square)"),
+                handler + " forwards for the square as well as for the label, so the same outline is "
+                + "drawn twice for one movement");
+        }
+    }
+
+    /**
+     * A right-click on a station label opens the square's menu.
+     *
+     * Adam, 2026-08-27: "right-clicks on the label don't propagate to the tile underneath it."
+     *
+     * A caption covers the middle of its square and takes every click landing there, so the autonomy
+     * menu - which is how everything about a square is set - did not open on the part of the diagram
+     * people aim at.
+     *
+     * Handed to `receiveClickEvent`, the method the tile's own listener calls, so it is the same menu
+     * rather than a second one built to match. And CONVERTED first: a popup opens at the coordinates
+     * it is given, and the caption's are not the square's - the menu would appear offset by however
+     * far the label sits from its tile.
+     *
+     * MUTATION: dropping the conversion leaves the menu opening in the wrong place, which this cannot
+     * see; dropping the forward entirely, or letting the square forward for itself, fails below.
+     */
+    @Test
+    public void testARightClickOnANameReachesItsSquare() throws Exception
+    {
+        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        String body = withoutComments(bodyOf(grid, "public void mouseClicked(MouseEvent e)"));
+
+        assertFalse(body.isEmpty(), "the drag no longer handles a click at all");
+
+        assertTrue(body.contains("editor.receiveClickEvent("),
+            "a right-click on a station label is swallowed by the label, so the autonomy menu does "
+            + "not open on the middle of a captioned square - which is where people aim");
+
+        assertTrue(body.contains("isRightMouseButton(e)"),
+            "every click on a label is now forwarded to the square, not only the right-click Adam "
+            + "asked for - a left-click would run the selected tool as well as whatever the label does");
+
+        assertTrue(body.contains("convertMouseEvent("),
+            "the click is forwarded without converting its coordinates, so the menu opens offset by "
+            + "however far the label sits from the corner of its tile");
+
+        assertTrue(body.contains("if (handle != square"),
+            "the square forwards its own clicks to itself, so a right-click on plain track opens the "
+            + "menu twice");
+    }
+
+    /**
+     * The autonomy editor says which station the pointer is on.
+     *
+     * Adam, 2026-08-27: "on hover of a tile in the autonomy editor, show the station name as the
+     * tooltip."
+     *
+     * This editor has had no tooltip at all, and the code says why: returning early once "took the
+     * whole gesture away, tooltip and outline together", and OB-091 put back only the outline.
+     *
+     * The name is asked of the SESSION and not of any caption drawn nearby, which is the assertion
+     * worth having. A caption is a label somebody chose to place on some square; the square under the
+     * pointer usually has none, and that is exactly the case this exists for.
+     *
+     * MUTATION: reading the name off a caption, or dropping the setToolTipText call, fails this.
+     */
+    @Test
+    public void testTheAutonomyEditorNamesTheSquareUnderThePointer() throws Exception
+    {
+        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutEditor.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String hover = withoutComments(bodyOf(editor, "public void receiveMoveEvent("));
+
+        assertFalse(hover.isEmpty(), "cannot find receiveMoveEvent - has it been renamed?");
+
+        assertTrue(hover.contains("setToolTipText(stationNameOn(label))"),
+            "the autonomy editor no longer names the square under the pointer, so a station with no "
+            + "label on the diagram is anonymous in the one window whose job is arranging stations");
+
+        String lookup = withoutComments(bodyOf(editor, "private String stationNameOn("));
+
+        assertTrue(lookup.contains("autonomyStationNameAt("),
+            "the name comes from somewhere other than the autonomy session - a caption drawn nearby "
+            + "is a label somebody placed, and the squares this is for have none");
+
+        // And the LABEL's tooltip, which is a different question with a different answer.
+        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        // Scoped to the EDITOR's branch by position.
+        //
+        // `contains` alone passed with the line deleted, because the running diagram sets the same
+        // tooltip in its own branch and the name was still somewhere in the file. Fourth time this
+        // week that a check has been satisfied by the site it was not about.
+        int editorBranch = grid.indexOf("autonomyEditor && captioned != null");
+        int draggable = grid.indexOf("dragCaption(text, text,");
+
+        assertTrue(editorBranch > 0 && draggable > editorBranch,
+            "cannot find the autonomy editor's caption branch, so this check cannot see the region "
+            + "it is about");
+
+        assertTrue(grid.substring(editorBranch, draggable).contains("setToolTipText(captionName)"),
+            "a station label carries no tooltip in the EDITOR, so hovering the name says nothing - "
+            + "and the square underneath cannot answer for it, because a caption sits on blank space "
+            + "BESIDE its platform rather than on it");
+
+        assertTrue(lookup.contains("x < 0 || y < 0"),
+            "the palette is no longer excluded, so hovering a tile that is not on the railway asks "
+            + "the session about coordinates of minus one");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)

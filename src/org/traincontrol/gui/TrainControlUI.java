@@ -4275,9 +4275,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             String name = standing.getName();
 
-            text.append(name.substring(0, Math.min(name.length(), room)).trim());
-
-            text.append(facingArrowOf(at, square));
+            // Through the same join as the single caption, so a south-facing train has its arrow in
+            // front of its name whether it is sharing the platform or standing on it alone.
+            text.append(StationCaption.withArrow(
+                name.substring(0, Math.min(name.length(), room)).trim(),
+                facingArrowOf(at, square)));
         }
 
         return text.toString();

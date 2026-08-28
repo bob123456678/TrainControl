@@ -1696,6 +1696,35 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * A cell with no wash on it, and this is the whole of OB-121.
+     *
+     * The two exemptions above used to `return out` - declining to ADD the grey, which is not the same
+     * thing as not having it. A table cell renderer hands back one recycled component for every cell
+     * in the table, so the label they were given had already been painted grey for the un-editable
+     * cell rendered a moment earlier, and returning it unchanged returned that grey.
+     *
+     * Which is why reading the code could not find this: the exemption was correct, ran, and covered
+     * exactly the right row. What it gave back was somebody else's paint.
+     *
+     * A SELECTED row is left as super made it, where the highlight is the point.
+     *
+     * @param out the recycled renderer component
+     * @param which the table it is being drawn for
+     * @param selected whether this cell is in the selection
+     * @return the same component, with any wash taken off it
+     */
+    private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
+    {
+        if (!selected && out instanceof javax.swing.JComponent)
+        {
+            ((javax.swing.JComponent) out).setOpaque(true);
+            out.setBackground(which.getBackground());
+        }
+
+        return out;
+    }
+
+    /**
      * Greys every cell somebody cannot type into.
      *
      * A blank cell that will accept a value and a blank cell that will not look identical until one
@@ -1728,7 +1757,7 @@ public class RouteEditorFrame extends JFrame
                 // one word and nothing else, which the row already shows.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isJoinerRow(row))
                 {
-                    return out;
+                    return unshaded(out, which, selected);
                 }
 
                 // And so is the row at the bottom with the + on it.
@@ -1737,7 +1766,7 @@ public class RouteEditorFrame extends JFrame
                 // makes one.  Shading it therefore shaded the whole line, which reads as a row that has
                 // been switched off rather than as the way to add another, and it is the one line in
                 // the table a new user is looking for.
-                if (row >= which.getRowCount() - 1) return out;
+                if (row >= which.getRowCount() - 1) return unshaded(out, which, selected);
 
                 if (!selected)
                 {

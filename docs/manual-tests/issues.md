@@ -59,40 +59,23 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### FR-033 - 2026-08-27 - Cap locomotive mapping pages at 50
-
-**Kind:** feature request  
-**Raised from:** the triage API  
-**Filed:** 2026-08-27  
-
-Adam, 2026-08-27: "add a cap of 50 pages for now (not 99) and associated error message if exceeded." There was no ceiling before this: addLocMappingPage simply incremented. Implemented as MAX_LOC_MAPPINGS = 50 in TrainControlUI, with canAddLocMappingPage() asked by the page right-click menu (Add New Page greys at the ceiling, with the limit in its tooltip) and enforced again inside addLocMappingPage itself, which refuses with page.ui.errorTooManyPages in all eight languages. LOADING IS DELIBERATELY NOT CAPPED: setViewListener grows the page count to fit a saved state, and clamping there would silently drop the mappings on every page above the fiftieth. Covered by ui.testLocMappingPages (4 tests, 5 mutations verified biting).
-
-### OB-121 - 2026-08-27 - route editor condition shading
+### OB-122 - 2026-08-27 - autonomy warning error
 
 **Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 18:49  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-27 21:55  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-in the route editor, remove the shading in the condition row with the +
+"No train can leave ParkingTrack10 for any other station.  Check the directions on the track leading away from it." - this warning does not consider what happens when the train follows the link.  Make that be part of the check.
 
-### FR-034 - 2026-08-27 - default label in autonomy diagram
+### OB-123 - 2026-08-27 - autonomy warning error 2
 
-**Kind:** feature request  
+**Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 18:53  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-27 22:04  
+**Build:** commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-when using the show station label here option, prefill it with the label of the nearest station by tile distance.  change to current behavior: only prefill the last clicked station for one right click somewhere else- the revert to the distance.
-
-### FR-035 - 2026-08-27 - draggable station labels
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-27 19:01  
-**Build:** commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the autonomy editor ONLY, make it possible to move around station labels (only) by clicking and dragging them.  do not make tiles or anything else movable.
+this is wrong: the train can continue or reverse.  It should test for two outgoing paths, not two incoming. "LowerBack is set to "trains may change direction here", but only one line runs into it - so there is nothing to carry on to and every train turns round anyway.  "Must" says the same thing plainly."
 
 ## What has been picked up
 
@@ -106,6 +89,10 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-27 | FR-033 | feature request | Fifty locomotive mapping pages, refused in the method and greyed in the menu | fixed unvalidated | - |
+| 2026-08-27 | OB-121 | bug | The + row in the conditions list was handed the previous cell’s grey by a recycled renderer | fixed unvalidated | - |
+| 2026-08-27 | FR-034 | feature request | The label chooser opens on the nearest station, and the last-clicked one is spent after one use | fixed unvalidated | - |
+| 2026-08-27 | FR-035 | feature request | Station labels can be dragged in the autonomy editor, by the label or by its square | fixed unvalidated | - |
 | 2026-08-27 | OB-120 | bug | Test a path drew routes into stations that refuse arrivals from that side | fixed unvalidated | - |
 | 2026-08-27 | OB-119 | bug | Escape did not put the autonomy editor's tools down | fixed unvalidated | - |
 | 2026-08-27 | FR-032 | feature request | Crop or pan an icon again without reselecting the source | - | [MT-203](tests.md#mt-203) |

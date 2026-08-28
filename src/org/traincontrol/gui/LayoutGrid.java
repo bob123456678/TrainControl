@@ -97,6 +97,260 @@ public class LayoutGrid
     }
 
     /**
+     * Lets one station caption be dragged to another square (FR-035).
+     *
+     * Adam: "in the autonomy editor ONLY, make it possible to move around station labels (only) by
+     * clicking and dragging them", and then: "have it fire on the label or the tile, so the mouse icon
+     * is more clearly shown.  Snapshot the label so users can see it is being moved."
+     *
+     * Installed TWICE per caption - once on the pill, once on the square beneath it - which is why
+     * the thing being moved and the thing the events arrive on are separate parameters. Both hands
+     * move the same label.
+     *
+     * What happens on release is `moveCaption`, which is the caption command the right-click menu
+     * already runs. So a dragged label stores nothing new and cannot fall out of step with the menu
+     * about where a name may go.
+     *
+     * A drag is told from a CLICK by distance. A caption answers a double-click and a square answers a
+     * plain one, and turning every press into a drag would take both away; a few pixels of movement is
+     * the difference between pointing at something and moving it.
+     *
+     * @param caption the label being moved, and the thing photographed
+     * @param handle what the pointer takes hold of - the label itself, or the square under it
+     * @param square the square under the caption, which is what the hover outline is drawn on
+     * @param on the square the caption sits on
+     * @param editor the window, for the drop mark, the floating copy, and the coordinates
+     * @param container the grid, whose tiles are searched for the one under the pointer
+     */
+    private static void dragCaption(final StationCaption caption, final javax.swing.JLabel handle,
+        final LayoutLabel square, final org.traincontrol.automationui.TileGraph.TileKey on,
+        final LayoutEditor editor, final Container container)
+    {
+        // At REST, not only while dragging.  The pointer is how the diagram says a thing can be picked
+        // up, and saying it only once the drag has started is saying it too late.
+        handle.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
+
+        final java.awt.Point[] began = new java.awt.Point[1];
+        final boolean[] dragging = new boolean[1];
+
+        java.awt.event.MouseAdapter gesture = new java.awt.event.MouseAdapter()
+        {
+            // The blue outline follows the pointer onto the NAME (Adam, 2026-08-27: "make sure
+            // hovering the label triggers the cell hover effect").
+            //
+            // A caption is stacked on top of its square, so moving onto the name sends the square a
+            // mouseExited and the outline goes out - on the bigger and more obvious of the two things
+            // to point at. Forwarded to the method the tiles call rather than drawing a second
+            // outline here, so there is one appearance to keep right instead of two.
+            //
+            // Only from the caption. On the square this is already happening, and doing it again
+            // would draw the same outline twice for one movement.
+            @Override
+            public void mouseEntered(MouseEvent e)
+            {
+                if (handle != square) editor.receiveMoveEvent(e, square);
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e)
+            {
+                if (handle != square) editor.receiveMoveEvent(e, square);
+            }
+
+            // A RIGHT-CLICK belongs to the square, not to the name lying on top of it.
+            //
+            // The caption covers the middle of its square and takes every click there, so the autonomy
+            // menu - which is how everything about a square is set - simply did not open on the part
+            // of the diagram people aim at. Handed to `receiveClickEvent`, which is the method the
+            // tile's own listener calls, so the menu is the same menu rather than a second one built
+            // to match.
+            //
+            // The event is CONVERTED first: the menu opens at the coordinates it is given, and the
+            // caption's coordinates are not the square's - the popup would appear offset by however
+            // far the label sits from the corner of its tile.
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {
+                if (handle != square && javax.swing.SwingUtilities.isRightMouseButton(e))
+                {
+                    editor.receiveClickEvent(
+                        javax.swing.SwingUtilities.convertMouseEvent(handle, e, square), square);
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                began[0] = e.getPoint();
+                dragging[0] = false;
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e)
+            {
+                if (began[0] == null) return;
+
+                // Far enough to mean it.  Below this a press is a click, and both of these answer
+                // clicks already.
+                if (!dragging[0] && began[0].distance(e.getPoint()) < DRAG_SLOP) return;
+
+                if (!dragging[0])
+                {
+                    dragging[0] = true;
+
+                    pickUp(caption, handle, began[0], editor);
+                }
+
+                editor.moveCaptionGhost(javax.swing.SwingUtilities.convertPoint(
+                    handle, e.getPoint(), editor.getLayeredPane()));
+
+                LayoutLabel over = tileUnder(container, handle, e);
+
+                // The mark asks the DROP's own question, so what is shown green is exactly what will
+                // be accepted.  A highlight with a rule of its own is the fault OB-057 and OB-090 were
+                // both filed for: an affordance that offers what the action then refuses.
+                editor.showCaptionDropTarget(over, over != null && editor.getAutonomyPanel() != null
+                    && editor.getAutonomyPanel().canDropCaption(on, tileOf(editor, over, on),
+                        over.getComponent()));
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {
+                boolean moved = dragging[0];
+
+                began[0] = null;
+                dragging[0] = false;
+
+                // Put down FIRST, and unconditionally.  A release arrives whether or not a drag ever
+                // started, and a floating label left on the drag layer would sit over the diagram with
+                // nothing moving it.
+                editor.hideCaptionGhost();
+                editor.clearCaptionDropTarget();
+
+                if (!moved || editor.getAutonomyPanel() == null) return;
+
+                LayoutLabel over = tileUnder(container, handle, e);
+
+                editor.getAutonomyPanel().moveCaption(on, tileOf(editor, over, on),
+                    over == null ? null : over.getComponent());
+            }
+        };
+
+        handle.addMouseListener(gesture);
+        handle.addMouseMotionListener(gesture);
+    }
+
+    /**
+     * Photographs the caption and hands it to the window to carry (FR-035).
+     *
+     * Cropped to the PILL. A caption's cell runs to the bottom of the diagram, so a picture of the
+     * whole component would be mostly empty and the part you can see would hang a long way from the
+     * pointer.
+     *
+     * Taken hold of where it was grabbed when the pointer is on the label itself, and by the middle
+     * when the drag started on the square - where there is no corresponding spot.
+     *
+     * @param caption the label being moved
+     * @param handle what the pointer took hold of
+     * @param at where on the handle it was taken hold of
+     * @param editor the window that carries the floating copy
+     */
+    private static void pickUp(StationCaption caption, javax.swing.JLabel handle,
+        java.awt.Point at, LayoutEditor editor)
+    {
+        java.awt.Rectangle pill = caption.drawnBounds();
+
+        if (pill == null || pill.width <= 0 || pill.height <= 0) return;
+
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+            pill.width, pill.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            // Slightly see-through, so the diagram underneath stays readable while something is being
+            // carried over it - the point of the drag is to choose a square, and the label must not
+            // hide the squares.
+            g.setComposite(java.awt.AlphaComposite.getInstance(
+                java.awt.AlphaComposite.SRC_OVER, 0.8f));
+
+            g.translate(-pill.x, -pill.y);
+
+            caption.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        java.awt.Point grab = handle == caption
+            ? new java.awt.Point(at.x - pill.x, at.y - pill.y)
+            : new java.awt.Point(pill.width / 2, pill.height / 2);
+
+        // Held INSIDE the picture whichever way it started: a grab point outside it would swing the
+        // label away from the pointer instead of hanging it off the spot it was taken by.
+        grab.x = Math.max(0, Math.min(pill.width, grab.x));
+        grab.y = Math.max(0, Math.min(pill.height, grab.y));
+
+        editor.showCaptionGhost(shot, grab.x, grab.y);
+    }
+
+    /**
+     * A tile turned back into a square on the page, or null when it has no coordinates.
+     *
+     * @param editor the window, which knows where its labels sit
+     * @param label the tile
+     * @param samePage any square on the page being looked at, for its name
+     * @return the square, or null
+     */
+    private static org.traincontrol.automationui.TileGraph.TileKey tileOf(LayoutEditor editor,
+        LayoutLabel label, org.traincontrol.automationui.TileGraph.TileKey samePage)
+    {
+        if (label == null) return null;
+
+        int x = editor.getGridX(label);
+        int y = editor.getGridY(label);
+
+        if (x < 0 || y < 0) return null;
+
+        return new org.traincontrol.automationui.TileGraph.TileKey(samePage.getPage(), x, y);
+    }
+
+    /**
+     * The TILE under the pointer, asked of the tiles rather than of Swing.
+     *
+     * `getDeepestComponentAt` answers with whatever is topmost, and captions are deliberately
+     * z-ordered in front of the diagram - so a drag passing over another station's name would be told
+     * the pointer was over that name rather than over the square beneath it. The tiles are the only
+     * components that cover the page without overlapping each other, which makes them the right thing
+     * to ask.
+     *
+     * @param container the grid
+     * @param from the component the event arrived on
+     * @param e the event
+     * @return the tile under the pointer, or null when the pointer is off the diagram
+     */
+    private static LayoutLabel tileUnder(Container container, java.awt.Component from, MouseEvent e)
+    {
+        java.awt.Point at = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), container);
+
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof LayoutLabel && child.getBounds().contains(at))
+            {
+                return (LayoutLabel) child;
+            }
+        }
+
+        return null;
+    }
+
+    /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */
+    private static final int DRAG_SLOP = 4;
+
+    /**
      * Whether the track on this square runs up and down rather than across (FR-028).
      *
      * Asked of the geometry rather than of the tile's name or its rotation number: the same question
@@ -178,7 +432,11 @@ public class LayoutGrid
         String cut = name.substring(0, Math.min(name.length(), LAYOUT_STATION_MAX_LENGTH)).trim();
 
         // No brackets since FR-028: the pill draws the shape they were standing in for.
-        return cut + (arrow == null ? "" : arrow);
+        //
+        // Joined through StationCaption rather than with `+`, because which SIDE the arrow goes on
+        // depends on which way it points (Adam, 2026-08-27) and that rule has to be the same here and
+        // in the crowded caption.
+        return StationCaption.withArrow(cut, arrow);
     }
     public static final int LAYOUT_ADDRESS_OPACITY = 200;
 
@@ -916,6 +1174,32 @@ public class LayoutGrid
                         gbc.gridheight = 0;    
                     }
                     
+                    // DRAGGABLE, in the autonomy editor, and only a square that carries a caption
+                    // (FR-035).  Not tiles and not the user's own writing: Adam asked for station
+                    // labels only.
+                    if (autonomyEditor && captioned != null && master instanceof LayoutEditor)
+                    {
+                        org.traincontrol.automationui.TileGraph.TileKey here =
+                            new org.traincontrol.automationui.TileGraph.TileKey(
+                                layout.getName(), x, y);
+
+                        // The station this label NAMES, which is usually not the square it is on.
+                        //
+                        // A caption goes on blank space beside its platform, because a platform road
+                        // rarely has room for the text - so asking the square underneath what station
+                        // it is answers "none" for precisely the labels worth asking about. What the
+                        // caption was built from is the answer.
+                        text.setToolTipText(captionName);
+
+                        // BOTH the label and the square under it (Adam, 2026-08-27: "have it fire on
+                        // the label or the tile, so the mouse icon is more clearly shown").  A pill is
+                        // a small target, and a move cursor that only appears over those few pixels
+                        // gives the diagram almost no way of saying a label can be picked up.
+                        dragCaption(text, text, grid[x][y], here, (LayoutEditor) master, container);
+                        dragCaption(text, grid[x][y], grid[x][y], here, (LayoutEditor) master,
+                            container);
+                    }
+
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
 

@@ -819,6 +819,34 @@ public class LayoutEditor extends PositionAwareJFrame
         return false;
     }
    
+    /**
+     * The name of the station on a square, for the autonomy editor's tooltip (FR, 2026-08-27).
+     *
+     * Asked of the autonomy session, not of any caption drawn nearby. A caption is a label somebody
+     * chose to place on some square, and the square this is about usually has no label at all - which
+     * is the whole reason for saying its name on hover.
+     *
+     * Null for anything that is not a station, which is what a JLabel wants for "no tooltip": most of
+     * a diagram is plain track, and a tooltip that appeared everywhere saying nothing would be worse
+     * than none.
+     *
+     * @param label the square under the pointer
+     * @return the station's name, or null
+     */
+    private String stationNameOn(LayoutLabel label)
+    {
+        if (label == null || this.parent == null || this.layout == null) return null;
+
+        int x = getX(label);
+        int y = getY(label);
+
+        // The palette, which is not on the railway at all.
+        if (x < 0 || y < 0) return null;
+
+        return this.parent.autonomyStationNameAt(
+            new org.traincontrol.automationui.TileGraph.TileKey(this.layout.getName(), x, y));
+    }
+
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
         // In autonomy mode there is no PLACEMENT preview - nothing is being placed - but the blue
@@ -838,6 +866,13 @@ public class LayoutEditor extends PositionAwareJFrame
         if (isAutonomyMode())
         {
             if (label == null || (this.popup != null && this.popup.isVisible())) return;
+
+            // And the square's NAME, which is the one thing this window is about that the diagram
+            // does not already show (Adam, 2026-08-27).
+            //
+            // Set outside the invokeLater: a tooltip is read when the pointer settles, not when the
+            // outline is painted, and putting it in the queue behind a repaint only delays it.
+            label.setToolTipText(stationNameOn(label));
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
@@ -3461,6 +3496,125 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (this.grid != null) clearBordersFromChildren(this.grid.getContainer());
     }
+
+    /**
+     * Picks a station label up, so the drag has something in it (FR-035).
+     *
+     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while
+     * held down)."
+     *
+     * On the LAYERED PANE's drag layer rather than in the diagram. The diagram is a grid whose
+     * components are laid out by their constraints, and a floating copy has no cell to be in; the drag
+     * layer is the one place in a Swing window that exists for something that is on top of everything
+     * and belongs to no layout.
+     *
+     * The grab offset is where the pointer took hold of the pill, so the label hangs off the cursor at
+     * the same spot it was picked up. Started from the square rather than the label itself, there is no
+     * such spot and the caller centres it.
+     *
+     * @param shot a picture of the caption
+     * @param grabX where in that picture the pointer took hold
+     * @param grabY likewise
+     */
+    public void showCaptionGhost(java.awt.Image shot, int grabX, int grabY)
+    {
+        hideCaptionGhost();
+
+        if (shot == null) return;
+
+        this.captionGhost = new JLabel(new javax.swing.ImageIcon(shot));
+        this.captionGhost.setSize(this.captionGhost.getPreferredSize());
+        this.captionGrab = new java.awt.Point(grabX, grabY);
+
+        getLayeredPane().add(this.captionGhost, javax.swing.JLayeredPane.DRAG_LAYER);
+    }
+
+    /**
+     * Moves the picked-up label to the pointer (FR-035).
+     *
+     * @param at where the pointer is, in this window's coordinates
+     */
+    public void moveCaptionGhost(java.awt.Point at)
+    {
+        if (this.captionGhost == null || at == null) return;
+
+        java.awt.Rectangle was = this.captionGhost.getBounds();
+
+        this.captionGhost.setLocation(at.x - this.captionGrab.x, at.y - this.captionGrab.y);
+
+        // Both rectangles, because the layer has to forget where it was as well as learn where it is.
+        getLayeredPane().repaint(was);
+        getLayeredPane().repaint(this.captionGhost.getBounds());
+    }
+
+    /**
+     * Puts the picked-up label down (FR-035).
+     *
+     * Safe to call when nothing was picked up, which matters: it runs from the release handler, and a
+     * release arrives whether or not a drag ever started.
+     */
+    public void hideCaptionGhost()
+    {
+        if (this.captionGhost == null) return;
+
+        java.awt.Rectangle was = this.captionGhost.getBounds();
+
+        getLayeredPane().remove(this.captionGhost);
+
+        this.captionGhost = null;
+
+        getLayeredPane().repaint(was);
+    }
+
+    /** The floating copy of a caption being dragged, or null when nothing is. */
+    private JLabel captionGhost;
+
+    /** Where in that copy the pointer took hold of it. */
+    private java.awt.Point captionGrab = new java.awt.Point();
+
+    /**
+     * Marks the square a dragged station label would land on (FR-035).
+     *
+     * The drag feedback, and deliberately the cheap kind: the label itself is not carried under the
+     * pointer. What matters while dragging is WHERE IT WILL GO, and a line round that square says it
+     * without a second copy of the caption floating over the diagram - which on a grid this dense
+     * would cover the very thing being aimed at.
+     *
+     * Green for a square that will take it, red for one that will refuse, so the answer arrives before
+     * the mouse comes up rather than as a message afterwards.
+     *
+     * @param label the square under the pointer, or null for none
+     * @param allowed whether dropping there would work
+     */
+    public void showCaptionDropTarget(LayoutLabel label, boolean allowed)
+    {
+        clearCaptionDropTarget();
+
+        if (label == null) return;
+
+        this.captionDropTarget = label;
+
+        highlightLabel(label, allowed ? new Color(0, 150, 0) : NEW_COMPONENT_BORDER_ACTIVE_COLOR);
+    }
+
+    /**
+     * Takes the drag mark off whichever square is wearing it (FR-035).
+     */
+    public void clearCaptionDropTarget()
+    {
+        if (this.captionDropTarget == null) return;
+
+        LayoutLabel was = this.captionDropTarget;
+
+        // Cleared BEFORE the border is put back, so a repaint that arrives in the middle of this does
+        // not find a target that is half restored.
+        this.captionDropTarget = null;
+
+        was.setBorder(restingBorder(false, isAutonomyMode()));
+    }
+
+    /** The square currently wearing the drag mark, so it can be given its own border back. */
+    private LayoutLabel captionDropTarget;
 
     private void highlightLabel(JLabel label, Color color)
     {

@@ -520,6 +520,56 @@ public class StationCaption extends JLabel
     }
 
     /**
+     * Whether this arrow goes BEFORE the name rather than after it.
+     *
+     * Adam, 2026-08-27: "if going south or west, move the arrow to the other side of the label."
+     *
+     * The arrow is a direction, and a direction reads better leading than trailing when it points
+     * back the way the text came from: a west arrow after a name points away from the name it belongs
+     * to, across whatever is drawn to the right of it. Put it in front and it points at its own label.
+     *
+     * South is the same question turned a quarter, and it matters more since captions on north-south
+     * track were stood on end: such a caption reads from the BOTTOM up, so the start of the string is
+     * the bottom of the pill, which is exactly where a downward arrow wants to be.
+     *
+     * Asked of the GLYPH rather than of the compass point, because the two places that join a name to
+     * an arrow have the string and not the direction - and because the answer really is a property of
+     * the character.
+     *
+     * @param arrow the arrow, with or without the space it is usually carried with
+     * @return whether it leads
+     */
+    public static boolean arrowLeads(String arrow)
+    {
+        if (arrow == null) return false;
+
+        String bare = arrow.trim();
+
+        return ARROW_S.equals(bare) || ARROW_W.equals(bare);
+    }
+
+    /**
+     * A name and its arrow, joined with the arrow on the side it points towards.
+     *
+     * The ONE place that join happens. It used to be `+` in two different methods - the single caption
+     * and the crowded one - and two spellings of the same rule are two rules that eventually disagree;
+     * a caption showing one train would have got the new placement and a caption showing two would
+     * have kept the old one.
+     *
+     * @param name the station or locomotive name, already cut to length
+     * @param arrow the arrow, or null or empty for none
+     * @return the caption text
+     */
+    public static String withArrow(String name, String arrow)
+    {
+        String bare = arrow == null ? "" : arrow.trim();
+
+        if (bare.isEmpty()) return name;
+
+        return arrowLeads(bare) ? bare + " " + name : name + " " + bare;
+    }
+
+    /**
      * The text colour to use on a pill, keeping what the caller meant by the one it asked for.
      *
      * The running diagram says two things with the text colour: red for a station the train has not
@@ -641,6 +691,20 @@ public class StationCaption extends JLabel
         if (high <= 0 || wide <= 0) return null;
 
         return new java.awt.Rectangle(left, top, wide, high);
+    }
+
+    /**
+     * Where this caption is actually drawn inside its own component, for a drag snapshot (FR-035).
+     *
+     * A caption's cell runs to the bottom of the diagram and its pill is placed within that by insets,
+     * so the component is mostly empty space. Anything wanting a picture of the caption wants this
+     * rectangle and not the component's own bounds.
+     *
+     * @return the drawn rectangle, or null when nothing is drawn
+     */
+    public java.awt.Rectangle drawnBounds()
+    {
+        return pillBounds();
     }
 
     @Override
