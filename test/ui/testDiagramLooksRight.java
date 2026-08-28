@@ -751,6 +751,13 @@ public class testDiagramLooksRight
     @Test
     public void testStationLabelsFollowTheColourPreference()
     {
+        // WHETHER IT WAS STORED, not what the accessor answers.
+        //
+        // Capturing the accessor captures its DEFAULT when nothing is stored, and writing that back
+        // materialises the preference on a machine that never set it. Two sibling tests were fixed for
+        // exactly this earlier today; this was the third, and nobody swept it (reviewer, 2026-08-28).
+        boolean had = TrainControlUI.getPrefs().get(TrainControlUI.STATION_LABELS_GREY, null) != null;
+
         boolean was = TrainControlUI.stationLabelsAreGrey();
 
         try
@@ -779,9 +786,13 @@ public class testDiagramLooksRight
         }
         finally
         {
-            TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, was);
+            // Put back as it was, INCLUDING never having been set.
+            if (had) TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, was);
+            else TrainControlUI.getPrefs().remove(TrainControlUI.STATION_LABELS_GREY);
         }
 
+        // The finally above has just written this, so comparing them proves nothing about the code -
+        // only that the restore ran. Kept as a guard on the RESTORE, and said to be that.
         assertEquals(TrainControlUI.stationLabelsAreGrey(), was,
             "this test left the operator's own preference changed");
     }

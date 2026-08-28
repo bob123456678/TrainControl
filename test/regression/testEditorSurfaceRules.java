@@ -1740,7 +1740,22 @@ public class testEditorSurfaceRules
             "nothing raises the latch when a switch is committed, so it can never be true and every "
             + "door that asks it is asking a constant");
 
-        assertTrue(leave.indexOf("settleUnsavedWork()") < leave.indexOf("changingPage = true"),
+        // BOTH PRESENT, then ordered.
+        //
+        // `indexOf` answers -1 for something absent, and -1 is less than every real index - so
+        // deleting the unsaved-work question outright made this pass, which is the very mutation the
+        // message below names (reviewer, 2026-08-28).
+        int asks = leave.indexOf("settleUnsavedWork()");
+        int raises = leave.indexOf("changingPage = true");
+
+        assertTrue(asks >= 0,
+            "leaveFor no longer asks about unsaved work, so switching page throws the edit away");
+
+        assertTrue(raises >= 0,
+            "leaveFor no longer raises the switch latch, so nothing stops a second switch starting "
+            + "inside the first");
+
+        assertTrue(asks < raises,
             "the latch is raised before the user has been asked about unsaved work, so answering "
             + "\"stay here\" would leave the window refusing every further switch");
 
@@ -1860,17 +1875,29 @@ public class testEditorSurfaceRules
         // local could be changed to a constant with nothing failing, restoring FR-023's reported
         // symptom on the one path a user reaches. Found by a reviewer; the first repair was to demand
         // the rule on the setVisible line itself, which failed against correct code.
+        int assignments = 0;
+
         for (String line : source.split("\n"))
         {
             String trimmed = line.trim();
 
             if (!trimmed.startsWith("boolean visible =")) continue;
 
+            assignments++;
+
             assertTrue(trimmed.contains("captionShouldShow") || trimmed.contains("captionIsActive"),
                 "a caption's visibility is decided by something other than the shared rule: "
                 + trimmed + ".  That local is handed straight to setVisible, so whatever it is "
                 + "computed from IS the rule for that path");
         }
+
+        // A loop over nothing asserts nothing.
+        //
+        // Renaming that local, or writing `final boolean visible =`, made the block above a no-op that
+        // passed (reviewer, 2026-08-28).
+        assertTrue(assignments > 0,
+            "no line assigns a `boolean visible` any more, so the check above ran over nothing and "
+            + "proved nothing - find what the caption deciders are handed now and check that instead");
 
         for (String decider : deciders)
         {

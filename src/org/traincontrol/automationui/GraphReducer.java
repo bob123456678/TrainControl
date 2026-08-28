@@ -556,9 +556,13 @@ public class GraphReducer
     /**
      * Whether a square refuses trains arriving by a given side (OB-120).
      *
-     * The same test `AutonomyBuilder.arrivalAllowed` makes when it decides which copies of a split
-     * square to emit, written once here so the two cannot drift: a run this walk allows and the build
-     * refuses is a route the editor draws and the railway will never take.
+     * The same test `AutonomyBuilder.arrivalAllowed` makes when it decides whether a copy of a split
+     * square is a STATION - somewhere a train may be sent to stop. It does not decide which copies are
+     * emitted: the barred copy is emitted and still carries traffic, which is why the callers refuse
+     * only a destination hop and walk through everything else.
+     *
+     * An earlier version of this sentence said the build dropped those copies entirely. It does not,
+     * and the code written to match that sentence refused runs the railway makes every day.
      *
      * A null side is the starting square, which has no arrival and is never barred.
      *

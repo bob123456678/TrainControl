@@ -17251,6 +17251,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         new File(layoutFolder, "config"));
                 }
 
+                // The cropped locomotive icons, which were in no backup at all (reviewer, 2026-08-28).
+                //
+                // `LocDB.data` records each locomotive's `localImageURL`, and for a cropped icon that
+                // names a file in `tc_loc_icons` - a folder this archive has never held and git does
+                // not track. So a restored backup gave every crop-carrying locomotive a URL pointing
+                // at a file the archive did not contain, and the crops were the one piece of state
+                // with no way back at all.
+                //
+                // Only if it exists: an installation where nobody has cropped anything should not
+                // gain an empty folder in its archive.
+                File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+
+                if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
+
                 backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
 
                 unsaved.addAll(Util.zipInto(backupArchive, state));
@@ -21500,13 +21514,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // The dialog's own javadoc already said null meant "leave everything exactly as
                     // it was, not a failure"; the two contracts were written the same day and the
                     // code followed the wrong one.
-                    boolean[] cancelled = {false};
+                    // Two answers, not one: was it cancelled, and was the picture unreadable.
+                    boolean[] cancelled = {false, false};
 
                     String cropped = cropLocIcon(source, l, f, cancelled);
 
                     // Nothing is assigned and nothing is deleted: the locomotive keeps the icon it
                     // had, which is what cancelling a dialog means.
                     if (cancelled[0]) return;
+
+                    // Nor when the picture could not be read at all.
+                    //
+                    // The fallback below - use the file the user picked, uncropped - is right when the
+                    // picture is good and only the crop failed. Here it would point the locomotive at
+                    // a file that renders as nothing AND delete the crop it had, which is the state a
+                    // reviewer found. The sibling `recropLocIcon` has always refused this case.
+                    if (cancelled[1]) return;
 
                     if (cropped != null) chosenURL = cropped;
                 }
@@ -21574,6 +21597,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // really something else, which is common enough among pictures collected off the web.
             this.model.logf("ui.errorFailedToLoadImage", chosen.getAbsolutePath());
 
+            // AND SAID OUT LOUD, because the caller must not fall back to this file.
+            //
+            // Falling back to the picture the user chose is right when the picture is good and only
+            // the crop failed. It is the worst of both when the picture cannot be read: the locomotive
+            // is pointed at a file that renders as nothing, and the crop it had is deleted on the way.
+            if (cancelled != null && cancelled.length > 1) cancelled[1] = true;
+
+            JOptionPane.showMessageDialog(parent,
+                I18n.f("loc.ui.errorPictureCouldNotBeRead", chosen.getName()));
+
             return null;
         }
 
@@ -21609,7 +21642,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            Util.writeAtomically(target, out -> ImageIO.write(cropped, "png", out));
+            // The RETURN VALUE, which ImageIO answers false with rather than throwing when no writer
+            // claims the format. Thrown away here, a zero-byte file was moved into place, reported as
+            // a success, and the crop it replaced deleted on the strength of it. DiagramExport checks
+            // the same call.
+            Util.writeAtomically(target, out ->
+            {
+                if (!ImageIO.write(cropped, "png", out))
+                {
+                    throw new IOException("no writer claimed PNG for " + target.getAbsolutePath());
+                }
+            });
         }
         catch (IOException | RuntimeException e)
         {

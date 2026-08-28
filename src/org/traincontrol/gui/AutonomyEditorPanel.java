@@ -2445,6 +2445,31 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The window this panel's dialogs belong to (MT-182).
+     *
+     * `owner()` already returns a Window whenever this panel is in one, and both callers that needed
+     * that window asked `SwingUtilities.getWindowAncestor(owner())` instead - which walks UP from what
+     * it is given. A top-level frame has no window ancestor, so both got null.
+     *
+     * One of them was the signal window's placement, whose null branch centres the dialog: the offset
+     * that ticket asked for was computed, clamped, tested, and then thrown away in favour of the exact
+     * behaviour being complained about. The other was the dialog's own constructor, so it has been
+     * running unowned - the state `owner()`'s comment below warns about.
+     *
+     * @return the window, or null when this panel is in none
+     */
+    private java.awt.Window ownerWindow()
+    {
+        java.awt.Component anchor = owner();
+
+        // Already a window: asking for its ancestor is asking what it is INSIDE, and a top-level
+        // window is inside nothing.
+        if (anchor instanceof java.awt.Window) return (java.awt.Window) anchor;
+
+        return javax.swing.SwingUtilities.getWindowAncestor(anchor);
+    }
+
+    /**
      * The window this panel lives in, for parenting dialogs.
      *
      * Not the panel itself.  JOptionPane centres over the COMPONENT it is given, and this one is a
@@ -4088,7 +4113,7 @@ public class AutonomyEditorPanel extends JPanel
         // somebody was reading jumped out from under them.  The list is the point of this window; it
         // has to survive being edited.
         final javax.swing.JDialog dialog = new javax.swing.JDialog(
-            javax.swing.SwingUtilities.getWindowAncestor(owner()),
+            ownerWindow(),
             I18n.t("autosetup.ui.menuPairSignal"),
             java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
@@ -4247,7 +4272,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placeBesideOwner(java.awt.Window dialog)
     {
-        java.awt.Window parent = javax.swing.SwingUtilities.getWindowAncestor(owner());
+        java.awt.Window parent = ownerWindow();
 
         if (parent == null)
         {

@@ -254,6 +254,91 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
+     * The window a dialog is placed against is the window itself, not what contains it (MT-182).
+     *
+     * **This is the test the two below could not be.** They check `besideOwner`, which is arithmetic on
+     * two rectangles and has always been right. Its javadoc says it was made public and static so the
+     * one thing worth checking could be checked without opening a modal dialog, and ends: "there is
+     * nothing left in the caller to get wrong except which rectangles it passes."
+     *
+     * That is exactly what the caller got wrong, twice reported and twice not found. `owner()` returns
+     * a WINDOW when the panel is in one; the caller asked `SwingUtilities.getWindowAncestor(owner())`,
+     * which walks UP from what it is given, and a top-level frame has no window ancestor. So it got
+     * null every time, took its fallback branch - `setLocationRidiculouslyRelativeTo(owner())`, which
+     * centres - and produced the precise behaviour the ticket was raised about, while both tests of
+     * the rule stayed green.
+     *
+     * Driven with real components, because the mistake is only visible in what `getWindowAncestor`
+     * answers for a window as against a panel. No dialog is shown and nothing blocks.
+     */
+    @Test
+    public void testAWindowIsNotAskedWhatContainsIt() throws Exception
+    {
+        // A frame is built but never shown, so this needs a graphics environment.
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("building a frame needs a display");
+        }
+
+        final javax.swing.JFrame frame = new javax.swing.JFrame("MT-182");
+        final javax.swing.JPanel inside = new javax.swing.JPanel();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setSize(1200, 800);
+                frame.add(inside);
+            });
+
+            // The mistake, stated as the platform states it.
+            assertNull(javax.swing.SwingUtilities.getWindowAncestor(frame),
+                "precondition: a top-level frame reports a window ancestor, so this whole class of "
+                + "mistake would not arise and this test is about nothing");
+
+            assertEquals(javax.swing.SwingUtilities.getWindowAncestor(inside), frame,
+                "precondition: a panel inside the frame does not report it, so the fixture is wrong");
+
+            // And what the panel's own helper must answer for each.
+            String panelSource = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            // CODE ONLY. The first version of this read the whole file and matched the sentence in
+            // the fix's own javadoc describing the mistake - so the test failed against the corrected
+            // code, on the strength of prose explaining the correction.
+            StringBuilder code = new StringBuilder();
+
+            for (String line : panelSource.split("\n"))
+            {
+                String trimmed = line.trim();
+
+                if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*"))
+                {
+                    continue;
+                }
+
+                code.append(line).append('\n');
+            }
+
+            panelSource = code.toString();
+
+            assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
+                "the panel asks getWindowAncestor for something that may already BE the window, so "
+                + "it gets null and the signal dialog falls back to centring - which is MT-182");
+
+            assertFalse(panelSource.contains("getWindowAncestor(owner())"),
+                "a caller still asks what contains owner(), and owner() is already the window - so "
+                + "that caller gets null. One of the two centres the dialog; the other leaves it "
+                + "with no owner at all");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
+        }
+    }
+
+    /**
      * The signal window does not open over the middle of the diagram it is describing (OB-107).
      *
      * Adam: "the signal protecting this station pops up over the middle of the diagram. see if you can

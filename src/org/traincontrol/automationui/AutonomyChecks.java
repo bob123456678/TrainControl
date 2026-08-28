@@ -400,8 +400,13 @@ public class AutonomyChecks
     /**
      * "May change direction" where there is nowhere else to go.
      *
-     * A square with one way in cannot offer the choice the word "may" describes: there is no straight
-     * on to carry on to, so every train turns whatever the setting says.  Worth saying because the
+     * A square no arriving train can carry on from cannot offer the choice the word "may" describes:
+     * every way in leads back out the way it came, so they all turn whatever the setting says.
+     *
+     * Judged per ARRIVAL since OB-123, not by counting the ways in. A square with two ways in and one
+     * way out forces a turn on the train that came in by the departure side and offers a real choice
+     * to the other - so counting lines called it pointless when it was not. This sentence said "one
+     * line runs into it" for a day after the rule stopped meaning that.  Worth saying because the
      * setting reads as a choice the user has made and is not one - and because if they wanted the
      * choice, the square is not the one they think it is.
      */

@@ -104,11 +104,14 @@ public class testAutonomyDiagramReducer
      *
      * Adam: "test a path should respect all red arrow restrictions."
      *
-     * The red arrows are barred arrivals - the sides a station refuses to let trains reach it by. The
-     * BUILD has always obeyed them: `AutonomyBuilder.arrivalAllowed` does not emit the barred copy of a
-     * split square, so no run through it exists for the railway to pick. The reducer's walks did not,
-     * so the editor's path test drew routes a train would never be offered - the one thing a path test
-     * must not do, since its whole purpose is to report what a train would find.
+     * The red arrows are barred arrivals - the sides a station refuses to let trains STOP at it by.
+     * `AutonomyBuilder` emits the barred copy as a non-station that still carries traffic, so a train
+     * may run through such a square and simply may not be sent there. The reducer's walks obeyed
+     * neither half, so the editor's path test drew routes into stations that refuse them - the one
+     * thing a path test must not do, since its whole purpose is to report what a train would find.
+     *
+     * This paragraph said the opposite for a day, and the code beneath it was written to match. See
+     * `testABarredArrivalCanStillBePassedThrough`.
      *
      * **Both walks, and that is the half worth testing.** `applyTest` says in as many words that it
      * shares its turn sets with the reachability check "so the path test and the findings panel cannot
