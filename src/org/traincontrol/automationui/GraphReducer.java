@@ -429,10 +429,15 @@ public class GraphReducer
     /**
      * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).
      *
-     * The BUILD has always obeyed these: `AutonomyBuilder.arrivalAllowed` does not emit the barred copy
-     * of a split square, so no run through it exists for the railway to pick. This walk did not, so the
-     * editor drew routes a train would never be offered - which is the one thing a path test must not
-     * do, its whole purpose being to report what a train would find.
+     * WHAT A BARRED SIDE MEANS: a train may not come in and STOP that way. The build says so plainly -
+     * `AutonomyBuilder` emits the barred copy as a non-station and notes that it "still carries
+     * traffic; it is simply not somewhere a train can be sent" - and the chevrons drawn for it are
+     * documented the same way.
+     *
+     * An earlier version of this javadoc claimed the build dropped those copies entirely, and the code
+     * under it refused the move wherever it appeared. That described a railway more restricted than the
+     * one that exists, and this walk feeds the editor's path test: it drew no route for journeys the
+     * railway would happily run. Corrected 2026-08-28 after an independent review.
      *
      * The START is exempt, as it is in the build: a train standing at a square did not arrive there by
      * any side, and refusing it would make a restricted station unable to SEND trains rather than
@@ -504,9 +509,21 @@ public class GraphReducer
                     }
                 }
 
-                // The red arrows (OB-120).  A square that refuses arrivals by this side is a square
-                // no train can be sent to this way, so the move does not exist.
-                if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
+                // The red arrows, and only where they mean something (OB-120, corrected 2026-08-28).
+                //
+                // A barred side says a train may not COME IN AND STOP that way. It does not say the
+                // square cannot be passed through: `AutonomyBuilder` still emits the barred copy, and
+                // its own comment says so - "the copy still exists and still carries traffic; it is
+                // simply not somewhere a train can be sent". This used to refuse the move outright,
+                // on a javadoc of mine claiming the build dropped such copies, which it does not.
+                //
+                // So the refusal belongs on the DESTINATION hop, which is what OB-120 was filed about:
+                // "Test a path drew routes INTO stations that refuse arrivals from that side."
+                if (edge.getEnd().equals(to)
+                    && refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
+                {
+                    continue;
+                }
 
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 
@@ -646,11 +663,21 @@ public class GraphReducer
                     }
                 }
 
-                // The red arrows again, and for the reason the turn sets are shared: the findings
-                // panel and the path test must not disagree about which runs exist (OB-120).
-                if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
-
-                reached.add(edge.getEnd());
+                // THROUGH a barred side, but not TO it (OB-120, corrected 2026-08-28).
+                //
+                // Reached means "a train could be sent here", which is the question both callers ask -
+                // can this station reach another, can this reversing point reach anything. A square a
+                // train may pass through but not stop at is not an answer to that, and the track beyond
+                // it is still perfectly reachable.
+                //
+                // Refusing the move outright, which is what this did, made the findings describe a
+                // more restricted railway than the one that exists: a station whose only route ran
+                // through a barred side was reported as reaching nothing, and Adam acts on those
+                // warnings by editing his diagram.
+                if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
+                {
+                    reached.add(edge.getEnd());
+                }
 
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 

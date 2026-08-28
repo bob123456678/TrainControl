@@ -279,6 +279,33 @@ public class testStationLabelDrag
     }
 
     /**
+     * Only the LEFT button picks a station label up.
+     *
+     * Found by a reviewer. Every button started a drag, so a right-press on a captioned square that
+     * wandered more than DRAG_SLOP before release moved the label instead of opening the properties
+     * menu - and `mouseClicked` never fired, so the menu did not open either. A gesture meant to ask
+     * about a square silently rearranged it.
+     *
+     * The distinction was already being made on the click path in the same adapter, which is what
+     * makes this a miss rather than a decision.
+     *
+     * MUTATION: dropping the button test lets any press begin a drag and fails this.
+     */
+    @Test
+    public void testOnlyTheLeftButtonPicksALabelUp() throws Exception
+    {
+        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
+
+        String pressed = bodyOf(grid, "public void mousePressed(MouseEvent e)");
+
+        assertFalse(pressed.isEmpty(), "the drag no longer handles the mouse going down");
+
+        assertTrue(pressed.contains("isLeftMouseButton"),
+            "any mouse button now starts a station-label drag, so a right-press that wanders a few "
+            + "pixels moves the label and swallows the menu that was being asked for");
+    }
+
+    /**
      * A label cannot be dropped on the grid's spacers, which are not squares.
      *
      * Found by a reviewer. The grid ends in a dummy row and a dummy column that stop long labels

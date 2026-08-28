@@ -155,6 +155,15 @@ public class testSidebarIcons
         // And the keyboard tab, which is the one the routes tab displaced.
         int keyboardAt = iconIndex(source, "TAB_ICON_KEYBOARD");
 
+        // WHERE it is, not merely that it differs.
+        //
+        // `iconIndex` answers -1 when the constant is never applied at all, and -1 differs from 3 -
+        // so deleting the keyboard icon entirely satisfied the old assertNotEquals. The three
+        // assertions around it use assertEquals; this one was the odd one out (reviewer, 2026-08-28).
+        assertEquals(keyboardAt, 4,
+            "the keyboard icon is on tab " + keyboardAt + " rather than tab 4, so either it moved or "
+            + "- if this says -1 - it is never applied and that tab has no icon at all");
+
         assertNotEquals(keyboardAt, routesAt,
             "the routes icon and the keyboard icon are both set on tab " + routesAt + ", so one of "
             + "them is overwriting the other and a tab is left with no icon at all");

@@ -1718,9 +1718,37 @@ public class testEditorSurfaceRules
             + "unsaved-work question and the latch that stops two switches overlapping - which is "
             + "precisely what Adam asked them to reuse");
 
-        assertTrue(step.contains("switching"),
-            "stepPage does not check whether a switch is already under way, so holding the key starts "
-            + "one inside another");
+        // THE LATCH THAT SPANS THE SWITCH, not merely the word.
+        //
+        // This asserted `contains("switching")` and passed, while the property it claimed was false:
+        // `switching` is assigned only inside syncSidebar, synchronously, so it is never true when a
+        // second switch could start. A validator found it. The token was present and the sentence
+        // above it was wrong - which is the most expensive kind of green there is, because it reads
+        // as coverage.
+        //
+        // `changingPage` is the one that answers the question: set when a switch is committed, cleared
+        // in arriveAt where it lands, so it is true across the whole gap leaveFor posts its work into.
+        assertTrue(step.contains("changingPage"),
+            "stepPage does not check whether a switch is already IN FLIGHT. leaveFor posts its work "
+            + "and returns, so the page has not changed yet - and holding the key queues one full "
+            + "teardown per auto-repeat, every one of them to the same destination");
+
+        String leave = withoutComments(bodyOf(editor,
+            "private void leaveFor(String page, boolean autonomy)"));
+
+        assertTrue(leave.contains("changingPage = true"),
+            "nothing raises the latch when a switch is committed, so it can never be true and every "
+            + "door that asks it is asking a constant");
+
+        assertTrue(leave.indexOf("settleUnsavedWork()") < leave.indexOf("changingPage = true"),
+            "the latch is raised before the user has been asked about unsaved work, so answering "
+            + "\"stay here\" would leave the window refusing every further switch");
+
+        String arrive = withoutComments(bodyOf(editor, "private void arriveAt(String page, boolean wanted)"));
+
+        assertTrue(arrive.contains("changingPage = false"),
+            "nothing lowers the latch when the switch arrives, so the first page change would be the "
+            + "last one this window ever made");
     }
 
     /**
@@ -1786,6 +1814,26 @@ public class testEditorSurfaceRules
             "there are now " + deciders.size() + " places setting a caption label's visibility, not "
             + "three.  A new one is not wrong in itself - but it has to ask the same rule, and this "
             + "test is here because the third one did not: " + deciders);
+
+        // AND WHERE `visible` COMES FROM, which is the hole the disjunct above leaves.
+        //
+        // One of the three deciders - refreshCaptionVisibility, the path the toggle actually uses -
+        // passes a local called `visible` rather than naming the rule on the same line. That is
+        // perfectly good code, and it is why the disjunct exists; but it meant the line assigning that
+        // local could be changed to a constant with nothing failing, restoring FR-023's reported
+        // symptom on the one path a user reaches. Found by a reviewer; the first repair was to demand
+        // the rule on the setVisible line itself, which failed against correct code.
+        for (String line : source.split("\n"))
+        {
+            String trimmed = line.trim();
+
+            if (!trimmed.startsWith("boolean visible =")) continue;
+
+            assertTrue(trimmed.contains("captionShouldShow") || trimmed.contains("captionIsActive"),
+                "a caption's visibility is decided by something other than the shared rule: "
+                + trimmed + ".  That local is handed straight to setVisible, so whatever it is "
+                + "computed from IS the rule for that path");
+        }
 
         for (String decider : deciders)
         {

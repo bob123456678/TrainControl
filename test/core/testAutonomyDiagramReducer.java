@@ -40,6 +40,66 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class testAutonomyDiagramReducer
 {
     /**
+     * A red arrow stops a train LANDING, not passing through (corrected 2026-08-28).
+     *
+     * The case the two tests beside this one could not see, and the one an independent reviewer found.
+     * Both of them bar the DESTINATION - the single arrangement where "cannot stop here" and "cannot
+     * come this way" give the same answer - so the walks could enforce the wrong one of the two and
+     * stay green.
+     *
+     * What the build actually does is not in doubt: `AutonomyBuilder` emits the barred copy of a split
+     * square as a non-station and says so in its own comment - "the copy still exists and still carries
+     * traffic; it is simply not somewhere a train can be sent". A javadoc of mine claimed the opposite,
+     * and the walks were written to match the javadoc.
+     *
+     * The consequence was not cosmetic. The path test drew no route for journeys the railway runs, and
+     * the findings reported stations as reaching nothing when they reach plenty - warnings Adam acts on
+     * by editing a diagram that was never wrong.
+     *
+     * MUTATION: refusing a barred arrival at every hop - which is what shipped - fails both halves.
+     */
+    @Test
+    public void testABarredArrivalCanStillBePassedThrough() throws IOException
+    {
+        // A - B - C again, but this time the bar is in the MIDDLE of the journey.
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        TileKey a = key("main", 1, 1);
+        TileKey b = key("main", 3, 1);
+        TileKey c = key("main", 5, 1);
+
+        Set<TileKey> none = Collections.emptySet();
+
+        // B refuses trains arriving from A's side.  A train may not STOP there that way; it may still
+        // run through on its way to C.
+        Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
+
+        barred.put(b, java.util.EnumSet.of(arrivalSideAt(reducer, a, b)));
+
+        assertNotNull(reducer.findPath(a, c, none, none, barred),
+            "no route from A to C because the square BETWEEN them refuses arrivals from A's side - but "
+            + "the railway runs that train: the build emits the barred copy and carries traffic "
+            + "through it, and only refuses to send a train there to stop");
+
+        assertTrue(reducer.reachableTiles(a, none, none, barred).contains(c),
+            "C is reported unreachable from A because the square between them is barred, so the "
+            + "findings would tell Adam a station reaches nothing when it reaches C perfectly well");
+
+        // And the square itself is still not a DESTINATION by that side, which is the half that was
+        // right all along.
+        assertFalse(reducer.reachableTiles(a, none, none, barred).contains(b),
+            "the barred square is offered as somewhere a train can be sent, which is exactly what the "
+            + "red arrow refuses");
+    }
+
+    /**
      * A barred arrival is not a route, for either walk (OB-120).
      *
      * Adam: "test a path should respect all red arrow restrictions."

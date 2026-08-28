@@ -3123,6 +3123,10 @@ it works 9 out of 10 times.  sometimes I see this without a positive detection: 
 
 Fixed 2026-08-27. The message Adam quoted - '192.168.50.25 is reachable' - is printed the instant a ping succeeds, so the host answered and was then dropped by the web check that follows. The asymmetry was sitting in CSDetect: isReachable retries PING_RETRY times, checkWebServer got a single 500ms connect-and-read, swallowed the exception and returned false. One transient timeout therefore threw away a station that had just proved it was there, and the scan walked past it - which is exactly the one-in-ten Adam measured, and exactly why retrying the whole detect finds it. WEB_RETRY = 3 now, and the retry lives INSIDE the two-argument checkWebServer that both callers already use, so there is no new call site to remember. Costs nothing on the ~250 dead addresses: the web check only runs on hosts that already answered a ping. Covered by core.testCentralStationDetection, which stands up a real HTTP server that is slow once and fine afterwards; all three mutations bite, including WEB_RETRY=1, which reproduces the original bug deterministically. Still needs Adam's hands: the fix cannot be proved on the real railway from here.
 
+**Adam, 2026-08-28 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-061"></a>
@@ -9165,6 +9169,15 @@ capture locomotive commands button can still be toggled while trains are returni
 
 I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.
 
+**Adam, 2026-08-28 (triage).** Does not work.
+
+1. is still not greyed when not connected / in debug mode
+2. is still not greyed when not connected / in debug mode
+
+rest not yet tested
+
+*Run against commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-180"></a>
@@ -10096,6 +10109,10 @@ list." That is a reason about reading a list, not about the railway - a square y
 needs no name to be recognised, and a blocker is resolved by tile rather than by name, so it is not
 dropped from the built configuration. What survives is what is about the railway: autonomy has to route
 over the square, and a station cannot hold itself back.
+
+**Adam, 2026-08-28 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

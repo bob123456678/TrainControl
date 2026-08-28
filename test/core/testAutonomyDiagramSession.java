@@ -1043,8 +1043,23 @@ public class testAutonomyDiagramSession
 
         session.rebuild();
 
-        boolean was = org.traincontrol.gui.TrainControlUI.getPrefs().getBoolean(
-            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+        // WHETHER IT WAS STORED AT ALL, not just what it reads as.
+        //
+        // This captured `getBoolean(key, false)` and put that back unconditionally - written when the
+        // default WAS false. The default became true the next day, so on any machine where nobody had
+        // ever set the key - which is every machine, including Adam's - the capture read false and the
+        // finally wrote an explicit false into his live preferences. Running the suite once switched
+        // off the feature he had just asked to be on by default, with nothing on screen connecting
+        // the two.
+        //
+        // Found by a reviewer. A test may read the user's settings; it may not decide them.
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+        boolean had = prefs.get(
+            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null) != null;
+
+        boolean was = prefs.getBoolean(
+            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
 
         try
         {
@@ -1073,8 +1088,16 @@ public class testAutonomyDiagramSession
         }
         finally
         {
-            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
-                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, was);
+            // Put back as it was, INCLUDING having been unset.
+            if (had)
+            {
+                prefs.putBoolean(
+                    org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, was);
+            }
+            else
+            {
+                prefs.remove(org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            }
         }
     }
 

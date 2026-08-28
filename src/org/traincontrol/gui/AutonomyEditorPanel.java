@@ -2077,8 +2077,19 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey station = session.getCaptionTarget(from);
 
-        session.setCaption(from, null);
-        session.setCaption(to, station);
+        // ONE move, through the session's own method (reviewer, 2026-08-28).
+        //
+        // This was two calls, and each of them ends in `touched()` -> `rebuild()`: the graph is
+        // discarded and rebuilt, portals revalidated, the reducer re-run. The window between "cleared"
+        // and "set" therefore contained a whole graph rebuild, and an exception out of that first one
+        // would have left the station with no caption anywhere, the failure escaping into the event
+        // thread's default handler with nothing but a stack trace on stderr. Nothing is written to
+        // disk in that window, so Cancel would still rewind it - but a Save afterwards would commit
+        // the loss.
+        //
+        // `AutonomySession.moveCaption` does it at store level with one rebuild, and it was already
+        // written and already tested. Nothing in the application called it.
+        if (!session.moveCaption(from, to)) return false;
 
         if (onDiagramChanged != null) onDiagramChanged.run();
 

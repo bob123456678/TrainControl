@@ -3756,7 +3756,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void setEditLayoutEnabled(boolean enabled)
     {
-        this.editLayoutButton.setEnabled(enabled);
+        // The caller's half of the answer, remembered rather than applied.
+        //
+        // Two different things decide whether these controls are live: whether an editor is already
+        // open, which is what every caller of this method is saying, and whether there is a layout of
+        // his to edit at all (OB-126). Keeping them apart is what lets the second be re-asked when the
+        // layout changes without having to pretend an editor just closed.
+        this.noEditorOpen = enabled;
+
+        applyLayoutEditingAvailability();
+    }
+
+    /**
+     * Lights or greys everything that edits the track diagram, from both halves of the question.
+     *
+     * Adam, 2026-08-28: "edit layout and manage layout... these must be greyed when using a CS layout
+     * or when there is no layout loaded."  Both of them open a layout that lives in a folder of his; a
+     * layout fetched from the Central Station has no such folder, and with nothing loaded there is
+     * nothing to open. Neither asked before: all three editor teardowns called
+     * `setEditLayoutEnabled(true)` unconditionally, so closing an editor lit the button again whatever
+     * had happened to the layout in the meantime.
+     *
+     * Called on every transition that can change the answer as well as from the setter, because the
+     * answer changes without anybody opening or closing an editor - switching to the CS layout is
+     * exactly that.
+     */
+    private void applyLayoutEditingAvailability()
+    {
+        boolean live = this.noEditorOpen && layoutCanBeEdited();
+
+        this.editLayoutButton.setEnabled(live);
+
+        // Manage Pages goes with it: it is the same permission, asked about the same folder.
+        if (this.modifyLocalLayoutMenu != null) this.modifyLocalLayoutMenu.setEnabled(live);
 
         // The button on the autonomy settings panel goes with it (C9).
         //
@@ -3773,9 +3805,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one window ago.
         if (this.editAutonomyFromSettings != null)
         {
-            this.editAutonomyFromSettings.setEnabled(enabled);
+            this.editAutonomyFromSettings.setEnabled(live);
         }
     }
+
+    /**
+     * Whether there is a track diagram of Adam's own to edit (OB-126).
+     *
+     * A layout read from the Central Station is not editable here: it belongs to the CS, there is no
+     * folder of his behind it, and the editor writes files. With no layout loaded there is nothing to
+     * open either - which is the state after a failed switch, when the offer is at its most misleading.
+     *
+     * @return whether the editing controls mean anything right now
+     */
+    private boolean layoutCanBeEdited()
+    {
+        return this.model != null && !this.model.getLayoutList().isEmpty() && isLocalLayout();
+    }
+
+    /** Whether no editor window is currently open - the caller's half of the availability answer. */
+    private boolean noEditorOpen = true;
 
     /**
      * Remembers which editor the user last chose, for a switch made from the sidebar.
@@ -17314,6 +17363,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 
                 prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+
+                // The editing controls answer differently now (OB-126): a CS layout has no folder of
+                // his behind it, so there is nothing for Edit or Manage Pages to open.
+                applyLayoutEditingAvailability();
                 // Cleared FIRST because an empty layout database is what makes the sync fetch the
                 // pages again.  A refusal after the clear left the diagram tab blank with nothing on
                 // its way to fill it, so the refusal is now said out loud.
@@ -17398,6 +17451,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             () -> this.syncWithCS2(),
             () ->
             {
+                // Either way round: a load that worked makes them live, one that failed leaves them
+                // greyed rather than offering an editor with nothing to edit (OB-126, OB-127).
+                applyLayoutEditingAvailability();
+
                 if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())
                 {
                     this.initializeTrackDiagram(true);

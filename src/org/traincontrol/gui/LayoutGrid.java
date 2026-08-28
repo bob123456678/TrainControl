@@ -181,6 +181,25 @@ public class LayoutGrid
             @Override
             public void mousePressed(MouseEvent e)
             {
+                // THE LEFT BUTTON ONLY (reviewer, 2026-08-28).
+                //
+                // Every button started a drag. Right-press a captioned square meaning to open the
+                // properties menu, let the pointer wander four pixels before letting go, and the label
+                // was picked up and dropped wherever the cursor happened to be - while `mouseClicked`
+                // never fired, so the menu did not open either. The gesture that was meant to ASK
+                // about a square silently rearranged it.
+                //
+                // The distinction was already made on the click path a few lines above, which tests
+                // `isRightMouseButton`. It was missed here. LayoutEditor carries the comment for the
+                // identical fault one level down: "without this branch a right-click ran the tool as
+                // well, which looked like a menu that failed to appear".
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
+                {
+                    began[0] = null;
+
+                    return;
+                }
+
                 began[0] = e.getPoint();
                 dragging[0] = false;
             }
@@ -371,9 +390,15 @@ public class LayoutGrid
      * the autonomy graph asks when it works out which ways a train may leave a square, so a caption
      * and the path drawn through it cannot disagree about which way the rails go.
      *
-     * False for anything that is not clearly one or the other - a switch, a crossing, a curve - and
-     * false when the geometry cannot be had at all. Those squares have no single direction for a
-     * caption to be placed against, and the answer for them is where captions have always been.
+     * False for a crossing or a curve, and false when the geometry cannot be had at all: those squares
+     * have no single direction for a caption to be placed against, and the answer for them is where
+     * captions have always been.
+     *
+     * NOT false for a switch, which this sentence used to claim (reviewer, 2026-08-28). A switch in its
+     * straight position offers one route north to south, so it answers TRUE. Little reaches that today
+     * because `mayCarryACaption` refuses captions on switches and signals - but two identical switches
+     * saved in different states would be captioned differently, and the sentence was what a reader
+     * would have trusted.
      *
      * Public so the one thing worth checking about it can be checked - which way it answers for a
      * straight rail and for the same rail turned a quarter - without building a grid and reading

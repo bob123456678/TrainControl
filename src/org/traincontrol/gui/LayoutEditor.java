@@ -3575,10 +3575,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Marks the square a dragged station label would land on (FR-035).
      *
-     * The drag feedback, and deliberately the cheap kind: the label itself is not carried under the
-     * pointer. What matters while dragging is WHERE IT WILL GO, and a line round that square says it
-     * without a second copy of the caption floating over the diagram - which on a grid this dense
-     * would cover the very thing being aimed at.
+     * The drag feedback that says WHERE IT WILL GO, as distinct from the ghost above, which says what
+     * is being carried. Both ship: Adam asked for the picture after seeing this on its own.
+     *
+     * This comment used to argue against carrying a copy of the label at all - "a second copy of the
+     * caption floating over the diagram would cover the very thing being aimed at" - which was the
+     * reasoning before the ghost existed and is now an argument against a feature sitting sixty lines
+     * above it. The concern it was about is met by drawing the ghost slightly see-through.
      *
      * Green for a square that will take it, red for one that will refuse, so the answer arrives before
      * the mouse comes up rather than as a message afterwards.
@@ -4862,6 +4865,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // Save is the default because it is the answer that cannot lose anything, and this dialog
         // appears on a gesture as small as clicking a tab.
         if (!settleUnsavedWork()) return;
+
+        // Committed: from here the switch is going to happen, and nothing else may start one until it
+        // has (FR-036 follow-up).  After the question, so answering "stay here" leaves this alone.
+        changingPage = true;
+
         // The window STAYS.
         //
         // Everything above this line is unchanged - the same three answers, the same save, the same
@@ -4928,6 +4936,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private void arriveAt(String page, boolean wanted)
     {
+        // Arrived, whatever happens below.  Cleared FIRST so that a failure inside this method cannot
+        // leave the window refusing every further switch - which would be a worse fault than the one
+        // the latch exists to stop.
+        changingPage = false;
+
         try
         {
             boolean autonomy = wanted;
@@ -5226,7 +5239,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private void stepPage(int by)
     {
-        if (switching || parent == null || parent.getModel() == null) return;
+        // `changingPage` as well as `switching`: the first says a switch is in flight, which is
+        // exactly the state auto-repeat produces and the one `switching` cannot see.
+        if (switching || changingPage || parent == null || parent.getModel() == null) return;
 
         java.util.List<String> pages = parent.getModel().getLayoutList();
 
@@ -5296,7 +5311,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             {
                 int row = pageList.locationToIndex(e.getPoint());
 
-                if (row < 0 || switching) return;
+                // And not while one is already in flight: two quick clicks on two different
+                // rows queued two switches, and the second read a page name the first had not yet
+                // changed.
+                if (row < 0 || switching || changingPage) return;
 
                 String page = pageList.getModel().getElementAt(row);
 
@@ -5376,7 +5394,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         tab.addActionListener(e ->
         {
-            if (switching || isAutonomyMode() == autonomy)
+            if (switching || changingPage || isAutonomyMode() == autonomy)
             {
                 syncSidebar();
                 return;
@@ -5504,6 +5522,24 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
     /** Set while the sidebar is being put back, so that doing so does not read as a click */
     private boolean switching;
+
+    /**
+     * Set while a page or mode switch has been ASKED FOR and has not yet arrived.
+     *
+     * `switching` above cannot answer this and never could: it is true only inside `syncSidebar`,
+     * synchronously, so it is false at every moment a second switch could be started. A validator
+     * found that, and the test that was supposed to guard it asserted the word rather than the
+     * property.
+     *
+     * The gap this covers is real. `leaveFor` answers the unsaved-work question, posts the rest of
+     * the work and returns, so the page has not changed when it does - and anything reading
+     * `layout.getName()` in the meantime gets the page being left. Holding + therefore queued one full
+     * teardown per auto-repeat, all to the same destination, each re-reading the diagram from disk.
+     *
+     * Set after the question is answered, so cancelling never sets it, and cleared in `arriveAt`,
+     * where both branches end up once the new page is in place.
+     */
+    private boolean changingPage;
 
     public int getLayoutSize()
     {

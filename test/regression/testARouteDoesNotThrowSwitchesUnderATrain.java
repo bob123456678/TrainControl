@@ -868,8 +868,19 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
                 Accessory.accessoryDecoderType.MM2, true));
             commands.add(RouteCommand.RouteCommandStop());
 
+            // FIRED AUTOMATICALLY, which is the door this rule is about.
+            //
+            // `skipAccessories = auto && conflict != null` - so with `auto` false the whole rule is
+            // switched off and this assertion ran down a branch where nothing could be discarded. A
+            // reviewer checked the whole corpus: every execRoute in the suite passed false, so the
+            // safety behaviour being asserted here - a route carrying an emergency stop is not thrown
+            // away whole - was never actually exercised. Restoring the original defect at the
+            // automatic door left the battery green.
+            //
+            // This is the door with no human at it: a sensor fires it, and whatever it decides is what
+            // the railway does.
             new MarklinRoute(model, "MX emergency", 84903, commands, 0,
-                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).execRoute(false);
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).execRoute(true);
 
             try
             {
