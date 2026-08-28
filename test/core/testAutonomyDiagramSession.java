@@ -1079,6 +1079,97 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The station ingress arrows follow the same switch as the travel restrictions (Adam, 2026-08-28).
+     *
+     * "Couple the station ingress arrows to this setting in the track viewer, but be careful not to
+     * disturb their behavior in the editor."
+     *
+     * A chevron saying which way into a platform is shut is the same kind of statement as a one-way
+     * arrow - both say where a train may not go, both come from this setup - so a switch that turned
+     * off one and left the other would be a setting that half works.
+     *
+     * The preference is set through the key the code reads and put back afterwards, because these are
+     * the real preferences of whoever runs the suite.
+     *
+     * MUTATION: drawing the arrivals unconditionally - which is what the viewer did before - fails the
+     * first half.
+     */
+    @Test
+    public void testTheIngressArrowsFollowTheSettingInTheViewer() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Ingress", null);
+        session.getStore().setActiveConfiguration("Ingress");
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Platform");
+
+        session.rebuild();
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
+            session.arrivalSides(station);
+
+        assertTrue(ways.size() > 1,
+            "precondition: the station has fewer than two ways in, so barring one leaves nothing to "
+            + "draw a chevron about");
+
+        session.setBarredArrivals(station,
+            new java.util.LinkedHashSet<>(Arrays.asList(ways.get(0))));
+
+        session.rebuild();
+
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+        boolean had = prefs.get(
+            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null) != null;
+        boolean was = prefs.getBoolean(
+            org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+
+        try
+        {
+            prefs.putBoolean(
+                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+
+            org.traincontrol.automationui.TileAnnotation off =
+                session.staticAnnotationFor(station);
+
+            assertTrue(off == null || off.getArrivals().isEmpty(),
+                "the barred way into a platform is still drawn on the diagram with travel "
+                + "restrictions switched OFF, so the setting turns off the arrows and leaves the "
+                + "chevrons - which is the half-working state the coupling was asked for to stop");
+
+            prefs.putBoolean(
+                org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+
+            org.traincontrol.automationui.TileAnnotation on =
+                session.staticAnnotationFor(station);
+
+            assertNotNull(on, "a station with a barred way in is described as nothing at all");
+
+            assertFalse(on.getArrivals().isEmpty(),
+                "the barred way into a platform is not drawn with travel restrictions switched ON, "
+                + "so the coupling took the chevrons away instead of following the switch");
+        }
+        finally
+        {
+            if (had)
+            {
+                prefs.putBoolean(
+                    org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, was);
+            }
+            else
+            {
+                prefs.remove(org.traincontrol.gui.TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            }
+        }
+    }
+
+    /**
      * The squares a given check named, so a test can tell which one it fired about.
      */
     private java.util.List<String> subjectsOf(String messageKey)

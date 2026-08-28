@@ -26,20 +26,72 @@ import org.traincontrol.gui.TrainControlUI;
 public class testDiagramDrawingSettings
 {
     /**
-     * The preference is off until asked for, and answers without a railway.
+     * The arrows are ON by default, and the default is what is actually asked.
      *
-     * The second half is the "does not blow anything up" case in its smallest form: the accessor is
-     * static and reads a preference, so it has an answer before any session, graph or configuration
-     * exists. Anything that consulted a session here would throw on a fresh install.
+     * Adam, 2026-08-28, having used it: "make this setting be on by default."  It shipped off, on the
+     * reasoning that a page of arrows over a railway nobody is configuring is what kept directions in
+     * the editor - but that was about ALL directions, and this draws only the restricted ones.
+     *
+     * **The stored value is removed first, and that is the whole point of this version.** The test
+     * before it simply called the accessor and asserted the answer, which read whatever value some
+     * earlier run had written into this machine's preferences - so when the default was changed from
+     * false to true the assertion went on passing, because a stored false was answering it. It was
+     * testing the developer's own settings, and on a clean install it would have said something else.
+     *
+     * The previous value is put back, because these are the real preferences of whoever is running the
+     * suite and a test has no business changing what their application does tomorrow.
      */
     @Test
-    public void testTheArrowsAreOffUntilAskedFor()
+    public void testTheArrowsAreOnByDefault()
     {
-        // No UI has been built in this JVM, which is the point.
-        assertFalse(TrainControlUI.diagramShowsRestrictionArrows(),
-            "the one-way arrows are on by default, so every operator who has never asked for them "
-            + "gets a page of arrows over a diagram they are watching trains on - which is the reason "
-            + "directions were kept to the editor in the first place");
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        boolean had = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null) != null;
+        boolean was = prefs.getBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+
+        try
+        {
+            prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+
+            assertTrue(TrainControlUI.diagramShowsRestrictionArrows(),
+                "with nothing stored, the travel restrictions are off - so a new installation shows "
+                + "none of them, which is what Adam asked to change");
+        }
+        finally
+        {
+            if (had) prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, was);
+            else prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+        }
+    }
+
+    /**
+     * And the menu's tick starts in the same place the drawing does.
+     *
+     * Two reads of one default, in two files. A menu item that came up unticked while the arrows were
+     * drawn would be a window disagreeing with itself about a setting the user has not touched.
+     *
+     * MUTATION: changing either default alone fails this.
+     */
+    @Test
+    public void testTheMenuAgreesWithTheDrawingAboutTheDefault() throws Exception
+    {
+        String ui = new String(Files.readAllBytes(
+            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
+
+        int defaults = 0;
+
+        for (int at = ui.indexOf("DIAGRAM_RESTRICTION_ARROWS,"); at >= 0;
+            at = ui.indexOf("DIAGRAM_RESTRICTION_ARROWS,", at + 1))
+        {
+            int end = ui.indexOf(')', at);
+
+            if (end > at && ui.substring(at, end).contains("true")) defaults++;
+        }
+
+        assertEquals(defaults, 2,
+            "the menu's tick and the drawing read different defaults for the travel restrictions, so "
+            + "on a fresh installation the window disagrees with itself about a setting nobody has "
+            + "touched yet");
     }
 
     /**
@@ -158,6 +210,36 @@ public class testDiagramDrawingSettings
             "the arrows setting refreshes the autonomy layer without asking whether that layer is "
             + "being shown - so switching the arrows on would turn the whole static overlay on with "
             + "them, and with no toggle built yet it would throw");
+    }
+
+    /**
+     * The EDITOR's arrival chevrons are not touched by the viewer's setting (Adam, 2026-08-28).
+     *
+     * "Be careful not to disturb their behavior in the editor."  The editor governs its arrivals with
+     * its own four-way control - all, restrictions, none, arrivals - and one of those modes exists
+     * precisely to show EVERY side of EVERY station so the setting can be read. That mode is the
+     * reason `arrivalMarks` takes an `always` flag at all.
+     *
+     * So the editor must go on passing its own answer, and must never read this preference. The second
+     * assertion is the one that matters: coupling the two windows would be easy to do by accident and
+     * impossible to see afterwards.
+     *
+     * MUTATION: having the editor ask `diagramShowsRestrictionArrows` fails this.
+     */
+    @Test
+    public void testTheEditorsArrivalsAreNotCoupledToTheViewersSetting() throws Exception
+    {
+        String panel = new String(Files.readAllBytes(
+            Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")), StandardCharsets.UTF_8);
+
+        assertTrue(panel.contains("session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS)"),
+            "the editor no longer asks its own directions control about arrivals, so the mode whose "
+            + "whole purpose is showing every side of every station has lost its answer");
+
+        assertFalse(panel.contains("diagramShowsRestrictionArrows"),
+            "the autonomy editor now reads the ordinary diagram's preference, which is exactly what "
+            + "Adam asked not to happen - the editor is where these are being decided, and it has its "
+            + "own control for them");
     }
 
     /**

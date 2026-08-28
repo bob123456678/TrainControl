@@ -193,10 +193,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Adam, 2026-08-27: "option to show RESTRICTION arrows in track diagram view mode - add this to the
      * layout preferences jmenu."
      *
-     * OFF by default, which is the answer `staticAnnotationFor` gave for everybody until now: the
-     * diagram tab is where trains are watched, and a page of arrows over a railway nobody is
-     * configuring was the reason directions were kept to the editor in the first place. This makes it
-     * available to somebody who wants it rather than making it the default for everybody.
+     * ON by default (Adam, 2026-08-28, having used it: "make this setting be on by default").
+     *
+     * It shipped off, on the reasoning that a page of arrows over a railway nobody is configuring was
+     * the reason directions were kept to the editor. That reasoning was about ALL the directions. What
+     * this draws is only the restricted ones - a run open both ways, which is most of any layout,
+     * draws nothing - so the clutter the old default was avoiding does not arise.
      */
     public static final String DIAGRAM_RESTRICTION_ARROWS = "DiagramRestrictionArrows";
 
@@ -1628,7 +1630,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static boolean diagramShowsRestrictionArrows()
     {
-        return getPrefs().getBoolean(DIAGRAM_RESTRICTION_ARROWS, false);
+        return getPrefs().getBoolean(DIAGRAM_RESTRICTION_ARROWS, true);
     }
 
     /**
@@ -7598,7 +7600,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             I18n.t("ui.main.toolbar.tooltip.restrictionArrows"));
 
         this.restrictionArrowsMenuItem.setSelected(
-            prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, false));
+            prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, true));
 
         this.restrictionArrowsMenuItem.addActionListener(event ->
         {

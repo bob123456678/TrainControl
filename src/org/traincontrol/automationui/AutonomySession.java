@@ -4071,10 +4071,22 @@ public class AutonomySession
             // drawing those here would put an arrow on nearly every square - which is the clutter that
             // kept directions out of this diagram to begin with.
             arrows,
-            // Only where something is actually restricted.  A station that takes trains from anywhere
-            // has nothing to say here, and saying it on every platform of the layout would be the
-            // clutter this mark exists to avoid.
-            arrivalMarks(tile, false));
+            // The station ingress arrows follow the SAME switch (Adam, 2026-08-28).
+            //
+            // A chevron saying which way into a platform is shut is the same kind of statement as a
+            // one-way arrow: both say where a train may not go, both come from this setup, and a
+            // switch that turned off one and not the other would be a setting that half works.
+            //
+            // THE EDITOR IS NOT TOUCHED BY THIS. Its arrivals are governed by its own four-way
+            // control, which has a mode whose whole point is showing every side of every station so
+            // the setting can be read - that mode is why `arrivalMarks` takes an `always` flag at all.
+            // The editor passes its own answer and never sees this preference.
+            //
+            // `false` still means what it meant: only where something is actually restricted. A
+            // station that takes trains from anywhere has nothing to say, and saying it on every
+            // platform would be the clutter this mark exists to avoid.
+            arrows ? arrivalMarks(tile, false)
+                : new ArrayList<TileAnnotation.Arrival>());
     }
 
     /**
