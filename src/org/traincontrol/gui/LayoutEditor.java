@@ -5207,6 +5207,42 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
+     * Moves to the next page along, or the previous one (FR-036).
+     *
+     * Adam: "just have them call existing components to reuse the same guards/warnings."  So this ends
+     * at `leaveFor`, which is exactly what clicking a row of the page list calls. The unsaved-work
+     * question, the mode the new page opens in and the latch that stops a second switch starting
+     * inside the first all belong to that method, and none of them is spelled out again here.
+     *
+     * IT WRAPS. On a railway of eight pages, stopping dead at the last one means noticing which end
+     * you are at before you can decide which key to press; coming round to the first is what "scroll
+     * through pages" does everywhere else. Nothing is lost by it - the pages are a ring the user is
+     * looking through, not a list being consumed.
+     *
+     * Silent when there is nowhere to go: one page, or a switch already under way. A key that reports
+     * "you cannot do that" on a railway with a single page is noise about a situation the user can see.
+     *
+     * @param by 1 for the next page, -1 for the one before
+     */
+    private void stepPage(int by)
+    {
+        if (switching || parent == null || parent.getModel() == null) return;
+
+        java.util.List<String> pages = parent.getModel().getLayoutList();
+
+        if (pages == null || pages.size() < 2) return;
+
+        int at = pages.indexOf(layout.getName());
+
+        // The page being looked at is not in the list, which is a state this cannot reason from.
+        if (at < 0) return;
+
+        int next = (at + by + pages.size()) % pages.size();
+
+        leaveFor(pages.get(next), isAutonomyMode());
+    }
+
+    /**
      * Which page, as a column of tabs.
      *
      * The control type lives here and nowhere else - swap the body and the rest of the window does not
@@ -5723,6 +5759,37 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 toggleAddresses();
 
                 return;
+            }
+
+            // Plus and minus walk through the pages, in BOTH editors (FR-036).
+            //
+            // Above the guard below, and for the reason its own sentence gives: moving to another page
+            // neither places, cuts, rotates nor retextures anything. Adam asked for it in "the
+            // layout/autonomy editor", and MT-109 is the ticket about keys that were filed as fixed
+            // while sitting below that line doing nothing at all.
+            //
+            // Four keycodes for two keys. The main row reports plus as VK_EQUALS unless shift is held,
+            // the numpad reports VK_ADD, and a keyboard laid out for another language may report either
+            // - so all of them are taken rather than making the shortcut depend on which key somebody
+            // reached for.
+            if (!evt.isControlDown())
+            {
+                int code = evt.getKeyCode();
+
+                if (code == KeyEvent.VK_PLUS || code == KeyEvent.VK_ADD
+                    || code == KeyEvent.VK_EQUALS)
+                {
+                    stepPage(1);
+
+                    return;
+                }
+
+                if (code == KeyEvent.VK_MINUS || code == KeyEvent.VK_SUBTRACT)
+                {
+                    stepPage(-1);
+
+                    return;
+                }
             }
 
             // Every shortcut below places, cuts, rotates or retextures a tile.  None of them mean

@@ -1661,6 +1661,69 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Plus and minus change pages in BOTH editors, through the switch that already exists (FR-036).
+     *
+     * Adam, 2026-08-27: "make the +/- keys scroll through pages in the layout/autonomy editor.  just
+     * have them call existing components to reuse the same guards/warnings."
+     *
+     * Two things can be wrong here without anything failing to compile, and both have happened before
+     * in this exact handler.
+     *
+     * WHERE THE KEYS SIT. The handler returns early in autonomy mode, guarding shortcuts that "place,
+     * cut, rotate or retexture a tile". A page key below that line does nothing in the autonomy
+     * editor - which is half of what was asked for - and MT-109 is the ticket about keys filed as
+     * fixed while sitting exactly there.
+     *
+     * WHAT THEY CALL. `leaveFor` carries the unsaved-work question and the latch that stops a second
+     * switch starting inside the first. A page key that moved the diagram itself would skip all of it.
+     *
+     * Read rather than run: driving a key into this window needs the window, a railway of several
+     * pages, and the focus owner to be the frame - which is the very thing that makes root-pane
+     * bindings dead here.
+     *
+     * MUTATION: moving the block below the autonomy guard fails the position assertion; having
+     * stepPage change the page itself instead of calling leaveFor fails the last one.
+     */
+    @Test
+    public void testThePageKeysUseTheSwitchThatAlreadyExists() throws Exception
+    {
+        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutEditor.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(editor.contains("stepPage(1)") && editor.contains("stepPage(-1)"),
+            "the page keys are gone, so + and - no longer move between pages");
+
+        // ABOVE the guard, identified by the guard's OWN sentence rather than by a method name that
+        // appears a dozen times in this file - which is how the first version of this check fooled
+        // itself into passing.
+        int guard = editor.indexOf(
+            "// Every shortcut below places, cuts, rotates or retextures a tile.");
+
+        assertTrue(guard > 0, "cannot find the autonomy guard, so this check cannot see what it is "
+            + "about");
+
+        assertTrue(editor.indexOf("stepPage(1)") < guard,
+            "the page keys sit below the guard that returns in autonomy mode, so they do nothing in "
+            + "the autonomy editor - which is half of what FR-036 asked for, and exactly where "
+            + "MT-109's keys were found doing nothing");
+
+        // And the switch is the one that already exists, with its guards.
+        String step = withoutComments(bodyOf(editor, "private void stepPage(int by)"));
+
+        assertFalse(step.isEmpty(), "cannot find stepPage - has it been renamed?");
+
+        assertTrue(step.contains("leaveFor("),
+            "the page keys move between pages by some other means than leaveFor, so they skip the "
+            + "unsaved-work question and the latch that stops two switches overlapping - which is "
+            + "precisely what Adam asked them to reuse");
+
+        assertTrue(step.contains("switching"),
+            "stepPage does not check whether a switch is already under way, so holding the key starts "
+            + "one inside another");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)
