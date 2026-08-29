@@ -1,8 +1,20 @@
 package core;
 
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.marklin.MarklinControlStation;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * When an edge behind a train may be handed back, at several train lengths.
@@ -38,6 +50,43 @@ import org.traincontrol.automation.Layout;
  */
 public class testTrainTailClearsEdges
 {
+    private static MarklinControlStation model;
+
+    /** Nothing else in test/core uses this address; this class gets its own JVM in the battery. */
+    private static final int SWITCH_ADDRESS = 187;
+
+    private static final String S88_MID = "48601";
+    private static final String S88_MID2 = "48602";
+    private static final String S88_END = "48603";
+
+    private static support.LayoutSandbox sandbox;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        // BEFORE the model, not after it.
+        //
+        // `init` reads the machine-global layout preference and loads whatever it names, which on
+        // Adam's machine is his real railway. Opened afterwards it protects nothing - three classes
+        // had it in that order on 2026-08-28 and had been opening his layout on every battery.
+        sandbox = support.LayoutSandbox.open();
+
+        model = init(null, true, false, false, true);
+        model.stop();
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception
+    {
+        if (model != null)
+        {
+            model.clearAutoLayout();
+            model.stop();
+        }
+
+        if (sandbox != null) sandbox.close();
+    }
+
     /**
      * A train is not let off an edge its tail is still standing on, whatever length it is.
      *
@@ -224,5 +273,151 @@ public class testTrainTailClearsEdges
         assertFalse(source.contains("tailMayStillBeOn"),
             "the looser companion rule is back. It may not decide whether an edge is reported clear: "
             + "with atomicRoutes on that is the only thing protecting the turnouts under a train");
+    }
+
+    /**
+     * TST-A3: the gate is proved present, positioned and unique above - by source alone - but nothing
+     * until this test RUNS the clearing loop and watches what it actually does to a locked edge.
+     *
+     * A mutation that keeps `if (!tailHasProvablyPassed(...))` exactly as written and empties its body
+     * - deleting the `continue;` inside it - leaves every count and position
+     * `testTheClearAndTheUnlockAskTheSameQuestion` checks exactly where it was: the `if` is still
+     * there, asking the same question, in the same place, called once. What breaks is that the answer
+     * stops mattering - an edge the rule refuses to clear gets cleared and unlocked anyway. Only
+     * running the loop can see that.
+     *
+     * This drives a real three-edge path - Adam's own worked example, edges of 100, 100 and an
+     * unmeasured 0, with a 250-length train - through the real `Layout.executePath`, in simulate mode,
+     * and reads the answer the same way the railway does: whether the first edge's own accessory is
+     * still reported ACTIVE by `getActiveAccs()` once the whole path has run. Still active means still
+     * held; dropping out of that set means cleared and unlocked.
+     *
+     * The control is the same three edges with none of them measured at all - `pathIsUnmeasured` true
+     * for the whole path - where `tailHasProvablyPassed` returns true unconditionally
+     * (`Layout.java:3440`) and the edge MUST be cleared quickly. Without it, "still held" above could
+     * mean nothing more than "this harness cannot observe a clear happening at all".
+     */
+    @Test
+    public void testAnEdgeTheRuleRefusesToClearStaysHeldWhileARealPathRuns() throws Exception
+    {
+        MarklinAccessory behind =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        behind.setSwitched(false);
+
+        try
+        {
+            // THE FINDING'S OWN SCENARIO. 100 measured units behind the first edge, 250 of train: the
+            // tail cannot possibly have passed it yet, so it must still be reported held.
+            List<Boolean> measured = runThreeEdgePath(behind, 100, 100, 0, 250);
+
+            assertTrue(measured.size() >= 2,
+                "the run reported fewer than two legs, so there was never a moment after the first "
+                + "edge was queued for release - got " + measured.size());
+
+            assertTrue(measured.get(0),
+                "precondition: when the train sets off the path must own the first edge's accessory, "
+                + "or there is nothing here for a mutation to hand back early");
+
+            assertTrue(measured.get(measured.size() - 1),
+                "the first edge stopped being held with 150 units of a 250-length train still standing "
+                + "on it - tailHasProvablyPassed(false, 100, 250) says the tail has not passed, and the "
+                + "clearing loop cleared and unlocked the edge anyway.  That is exactly what emptying "
+                + "the `if (!tailHasProvablyPassed(...))` body would do, invisibly to every source scan "
+                + "in this file");
+
+            // CONTROL: proves the observation above can see a PRESENCE (a genuine clear), not only an
+            // absence. Nothing here is measured, so pathIsUnmeasured is true for the whole path and
+            // tailHasProvablyPassed returns true unconditionally (Layout.java:3440) - the edge must be
+            // cleared, whatever the train's length. If this failed, "held" above would not be something
+            // this test could actually tell from "always reports held".
+            List<Boolean> unmeasured = runThreeEdgePath(behind, 0, 0, 0, 250);
+
+            assertTrue(unmeasured.size() >= 2,
+                "control: the run reported fewer than two legs - got " + unmeasured.size());
+
+            assertFalse(unmeasured.get(unmeasured.size() - 1),
+                "control: a path with no measured lengths anywhere must clear the first edge quickly "
+                + "regardless of the train's length - tailHasProvablyPassed returns true unconditionally "
+                + "when the path is unmeasured.  If this control cannot fail, the assertion above proves "
+                + "nothing about the rule actually being obeyed");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
+     * Builds a fresh A-B-C-D path with the given edge lengths, dispatches the first locomotive in the
+     * database down it with the given train length, and records - once per leg, via the real
+     * `getActiveAccs()` - whether the first edge's own accessory is still reported active.
+     *
+     * A fresh {@code Layout} every call: {@code model.clearAutoLayout()} first, so two calls in the same
+     * test cannot see each other's points, edges or locked accessory state.
+     */
+    private List<Boolean> runThreeEdgePath(MarklinAccessory behind, int abLength, int bcLength,
+        int cdLength, int trainLength) throws Exception
+    {
+        for (String s : new String[] { S88_MID, S88_MID2, S88_END })
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(true);
+
+        layout.createPoint("TL_A", false, null);
+        layout.createPoint("TL_B", false, S88_MID);
+        layout.createPoint("TL_C", false, S88_MID2);
+        layout.createPoint("TL_D", true, S88_END);
+
+        Edge ab = layout.createEdge("TL_A", "TL_B");
+        Edge bc = layout.createEdge("TL_B", "TL_C");
+        Edge cd = layout.createEdge("TL_C", "TL_D");
+
+        ab.setLength(abLength);
+        bc.setLength(bcLength);
+        cd.setLength(cdLength);
+
+        ab.addConfigCommand(behind.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer wasLength = loc.getTrainLength();
+
+        List<Boolean> behindHeld = new ArrayList<>();
+
+        try
+        {
+            loc.setTrainLength(trainLength);
+
+            layout.getPoint("TL_A").setLocomotive(loc);
+
+            layout.setCallback("tail-clears-edges outcome probe", (edges, l, started) ->
+            {
+                if (!Boolean.TRUE.equals(started)) return null;
+
+                behindHeld.add(layout.getActiveAccs().contains(behind));
+
+                return null;
+            });
+
+            assertTrue(layout.executePath(Arrays.asList(ab, bc, cd), loc, 30, null),
+                "the dispatch did not complete, so nothing here tests anything (edges " + abLength + "/"
+                + bcLength + "/" + cdLength + ", train " + trainLength + ")");
+        }
+        finally
+        {
+            loc.setTrainLength(wasLength);
+        }
+
+        return behindHeld;
     }
 }

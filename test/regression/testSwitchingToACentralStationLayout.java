@@ -230,6 +230,72 @@ public class testSwitchingToACentralStationLayout
     /** How many test classes build a model without a sandbox today - see the ratchet above. */
     private static final int MODELS_WITHOUT_A_SANDBOX = 56;
 
+    /**
+     * WHICH classes, not just how many (VAL-C8).
+     *
+     * A bare count can absorb a repair and a new violation in the same round: fix one class, break a
+     * different one, and 56 stays 56 while the test stays green. Pinning the names means a swap shows
+     * up as a failure naming both the file that is missing and the file that is not.
+     */
+    private static final String[] MODELS_WITHOUT_A_SANDBOX_NAMES = {
+        "testAMovedTileCarriesItsSetup.java",
+        "testARouteDoesNotThrowSwitchesUnderATrain.java",
+        "testARunSurvivesAPageRename.java",
+        "testAccessory.java",
+        "testAdvancedRoutes.java",
+        "testAutoLayout.java",
+        "testAutoLayoutRace.java",
+        "testAutonomyDiagramSampleLayout.java",
+        "testAutonomyGroundTruth.java",
+        "testAutonomySimulationSanity.java",
+        "testBothProtectingSignalsAreThrown.java",
+        "testConfirmedGoodState.java",
+        "testControlStationFaults.java",
+        "testDiscardedEditsDoNotDeleteSetup.java",
+        "testErrorsStopTheSetupRunning.java",
+        "testFacingFollowsTheTrack.java",
+        "testHomeStaging.java",
+        "testImportRename.java",
+        "testInvalidInput.java",
+        "testLayoutBfs.java",
+        "testLayoutBfsEquivalence.java",
+        "testLayoutFolderRobustness.java",
+        "testLayoutPickPath.java",
+        "testLayoutReloadFence.java",
+        "testLayoutRenameKeys.java",
+        "testLayoutTimetable.java",
+        "testLoadData.java",
+        "testLocDB.java",
+        "testLocomotive.java",
+        "testLocomotiveIdentityPropagates.java",
+        "testMaxActiveTrains.java",
+        "testMockCentralStation.java",
+        "testMultiUnitMembership.java",
+        "testNetworkProxy.java",
+        "testNonReversibleTrains.java",
+        "testParseCS2Layout.java",
+        "testParseCS2Routes.java",
+        "testParseCS3Routes.java",
+        "testRenameRoundTripThroughTheUIPath.java",
+        "testReturnHomeOnRealLayout.java",
+        "testRouteInventory.java",
+        "testRoutePicking.java",
+        "testRouteReachesTheRails.java",
+        "testRouteRoundTrip.java",
+        "testRoutes.java",
+        "testStationBlockedByAnotherPoint.java",
+        "testStuckTrainAdvisory.java",
+        "testTheCheckerAgreesWithTheBuild.java",
+        "testTheGoldenLayoutHoldsTogether.java",
+        "testTimetableCapture.java",
+        "testTimetableCaptureThroughARealRun.java",
+        "testTimetableOnDerivedGraph.java",
+        "testTracedPathIsContinuous.java",
+        "testTriggerWaitsSayNothing.java",
+        "testUiStateIsNotLostWhenUnreadable.java",
+        "testWhyStuck.java",
+    };
+
     private static String stripComments(String source)
     {
         return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
@@ -429,6 +495,8 @@ public class testSwitchingToACentralStationLayout
         // fails this, and repairing one is a matter of lowering MODELS_WITHOUT_A_SANDBOX by one.
         int loose = 0;
 
+        java.util.List<String> looseNames = new java.util.ArrayList<>();
+
         for (java.io.File f : filesUnder(root))
         {
             if (f.getName().equals("LayoutSandbox.java")) continue;
@@ -442,7 +510,11 @@ public class testSwitchingToACentralStationLayout
 
             int sandbox = code.indexOf("LayoutSandbox.open()");
 
-            if (sandbox < 0 || sandbox > builds) loose++;
+            if (sandbox < 0 || sandbox > builds)
+            {
+                loose++;
+                looseNames.add(f.getName());
+            }
         }
 
         assertTrue(loose <= MODELS_WITHOUT_A_SANDBOX,
@@ -455,10 +527,38 @@ public class testSwitchingToACentralStationLayout
             loose + " such classes remain, fewer than the " + MODELS_WITHOUT_A_SANDBOX
             + " recorded. Lower MODELS_WITHOUT_A_SANDBOX to " + loose + " so the improvement is kept.");
 
+        // The count alone can absorb a repair and a new violation in the same round (VAL-C8): fix one
+        // class, break a different one, and the number never moves. Pin WHICH classes too, so a swap
+        // fails and names both files.
+        java.util.Collections.sort(looseNames);
+
+        java.util.List<String> pinned = new java.util.ArrayList<>(
+            java.util.Arrays.asList(MODELS_WITHOUT_A_SANDBOX_NAMES));
+
+        java.util.Collections.sort(pinned);
+
+        assertEquals(looseNames, pinned,
+            "the set of test classes that build a model without a sandbox has changed even though the "
+            + "count may not have: now missing from the pinned list: "
+            + diff(pinned, looseNames) + "; newly appearing: " + diff(looseNames, pinned)
+            + ". If a class was genuinely fixed, remove it from MODELS_WITHOUT_A_SANDBOX_NAMES and "
+            + "lower MODELS_WITHOUT_A_SANDBOX; if a new one appeared, give it a sandbox instead of "
+            + "adding it to the list.");
+
         assertEquals(offenders.toString(), "[]",
             "these tests open whatever layout the machine has, which on Adam\u2019s is his real "
             + "railway - they read it, write it back, and can raise a modal dialog that stalls the "
             + "battery: " + offenders);
+    }
+
+    /** Entries in {@code from} that are not in {@code excluding}, for a readable failure message. */
+    private static java.util.List<String> diff(java.util.List<String> from, java.util.List<String> excluding)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>(from);
+
+        out.removeAll(excluding);
+
+        return out;
     }
 
     private static int earliest(String body, String... needles)

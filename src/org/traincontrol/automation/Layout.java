@@ -4724,10 +4724,6 @@ public class Layout
         //   { index into path, how far the head has gone since that edge ended }
         List<int[]> waitingToClear = new LinkedList<>();
 
-        // How far this run has gone in total.  Zero means the path carries no lengths at all - see the
-        // fallback where an edge is released.
-        int travelledOnThisPath = 0;
-
         // Asked of the WHOLE path, once, before anything is handed back (VAL-A1).
         //
         // The escape below means "nothing on this path has a length, so distance can never accumulate
@@ -4843,18 +4839,19 @@ public class Layout
                         // top of its far end.
                         int justTravelled = path.get(i - 1).getLength();
 
-                        // Distance AND how many edges ago, because the two answer different halves
-                        // of the question: an entry with no distance behind it may be one the head has
-                        // only just left, or one it has walked away from over unmeasured track.
+                        // Distance behind the head. (VAL-C1: this used to also count how many edges
+                        // ago each entry was queued, in a third slot - that answered which of two
+                        // standards of proof applied, back when clearing and unlocking asked different
+                        // questions. WK-B1/VAL-A1 settled both onto tailHasProvablyPassed, which reads
+                        // only the distance and whether the path is unmeasured, so the edge count had
+                        // no reader left. Dropped with it rather than kept as an unread slot for the
+                        // next reader to reconstruct a rule from.)
                         for (int[] waiting : waitingToClear)
                         {
                             waiting[1] += justTravelled;
-                            waiting[2]++;
                         }
 
-                        waitingToClear.add(new int[] { i - 1, 0, 0 });
-
-                        travelledOnThisPath += justTravelled;
+                        waitingToClear.add(new int[] { i - 1, 0 });
 
                         for (java.util.Iterator<int[]> pending = waitingToClear.iterator();
                             pending.hasNext();)

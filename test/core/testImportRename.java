@@ -68,7 +68,7 @@ public class testImportRename
     /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
     private static final String[] TEST_LOCS = {
         "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
-        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE };
+        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown" };
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -220,6 +220,13 @@ public class testImportRename
     {
         MarklinLocomotive mine = model.newMM2Locomotive("IR cs dupe", CS_DUPE_ADDRESS);
 
+        // TST-B20: this clears the decoder so the precondition below can hold - but against a
+        // restored database, "everything else on this decoder" can be a real locomotive that has
+        // nothing to do with this test.  Names are captured before deleting, and recreated in the
+        // finally below, so the restored database is not left permanently missing a locomotive for
+        // whatever class runs next in this JVM.
+        List<String> displaced = new ArrayList<>();
+
         // getLocomotives returns a fresh list, so deleting while iterating it is safe
         for (Locomotive other : model.getLocomotives())
         {
@@ -227,20 +234,33 @@ public class testImportRename
 
             if (existing != mine && existing.getIntUID() == mine.getIntUID())
             {
+                displaced.add(existing.getName());
                 model.deleteLoc(existing.getName());
             }
         }
 
-        assertEquals(localsSharingDecoderWith(mine), 1,
-            "precondition: this test's locomotive must be the only local one on this decoder - with "
-            + "another there the LOCAL-side refusal fires instead, and this would pass without "
-            + "exercising the Central Station side at all");
+        try
+        {
+            assertEquals(localsSharingDecoderWith(mine), 1,
+                "precondition: this test's locomotive must be the only local one on this decoder - with "
+                + "another there the LOCAL-side refusal fires instead, and this would pass without "
+                + "exercising the Central Station side at all");
 
-        List<String> targets = renameTargetsFor("IR cs dupe");
+            List<String> targets = renameTargetsFor("IR cs dupe");
 
-        assertTrue(targets.isEmpty(),
-            "the Central Station has two locomotives at this address, so no single name can be "
-            + "proposed - but got " + targets);
+            assertTrue(targets.isEmpty(),
+                "the Central Station has two locomotives at this address, so no single name can be "
+                + "proposed - but got " + targets);
+        }
+        finally
+        {
+            // Every displaced locomotive matched mine's UID, which is address-and-decoder together -
+            // so each one really was MM2 at CS_DUPE_ADDRESS, and this recreates it exactly.
+            for (String name : displaced)
+            {
+                model.newMM2Locomotive(name, CS_DUPE_ADDRESS);
+            }
+        }
     }
 
     /**
@@ -452,17 +472,32 @@ public class testImportRename
 
     /**
      * A locomotive the Central Station has never heard of is left alone.
+     *
+     * TST-C8: an empty proposal list used to pass this test just as well as a correct one, since
+     * nothing forced the loop below to run over anything.  "IR mismatch" guarantees at least one real
+     * proposal (the floor assertion below proves the loop actually ran), and "IR unknown" is a DCC
+     * locomotive at an address the CS3 fixture never mentions - DCC_BASE (0xc000) plus 999, and the
+     * fixture's only DCC locomotive is at 112 - so its UID cannot collide with anything parsed.
      */
     @Test
     public void testUnknownLocomotiveIsNotProposed() throws Exception
     {
+        installAtReferenceAddress("IR mismatch");
+        model.newDCCLocomotive("IR unknown", 999);
+
         List<String[]> candidates = model.getLocomotivesToRenameFromImport();
+
+        assertFalse(candidates.isEmpty(),
+            "precondition: the mismatch above must produce a real candidate, or the loop below runs "
+            + "over nothing and proves nothing");
 
         for (String[] pair : candidates)
         {
             assertNotNull(model.getLocByName(pair[0]),
                 "every proposal must name a locomotive that actually exists locally");
             assertNotEquals(pair[0], pair[1], "and must be an actual change of name");
+            assertNotEquals(pair[0], "IR unknown",
+                "a locomotive the Central Station has never heard of must not be proposed for renaming");
         }
     }
 }

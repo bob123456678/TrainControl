@@ -1,14 +1,18 @@
 package core;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
@@ -60,14 +64,24 @@ public class testAutonomyGroundTruth
         model = init(null, true, false, false, true);
         model.stop();
 
-        File file = new File("test/autonomy.json");
+        // Resolved as a classpath resource, not a CWD-relative File.  test/autonomy.json used to be
+        // opened with new File("test/autonomy.json"), which only exists when the process is launched
+        // from the project root - anywhere else, this threw a SkipException and the whole class (1,399
+        // pinned station pairs) went quietly green with nothing checked.  testAutonomySimulationSanity's
+        // loadSanityFixture() resolves its fixture the same classpath-resource way; this follows suit,
+        // and a missing resource is now a hard, loud failure instead of a silent skip.
+        URL resource = testAutonomyGroundTruth.class.getResource("/autonomy.json");
 
-        if (!file.exists())
+        assertNotNull(resource,
+            "autonomy.json was not found on the classpath - it is expected to be present as a "
+            + "classpath resource (mirrored from test/autonomy.json) regardless of the working "
+            + "directory the test process was launched from");
+
+        try (InputStream in = resource.openStream())
         {
-            throw new SkipException("test/autonomy.json is missing - this suite describes that file");
+            config = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                .lines().collect(Collectors.joining("\n"));
         }
-
-        config = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
     /**

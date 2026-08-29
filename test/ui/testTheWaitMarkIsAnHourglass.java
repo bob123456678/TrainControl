@@ -603,39 +603,50 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The sand falls DOWN the screen in the flipped cycle too (Adam, 2026-08-29).
+     * The drain is drawn UPRIGHT in every cycle, not only the first (VAL-B4, 2026-08-29).
      *
-     * "The hourglass flows backwards after the flip." The animation loops by rotating rather than
-     * resetting, so every other cycle is drawn upside down - and the drain was handed the same rising
-     * value regardless, which under a 180-degree rotation sends the sand up the screen.
+     * Adam, 2026-08-29: "the hourglass flows backwards after the flip." The fix in the tree today
+     * never rotates the drain at all - only the turn does - so a mid-drain frame in the second cycle
+     * has to render EXACTLY like the same point in the first, not merely fall in the same direction.
      *
-     * `testItRunsDownwards` shoots frames 0 and 49. Both are inside the FIRST cycle. The frame counter
-     * runs over two cycles precisely because the drawing alternates, and nothing had ever looked at the
-     * second one.
+     * This replaces what was here before this review (VAL-B4): a check that shot frames deep into the
+     * second cycle and asked whether sand still fell downward. That is not the property that
+     * distinguishes a correct drain from a rotated one - a 180-degree rotation flips top and bottom
+     * AND reverses the fall, so the two inversions cancel and "sand ends up at the bottom" stays true
+     * either way. Comparing the actual pixels does not have that blind spot: a mid-drain frame that is
+     * rotated at all lands its ink on different pixels than the unrotated one, regardless of which way
+     * the rotation goes.
      *
-     * The repair went further than inverting the sand, which is what the first attempt did: the drain
-     * is now never drawn rotated at all, because the sand is anchored at the bottom of each region -
-     * the upper bulb fills DOWN to the waist, the lower DOWN to the plate - so rotating it mid-fall
-     * hangs the upper sand from the top of the glass. Adam saw that too: "the icon is weird in how it
-     * empties now."
-     *
-     * MUTATION: putting the rotation back into the drain - `halfTurns = turns` rather than 0 - fails
-     * this, which is the regression that would bring the backwards flow with it.
+     * MUTATION: reintroducing a `turns`-dependent rotation into the drain branch - so the second
+     * cycle's drain turns with the glass instead of staying upright - fails this: frame 25 of cycle two
+     * would be a rotated copy of frame 25 of cycle one, not an identical one, and far more than
+     * antialiasing's worth of pixels would differ.
      */
     @Test
     public void testItRunsDownwardsAfterTheFlipToo() throws Exception
     {
-        // The second cycle: one whole cycle on from the frames the sibling test uses.
-        BufferedImage full = shoot(CYCLE);
-        BufferedImage empty = shoot(CYCLE + 49);
+        // Mid-drain, past the antialiased edges of "just started" or "just finished" - the same frame
+        // VAL-D4 measured by sand mass to confirm the two cycles agree.
+        int midDrain = 25;
 
-        assertTrue(ink(full, true) > ink(full, false),
-            "after the glass turns, the sand starts in the LOWER bulb - so the flip lands on an empty "
-            + "top and the sand then climbs back up it");
+        BufferedImage firstCycle = shoot(midDrain);
+        BufferedImage secondCycle = shoot(midDrain + CYCLE);
 
-        assertTrue(ink(empty, false) > ink(empty, true),
-            "after the glass turns, the sand ends in the UPPER bulb - it ran uphill for the whole "
-            + "cycle, which is what Adam saw");
+        int different = 0;
+
+        for (int y = 0; y < SIZE; y++)
+        {
+            for (int x = 0; x < SIZE; x++)
+            {
+                if (firstCycle.getRGB(x, y) != secondCycle.getRGB(x, y)) different++;
+            }
+        }
+
+        // A few pixels may differ from antialiasing; a rotated drain differs by far more than that.
+        assertTrue(different < 60,
+            "frame " + midDrain + " and frame " + (midDrain + CYCLE) + " are the same point in "
+            + "successive cycles and should render identically - " + different + " pixels differ, "
+            + "which is what a drain rotated with the glass looks like (the backwards-flow report)");
     }
 
     /**
@@ -651,7 +662,15 @@ public class testTheWaitMarkIsAnHourglass
      * which under the rotation reads as an EMPTY top - so the glass snapped from full-at-top back to
      * empty-at-top the instant the turn finished, and then ran backwards.
      *
-     * MUTATION: putting the rotation back into the drain - `halfTurns = turns` - fails both seams.
+     * VAL-B4 (2026-08-29): the drain no longer rotates at all, so "putting the rotation back into the
+     * drain" is not a live risk here any more - that mutation is caught by
+     * `testItRunsDownwardsAfterTheFlipToo` instead. What this test still guards, on the code as it
+     * stands, is the TURN's own arithmetic reaching a full half-turn by its last frame.
+     *
+     * MUTATION: dropping the `+ 1` from `(at - DRAIN_FRAMES + 1) / TURN_FRAMES` in the turn branch
+     * stops the rotation eleven twelfths of the way around instead of all the way - the last turn
+     * frame is then a full hourglass tilted just short of upside down, not a full hourglass rotated
+     * exactly to look empty-at-top, and the seam comparison fails by far more than antialiasing.
      */
     @Test
     public void testTheTurnIsSeamless() throws Exception

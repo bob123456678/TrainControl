@@ -45,7 +45,7 @@ Automation rests on three things, and everything else in this guide is a refinem
 
 Press start, and TrainControl picks a train, picks somewhere it can go, sets the switches and signals along the way, sends it, and watches the sensors until it arrives. Then it does it again.
 
-![PLACEHOLDER: the autonomy view of a small layout, with two stations marked and the link between them drawn](assets/automation/01-overview.png)
+> **[Screenshot not yet captured — assets/automation/01-overview.png]** the autonomy view of a small layout, with two stations marked and the link between them drawn
 
 ---
 
@@ -60,13 +60,13 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
 
 **1. Build the setup.** `Autonomy` → `Add a Configuration...`. This reads your track diagram as it stands and works out the railway from it: every sensor becomes a station, and the track between them becomes the links trains can use. Nothing is asked of you yet.
 
-![PLACEHOLDER: the Autonomy menu, with "Add a Configuration..." highlighted](assets/automation/02-add-configuration.png)
+> **[Screenshot not yet captured — assets/automation/02-add-configuration.png]** the Autonomy menu, with "Add a Configuration..." highlighted
 
 **2. Open the editor.** `Autonomy` → `Edit Autonomy on Page`, and pick your page. The diagram looks the same; what changes is that right-clicking a square now sets automation up rather than throwing a switch.
 
 **3. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under — so name them the way you talk about them out loud.
 
-![PLACEHOLDER: the right-click menu on a station square in the setup editor](assets/automation/03-station-menu.png)
+> **[Screenshot not yet captured — assets/automation/03-station-menu.png]** the right-click menu on a station square in the setup editor
 
 **4. Check both may be stopped at.** The same menu has `Station (...)`, with three choices: trains can stop here, trains can only pass through, or nothing can pass. The first is what a station is. Sensors that are only there to track a train through a junction are the second.
 
@@ -99,7 +99,7 @@ Press start. A train leaves A. It can reach B two ways — through the loop past
 
 **Try this.** Right-click one side of the loop and untick `Autonomy Uses This Link`. Now every train goes past C. A switched-off link is greyed out on the diagram, so you can see at a glance what is not being used.
 
-![PLACEHOLDER: a diagram with one link greyed out, and two trains running](assets/automation/04-two-trains.png)
+> **[Screenshot not yet captured — assets/automation/04-two-trains.png]** a diagram with one link greyed out, and two trains running
 
 **Try this too.** Right-click C, open `Advanced Parameters...`, and set `Station Priority` higher than the others. Trains will now favour calling there. Priority does not force it — it tips the choice.
 
@@ -122,7 +122,7 @@ That is deliberate, and it is worth understanding because it surprises people. R
 
 **You can still use it.** Send a train there yourself from the route menu, and [Return Locomotives Home](#sending-everything-home) will still park trains there. What will not happen is a train ending up there because a dice roll put it there.
 
-![PLACEHOLDER: a terminus station on the diagram, showing the reversing marker](assets/automation/05-terminus.png)
+> **[Screenshot not yet captured — assets/automation/05-terminus.png]** a terminus station on the diagram, showing the reversing marker
 
 ---
 
@@ -134,7 +134,7 @@ Right-click the station and open **Trains May Arrive...** in the setup editor. B
 
 The diagram marks this: a station that only takes trains one way shows a small arrow. That arrow is the only outward sign, so it is worth knowing what it means when you meet one on somebody else's layout.
 
-![PLACEHOLDER: the Arrivals view for a station, with one direction switched off, and the resulting arrow on the diagram](assets/automation/06-arrivals.png)
+> **[Screenshot not yet captured — assets/automation/06-arrivals.png]** the Arrivals view for a station, with one direction switched off, and the resulting arrow on the diagram
 
 **Where this matters most** is a station that is really two platforms. On the diagram it is one square, but a train arriving from the east and a train arriving from the west are doing different things — different switches set, different track occupied. Arrival directions are how you say which of those you want.
 
@@ -152,7 +152,7 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 **The locomotive list** shows each train, where it is, and where it can go. Double-click a destination to send a train there yourself.
 
-![PLACEHOLDER: a running layout, with a route drawn in red and green and a train's name showing at a station](assets/automation/07-running.png)
+> **[Screenshot not yet captured — assets/automation/07-running.png]** a running layout, with a route drawn in red and green and a train's name showing at a station
 
 **Gracefully Stop Autonomy** lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies.
 
@@ -160,7 +160,7 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 ## Choosing how trains pick their route
 
-When more than one route will do, TrainControl has to choose. Under the **Autonomy** menu, **Route Choice**, you can say how:
+When more than one route will do, TrainControl has to choose. Under the **Autonomy** menu, **Choose Routing Logic...**, you can say how:
 
 | Setting | What it does |
 | --- | --- |
@@ -171,6 +171,7 @@ When more than one route will do, TrainControl has to choose. Under the **Autono
 | Over the longest track | The scenic route |
 | Across the fewest sensors | Fewest reporting points on the way |
 | Across the most sensors | The busiest-looking route |
+| Whichever station has gone longest without a train | For a layout with a favourite loop, so the far corner still gets visited. Station priority still applies first |
 
 The "most" and "longest" settings exist for a layout that should look busy rather than efficient. On a small layout they are the difference between a train shuttling back and forth and a train that appears to be going somewhere.
 
@@ -190,7 +191,7 @@ Autonomy running on its own is random by design. A timetable is the opposite: a 
 
 It is worth recording a timetable that ends where it began. That way it can be run again and again.
 
-![PLACEHOLDER: the timetable panel with several captured entries](assets/automation/08-timetable.png)
+> **[Screenshot not yet captured — assets/automation/08-timetable.png]** the timetable panel with several captured entries
 
 ---
 
@@ -254,7 +255,7 @@ In the locomotive list, hover over "No available paths". The tooltip names every
 might have been sent to and, for each one, the reason it was refused - occupied and by whom, switched
 off, excluded, no track at all.
 
-In the setup editor, the **Why is it not moving?** tool answers the same question on the diagram.
+In the setup editor, the **Why not Moving?** tool answers the same question on the diagram.
 Click the square a train is standing on: every route it *could* take is drawn on the track, and the
 reasons for the ones it cannot are listed underneath. A train with somewhere to go draws lines; a
 train with nowhere draws none, which is the same answer read from across the room.
@@ -282,4 +283,4 @@ The placeholders above want real pictures. Each is a single screen capture; the 
 | `assets/automation/07-running.png` | A running layout: a route drawn in red and green, arrows, and a train's name showing at a station |
 | `assets/automation/08-timetable.png` | The timetable panel with several captured entries in it |
 
-**The easiest way to produce a clean diagram picture** is `Layout` -> `Save This Diagram as a Picture...`, which writes the page you are looking at to a PNG at whatever size you ask for - the whole page, not just the part scrolled into view, and with none of the window around it. The item below it asks which page, for the times it is not the one on screen. Sixty pixels per square reads well in a document; twenty is about what the screen shows.
+**The easiest way to produce a clean diagram picture** is `Layout` -> `Save Current Track Diagram as a Picture...`, which writes the page you are looking at to a PNG at whatever size you ask for - the whole page, not just the part scrolled into view, and with none of the window around it. Sixty pixels per square reads well in a document; twenty is about what the screen shows.

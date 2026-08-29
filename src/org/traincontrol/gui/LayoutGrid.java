@@ -82,12 +82,15 @@ public class LayoutGrid
      * complaint, surviving inside its own fix.
      *
      * A method rather than a line of `&&`, so the rule can be asked its truth table without building a
-     * window. What that leaves uncovered is whether the caller passes the right two booleans, which is
-     * the usual price of pulling a rule out of its call site - `testEditorSurfaceRules` reads the call
-     * for exactly that reason.
+     * window. What that leaves uncovered is whether the caller passes the right THREE booleans (DOC-C5:
+     * this used to say "two", from before {@code pageExcluded} was added), which is the usual price of
+     * pulling a rule out of its call site - `testEditorSurfaceRules` reads the call for exactly that
+     * reason.
      *
      * @param inEditor whether this grid is inside an editor at all
      * @param autonomyMode whether that editor is the autonomy one
+     * @param pageExcluded whether this page is excluded from the active autonomy configuration - the
+     *                     argument that decides the result outright, added by {@code 453a3ef4}
      * @return true when no caption should be drawn
      */
     public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode,
@@ -936,29 +939,23 @@ public class LayoutGrid
                             @Override
                             public void mouseClicked(MouseEvent e)
                             {
-                                // Double-click opens the setup at this station.
+                                // A DOUBLE-CLICK IS TWO CLICKS, and each activates (OB-138).
                                 //
-                                // The name of the train standing on a platform is the thing on the
-                                // running diagram somebody points at when they want to change what is
-                                // standing there - and until now pointing at it activated the
-                                // locomotive and nothing else, so getting to the placement view meant
-                                // finding the button for it and then finding the station again.
+                                // Adam: "double clicking station label in track viewer should activate
+                                // that locomotive (as if it was selected on the key mappings) if it is
+                                // mapped, not open the editor."
                                 //
-                                // Not while autonomy is running: the editor cannot open then, and the
-                                // refusal is better said by the menu, which explains itself.  A
-                                // double-click that opened a dialog saying no would be worse than one
-                                // that does nothing.
-                                if (e.getClickCount() == 2
-                                    && javax.swing.SwingUtilities.isLeftMouseButton(e))
-                                {
-                                    if (!ui.isAutonomyBusy())
-                                    {
-                                        javax.swing.SwingUtilities.invokeLater(
-                                            () -> ui.openAutonomyEditor(station));
-                                    }
-
-                                    return;
-                                }
+                                // This used to open the autonomy setup at the station, deliberately.
+                                // He has ruled the other way, so the branch is gone rather than given
+                                // another condition - what is left is the ordinary left-click path
+                                // below, which is exactly the behaviour he describes: jumpToLocomotive
+                                // switches to the locomotive\u2019s mapping page and selects its button, and
+                                // does nothing when it has no mapping.
+                                //
+                                // The setup is not stranded. The right-click menu on this same square
+                                // still opens the full editor, and it is the door that explains itself
+                                // when it has to refuse - which is why the removed branch had to carry
+                                // a copy of that reasoning, and why the copy goes with it.
 
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
@@ -1244,7 +1241,18 @@ public class LayoutGrid
                     // DRAGGABLE, in the autonomy editor, and only a square that carries a caption
                     // (FR-035).  Not tiles and not the user's own writing: Adam asked for station
                     // labels only.
-                    if (autonomyEditor && captioned != null && master instanceof LayoutEditor)
+                    // AND THE LABELS ARE ACTUALLY DRAWN (OB-139).
+                    //
+                    // `captioned` is the caption OBJECT, which exists whether or not the text layer is
+                    // showing - so with Text Labels unticked the pills disappear and every square that
+                    // had one went on offering a move cursor for something invisible. A drag begun
+                    // there would move a label the user cannot see.
+                    //
+                    // Not installed at all rather than installed without its cursor: the cursor IS the
+                    // diagram saying the thing can be picked up, and the two must not disagree. The
+                    // grid is rebuilt when the box is toggled, so ticking it back restores the drag.
+                    if (autonomyEditor && captioned != null && master instanceof LayoutEditor
+                        && !layout.getEditHideText())
                     {
                         org.traincontrol.automationui.TileGraph.TileKey here =
                             new org.traincontrol.automationui.TileGraph.TileKey(

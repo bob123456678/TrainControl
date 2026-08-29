@@ -225,7 +225,7 @@ Moreover, to make it easier to create graphs, all state associated with graphs (
 
 The following example JSON corresponds to the above code/layout and edge locking.
 
-To get started, paste the JSON in TrainControl's "Autonomy" tab, then click on "Validate Graph".  Any errors (such as non-existing edges or missing points) will be shown in the log.  You can also click on "Initialize New Graph" and let the program load the sample JSON for you.
+To get started, paste the JSON in TrainControl's "Autonomy" tab, then click on "Validate Configuration & Open Graph UI".  Any errors (such as non-existing edges or missing points) will be shown in the log.  You can also click on "Initialize New Configuration" and let the program load the sample JSON for you.
 
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via "Graceful Stop", or reset by the former button.  Graceful Stop is recommended, as this way the state will automatically be saved when you exit the program.   Chosen paths will be shown in the log.
@@ -381,11 +381,11 @@ Point colors:
 * Green - active route - locomotive has passed through
 * Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)  A route you pick yourself is treated differently at the two ends: it may start from a disabled point, and may finish on one, but may never pass through one.  So disabling a station keeps autonomy away from it without putting it beyond your own reach, while disabling a point you only ever drive across takes it out of service completely.
 
-Point shapes:
-* Circle - regular station.  Any train can stop here.
-* Square - terminus station. Only reversable trains can stop here.  They will switch direction on arrival.
-* Cross - reversing station (large) or reversing point (small).  Any train can stop here and will switch direciton on arrival.  Useful for shunting/parking.
-* Diamond - intermediate point that is not a station (trains pass through these while operating between stations; locomotives manually placed here will not be automatically run)
+Point shapes and sizes work together: the SHAPE says whether trains turn here, the SIZE says whether it is a station (large) or a passing point that is not a station (small - trains pass through these while operating between stations; locomotives manually placed here will not be automatically run).
+
+* Circle - trains do not turn here.  A large circle is a regular station any train can stop at; a small circle is an ordinary point.
+* Diamond - trains MAY turn here, as a choice rather than a requirement - a reversing station (large) or reversing point (small).  Useful for shunting/parking.
+* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Only reversible locomotives can do this.
 
 ![Sample layout](assets/graph2b.png?raw=true)
 
@@ -398,7 +398,7 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 # Terminus Stations
 
 TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
-also specify `"terminus" : "true"`.  For the corresponding point/locomotive, set `"locReversible" : "true"`.  Only such reversible locomotives can travel to a terminus and they will automatically change direction after arrival.
+also specify `"terminus" : true`.  For the corresponding locomotive, set `"reversible" : true`.  Only such reversible locomotives can travel to a terminus and they will automatically change direction after arrival.
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
 If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
@@ -425,7 +425,7 @@ Remember that everything described below can now be fully edited via TrainContro
 
 ## Train lengths and non-atomic routes
 
-You can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
+You can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `maxTrainLength` integer JSON key), for any entry within the `points` list. 
 This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
 A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
 
@@ -469,7 +469,7 @@ TrainControl provides a timetable feature which can be accessed from within the 
 
 To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points can be traversed in semi-autonomous mode, but not in timetable/fully autonomous mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
 
-The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.addTimetableEntry` or `Layout.setTimetable`.
+The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.setTimetable`.
 
 ## Locomotive exclusions (v2.1.5+)
 

@@ -92,7 +92,7 @@ public class testRoutes
             RouteCommand.commandType[] types = new RouteCommand.commandType[]{TYPE_ACCESSORY, TYPE_STOP, TYPE_FUNCTION, TYPE_LOCOMOTIVE, TYPE_LOCOMOTIVE_DIRECTION,
                  TYPE_AUTONOMY_LIGHTS_ON, TYPE_FUNCTIONS_OFF, TYPE_LIGHTS_ON, TYPE_ROUTE
             };
-            RouteCommand.commandType randomType = types[random.nextInt(8)];
+            RouteCommand.commandType randomType = types[random.nextInt(types.length)];
             
             MarklinAccessory.accessoryDecoderType randomProtocol = protocols[random.nextInt(2)];
             
@@ -823,10 +823,15 @@ public class testRoutes
     {   
         List<MarklinRoute> currentRoutes = new ArrayList<>(model.getRoutes());
 
+        // A floor: if this were empty, the equals() below would compare empty-to-empty and pass no
+        // matter what exportRoutes/parseRoutesFromJson actually did.
+        assertFalse(currentRoutes.isEmpty(),
+            "the model has no routes to export - this test would pass vacuously");
+
         String json = model.exportRoutes();
-        
+
         List<MarklinRoute> finalRoutes = model.parseRoutesFromJson(json);
-                
+
         for (MarklinRoute current : currentRoutes)
         {
             for (MarklinRoute finalr : finalRoutes)

@@ -76,7 +76,13 @@ public class AutonomyMenu extends JMenu
      */
     public final void refreshEnabled()
     {
-        boolean hasLayout = ui.getModel() != null && !ui.getModel().getLayoutList().isEmpty();
+        // UXR-C17: was `!ui.getModel().getLayoutList().isEmpty()`, asked directly at whatever instant
+        // refreshEnabled happened to run - the exact question TrainControlUI.isLayoutLoaded's own
+        // javadoc says was centralised into one stored answer precisely so it stops being asked live at
+        // sixteen (now seventeen, eighteen) separate places that can each catch a different moment of a
+        // refreshLayouts() rebuild. refreshEnabled only runs from the constructor and
+        // autonomyMenuActed(), so this was a snapshot that could disagree with every other consumer.
+        boolean hasLayout = ui.getModel() != null && ui.isLayoutLoaded();
 
         // And a LOCAL one.  A setup lives in files beside the diagram, so a diagram read straight from
         // the Central Station has nowhere to keep one - which was true before and simply not said, so
@@ -159,7 +165,13 @@ public class AutonomyMenu extends JMenu
         // It was disabled once, which states the problem and offers nothing - and the window it is
         // talking about may well be behind this one, which is exactly why somebody reached for this
         // menu. First in the list, because it is the only thing here that can be done.
-        JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+        //
+        // UXR-C1: this used to read autosetup.ui.menuEditorOpen, the full refusal sentence ("Close the
+        // editor first - autonomy cannot be changed from here while it is open.") - a sentence written
+        // for a dialog body, not a label, and one that told the user to close the editor on an item
+        // whose own action brings that editor forward. menuOpenFullEditor is the label already used
+        // for the same action elsewhere (LayoutRightclickAutonomyMenu.addSetupMenu).
+        JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
 
         busy.addActionListener(e -> ui.showOpenEditor());
 
@@ -389,13 +401,21 @@ public class AutonomyMenu extends JMenu
             // Only this item. Everything else on this menu chooses a setup or does housekeeping on the
             // file, and the one thing somebody with trains running most needs to reach is the way to
             // stop them.
-            boolean trainsMoving = ui.isAutonomyBusy();
+            //
+            // UXR-C13: this used to re-derive three of openLayoutEditor's four refusals by hand
+            // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and
+            // isAutonomyBusy but not the fourth - "an editor is already open" - so this item could stay
+            // live and fail during the same layoutEditingComplete window UXR-B2 names. The sibling
+            // surface, LayoutRightclickAutonomyMenu.addSetupMenu, already asks the guard's own answer
+            // for exactly this reason; ask it here too instead of keeping a second copy of its rule.
+            String editRefusal = ui.whyAutonomyEditorCannotOpen();
+            boolean pagesAvailable = edit.getItemCount() > 0;
 
-            edit.setEnabled(chosen && !trainsMoving && edit.getItemCount() > 0);
+            edit.setEnabled(editRefusal == null && pagesAvailable);
             edit.setToolTipText(AutonomyEditorPanel.wrapped(
-                trainsMoving ? I18n.t("autolayout.errorCannotEditWhileRunning")
-                : chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
-                : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
+                editRefusal != null ? I18n.t(editRefusal)
+                : !pagesAvailable ? I18n.t("autosetup.ui.tooltipNeedsLoaded")
+                : I18n.t("autosetup.ui.tooltipEditAutonomy")));
             add(edit);
 
             // Directly under the editor, because it answers the question the editor list raises.

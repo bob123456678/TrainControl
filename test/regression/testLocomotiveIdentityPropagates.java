@@ -350,9 +350,18 @@ public class testLocomotiveIdentityPropagates
 
         assertNotNull(sweep, "locDeleted is not there any more, so nothing sweeps at all");
 
+        List<String> holders = holdersIn(text);
+
+        // A regex that stops matching - the nested-generics fix above already shows it has happened
+        // once - returns an empty list and this test passes having swept nothing. Seven holders exist
+        // in Layout.java today; three is a floor well under that, not a pin on the count.
+        assertTrue(holders.size() >= 3,
+            "only " + holders.size() + " locomotive-holding fields were found in Layout.java - the "
+            + "patterns holdersIn() looks for have gone stale, and this is now checking almost nothing");
+
         List<String> missing = new ArrayList<>();
 
-        for (String field : holdersIn(text))
+        for (String field : holders)
         {
             if (sweep.contains(field)) continue;
 
@@ -398,6 +407,14 @@ public class testLocomotiveIdentityPropagates
 
         collect(src, sources);
 
+        // A wrong working directory, or `src` gutted, gives an empty sweep and an empty `suspect` list
+        // that looks identical to "nothing is wrong". Over a hundred files exist under src/ today; 50
+        // is a floor well under that, not a pin on the count.
+        assertTrue(sources.size() >= 50,
+            "only " + sources.size() + " files were found under src/ - this ran from the wrong working "
+            + "directory, or the tree has shrunk enough that this scan is not checking much of "
+            + "anything");
+
         List<String> suspect = new ArrayList<>();
 
         for (File file : sources)
@@ -407,50 +424,9 @@ public class testLocomotiveIdentityPropagates
 
             for (int at = 0; at < lines.length; at++)
             {
-                String line = lines[at];
-
-                // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected.
-                //
-                // The first version of this required getName().equals( on the line, which is one of
-                // several shapes the mistake takes - and not the shape of the defect it was written
-                // for.  That one was a Locomotive handed to setSelectedItem on a combo box of names
-                // (gui/HomeLocomotiveMenu.java): it compiles, Swing quietly ignores a selection it
-                // cannot find, and the dialog showed "(none)" for a station that had a home - so
-                // pressing OK cleared the assignment it was displaying.  No equals anywhere in it.
-                //
-                // Found by review, which is the second time this guard has been the thing at fault
-                // rather than the code it watches.
-                if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
-                    && !line.contains("getBlockLocomotive()")) continue;
-
-                // Compared against a name, either way round
-                boolean comparedWithAName = line.contains("getName().equals(")
-                    || line.contains("getHomeLoc().equals(")
-                    || line.contains("getCurrentLocomotive().equals(")
-                    || line.contains("getBlockLocomotive().equals(");
-
-                // Or handed to a combo box that holds names.
-                //
-                // NOT contains/indexOf/remove, which were tried and cry wolf: they take an Object, so
-                // they are equally the RIGHT call on a collection of locomotives, and a guard reading
-                // source text one line at a time cannot tell which it is looking at.  The first run
-                // flagged Layout.locomotivesToRun.remove(getCurrentLocomotive()) - a Set<Locomotive>,
-                // where removing by object is exactly correct.  A guard that has to be argued with is
-                // one somebody eventually adds an exemption list to, and then it watches nothing.
-                //
-                // setSelectedItem is different: every combo box in this application that a locomotive
-                // could be offered to is built from NAMES, so a Locomotive reaching one is wrong every
-                // time - and it is the shape of the live defect (gui/HomeLocomotiveMenu.java).
-                boolean handedToNames = line.contains("setSelectedItem(");
-
-                // Unless the name is taken first, which is how the boundary is meant to be crossed
-                boolean converted = line.contains("getHomeLoc().getName()")
-                    || line.contains("getCurrentLocomotive().getName()")
-                    || line.contains("getBlockLocomotive().getName()");
-
-                if ((comparedWithAName || handedToNames) && !converted)
+                if (isSuspectLine(lines[at]))
                 {
-                    suspect.add(file.getName() + ":" + (at + 1) + "  " + line.trim());
+                    suspect.add(file.getName() + ":" + (at + 1) + "  " + lines[at].trim());
                 }
             }
         }
@@ -461,6 +437,85 @@ public class testLocomotiveIdentityPropagates
             + "so the comparison silently never matches - and Swing quietly ignores a selection it "
             + "cannot find, which is how opening the home dialog came to clear the assignment it was "
             + "showing. Take .getName() first: " + suspect);
+    }
+
+    /**
+     * A positive control for {@link #isSuspectLine(String)} (TST-C15).
+     *
+     * The scan above is line-scoped with no floor: a rename of the accessors it looks for, or the
+     * pattern going stale in some other way, degenerates it to zero matches over every file in `src` -
+     * indistinguishable from "nothing is wrong". This proves the detector can still find the shape of
+     * bug it was written for, using the exact lines the two original production defects looked like,
+     * so a change that silences the real scan silences this one too.
+     */
+    @Test
+    public void testTheNameComparisonScanCanStillCatchAKnownBadLine() throws Exception
+    {
+        // HomeStaging's defect: a strict equals against an accessor answering a Locomotive.
+        assertTrue(isSuspectLine("if (loc.getName().equals(point.getHomeLoc())) { return ASSIGNED; }"),
+            "the scan no longer flags getHomeLoc() compared with a name via .equals() - the shape of "
+            + "the HomeStaging defect it was written for - so it would not have caught the original "
+            + "bug either");
+
+        // The locomotive status panel's defect: a Locomotive handed to a combo box of names.
+        assertTrue(isSuspectLine("combo.setSelectedItem(point.getHomeLoc());"),
+            "the scan no longer flags getHomeLoc() handed to setSelectedItem() - the shape of the "
+            + "HomeLocomotiveMenu defect it was written for - so it would not have caught the original "
+            + "bug either");
+
+        // The permitted crossing: taking the name first must NOT be flagged, even though the line
+        // would otherwise match the same comparedWithAName shape as the first control above.
+        assertFalse(isSuspectLine("if (loc.getName().equals(point.getHomeLoc().getName())) { return ASSIGNED; }"),
+            "the scan flags the correct, converted form as suspect, which means a real fix would show "
+            + "up as a false positive forever");
+    }
+
+    /**
+     * One line, judged the way {@code testNoHomeOrPlacementIsComparedWithAName} judges every line in
+     * `src`. Extracted so the same logic can be driven by a known-bad line as a control (TST-C15).
+     */
+    private boolean isSuspectLine(String line)
+    {
+        // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected.
+        //
+        // The first version of this required getName().equals( on the line, which is one of
+        // several shapes the mistake takes - and not the shape of the defect it was written
+        // for.  That one was a Locomotive handed to setSelectedItem on a combo box of names
+        // (gui/HomeLocomotiveMenu.java): it compiles, Swing quietly ignores a selection it
+        // cannot find, and the dialog showed "(none)" for a station that had a home - so
+        // pressing OK cleared the assignment it was displaying.  No equals anywhere in it.
+        //
+        // Found by review, which is the second time this guard has been the thing at fault
+        // rather than the code it watches.
+        if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
+            && !line.contains("getBlockLocomotive()")) return false;
+
+        // Compared against a name, either way round
+        boolean comparedWithAName = line.contains("getName().equals(")
+            || line.contains("getHomeLoc().equals(")
+            || line.contains("getCurrentLocomotive().equals(")
+            || line.contains("getBlockLocomotive().equals(");
+
+        // Or handed to a combo box that holds names.
+        //
+        // NOT contains/indexOf/remove, which were tried and cry wolf: they take an Object, so
+        // they are equally the RIGHT call on a collection of locomotives, and a guard reading
+        // source text one line at a time cannot tell which it is looking at.  The first run
+        // flagged Layout.locomotivesToRun.remove(getCurrentLocomotive()) - a Set<Locomotive>,
+        // where removing by object is exactly correct.  A guard that has to be argued with is
+        // one somebody eventually adds an exemption list to, and then it watches nothing.
+        //
+        // setSelectedItem is different: every combo box in this application that a locomotive
+        // could be offered to is built from NAMES, so a Locomotive reaching one is wrong every
+        // time - and it is the shape of the live defect (gui/HomeLocomotiveMenu.java).
+        boolean handedToNames = line.contains("setSelectedItem(");
+
+        // Unless the name is taken first, which is how the boundary is meant to be crossed
+        boolean converted = line.contains("getHomeLoc().getName()")
+            || line.contains("getCurrentLocomotive().getName()")
+            || line.contains("getBlockLocomotive().getName()");
+
+        return (comparedWithAName || handedToNames) && !converted;
     }
 
     private void collect(File from, List<File> into)

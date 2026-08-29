@@ -72,6 +72,7 @@ public class testEditorSurfaceRules
 
         int writes = 0;
         boolean redrawn = false;
+        int toggleSignatureFound = 0;
 
         for (int i = 0; i < lines.size(); i++)
         {
@@ -103,6 +104,8 @@ public class testEditorSurfaceRules
             {
                 if (!lines.get(j).contains("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")) continue;
 
+                toggleSignatureFound++;
+
                 boolean rebuilt = false;
 
                 // Sixty, not forty.  The method grew an error guard - C11, it called its action
@@ -122,6 +125,14 @@ public class testEditorSurfaceRules
                     + "names quietly stops working (TD-1)");
             }
         }
+
+        // Without this, reformatting the toggle() signature makes the inner loop above match nothing
+        // and skip its assertTrue(rebuilt, ...) entirely (TST-C10) - silence, not a pass, since the
+        // check that names TD-1's actual bug never runs at all.
+        assertTrue(toggleSignatureFound > 0,
+            "the toggle(String text, String tooltipKey...) signature was not found in "
+            + PANEL.getName() + " under any session.setFacing( write - it may have been reformatted "
+            + "or renamed, and without this the assertion about its rebuild silently never runs");
 
         assertEquals(writes, 1,
             "the facing MENU writes to the setup from " + writes + " places in AutonomyEditorPanel. Two "
@@ -2022,6 +2033,15 @@ public class testEditorSurfaceRules
 
         // What is stored has to be read before the offer is built, because it is what decides the
         // offer.  Read after, it can only be used to tick boxes that are already on the list.
+        //
+        // The left term is proved present first (TST-C7): indexOf returns -1 for an absent needle, and
+        // -1 is less than every real index, so a rename or reparameterisation of getBlockingPoints(station)
+        // would otherwise make the ordering assertion below pass vacuously instead of failing.
+        assertTrue(body.contains("getBlockingPoints(station)"),
+            "getBlockingPoints(station) is no longer called here - it may have been renamed or "
+            + "reparameterised, and without this check the ordering assertion below would pass "
+            + "vacuously (indexOf returns -1, which sorts before everything)");
+
         assertTrue(body.indexOf("getBlockingPoints(station)") < body.indexOf("getNamedTiles()"),
             "promptBlockingPoints builds its list of choices before reading what is already stored. "
             + "The stored entries are what the filters have to be qualified BY (FSR-C5), so a read "
@@ -2357,5 +2377,142 @@ public class testEditorSurfaceRules
             "the separator tidy names a generated field. The NetBeans designer renumbers those "
             + "whenever the form is touched, so a rule that names one is a designer save away from "
             + "being wrong - which is how cropOverlay disappeared twice on 2026-08-28");
+    }
+
+    /**
+     * No dialog is raised from a background thread (OB-137, widened by VB-B1).
+     *
+     * Adam: "while importing routes from Json, the route table freezes up / looks weird." The whole
+     * of `importRoutesMenuItemActionPerformed` ran inside `new Thread(...)`, and the first thing it
+     * did there was show a MODAL JFileChooser - a Swing dialog from a thread that is not the event
+     * thread, so the chooser and the window behind it were laid out and painted from two threads at
+     * once.
+     *
+     * THE FIRST VERSION OF THIS TEST READ ONE FILE AND ONE NEEDLE. It said it asserted over "every
+     * handler that opens a chooser", and it meant every handler in TrainControlUI.java that calls
+     * showOpenDialog - so a save dialog one class over, a modal confirm, a modal input, and a Swing
+     * panel constructed off the thread and then shown modally were all invisible to it. It passed
+     * for the whole time six other methods were wrong in exactly the way it was written to catch.
+     *
+     * Every source file now, and every dialog form that blocks. The floors matter as much as the
+     * assertion: a scan that quietly stops finding calls has turned into a check that no dialogs
+     * exist anywhere, which is not the same thing and always passes.
+     *
+     * invokeAndWait counts as marshalling alongside invokeLater. LocomotiveStats#exportData uses the
+     * former and was a false positive while this only knew the latter - the guard is only as good as
+     * the ways it knows a call can be made correctly, so a miss there is this test's bug and not the
+     * code's. examples/ is skipped: sample code with a main, not the application.
+     *
+     * MUTATION: wrapping any of these calls back inside a `new Thread(` in its own method fails this.
+     */
+    @Test
+    public void testNoDialogIsShownOffTheEventThread() throws Exception
+    {
+        // Everything that BLOCKS. A message dialog is on the list deliberately: three of the six
+        // methods VB-B1 found used showMessageDialog to display a whole AutoJSONExport panel, built
+        // on the background thread, and "message" made them read like harmless toasts.
+        String[] needles =
+        {
+            "showOpenDialog(", "showSaveDialog(", "showInputDialog(",
+            "showMessageDialog(", "showConfirmDialog(", "showOptionDialog("
+        };
+
+        // Where a member begins. Not a Java parser, and it does not need to be: the shape being
+        // caught is `new Thread(() -> { ... showSomethingDialog( ... })` inside one member.
+        String[] memberStarts = { "    private ", "    public ", "    protected ", "    static " };
+
+        java.util.List<String> offenders = new java.util.ArrayList<>();
+        java.util.Set<String> filesWithDialogs = new java.util.TreeSet<>();
+
+        int examined = 0;
+
+        for (java.io.File f : javaFilesUnder(new java.io.File("src")))
+        {
+            String path = f.getPath().replace('\\', '/');
+
+            if (path.contains("/examples/")) continue;
+
+            String code = withoutComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8));
+
+            for (String needle : needles)
+            {
+                for (int at = code.indexOf(needle); at >= 0; at = code.indexOf(needle, at + 1))
+                {
+                    examined++;
+                    filesWithDialogs.add(f.getName());
+
+                    int from = -1;
+
+                    for (String s : memberStarts)
+                    {
+                        from = Math.max(from, code.lastIndexOf(s, at));
+                    }
+
+                    if (from < 0) from = 0;
+
+                    String before = code.substring(from, at);
+
+                    int thread = Math.max(before.lastIndexOf("new Thread("),
+                        before.lastIndexOf("LayoutGridRenderer.submit("));
+
+                    if (thread < 0) continue;
+
+                    // Marshalled back after the thread opened is the correct shape, and both forms
+                    // of it count.
+                    String inside = before.substring(thread);
+
+                    if (inside.contains("invokeLater") || inside.contains("invokeAndWait")) continue;
+
+                    String member = code.substring(from, code.indexOf('(', from));
+                    member = member.substring(member.lastIndexOf(' ') + 1);
+
+                    offenders.add(f.getName() + "#" + member + " " + needle);
+                }
+            }
+        }
+
+        assertTrue(examined >= 200,
+            "this scan examined only " + examined + " dialog calls. It used to find 322, so either "
+            + "the needles have gone stale or the walk is not reaching the source - and a scan that "
+            + "finds nothing asserts that no dialogs exist rather than where they are shown");
+
+        assertTrue(filesWithDialogs.size() >= 12,
+            "dialogs were found in only " + filesWithDialogs.size() + " files (" + filesWithDialogs
+            + "). The first version of this test read exactly one file and missed six broken methods "
+            + "in five others, which is the whole reason it walks the tree now");
+
+        assertEquals(offenders.toString(), "[]",
+            "a modal dialog is shown from a background thread. Swing is single-threaded, so the "
+            + "dialog and the window behind it are laid out from two threads at once - which is what "
+            + "Adam saw as the route table freezing and looking wrong (OB-137): " + offenders);
+    }
+
+    /**
+     * Every .java file under a directory, recursively.
+     */
+    private static java.util.List<java.io.File> javaFilesUnder(java.io.File dir)
+    {
+        java.util.List<java.io.File> found = new java.util.ArrayList<>();
+
+        java.io.File[] entries = dir.listFiles();
+
+        if (entries == null) return found;
+
+        java.util.Arrays.sort(entries);
+
+        for (java.io.File e : entries)
+        {
+            if (e.isDirectory())
+            {
+                found.addAll(javaFilesUnder(e));
+            }
+            else if (e.getName().endsWith(".java"))
+            {
+                found.add(e);
+            }
+        }
+
+        return found;
     }
 }

@@ -452,6 +452,9 @@ public class AutonomyChecks
      * @param reducer the reduced graph
      * @param mayTurn squares where a train may change direction
      * @param mustTurn squares where it must
+     * @param barred arrival sides closed off, passed through to reachableTiles so a station reachable
+     *               only by a barred side is not counted as reachable (DOC-C17: added by 3a52ec14 for
+     *               OB-120 and missing from this list ever since)
      * @return one finding per reversing square that leads nowhere
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,

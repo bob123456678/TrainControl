@@ -122,17 +122,47 @@ public class testDiagramExport
     }
 
     /**
-     * A size beyond the maximum is brought back to it rather than attempted.
+     * A size beyond the maximum is brought back to the documented ceiling, not to some other size.
+     *
+     * TST-C9: comparing render(100000) against a second render(MAX_TILE_SIZE) call proves only that
+     * the two inputs are clamped to the SAME size, not that the size is the ceiling the constant
+     * names - a clamp mistakenly written as MAX_TILE_SIZE / 4 would move both calls together and this
+     * test would still pass. So the expected width is derived independently instead: from a render at
+     * a size well under the ceiling, scaled up by the ratio to MAX_TILE_SIZE by hand.
      */
     @Test
     public void testAnAbsurdSizeIsCapped() throws Exception
     {
-        BufferedImage capped = render(100000);
-        BufferedImage atMax = render(DiagramExport.MAX_TILE_SIZE);
+        // THREE RENDERS, no arithmetic, no tolerance.
+        //
+        // Comparing an absurd size against MAX alone proves nothing - both go through the clamp, so a
+        // clamp written as MAX / 4 moves them together and the test still passes. That is TST-C9.
+        //
+        // Deriving the expected width instead - render small, scale by the ratio - does not hold
+        // either: a diagram is tiles PLUS what the drawing adds that does not scale with them, so
+        // multiplying a small render by a large factor multiplies the fixed part too. It came out
+        // seven pixels wide of the real answer, and a tolerance loose enough to swallow that is loose
+        // enough to hide a genuine drift.
+        //
+        // What settles it is the SHAPE of the clamp rather than its arithmetic: an absurd size must
+        // land on the same width as the ceiling, and the ceiling must be bigger than a quarter of it.
+        // A clamp of min(size, MAX / 4) makes all three equal and fails the second comparison, which
+        // is the mutation the finding named.
+        int quarter = Math.max(1, DiagramExport.MAX_TILE_SIZE / 4);
 
-        assertEquals(capped.getWidth(), atMax.getWidth(),
-            "a size beyond the maximum was attempted rather than capped, which on a large layout is "
-            + "an image no program can open - and an OutOfMemoryError on the way there");
+        int absurd = render(100000).getWidth();
+        int ceiling = render(DiagramExport.MAX_TILE_SIZE).getWidth();
+        int smaller = render(quarter).getWidth();
+
+        assertEquals(absurd, ceiling,
+            "a size beyond the maximum did not come back the same width as the maximum itself, so the "
+            + "clamp let it through - an image no program can open, and an OutOfMemoryError on the "
+            + "way there");
+
+        assertTrue(ceiling > smaller,
+            "rendering at the ceiling and at a quarter of it produced the same width (" + ceiling
+            + "), so the clamp is landing on something smaller than MAX_TILE_SIZE - every export is "
+            + "quietly coarser than it should be");
     }
 
     /**

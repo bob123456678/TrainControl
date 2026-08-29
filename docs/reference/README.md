@@ -12,7 +12,9 @@ hand-authored JSON file. The track diagram replaced it: the diagram IS the graph
 the pages the Central Station already holds, and a second view of the same railway was an invitation
 to edit the wrong one.
 
-`GraphViewer` and the three GraphStream jars are deleted outright. These four are kept:
+`GraphViewer` is deleted outright. The three GraphStream jars (`resources/gs-algo-2.0.jar`,
+`gs-core-2.0.jar`, `gs-ui-swing-2.0.jar`) are still on disk but off the classpath -
+`nbproject/project.properties` no longer lists them. These four source files are kept:
 
 | File | What it was |
 | --- | --- |

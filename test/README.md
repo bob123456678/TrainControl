@@ -4,10 +4,10 @@ Four folders, by what a test is FOR rather than by what it happens to import.
 
 | Folder | What lives there | How many |
 |---|---|---|
-| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 58 |
-| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 7 |
-| `regression/` | Written for one named defect, to stop it coming back. | 12 |
-| `support/` | Not tests. Fixtures the others use. | 2 |
+| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 63 |
+| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 16 |
+| `regression/` | Written for one named defect, to stop it coming back. | 45 |
+| `support/` | Not tests. Fixtures the others use. | 3 |
 
 Set 2026-08-22, at Adam's request, when 76 classes in one flat folder had stopped saying anything about
 themselves.
@@ -52,7 +52,17 @@ matrix test written specifically to catch this project's commonest bug class.
 
 ## Running them
 
-`ant test` runs everything except `testAutoDetect`, which probes the network for a real Central Station.
+**The real gate is `tools/battery.sh`, not `ant test`.** `ant test` runs everything except
+`testAutoDetect` (which probes the network for a real Central Station), one class per JVM, and it is
+useful for driving a single class while iterating. But it is weaker than `battery.sh` in two ways that
+matter: a class that skips every test in it (via a `SkipException`, or a `@BeforeClass` failure) reads as
+green to `ant test`, where `battery.sh` classifies "0 passed, N skipped" separately and fails on it; and
+`battery.sh` fingerprints `cs2_sample_layout` before and after the whole run and shouts if anything wrote
+to it, which `ant test` has no way to do. `battery.sh` also sets the
+`-Dtraincontrol.anyReceivePort=true` system property that lets tests share a machine without binding the
+same UDP port; `ant test` does not, so a class whose `@BeforeClass` fails to bind can silently test
+nothing. Use `ant test` (or the scratchpad runners below) for a fast loop on the classes you are
+changing, but treat `tools/battery.sh` as the one that actually has to pass.
 
 While iterating, the scratchpad holds two scripts that run classes in their own JVMs and print one line
 each: a full runner and a fast one that excludes the handful of slow classes. The fast one is an

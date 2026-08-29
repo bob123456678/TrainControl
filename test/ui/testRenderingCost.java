@@ -303,6 +303,16 @@ public class testRenderingCost
             + " coldDecodeTotal=" + String.format("%.1f", ms) + "ms"
             + " perDecode=" + String.format("%.2f", decoded == 0 ? 0 : ms / decoded) + "ms");
 
+        // TST-C14: the decode loop swallows every exception, so a getImage that throws for EVERY
+        // tile leaves decoded at 0 and ms near zero - which used to read as a fast, passing test.
+        // That is the "0.00ms looks like good news" failure this class's own header comment says it
+        // was rewritten to avoid; the floor below is what closes it for this loop too.
+        assertTrue(decoded > 0,
+            "not a single tile image decoded (coldDecodes=0 of " + tiles + " tiles on "
+            + distinct.size() + " distinct appearances).  Either the fixture lost its icons or "
+            + "getImage is throwing for every tile, and this loop's own catch block would hide "
+            + "that - a near-zero decode time here is not a fast diagram, it is nothing measured");
+
         assertTrue(ms < 30000,
             "decoding one image per distinct tile appearance took " + ms + "ms.  That is the cold-cache "
             + "cost of opening a diagram, and it is what the spinner is covering");

@@ -17,6 +17,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -301,7 +302,13 @@ public class testLayoutBfs
         }
         catch (Exception e)
         {
-            assertNotNull(e.getMessage(), "the rejection must carry a message");
+            // Not just "something was thrown" - the guard in Layout.bfs rejects a null start/end
+            // (which is what getPoint returns for a foreign Point) with this exact message.  A
+            // downstream NullPointerException, including a modern "helpful" one with its own
+            // message, must fail this test rather than satisfy it.
+            assertEquals(e.getMessage(), I18n.f("autolayout.errorInvalidPointsSpecified"),
+                "the rejection must be Layout.bfs's own invalid-points guard, not some other "
+                + "exception (e.g. a downstream NullPointerException) that happens to have a message");
         }
     }
 

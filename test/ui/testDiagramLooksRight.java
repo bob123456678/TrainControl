@@ -1109,7 +1109,10 @@ public class testDiagramLooksRight
             if (at > 0 && at < next) next = at;
         }
 
-        String body = source.substring(lift, next);
+        // Comments stripped first (TST-C10): otherwise a comment left behind describing the removed
+        // call - "keepCaptionsInFront(parent) is handled by the caller now" - keeps this string match
+        // passing after the real call is gone.
+        String body = withoutComments(source.substring(lift, next));
 
         assertTrue(body.contains("keepCaptionsInFront("),
             "the lift no longer puts the station captions back in front of the tile it raised. The "
@@ -1814,6 +1817,7 @@ public class testDiagramLooksRight
         }
 
         org.traincontrol.automationui.TileGraph.TileKey point = null;
+        String expectedName = null;
 
         for (org.traincontrol.automationui.TileGraph.TileKey tile
             : session.getReducer().getPoints().keySet())
@@ -1823,6 +1827,7 @@ public class testDiagramLooksRight
             if (name != null && !name.trim().isEmpty())
             {
                 point = tile;
+                expectedName = name.trim();
                 break;
             }
         }
@@ -1849,7 +1854,10 @@ public class testDiagramLooksRight
             "the first item on the menu is live, so it is a command and not a name. A heading has to "
             + "be unclickable or it is one more thing to press by accident");
 
-        assertEquals(heading.getText(), session.describeTile(square),
+        // Compared against the name read independently above (TST-C9), not against
+        // session.describeTile(square) again - both sides of that comparison come from the same
+        // method under test, so a broken describeTile would move with the heading and still match.
+        assertEquals(heading.getText(), expectedName,
             "the menu does not open with the name of the square it is about. That is OB-112, and it "
             + "is the assertion that says whether the fault is in this code or in the build that was "
             + "running when it was reported");

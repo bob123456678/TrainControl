@@ -201,7 +201,14 @@ public class testAutonomyDiagramPorts
         {
             for (int state = 0; state < TilePorts.getStateCount(type); state++)
             {
-                for (Route r : TilePorts.ports(type, 0, state))
+                List<Route> routes = TilePorts.ports(type, 0, state);
+
+                // Floor: without it, TilePorts.ports returning empty for every state would leave both
+                // loops below running zero times and this test would pass having checked nothing.
+                assertFalse(routes.isEmpty(),
+                    type + " state " + state + " should still offer routes");
+
+                for (Route r : routes)
                 {
                     assertTrue(r.touches(Side.S),
                         type + " state " + state + " route " + r + " does not touch the toe");
@@ -255,7 +262,16 @@ public class testAutonomyDiagramPorts
         {
             Side toe = Side.S.rotateClockwise(4 - o);
 
-            for (Route r : TilePorts.ports(componentType.CUSTOM_PERM_LEFT, o, 0))
+            List<Route> routes = TilePorts.ports(componentType.CUSTOM_PERM_LEFT, o, 0);
+
+            // Floor: TilePorts.ports returning empty for a rotated orientation would leave the loop
+            // below running zero times, and the rotation of the trailing-only restriction would be
+            // asserted nowhere - this is the one case among the C8 loop-only findings not covered by
+            // any sibling test.
+            assertFalse(routes.isEmpty(),
+                "orientation " + o + " should still offer routes");
+
+            for (Route r : routes)
             {
                 assertEquals(r.getDirectedToward(), toe,
                     "orientation " + o + ": route " + r + " should be directed toward " + toe);

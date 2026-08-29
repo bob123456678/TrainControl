@@ -136,8 +136,9 @@ public class AutonomyEditorPanel extends JPanel
     private static final int WIDTH = 150;
 
     // The EDITOR window's own conventions, which are not quite the main window's: its headings are
-    // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", jLabel2 "Toggle Visibility") and its
-    // buttons are bold 11 (saveButton, cancelButton), a size down from the main window's 12.
+    // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", toggleVisibility "Toggle Visibility" -
+    // DOC-C24: renamed from jLabel2, this trail dead-ended at the old name) and its buttons are bold
+    // 11 (saveButton, cancelButton), a size down from the main window's 12.
     static final java.awt.Font FONT_HEADING =
         new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
 
@@ -1240,11 +1241,12 @@ public class AutonomyEditorPanel extends JPanel
 
             // Everything a station can be TUNED with, under one heading.
             //
-            // Four settings that a railway works without: how long a train may be, which order
-            // stations are preferred in, how fast trains run through here, and which locomotives are
-            // not allowed.  Two of them were loose on the menu above and two were already down here,
-            // which is the worst of both - the menu was longer for no reason and the grouping said
-            // nothing about which settings were which.
+            // DOC-C24: five settings now, not four - FR-001 added the fifth, blockedByPoints, below.
+            // The original four are settings a railway works without: how long a train may be, which
+            // order stations are preferred in, how fast trains run through here, and which locomotives
+            // are not allowed.  Two of those were loose on the menu above and two were already down
+            // here, which is the worst of both - the menu was longer for no reason and the grouping
+            // said nothing about which settings were which.
             //
             // Every label carries its current value, as the graph window's did: a menu that says
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.

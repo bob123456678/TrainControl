@@ -116,16 +116,64 @@ public class testParseCS2Layout
      * File order is what parsing returns; lexicographic order is what the layout selector shows.  The
      * two are different on purpose, and the parsing change must not have quietly swapped one for the
      * other.
+     *
+     * Driven against three names added directly to the model's layout database in a scrambled order,
+     * rather than against whatever model.getLayoutList() already returns.  That used to compare the
+     * list with a sorted copy of itself - trivially true at 0 or 1 pages, and the list it compared came
+     * from LAYOUT_OVERRIDE_PATH_PREF, a machine preference, rather than from this test's own fixture,
+     * so it was really asserting nothing about production sorting.  RemoteDeviceCollection stores names
+     * in a plain HashMap, whose iteration order is neither insertion order nor alphabetical, so three
+     * names added as Zulu, Alpha, Mike coming back as Alpha, Mike, Zulu is real evidence that
+     * getLayoutList()'s own Collections.sort ran, not a coincidence of insertion order.
      */
     @Test
-    public void testTheLayoutListIsStillSortedLexicographically()
+    public void testTheLayoutListIsStillSortedLexicographically() throws Exception
     {
-        List<String> shown = model.getLayoutList();
+        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("layoutDB");
+        field.setAccessible(true);
 
-        List<String> sorted = new ArrayList<>(shown);
-        java.util.Collections.sort(sorted);
+        @SuppressWarnings("unchecked")
+        org.traincontrol.base.RemoteDeviceCollection<LayoutDiagram, String> layoutDB =
+            (org.traincontrol.base.RemoteDeviceCollection<LayoutDiagram, String>) field.get(model);
 
-        assertEquals(shown, sorted, "the layout selector should list pages in lexicographic order");
+        // Deliberately out of both insertion order and alphabetical order.
+        String[] scrambled = {"TSTC13_Zulu", "TSTC13_Alpha", "TSTC13_Mike"};
+
+        try
+        {
+            for (String name : scrambled)
+            {
+                layoutDB.add(new LayoutDiagram(name, 1, 1, "test://" + name, model), name, name);
+            }
+
+            List<String> shown = model.getLayoutList();
+
+            assertFalse(shown.isEmpty(),
+                "the layout list must not be empty - three known pages were just added to it");
+
+            int alpha = shown.indexOf("TSTC13_Alpha");
+            int mike = shown.indexOf("TSTC13_Mike");
+            int zulu = shown.indexOf("TSTC13_Zulu");
+
+            assertTrue(alpha >= 0 && mike >= 0 && zulu >= 0,
+                "all three known layout names must come back from getLayoutList(): " + shown);
+
+            assertTrue(alpha < mike && mike < zulu,
+                "three names added in scrambled order (Zulu, Alpha, Mike) must come back sorted "
+                + "(Alpha, Mike, Zulu) - they did not: " + shown);
+
+            List<String> sorted = new ArrayList<>(shown);
+            java.util.Collections.sort(sorted);
+
+            assertEquals(shown, sorted, "the layout selector should list pages in lexicographic order");
+        }
+        finally
+        {
+            for (String name : scrambled)
+            {
+                layoutDB.delete(name);
+            }
+        }
     }
 
     /**

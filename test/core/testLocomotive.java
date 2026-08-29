@@ -725,7 +725,6 @@ public class testLocomotive
     {
         model.deleteLoc("Test loc 3");
         model.deleteLoc("Test loc 4");
-        model.deleteLoc("Test loc 4a");
         model.deleteLoc("Test loc 5");
         model.deleteLoc("Test loc 6");
         model.deleteLoc("Test loc 7");

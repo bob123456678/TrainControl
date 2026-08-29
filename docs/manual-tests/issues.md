@@ -28,8 +28,9 @@ filed was renumbered.
 gives it a receipt row here. A **bug** also gets an `MT-###` tag in `tests.md`, disposition **needs
 test** - a fix needs a repeatable hands-on check that the regression stays fixed, so that tag is
 handed out immediately, not earned. A **feature request** is tracked directly instead, by default:
-its receipt row gets a **State** in the same three words `tests.md`'s disposition uses (plus a
-fourth, **declined**, for something cancelled - see below), set by Claude and only by Claude. It
+its receipt row gets a **State** in three of the four words `tests.md`'s disposition uses (not
+**superseded**, which has no meaning for a request nobody has coded yet), plus one of its own,
+**declined**, for something cancelled - see below - set by Claude and only by Claude. It
 only gets promoted to an `MT-###` tag if the eventual work turns out to need a genuine hands-on
 test the way a bug fix does.
 
@@ -76,51 +77,26 @@ excludeRepeatedSensorPages has TWO call sites and they carry contradictory inten
 
 This class ran clean through several batteries and began skipping after the review round, with "nothing moved in 12s, so there is no timetable to replay". The cause is a correct fix: TST-B11 found it was reading model.getLayoutList(), i.e. whatever layout the machine happened to have - your real railway - and pointed it at test_layout instead, correcting the configuration name from "Autonomy 1" (which matched nothing) to "Main". Against the fixture, two stations are found and five of seven locomotives are placed, and then nothing runs in the window. So it is now honest and vacuous, which by this repo own rule is the same as having no test. Unknown whether the cause is the run window, the Main configuration paths, or the placement.
 
-### OB-133 - 2026-08-29 - The unreadable-import test has never exercised the rollback it is named for
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-08-29  
-
-testAnUnreadableImportChangesNothing malforms a value and expects importBundle to refuse and roll back. It never refuses. The rollback code itself is correct - the catch does "if (existed) configurations.put(name, replaced); else forgetConfiguration(name);" - so the configuration is left behind only because the import SUCCEEDS. I first traced this to readSquareMap skipping entries whose key does not resolve to a tile, which was wrong twice over: the validator proved by running that the exported key is exactly the literal the comment calls unparseable, and that the real mechanism is the merge rule (if (mine.has(inner)) continue), so nothing is filled and readShared is never called at all. The validator built a genuinely refusing bundle four lines away and confirmed the rollback works. The site also now carries two contradictory comment blocks, one describing an assertion that is not there. Worth finishing properly (VAL-B2, VAL-B3).
-
-### OB-134 - 2026-08-29 - Six destructive confirmations still pre-select Yes
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-08-29  
-
-UXR-B5 found confirmation dialogs that pre-select the destructive answer while their comment claims the safe one is selected. Three were fixed - the full locomotive state sync, the data source dialog, and deleting a timetable entry. The validator found six siblings left with the same fault, among them Delete Route, delete a locomotive from the database, and remove all timetable entries. These are the ones where a reflexive Enter is most expensive, and the pattern is exactly the fix-one-site-and-not-its-twins failure this project keeps hitting (VAL-B5).
-
-### OB-136 - 2026-08-29 - simulate: true has gone from the live autonomy configuration
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-08-29  
-
-cs2_sample_layout/config/autonomy/configuration-Main.json is showing as modified with "simulate": true REMOVED. The loc and facing changes in the same file are ordinary placement churn from running trains; this one is a settings change to the real railway. It is uncommitted and has never been staged, and the battery live-layout fingerprint has been silent on every run since the harness sandboxes were fixed - so nothing in the suite is writing it now. The likeliest cause is the earlier harness defect, when three test classes opened the real layout because their sandbox was opened after the model rather than before it. Flagged so it is a decision rather than something that ships by accident.
-
-### OB-137 - 2026-08-29 - route table freeze on import
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 02:12  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 01:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-while importing routes from Json, the route table freezes up /looks weird
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
 `MT-###` tag, and its state lives there from then on. Something tracked directly instead - most
 feature requests, going forward - has no `MT-###` tag to point at; **State** is its disposition,
-in the same three words `tests.md` uses (`needs test` / `fixed unvalidated` / `fixed validated`),
-set by Claude and only by Claude, the same rule as everywhere else it appears. Exactly one of
+in three of the four words `tests.md` uses (`needs test` / `fixed unvalidated` / `fixed
+validated` - not `superseded`, which has no meaning for something nobody has coded yet), plus
+**declined** for something cancelled, set by Claude and only by Claude, the same rule as
+everywhere else it appears. Exactly one of
 State or Became is filled in for any row - a feature request either gets its own tag, or it does
 not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-139 | bug | move pointer in autonomy editor. | - | [MT-210](tests.md#mt-210) |
+| 2026-08-29 | OB-138 | bug | doube clicking station label in track viewer | - | [MT-209](tests.md#mt-209) |
+| 2026-08-29 | OB-137 | bug | route table freeze on import | - | [MT-208](tests.md#mt-208) |
+| 2026-08-29 | OB-136 | bug | simulate: true has gone from the live autonomy configuration | - | [MT-207](tests.md#mt-207) |
+| 2026-08-29 | OB-134 | bug | Six destructive confirmations still pre-select Yes | fixed unvalidated | - |
+| 2026-08-29 | OB-133 | bug | The unreadable-import test has never exercised the rollback it is named for | fixed validated | - |
 | 2026-08-29 | OB-135 | bug | The wait mark still does not animate on the track diagram | - | [MT-206](tests.md#mt-206) |
 | 2026-08-29 | OB-131 | bug | Start Autonomy never comes back if a train never berths | - | [MT-205](tests.md#mt-205) |
 | 2026-08-29 | FR-042 | feature request | Spot-check the newly translated autonomy strings | - | [MT-204](tests.md#mt-204) |

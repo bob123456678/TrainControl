@@ -48,6 +48,10 @@ public class testRouteCommandParity
             Locomotive.locDirection.DIR_BACKWARD));
         corpus.add(RouteCommand.RouteCommandStop());
         corpus.add(RouteCommand.RouteCommandFunctionsOff());
+        corpus.add(RouteCommand.RouteCommandRoute("Test route 1"));
+        corpus.add(RouteCommand.RouteCommandAutoLocomotive("Test loc 1", 87));
+        corpus.add(RouteCommand.RouteCommandAutonomyLightsOn());
+        corpus.add(RouteCommand.RouteCommandLightsOn());
 
         for (RouteCommand original : corpus)
         {
@@ -100,6 +104,8 @@ public class testRouteCommandParity
         if (command.isFunctionsOff()) return "functions off";
         if (command.isRoute()) return "route";
         if (command.isAutoLocomotive()) return "auto locomotive";
+        if (command.isAutonomyLightsOn()) return "autonomy lights on";
+        if (command.isLightsOn()) return "lights on";
 
         return "unknown";
     }

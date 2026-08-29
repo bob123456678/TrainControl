@@ -1869,8 +1869,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param layoutList the pages that are actually loaded
      * @param renamedFromTo old name -&gt; new name, whose old names are not absences
      * @param deliberatelyRemoved names being removed on purpose, which are not absences either
-     * @return the names to keep in the index, empty when there was nothing to ask about, and null
-     *         when the operator cancelled - in which case the index must not be written at all
+     * @return the names to keep in the index, empty when there was nothing to ask about, and null when
+     *         the index must not be written at all - the operator cancelled, there is no local layout to
+     *         reconcile against (OB-127), or the index could not be read (RA-C3).  DOC-C4: this used to
+     *         say only "the operator cancelled"; all three callers already treat null as "do not
+     *         proceed" regardless of which of the three it was, so nothing was broken by the other two -
+     *         only the comment was incomplete.
      */
     private java.util.Collection<String> settleAbsentPages(java.util.List<String> layoutList,
         java.util.Map<String, String> renamedFromTo,
@@ -2768,7 +2772,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the state OB-127 was filed from.
             //
             // An open editor may still take them away; only their owner may give them back.
-            if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem)
+            //
+            // VAL-C4: initializeLocalLayoutMenuItem joined this list for the same reason. Its own
+            // action listener disables it before createAndApplyEmptyLayout runs, off the EDT, and only
+            // that flow's completion callback re-enables it - a third instance of the exact pattern
+            // UXR-A1 fixed for the two Central Station items above. Left in the blanket loop, opening
+            // this menu while a new layout was still being created re-enabled the item mid-creation.
+            if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem
+                || child == initializeLocalLayoutMenuItem)
             {
                 if (busy) child.setEnabled(false);
 
@@ -3024,7 +3035,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         String source;
 
-        if (this.model == null || this.model.getLayoutList().isEmpty())
+        // UXR-C3: asked isLayoutLoaded() rather than model.getLayoutList().isEmpty() directly - that
+        // raw question is the one isLayoutLoaded's own javadoc (see layoutLoaded field) says was asked
+        // at sixteen places, each catching a different instant of a rebuild.  This item sits right next
+        // to guardLayoutMenu's items, which already ask isLayoutLoaded(); asking the stored answer here
+        // too keeps this item from disagreeing with its neighbours during a refreshLayouts() rebuild.
+        if (this.model == null || !isLayoutLoaded())
         {
             source = I18n.t("ui.main.toolbar.dataSourceNone");
         }
@@ -3648,7 +3664,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             setAutoTabEnabled(false);
 
             this.startAutonomy.setEnabled(false);
-            this.returnHomeButton.setEnabled(false);
+
+            // UXR-C4: disableReturnHome, not a bare setEnabled(false) - otherwise the button keeps
+            // whatever tooltip a previous session left on it (possibly "Send every locomotive back to
+            // the station it started on") while there is no session behind it at all.
+            this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
 
             return;
         }
@@ -5672,9 +5692,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Offered only once a configuration has loaded, because that tab does not exist before then - which
      * is exactly the dead end that made the feature unreachable.
+     *
+     * UXR-C20: guarded the same way `setAutoTabEnabled` guards the same index - `getTabCount() <= 2`
+     * (the tab is not built yet) and `isEnabledAt(2)` (`showLayoutTab`'s OB-128 rule for this tab) -
+     * so a caller reached before a configuration is loaded selects nothing rather than a greyed, empty
+     * tab. Unreachable today; a trap for whoever calls this next without checking first.
      */
     public void showAutonomyRunTab()
     {
+        if (this.KeyboardTab.getTabCount() <= 2 || !this.KeyboardTab.isEnabledAt(2)) return;
+
         this.KeyboardTab.setSelectedIndex(2);
 
         if (locCommandPanels.indexOfComponent(this.locCommandTab) >= 0)
@@ -5689,9 +5716,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * By COMPONENT rather than by index, like showAutonomyRunTab beside it.  The inner tabs are
      * removed and reinserted on every load, so an index is only right until the next one - and these
      * three have already been reordered once.
+     *
+     * UXR-C20: same guard as showAutonomyRunTab, for the same reason.
      */
     public void showAutonomySettingsTab()
     {
+        if (this.KeyboardTab.getTabCount() <= 2 || !this.KeyboardTab.isEnabledAt(2)) return;
+
         this.KeyboardTab.setSelectedIndex(2);
 
         if (locCommandPanels.indexOfComponent(this.autoSettingsPanel) >= 0)
@@ -15300,12 +15331,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_WindowClosed
 
     /**
-     * Brings the track diagram to the front.
+     * Brings the track diagram to the front - unless there is nothing to show it on.
      *
      * Where somebody who has just set autonomy up wants to be: the diagram is what the setup is FOR, it
      * carries the strip saying whether anything needs looking at, and it is where the stations they have
      * just created will appear.  Leaving them on the tab they pressed the button from means the work
      * they did seems to have happened somewhere they cannot see.
+     *
+     * DOC-C24: does nothing, silently, when there is no layout tab to find (the panel is null or not
+     * mounted) or the tab exists but is disabled (OB-128) - see the inline comment on the body for why.
      */
     public void showLayoutTab()
     {
@@ -15323,28 +15357,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // open, greyed, showing the railway a failed switch to a Central Station layout had just
         // unloaded.
         //
-        // Those nine now come through here, which also stops them assuming the diagram is tab 1.
+        // Those nine now come through here, which also stops them assuming the diagram is tab 1 - for
+        // WHICH TAB GETS SELECTED. DOC-C24: jumpToLayoutTab below still compares its saved
+        // currentIndex against a literal 1 to decide whether to move focus, so that one narrower
+        // assumption survives this method's fix.
         if (!this.KeyboardTab.isEnabledAt(index)) return;
 
         this.KeyboardTab.setSelectedIndex(index);
     }
 
-    /**
-     * Shows the tab with the specified icon
-     * @param tabIcon 
-     */
-    public void showTab(Icon tabIcon)
-    {
-        for (int i = 0; i < this.KeyboardTab.getTabCount(); i++)
-        {
-            if (tabIcon.equals(this.KeyboardTab.getIconAt(i)))
-            {
-                this.KeyboardTab.setSelectedIndex(i);
-                this.KeyboardTab.requestFocus();
-            }
-        }
-    }
-    
+    // UXR-C21: showTab(Icon) removed. Dead code - its only call site
+    // (LocomotiveSelector.java:394) has been commented out, and it never picked up C20's
+    // isEnabledAt/getTabCount guard, so reviving it would revive OB-128 (a program-driven tab switch
+    // landing on a greyed, empty tab) with it.
+
     public void deleteRoute(String routeName)
     {
         Route route = this.model.getRoute(routeName);
@@ -15359,7 +15385,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                // VAL-B5: default to No. A destructive delete confirmation should not pre-select the
+                // destructive answer - Enter should not delete a route by accident.
+                YES_NO_OPTS[1]
             );
             
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -15666,7 +15694,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                YES_NO_OPTS[1] // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not (VB-B2)
             );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -15708,7 +15736,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                // VAL-B5: default to No, same reasoning as the route-delete confirmation - a page's
+                // entire set of key mappings is destructive to lose to a stray Enter.
+                YES_NO_OPTS[1]
             );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -16701,7 +16731,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                // VAL-B5: default to No - deleting a locomotive from the database is not recoverable
+                // from this dialog, and should not be one Enter keypress away.
+                YES_NO_OPTS[1]
             ))
         {
             Locomotive l = this.model.getLocByName(value);
@@ -17026,45 +17058,63 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     private void BulkEnableOrDisable(boolean enable)
     {
-        new Thread(()->
-        { 
-            String searchString = JOptionPane.showInputDialog(
-                this,
-                I18n.f(
-                    "route.ui.promptEnterSearchStringWithS88State",
-                    enable ? I18n.t("ui.stateEnabled") : I18n.t("ui.stateDisabled")
-                ),
-                "*"
-            );
-            
-            // Cancel returns null, which is not the same as an empty search.  !"".equals(null) is
-            // true, so the loop ran and getName().contains(null) threw - killing the worker thread on
-            // a stack trace nobody sees, and skipping the sync and refresh that follow it.
-            if (searchString != null && !"".equals(searchString))
-            {
-                for (String routeName : this.model.getRouteList())
-                {
-                    Route r = this.model.getRoute(routeName);
+        // THE QUESTION IS ASKED ON THE EVENT THREAD (VB-B1).
+        //
+        // This was a modal JOptionPane raised inside `new Thread(...)`, and both callers started a
+        // thread of their own before reaching it - a thread inside a thread with a modal dialog at
+        // the bottom of it. A modal dialog off the event thread pumps events from a thread Swing does
+        // not expect to be pumping them; it can come up behind the window, or not come up at all.
+        //
+        // An action handler already runs on the event thread, so asking here needs no marshalling.
+        // The thread below stays for what it was really for - a write per route and one station sync
+        // - and the two calls after it, repaintLayout and refreshRouteList, marshal themselves.
+        String searchString = JOptionPane.showInputDialog(
+            this,
+            I18n.f(
+                "route.ui.promptEnterSearchStringWithS88State",
+                enable ? I18n.t("ui.stateEnabled") : I18n.t("ui.stateDisabled")
+            ),
+            "*"
+        );
 
-                    if (r.hasS88() || r.isEnabled())
+        // Cancel returns null, which is not the same as an empty search.  !"".equals(null) is
+        // true, so the loop ran and getName().contains(null) threw - killing the worker thread on
+        // a stack trace nobody sees, and skipping the sync and refresh that follow it.
+        if (searchString == null || "".equals(searchString)) return;
+
+        final String search = searchString;
+
+        new Thread(()->
+        {
+            for (String routeName : this.model.getRouteList())
+            {
+                Route r = this.model.getRoute(routeName);
+
+                if (r.hasS88() || r.isEnabled())
+                {
+                    if (r.getName().contains(search) || "*".equals(search))
                     {
-                        if (r.getName().contains(searchString) || "*".equals(searchString))
-                        {
-                             this.model.editRoute(r.getName(), r.getName(), r.getRoute(),
-                                        r.getS88(), r.getTriggerType(), enable, r.getConditions());
-                        }
+                         // VAL-C6: routed through the same write enableOrDisableRoute uses, rather
+                         // than a second inline this.model.editRoute(...) call with the same six
+                         // arguments - so the write itself cannot drift between the two, even
+                         // though the guard around it (this method's own hasS88() || isEnabled()
+                         // filter, versus enableOrDisableRoute's !enable || hasS88()) stays
+                         // deliberately separate: this loop syncs once after the whole batch, not
+                         // once per route, and folding in enableOrDisableRoute's own sync/refresh
+                         // would turn one sync into as many as there are matching routes.
+                         writeRouteEnabledState(r, enable);
                     }
                 }
-
-                // Ensure route changes are synced
-                this.syncWithCS2();
-                this.repaintLayout();
-                
-                refreshRouteList();
             }
+
+            // Ensure route changes are synced
+            this.syncWithCS2();
+            this.repaintLayout();
+
+            refreshRouteList();
         }).start();
     }
-    
+
     public void enableOrDisableRoute(String routeName, boolean enable)
     {
         new Thread(() ->
@@ -17079,8 +17129,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // on every route with no check of its own - see that menu for the other half of this.
             if (!enable || r.hasS88())
             {
-                this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
-                        r.getConditions());
+                writeRouteEnabledState(r, enable);
 
                 // Ensure route changes are synced
                 this.syncWithCS2();
@@ -17096,6 +17145,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ));
             }
         }).start();
+    }
+
+    /**
+     * Writes a route's enabled/disabled flag - the one call both enableOrDisableRoute and
+     * BulkEnableOrDisable make, with the same six arguments.
+     *
+     * VAL-C6: BulkEnableOrDisable used to call this.model.editRoute(...) directly, so the write itself
+     * could in principle drift from enableOrDisableRoute's version of the same line while the two
+     * different GUARDS around it (deliberately different - see the comment in enableOrDisableRoute)
+     * kept matching by coincidence rather than by construction. Extracted just the write, not the
+     * guard or the sync/refresh that follows it - the two callers sync at different granularity (once
+     * per route here, once per batch in BulkEnableOrDisable) and folding that in too would change how
+     * often a bulk operation talks to the Central Station.
+     *
+     * @param r the route to update
+     * @param enable the new enabled state
+     */
+    private void writeRouteEnabledState(Route r, boolean enable)
+    {
+        this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
+                r.getConditions());
     }
 
     public void resetFocus()
@@ -17426,7 +17496,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                // VAL-B5: default to No - this clears the whole timetable, not one entry.
+                YES_NO_OPTS[1]
             );
 
             // Anything but Yes.  This one wipes the whole captured timetable with no undo, and
@@ -18326,7 +18397,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.startAutonomy.setEnabled(false);
-                    this.returnHomeButton.setEnabled(false);
+
+                    // UXR-C4: the button's tooltip has to say trains are moving for the length of this
+                    // run, not keep whatever it said before the timetable started - refreshReturnHomeButton
+                    // below (on completion) puts the real answer back once it is safe to ask again.
+                    this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
                 });
 
                 // The ANSWER, not just the call.  It was discarded, so a timetable that gave up part
@@ -18399,18 +18474,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
 
-        new Thread(()->
-            {
-                BulkEnableOrDisable(false);
-            }).start();
+        // No wrapper thread (VB-B1): it bought nothing. Everything it wrapped is either the
+        // prompt, which has to be on the event thread, or the batch, which starts its own.
+        BulkEnableOrDisable(false);
     }//GEN-LAST:event_BulkDisableActionPerformed
 
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
 
-        new Thread(()->
-            {
-                BulkEnableOrDisable(true);
-            }).start();
+        // No wrapper thread (VB-B1): it bought nothing. Everything it wrapped is either the
+        // prompt, which has to be on the event thread, or the batch, which starts its own.
+        BulkEnableOrDisable(true);
     }//GEN-LAST:event_BulkEnableActionPerformed
 
     private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
@@ -18886,11 +18959,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Jumps to the locomotive tab on the autonomy page
+     *
+     * UXR-C20: same guard as showAutonomyRunTab/showAutonomySettingsTab - `getTabCount() <= 2` and
+     * `isEnabledAt(2)`, the two checks `setAutoTabEnabled` already applies to this tab.
      */
     public void jumpToAutonomyLocTab()
     {
+        if (this.KeyboardTab.getTabCount() <= 2 || !this.KeyboardTab.isEnabledAt(2)) return;
+
         this.KeyboardTab.setSelectedIndex(2);
-        
+
         // Advance to locomotive autonomy tab
         this.locCommandPanels.setSelectedIndex(
             0
@@ -19070,7 +19148,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             JOptionPane.PLAIN_MESSAGE,
                             null,
                             YES_NO_OPTS,
-                            YES_NO_OPTS[0] // default selection
+                            // VAL-B5: default to No - Yes here throws away unsaved autonomy JSON edits.
+                            YES_NO_OPTS[1]
                         );
                         
                         // Anything but Yes: Escape was discarding the unsaved autonomy JSON.
@@ -19108,7 +19187,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 locCommandPanels.remove(this.autoSettingsPanel);
 
                 this.startAutonomy.setEnabled(false);
-                this.returnHomeButton.setEnabled(false);
+
+                // UXR-C4: say why, the same as the other "no valid autonomy setup" site above -
+                // otherwise a JSON validation failure leaves whatever Return Home's tooltip said before
+                // this attempt, which will usually be wrong once the setup that produced it is gone.
+                this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
 
                 JOptionPane.showMessageDialog(
                     this,
@@ -19299,8 +19382,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
+            // UXR-C5: `startAutonomy.isEnabled()` is false for two different reasons - a blocking
+            // configuration error, or trains still moving/a timetable running - and this used to name
+            // only the second one regardless of which it was.  Split the same way
+            // `LayoutRightclickAutonomyMenu`'s tooltip already does, so a caller of this API is not told
+            // to wait for trains when the real problem is an error count nothing will clear on its own.
+            int errors = autonomyErrorCount();
+
             throw new Exception(
-                I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
+                errors > 0
+                    ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
+                    : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
             );
         }
     }
@@ -19559,7 +19651,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (layout == null)
         {
-            this.returnHomeButton.setEnabled(false);
+            // UXR-C4: same reasoning as the other disableReturnHome sites - a bare setEnabled(false)
+            // here leaves the tooltip from whatever this button last had to say, which is nonsense once
+            // there is no autonomy layout behind it at all.
+            this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
             return;
         }
 
@@ -19966,76 +20061,129 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_autosaveActionPerformed
 
     private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
+
+        // THE SIBLING OF OB-137, found by the test written for it.
+        //
+        // Adam reported the route import; this had the identical fault and nobody had reached it yet.
+        // A modal JFileChooser was opened inside `new Thread(...)`, and this one went further: it set
+        // the text area and called straight into validateButtonActionPerformed from that same thread.
+        // Three Swing calls off the event thread in one handler.
+        //
+        // The chooser and every Swing call belong here, on the event thread an action handler already
+        // runs on. Only reading and decoding the file goes off it.
+        JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
+
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        final File chosen = fc.getSelectedFile();
+
         this.loadJSONButton.setEnabled(false);
-        new Thread(()->
+
+        new Thread(() ->
             {
+                String decoded = null;
+                Exception failed = null;
+
                 try
                 {
-                    JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
-                    int i = fc.showOpenDialog(this);
-
-                    if (i == JFileChooser.APPROVE_OPTION)
-                    {
-                        File f = fc.getSelectedFile();
-
-                        this.autonomyJSON.setText(decodeAutonomyJson(Files.readAllBytes(Paths.get(f.getPath()))));
-                        prefs.put(LAST_USED_FOLDER, f.getParent());
-
-                        validateButtonActionPerformed(null);
-                    }
+                    decoded = decodeAutonomyJson(Files.readAllBytes(Paths.get(chosen.getPath())));
                 }
                 catch (HeadlessException | IOException | ClassNotFoundException e)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorOpeningFile")));
-
-                    this.model.log(e);
+                    failed = e;
                 }
 
-                this.loadJSONButton.setEnabled(true);
+                final String text = decoded;
+                final Exception threw = failed;
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.loadJSONButton.setEnabled(true);
+
+                    if (threw != null)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            I18n.t("autolayout.ui.errorOpeningFile"));
+
+                        this.model.log(threw);
+
+                        return;
+                    }
+
+                    this.autonomyJSON.setText(text);
+
+                    prefs.put(LAST_USED_FOLDER, chosen.getParent());
+
+                    validateButtonActionPerformed(null);
+                });
             }).start();
     }//GEN-LAST:event_loadJSONButtonActionPerformed
 
     private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
 
+        // THE PANEL IS BUILT AND SHOWN ON THE EVENT THREAD (VB-B1).
+        //
+        // "showMessageDialog" reads like a toast, which is why this sat here through OB-137: what it
+        // shows is a whole AutoJSONExport - a JTextArea, a JButton and a GroupLayout - and all of it
+        // was CONSTRUCTED on a raw thread before being shown modally from the same one. Constructing
+        // Swing components off the event thread is as wrong as showing them.
+        //
+        // Generating the export is the slow part and is the only thing left on the thread. It also
+        // now runs once instead of twice: the old code generated it for the panel and generated it
+        // again for the clipboard.
         new Thread(() ->
+        {
+            String generated = null;
+            Exception failed = null;
+
+            try
             {
+                generated = this.getModel().getAutoLayout().toJSON();
+            }
+            catch (Exception e)
+            {
+                failed = e;
+            }
+
+            final String payload = generated;
+            final Exception threw = failed;
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (threw != null)
+                {
+                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", threw.getMessage());
+                    this.model.log(threw);
+
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorFailedToGenerateOrExportJsonCheckLog"));
+
+                    return;
+                }
+
                 try
                 {
                     JOptionPane.showMessageDialog(
                         this,
-                        new AutoJSONExport(
-                            this.getModel().getAutoLayout().toJSON(),
-                            this,
-                            "autonomy",
-                            "json"
-                        ),
+                        new AutoJSONExport(payload, this, "autonomy", "json"),
                         I18n.t("autolayout.ui.dialogExportGraphStateToJsonFile"),
                         JOptionPane.PLAIN_MESSAGE
                     );
 
                     // Place in clipboard
-                    StringSelection selection = new StringSelection(
-                        this.model.getAutoLayout().toJSON()
-                    );
+                    StringSelection selection = new StringSelection(payload);
                     Toolkit.getDefaultToolkit()
                         .getSystemClipboard()
                         .setContents(selection, selection);
                 }
                 catch (Exception e)
                 {
+                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", e.getMessage());
                     this.model.log(e);
 
-                    this.model.logf(
-                        "autolayout.errorJsonExportFailedWithMessage",
-                        e.getMessage()
-                    );
-
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("autolayout.ui.errorFailedToGenerateOrExportJsonCheckLog")
-                    );
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorFailedToGenerateOrExportJsonCheckLog"));
                 }
-            }).start();
+            });
+        }).start();
     }//GEN-LAST:event_exportJSONActionPerformed
 
     private void showKeyboardHintsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showKeyboardHintsMenuItemActionPerformed
@@ -20049,89 +20197,138 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_activeLocInTitleActionPerformed
 
     private void exportRoutesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportRoutesMenuItemActionPerformed
+
+        // THE PANEL IS BUILT AND SHOWN ON THE EVENT THREAD (VB-B1).
+        //
+        // "showMessageDialog" reads like a toast, which is why this sat here through OB-137: what it
+        // shows is a whole AutoJSONExport - a JTextArea, a JButton and a GroupLayout - and all of it
+        // was CONSTRUCTED on a raw thread before being shown modally from the same one. Constructing
+        // Swing components off the event thread is as wrong as showing them.
+        //
+        // Generating the export is the slow part and is the only thing left on the thread. It also
+        // now runs once instead of twice: the old code generated it for the panel and generated it
+        // again for the clipboard.
         new Thread(() ->
+        {
+            String generated = null;
+            Exception failed = null;
+
+            try
             {
+                generated = this.getModel().exportRoutes();
+            }
+            catch (Exception e)
+            {
+                failed = e;
+            }
+
+            final String payload = generated;
+            final Exception threw = failed;
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (threw != null)
+                {
+                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", threw.getMessage());
+                    this.model.log(threw);
+
+                    JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog"));
+
+                    return;
+                }
+
                 try
                 {
                     JOptionPane.showMessageDialog(
                         this,
-                        new AutoJSONExport(
-                            this.getModel().exportRoutes(),
-                            this,
-                            "routes",
-                            "json"
-                        ),
+                        new AutoJSONExport(payload, this, "routes", "json"),
                         I18n.t("route.ui.dialogExportRouteData"),
                         JOptionPane.PLAIN_MESSAGE
                     );
 
                     // Place in clipboard
-                    StringSelection selection = new StringSelection(
-                        this.model.exportRoutes()
-                    );
+                    StringSelection selection = new StringSelection(payload);
                     Toolkit.getDefaultToolkit()
                         .getSystemClipboard()
                         .setContents(selection, selection);
                 }
                 catch (Exception e)
                 {
-                    this.model.logf(
-                        "autolayout.errorJsonExportFailedWithMessage",
-                        e.getMessage()
-                    );
+                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", e.getMessage());
                     this.model.log(e);
 
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog")
-                    );
+                    JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog"));
                 }
-            }).start();
+            });
+        }).start();
     }//GEN-LAST:event_exportRoutesMenuItemActionPerformed
 
     private void importRoutesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importRoutesMenuItemActionPerformed
+
+        // THE CHOOSER ON THE EVENT THREAD, the work off it (OB-137).
+        //
+        // Adam: "while importing routes from Json, the route table freezes up / looks weird." The
+        // whole of this handler used to run inside `new Thread(...)`, and the first thing it did
+        // there was show a MODAL JFileChooser - a Swing dialog raised from a thread that is not the
+        // event thread, which is the plainest way there is to break Swing's single-thread rule. The
+        // chooser and the window behind it were being laid out and painted from two threads at once.
+        // The same thread also set the menu item enabled and disabled.
+        //
+        // An action handler already runs on the event thread, so the chooser simply stays here. What
+        // belongs off it is the slow half - parsing the file and the full Central Station sync that
+        // follows - and BusyDialog is what this window uses for exactly that: work off the thread,
+        // the finishing on it, and a spinner rather than a frozen table.
+        JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
+
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        final File chosen = fc.getSelectedFile();
+
         this.importRoutesMenuItem.setEnabled(false);
 
-        new Thread(() ->
+        // Held rather than thrown, because the work half must not raise a dialog: that would be the
+        // same violation one layer down.
+        final Exception[] failed = new Exception[1];
+
+        BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
+            () ->
             {
                 try
                 {
-                    JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
-                    int i = fc.showOpenDialog(this);
+                    this.model.importRoutes(new String(Files.readAllBytes(Paths.get(
+                        chosen.getPath()))));
 
-                    if (i == JFileChooser.APPROVE_OPTION)
-                    {
-                        File f = fc.getSelectedFile();
+                    prefs.put(LAST_USED_FOLDER, chosen.getParent());
 
-                        this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
-
-                        prefs.put(LAST_USED_FOLDER, f.getParent());
-
-                        // Ensure route changes are synced
-                        this.syncWithCS2();
-                        this.repaintLayout();
-                        this.repaintLoc();
-                        refreshRouteList();
-                    }
+                    // Ensure route changes are synced
+                    this.syncWithCS2();
                 }
                 catch (Exception e)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("route.ui.errorFailedToImportRoutesCheckLog")
-                    ));
-
-                    this.model.logf(
-                        "route.errorImportFailedWithMessage",
-                        e.getMessage()
-                    );
-
-                    this.model.log(e);
+                    failed[0] = e;
                 }
-
+            },
+            () ->
+            {
                 this.importRoutesMenuItem.setEnabled(true);
 
-            }).start();
+                if (failed[0] != null)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        I18n.t("route.ui.errorFailedToImportRoutesCheckLog"));
+
+                    this.model.logf("route.errorImportFailedWithMessage", failed[0].getMessage());
+
+                    this.model.log(failed[0]);
+
+                    return;
+                }
+
+                this.repaintLayout();
+                this.repaintLoc();
+
+                refreshRouteList();
+            });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
     private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
@@ -20836,7 +21033,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                // VAL-B5: default to No - this deletes a whole track diagram page.
+                YES_NO_OPTS[1]
             );
 
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -21320,35 +21518,63 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
 
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
+
+        // THE PANEL IS BUILT AND SHOWN ON THE EVENT THREAD (VB-B1).
+        //
+        // "showMessageDialog" reads like a toast, which is why this sat here through OB-137: what it
+        // shows is a whole AutoJSONExport - a JTextArea, a JButton and a GroupLayout - and all of it
+        // was CONSTRUCTED on a raw thread before being shown modally from the same one. Constructing
+        // Swing components off the event thread is as wrong as showing them.
+        //
+        // Generating the export is the slow part and is the only thing left on the thread. It also
+        // now runs once instead of twice: the old code generated it for the panel and generated it
+        // again for the clipboard.
         new Thread(() ->
         {
+            String generated = null;
+            Exception failed = null;
+
             try
             {
-                JOptionPane.showMessageDialog(
-                    this,
-                    new AutoJSONExport(
-                        this.getModel().exportLocsToCSV(),
-                        this,
-                        "locs",
-                        "csv"
-                    ),
-                    I18n.t("loc.ui.dialogExportLocomotiveData"),
-                    JOptionPane.PLAIN_MESSAGE
-                );
+                generated = this.getModel().exportLocsToCSV();
             }
             catch (Exception e)
             {
-                this.model.logf(
-                    "loc.errorExportFailedWithMessage",
-                    e.getMessage()
-                );
-                this.model.log(e);
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog")
-                );
+                failed = e;
             }
+
+            final String payload = generated;
+            final Exception threw = failed;
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (threw != null)
+                {
+                    this.model.logf("loc.errorExportFailedWithMessage", threw.getMessage());
+                    this.model.log(threw);
+
+                    JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog"));
+
+                    return;
+                }
+
+                try
+                {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        new AutoJSONExport(payload, this, "locs", "csv"),
+                        I18n.t("loc.ui.dialogExportLocomotiveData"),
+                        JOptionPane.PLAIN_MESSAGE
+                    );
+                }
+                catch (Exception e)
+                {
+                    this.model.logf("loc.errorExportFailedWithMessage", e.getMessage());
+                    this.model.log(e);
+
+                    JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog"));
+                }
+            });
         }).start();
     }//GEN-LAST:event_exportLocsToCSVMenuItemActionPerformed
 

@@ -23,8 +23,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
-| [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
-| [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
+| [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | fixed unvalidated | hands-on testing |
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
@@ -38,8 +37,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
-| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | - |
-| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | - |
+| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | Adam's request to capture a confirmed-good baseline |
+| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 | [MT-153](#mt-153) | 2026-08-24 | A locomotive rename reaches the diagram labels | fixed unvalidated | OB-081, OB-074 |
 | [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
@@ -51,12 +50,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
 | [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
 | [MT-173](#mt-173) | 2026-08-24 | The diagram strip offers Fix, not Start, when the setup has errors | fixed unvalidated | OB-090 |
-| [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092 |
+| [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092, and Adam's request for a real round-trip test |
 | [MT-175](#mt-175) | 2026-08-24 | Capture fills the timetable, and the table shows it filling | fixed unvalidated | MT-149, OB-097 |
-| [MT-176](#mt-176) | 2026-08-24 | What a run did survives renaming or deleting a page | fixed unvalidated | DW-A1, DW-C1 |
-| [MT-177](#mt-177) | 2026-08-24 | Four menu and window details from the testing round | fixed unvalidated | OB-093, OB-094, OB-095, OB-096 |
+| [MT-176](#mt-176) | 2026-08-24 | What a run did survives renaming or deleting a page | fixed unvalidated | DW-A1, DW-C1 (the day review) |
 | [MT-178](#mt-178) | 2026-08-25 | Importing a legacy autonomy file onto a layout with none | fixed unvalidated | OB-106 |
-| [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | fixed unvalidated | OB-098, OB-100, OB-101, OB-104 |
+| [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | needs test | OB-098, OB-100, OB-101, OB-104 |
 | [MT-180](#mt-180) | 2026-08-25 | Three things the interface was not saying | fixed unvalidated | OB-102, OB-103, OB-105 |
 | [MT-181](#mt-181) | 2026-08-25 | Show Inactive Labels | fixed unvalidated | FR-023 |
 | [MT-182](#mt-182) | 2026-08-25 | The signal window opens beside the diagram, not on it | fixed unvalidated | OB-107 |
@@ -66,11 +64,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-186](#mt-186) | 2026-08-25 | Nothing about the railway changed when the last string key went | fixed unvalidated | FR-013 |
 | [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
 | [MT-188](#mt-188) | 2026-08-25 | The blocked-points picker names what it is offering | fixed unvalidated | OB-086 |
-| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | AU-A2 |
-| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | AU-B7 |
-| [MT-191](#mt-191) | 2026-08-25 | An edit that never finished | needs test | OB-108 |
-| [MT-192](#mt-192) | 2026-08-26 | The diagram menu says which square it is about, and opens the editor | needs test | OB-112, FR-026 |
-| [MT-193](#mt-193) | 2026-08-26 | A reversing point that leads nowhere | needs test | OB-113 |
+| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | the whole-application review pass of 2026-08-25 (AU-A2) |
+| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | the three-day review pass of 2026-08-25 (AU-B7) |
+| [MT-191](#mt-191) | 2026-08-25 | An edit that never finished | needs test | OB-108, on your ruling "revert to pre save state" |
+| [MT-192](#mt-192) | 2026-08-26 | The diagram menu says which square it is about, and opens the editor | needs test | OB-112 and FR-026, both about the right-click menu on the track diagram |
+| [MT-193](#mt-193) | 2026-08-26 | A reversing point that leads nowhere | needs test | OB-113, on your note "we need to add a warning if a reversing point leads to nothing else" |
 | [MT-194](#mt-194) | 2026-08-26 | Placing tiles without the diagram blinking | needs test | OB-109 |
 | [MT-195](#mt-195) | 2026-08-26 | Picking what holds a station back by clicking it | needs test | FR-025 |
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
@@ -81,8 +79,15 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-202](#mt-202) | 2026-08-26 | Which conflict the route question is about | fixed unvalidated | LR-2 (2026-08-26 last-reviewer pass) |
 | [MT-203](#mt-203) | 2026-08-27 | Cropping an icon again without reselecting it | fixed unvalidated | FR-032 |
+| [MT-204](#mt-204) | 2026-08-29 | The words in the seven translated bundles | needs test | FR-042 |
+| [MT-205](#mt-205) | 2026-08-29 | Graceful stop, and when Start comes back | needs test | OB-131 |
+| [MT-206](#mt-206) | 2026-08-29 | Which surfaces show the wait mark moving | needs test | OB-135 |
+| [MT-207](#mt-207) | 2026-08-29 | simulate: true, and what a save does to it | needs test | OB-136 |
+| [MT-208](#mt-208) | 2026-08-29 | Importing routes, and the table behind the dialog | needs test | OB-137 |
+| [MT-209](#mt-209) | 2026-08-29 | Double-clicking a station on the running diagram | needs test | OB-138 |
+| [MT-210](#mt-210) | 2026-08-29 | The move cursor over labels that are not drawn | needs test | OB-139 |
 
-Everything else - 137 of 200 - is **fixed validated** and needs nothing from you unless the
+Everything else - 143 of 210 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -6263,6 +6268,7 @@ diagram edit that costs the station- in the current state, I can't validate, but
 ### MT-138 - 2026-08-23 - A split copy's name and its facing disagree on a curve
 
 **Disposition:** superseded
+**From:** UR-16
 
 **Claude, 2026-08-23.** This one is a design decision rather than a fix, because fixing it renames
 Points on your layout.
@@ -6368,6 +6374,7 @@ Control+X drove its protecting signals on the spot" - and it stays fixed.
 ### MT-140 - 2026-08-23 - Bless the baseline once you are happy with the railway
 
 **Disposition:** needs test
+**From:** Adam's request to capture a confirmed-good baseline
 
 **Claude, 2026-08-23.** This is the entry that keeps your own request from being forgotten: "Once we are
 bug free, can you capture confirmed good state along with config files for validation? that is better
@@ -6424,6 +6431,7 @@ You now have the materials- use the current page 1.
 ### MT-141 - 2026-08-23 - Editing a placement while trains are out puts the others back where they started
 
 **Disposition:** fixed unvalidated
+**From:** NR-1
 
 **Claude, 2026-08-23.** A design decision, and I would rather you made it than have me pick.
 
@@ -10345,6 +10353,8 @@ Settled 2026-08-27 after eight passes. The locomotive is now ONE closed path wal
 
 *Run against commit 309b984f, build\classes, compiled 27 Aug 18:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+---
+
 <a id="mt-199"></a>
 
 ### MT-199 - 2026-08-26 - What the captions say in each editor
@@ -10454,6 +10464,13 @@ OB-125 is fixed: the note now carries the view as well as the source path, and t
 
 *Run against commit 309b984f, build\classes, compiled 28 Aug 18:58 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.** Filing note, not a result: this entry (written 2026-08-27) sits above MT-201,
+MT-202 and MT-200 (all written 2026-08-26), against rule 1's append-at-the-bottom order. Rule 5 forbids
+reordering existing entries, so it stays here rather than being moved; flagged so the gap between tag
+order and date order in this stretch is not mistaken for a second, undocumented one.
+
+---
+
 <a id="mt-201"></a>
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard
@@ -10496,6 +10513,8 @@ the whole time.
 
 The exit path now does what the editor's own X has always done. Nothing in the test suite touched that
 method at all, which is why a review found it and not a test.
+
+---
 
 <a id="mt-202"></a>
 
@@ -10557,6 +10576,8 @@ did. Left alone rather than changed quietly; say the word either way.
 **Adam, 2026-08-27 (triage).** Works.
 
 *Run against commit 309b984f, build\classes, compiled 27 Aug 21:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
 
 <a id="mt-200"></a>
 
@@ -10694,3 +10715,118 @@ repair options differ a lot in risk.
 
 *Run against commit 309b984f, build\classes, compiled 27 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+---
+
+<a id="mt-207"></a>
+
+### MT-207 - 2026-08-29 - simulate: true, and what a save does to it
+
+**Disposition:** needs test
+**From:** OB-136
+**Written:** 2026-08-29
+
+`simulate: true` disappeared from the live autonomy configuration. That is a setting you had on, and it
+came back off, which means something wrote the file without carrying it across.
+
+What is being checked is not that the value is right today - it is set correctly now - but that it
+SURVIVES the round trip, because a setting that is silently dropped on save is wrong again the moment
+you touch anything.
+
+1. Confirm simulation is on, in whatever way you normally read it.
+2. Change something unrelated in the autonomy configuration and save.
+3. Read the setting back. It must still be on.
+4. Now restart the application and read it a third time. A value that survives the save but not the
+   reload is the same bug wearing a different coat.
+5. If you can, repeat with the setting turned OFF. A default that quietly reasserts itself is only
+   visible from the side it defaults to.
+
+---
+
+<a id="mt-208"></a>
+
+### MT-208 - 2026-08-29 - Importing routes, and the table behind the dialog
+
+**Disposition:** needs test
+**From:** OB-137
+**Written:** 2026-08-29
+
+You reported that importing routes from JSON made the route table freeze up and look wrong. The cause
+was a modal file chooser opened from a background thread, so the chooser and the window behind it were
+being laid out by two threads at once.
+
+The chooser and everything Swing now run on the event thread; only reading and decoding the file does
+not. A test asserts that shape, and a widened version of it now covers every dialog in the application
+- it found six more methods with the same fault, which are fixed here too. **None of that says it looks
+right to you**, which is the whole of this test.
+
+1. **Import routes from JSON.** Watch the route table while the chooser is open and as it closes. No
+   half-drawn rows, no stale paint, no freeze.
+2. **Cancel** an import rather than completing one. The table should be untouched.
+3. **Import a deliberately broken file.** You should get one clear error, and the routes you had should
+   be exactly as they were.
+4. The same five other places, briefly, since they were fixed the same way and none of them was
+   reported by anyone - each was found by widening the guard:
+   - **Autonomy -> export JSON**, and **export routes**, and **export locomotives to CSV**. Each opens a
+     window with the data in it and copies to the clipboard. Check the window draws properly and the
+     clipboard has the same content.
+   - **Save to file** from inside any of those windows.
+   - A **locomotive function icon**: set a custom one, and use **Reset** on the function editor.
+5. On Reset, read the confirmation before answering. Its default answer was Yes and is now No, because
+   Yes there throws away every custom function and icon on that locomotive.
+
+---
+
+<a id="mt-209"></a>
+
+### MT-209 - 2026-08-29 - Double-clicking a station on the running diagram
+
+**Disposition:** needs test
+**From:** OB-138
+**Written:** 2026-08-29
+
+You asked: "double clicking station label in track viewer should activate that locomotive (as if it was
+selected on the key mappings) if it is mapped, not open the editor."
+
+A double-click used to open the autonomy setup at that station - a deliberate feature from an earlier
+round, and you have ruled the other way. The branch is gone rather than given another condition, so a
+double-click is simply two ordinary clicks again and each one activates.
+
+1. On the **running diagram** (not the editor), double-click a station label whose locomotive **is**
+   mapped to a key. It should jump to that locomotive's mapping page and select its button, and it
+   should NOT open the setup.
+2. Double-click one whose locomotive is **not** mapped. Nothing should happen - no dialog, no error.
+3. **The setup is meant to still be reachable**: right-click the same square. The full editor is there.
+   Confirm that, because if it is not, this fix took away a door instead of moving it.
+4. Try both while **autonomy is running**. The right-click menu explains itself when it has to refuse;
+   the removed branch used to carry a copy of that reasoning and no longer needs to.
+
+---
+
+<a id="mt-210"></a>
+
+### MT-210 - 2026-08-29 - The move cursor over labels that are not drawn
+
+**Disposition:** needs test
+**From:** OB-139
+**Written:** 2026-08-29
+
+You asked: "when show text labels is OFF in the autonomy editor, the cursor over a tile should never
+show the move pointer."
+
+The drag was installed on both the label and the square under it - which you asked for in FR-035,
+because a pill is a small target - but the guard tested whether the caption OBJECT existed, and that is
+true whether or not the text layer is drawn. So with the box unticked every square that had a label went
+on offering to move something invisible.
+
+The drag is not installed at all now, rather than merely losing its cursor: the cursor IS the diagram
+saying a thing can be picked up, and the two must not disagree.
+
+1. In the **autonomy editor**, untick **Text Labels**. Move the pointer over squares that had labels.
+   No move cursor anywhere.
+2. Try to **drag** one of those squares. Nothing should move.
+3. **Tick the box back on.** The move cursor and the drag must both return - the grid is rebuilt on that
+   toggle, which is what this depends on. If they do not come back, this is worse than the bug.
+4. With labels **on**, confirm FR-035 still holds: dragging works from the label AND from the tile under
+   it, not only from the pill.
+
+---

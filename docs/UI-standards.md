@@ -17,7 +17,10 @@ line up down the left edge rather than the heading sitting proud of them.
 
 ## The reference screen
 
-**`GraphEdgeEdit`** already does all of this, and is the thing to copy rather than this table:
+**`RouteEditorFrame`** is the hand-written screen built to this standard, and is the thing to copy
+rather than this table. (`GraphEdgeEdit` used to be the reference screen; it left the build on
+2026-08-21 and survives only as `docs/reference/GraphEdgeEdit.java.txt`, which is where the snippet
+below is preserved from.)
 
 ```java
 label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));   // labels
@@ -28,8 +31,6 @@ button.setFont(new java.awt.Font("Segoe UI", 1, 12));           // buttons
 The second argument is the style - `0` plain, `1` bold - so Semibold is the plain style of its own
 family, and bold is the ordinary family made bold. Windows treats "Segoe UI Semibold" as a separate
 family, which is why it is asked for by name.
-
-`RouteEditorFrame` is the hand-written screen built to this, if a non-form example is more use.
 
 ## Where this does and does not reach
 

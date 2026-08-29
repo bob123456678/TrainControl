@@ -207,6 +207,10 @@ public class testHomeStaging
 
     private static void assertEveryoneHome(Layout layout)
     {
+        assertFalse(layout.getHomeStations().isEmpty(),
+            "precondition: there must be homes to check, or the loop below runs zero times and "
+            + "\"everyone home\" is vacuously true");
+
         for (java.util.Map.Entry<org.traincontrol.base.Locomotive, org.traincontrol.automation.Point> e
             : layout.getHomeStations().entrySet())
         {

@@ -102,7 +102,10 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(210, 0, 0);
 
     /**
-     * Where a group being dragged would land, in a paler shade of the picking colour.
+     * Where a group being dragged would land, outlined in blue.
+     *
+     * DOC-C6: the summary used to say "in a paler shade of the picking colour", which is exactly the
+     * design this rejected - see below.
      *
      * A different COLOUR, not a paler shade of the selection.  The squares a group currently occupies
      * and the squares it would move to are both worth seeing at once, and two reds differing only in
@@ -4208,7 +4211,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
+                TrainControlUI.YES_NO_OPTS[1] // NOT [0]: a reflexive Enter on this one destroys something (VB-B2) // default selection = "Yes"
             );
 
             if (confirmation == JOptionPane.YES_OPTION)
@@ -4669,7 +4672,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0]
+                TrainControlUI.YES_NO_OPTS[1] // NOT [0]: a reflexive Enter on this one destroys something (VB-B2)
             );
 
             if (result != JOptionPane.YES_OPTION) return false;
@@ -4697,7 +4700,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             JOptionPane.PLAIN_MESSAGE,
             null,
             TrainControlUI.YES_NO_OPTS,
-            TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
+            TrainControlUI.YES_NO_OPTS[1] // NOT [0]: a reflexive Enter on this one destroys something (VB-B2) // default selection = "Yes"
         );
 
         return result == JOptionPane.YES_OPTION;
@@ -5117,6 +5120,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         layout.setEdit(false);
 
         parent.setEditLayoutEnabled(true);
+
+        // VAL-C5: every other door out of this window pairs setEditLayoutEnabled(true) with a
+        // repaintLayout() - see TrainControlUI's own layoutEditingComplete. Without it, the Central
+        // Station "Switch"/"Download" menu items - only re-decided from repaintPathLabel, which
+        // repaintLayout calls - stay however guardLayoutMenu last left them greyed while this editor
+        // was open (UXR-A1/VAL-B1), because closing on THIS door never asks for a repaint at all.
+        parent.repaintLayout();
 
         dispose();
     }

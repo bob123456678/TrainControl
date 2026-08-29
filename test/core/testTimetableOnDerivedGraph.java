@@ -66,8 +66,24 @@ public class testTimetableOnDerivedGraph
     /** How many locomotives to place, when the layout has that many stations to spare. */
     private static final int TRAINS = 3;
 
-    /** How long autonomy runs before the graceful stop.  Long enough to capture several moves. */
+    /**
+     * How long autonomy runs, once it has actually dispatched something.  Long enough to capture
+     * several moves.
+     */
     private static final int RUN_SECONDS = 12;
+
+    /**
+     * How long to wait for autonomy to dispatch ANYTHING before giving up (OB-114, OB-132).
+     *
+     * This used to be a flat `Thread.sleep(RUN_SECONDS * 1000L)` with no wait for a first move - fine
+     * on the small hand-built layouts most timetable tests use, where dispatch is close to instant, but
+     * this test derives a 56-point graph from test_layout and does a real path search before its first
+     * command. On a machine running a full battery - several JVMs at once, autonomy competing for CPU -
+     * that search can take much longer than twelve seconds, and a skip after a short fixed sleep cannot
+     * tell "nothing to see here" from "the clock ran out before the railway did anything". Matches the
+     * ceiling testTimetableCaptureThroughARealRun uses for the same reason.
+     */
+    private static final long STARTUP_CEILING_MS = 240000;
 
     private static final long SETTLE_TIMEOUT_MS = 90000;
 
@@ -111,7 +127,10 @@ public class testTimetableOnDerivedGraph
         }
     }
 
-    @Test(timeOut = 300000)
+    // 600s: room for STARTUP_CEILING_MS (240s) plus a run, two settle waits (up to 90s each) and a
+    // replay, without the harness timing this out before the diagnostics in runCaptureAndReplay get a
+    // chance to say why.
+    @Test(timeOut = 600000)
     public void testACapturedTimetableReplaysOverTheSameTrack() throws Exception
     {
         Layout layout = derivedLayout();
@@ -212,7 +231,25 @@ public class testTimetableOnDerivedGraph
         layout.setTimetableCapture(true);
 
         layout.runLocomotives();
-        Thread.sleep(RUN_SECONDS * 1000L);
+
+        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114, the same fix
+        // testTimetableCaptureThroughARealRun applies for the same reason). A derived 56-point graph
+        // does a real path search before its first dispatch, and this test used to give up after a
+        // flat twelve-second sleep - which cannot tell "the fixture has nothing to route" from "the
+        // clock ran out before a loaded machine got to it" (OB-132).
+        boolean moved = false;
+
+        long startupDeadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
+
+        while (!moved && System.currentTimeMillis() < startupDeadline)
+        {
+            if (!layout.getActiveLocomotives().isEmpty()) moved = true;
+            else Thread.sleep(200);
+        }
+
+        // And then let it actually run for a while, which is the part capture records.
+        if (moved) Thread.sleep(RUN_SECONDS * 1000L);
+
         layout.stopLocomotives();
 
         awaitStopped(layout);
@@ -224,8 +261,14 @@ public class testTimetableOnDerivedGraph
         if (captured.isEmpty())
         {
             throw new SkipException(
-                "nothing moved in " + RUN_SECONDS + "s, so there is no timetable to replay - "
-                + describe(layout));
+                "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + "s, so there is no timetable "
+                + "to replay - " + describe(layout) + ".  " + stations.size() + " ordinary station(s) "
+                + "found (" + stationNames(stations) + "); " + startedAt.size() + " locomotive(s) "
+                + "stand on a destination out of " + layout.getLocomotivesToRun().size()
+                + " autonomy knows about.  If this keeps happening on an unloaded machine too, check "
+                + "whether test_layout's active autonomy configuration still leaves enough live "
+                + "destinations for that many trains to move between - several of its points are "
+                + "marked inactive.");
         }
 
         // What was captured, remembered as names, because the replay rebuilds nothing but must drive
@@ -497,6 +540,24 @@ public class testTimetableOnDerivedGraph
         StringBuilder out = new StringBuilder(path.get(0).getStart().getName());
 
         for (Edge e : path) out.append(" > ").append(e.getEnd().getName());
+
+        return out.toString();
+    }
+
+    /**
+     * The names of a list of stations, for a diagnostic message - so a skip names what it found
+     * rather than only how many.
+     */
+    private static String stationNames(List<Point> stations)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (Point p : stations)
+        {
+            if (out.length() > 0) out.append(", ");
+
+            out.append(p.getName());
+        }
 
         return out.toString();
     }

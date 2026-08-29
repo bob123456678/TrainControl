@@ -78,23 +78,18 @@ public class testNonReversibleTrains
         }
     }
 
-    /**
-     * Where the reversing-point rule actually lives, so nobody looks for it here.
-     *
-     * "In full autonomy a train is only ever reversed at a terminus" is a rule about which routes
-     * autonomy CHOOSES, not about which routes are legal - a hand-driven move and the staging planner
-     * may both use a headshunt. It is therefore tested in testLayoutPickPath, beside the other
-     * choosing rules, and a first attempt to put it here took the manual route and the staging run
-     * out with it.
-     */
-    @Test
-    public void testTheReversingRuleIsTestedWhereItLives()
-    {
-        // Nothing to assert: this is a signpost, and the compiler is what keeps it from rotting into
-        // a reference to a class that no longer exists.
-        assertNotNull(testLayoutPickPath.class,
-            "the reversing-point rule is tested in testLayoutPickPath");
-    }
+    // Where the reversing-point rule actually lives, so nobody looks for it here.
+    //
+    // "In full autonomy a train is only ever reversed at a terminus" is a rule about which routes
+    // autonomy CHOOSES, not about which routes are legal - a hand-driven move and the staging planner
+    // may both use a headshunt. It is therefore tested in
+    // test/core/testLayoutPickPath.java's testFullAutonomyDoesNotDriveThroughAReversingPoint, beside
+    // the other choosing rules, and a first attempt to put it here took the manual route and the
+    // staging run out with it.
+    //
+    // This used to be a @Test method whose entire body was assertNotNull(testLayoutPickPath.class,
+    // ...) - a compile-time-guaranteed non-null that asserted nothing and only occupied a slot in the
+    // test count. A comment says the same thing without doing that.
 
     /**
      * One locomotive on several copies of a square is one train in the caption, not several.

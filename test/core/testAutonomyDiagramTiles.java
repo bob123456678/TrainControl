@@ -162,7 +162,13 @@ public class testAutonomyDiagramTiles
 
         TileGraph graph = graph(page);
 
-        for (Exit exit : graph.exits(key("main", 1, 1), Side.S))
+        List<Exit> exits = graph.exits(key("main", 1, 1), Side.S);
+
+        // Floor: without this, exits() returning empty would leave the loop below running zero times
+        // and this test would pass having checked neither the straight nor the diverging exit.
+        assertFalse(exits.isEmpty(), "a switch toe should have exits to check");
+
+        for (Exit exit : exits)
         {
             if (exit.getSide() == Side.N)
             {

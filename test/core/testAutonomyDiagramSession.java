@@ -346,16 +346,24 @@ public class testAutonomyDiagramSession
         org.json.JSONObject rebuilt = new org.json.JSONObject(session.buildConfiguration());
         assertEquals(rebuilt.getInt("minDelay"), 3, "captured globals should feed the next build");
 
+        boolean sawS88Eleven = false;
+
         for (Object o : rebuilt.getJSONArray("points"))
         {
             org.json.JSONObject p = (org.json.JSONObject) o;
 
             if (p.getInt("s88") == 11)
             {
+                sawS88Eleven = true;
+
                 assertEquals(p.getInt("maxTrainLength"), 7);
                 assertEquals(p.getJSONObject("loc").getString("name"), "BR 218");
             }
         }
+
+        // Floor: without this, a rebuild that dropped s88 11 entirely (or renumbered it) would leave
+        // the loop above running zero matching iterations and the test green regardless.
+        assertTrue(sawS88Eleven, "the rebuilt configuration should still contain the captured point");
 
         // capture by NAME lands in that configuration even when another one is active - which is what
         // keeps a refused load from having another configuration's state written over it at exit
@@ -2168,6 +2176,62 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A page the user deliberately re-enabled is silently shut again by the next legacy import.
+     *
+     * The javadoc on {@link #testRunningAgainOverASettledSetupChangesNothing} promises this "must not"
+     * happen, and names the caller as what makes that safe - but AutonomyViewerPanel.java now calls
+     * excludeRepeatedSensorPages() from a second place, at line 1137, when importing a legacy graph into
+     * an EXISTING setup.  That call site is not a different method: it is the same
+     * excludeRepeatedSensorPages() exercised above, called again after the operator has had a chance to
+     * change their mind.
+     *
+     * excludeRepeatedSensorPages() only skips pages ALREADY in the excluded set (:825) - it has no
+     * record of a page having been deliberately turned back on, so re-running it after that happens
+     * treats the page exactly like one that was never looked at, and re-excludes it.
+     *
+     * DISABLED ON PURPOSE (TST-B15, open - see the ratchet test above). This assertion encodes what the
+     * javadoc promises, not what the code does: with the production behaviour above, this test fails,
+     * which is the correct and expected outcome - it is a real bug the 2026-08-28 test-suite review
+     * found, not a test defect. Left here, off, rather than deleted, so the failure is not hidden: it is
+     * a step away from proving the bug, and enabling it is the reproduction. Re-enable once
+     * AutonomyViewerPanel's second call site either preserves a re-enabled page's choice or the "must
+     * not" promise is deliberately relaxed - whichever way Adam's ruling goes - and update this comment
+     * to say which.
+     */
+    @Test(enabled = false)
+    public void testALegacyImportDoesNotReExcludeAPageTheOperatorTurnedBackOn() throws Exception
+    {
+        LayoutDiagram first = pageOnDisk();
+
+        LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
+        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        repeat.setPageId("2");
+        repeat.checkBounds();
+
+        session.open(Arrays.asList(first, repeat));
+
+        // First call site: configuration creation auto-excludes the repeating page.
+        assertEquals(session.excludeRepeatedSensorPages(), Arrays.asList("repeat"),
+            "precondition: creating the setup shuts the repeating page, same as the test above");
+
+        // The operator looks at the page checkboxes and deliberately turns "repeat" back on.
+        session.getStore().setPageExcluded("repeat", false);
+
+        assertFalse(session.getStore().getExcludedPages().contains("repeat"),
+            "precondition: the operator's re-enable did not take");
+
+        // Second call site: a legacy import into the now-existing setup calls the very same method
+        // (AutonomyViewerPanel.java:1137), which is the "second call site" the javadoc says must not
+        // exist.
+        session.excludeRepeatedSensorPages();
+
+        assertFalse(session.getStore().getExcludedPages().contains("repeat"),
+            "a page the operator deliberately re-enabled was re-excluded by the next legacy import - "
+            + "this is the invariant testRunningAgainOverASettledSetupChangesNothing's comment says "
+            + "must not be violated");
+    }
+
+    /**
      * A placement naming a locomotive this database does not have is refused, not written in.
      *
      * The running model does not skip an unknown locomotive - it invalidates the WHOLE layout, by
@@ -3274,6 +3338,10 @@ public class testAutonomyDiagramSession
 
         org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
         org.json.JSONArray points = built.getJSONArray("points");
+
+        assertTrue(points.length() > 0,
+            "precondition: nothing was scanned, so the loop below could not have found the bad pair "
+            + "even if it were still there");
 
         for (int at = 0; at < points.length(); at++)
         {

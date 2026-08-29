@@ -549,11 +549,22 @@ public class testAdvancedRoutes
 
         route.locomotiveRenamed("BR 218", "BR 218 neu");
 
-        for (RouteCommand rc : NodeExpression.toList(route.getConditions()))
+        List<RouteCommand> conditionCommands = NodeExpression.toList(route.getConditions());
+
+        // Floor: without this, an empty condition list would leave the loop below running zero times
+        // and the rename-reaches-conditions check would pass having examined nothing.
+        assertFalse(conditionCommands.isEmpty(),
+            "precondition: the route must still have a condition to check");
+
+        for (RouteCommand rc : conditionCommands)
         {
             assertEquals(rc.getName(), "BR 218 neu",
                 "the condition still names the old locomotive, so this route can never fire again");
         }
+
+        // Same floor for the command list, so a mutation emptying it cannot pass this silently either.
+        assertFalse(route.getRoute().isEmpty(),
+            "precondition: the route must still have a command to check");
 
         for (RouteCommand rc : route.getRoute())
         {

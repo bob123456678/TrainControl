@@ -449,43 +449,42 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
-        
+
+        // ON THE EVENT THREAD (VB-B1), and the thread now holds the only slow thing here.
+        //
+        // The thread existed to hold a modal confirm - everything the answer led to was already being
+        // marshalled straight back with invokeLater, which is the tell: the background thread was
+        // doing no background work at all. What IS slow is syncWithCS2, which talks to the station,
+        // so that is what runs off the event thread now.
         this.resetButton.setEnabled(false);
 
-        new Thread(() ->
-        {  
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
-                I18n.t("loc.ui.dialogConfirmReset"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
-            );
+        int dialogResult = JOptionPane.showOptionDialog(
+            this,
+            I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
+            I18n.t("loc.ui.dialogConfirmReset"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            TrainControlUI.YES_NO_OPTS,
+            // NOT [0] (VB-B2): Yes here throws away every custom function and icon on this
+            // locomotive, so it is not the answer a reflexive Enter should give.
+            TrainControlUI.YES_NO_OPTS[1]
+        );
 
-            if (dialogResult == JOptionPane.YES_OPTION)
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    this.loc.setCustomFunctions(false);
-                    this.loc.unsetLocalFunctionImageURLs();
-                    this.parent.syncWithCS2();
-                    this.parent.repaintLoc(true, null);
-                    this.customIconPath = null;
+        if (dialogResult == JOptionPane.YES_OPTION)
+        {
+            this.loc.setCustomFunctions(false);
+            this.loc.unsetLocalFunctionImageURLs();
+            this.parent.repaintLoc(true, null);
+            this.customIconPath = null;
 
-                    updateFNumber(this.fNo.getSelectedIndex());
-                });
-            }
+            updateFNumber(this.fNo.getSelectedIndex());
 
-            // The button was only disabled to keep a second dialog from opening, so restore its correct state
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                displayCustomizationButtons();
-            });
+            new Thread(() -> this.parent.syncWithCS2()).start();
+        }
 
-        }).start();
+        // The button was only disabled to keep a second dialog from opening, so restore its correct state
+        displayCustomizationButtons();
     }//GEN-LAST:event_resetButtonActionPerformed
 
     private void updateFNumber(int targetFNo)
@@ -518,59 +517,60 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }//GEN-LAST:event_fNoItemStateChanged
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
-        
-        new Thread(() ->
-        {     
-            String currentPath = null;
 
-            if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
+        // NO THREAD AT ALL (VB-B1).
+        //
+        // A modal JFileChooser opened on a raw thread, and so did every setEnabled, the icon preview
+        // and the repaint that followed it. Nothing in this handler is slow: it reads a preference,
+        // opens a chooser, and shows the chosen image. The thread bought nothing and cost correctness.
+        String currentPath = null;
+
+        if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
+        {
+            // Through a URI, because that is what the value IS (validation pass).
+            //
+            // `getLocalFunctionImageURL` returns what `.toUri().toString()` produced twenty lines
+            // below, so `new File(String)` on it makes a path with the scheme still on the front,
+            // which never exists.  currentPath was therefore always null and the chooser never
+            // opened where the current icon lives - a silent no-op since the day it was written.
+            // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
+            // its twin, one class over.
+            File currentIcon = fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+
+            if (currentIcon != null && currentIcon.exists())
             {
-                // Through a URI, because that is what the value IS (validation pass).
-                //
-                // `getLocalFunctionImageURL` returns what `.toUri().toString()` produced twenty lines
-                // below, so `new File(String)` on it makes a path with the scheme still on the front,
-                // which never exists.  currentPath was therefore always null and the chooser never
-                // opened where the current icon lives - a silent no-op since the day it was written.
-                // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
-                // its twin, one class over.
-                File currentIcon = fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
-
-                if (currentIcon != null && currentIcon.exists())
-                {
-                    currentPath = currentIcon.getParent();
-                }
+                currentPath = currentIcon.getParent();
             }
+        }
 
-            this.useCustomFunctionIcon.setEnabled(false);
-            this.deleteCustomIcon.setEnabled(false);
-            
-            JFileChooser fc = new JFileChooser(
-                currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
-            );
+        this.useCustomFunctionIcon.setEnabled(false);
+        this.deleteCustomIcon.setEnabled(false);
 
-            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-            fc.setFileFilter(filter);
+        JFileChooser fc = new JFileChooser(
+            currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+        );
 
-            fc.setAcceptAllFileFilterUsed(false);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+        fc.setFileFilter(filter);
 
-            int i = fc.showOpenDialog(this);
+        fc.setAcceptAllFileFilterUsed(false);
 
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
+        int i = fc.showOpenDialog(this);
 
-                TrainControlUI.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+        if (i == JFileChooser.APPROVE_OPTION)
+        {
+            File f = fc.getSelectedFile();
 
-                customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
-                this.displayCustomFunctionIcon(customIconPath);
-            } 
-            
-            this.useCustomFunctionIcon.setEnabled(true);
-            this.deleteCustomIcon.setEnabled(true);
-            parent.repaintLoc(true, null);
+            TrainControlUI.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
 
-        }).start();
+            customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
+            this.displayCustomFunctionIcon(customIconPath);
+        }
+
+        this.useCustomFunctionIcon.setEnabled(true);
+        this.deleteCustomIcon.setEnabled(true);
+        parent.repaintLoc(true, null);
     }//GEN-LAST:event_useCustomFunctionIconActionPerformed
 
     private void deleteCustomIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCustomIconActionPerformed

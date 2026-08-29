@@ -127,6 +127,102 @@ public class testEveryTestIsInTheBattery
         }
     }
 
+    /**
+     * Every test-SHAPED method carries an annotation, not just the class (TST-C2).
+     *
+     * The check above answers "is this FILE in the battery", by whether `@Test` appears in it
+     * anywhere - which is also true of a file where one method quietly lost its `@Test` and four
+     * others kept theirs. That happened: five methods in one class carried no `@Test` at all and had
+     * never run, and this test's own sibling could not see it, because the class itself was still
+     * correctly listed in `build.xml`.
+     *
+     * Deliberately permissive about WHICH annotation: `@AfterClass`/`@BeforeClass`/`@BeforeMethod`/
+     * etc. on a method named like a test is a lifecycle hook that happens to share the naming
+     * convention (`testTheGoldenLayoutHoldsTogether`'s golden-write check is exactly this, run via
+     * `@AfterClass`), and flagging those would be noise this test would train someone to ignore. What
+     * must never happen is a `public void testX()` with no TestNG annotation above it at all - that
+     * is a method TestNG will never call, whatever it is named.
+     *
+     * MUTATION: removing the annotation from any `public void testX(...)` method, leaving the method
+     * itself in place, fails this and names the file and method.
+     */
+    @Test
+    public void testEveryTestShapedMethodCarriesAnAnnotation() throws Exception
+    {
+        java.util.regex.Pattern method = java.util.regex.Pattern.compile(
+            "^\\s*public\\s+void\\s+(test\\w+)\\s*\\(");
+
+        List<String> missing = new ArrayList<>();
+
+        int methodsChecked = 0;
+
+        for (File folder : new File("test").listFiles())
+        {
+            if (!folder.isDirectory()) continue;
+
+            File[] files = folder.listFiles();
+
+            if (files == null) continue;
+
+            for (File file : files)
+            {
+                if (!file.getName().endsWith(".java")) continue;
+
+                List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+
+                for (int i = 0; i < lines.size(); i++)
+                {
+                    java.util.regex.Matcher m = method.matcher(lines.get(i));
+
+                    if (!m.find()) continue;
+
+                    methodsChecked++;
+
+                    boolean annotated = false;
+
+                    // Walk upward through blank lines, comments and stacked annotations. Anything
+                    // else - a real statement, a closing brace - means there was never an annotation.
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        String line = lines.get(j).trim();
+
+                        if (line.isEmpty() || line.startsWith("//") || line.startsWith("*")
+                            || line.startsWith("/**") || line.endsWith("*/"))
+                        {
+                            continue;
+                        }
+
+                        if (line.startsWith("@"))
+                        {
+                            annotated = true;
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    if (!annotated)
+                    {
+                        missing.add(file.getName() + ":" + m.group(1));
+                    }
+                }
+            }
+        }
+
+        // A pattern that stopped matching - a reformat, a renamed convention - would pass having
+        // examined nothing. Over a thousand methods are named like a test today; 500 is a floor well
+        // under that, not a pin on the count.
+        assertTrue(methodsChecked >= 500,
+            "only " + methodsChecked + " methods named like a test (public void test...) were found "
+            + "under test/ - fewer than the suite is known to have, so this scan ran from the wrong "
+            + "directory or the pattern it looks for has gone stale");
+
+        assertEquals(missing, new ArrayList<String>(),
+            "these methods are shaped like a test - public void test...(...) - but carry no "
+            + "annotation at all, so TestNG never calls them and a green run says nothing about them: "
+            + missing);
+    }
+
     private boolean excused(String name)
     {
         for (String[] each : DELIBERATELY_OUT)

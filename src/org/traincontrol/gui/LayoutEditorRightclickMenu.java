@@ -142,14 +142,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
 
-            selectionMenu.addSeparator();
-
-            JMenuItem clearSelected = new JMenuItem(I18n.t("layout.ui.clearSelection"));
-            clearSelected.addActionListener(event -> edit.clearSelection());
-            clearSelected.setToolTipText("Escape");
-            clearSelected.setEnabled(anyPicked);
-            selectionMenu.add(clearSelected);
-
+            // UXR-C14: there used to be a second item here, "Clear Selection", calling the exact same
+            // edit.clearSelection() as "Deselect All" above - same tooltip ("Escape"), same enable
+            // rule, separated only by a divider that implied they differed.  One action needs one
+            // label; "Deselect All" already sits with the three ways to select, which is where a user
+            // undoing a selection looks first.
             selectionMenu.setToolTipText(I18n.t("layout.ui.tooltipSelection"));
 
             add(selectionMenu);
@@ -249,7 +246,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             )
             {
                 menuItem = new JMenuItem(I18n.t("ui.rotate"));
-                menuItem.addActionListener(event -> 
+                menuItem.addActionListener(event ->
                 {
                     try
                     {
@@ -261,10 +258,16 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     }
                 });
                 menuItem.setToolTipText("Control+R");
+
+                // UXR-C18: add() belongs inside this block.  menuItem is only reassigned to Rotate
+                // here; for a text tile or a symmetric one (no Rotate) it still names the Copy item
+                // added above, and Container.add() on a component already in this menu silently
+                // removes it from its slot and appends it again instead of duplicating it - a no-op
+                // today only because Copy is already last.  Left outside, the next item inserted
+                // between Copy and here would get silently reordered behind Copy.
+                add(menuItem);
             }
 
-            add(menuItem);
-                        
             if (component.isClickable())
             {
                 addSeparator();
@@ -433,7 +436,15 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        menuItem.setToolTipText("Control+I");
+        // UXR-C12: growEdges() itself refuses at MAX_SIZE with layout.ui.errorMaxSizeExceeded, but
+        // the item stayed enabled and live at the ceiling, printing "(60 x 30)" on a control that was
+        // about to refuse.  Mirrors the predicate growEdges() checks, and swaps the tooltip to the
+        // reason for the same treatment Decrease already gets below.
+        boolean canGrow = edit.getMarklinLayout().getSx() < LayoutEditor.MAX_SIZE
+            && edit.getMarklinLayout().getSy() < LayoutEditor.MAX_SIZE;
+        menuItem.setEnabled(canGrow);
+        menuItem.setToolTipText(canGrow ? "Control+I"
+            : I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
         diagramSubmenu.add(menuItem);
 
         menuItem = new JMenuItem(I18n.t("layout.ui.menuDecreaseSize"));
@@ -450,7 +461,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        menuItem.setEnabled(edit.getMarklinLayout().edgesAreEmpty());
+        // UXR-C12: this matched shrinkEdges()'s own check already, but was left with no tooltip at
+        // all, so when it greys out it gives no reason - against the pattern used everywhere else in
+        // this menu (see Delete Page's tooltip split for the same idea).  Reuse the exact sentence
+        // shrinkEdges() itself shows when refused.
+        boolean canShrink = edit.getMarklinLayout().edgesAreEmpty();
+        menuItem.setEnabled(canShrink);
+        menuItem.setToolTipText(canShrink ? null : I18n.t("layout.ui.errorEdgesNotEmpty"));
         diagramSubmenu.add(menuItem);
 
         diagramSubmenu.addSeparator();

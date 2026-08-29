@@ -89,9 +89,10 @@ A **bug** becomes a finding in `docs/reviews/` under that round's prefix, gets f
 an entry in `tests.md` with a new `MT-###` tag and the disposition **needs test** - a bug fix needs a
 repeatable hands-on check that the regression stays fixed, which is exactly what `tests.md` is for.
 
-A **feature request** is tracked directly in the receipt table instead: a **State** column, in the
-same three words `tests.md`'s disposition uses (plus a fourth - see cancelling, below), set by Claude
-the same way. It gets an `MT-###` tag only if the eventual work turns out to need a genuine repeatable
+A **feature request** is tracked directly in the receipt table instead: a **State** column, in
+three of the four words `tests.md`'s disposition uses (not **superseded**, which has no meaning
+for a request nobody has coded yet), plus a fourth of its own - see cancelling, below - set by
+Claude the same way. It gets an `MT-###` tag only if the eventual work turns out to need a genuine repeatable
 hands-on test the way a bug fix does - not as the default. `MT-094` is what the default used to
 produce: a feature nobody had even designed yet, filed the moment it was picked up as if it were a
 regression test, sitting in the Tests ledger indistinguishable from one. See its own entry for the
@@ -173,7 +174,8 @@ by finding the `MT-###` row it got picked up into, indistinguishable there from 
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
 items of that kind: pending ones, and picked-up ones tracked directly by their own **State** -
-colored the same way the Tests tab colors a disposition, same three words (plus **declined**).
+colored the same way the Tests tab colors a disposition, three of its four words (not
+**superseded**) plus **declined**.
 
 **A picked-up item promoted to an `MT-###` tag hides under the `open` filters and reappears under
 `everything, validated included`.** While it's active work its home is the Tests tab, not here - the
@@ -198,8 +200,8 @@ windows can sit side by side.
 **What it writes, and to where.** A result is appended under that entry's `#### Comments` in
 `tests.md` - dated, signed, and stamped with the commit it was run against - the same shape a comment
 typed by hand would take. Anything else noticed, and everything from **New issue**, becomes a
-structured `OB-###` item in [issues.md](issues.md), cross-referenced back to the test it came from if
-it came from one.
+structured `OB-###` (bug) or `FR-###` (feature request) item in [issues.md](issues.md),
+cross-referenced back to the test it came from if it came from one.
 
 **What it deliberately never writes: the Disposition line, or the ledger.** Rule 4 above says the
 disposition is Claude's to set, and that stays true whether the comment arrived by hand or through the
@@ -229,17 +231,23 @@ py -3 docs\manual-tests\triage.py verify-ledger          # ledger table vs. actu
 Structured entries parse in full - tag, dates, disposition, from, the instruction, the comments, and
 for an issue, its kind and what it was raised from. Anything hand-written that does not match the
 structured shape (a freeform note dropped straight into the Inbox, say) is still returned, under
-`"freeform"`, rather than silently dropped - the parser is exhaustive, not lossy, even where it cannot
-be exact.
+`"freeform_pending"` (with `"has_freeform_pending"` as a quick boolean check), rather than silently
+dropped - the parser is exhaustive, not lossy, even where it cannot be exact.
 
 `verify-ledger` is read-only: it reports which open entries are missing from the ledger table, which
 ledger rows no longer belong there, and where a row's Disposition, Date, What or From has drifted from
 the entry itself - plus a duplicate `MT-###`/issue ref anywhere in either file, a duplicate ledger row,
-a ledger link whose href doesn't point at the tag it names, and a Disposition that isn't one of rule 4's
-four words. It does not rewrite the table - the ledger allows hand notes on individual rows (crossing
+a ledger link whose href doesn't point at the tag it names, a Disposition that isn't one of rule 4's
+four words, a malformed ledger row, an Inbox entry with no Kind, and a `tests.md` entry with no rule-3
+separator. It does not rewrite the table - the ledger allows hand notes on individual rows (crossing
 something out, adding a comment), and a wholesale regeneration would erase them. Use it to know exactly
 what to change, then change it the same way as always. Exits 3, not 1, when the ledger merely isn't
 clean - kept apart from 1 (an actual error running the check) so a script can tell the two apart.
+
+Also undocumented above: `tests` takes an optional `TAG` positional to look up one entry (same as
+`test TAG`, from the CLI's `tests --open`/`--all` list), `tests --full`/`--brief` toggles whether body
+text comes back with it, and `issues --all` also returns the picked-up receipt table, not just the
+pending Inbox.
 
 ---
 

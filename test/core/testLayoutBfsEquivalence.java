@@ -385,8 +385,10 @@ public class testLayoutBfsEquivalence
         Point foreign = other.getPoint("NotInG");
         Point end = g.layout.getPoint(g.names.get(0));
 
-        boolean currentThrew = false;
-        boolean legacyThrew = false;
+        String expectedMessage = I18n.f("autolayout.errorInvalidPointsSpecified");
+
+        String currentMessage = null;
+        String legacyMessage = null;
 
         try
         {
@@ -394,7 +396,7 @@ public class testLayoutBfsEquivalence
         }
         catch (Exception e)
         {
-            currentThrew = true;
+            currentMessage = e.getMessage();
         }
 
         try
@@ -403,11 +405,18 @@ public class testLayoutBfsEquivalence
         }
         catch (Exception e)
         {
-            legacyThrew = true;
+            legacyMessage = e.getMessage();
         }
 
-        assertTrue(currentThrew, "a point from another layout must be rejected");
-        assertTrue(legacyThrew, "the previous implementation rejected it too");
+        // Not just "something was thrown" - both implementations must throw the SAME guard with the
+        // SAME message.  A foreign point NPEing downstream instead (e.g. because the null check was
+        // deleted) would still set the message variable to a non-null string here, so checking for
+        // "thrown" alone would not catch it; checking the exact message would.
+        assertEquals(currentMessage, expectedMessage,
+            "a point from another layout must be rejected by Layout.bfs's own invalid-points guard, "
+            + "not some other exception (e.g. a downstream NullPointerException)");
+        assertEquals(legacyMessage, expectedMessage,
+            "the previous implementation must reject it the same way");
     }
 
     private static String[][] topologies()

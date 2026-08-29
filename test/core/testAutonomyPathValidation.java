@@ -264,6 +264,14 @@ public class testAutonomyPathValidation
         boolean[] corrupting = startCorrupting(tp);
 
         MarklinLocomotive loc = dummyLoc();
+
+        // TST-C13: a freshly-built dummyLoc() already sits at speed 0, so asserting getSpeed() == 0
+        // afterwards proved nothing about handleMisconfiguredPath's loc.setSpeed(0) (Layout.java:2772) -
+        // deleting that production line would leave this test green.  Giving the locomotive a nonzero
+        // speed here means the closing assertion below can only pass if the guard actually stopped it.
+        loc.setSpeed(30);
+        assertTrue(loc.getSpeed() == 30, "precondition: the locomotive must be moving before the fault");
+
         boolean result;
 
         try
@@ -283,7 +291,9 @@ public class testAutonomyPathValidation
         assertTrue(model.getPowerState(), "Power must stay on after a misconfigured path");
 
         // The locomotive is stopped and the failed path's locks are released
-        assertTrue(loc.getSpeed() == 0, "The locomotive must be stopped");
+        assertTrue(loc.getSpeed() == 0,
+            "The locomotive must be stopped - it was moving at 30 before the fault, so this can only "
+                + "pass if handleMisconfiguredPath actually stopped it");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The failed path's edge must be released");
     }
 

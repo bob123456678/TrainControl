@@ -25,8 +25,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * layout every station pair is reachable, so it distinguishes nothing at all.
  *
  * So this asks the running model the question a train asks - getPossiblePaths - and writes down every
- * answer with its intermediate points, for a person to check.  A REPORT, not an assertion: it fails
- * only if a configuration will not build.  What the routes ought to be is Adam's to say.
+ * answer with its intermediate points, for a person to check.  Mostly a REPORT, not an assertion: it
+ * fails if a configuration will not build, and each method also asserts the one floor it can state
+ * without pre-judging Adam's layout - that the configuration it just built is valid, and (for the live
+ * derived configuration specifically, where zero routes would mean the router or the config broke
+ * rather than that the railway genuinely has none) that it offers at least one route.  What the routes
+ * actually ARE beyond that floor is still Adam's to read out of the written report.
  *
  * Uses the real control station in simulation, so the accessories are the layout's own and the router
  * is the one that actually runs.  An earlier attempt built the graph by hand and produced three edges,
@@ -61,7 +65,21 @@ public class testRouteInventory
     @Test
     public void testDerivedRoutes() throws Exception
     {
-        report("1-derived-active", build(null));
+        RouteInventoryResult result = report("1-derived-active", build(null));
+
+        assertTrue(result.valid,
+            "the live, currently-active derived configuration must build into a valid layout");
+
+        // The one floor this report-generator can assert without pre-judging what Adam's routing
+        // ought to be: the live setup is not a degenerate one, so SOME route must be offered.  A
+        // getPossiblePaths (or config-building) regression that returns nothing for every station
+        // would otherwise leave all eight methods in this class green while offering nothing at all.
+        assertTrue(result.hasLocomotive,
+            "precondition: no locomotive found in the database to probe with");
+        assertTrue(result.offered > 0,
+            "the live active configuration offered zero routes from any of its "
+                + result.destinations + " destinations - either the router or the derived "
+                + "configuration is broken, since this layout has always offered routes");
     }
 
     @Test
@@ -71,7 +89,9 @@ public class testRouteInventory
 
         if (!bundle.isFile()) return;
 
-        report("2-stuck-1b", build(bundle));
+        RouteInventoryResult result = report("2-stuck-1b", build(bundle));
+
+        assertTrue(result.valid, "tc_backup/Autonomy 1b.json must build into a valid layout");
     }
 
     @Test
@@ -81,7 +101,9 @@ public class testRouteInventory
 
         if (!bundle.isFile()) return;
 
-        report("4-bundle-1d", build(bundle));
+        RouteInventoryResult result = report("4-bundle-1d", build(bundle));
+
+        assertTrue(result.valid, "tc_backup/Autonomy 1d.json must build into a valid layout");
     }
 
     @Test
@@ -91,7 +113,9 @@ public class testRouteInventory
 
         if (!bundle.isFile()) return;
 
-        report("5-bundle-1e", build(bundle));
+        RouteInventoryResult result = report("5-bundle-1e", build(bundle));
+
+        assertTrue(result.valid, "tc_backup/Autonomy 1e.json must build into a valid layout");
     }
 
     @Test
@@ -101,8 +125,11 @@ public class testRouteInventory
 
         if (!hand.isFile()) return;
 
-        report("3-hand-authored-2.8.1",
+        RouteInventoryResult result = report("3-hand-authored-2.8.1",
             new String(Files.readAllBytes(hand.toPath()), StandardCharsets.UTF_8));
+
+        assertTrue(result.valid,
+            "test_layout/config/autorun/autonomy.json must build into a valid layout");
     }
 
     /**
@@ -162,12 +189,38 @@ public class testRouteInventory
     }
 
     /**
+     * What one call to {@link #report} actually found, so a caller can assert on it instead of only
+     * writing it to a file for a person to read later.
+     *
+     * TST-B5: this class used to compute all of this and throw every bit of it away except the file on
+     * disk, which is how seven of its eight {@code @Test} methods could pass without checking anything.
+     */
+    private static final class RouteInventoryResult
+    {
+        final boolean valid;
+        final boolean hasLocomotive;
+        final int destinations;
+        final int offered;
+        final int barren;
+
+        RouteInventoryResult(boolean valid, boolean hasLocomotive, int destinations, int offered,
+            int barren)
+        {
+            this.valid = valid;
+            this.hasLocomotive = hasLocomotive;
+            this.destinations = destinations;
+            this.offered = offered;
+            this.barren = barren;
+        }
+    }
+
+    /**
      * Places one locomotive at each destination in turn and writes down every route offered from there.
      *
      * One at a time on purpose: with several placed, every answer also depends on where the others are
      * standing, and the question here is what the TRACK allows.  Occupancy is a different test.
      */
-    private void report(String label, String configuration) throws Exception
+    private RouteInventoryResult report(String label, String configuration) throws Exception
     {
         StringBuilder out = new StringBuilder("# ").append(label).append("\n\n");
 
@@ -189,7 +242,7 @@ public class testRouteInventory
 
             write(label, out);
 
-            return;
+            return new RouteInventoryResult(false, false, 0, 0, 0);
         }
 
         List<Point> destinations = new ArrayList<>();
@@ -217,7 +270,7 @@ public class testRouteInventory
         if (loc == null)
         {
             write(label, out.append("no locomotive in the database\n"));
-            return;
+            return new RouteInventoryResult(true, false, destinations.size(), 0, 0);
         }
 
         out.append("probe locomotive: ").append(loc.getName()).append("\n\n");
@@ -253,6 +306,8 @@ public class testRouteInventory
            .append(barren).append(" stations offer nothing\n");
 
         write(label, out);
+
+        return new RouteInventoryResult(true, true, destinations.size(), offered, barren);
     }
 
     /**
@@ -363,12 +418,9 @@ public class testRouteInventory
 
         StringBuilder out = new StringBuilder("# what the UI would show, live setup\n\n");
 
-        if (layout == null || !layout.isValid())
-        {
-            write("7-as-the-ui-sees-it", out.append("CONFIGURATION INVALID: ")
-                .append(layout == null ? "no layout" : layout.getInvalidReason()).append("\n"));
-            return;
-        }
+        assertTrue(layout != null && layout.isValid(),
+            "the live derived configuration must build into a valid layout: "
+                + (layout == null ? "no layout" : layout.getInvalidReason()));
 
         // how many edges carry a length at all - the tile lengths are supposed to feed these
         int withLength = 0;
@@ -453,12 +505,16 @@ public class testRouteInventory
 
         org.traincontrol.automationui.GraphReducer reducer = session.getReducer();
 
+        // TST-B5: reducer.getEdges() is the whole reason this test exists - if the reducer stops
+        // producing lock edges for the live layout, there is nothing left below to write down or to
+        // debug, and that is itself the regression this floor catches.
+        assertFalse(reducer.getEdges().isEmpty(),
+            "the live layout's reducer produced no edges at all - nothing to report on");
+
         StringBuilder out = new StringBuilder("# what the lock edge shares\n");
 
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            String name = session.getStationIndex() == null ? "" : "";
-
             out.append(edge.getStart()).append("  ->  ").append(edge.getEnd()).append("\n");
 
             for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())

@@ -60,11 +60,13 @@ public class LocIconCropDialog extends JDialog
     /**
      * How far the picture may be enlarged beyond the point where it just fills the crop window.
      *
-     * Eight is generous on purpose.  The case this feature exists for is a locomotive that occupies a
-     * small part of a large photograph, and a limit that stops before the user has it filling the
-     * window would leave the feature unable to do the one job it was asked for.  The picture goes
-     * soft long before this, which is its own signal that the crop is too small - a number cannot
-     * tell the user that as well as their own eyes can.
+     * DOC-C2: this used to be 8, and eight was "generous on purpose" for the case this feature exists
+     * for - a locomotive that occupies a small part of a large photograph, where a limit that stops
+     * before the user has it filling the window would leave the feature unable to do the one job it
+     * was asked for. Raised to 32 at Adam's request ("add more zoomability" - see getScale()'s own
+     * javadoc, which already carries the current number). The picture goes soft long before this,
+     * which is its own signal that the crop is too small - a number cannot tell the user that as well
+     * as their own eyes can.
      */
     private static final double MAX_ZOOM = 32.0;
 
@@ -304,7 +306,12 @@ public class LocIconCropDialog extends JDialog
     public interface ZoomObserver
     {
         /**
-         * @param fraction the new zoom, 0 (the whole crop window just filled) to 1 (fully zoomed in)
+         * DOC-C24: 0 is MIN_ZOOM, not "the whole crop window just filled" - MIN_ZOOM is 0.5, so 0 is
+         * HALF the picture fitting the panel, with white on every side (see CropPanel's own
+         * zoomFraction javadoc, which already says this correctly).
+         *
+         * @param fraction the new zoom, 0 (MIN_ZOOM of the picture fitting the panel) to 1 (fully
+         *                 zoomed in, at MAX_ZOOM)
          */
         void zoomChanged(double fraction);
     }
@@ -447,7 +454,8 @@ public class LocIconCropDialog extends JDialog
         /**
          * @param source the picture to crop, must not be null
          * @param outWidth width of the icon that will be produced - only its RATIO to outHeight is
-         *        used here, and it is what locks the shape of the crop window
+         *        used here, and it is what the crop window's shape STARTS at (DOC-C24: not "locks" -
+         *        dragging an edge changes {@link #frameAspect} away from this ratio; see cropWindow())
          * @param outHeight height of the icon that will be produced
          */
         public CropPanel(BufferedImage source, int outWidth, int outHeight)
@@ -629,8 +637,16 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The crop window, in panel coordinates: centred, inset by {@link #WINDOW_MARGIN}, and locked
-         * to the ratio the locomotive icon is displayed at.
+         * The crop window, in panel coordinates: centred, and shaped to {@link #frameAspect} - the
+         * icon's own ratio until an edge has been dragged, and whatever ratio was dragged to after.
+         *
+         * DOC-C24: this used to say "inset by WINDOW_MARGIN, and locked to the ratio the locomotive
+         * icon is displayed at", which held only before either kind of pull. `largestWindow` is the
+         * one that is actually inset by {@link #WINDOW_MARGIN} - this returns that box scaled down by
+         * {@link #frameSize} (1.0 until the WINDOW itself has been shrunk), so once {@code frameSize}
+         * is below 1 the returned window sits well inside the margin rather than against it; and once
+         * an edge has been dragged, {@link #frameAspect} is whatever ratio that produced, not the
+         * icon's.
          *
          * Recomputed on every use rather than cached, because it depends on the panel size and the
          * panel is resizable.  It is a handful of arithmetic against a repaint that scales an image.

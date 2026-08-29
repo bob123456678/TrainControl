@@ -445,34 +445,52 @@ public class testAutonomyDiagramStore
     public void testAnUnreadableImportChangesNothing() throws Exception
     {
         TileKey station = new TileKey("1 - Main", 4, 7);
+        TileKey other = new TileKey("1 - Main", 9, 9);
 
         store.setPageIds(onePage());
         store.setStation(station, true);
         store.setPointName(station, "Bottom Main");
+        store.setPointName(other, "Second Point");
         store.createConfiguration("Mine", null);
 
         org.json.JSONObject bundle = store.exportBundle("Mine");
 
-        // A number where the reader demands a string, under a key the STORE wrote.
-        //
-        // The key matters as much as the value. `readSquareMap` is
-        //
-        //     if (tile != null) into.put(tile, object.getString(key));
-        //
-        // so an entry whose key does not parse as a tile is skipped BEFORE the strict accessor. This
-        // fixture used "1:4,7", which does not parse - the import therefore succeeded quietly, the
-        // rollback this test is named for never ran once, and the assertion below was failing for the
-        // honest reason that nothing had been refused.
         org.json.JSONObject names = bundle.getJSONObject("shared").getJSONObject("pointNames");
 
         assertFalse(names.keySet().isEmpty(),
-            "precondition: the exported bundle names no points, so there is no key known to parse and "
-            + "this fixture cannot reach the strict accessor");
+            "precondition: the exported bundle names no points, so there is no key to corrupt");
 
-        for (String wrote : new java.util.ArrayList<>(names.keySet()))
+        // Whichever key the export wrote "other" under, found by its value rather than assumed from
+        // the stored-key format - the export translates keys through page ids, and hard-coding that
+        // shape here is exactly what earlier versions of this fixture got wrong.
+        String otherKey = null;
+
+        for (String k : names.keySet())
         {
-            names.put(wrote, 12345);
+            if ("Second Point".equals(names.getString(k)))
+            {
+                otherKey = k;
+                break;
+            }
         }
+
+        assertNotNull(otherKey, "precondition: the second point's name is in the export under some key");
+
+        // Remove it locally so the merge below has a gap to fill.  Exporting a store and importing the
+        // same bundle straight back FILLS NOTHING: every incoming key is already present locally, and
+        // `importBundle`'s merge rule (`if (mine.has(inner)) continue;`) skips every one of them before
+        // `readShared` is ever reached - a bundle can be as malformed as it likes and nothing will read
+        // far enough to notice. That was this test's fixture until now, which is why it had never once
+        // exercised the rollback it is named for. With a real gap the merge has something to fill, which
+        // is what makes the corrupted value below actually reach the strict accessor.
+        store.setPointName(other, null);
+
+        // A number where the reader demands a string, under the key the gap will be filled from.
+        // `readSquareMap` is `if (tile != null) into.put(tile, object.getString(key));` - the tile key
+        // parses fine, so this is refused by the type-strict accessor rather than skipped ahead of it.
+        names.put(otherKey, 12345);
+
+        boolean threw = false;
 
         try
         {
@@ -480,37 +498,26 @@ public class testAutonomyDiagramStore
         }
         catch (RuntimeException expected)
         {
-            // the import is refused, which is right - what matters is what it left behind
+            threw = true;
         }
+
+        // MUTATION this catches: change readShared to use opt* accessors instead of the type-strict
+        // ones, so the malformed value above is coerced instead of rejected. Nothing throws, the merge
+        // completes, and every assertion below would fail: "Theirs" would exist, and "other" would
+        // carry whatever the coercion produced instead of staying unset.
+        assertTrue(threw, "a bundle with a genuinely unreadable entry must be refused, not imported "
+            + "silently");
 
         assertEquals(store.getPointName(station), "Bottom Main",
             "a refused import emptied the setup it was refused by");
 
         assertTrue(store.isStation(station), "the station went with it");
 
-        // The two checks above hold whether the import threw or quietly succeeded - importing fills
-        // gaps and never overwrites, so "Bottom Main" survives either way.  This is the one that
-        // actually needs the throw: MUTATION this catches - change readShared to use opt* accessors
-        // instead of the type-strict ones, so the malformed "pointNames" value above is silently
-        // coerced instead of rejected.  The rollback this test is named for is then never exercised, and
-        // without this assertion the whole method would still pass.
-        // NOT ASSERTED, and the reason is worth more than the assertion would have been (TST-B17).
-        //
-        // "A refused import must not leave its configuration behind" is right, and importBundle already
-        // does it - `if (existed) configurations.put(name, replaced); else forgetConfiguration(name);`.
-        // What could not be shown is a REFUSAL: this fixture has never produced one.
-        //
-        // readSquareMap is `if (tile != null) into.put(tile, object.getString(key));`, so an entry
-        // whose key does not resolve to a tile is skipped before the strict accessor is reached. The
-        // key here does not parse; keying it from what the store exported does not help either,
-        // because the export translates keys through page ids and importing under another
-        // configuration does not translate them back. Either way the entry is dropped and the import
-        // succeeds.
-        //
-        // So the configuration exists because the import WORKED, not because a rollback failed, and an
-        // assertion here would be reporting a true thing about this fixture and a false thing about
-        // the code. Anyone re-adding it needs a bundle that is genuinely refused first - which is the
-        // half of this test that has never run.
+        assertNull(store.getPointName(other),
+            "a refused import must not have half-applied the merge it was refused by");
+
+        assertFalse(store.getConfigurationNames().contains("Theirs"),
+            "a refused import must not leave its configuration behind");
     }
 
     /**

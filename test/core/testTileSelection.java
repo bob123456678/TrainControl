@@ -70,6 +70,11 @@ public class testTileSelection
             "a box dragged up and to the left must select what the same box dragged down and to the "
             + "right does");
 
+        // Floor: without this, addRectangle producing nothing would leave both sizes at 0 - the
+        // equality above would hold and the loop below would run zero times, proving nothing about
+        // which squares actually got selected.
+        assertFalse(forwards.isEmpty(), "precondition: the box must actually select some squares");
+
         for (TileSelection.At at : forwards.all())
         {
             assertTrue(backwards.contains(at.getX(), at.getY()));

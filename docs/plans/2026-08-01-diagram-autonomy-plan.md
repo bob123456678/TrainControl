@@ -1,7 +1,11 @@
 # Autonomy on the Track Diagram
 
-Design plan. Started 2026-07-31, substantially revised 2026-08-01. Not yet approved for
-implementation.
+Design plan. Started 2026-07-31, substantially revised 2026-08-01.
+
+**Status: approved and implemented.** Phase 1 shipped and the branch this work landed on is named
+after this plan. Phase 2 (deleting the disabled old UI) is in progress: `GraphViewer` and
+`GraphEdgeEdit` are gone from `src/`, while `GraphLocAssign` is still live - see
+`docs/reference/README.md` for what remains and why.
 
 Read the top three sections first - **Delivery**, **Revised architecture**, and the rulings that
 follow them. The **PARKED** section further down is the original anchor-and-trace draft; it is kept

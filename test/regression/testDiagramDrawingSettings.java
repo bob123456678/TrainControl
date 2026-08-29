@@ -240,6 +240,14 @@ public class testDiagramDrawingSettings
             "the autonomy editor now reads the ordinary diagram's preference, which is exactly what "
             + "Adam asked not to happen - the editor is where these are being decided, and it has its "
             + "own control for them");
+
+        // The METHOD NAME is not the coupling; the STORED PREFERENCE is (TST-C16). Reading
+        // DIAGRAM_RESTRICTION_ARROWS out of Preferences directly - skipping the accessor entirely -
+        // would couple the two windows exactly as before while leaving the check above satisfied.
+        assertFalse(panel.contains("DIAGRAM_RESTRICTION_ARROWS"),
+            "the autonomy editor now reads the viewer's stored preference key directly, bypassing "
+            + "diagramShowsRestrictionArrows() rather than calling it - the coupling Adam asked to "
+            + "avoid, reached by a different door");
     }
 
     /**

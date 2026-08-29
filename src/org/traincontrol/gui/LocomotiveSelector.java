@@ -358,14 +358,10 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_LocFilterBoxKeyReleased
 
     private void LocFilterBoxKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyTyped
-        if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
-        {
-            this.setVisible(false);
-        }
-        else
-        {
-            filterLocList();
-        }
+        // UXR-C21: getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so the Escape branch this
+        // used to have could never fire - dead code, not a missing feature. Escape is already handled
+        // for this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
+        filterLocList();
     }//GEN-LAST:event_LocFilterBoxKeyTyped
 
     private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized

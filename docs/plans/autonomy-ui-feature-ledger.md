@@ -9,9 +9,12 @@ Sources: `GraphRightClickPointMenu`, `GraphRightClickGeneralMenu`, `GraphEdgeEdi
 **Status key** — DONE: reachable in the new UI. PARTIAL: possible but awkward or incomplete.
 TODO: no way to do it yet. N/A: deliberately dropped, with the reason.
 
-Last updated 2026-08-16, after a three-way review. Rows marked **(corrected)** were wrong before
-that review: this ledger claimed DONE for things that were broken or absent, which is worse than
-having no ledger. What follows is what the review verified, not what was intended.
+Last updated 2026-08-24. Rows marked **(corrected)** were wrong before the 2026-08-16 three-way
+review: this ledger claimed DONE for things that were broken or absent, which is worse than
+having no ledger. What follows is what the review verified, not what was intended. The old
+`GraphViewer` window itself was deleted on 2026-08-21; this ledger is kept open because it is
+still the only inventory of what that window could do that the new diagram-based UI does not yet
+match.
 
 ## Points
 
@@ -71,7 +74,7 @@ should be reported as such rather than patched by hand here.
 | Graceful stop | general right-click / button | Unchanged | DONE |
 | Watch trains move | graph node/edge colouring | Diagram overlay, same colours | DONE |
 | See which paths are locked | graph edge colouring | Diagram overlay (locked state) | DONE |
-| Train icon on the diagram | - | **Wanted, comes last** | TODO |
+| Train icon on the diagram | - | Drawn on the diagram overlay | DONE |
 
 ## Display options
 
@@ -125,6 +128,5 @@ Found by review; none has a new home and none has a ruling.
    diagram than on a graph, where they existed to fight clutter, but "hide inactive" is a genuine want
    on a layout with many parking berths.
 4. **Exclusions are not drawn** - a point with excluded locomotives looks like any other.
-5. **Train icon on the diagram** - author has said this comes last.
-6. **Reading the derived graph** - a file export in debug mode only. May want to open in the old
-   viewer before that window is deleted, or become a table.
+5. **Reading the derived graph** - a file export in debug mode only. The old `GraphViewer` window
+   this could have opened in is gone (deleted 2026-08-21); the remaining option is a table.

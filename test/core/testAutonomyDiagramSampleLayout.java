@@ -253,9 +253,20 @@ public class testAutonomyDiagramSampleLayout
     {
         Set<Integer> out = new LinkedHashSet<>();
 
-        for (ReducedPoint p : reducer.getPoints().values())
+        // TST-A2: this used to be the same loop as `derived` in testEverySensorTheLegacyConfigUsesIsDerived
+        // - reducer.getPoints().values() - which made `missing` unconditionally empty by construction:
+        // whatever was not in `derived` could not be in `inScope` either, since both came from the same
+        // map. Read straight off the tile graph instead: graph.getFeedbackTiles() is every sensor drawn
+        // on a page autonomy is looking at (excluded pages are already left out of `graph`), worked out
+        // from the diagram itself and never touching reducer.getPoints() or reduce() at all. That makes
+        // this independent of whatever GraphReducer derived, so a page that fails to produce Points no
+        // longer takes its own sensors out of scope along with it.
+        for (TileKey tile : graph.getFeedbackTiles())
         {
-            out.add(p.getS88());
+            org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(tile);
+
+            // Same convention GraphReducer.buildPoints() uses: feedback is keyed on the raw address.
+            if (c != null) out.add(c.getRawAddress());
         }
 
         return out;
@@ -1147,6 +1158,12 @@ public class testAutonomyDiagramSampleLayout
             assertTrue(names.add(name), "duplicate Point name in generated output: " + name);
         }
 
+        // TST-C8: without this, a build that emitted points but no edges at all - a defect in
+        // AutonomyBuilder itself, not something testTheDiagramReducesToSomething would catch, since that
+        // checks reducer.getEdges() rather than this builder's JSON output - would make the loop below
+        // run zero times and pass having checked nothing.
+        assertTrue(parsed.getJSONArray("edges").length() > 0, "no edges in generated output to check");
+
         // and every edge must reference Points that exist
         for (Object o : parsed.getJSONArray("edges"))
         {
@@ -1181,17 +1198,61 @@ public class testAutonomyDiagramSampleLayout
             if (!excludedPages.contains(page.getName())) pageOrder.add(page.getName());
         }
 
-        write("autonomy-derived.json",
-            new AutonomyBuilder(reducer, null).withCoordinatesFromTiles(pageOrder).build());
+        String closed = new AutonomyBuilder(reducer, null).withCoordinatesFromTiles(pageOrder).build();
+        String open = new AutonomyBuilder(reduceWithEveryBranchOpen(), null)
+            .withCoordinatesFromTiles(pageOrder).build();
 
-        write("autonomy-derived-open.json",
-            new AutonomyBuilder(reduceWithEveryBranchOpen(), null)
-                .withCoordinatesFromTiles(pageOrder).build());
+        write("autonomy-derived.json", closed);
+        write("autonomy-derived-open.json", open);
+
+        // TST-C12: the writes above are a dump for a person to read, not a check - so assert the one
+        // property the export exists to have. Without this, a mutation making
+        // withCoordinatesFromTiles(pageOrder) return (0,0) for every tile (or ignore pageOrder
+        // entirely) would still produce two well-formed, non-empty files - the JSON is valid either
+        // way - and this test would stay green while the rendered graph collapsed onto one point.
+        assertPlacedByTile(closed);
+        assertPlacedByTile(open);
     }
 
+    /**
+     * Asserts that withCoordinatesFromTiles actually spread the exported Points across distinct,
+     * non-degenerate coordinates rather than collapsing them all onto the origin.
+     */
+    private void assertPlacedByTile(String json)
+    {
+        JSONArray points = new JSONObject(json).getJSONArray("points");
+
+        assertTrue(points.length() > 1,
+            "too few exported points to prove coordinates vary: " + points.length());
+
+        Set<String> distinctCoordinates = new LinkedHashSet<>();
+        boolean sawNonZero = false;
+
+        for (Object o : points)
+        {
+            JSONObject point = (JSONObject) o;
+            int x = point.getInt("x");
+            int y = point.getInt("y");
+
+            distinctCoordinates.add(x + "," + y);
+
+            if (x != 0 || y != 0) sawNonZero = true;
+        }
+
+        assertTrue(distinctCoordinates.size() > 1,
+            "every exported Point landed on the same coordinate - withCoordinatesFromTiles is not "
+            + "placing Points by tile");
+        assertTrue(sawNonZero, "every exported Point sits at (0,0)");
+    }
+
+    /**
+     * Writes a diagnostic dump to a temp directory, never the working directory - this is a file for a
+     * person to open and read, not part of the build.
+     */
     private void write(String name, String contents) throws Exception
     {
-        File out = new File(name);
+        File dir = Files.createTempDirectory("autonomy-derived").toFile();
+        File out = new File(dir, name);
 
         Files.write(out.toPath(), contents.getBytes(StandardCharsets.UTF_8));
 
@@ -1205,8 +1266,18 @@ public class testAutonomyDiagramSampleLayout
     @Test
     public void testTheBuildIsDeterministic()
     {
-        assertEquals(new AutonomyBuilder(reducer, null).build(),
-                     new AutonomyBuilder(reducer, null).build());
+        String a = new AutonomyBuilder(reducer, null).build();
+        String b = new AutonomyBuilder(reducer, null).build();
+
+        // TST-C8: without this, two builds that both degenerated to "" (or any other constant string)
+        // would still satisfy assertEquals below - an empty-vs-empty comparison that proves the two
+        // calls agree without proving either one built anything.
+        // testTheGeneratedConfigurationIsWellFormed pins that A build has points; this pins that the
+        // two builds THIS test is comparing are non-trivial, not that build() works at all.
+        assertTrue(new JSONObject(a).getJSONArray("points").length() > 0,
+            "precondition: the build being checked for determinism has no points to be deterministic about");
+
+        assertEquals(a, b);
     }
 
     /**

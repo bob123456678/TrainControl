@@ -43,6 +43,60 @@ public class testJavadocsAreAttached
      */
     private static final int ALLOWED = 96;
 
+    /**
+     * WHICH files carry the orphans, not just how many (VAL-C8).
+     *
+     * A bare total can absorb a repair and a new orphan landing in a different file in the same round:
+     * fix one, break another, and 96 stays 96 while this stays green. Pinning the per-file breakdown
+     * means a swap fails and names both files - the one that improved and the one that regressed.
+     */
+    private static final String[] ORPHANS_BY_FILE = {
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automation" + File.separator + "Layout.java (4)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "AutonomyBuilder.java (6)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "AutonomyChecks.java (2)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "AutonomyCompanionStore.java (4)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "AutonomySession.java (10)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "GraphReducer.java (3)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "TileAnnotation.java (3)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "automationui" + File.separator + "TileGraph.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "base" + File.separator + "CommandRow.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "base" + File.separator + "RouteCommand.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "base" + File.separator + "TileSelection.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "AutoLocomotiveStatus.java (2)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "AutonomyEditorPanel.java (18)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "AutonomyViewerPanel.java (3)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "DiagramTileRegistry.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "LayoutEditor.java (3)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "LayoutGrid.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "LayoutLabel.java (1)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "LayoutRightclickAutonomyMenu.java (2)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "RouteEditorFrame.java (4)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "gui" + File.separator + "TrainControlUI.java (24)",
+        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
+            + "marklin" + File.separator + "MarklinControlStation.java (1)",
+    };
+
     @Test
     public void testNoNewOrphanedJavadocs() throws Exception
     {
@@ -79,6 +133,21 @@ public class testJavadocsAreAttached
         assertEquals(found, ALLOWED,
             found + " orphaned javadocs remain, fewer than the " + ALLOWED + " recorded. Lower "
             + "ALLOWED to " + found + " so the improvement is kept.");
+
+        // The total alone can absorb a repair and a new orphan in the same round (VAL-C8): fix one
+        // file, break a different one, and 96 stays 96. Pin WHICH files carry them too, so a swap
+        // fails and names both.
+        List<String> sortedWorst = new ArrayList<>(worst);
+        java.util.Collections.sort(sortedWorst);
+
+        List<String> pinned = new ArrayList<>(java.util.Arrays.asList(ORPHANS_BY_FILE));
+        java.util.Collections.sort(pinned);
+
+        assertEquals(sortedWorst, pinned,
+            "the per-file breakdown of orphaned javadocs has changed even though the total may not "
+            + "have. If a file was genuinely fixed, remove its line from ORPHANS_BY_FILE and lower "
+            + "ALLOWED; if a new file appeared, that file has a fresh orphan that the total alone "
+            + "would hide behind an unrelated fix elsewhere.");
     }
 
     /**

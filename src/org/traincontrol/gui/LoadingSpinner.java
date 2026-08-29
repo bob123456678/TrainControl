@@ -33,8 +33,10 @@ import javax.swing.Timer;
  * parts.
  *
  * The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is
- * pixel for pixel a full one, so the animation loops by rotating rather than by resetting, and there
- * is no frame where the sand jumps back up the glass.
+ * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass. (VAL-C3:
+ * that used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
+ * only the turn itself rotates and the drain is always drawn upright - see the halfTurns comment in
+ * paintComponent - so "loops by rotating" is now true of the twelve turn frames only.)
  *
  * The timer is started and stopped with the component's visibility on screen, so one left in a window
  * nobody is looking at is not repainting a hidden pixel sixteen times a second.
@@ -97,8 +99,13 @@ public class LoadingSpinner extends JPanel
     /**
      * Frames since the animation started, modulo two whole cycles.
      *
-     * Two rather than one because the drawing alternates between upright and inverted, and one cycle
-     * of frames leaves it standing on its head.
+     * VAL-C3: two whole cycles used to be load-bearing, because the drawing alternated between upright
+     * and inverted and one cycle left it standing on its head. As of 2026-08-29 the drain is always
+     * drawn upright and only the twelve turn frames rotate (see the halfTurns comment in
+     * paintComponent), so every frame `n` now renders identically to `n + CYCLE_FRAMES` and the true
+     * period is one cycle, not two. `frameAt` and `advanceOneFrame` still wrap at `CYCLE_FRAMES * 2`
+     * regardless - harmless, since the second cycle is a silent repeat of the first, but the field is
+     * twice the size it needs to be for what it now draws.
      */
     private int frame;
 
@@ -160,10 +167,12 @@ public class LoadingSpinner extends JPanel
     /**
      * A default only, and only when nobody has said otherwise.
      *
-     * This used to return 120x120 unconditionally, which quietly overrode both callers: the grid asks
-     * for the space the diagram is about to take so that nothing jumps when the two are swapped, and
-     * the busy dialog asks for something small enough to sit above a line of text.  Neither got what
-     * it asked for, and the grid's comment described a behaviour that could not happen.
+     * This used to return 120x120 unconditionally, which quietly overrode all three callers (DOC-C24:
+     * there are now three, not two - LayoutGrid.showWhenTilesAreReady, BusyDialog, and StartupSplash):
+     * the grid asks for the space the diagram is about to take so that nothing jumps when the two are
+     * swapped, the busy dialog asks for something small enough to sit above a line of text, and the
+     * splash asks for its own fixed size. None of them got what they asked for, and the grid's comment
+     * described a behaviour that could not happen.
      */
     @Override
     public Dimension getPreferredSize()
@@ -214,12 +223,27 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // Sized off whichever way round the space is tighter, so it never overhangs.
+            // WK-C3: centred on the VISIBLE part of this component, not the whole of it. This
+            // component is sized to the whole diagram page (LayoutGrid.showWhenTilesAreReady), which
+            // on a page bigger than the LayoutArea viewport put the glass's true centre off whatever
+            // screenful the operator happens to be scrolled to - the "blank page" symptom OB-129 was
+            // filed for, arrived at by a different route. getVisibleRect() is the standard way to ask
+            // a component what part of itself is actually on screen inside a JScrollPane; it degrades
+            // to the full bounds outside one, and the empty-rect guard covers the moment before this
+            // component has ever been laid out.
+            java.awt.Rectangle visible = getVisibleRect();
+
+            if (visible.isEmpty())
+            {
+                visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
+            }
+
+            // Sized off whichever way round the visible space is tighter, so it never overhangs.
             double glassH = Math.max(18.0,
-                Math.min(MAX_GLASS_H, Math.min(getWidth() / ASPECT, getHeight()) * FILL));
+                Math.min(MAX_GLASS_H, Math.min(visible.width / ASPECT, visible.height) * FILL));
             double glassW = glassH * ASPECT;
 
-            g2.translate(getWidth() / 2.0, getHeight() / 2.0);
+            g2.translate(visible.getCenterX(), visible.getCenterY());
             g2.rotate(Math.PI * halfTurns);
 
             drawHourglass(g2, glassW, glassH, drained);

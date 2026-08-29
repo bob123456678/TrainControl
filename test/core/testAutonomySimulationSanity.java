@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.Arrays;
 import java.util.List;
 import java.util.LinkedList;
 import java.io.BufferedReader;
@@ -22,7 +23,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -414,6 +417,111 @@ public class testAutonomySimulationSanity
         finally
         {
             model.deleteLoc("Sim orphan loc");
+        }
+    }
+
+    /**
+     * TST-A4: proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to
+     * stay silent is actually capable of firing.
+     *
+     * That soak test runs entirely against the fixture's own Layout, which loads with "simulate": true
+     * (test/autonomy_sanity.json:143).  Layout.configureAndLockPath returns at Layout.java:2604 -
+     * "if (this.simulate || !PATH_INTEGRITY_VALIDATION) return true;" - BEFORE validatePathActuation ever
+     * runs, so for the whole two-minute run handleMisconfiguredPath is unreachable and
+     * getPathValidationFailureCount() is pinned at 0 no matter what the guard would have found.  "No
+     * warning fired" there is unfalsifiable, not a verified outcome - the mechanism was never armed.
+     *
+     * Simulate mode cannot simply be turned off for the soak itself: it is also what makes
+     * simAnnounce/simClearBehind fake each point's sensor as the train "arrives", which is the only
+     * reason the fixture's locomotives move at all without real hardware.  So this is a separate, small
+     * Layout built directly (like testAutonomyPathValidation.java's fixtures) with simulate left at its
+     * default OFF, network still disconnected and DEBUG_SIMULATE_PACKETS still on from setUpClass - so
+     * the CS echo is simulated and no real hardware is needed, but the real validatePathActuation guard
+     * runs instead of being bypassed.  The path's one accessory is then driven to the wrong state out of
+     * band so it can never confirm, proving the exact mechanism the soak test's silence depends on can in
+     * fact detect a real misconfiguration.
+     *
+     * MUTATION this catches: delete the guard at Layout.java:2604-2609 (or make validatePathActuation
+     * return true unconditionally, or set PATH_INTEGRITY_VALIDATION = false) - the failure below would
+     * then never be recorded and this test goes red, exactly where the always-simulate soak test above
+     * cannot.
+     */
+    @Test
+    public void testPathValidationCanActuallyFireOutsideSimulateMode() throws Exception
+    {
+        int originalMs = Layout.PATH_VALIDATION_MS;
+        Layout.PATH_VALIDATION_MS = 100;
+
+        MarklinLocomotive loc = model.newMM2Locomotive("Sanity val loc", 66);
+
+        try
+        {
+            Layout layout = new Layout(model);
+
+            assertFalse(layout.isSimulate(),
+                "precondition: this Layout must run the real guard, not the simulate-mode bypass the "
+                    + "soak test above relies on for its own reason to exist");
+
+            layout.createPoint("SANITY_VAL_A", false, null);
+
+            MarklinFeedback fb = model.newFeedback(47421, null);
+            model.setFeedbackState(fb.getName(), false);
+            layout.createPoint("SANITY_VAL_B", true, fb.getName());
+
+            Edge edge = layout.createEdge("SANITY_VAL_A", "SANITY_VAL_B");
+
+            MarklinAccessory acc = model.newSwitch(8, MM2, false);
+            edge.addConfigCommand(acc.getName(), Accessory.accessorySetting.TURN);
+
+            // Continuously drives the accessory to the opposite of its commanded state so it can never
+            // confirm - the same technique testAutonomyPathValidation.startCorrupting uses for this
+            // exact guard.
+            final boolean[] corrupting = { true };
+
+            Thread corrupter = new Thread(() ->
+            {
+                while (corrupting[0])
+                {
+                    acc.setSwitched(false);
+
+                    try
+                    {
+                        Thread.sleep(2);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        return;
+                    }
+                }
+            });
+
+            corrupter.setDaemon(true);
+            corrupter.start();
+
+            int before = layout.getPathValidationFailureCount();
+            boolean result;
+
+            try
+            {
+                result = layout.configureAndLockPath(Arrays.asList(edge), loc);
+            }
+            finally
+            {
+                corrupting[0] = false;
+            }
+
+            assertFalse(result,
+                "a misconfigured accessory must fail configureAndLockPath outside simulate mode");
+
+            assertTrue(layout.getPathValidationFailureCount() > before,
+                "validatePathActuation must have recorded the failure - this is exactly the mechanism "
+                    + "the soak test above trusts to stay silent, and its simulate=true Layout never lets "
+                    + "it run at all");
+        }
+        finally
+        {
+            Layout.PATH_VALIDATION_MS = originalMs;
+            model.deleteLoc("Sanity val loc");
         }
     }
 }

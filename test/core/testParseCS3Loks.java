@@ -113,11 +113,33 @@ public class testParseCS3Loks
     public void testParseCS3Loks() throws Exception
     {
         parser = new CS2File(null, null);
-        
-        parser.parseLocomotives(parseFile(fetchURL(cs2_loks)));
-        parser.parseLocomotives(parseFile(fetchURL(cs2_loks_from_cs3)));  
-        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks)));  
-        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));    
+
+        List<MarklinLocomotive> fromCs2 = parser.parseLocomotives(parseFile(fetchURL(cs2_loks)));
+        List<MarklinLocomotive> fromCs2FromCs3 =
+            parser.parseLocomotives(parseFile(fetchURL(cs2_loks_from_cs3)));
+        List<MarklinLocomotive> fromCs3 =
+            parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks)));
+        List<MarklinLocomotive> fromCs3V260 =
+            parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));
+
+        // MUTATION this catches: any of the four parse methods returning an empty list - previously
+        // nothing here checked the results at all, so a parser that silently produced nothing would
+        // still pass this test.  Counts match the fixtures pinned by testCS3/testCS3_v260/testLoaded.
+        assertFalse(fromCs2.isEmpty(), "parseLocomotives returned nothing for " + cs2_loks);
+        assertFalse(fromCs2FromCs3.isEmpty(), "parseLocomotives returned nothing for " + cs2_loks_from_cs3);
+        assertFalse(fromCs3.isEmpty(), "parseLocomotivesCS3 returned nothing for " + cs3_loks);
+        assertFalse(fromCs3V260.isEmpty(), "parseLocomotivesCS3 returned nothing for " + cs3_loks_v260);
+
+        assertEquals(fromCs3.size(), 136, "the CS3 locomotive count should match the fixture pinned "
+            + "by testCS3");
+        assertEquals(fromCs3V260.size(), 154, "the CS3 v260 locomotive count should match the fixture "
+            + "pinned by testCS3_v260");
+
+        for (MarklinLocomotive l : fromCs3)
+        {
+            assertTrue(l.getName() != null && !l.getName().trim().isEmpty(),
+                "a parsed CS3 locomotive has a blank name");
+        }
     }
        
     /**
@@ -219,12 +241,22 @@ public class testParseCS3Loks
     @Test
     public void testBothCS3Equivalent()
     {
+        // Floor: without these, either list being empty would leave the nested loop below running
+        // zero times and this test would pass having compared nothing.
+        assertFalse(loksCS3.isEmpty(), "precondition: the CS3 fixture must have parsed some locomotives");
+        assertFalse(loksCS2_fromCS3.isEmpty(),
+            "precondition: the CS2-from-CS3 fixture must have parsed some locomotives");
+
+        int matched = 0;
+
         for(MarklinLocomotive l1 : loksCS3)
         {
             for(MarklinLocomotive l2 : loksCS2_fromCS3)
             {
                 if (l1.getName().equals(l2.getName()))
                 {
+                    matched++;
+
                     assertEquals(l1.getAddress(), l2.getAddress());
                     assertEquals(l1.getDecoderType(), l2.getDecoderType());
                     assertEquals(l1.getImageURL().isEmpty(), l2.getImageURL().isEmpty());
@@ -237,11 +269,18 @@ public class testParseCS3Loks
                         {
                             assertEquals(l1.getFunctionType(i), l2.getFunctionType(i));
                             assertEquals(l1.getFunctionTriggerTypes()[i], l2.getFunctionTriggerTypes()[i]);
-                        }  
+                        }
                     }
                 }
             }
         }
+
+        // Control: the two fixtures are meant to describe the same locomotives under different file
+        // formats, so at least one name must match - or every assertion above ran zero times despite
+        // both lists being non-empty (e.g. a naming mismatch between the two parsers).
+        assertTrue(matched > 0,
+            "no locomotive name matched between loksCS3 and loksCS2_fromCS3, so the equivalence check "
+            + "above compared nothing even though both fixtures parsed successfully");
     }
     
     @BeforeClass

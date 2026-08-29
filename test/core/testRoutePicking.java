@@ -64,6 +64,24 @@ public class testRoutePicking
     private static final Set<Layout.PathPreference> COVERED_ELSEWHERE = EnumSet.of(
         Layout.PathPreference.LEAST_RECENTLY_VISITED);
 
+    /**
+     * Where each COVERED_ELSEWHERE rule is actually tested: fully-qualified class name and method
+     * name, checked by reflection in testEveryRuleIsCoveredSomewhere.
+     *
+     * Naming a rule in COVERED_ELSEWHERE used to be nothing more than a comment - true today, but
+     * nothing would notice if the file it points at were deleted or the method renamed. This map is
+     * what turns that into a check: the covering method has to still exist, and still be a @Test,
+     * or testEveryRuleIsCoveredSomewhere fails instead of continuing to claim the coverage is there.
+     */
+    private static final java.util.Map<Layout.PathPreference, String[]> COVERED_ELSEWHERE_LOCATION =
+        new java.util.EnumMap<>(Layout.PathPreference.class);
+
+    static
+    {
+        COVERED_ELSEWHERE_LOCATION.put(Layout.PathPreference.LEAST_RECENTLY_VISITED,
+            new String[]{"core.testAutoLayout", "testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen"});
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -183,6 +201,36 @@ public class testRoutePicking
                 rule + " is a way of choosing routes that nothing tests.  Give it a winner on the "
                 + "fixture in this class, or add it to COVERED_ELSEWHERE saying which railway it "
                 + "needs and where that test is");
+
+            // A name in COVERED_ELSEWHERE is a claim, not proof.  Reflectively confirm the covering
+            // test still exists and is still a @Test, so deleting or weakening it away fails THIS
+            // test instead of leaving the claim of coverage standing on nothing.
+            if (COVERED_ELSEWHERE.contains(rule))
+            {
+                String[] location = COVERED_ELSEWHERE_LOCATION.get(rule);
+
+                assertNotNull(location,
+                    rule + " is claimed as COVERED_ELSEWHERE but COVERED_ELSEWHERE_LOCATION does not "
+                    + "say which class and method actually covers it");
+
+                try
+                {
+                    Class<?> coveringClass = Class.forName(location[0]);
+                    java.lang.reflect.Method coveringMethod =
+                        coveringClass.getDeclaredMethod(location[1]);
+
+                    assertNotNull(coveringMethod.getAnnotation(Test.class),
+                        location[0] + "." + location[1] + "() is claimed to cover " + rule
+                        + " but is no longer annotated @Test - the coverage this class claims does "
+                        + "not exist any more");
+                }
+                catch (ClassNotFoundException | NoSuchMethodException e)
+                {
+                    fail(location[0] + "." + location[1] + "() is claimed to cover " + rule
+                        + " but " + e.getClass().getSimpleName() + " says it no longer exists - the "
+                        + "coverage this class claims does not exist any more");
+                }
+            }
         }
     }
 

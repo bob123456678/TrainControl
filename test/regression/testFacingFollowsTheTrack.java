@@ -65,7 +65,31 @@ public class testFacingFollowsTheTrack
 
         List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
 
-        session = new AutonomySession(folder);
+        // A throwaway copy, not the tracked fixture itself (TST-C17). `session.open` runs
+        // `migrateStationLabels`, which calls `store.save()` and `page.saveChanges(...)` the moment a
+        // `Point:` label turns up in a page - not the case today, but `test_layout` is checked in and
+        // shared with every other class in the suite, and this one is the only sibling that opened a
+        // session on it directly instead of copying `config/autonomy` first, following
+        // `testDiscardedEditsDoNotDeleteSetup`'s and `testErrorsStopTheSetupRunning`'s precedent.
+        File temp = File.createTempFile("tc-facings", "");
+
+        assertTrue(temp.delete(), "making room for a directory of the same name");
+        assertTrue(new File(temp, "config/autonomy").mkdirs(), "could not make the copy");
+
+        File from = new File(folder, "config/autonomy");
+
+        for (File one : from.listFiles())
+        {
+            if (one.isFile())
+            {
+                java.nio.file.Files.copy(one.toPath(),
+                    new File(temp, "config/autonomy/" + one.getName()).toPath());
+            }
+        }
+
+        temp.deleteOnExit();
+
+        session = new AutonomySession(temp);
         session.open(pages);
     }
 

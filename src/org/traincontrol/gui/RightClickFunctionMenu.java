@@ -24,17 +24,11 @@ public class RightClickFunctionMenu extends MouseAdapter
         this.fNumber = fNumber;
     }
 
-    @Override
-    public void mousePressed(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
+    // UXR-C21: mousePressed/mouseReleased overrides used to live here, extending MouseAdapter as
+    // though this were registered as a mouse listener on the function button. It never is - the only
+    // caller, TrainControlUI.EditFunction, constructs this and calls showPopup(evt) directly - so
+    // those two overrides never ran. Removed rather than left behind, since dead listener methods on
+    // a class that keeps a live isPopupTrigger() branch look like the real wiring at a glance.
 
     public void showPopup(MouseEvent e)
     {
