@@ -4431,6 +4431,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
         }
 
+        // WHERE THE TRAINS ACTUALLY ARE, folded into the setup before the editor can snapshot it
+        // (OB-144).
+        //
+        // Adam, filed as critical: "run EN57-203 from BottomSecondary to BottomMainC.  Then, switch to
+        // track diagram page 2, click edit and save.  EN57-203 is now back at BottomSecondary."
+        //
+        // A run moves a locomotive and where it ended up lives in `Point.currentLoc` and nowhere else.
+        // `captureFromLayout` is the only thing that folds it into the setup, and stopping autonomy is
+        // not one of its callers - so between the end of a run and the next load, exit or diagram edit,
+        // the setup on disk still says where the train STARTED.  The editor then snapshots that, Save
+        // writes it back, and `rebuildRunningLayoutFromSetup` regenerates every placement from the file
+        // on the way out.  The train is put back where it began.
+        //
+        // BEFORE the constructor, because the constructor is where the undo point is taken - so this is
+        // the last moment a capture can happen at all.  It also makes Cancel right for the same reason:
+        // the snapshot it restores is now the truth rather than a pre-run copy of it.
+        //
+        // Regardless of which editor is being opened.  The track editor can switch into autonomy mode
+        // without closing (`arriveAt` re-takes the undo point), so gating this on `wantsAutonomy` would
+        // leave that door open.  It is a no-op when there is no session, no active configuration, or a
+        // run in progress - and a run in progress has already been refused above.
+        //
+        // This is DW-A1 through a second door, and it is fixed the same way it was: by an ORDER.  The
+        // rename door got `captureRunningLayout()` moved ahead of the gesture that rekeys the store;
+        // this one never got the same treatment.  `rebuildRunningLayoutFromSetup` says "the setup is
+        // the newer of the two by definition", which is true of the setup against the PREVIOUS setup
+        // and false against the running layout - and that is the comparison that decides whether a
+        // train teleports.
+        captureRunningLayout();
+
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -5150,14 +5180,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // WITHOUT capturing the running layout's state first.
             //
-            // Both callers of this shape reach it BECAUSE the setup just changed, so the setup is the
-            // newer of the two by definition. An ordinary load folds the running layout's placements,
-            // homes and facings back into the configuration before replacing it - which here writes
-            // the stale answer back over the edit that asked for the rebuild, and then regenerates
-            // from the reverted configuration. The edit is undone on its way to being redrawn.
+            // Every caller of this shape reaches it BECAUSE the setup just changed, so the setup is
+            // the newer of the two. An ordinary load folds the running layout's placements, homes and
+            // facings back into the configuration before replacing it - which here writes the stale
+            // answer back over the edit that asked for the rebuild, and then regenerates from the
+            // reverted configuration. The edit is undone on its way to being redrawn.
             //
             // An explicit edit beats an inferred one. A facing learned by watching where a train ended
             // up is a guess; somebody choosing one is not.
+            //
+            // "NEWER OF THE TWO" IS A CLAIM ABOUT THE RUNNING LAYOUT, and it used to say "by
+            // definition", which was the defect (OB-144). The setup being newer than the setup WAS is
+            // not the same statement, and it is the wrong one: a run moves locomotives, `currentLoc`
+            // is the only place that lives, and nothing folds it into the setup when the run ends. So
+            // the setup could be newer than itself and still older than the railway - and this
+            // regenerated every placement from it, putting each train back where it had started.
+            //
+            // What makes the claim true is upstream, and it has to be. `openLayoutEditor` captures the
+            // running layout before it constructs the editor, so by the time an edit exists the setup
+            // already knows where the trains are; `placementChanged` and the rename both run inside a
+            // session that opened that way. This method cannot check that for itself - by the time it
+            // is called the running layout has already been rebuilt over once - which is why the rule
+            // is an ORDER upstream rather than a guard here, exactly as DW-A1 was settled.
             getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
         }
     }

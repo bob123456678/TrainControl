@@ -320,14 +320,21 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * A train parked where it turned round is not reported as facing an impossible way.
      *
-     * `facingChoices` offers where a train could be sent ONWARD from a square, so it never offers an
-     * arrival side. A train that turned round is pointing back at the side it came in by - so on a
-     * berth whose only copy is the turning one, the single facing the square can actually hold was
-     * reported as impossible.
+     * A train that turned round is pointing back at the side it came in by - so on a berth whose only
+     * copy is the turning one, the single facing the square can actually hold was reported as
+     * impossible.
      *
      * Sixteen squares on this fixture are of that shape - every parking berth plus four reversing
      * points - and it appears on the railway the first time autonomy parks a train in one, because
      * `captureFromLayout` writes that facing back.
+     *
+     * **What used to make that true, and what makes it true now.** `facingChoices` offered only where
+     * a train could be sent ONWARD, so it never offered an arrival side, and the checker carried a
+     * carve-out to forgive one. OB-145 is what that arrangement cost: the checker forgave a facing the
+     * MENU would not offer, and on BottomMainC - one arrival side after a one-way run - that left a
+     * single offered facing and no facing menu at all. So `facingChoices` now includes the turning
+     * facings on these squares, the carve-out is gone, and this test passes because the answer is
+     * right rather than because it was excused.
      *
      * **This test exists because the fix shipped without one.** The carve-out was written into
      * {@link #testEveryFacingTheBuildEmitsIsOneTheEditorOffers} when the arrival-sides consolidation
@@ -340,8 +347,8 @@ public class testTheCheckerAgreesWithTheBuild
      * three-square page with no berth on it - there is no square there that a train can turn round on,
      * so the case cannot be built.
      *
-     * MUTATION: removing the `isTurnAround(...) && arrivalSides(...).contains(recorded)` carve-out
-     * from `AutonomySession.facingsThatCannotBeHeld` fails this test.
+     * MUTATION: removing `if (isTurnAround(tile)) out.addAll(arrivalSides(tile));` from
+     * `AutonomySession.facingChoices` fails this test, along with the two beside it.
      */
     @Test
     public void testATrainParkedWhereItTurnedRoundIsNotAnImpossibleFacing()
@@ -350,15 +357,20 @@ public class testTheCheckerAgreesWithTheBuild
         Side turned = null;
 
         // The first square that is a berth in the sense this is about: a train may turn round on it,
-        // and the side it would then face is one facingChoices does not offer.
+        // and the side it would then be facing is an arrival side.
+        //
+        // THE SEARCH USED TO ADD "and facingChoices does not offer it", which was how it found the
+        // squares the carve-out excused. OB-145 removed that gap - `facingChoices` now offers those
+        // facings - so the old search matched nothing and this test's own vacuity guard fired, which
+        // is what a vacuity guard is for. Narrowing the search to keep it satisfiable would have been
+        // the wrong repair: the claim is about what the CHECKER says, not about which squares happen
+        // to disagree with the menu on the way there.
         for (TileKey tile : session.getReducer().getPoints().keySet())
         {
             if (!session.isTurnAround(tile)) continue;
 
             for (Side arrival : session.arrivalSides(tile))
             {
-                if (session.facingChoices(tile).contains(arrival)) continue;
-
                 berth = tile;
                 turned = arrival;
 
@@ -369,9 +381,8 @@ public class testTheCheckerAgreesWithTheBuild
         }
 
         assertNotNull(berth,
-            "this fixture has no square a train can turn round on whose turned facing is not also "
-            + "offered onward - so the case the carve-out exists for cannot be built here, and this "
-            + "test would pass by testing nothing");
+            "this fixture has no square a train can turn round on that anything arrives at - so the "
+            + "case this is about cannot be built here, and this test would pass by testing nothing");
 
         session.placeLocomotive(berth, firstLocomotive());
 
@@ -441,9 +452,19 @@ public class testTheCheckerAgreesWithTheBuild
 
                 if (offered.contains(copy.getValue())) continue;
 
-                // the turning copy, pointing back the way it came
-                if (arrivals.contains(copy.getValue())) continue;
-
+                // THE TURNING COPY IS NO LONGER EXCUSED HERE (OB-145).
+                //
+                // This used to skip any facing that was an arrival side, on the reasoning quoted in
+                // the javadoc: a turning copy points back the way it came, and that is "never offered
+                // as a facing because a train standing there has not turned round yet". True of a
+                // train that arrived and stopped; false of one the operator placed, which is the
+                // menu's whole job, and false of one autonomy parked, because captureFromLayout
+                // writes that facing back.
+                //
+                // So the skip was excusing the disagreement it was written to catch, and Adam found
+                // what it was hiding: at BottomMainC the build held two facings, the menu offered one,
+                // and the menu therefore did not appear. `facingChoices` offers them now, so this test
+                // no longer needs the excuse - and without it, a drift on ANY square is a failure.
                 wrong.append("\n  ").append(square).append(": the build calls ")
                      .append(copy.getKey()).append(" ").append(copy.getValue())
                      .append(", the editor offers ").append(offered)
@@ -458,6 +479,79 @@ public class testTheCheckerAgreesWithTheBuild
             "the build gives a copy a facing the editor would never offer for that square.  A facing "
                 + "is the other end of the piece of track the train is standing on (MT-125), and "
                 + "onwardFrom and AutonomyBuilder.facingOf both have to say so:" + wrong);
+    }
+
+    /**
+     * On a square a train may turn round on, the menu offers every facing the build can hold (OB-145).
+     *
+     * Adam: "on bottommainc, I don't see a 'locomotive is facing' choice even though there is a path
+     * out both ways" - and the context that finds it: "the menu disappears when switch 70 disallows
+     * outbound travel to the west, which shouldn't affect leaving trains."
+     *
+     * BottomMainC carries `canReverse: true` and a recorded facing of W, which is an ARRIVAL side. The
+     * build holds that facing perfectly well - `AutonomyBuilder.facingOf` returns `node.arrival` for a
+     * turning copy - and `facingsThatCannotBeHeld` was taught to accept it. `facingChoices`, which is
+     * what decides whether the menu appears at all, was not: it offers only where a train could be sent
+     * ONWARD. So once the one-way run cut that square to a single arrival side, one onward facing was
+     * all it offered, and `buildFacingMenu` returns null below two.
+     *
+     * **The sentence that allowed it** is in `testEveryFacingTheBuildEmitsIsOneTheEditorOffers` just
+     * above, which skips a turning copy's facing on the reasoning that it is "never offered as a facing
+     * because a train standing there has not turned round yet". That is true of a train that arrived
+     * and stopped. It is false of a train the OPERATOR placed - which is the whole job of the menu -
+     * and false of one autonomy parked, because `captureFromLayout` writes exactly that facing back.
+     * So the pair were held in step by a rule that excused the disagreement instead of catching it.
+     *
+     * This is the strict half, over the squares where the excuse applied: the build emits a turning
+     * copy only where a train may turn round, so on those squares the arrival sides ARE holdable
+     * facings and the menu has to offer them.
+     *
+     * MUTATION: remove `if (isTurnAround(tile)) out.addAll(arrivalSides(tile));` from
+     * `AutonomySession.facingChoices` and this fails, naming the berths.
+     */
+    @Test
+    public void testTheMenuOffersEveryFacingATurnAroundSquareCanHold()
+    {
+        StringBuilder missing = new StringBuilder();
+
+        int checked = 0;
+        int berths = 0;
+
+        for (TileKey square : index().squares())
+        {
+            if (!session.isTurnAround(square)) continue;
+
+            berths++;
+
+            List<Side> offered = session.facingChoices(square);
+
+            for (Map.Entry<String, Side> copy : index().facingsAt(square).entrySet())
+            {
+                checked++;
+
+                if (offered.contains(copy.getValue())) continue;
+
+                missing.append("\n  ").append(square).append(": the build calls ")
+                       .append(copy.getKey()).append(" ").append(copy.getValue())
+                       .append(", but the editor offers only ").append(offered);
+            }
+        }
+
+        // Both floors, because they fail differently: no berths at all means the fixture stopped
+        // carrying the case, and berths with no copies means facingsAt has stopped answering.
+        assertTrue(berths > 0,
+            "no square in this fixture is one a train may turn round on, so the case OB-145 is about "
+            + "cannot be built here and this test would pass by testing nothing");
+
+        assertTrue(checked > 0,
+            berths + " squares a train may turn round on, and not one of them has a copy carrying a "
+            + "facing - so this compared nothing");
+
+        assertEquals(missing.toString(), "",
+            "the build can stand a train on a copy whose facing the editor will not offer for that "
+            + "square.  Below two offered facings `buildFacingMenu` returns null, so the operator "
+            + "loses the ability to say which way round the train is standing - which is what Adam "
+            + "saw at BottomMainC (OB-145):" + missing);
     }
 
     /**

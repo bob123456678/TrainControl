@@ -32,6 +32,40 @@ fi
 # silently tested old code and a method added minutes earlier came back as NoSuchMethodError.
 CP="$(cat "$S/cp.txt")"
 
+# AND THE BATTERY COMPILES THE WORKING TREE ITSELF, which is the other half of that sentence and was
+# missing for as long as the sentence has been there.
+#
+# cp.txt begins with one.sh's output directory, and this script had no compile step of its own - so a
+# battery reported on whatever one.sh happened to have compiled last, which is not the same thing as
+# the working tree and on 2026-08-29 was not even close.  A mutation had been compiled into that
+# directory to prove a test could catch it; the source was restored, the battery was run, and it
+# reported the mutation's three failures against a tree that did not contain it.  Every earlier
+# battery today was only as true as the last one.sh before it.
+#
+# The comment above was written about a stale directory SHADOWING the real one.  The failure it did
+# not name is the same directory being the ONLY one, which is worse, because then there is nothing to
+# shadow and no symptom to notice.
+#
+# Compiled into a directory of this script's own and PREPENDED, so every class the run loads is one
+# this compile produced and one.sh's output cannot reach the classpath ahead of it.
+BUILD="$S/build/battery"
+
+rm -rf "$BUILD"
+mkdir -p "$BUILD"
+
+find src test -name "*.java" > "$S/battery-files.txt"
+
+if ! "${TC_JAVAC:-/c/Program Files/Java/jdk1.8.0_361/bin/javac}" -nowarn -encoding UTF-8 \
+    -d "$BUILD" -cp "$CP" @"$S/battery-files.txt" 2>"$S/battery-javac.log"
+then
+    echo "*** THE WORKING TREE DOES NOT COMPILE - nothing was run ***"
+    echo ""
+    grep -i "error" "$S/battery-javac.log" | head -20
+    exit 2
+fi
+
+CP="$BUILD;$CP"
+
 JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 
 # Any free receive port instead of the Marklin one.

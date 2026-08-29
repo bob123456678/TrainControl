@@ -86,8 +86,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-208](#mt-208) | 2026-08-29 | Importing routes, and the table behind the dialog | needs test | OB-137 |
 | [MT-209](#mt-209) | 2026-08-29 | Double-clicking a station on the running diagram | needs test | OB-138 |
 | [MT-210](#mt-210) | 2026-08-29 | The move cursor over labels that are not drawn | needs test | OB-139 |
+| [MT-212](#mt-212) | 2026-08-29 | The facing choice on a square trains turn round on | needs test | OB-145 |
 
-Everything else - 143 of 210 - is **fixed validated** and needs nothing from you unless the
+Everything else - 144 of 212 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -10842,5 +10843,96 @@ saying a thing can be picked up, and the two must not disagree.
    toggle, which is what this depends on. If they do not come back, this is worse than the bug.
 4. With labels **on**, confirm FR-035 still holds: dragging works from the label AND from the tile under
    it, not only from the pill.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-211"></a>
+
+### MT-211 - 2026-08-29 - Trains stay where the run left them
+
+**Disposition:** fixed validated
+**From:** OB-144
+**Written:** 2026-08-29
+
+You filed this as critical: "run EN57-203 from BottomSecondary to BottomMainC. Then, switch to track
+diagram page 2, click edit and save. EN57-203 is now back at BottomSecondary."
+
+Where a train ended up lives in the running layout and nowhere else - nothing folds it into the setup
+when a run stops. So the editor opened on a setup that still said BottomSecondary, Save wrote that back,
+and closing the editor rebuilt every placement from the file. This is the same defect as the page-rename
+one (DW-A1) through a different door, and it is fixed the same way: the running layout is now captured
+into the setup **before** the editor is constructed, which is the last moment it can happen, because the
+editor takes its undo point in its own constructor.
+
+**Why it mattered more than a lost setting.** Occupancy is derived from placements, and `isPathClear`
+never consults the s88 - so after the teleport the model believed BottomMainC was empty with a train
+standing in it, and Start could route another one into it.
+
+1. **Your repro, exactly.** Run EN57-203 from BottomSecondary to BottomMainC. Switch to page 2, click
+   Edit, and Save without changing anything. EN57-203 must still be at BottomMainC.
+2. The same again, but press **Cancel** instead of Save. Also must stay at BottomMainC - Cancel restores
+   the setup as it was when the window opened, and what that snapshot holds is the thing this fix
+   changed.
+3. The same again, but **close the window with the X**.
+4. **Restart the application** after step 1 and check once more. The capture writes to disk, so if this
+   is right after a restart it is right for good; if it is not, the write is not landing.
+5. **Now the thing a fix of this shape would most likely break.** Open the setup editor and deliberately
+   **move a locomotive to a different point**, then Save. Your placement must win - it must NOT be
+   overwritten by wherever the train was standing before. If step 1 works and this one does not, I have
+   traded one bug for a worse one.
+6. And **the track editor**, not just the autonomy one: run a train, open the *track diagram* editor,
+   move a tile, save. The train should be where the run left it, and your tile edit should have stuck.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-29 (triage).** Works.
+
+Works.
+
+---
+
+<a id="mt-212"></a>
+
+### MT-212 - 2026-08-29 - The facing choice on a square trains turn round on
+
+**Disposition:** fixed validated
+**From:** OB-145
+**Written:** 2026-08-29
+
+You: "on bottommainc, I don't see a 'locomotive is facing' choice even though there is a path out both
+ways" - and the clue that found it: "the menu disappears when switch 70 disallows outbound travel to the
+west, which shouldn't affect leaving trains."
+
+BottomMainC is marked **can reverse**, so the build emits a turning copy there, and a turning copy points
+back the way it came in. Its facing is therefore an ARRIVAL side - your recorded facing is W - and the
+build holds it perfectly well. What did not know that was `facingChoices`, which decides whether the
+menu appears: it offered only where a train could be sent ONWARD. Once the one-way run cut the square to
+a single arrival side there was one onward facing left, and the menu is not shown below two. So the
+question disappeared instead of being answered.
+
+The frozen fixture had the same defect on the same square, which is how it is now pinned.
+
+1. **Your case.** Right-click BottomMainC with EN57-203 standing on it. The "**EN57-203 Is Facing...**"
+   submenu must be there, offering **both** E and W, with W ticked.
+2. **Choose the other one**, then look at the label on the diagram - it should turn - and press Start.
+   The train must set off the way it is now pointing, not the way it was.
+3. **Put it back to W** and confirm the setup reports no problem about it. A facing the square cannot
+   hold is meant to be reported; W here is one it can, and it must not be flagged.
+4. **The squares that should NOT have gained the choice.** On an ordinary through station - one not
+   marked can-reverse or terminus - the submenu should still offer only the onward facings. If a plain
+   through platform has started offering you the side trains arrive by, the fix has gone too wide and
+   the build will quietly turn those trains round.
+5. **The parking berths.** TunnelLeftPark, TunnelCenterPark, TunnelRightPark and TunnelLongPark were in
+   the same position as BottomMainC on the fixture. Check one of them offers both ways too.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+Works.
 
 ---

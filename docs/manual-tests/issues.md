@@ -128,15 +128,6 @@ any database sync, import, or completed route edits should reset all spinners in
 
 the button disappears rather than being greyed out prior to replacement by the start button.  make it get greyed out and then replaced.
 
-### OB-144 - 2026-08-29 - Critical: trains teleport
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:34  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-from current config, run EN57-203 from BottomSecondary to BottomMainC.  Then, switch to track diagram page 2, click edit and save.  EN57-203 is now back at BottomSecondary.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -151,6 +142,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-145 | bug | loc facing direction choice | - | [MT-212](tests.md#mt-212) |
+| 2026-08-29 | OB-144 | bug | Critical: trains teleport | - | [MT-211](tests.md#mt-211) |
 | 2026-08-29 | OB-139 | bug | move pointer in autonomy editor. | - | [MT-210](tests.md#mt-210) |
 | 2026-08-29 | OB-138 | bug | doube clicking station label in track viewer | - | [MT-209](tests.md#mt-209) |
 | 2026-08-29 | OB-137 | bug | route table freeze on import | - | [MT-208](tests.md#mt-208) |

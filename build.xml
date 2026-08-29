@@ -225,6 +225,7 @@
         <test-one-class class="testAMovedTileCarriesItsSetup"/>
         <test-one-class class="testBackupArchiveNamesTheLayout"/>
         <test-one-class class="testARunSurvivesAPageRename"/>
+        <test-one-class class="testARunSurvivesADiagramEdit"/>
         <test-one-class class="testUdpMessagesReachTheWire"/>
         <test-one-class class="testCS3NotFoundDetection"/>
         <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>

@@ -38,6 +38,7 @@
       "priority": -1
     },
     "1 - Main:19,14": {
+      "loc": {"name": "EN57-203"},
       "maxTrainLength": 0,
       "facing": "E",
       "priority": 2,
@@ -123,11 +124,7 @@
       "autoDestination": false
     },
     "1 - Main:10,7": {"speedMultiplier": 0.9},
-    "1 - Main:12,11": {
-      "loc": {"name": "EN57-203"},
-      "maxTrainLength": 0,
-      "facing": "W"
-    },
+    "1 - Main:12,11": {"maxTrainLength": 0},
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {

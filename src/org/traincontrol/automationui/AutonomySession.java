@@ -2682,25 +2682,20 @@ public class AutonomySession
 
             if (offered.isEmpty() || offered.contains(recorded)) continue;
 
-            // A train that turned round is pointing back at the side it came in by (automation
-            // review, C).
+            // A TRAIN THAT TURNED ROUND used to be excused here, and is now simply offered.
             //
-            // `facingChoices` offers where a train could be sent ONWARD from here, so it never offers
-            // an arrival side. On a square a train may turn round on - every parking berth, and every
-            // reversing point - the facing a turning copy actually holds IS an arrival side, and on a
-            // berth with only that one copy it is the only facing the square can hold. So this
-            // reported the one correct answer as impossible.
+            // The excuse was `isTurnAround(tile) && arrivalSides(tile).contains(recorded)`, and it was
+            // right about the railway: on a square a train may turn round on, the facing a turning copy
+            // holds IS an arrival side, so reporting it as impossible reported the one correct answer.
+            // What it was wrong about is WHERE that belongs. `facingChoices` is the answer to "which
+            // facings can this square hold", and it did not know this one - so the checker forgave a
+            // facing the menu would not offer, and the disagreement was invisible from either side.
             //
-            // Written into `testEveryFacingTheBuildEmitsIsOneTheEditorOffers` when the arrival-sides
-            // consolidation was checked, and not into the production consumer - the twin, three
-            // hundred lines away. On the frozen fixture it is 16 squares, and it appears on the
-            // railway the first time autonomy parks a train in a berth, because captureFromLayout
-            // writes that facing back.
-            if (isTurnAround(placed.getKey()) && arrivalSides(placed.getKey()).contains(recorded))
-            {
-                continue;
-            }
-
+            // OB-145 is what that cost: BottomMainC could hold two facings and was offered one, and
+            // `buildFacingMenu` returns null below two, so the question disappeared from the menu.
+            // `facingChoices` now includes them, which makes the test above true by construction and
+            // this carve-out dead - and dead code that looks load-bearing is worse than none, because
+            // the next person to touch `facingChoices` would think this still protected them.
             out.add(placed.getKey());
         }
 
@@ -3291,6 +3286,34 @@ public class AutonomySession
         Set<Side> out = new java.util.LinkedHashSet<>();
 
         for (Side arrival : arrivalSides(tile)) out.addAll(onwardFrom(tile, arrival));
+
+        // AND THE WAY A TRAIN THAT TURNED ROUND IS POINTING (OB-145).
+        //
+        // Adam: "on bottommainc, I don't see a 'locomotive is facing' choice even though there is a
+        // path out both ways", found by "the menu disappears when switch 70 disallows outbound travel
+        // to the west, which shouldn't affect leaving trains".
+        //
+        // Onward sides alone are what a train that arrived and CARRIED ON is pointing. On a square a
+        // train may turn round on the build also emits a turning copy, and `AutonomyBuilder.facingOf`
+        // gives that copy the ARRIVAL side - so the square can genuinely hold that facing, and the
+        // menu was refusing to say so. BottomMainC has one arrival side since the one-way run was
+        // drawn, which left one onward facing, and `buildFacingMenu` returns null below two: the
+        // question vanished from the menu rather than being answered.
+        //
+        // Not on every square, because it is not true of every square: without a turning copy there is
+        // nothing standing that way for the build to place a train on, and offering it would be a
+        // facing that falls through to the first copy and quietly turns the train round - which is
+        // what `facingsThatCannotBeHeld` exists to report.
+        //
+        // AFTER the onward sides, so the first answer is unchanged - it is the one a placement with no
+        // recorded facing actually gets, and `placementCopy` prefers the plain copy to the turning one
+        // for the same reason: a train standing where it MAY turn round has not turned round yet.
+        //
+        // This is the twin of the carve-out in `facingsThatCannotBeHeld`, which was taught to accept an
+        // arrival-side facing on these squares and did not tell this method. The pair were held in
+        // step by a test that skipped the disagreement rather than catching it - see
+        // `testTheMenuOffersEveryFacingATurnAroundSquareCanHold`.
+        if (isTurnAround(tile)) out.addAll(arrivalSides(tile));
 
         return new ArrayList<>(out);
     }
