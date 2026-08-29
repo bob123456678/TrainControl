@@ -10740,6 +10740,12 @@ you touch anything.
 5. If you can, repeat with the setting turned OFF. A default that quietly reasserts itself is only
    visible from the side it defaults to.
 
+**Adam, 2026-08-29 (triage).** Works.
+
+it survives a restart in sumulate mode, but should be automatically turned off when connected to a CS. this is why you saw it flip during my testing.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-208"></a>
@@ -10774,6 +10780,10 @@ right to you**, which is the whole of this test.
 5. On Reset, read the confirmation before answering. Its default answer was Yes and is now No, because
    Yes there throws away every custom function and icon on that locomotive.
 
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-209"></a>
@@ -10799,6 +10809,10 @@ double-click is simply two ordinary clicks again and each one activates.
    Confirm that, because if it is not, this fix took away a door instead of moving it.
 4. Try both while **autonomy is running**. The right-click menu explains itself when it has to refuse;
    the removed branch used to carry a copy of that reasoning and no longer needs to.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

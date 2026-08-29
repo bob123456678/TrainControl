@@ -77,6 +77,66 @@ excludeRepeatedSensorPages has TWO call sites and they carry contradictory inten
 
 This class ran clean through several batteries and began skipping after the review round, with "nothing moved in 12s, so there is no timetable to replay". The cause is a correct fix: TST-B11 found it was reading model.getLayoutList(), i.e. whatever layout the machine happened to have - your real railway - and pointed it at test_layout instead, correcting the configuration name from "Autonomy 1" (which matched nothing) to "Main". Against the fixture, two stations are found and five of seven locomotives are placed, and then nothing runs in the window. So it is now honest and vacuous, which by this repo own rule is the same as having no test. Unknown whether the cause is the run window, the Main configuration paths, or the placement.
 
+### OB-140 - 2026-08-29 - syncing cs db from button shows no hourglass
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:08  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the hourglass flyover isn't shown when syncing the CS database from the Locomotives JMenu, locomotive database popup, or the Functions Jmenu.  Do we still need the greyout of the Functions menu?
+
+### OB-141 - 2026-08-29 - route commands contain s88 sensor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:15  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+a route command should not be able to contain s88 sensors.  these should only be in the conditions only.  remove s88 from the "Kind" dropdown.  avise what happens in the model when this is selected (if anything)
+
+### OB-142 - 2026-08-29 - route command editor capitalization
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:16  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the Kind dropdown in the route editor has inconsistent capitalization for its items.  make all works start with capitals
+
+### FR-043 - 2026-08-29 - route view user experience
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:22  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+update the route table view so that there is a green play button (execute) icon on the right side of each cell. make it be about the same height as the text. wire it so that no confirmation is needed prior to execution when this is pressed.
+
+when the execute button is pressed, convert it to a spinner animation that reverts back to the button once the route execution is finished.
+
+make all other left or clicks on the table cells open the right-click menu.  executing the route from there should also start the spinner.
+
+any database sync, import, or completed route edits should reset all spinners in this view
+
+### OB-143 - 2026-08-29 - graceful stop from track diagram
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:27  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the button disappears rather than being greyed out prior to replacement by the start button.  make it get greyed out and then replaced.
+
+### OB-144 - 2026-08-29 - Critical: trains teleport
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 14:34  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+from current config, run EN57-203 from BottomSecondary to BottomMainC.  Then, switch to track diagram page 2, click edit and save.  EN57-203 is now back at BottomSecondary.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
