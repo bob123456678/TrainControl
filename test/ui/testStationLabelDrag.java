@@ -256,21 +256,39 @@ public class testStationLabelDrag
      * nothing left to move it, sitting over the diagram until the editor was rebuilt.
      *
      * MUTATION: moving `hideCaptionGhost` below the early return fails this.
+     *
+     * TST-B8: `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
+     * branch, ahead of THAT branch's own `return;`, and once more, unconditionally, ahead of the
+     * real "did this actually move anything" question. Anchoring on the first occurrence of each
+     * name, as this test used to, finds the wrong-button branch's own pairing every time and can
+     * never fail - true before the real fix and true after it was undone. Anchored instead on
+     * `boolean moved = dragging[0];`, the line that sits directly above the real, unconditional
+     * put-down and exists nowhere else in the method.
      */
     @Test
     public void testThePickedUpLabelIsAlwaysPutDown() throws Exception
     {
         String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
 
-        int released = grid.indexOf("public void mouseReleased(");
+        String released = bodyOf(grid, "public void mouseReleased(MouseEvent e)");
 
-        assertTrue(released > 0, "the drag no longer handles the mouse coming up");
+        assertFalse(released.isEmpty(), "the drag no longer handles the mouse coming up");
 
-        int down = grid.indexOf("hideCaptionGhost()", released);
-        int leaves = grid.indexOf("return;", released);
+        int movedRead = released.indexOf("boolean moved = dragging[0];");
 
-        assertTrue(down > 0, "the floating copy of the label is never removed, so it stays on the "
-            + "window after the drag ends");
+        assertTrue(movedRead >= 0, "cannot find where the method reads whether a drag actually "
+            + "happened - has it been renamed or restructured?");
+
+        int down = released.indexOf("hideCaptionGhost()", movedRead);
+        int leaves = released.indexOf("if (!moved", movedRead);
+
+        // Proved present, and past the wrong-button branch's own pairing, before they are
+        // ordered - an absent term made this pass unconditionally before (TST-C7's shape).
+        assertTrue(down > movedRead, "the floating copy of the label is never removed after a "
+            + "real drag ends, so it stays on the window after the drag ends");
+
+        assertTrue(leaves > movedRead, "the early-out that skips committing a move which never "
+            + "happened is gone, so every release now tries to commit one");
 
         assertTrue(down < leaves,
             "the label is put down after the handler can already have returned, so a click that was "
@@ -304,7 +322,18 @@ public class testStationLabelDrag
             "any mouse button now starts a station-label drag, so a right-press that wanders a few "
             + "pixels moves the label and swallows the menu that was being asked for");
 
-        assertTrue(pressed.contains("dragging[0] = false"),
+        // TST-B8: "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
+        // branch this assertion is about, and once more on the ordinary path a few lines later.
+        // Searching the whole method body for the substring passes on the second occurrence alone,
+        // so deleting the first (the actual fix this test protects) would go unnoticed. Scoped to
+        // just the wrong-button branch instead.
+        String wrongButton = bodyOf(pressed,
+            "if (!javax.swing.SwingUtilities.isLeftMouseButton(e))");
+
+        assertFalse(wrongButton.isEmpty(), "cannot find the wrong-button branch in mousePressed - "
+            + "has it been restructured?");
+
+        assertTrue(wrongButton.contains("dragging[0] = false"),
             "a press of the wrong button clears the start point but leaves the drag armed, so the "
             + "ghost freezes and the eventual release still commits a move");
 

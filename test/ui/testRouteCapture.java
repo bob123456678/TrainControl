@@ -35,11 +35,27 @@ public class testRouteCapture
     // altering somebody's railway.
     private static MarklinControlStation model;
 
+    /**
+     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111, TST-B3).
+     *
+     * init() reads the layout preference and loads whatever it names, which on his machine is his
+     * live layout.  This class never had a sandbox before now.
+     */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, true);
         model.stop();
+    }
+
+    @org.testng.annotations.AfterClass
+    public static void putTheLayoutPreferenceBack()
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**

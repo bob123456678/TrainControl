@@ -203,32 +203,108 @@ public class testDiagramExport
      * a question with a visible answer.  What has to hold is that the shortcut and the long way round
      * draw the same thing - a shortcut that quietly exported a different page would be worse than the
      * question it removes.
+     *
+     * TST-B9: the original body rendered `page` against itself twice - byte-identical arguments, so
+     * all it measured was that `DiagramExport.render` is deterministic. The active-page path
+     * (`TrainControlUI.java:8044`, `active.addActionListener(event ->
+     * exportDiagram(activeLayoutPage()))`) never ran.
+     *
+     * Rebuilt to go through `activeLayoutPage()` itself - by reflection, since it is private and the
+     * rest of `exportDiagram` is a chain of modal dialogs and a file chooser no headless test can drive
+     * - after pointing the real selector at a page the way choosing one from the toolbar does.
+     *
+     * Mutation this must fail: swap the endpoints so the shortcut asks for a DIFFERENT page than the
+     * selector shows, or revert `activeLayoutPage()` to always answer the same page regardless of the
+     * selector.
      */
     @Test
     public void testTheActivePageDrawsTheSamePictureAsChoosingIt() throws Exception
     {
-        LayoutDiagram page = withSomeTrack();
+        java.util.List<String> pages = model.getLayoutList();
 
-        BufferedImage byName = DiagramExport.render(page, 60, ui);
-        BufferedImage asActive = DiagramExport.render(page, 60, ui);
+        assertTrue(pages.size() >= 2, "the sample layout has fewer than two pages, so choosing the "
+            + "wrong one as \"active\" would draw the same picture by accident and this test would "
+            + "prove nothing");
 
-        assertEquals(asActive.getWidth(), byName.getWidth(), "the same page must draw the same width");
-        assertEquals(asActive.getHeight(), byName.getHeight(), "and the same height");
+        String onScreen = pages.get(pages.size() - 1);
+        String somethingElse = pages.get(0);
 
-        int differences = 0;
+        assertNotEquals(onScreen, somethingElse,
+            "picked the same page twice by accident, so this test would prove nothing");
 
-        for (int x = 0; x < byName.getWidth(); x += 7)
+        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("LayoutList");
+        listField.setAccessible(true);
+
+        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) listField.get(ui);
+
+        final Object[] wasSelected = new Object[1];
+
+        SwingUtilities.invokeAndWait(() -> wasSelected[0] = list.getSelectedItem());
+
+        try
         {
-            for (int y = 0; y < byName.getHeight(); y += 7)
+            // The real selector, pointed at the page the shortcut is supposed to notice - not the
+            // page name handed straight to exportDiagram, which would leave activeLayoutPage()
+            // itself unexercised.
+            SwingUtilities.invokeAndWait(() -> list.setSelectedItem(onScreen));
+
+            // The exact private call the active-page menu item makes.
+            java.lang.reflect.Method activeLayoutPage =
+                TrainControlUI.class.getDeclaredMethod("activeLayoutPage");
+            activeLayoutPage.setAccessible(true);
+
+            Object reportedActive = activeLayoutPage.invoke(ui);
+
+            assertEquals(reportedActive, onScreen,
+                "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
+                + onScreen + " - the shortcut would export the wrong page");
+
+            LayoutDiagram chosenByName = model.getLayout(onScreen);
+            LayoutDiagram viaShortcut = model.getLayout((String) reportedActive);
+            LayoutDiagram different = model.getLayout(somethingElse);
+
+            assertNotNull(chosenByName, "no page found for " + onScreen);
+            assertNotNull(different, "no page found for " + somethingElse);
+
+            BufferedImage byName = DiagramExport.render(chosenByName, 60, ui);
+            BufferedImage asActive = DiagramExport.render(viaShortcut, 60, ui);
+            BufferedImage otherPage = DiagramExport.render(different, 60, ui);
+
+            // CONTROL: the two source pages really do draw differently, or the assertion below would
+            // pass no matter which page the shortcut actually picked.
+            assertTrue(imagesDiffer(byName, otherPage),
+                "the page chosen by name and a different page on the same sample layout drew "
+                + "identical pictures, so nothing below can tell a right page from a wrong one");
+
+            assertFalse(imagesDiffer(byName, asActive),
+                "the page chosen by name and the picture the active-page shortcut rendered are "
+                + "different, so the shortcut is not exporting what is on screen");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> list.setSelectedItem(wasSelected[0]));
+        }
+    }
+
+    /**
+     * Whether two renders differ anywhere on a coarse grid - enough to tell two real pages apart
+     * without demanding pixel-perfect determinism from the renderer.
+     */
+    private static boolean imagesDiffer(BufferedImage a, BufferedImage b)
+    {
+        if (a.getWidth() != b.getWidth() || a.getHeight() != b.getHeight()) return true;
+
+        for (int x = 0; x < a.getWidth(); x += 7)
+        {
+            for (int y = 0; y < a.getHeight(); y += 7)
             {
-                if (byName.getRGB(x, y) != asActive.getRGB(x, y)) differences++;
+                if (a.getRGB(x, y) != b.getRGB(x, y)) return true;
             }
         }
 
-        assertEquals(differences, 0,
-            "the same page drawn twice produced " + differences + " differing pixels, so the export is "
-            + "not deterministic and the active-page shortcut cannot be trusted to match");
+        return false;
     }
+
     /**
      * Building a grid over a panel retires the grid that was there.
      *

@@ -44,10 +44,13 @@ import org.traincontrol.marklin.file.CS2File;
  * worth ignoring. What it checks is internal consistency: that the setup names track the diagram has,
  * that the numbering agrees with itself, and that nothing was written.
  *
- * **The first test is the important one and it is about this suite, not about the railway.** Two test
- * classes start the real window, which loads whatever the saved UI state names - his layout. On
- * 25 August the battery was leaving it modified on every run, and it went unnoticed for two days
- * because nothing was watching. Something is now.
+ * **The `@AfterClass` check is the important one and it is about this suite, not about the railway.**
+ * Two test classes start the real window, which loads whatever the saved UI state names - his layout.
+ * On 25 August the battery was leaving it modified on every run, and it went unnoticed for two days
+ * because nothing was watching. Something is now - and it runs LAST, after every `@Test` below, rather
+ * than as the first of them: a fingerprint taken as the first `@Test` compares against itself before any
+ * of its four siblings have run, so a write made by the third or fourth was never in scope. Review
+ * caught this as TST-B2.
  *
  * Skipped rather than failed when the folder is not there, so this travels with the repository
  * without demanding that everybody have Adam's railway.
@@ -108,10 +111,17 @@ public class testTheGoldenLayoutHoldsTogether
      * test classes start the real window, which opens whatever the saved UI state names, and a save on
      * that path rewrote his configuration file on every battery.
      *
-     * **Read the scope before relying on it.** Both captures are in this class's own JVM, and the
-     * suite runs one JVM per class - so a write by another class already happened before `before` was
-     * taken, and this cannot see it. What it does catch is this class's own reading writing, which is
-     * a real property and a narrower one. Review found the javadoc claiming the wider one.
+     * **`@AfterClass`, not `@Test` - and that is itself the fix for TST-B2.** This used to be the
+     * FIRST `@Test` in the class, comparing `after` against `before` while the four tests below it had
+     * not run yet - so a write made by any of THEM, in this same JVM, was never in scope; the class
+     * could tell you it had not written to the golden layout before it was done reading it. Declared
+     * here instead, it runs once, after every `@Test` in the class has finished, so `after` sees
+     * whatever any of them did.
+     *
+     * **Read the scope before relying on it further.** Both captures are still in this class's own
+     * JVM, and the suite runs one JVM per class - so a write by ANOTHER class already happened before
+     * `before` was taken, and this cannot see it. What it catches now is every write this class's own
+     * reading could cause, which is the property the class exists for and no longer only a slice of it.
      *
      * The protection against another class writing to that folder lives in `tools/battery.sh`, which
      * fingerprints it around the whole run and says so explicitly - and which `ant test` does not
@@ -124,8 +134,13 @@ public class testTheGoldenLayoutHoldsTogether
      *
      * Every file, by content, not by timestamp: a file rewritten with identical bytes is not a
      * problem, and flagging it would make this test noise.
+     *
+     * MUTATION this catches: have any `@Test` above - `testEverySquareTheSetupNamesIsOnTheDiagram` is
+     * as good as any - call `store.save()` once. As a `@Test` running first this passed regardless,
+     * because `after` was taken before that write happened; run last, it sees the rewritten file and
+     * fails.
      */
-    @Test
+    @AfterClass
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
         Map<String, String> after = fingerprint(GOLDEN);

@@ -1292,7 +1292,23 @@ public class testEditorSurfaceRules
         // undo already spent.
         String exit = withoutComments(bodyOf(ui, "private void WindowClosed("));
 
-        assertTrue(exit.indexOf("completeExitDiscard()") > exit.indexOf("maySettleBeforeExit()"),
+        int settles = exit.indexOf("maySettleBeforeExit()");
+        int completes2 = exit.indexOf("completeExitDiscard()");
+
+        // Proved present before they are compared - indexOf answers -1 for an absent term, which is
+        // less than every real index, so deleting the settle call outright (a worse fault than
+        // reordering it - the exit stops asking about unsaved work at all) would otherwise still leave
+        // a present completeExitDiscard() reading as "after" and this passing on the strength of a
+        // call that is no longer there (TST-B7).
+        assertTrue(settles >= 0,
+            "maySettleBeforeExit() is no longer called from WindowClosed - the exit stopped asking "
+            + "about unsaved work at all, which is worse than what this test was written for");
+
+        assertTrue(completes2 >= 0,
+            "completeExitDiscard() is no longer called from WindowClosed - a Discard on the way out "
+            + "no longer completes the second half of it");
+
+        assertTrue(completes2 > settles,
             "the discard is completed before the exit is certain. Anything between those two can "
             + "still return, and then the setup has been rewound and the application is still up");
     }
@@ -2285,5 +2301,61 @@ public class testEditorSurfaceRules
         assertTrue(manage < pages,
             "Manage Configurations has drifted back down the menu, below the editing tools - it was "
             + "two groups away from the thing it acts on and they are one subject");
+    }
+
+    /**
+     * The pop-out and the picture export sit BELOW the Central Station section.
+     *
+     * Adam, 2026-08-29: "Move pop up all... and save as picture to below the central station layout
+     * section." They were between the two source sections, which put them under the Local Layout
+     * heading - and neither is about where the diagram came from. The UX review had the same
+     * complaint from the other side (UXR-C11).
+     *
+     * The existing menu test checks the export is placed relative to the POP-OUT, which stays true
+     * wherever the pair ends up, so nothing pinned where the pair itself sits.
+     *
+     * MUTATION: dropping the re-home block from mountLayoutHeadings fails this.
+     */
+    @Test
+    public void testThePopOutAndExportSitBelowTheStationSection() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String mount = withoutComments(bodyOf(ui, "private void mountLayoutHeadings()"));
+
+        assertFalse(mount.isEmpty(), "mountLayoutHeadings is gone");
+
+        int heading = mount.indexOf("layoutMenu.add(centralStationHeading");
+        int removed = mount.indexOf("layoutMenu.remove(popUpAllMenuItem)");
+        int readded = mount.indexOf("layoutMenu.add(popUpAllMenuItem)");
+        int export = mount.indexOf("layoutMenu.add(exportDiagramItem)");
+
+        // Both present before either is ordered - indexOf answers -1 for something absent.
+        assertTrue(heading >= 0, "the Central Station heading is no longer mounted");
+        assertTrue(removed >= 0 && readded >= 0,
+            "the pop-out is no longer taken out from between the two sections and put below them, so "
+            + "it is back under the Local Layout heading it has nothing to do with");
+        assertTrue(export >= 0, "the picture export no longer travels with the pop-out");
+
+        assertTrue(heading < removed,
+            "the pop-out is re-homed before the Central Station heading is mounted, so it lands above "
+            + "the section it is supposed to sit below");
+
+        assertTrue(readded < export,
+            "the export no longer follows the pop-out - they were put together deliberately, both "
+            + "being ways of getting the diagram into a window or a file");
+
+        // And the separators are tidied by walking, not by naming generated fields.
+        String tidy = withoutComments(bodyOf(ui, "private void tidyLayoutMenuSeparators()"));
+
+        assertFalse(tidy.isEmpty(),
+            "nothing collapses runs of separators, so taking the pop-out out from between two of them "
+            + "leaves two rules in a row where it used to be");
+
+        assertFalse(tidy.contains("jSeparator"),
+            "the separator tidy names a generated field. The NetBeans designer renumbers those "
+            + "whenever the form is touched, so a rule that names one is a designer save away from "
+            + "being wrong - which is how cropOverlay disappeared twice on 2026-08-28");
     }
 }

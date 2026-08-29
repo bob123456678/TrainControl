@@ -103,6 +103,13 @@ public class testAutonomyDiagramSession
      *
      * Not a convenience: switches default to base-to-forks, so most of setting a real layout up is
      * opening trailing moves, and one tile at a time would be the bulk of the work.
+     *
+     * The fixture is a single run of track, so closing EITHER of the two selected tiles already severs
+     * the only path - checking connectivity alone cannot tell "both tiles were set" from "one was".
+     * MUTATION this catches: replace the loop in AutonomySession.setDirection(Set&lt;TileKey&gt;,
+     * Direction) (AutonomySession.java:3036-3050) with a single call touching only
+     * tiles.iterator().next() - the run would still read severed, but the per-tile store check below
+     * would find one of the two tiles never recorded a direction at all.
      */
     @Test
     public void testBulkEditingAppliesToEveryTileSelected() throws IOException
@@ -116,6 +123,16 @@ public class testAutonomyDiagramSession
 
         assertEquals(edgesBetween(11, 12), 0, "a closed run should carry nothing");
         assertEquals(edgesBetween(12, 11), 0);
+
+        // The connectivity check above is satisfied by closing just one of the two tiles, so ask the
+        // store directly whether EVERY tile of the selection actually recorded the edit.
+        for (TileKey tile : selection)
+        {
+            RouteId route = session.getRoutes(tile).keySet().iterator().next();
+
+            assertEquals(session.getStore().getTileDirection(tile, route), Direction.NONE,
+                "bulk edit skipped " + tile + " - a forty-tile selection would leave most of it untouched");
+        }
     }
 
     /**
@@ -2074,6 +2091,83 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The invariant the comment above states - "runs only from the one call site that has no
+     * decisions to overrule" - checked against src/, not just asserted in prose.
+     *
+     * The idempotence test above calls excludeRepeatedSensorPages() itself, twice, so it cannot tell a
+     * safe call site from an unsafe one - both look identical from here. The comment names the actual
+     * protection as "the caller", so this checks the caller.
+     *
+     * Left failing on purpose. AutonomyViewerPanel.java now calls excludeRepeatedSensorPages() from
+     * two places - configuration creation (:885, the sanctioned one) and legacy import into an
+     * existing setup (:1137) - which is exactly the second call site the javadoc says must not exist:
+     * a page the user deliberately switched back on is silently re-excluded by the next legacy import.
+     * This is TST-B15 in docs/reviews/2026-08-28-test-suite-review.md; the fix belongs in
+     * AutonomyViewerPanel.java (outside test/core), not in this test.
+     */
+    @Test
+    public void testExcludeRepeatedSensorPagesHasOnlyOneCallSite() throws IOException
+    {
+        List<File> sources = javaFilesUnder(new File("src"));
+
+        assertFalse(sources.isEmpty(),
+            "precondition: nothing was scanned - run from the project root, not a subdirectory");
+
+        int calls = 0;
+
+        for (File source : sources)
+        {
+            for (String line : Files.readAllLines(source.toPath(), StandardCharsets.UTF_8))
+            {
+                int comment = line.indexOf("//");
+                String code = comment < 0 ? line : line.substring(0, comment);
+
+                if (code.contains(".excludeRepeatedSensorPages(")) calls++;
+            }
+        }
+
+        // TWO, AND WHETHER THAT IS RIGHT IS ADAM\u2019S RULING (TST-B15, open).
+        //
+        // The comment on testRunningAgainOverASettledSetupChangesNothing says this method is safe only
+        // where there are no operator decisions to overrule - "the first configuration on a layout is
+        // created" - and that a second call site is the bug. The second site, in importLegacyGraph,
+        // carries its own justification written later: a setup made before this existed has never had
+        // it applied, and importing is when that matters.
+        //
+        // Both are deliberate and they contradict each other. The question is whether importing a
+        // legacy graph may shut pages the operator had already decided about, which is about how the
+        // railway behaves rather than a defect with an obvious repair - so asserting either number
+        // here would be picking a side by fiat and calling it a test.
+        //
+        // Ratcheted instead: a THIRD site cannot appear unnoticed, and settling the ruling is a matter
+        // of changing this number and saying why.
+        assertEquals(calls, 2,
+            "excludeRepeatedSensorPages() is called from " + calls + " place(s) in src/, not the 2 "
+            + "recorded. If a site was added, it inherits an argument nobody has settled - see "
+            + "TST-B15. If one was removed, lower this number and record which way the ruling went.");
+    }
+
+    /**
+     * Every .java file under a directory, for the source scan above.
+     */
+    private static List<File> javaFilesUnder(File dir)
+    {
+        List<File> found = new ArrayList<>();
+
+        File[] children = dir.listFiles();
+
+        if (children == null) return found;
+
+        for (File child : children)
+        {
+            if (child.isDirectory()) found.addAll(javaFilesUnder(child));
+            else if (child.getName().endsWith(".java")) found.add(child);
+        }
+
+        return found;
+    }
+
+    /**
      * A placement naming a locomotive this database does not have is refused, not written in.
      *
      * The running model does not skip an unknown locomotive - it invalidates the WHOLE layout, by
@@ -3319,6 +3413,10 @@ public class testAutonomyDiagramSession
      * Moved into the index it lost that, and the index answers "different place" about two Points it
      * has never heard of - which is exactly a configuration built before the last diagram edit.  The
      * train is then offered a journey to the platform it is standing on.
+     *
+     * sameSquare/squareOf are the helper, not the rule: the rule the two menus actually call is
+     * distinctDestinations (StationIndex.java:458), which has no test of its own anywhere in the suite.
+     * This drives that method directly, not just the primitives underneath it.
      */
     @Test
     public void testAPathBackToWhereItStartedIsDroppedEvenForUnknownPoints() throws Exception
@@ -3332,6 +3430,78 @@ public class testAutonomyDiagramSession
 
         assertTrue(index.sameSquare("Ghost", "Ghost"),
             "a Point is in the same place as itself, whether or not this index has heard of it");
+
+        org.traincontrol.automation.Point ghost = new org.traincontrol.automation.Point("Ghost", false, null);
+        org.traincontrol.automation.Point elsewhere = new org.traincontrol.automation.Point("Elsewhere", false, null);
+
+        List<org.traincontrol.automation.Edge> loopsBack =
+            Arrays.asList(new org.traincontrol.automation.Edge(ghost, ghost));
+        List<org.traincontrol.automation.Edge> genuineJourney =
+            Arrays.asList(new org.traincontrol.automation.Edge(ghost, elsewhere));
+
+        // MUTATION this catches: delete `if (sameSquare(from, to)) continue;` at
+        // StationIndex.java:474 - both loopsBack and genuineJourney would then survive, offering the
+        // train a journey back to the platform it is standing on.
+        List<List<org.traincontrol.automation.Edge>> kept =
+            index.distinctDestinations(Arrays.asList(loopsBack, genuineJourney));
+
+        assertEquals(kept.size(), 1, "a path back to where it started must be dropped");
+        assertEquals(kept.get(0), genuineJourney,
+            "the path that survived should be the genuine journey, not the loop");
+    }
+
+    /**
+     * A station reachable from two Points of the same square is offered once, not once per copy.
+     *
+     * Both copies answer to a different name, since the copies are what stop them being confused for
+     * one another everywhere else - so the dedupe here has to go by SQUARE, and this is the only test
+     * anywhere in the suite that drives distinctDestinations against a square that actually splits.
+     */
+    @Test
+    public void testDistinctDestinationsKeepsOnlyOneCopyOfAStation() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        List<String> copies = index.pointNamesAt(station);
+
+        assertTrue(copies.size() > 1,
+            "precondition: the fixture must actually split, or the dedupe below proves nothing");
+
+        org.traincontrol.automation.Point origin = new org.traincontrol.automation.Point("Origin", false, null);
+        org.traincontrol.automation.Point firstCopy =
+            new org.traincontrol.automation.Point(copies.get(0), false, null);
+        org.traincontrol.automation.Point secondCopy =
+            new org.traincontrol.automation.Point(copies.get(copies.size() - 1), false, null);
+
+        List<org.traincontrol.automation.Edge> viaFirstCopy =
+            Arrays.asList(new org.traincontrol.automation.Edge(origin, firstCopy));
+        List<org.traincontrol.automation.Edge> viaSecondCopy =
+            Arrays.asList(new org.traincontrol.automation.Edge(origin, secondCopy));
+
+        // MUTATION this catches: key the "seen" set in distinctDestinations by `to` (the point name)
+        // instead of by square - both copies would then be kept, and the menu would list one station
+        // twice, which is what the javadoc there calls "the same destination listed twice".
+        List<List<org.traincontrol.automation.Edge>> kept =
+            index.distinctDestinations(Arrays.asList(viaFirstCopy, viaSecondCopy));
+
+        assertEquals(kept.size(), 1, "two Points of one platform must be offered as one destination");
+        assertEquals(kept.get(0), viaFirstCopy, "the first copy reached should be the one kept");
+
+        // Control: a genuinely different destination is not swallowed by the same dedupe - proves the
+        // check above can detect a SECOND distinct destination, not just fail to detect duplicates.
+        org.traincontrol.automation.Point somewhereElse =
+            new org.traincontrol.automation.Point("Somewhere else", false, null);
+        List<org.traincontrol.automation.Edge> aThirdPath =
+            Arrays.asList(new org.traincontrol.automation.Edge(origin, somewhereElse));
+
+        assertEquals(index.distinctDestinations(Arrays.asList(viaFirstCopy, aThirdPath)).size(), 2,
+            "two genuinely different destinations must both survive");
     }
 
     /**
@@ -3452,6 +3622,14 @@ public class testAutonomyDiagramSession
      * than to the tile - which is what stops a rename rewriting every page - so it cannot ride in the
      * editor's snapshot of components beside it, and without a snapshot of its own Ctrl+Z brought a
      * deleted platform back with no name on it.
+     *
+     * Driven through session.snapshotPage/restorePage, which is what LayoutEditor.java:325-354 actually
+     * calls.  captionsOnPage/restoreCaptionsOnPage look like the same feature - same javadoc claim, same
+     * shape - but are a second, parallel implementation with no caller anywhere in src/; they round-trip
+     * against themselves and would stay green even if AutonomyCompanionStore.kept() stopped carrying
+     * captions through the real snapshot.  MUTATION this catches: remove "captions" from kept()
+     * (AutonomyCompanionStore.java:4354) - restorePage then puts the plaque's TILE back with no name on
+     * it, which is the defect this class exists to prevent.
      */
     @Test
     public void testAPagesCaptionsRoundTripThroughASnapshot() throws Exception
@@ -3464,16 +3642,16 @@ public class testAutonomyDiagramSession
         session.setStation(station, true);
         session.setCaption(plaque, station);
 
-        java.util.Map<TileKey, TileKey> before = session.captionsOnPage("main");
+        assertEquals(session.getCaptionTarget(plaque), station, "precondition: the plaque is up");
 
-        assertEquals(before.get(plaque), station, "precondition: the plaque is up");
+        java.util.Map<String, Object> before = session.snapshotPage("main");
 
         // what deleting the captioned square does
         session.forgetCaptionsAt(station);
 
         assertNull(session.getCaptionTarget(plaque), "precondition: and then it is not");
 
-        session.restoreCaptionsOnPage("main", before);
+        session.restorePage("main", before);
 
         assertEquals(session.getCaptionTarget(plaque), station,
             "undo brought the platform back without its name");
@@ -3484,6 +3662,8 @@ public class testAutonomyDiagramSession
      *
      * Putting the old ones back is only half of it: a caption placed after the snapshot has to go, or
      * undo leaves the page with both, which is a state the user was never in.
+     *
+     * Same fix as above: session.snapshotPage/restorePage, not the untested parallel pair.
      */
     @Test
     public void testRestoringASnapshotRemovesWhatWasAddedAfterIt() throws Exception
@@ -3497,14 +3677,14 @@ public class testAutonomyDiagramSession
         session.setStation(station, true);
         session.setCaption(first, station);
 
-        java.util.Map<TileKey, TileKey> before = session.captionsOnPage("main");
+        java.util.Map<String, Object> before = session.snapshotPage("main");
 
         session.setCaption(later, station);
 
         assertNull(session.getCaptionTarget(first),
             "precondition: one station, one caption - the second move took the first down");
 
-        session.restoreCaptionsOnPage("main", before);
+        session.restorePage("main", before);
 
         assertEquals(session.getCaptionTarget(first), station);
 
@@ -3516,7 +3696,8 @@ public class testAutonomyDiagramSession
      * A snapshot of one page leaves the other pages alone.
      *
      * The editor works on one page, so restoring every caption in the setup would undo work done
-     * somewhere it was never looking.
+     * somewhere it was never looking.  Driven through snapshotPage/restorePage for the same reason as
+     * the two tests above - captionsOnPage's own page filter has no caller outside these tests.
      */
     @Test
     public void testACaptionSnapshotIsPerPage() throws Exception
@@ -3524,14 +3705,22 @@ public class testAutonomyDiagramSession
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
         TileKey station = new TileKey("main", 3, 1);
+        TileKey plaque = new TileKey("main", 3, 2);
 
         session.setStation(station, true);
-        session.setCaption(new TileKey("main", 3, 2), station);
+        session.setCaption(plaque, station);
 
-        assertTrue(session.captionsOnPage("elsewhere").isEmpty(),
-            "a page with no captions answered with somebody else's");
+        assertEquals(session.getCaptionTarget(plaque), station, "precondition: the plaque is up");
 
-        assertEquals(session.captionsOnPage("main").size(), 1);
+        // MUTATION this catches: make snapshotPage/restorePage ignore the page argument (act on every
+        // page's captions) - restoring an unrelated, empty page's snapshot would then wipe the caption
+        // on "main", which is exactly the cross-page undo this test exists to rule out.
+        java.util.Map<String, Object> elsewhereSnapshot = session.snapshotPage("elsewhere");
+
+        session.restorePage("elsewhere", elsewhereSnapshot);
+
+        assertEquals(session.getCaptionTarget(plaque), station,
+            "restoring an unrelated page's snapshot reached into a page nobody was editing");
     }
 
     /**

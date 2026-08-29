@@ -64,17 +64,85 @@ public class testNoSelfRecursiveWrappers
             // itself declaring, which is the recursion.
             for (String line : bodyOf(lines, i))
             {
-                assertFalse(withoutComments(line).contains("this." + name + "("),
-                    name + " calls this." + name + "(...) from inside its own body.  A wrapper that "
-                    + "forwards to the model must call this.model." + name + "(...) - calling itself "
-                    + "is an infinite recursion the compiler accepts, the battery does not notice, and "
-                    + "the user meets as a StackOverflowError.  Line: " + line.trim());
+                assertFalse(callsItself(line, name, argumentCount(
+                        declaration.substring(declaration.indexOf('(') + 1,
+                            declaration.lastIndexOf(')')))),
+                    name + " calls itself from inside its own body instead of calling "
+                    + "this.model." + name + "(...) - an infinite recursion the compiler accepts, the "
+                    + "battery does not notice, and the user meets as a StackOverflowError.  Line: "
+                    + line.trim());
             }
         }
 
         assertTrue(checked > 0,
             "no forwarding wrappers were found at all, so this test is checking nothing - the shape it "
             + "looks for has probably changed");
+    }
+
+    /**
+     * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
+     *
+     * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what
+     * caught it - but the mechanical rewrite that produced it is exactly the kind of edit that also
+     * produces the UNQUALIFIED spelling, `syncWithCS2()`, with no `this.` in front at all - inside a
+     * lambda, for instance, or after a second mechanical pass tidies the first one's `this.` away.  The
+     * substring check alone cannot see that spelling, so the regex below is checked as well: a bare
+     * occurrence of the name, immediately preceded by neither a dot nor a word character, so that it
+     * matches `-> ` + name + `(` and a plain `name(` but not `this.` + name + `(` a second time and
+     * not `this.model.` + name + `(`, which is the call the wrapper is supposed to make.
+     *
+     * MUTATION this catches: change the recursive call this file already guards against from
+     * `this.syncWithCS2();` to the unqualified `syncWithCS2();`.  Before this method existed, the
+     * substring check on `"this." + name + "("` no longer matched and the test went green over the
+     * same infinite recursion it was written to catch.
+     */
+    private static boolean callsItself(String line, String name, int arity)
+    {
+        String code = withoutComments(line);
+
+        // THE SAME ARITY, or it is another overload rather than recursion.
+        //
+        // `saveState(boolean)` ends `saveState(backup, !backup);` - one overload handing to the other,
+        // the ordinary Java idiom, and the two-argument form calls nothing at all. Reading the bare
+        // name alone reported that as an infinite recursion in working code, which is worse than the
+        // gap the bare-name check closed: saveState is the only overloaded method in this file\u2019s
+        // scope, so this would have been red for ever and somebody would have deleted it.
+        java.util.regex.Matcher call = java.util.regex.Pattern.compile(
+            "(^|[^.\\w])" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
+            .matcher(code);
+
+        while (call.find())
+        {
+            if (argumentCount(call.group(2)) == arity) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * How many arguments a call carries.
+     *
+     * Commas inside a nested call are not separators, so depth is tracked. Good enough for what this
+     * has to tell apart - `name(a)` from `name(a, b)` - and the alternative is a Java parser.
+     *
+     * @param args the text between the brackets
+     * @return the number of top-level arguments
+     */
+    private static int argumentCount(String args)
+    {
+        if (args.trim().isEmpty()) return 0;
+
+        int depth = 0;
+        int count = 1;
+
+        for (char c : args.toCharArray())
+        {
+            if (c == '(' || c == '<') depth++;
+            else if (c == ')' || c == '>') depth--;
+            else if (c == ',' && depth == 0) count++;
+        }
+
+        return count;
     }
 
     /**
@@ -93,6 +161,12 @@ public class testNoSelfRecursiveWrappers
 
     /**
      * The lines of a method body, from its declaration to its closing brace.
+     *
+     * The signature itself is never included, even when its opening brace shares its line (K&R style,
+     * against the Allman style this file mostly uses) - only what follows that brace is. Otherwise
+     * `public void syncWithCS2() {` would be handed to `callsItself` as a line "calling" syncWithCS2,
+     * since the bare-name check added for TST-B6 cannot otherwise tell a declaration's own name from a
+     * call to it - both are just the name followed by `(`, preceded by a space.
      */
     private static List<String> bodyOf(List<String> lines, int declaredAt)
     {
@@ -104,21 +178,26 @@ public class testNoSelfRecursiveWrappers
         for (int i = declaredAt; i < lines.size(); i++)
         {
             String line = lines.get(i);
+            String forChecking = line;
 
-            for (char c : line.toCharArray())
+            for (int c = 0; c < line.length(); c++)
             {
-                if (c == '{')
+                char ch = line.charAt(c);
+
+                if (ch == '{')
                 {
+                    if (!started) forChecking = line.substring(c + 1);
+
                     depth++;
                     started = true;
                 }
-                else if (c == '}')
+                else if (ch == '}')
                 {
                     depth--;
                 }
             }
 
-            if (started) body.add(line);
+            if (started) body.add(forChecking);
 
             if (started && depth <= 0) break;
         }

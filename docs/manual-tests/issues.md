@@ -3,7 +3,8 @@
 Bugs and feature requests, in one inbox. Adam writes here - by hand, or through
 [triage.py](triage.py)'s **New issue** button. Claude reads here, turns each item into a finding in
 `docs/reviews/` (for a bug, under that round's prefix) or works it directly (for a feature request),
-opens an `MT-###` entry in [tests.md](tests.md) to cover it, and clears the item out of the Inbox.
+opens an `MT-###` entry in [tests.md](tests.md) to cover a bug fix (a feature request only if the work
+turns out to need one), and clears the item out of the Inbox.
 
 This replaces the separate `bug-reports.md` and `feature-requests.md` files from 2026-08-22 - the two
 inboxes worked identically and existed only because bugs and features felt like different things when
@@ -59,6 +60,55 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### OB-130 - 2026-08-29 - Ruling needed: may importing a legacy graph shut pages you already decided about
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-29  
+
+excludeRepeatedSensorPages has TWO call sites and they carry contradictory intentions, both deliberate. The comment on testRunningAgainOverASettledSetupChangesNothing says the method is safe only where there are no operator decisions to overrule - "the first configuration on a layout is created, which is the one moment there are no decisions to overrule" - and that a second call site is the bug. The second site, AutonomyViewerPanel.importLegacyGraph, carries a justification written later: a setup made before this existed, or one whose pages have been redrawn since, has never had it applied, and importing is exactly when that matters. The question is whether importing may shut pages you had already chosen to keep. A test currently ratchets the count at 2 so a third site cannot appear unnoticed; settling this means changing that number and recording which way it went. Found by the test-suite review (TST-B15).
+
+### OB-132 - 2026-08-29 - testTimetableOnDerivedGraph now skips, so it covers nothing
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-29  
+
+This class ran clean through several batteries and began skipping after the review round, with "nothing moved in 12s, so there is no timetable to replay". The cause is a correct fix: TST-B11 found it was reading model.getLayoutList(), i.e. whatever layout the machine happened to have - your real railway - and pointed it at test_layout instead, correcting the configuration name from "Autonomy 1" (which matched nothing) to "Main". Against the fixture, two stations are found and five of seven locomotives are placed, and then nothing runs in the window. So it is now honest and vacuous, which by this repo own rule is the same as having no test. Unknown whether the cause is the run window, the Main configuration paths, or the placement.
+
+### OB-133 - 2026-08-29 - The unreadable-import test has never exercised the rollback it is named for
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-29  
+
+testAnUnreadableImportChangesNothing malforms a value and expects importBundle to refuse and roll back. It never refuses. The rollback code itself is correct - the catch does "if (existed) configurations.put(name, replaced); else forgetConfiguration(name);" - so the configuration is left behind only because the import SUCCEEDS. I first traced this to readSquareMap skipping entries whose key does not resolve to a tile, which was wrong twice over: the validator proved by running that the exported key is exactly the literal the comment calls unparseable, and that the real mechanism is the merge rule (if (mine.has(inner)) continue), so nothing is filled and readShared is never called at all. The validator built a genuinely refusing bundle four lines away and confirmed the rollback works. The site also now carries two contradictory comment blocks, one describing an assertion that is not there. Worth finishing properly (VAL-B2, VAL-B3).
+
+### OB-134 - 2026-08-29 - Six destructive confirmations still pre-select Yes
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-29  
+
+UXR-B5 found confirmation dialogs that pre-select the destructive answer while their comment claims the safe one is selected. Three were fixed - the full locomotive state sync, the data source dialog, and deleting a timetable entry. The validator found six siblings left with the same fault, among them Delete Route, delete a locomotive from the database, and remove all timetable entries. These are the ones where a reflexive Enter is most expensive, and the pattern is exactly the fix-one-site-and-not-its-twins failure this project keeps hitting (VAL-B5).
+
+### OB-136 - 2026-08-29 - simulate: true has gone from the live autonomy configuration
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-08-29  
+
+cs2_sample_layout/config/autonomy/configuration-Main.json is showing as modified with "simulate": true REMOVED. The loc and facing changes in the same file are ordinary placement churn from running trains; this one is a settings change to the real railway. It is uncommitted and has never been staged, and the battery live-layout fingerprint has been silent on every run since the harness sandboxes were fixed - so nothing in the suite is writing it now. The likeliest cause is the earlier harness defect, when three test classes opened the real layout because their sandbox was opened after the model rather than before it. Flagged so it is a decision rather than something that ships by accident.
+
+### OB-137 - 2026-08-29 - route table freeze on import
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 02:12  
+**Build:** commit eac0e392, build\classes, compiled 29 Aug 01:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+while importing routes from Json, the route table freezes up /looks weird
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -71,6 +121,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-135 | bug | The wait mark still does not animate on the track diagram | - | [MT-206](tests.md#mt-206) |
+| 2026-08-29 | OB-131 | bug | Start Autonomy never comes back if a train never berths | - | [MT-205](tests.md#mt-205) |
+| 2026-08-29 | FR-042 | feature request | Spot-check the newly translated autonomy strings | - | [MT-204](tests.md#mt-204) |
 | 2026-08-28 | FR-041 | feature request | A splash while the station is reached, before there is a window to put one in | fixed unvalidated | - |
 | 2026-08-28 | OB-129 | bug | The wait mark counted timer ticks on an event thread that coalesces them, and was capped at 400 in a top-aligned parent | fixed unvalidated | - |
 | 2026-08-28 | FR-040 | feature request | The Layout menu names its data source instead of offering to tell you | fixed unvalidated | - |

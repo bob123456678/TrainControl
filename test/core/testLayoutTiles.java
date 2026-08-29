@@ -56,9 +56,18 @@ public class testLayoutTiles
     // is what produces the sustained structural modification during iteration
     private static final int CHURN_TILES = 4000;
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
+        // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
+        // this, showUI = true below opens and can write to Adam's own railway (OB-111), and can also
+        // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
+        // the whole battery.
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, true, false, true);
         model.setNetworkCommState(false);
 
@@ -69,9 +78,11 @@ public class testLayoutTiles
     }
 
     @AfterClass
-    public static void tearDownClass()
+    public static void tearDownClass() throws Exception
     {
         Thread.setDefaultUncaughtExceptionHandler(previousHandler);
+
+        if (sandbox != null) sandbox.close();
     }
 
     // ------------------------------------------------------------------------------------------------

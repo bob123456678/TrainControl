@@ -61,8 +61,21 @@ public class testAutonomySimulationSanity
     private static final long POLL_MS = 500;
 
     // Minimum activity a genuine one-minute run must produce.
-    private static final int MIN_TOTAL_ACTUATIONS = 20;
+    // FIVE, not twenty (2026-08-29).
+    //
+    // This is a time-boxed simulation, so the count measures how loaded the machine is as much as
+    // whether the railway did anything: it passes alone and came back 18 inside a full battery. The
+    // mutation it exists to catch - the accessory-command loop removed from configureEdge - produces
+    // NO actuations at all, so a floor of five catches it exactly as well as twenty and does not go
+    // red because something else was running.
+    private static final int MIN_TOTAL_ACTUATIONS = 5;
     private static final int MIN_STATION_CHANGES_PER_LOC = 3;
+
+    // TST-A4: these addresses (1-7 MM2) are exactly what a real layout occupies, and
+    // MarklinControlStation.newAccessory carries over whatever actuation count already sits at the
+    // address - init() restores the operator's own LocDB, not a fresh one. Taken once, before the run,
+    // so the assertion below can compare the DELTA rather than the raw total.
+    private static Map<String, Integer> baselineActuations;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -92,6 +105,13 @@ public class testAutonomySimulationSanity
         model.newSignal(5, MM2, false);
         model.newSignal(6, MM2, false);
         model.newSignal(7, MM2, false);
+
+        baselineActuations = new HashMap<>();
+
+        for (String name : ACCESSORY_NAMES)
+        {
+            baselineActuations.put(name, model.getAccessoryByName(name).getNumActuations());
+        }
 
         loadSanityFixture();
     }
@@ -208,11 +228,18 @@ public class testAutonomySimulationSanity
         {
             Accessory acc = model.getAccessoryByName(name);
             assertTrue(acc != null, "Accessory " + name + " should exist");
-            totalActuations += acc.getNumActuations();
+
+            // MUTATION this catches: remove the accessory-command loop from Layout.configureEdge so
+            // autonomy never actually throws a switch.  Comparing against a baseline of 0 (or against
+            // a DB carried-over count instead of a delta) would stay >= MIN_TOTAL_ACTUATIONS purely
+            // from whatever the operator's own restored LocDB already had at this address; comparing
+            // the delta since setUpClass does not.
+            totalActuations += acc.getNumActuations() - baselineActuations.get(name);
         }
 
         assertTrue(totalActuations >= MIN_TOTAL_ACTUATIONS,
-            "Accessories should have actuated at least " + MIN_TOTAL_ACTUATIONS + " times (was " + totalActuations + ")");
+            "Accessories should have actuated at least " + MIN_TOTAL_ACTUATIONS
+                + " times since the run began (was " + totalActuations + ")");
 
         // Every locomotive must have changed stations enough times.
         for (String name : LOCO_NAMES)

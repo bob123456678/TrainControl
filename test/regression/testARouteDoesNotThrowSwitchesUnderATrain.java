@@ -969,4 +969,140 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     {
         Thread.sleep(600);
     }
+
+    /**
+     * A turnout under a MEASURED train stays refused, on a path that is only partly measured (WK-B1).
+     *
+     * The sibling of `testAnAccessoryBehindTheTrainIsStillSettable`, with the one thing that test does
+     * not have: a train with a length. Without one every edge is handed back the moment the head
+     * leaves it, which is the right answer on an unmeasured railway and says nothing about a measured
+     * one.
+     *
+     * Edges of 100, 100 and 0 with a train of 250 - the example from the commit that introduced the
+     * rule this tests. When the head finishes the unmeasured third edge, the first edge has 100 units
+     * of measured distance behind it and 150 units of train still standing on it.
+     *
+     * A looser rule released it there, on the reasoning that nothing better could be known over
+     * unmeasured track. Nothing better can be known, which is exactly why the answer must be that the
+     * train is still there: `getActiveAccs` skips cleared edges, and with atomicRoutes on the lock is
+     * held for the whole run by design - so being reported clear is the ONLY thing that stops
+     * `heldReason` refusing a route that would throw that turnout.
+     *
+     * MUTATION: restoring the escape - release when the last edge traversed had no length - fails the
+     * behind-the-train assertion while every other test in this class still passes.
+     */
+    @Test
+    public void testAMeasuredTrainKeepsItsTurnoutsRefused() throws Exception
+    {
+        for (String s : new String[] {S88, S88_MID, S88_MID2})
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(true);
+
+        layout.createPoint("ML_A", false, null);
+        layout.createPoint("ML_B", false, S88_MID);
+        layout.createPoint("ML_C", false, S88_MID2);
+        layout.createPoint("ML_D", true, S88);
+
+        Edge ab = layout.createEdge("ML_A", "ML_B");
+        Edge bc = layout.createEdge("ML_B", "ML_C");
+        Edge cd = layout.createEdge("ML_C", "ML_D");
+
+        // Measured, measured, unmeasured - a railway with lengths on some of its track and not the
+        // rest, which is the one this is about.
+        ab.setLength(100);
+        bc.setLength(100);
+        cd.setLength(0);
+
+        MarklinAccessory behind =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        MarklinAccessory ahead =
+            model.newSwitch(SWITCH_AHEAD, Accessory.accessoryDecoderType.MM2, false);
+
+        behind.setSwitched(false);
+        ahead.setSwitched(false);
+
+        ab.addConfigCommand(behind.getName(), Accessory.accessorySetting.STRAIGHT);
+        cd.addConfigCommand(ahead.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer wasLength = loc.getTrainLength();
+
+        // Longer than the measured distance the run can accumulate behind the first edge.
+        loc.setTrainLength(250);
+
+        layout.getPoint("ML_A").setLocomotive(loc);
+
+        final List<Boolean> behindHeld = new ArrayList<>();
+        final List<Boolean> aheadHeld = new ArrayList<>();
+
+        layout.setCallback("measured probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            behindHeld.add(layout.getActiveAccs().contains(behind));
+            aheadHeld.add(layout.getActiveAccs().contains(ahead));
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab, bc, cd), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(behindHeld.size() >= 3,
+                "the run reported fewer than three legs, so there was never a moment with one leg "
+                + "behind the train and one ahead.  Got " + behindHeld.size());
+
+            int last = behindHeld.size() - 1;
+
+            // PRECONDITIONS, so this cannot pass for the wrong reason.
+            assertTrue(behindHeld.get(0),
+                "precondition: when the train sets off the path must own the first turnout");
+
+            assertEquals(loc.getTrainLength(), Integer.valueOf(250),
+                "precondition: the train length did not survive to the run, so the rule compared "
+                + "against nothing and this test proves nothing");
+
+            // THE FINDING. 100 measured units behind, 250 of train.
+            // WHAT IT ACTUALLY SAW, because this failed once inside a full battery and passed alone,
+            // and the message could not tell anybody why. A failure nobody can reproduce gets deleted
+            // rather than fixed.
+            String seen = " [observed: " + behindHeld.size() + " legs, ab=" + ab.getLength()
+                + " bc=" + bc.getLength() + " cd=" + cd.getLength()
+                + " trainLength=" + loc.getTrainLength() + " held=" + behindHeld + "]";
+
+            assertTrue(ab.getLength() == 100 && bc.getLength() == 100,
+                "the measured lengths are not on the edges at run time, so the rule saw an unmeasured "
+                + "path and released everything - this test would then be vacuous rather than wrong"
+                + seen);
+
+            assertTrue(behindHeld.get(last),
+                "the turnout on the first edge stopped being refused while 150 units of a 250 train "
+                + "were still standing on it.  The head had run on over unmeasured track, which says "
+                + "nothing about where the tail is - and with atomicRoutes on, an edge being reported "
+                + "clear is the only thing that stops a route throwing that turnout (WK-B1)" + seen);
+
+            assertTrue(aheadHeld.get(last),
+                "the turnout the train had not yet reached stopped being protected");
+        }
+        finally
+        {
+            loc.setTrainLength(wasLength);
+            layout.setAtomicRoutes(false);
+            model.clearAutoLayout();
+        }
+    }
 }

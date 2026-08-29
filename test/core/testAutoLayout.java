@@ -1148,6 +1148,28 @@ public class testAutoLayout
         String hadSignal = point.getProtectingSignal();
         org.traincontrol.base.Locomotive hadHome = point.getHomeLoc();
         boolean wasActive = point.isActive();
+        java.util.List<Point> hadBlockedBy = new java.util.ArrayList<>(point.getBlockedBy());
+        java.util.Set<Locomotive> hadExcludedLocs = new java.util.HashSet<>(point.getExcludedLocs());
+
+        // TST-B20: these four used to be set below and never put back, leaving this point of the
+        // shared sample layout non-dispatchable and speed-scaled for every test that ran after this
+        // one in the same JVM.
+        Integer hadMaxTrainLength = point.getMaxTrainLength();
+        int hadPriority = point.getPriority();
+        double hadSpeedMultiplier = point.getSpeedMultiplier();
+        boolean hadAutoDestination = point.isAutoDestination();
+
+        // A second, unrelated point of the same real layout, purely to be named as a blocker - never
+        // touched itself, so nothing about it needs restoring.
+        Point blocker = null;
+
+        for (Point candidate : layout.getPoints())
+        {
+            if (candidate != point) { blocker = candidate; break; }
+        }
+
+        assertNotNull(blocker,
+            "precondition: needed a second point of the same layout to name as a blocker");
 
         try
         {
@@ -1159,6 +1181,9 @@ public class testAutoLayout
             point.setPriority(3);
             point.setSpeedMultiplier(0.75);
             point.setAutoDestination(false);
+            point.setExcludedLocs(new java.util.HashSet<>(
+                Arrays.asList(model.getLocByName("Test loc 2"))));
+            point.setBlockedBy(Arrays.asList(blocker));
 
             // Not the default, deliberately.  The format omits a field that holds its default value -
             // "active" is written only when false, and parseAuto defaults it to true - so a test that
@@ -1170,12 +1195,16 @@ public class testAutoLayout
             org.json.JSONObject json = point.toJSON();
 
             // The keys parseAuto looks for on a point.  Kept in the reader's order so the two can be
-            // compared by eye.
+            // compared by eye.  "terminus", "reversing" and "loc" are checked separately below: the
+            // first two are mutually exclusive with each other (Point.setTerminus/setReversing each
+            // refuse the other), and "loc" needs a Point actually attached to a live layout to matter,
+            // which this shared sample-layout Point already is for everything else here.
             String[] readsOffAPoint =
             {
                 "name", "station", "s88", "x", "y",
                 "block", "protectingSignal", "home", "maxTrainLength",
-                "active", "autoDestination", "priority", "speedMultiplier"
+                "active", "autoDestination", "priority", "speedMultiplier",
+                "blockedBy", "excludedLocs"
             };
 
             for (String key : readsOffAPoint)
@@ -1191,7 +1220,38 @@ public class testAutoLayout
             point.setProtectingSignal(hadSignal);
             point.setHomeLoc(hadHome);
             point.setActive(wasActive);
+            point.setBlockedBy(hadBlockedBy);
+            point.setExcludedLocs(hadExcludedLocs);
+            point.setMaxTrainLength(hadMaxTrainLength);
+            point.setPriority(hadPriority);
+            point.setSpeedMultiplier(hadSpeedMultiplier);
+            point.setAutoDestination(hadAutoDestination);
         }
+
+        // "terminus", "reversing" and "loc" - checked on a standalone Point rather than the shared
+        // sample layout's, so setLocomotive here cannot reach into MarklinControlStation.clearLocomotiveExcept
+        // and move a locomotive the rest of this class's tests depend on (Point.setLocomotive only does
+        // that when the Point has a layout attached; a hand-built one does not).
+        //
+        // MUTATION each of the three assertions below catches on its own: delete the corresponding
+        // `jsonObj.put(...)` write in Point.toJSON (Point.java:941 terminus, :946 reversing, :1031 loc)
+        // - the terminus flag, the reversing flag, or the locomotive standing on a point is then
+        // silently dropped by export, exactly as TST-A1 describes for the fields above.
+        Point standalone = new Point("Terminus check", true, "999");
+
+        standalone.setTerminus(true);
+        assertTrue(standalone.toJSON().has("terminus"),
+            "parseAuto reads \"terminus\" off a point and toJSON did not write it");
+        standalone.setTerminus(false);
+
+        standalone.setReversing(true);
+        assertTrue(standalone.toJSON().has("reversing"),
+            "parseAuto reads \"reversing\" off a point and toJSON did not write it");
+        standalone.setReversing(false);
+
+        standalone.setLocomotive(model.getLocByName("Test loc 1"));
+        assertTrue(standalone.toJSON().has("loc"),
+            "parseAuto reads \"loc\" off a point and toJSON did not write it");
     }
 
     /**

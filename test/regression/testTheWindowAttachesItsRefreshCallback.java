@@ -29,17 +29,46 @@ import org.testng.annotations.Test;
 public class testTheWindowAttachesItsRefreshCallback
 {
     /**
-     * Java source with its // comments removed, so a check reads the code and not the prose about it.
+     * Java source with its comments removed - `//` AND block, so a check reads the code and not the
+     * prose about it.
+     *
+     * The line-based version this replaced stripped only from the first `//` on each line, which is
+     * exactly the half this file's own class javadoc warns about: "an attachment that does not follow
+     * it" and "the first comment anybody writes mentioning attachAutonomyRefresh( reopens the hole"
+     * were both about the RAW-TEXT count staying accurate by luck, not by a check that could not be
+     * fooled by prose. A `/**` block above a deleted call, or a `/* *&#47;` aside beside one, passed
+     * straight through the old stripper into `attached`'s count and into `body.contains(...)` alike -
+     * TST-B23, self-declared by the comment this method used to sit under.
+     *
+     * MUTATION this catches: delete the second `attachAutonomyRefresh(` call site
+     * (`TrainControlUI.java:18941`) and add a block comment anywhere in the file that mentions
+     * `attachAutonomyRefresh(` once - a javadoc line is enough. The old stripper left the count at 3
+     * regardless (two real calls, one declaration) even after the deletion, because the mention in the
+     * comment "replaced" the one that was removed; this one strips the comment first, so the count
+     * drops to 2 and `attached >= 3` fails where it used to pass.
      */
     private static String withoutComments(String source)
     {
         StringBuilder out = new StringBuilder();
 
-        for (String line : source.split("\n", -1))
-        {
-            int slashes = line.indexOf("//");
+        boolean inLine = false, inBlock = false;
 
-            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
+        for (int i = 0; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
         }
 
         return out.toString();

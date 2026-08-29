@@ -87,8 +87,10 @@ public class testErrorsStopTheSetupRunning
             + "the clean demonstration it is meant to be");
 
         assertTrue(session.hasErrors(),
-            "the setup has an error and will not admit it, so every affordance that asks this goes "
-            + "on offering to start something the refusal will decline (OB-090)");
+            "the setup has an error and will not admit it - though see "
+            + "testTheAffordancesAskTheGuardsOwnQuestion below: hasErrors() itself has no caller left "
+            + "in src/, so this line proves the METHOD works and not that anything offering to start "
+            + "autonomy actually asks it (OB-090, DD-A6)");
 
         // The heart of it: an error arrived that no blocking problem accounts for.
         assertTrue(session.errorCount() > blockingProblems(session),
@@ -169,6 +171,124 @@ public class testErrorsStopTheSetupRunning
         assertTrue(session.errorCount() < errors + soft,
             "every finding is being counted as an error, so nothing could ever be merely worth "
             + "looking at");
+    }
+
+    /**
+     * The affordances that offer to start autonomy ask the same question the refusal asks.
+     *
+     * `AutonomySession.hasErrors()` - the method the test above exercises - has zero callers left in
+     * `src/`: `grep -rn hasErrors src/` finds only its own declaration. What the guard
+     * (`refuseAutonomyStartWhileBroken`) and the affordances (`TrainControlUI.canStartAutonomy`,
+     * `AutonomyOverlayToggle`, `LayoutRightclickAutonomyMenu`) actually ask today is
+     * `autonomyErrorCount()` / `errorCount()`. A test that only proves `hasErrors()` still computes
+     * correctly is a rule tested and its call site left uncovered - DD-A6, named in this class's own
+     * javadoc and then done anyway, which is TST-B21.
+     *
+     * This reads the affordances instead, and asks whether they still consult the guard's own number
+     * rather than the narrower graph-only question OB-090 was about.
+     *
+     * MUTATION this catches: revert `canStartAutonomy()` to
+     * `return this.startAutonomy != null && this.startAutonomy.isEnabled() && !session.hasBlockingProblems();`
+     * (its shape before OB-090's third occurrence). Nothing above this test notices - the fixture's own
+     * javadoc says there is no way to make `hasBlockingProblems()` disagree with the graph on this
+     * layout - and OB-090 is back: four unnamed stations are four errors, no blocking problem, and the
+     * Start button stays live over a setup that refuses every press.
+     */
+    @Test
+    public void testTheAffordancesAskTheGuardsOwnQuestion() throws Exception
+    {
+        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
+        String toggle = read("src/org/traincontrol/gui/AutonomyOverlayToggle.java");
+        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
+
+        String canStart = withoutComments(bodyOf(ui, "public boolean canStartAutonomy()"));
+
+        assertFalse(canStart.isEmpty(), "canStartAutonomy() has moved or been renamed");
+
+        assertTrue(canStart.contains("autonomyErrorCount()"),
+            "canStartAutonomy() no longer asks autonomyErrorCount() - the Start button's own enabled "
+            + "state is deliberately left true, per this method's javadoc, so nothing else in it "
+            + "would notice an error the checks found");
+
+        assertFalse(canStart.contains("hasBlockingProblems()"),
+            "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "
+            + "OB-090 was about, blind to an unnamed station or any other check-only error");
+
+        assertTrue(toggle.contains("autonomyErrorCount()"),
+            "AutonomyOverlayToggle no longer reads autonomyErrorCount() at all - the diagram strip's "
+            + "own OB-090 fix has gone");
+
+        assertTrue(menu.contains("autonomyErrorCount()"),
+            "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "
+            + "Start item's own OB-090 fix has gone");
+    }
+
+    /**
+     * A source file, whole.
+     */
+    private static String read(String path) throws java.io.IOException
+    {
+        return new String(java.nio.file.Files.readAllBytes(new File(path).toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /**
+     * A line with any comment - `//` or `/* *&#47;` - removed, so a check does not pass on the
+     * strength of prose describing code that has gone. Copied rather than shared with the other tests
+     * that do this: a test helper reaching into another test class is a dependency between things that
+     * are supposed to fail independently.
+     */
+    private static String withoutComments(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * The body of one method, braces included, or empty when the declaration cannot be found.
+     */
+    private static String bodyOf(String source, String declaration)
+    {
+        int at = source.indexOf(declaration);
+
+        if (at < 0) return "";
+
+        int open = source.indexOf('{', at + declaration.length());
+
+        if (open < 0) return "";
+
+        int depth = 0;
+
+        for (int i = open; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
+        }
+
+        return "";
     }
 
     /**

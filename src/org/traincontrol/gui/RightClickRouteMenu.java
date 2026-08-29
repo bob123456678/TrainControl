@@ -81,23 +81,37 @@ public class RightClickRouteMenu extends MouseAdapter
                 menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
                 add(menuItem);
 
-                addSeparator();
+                // UXR-B6, reconciled. `hasS88()` alone was right against the action as it read an
+                // hour ago - the whole body was gated on it, disable included - and a second fix has
+                // since corrected that, because turning autofire OFF never needed a sensor.
+                //
+                // So the affordance has to move with it, or it is stricter than the thing it offers:
+                // a route whose s88 was removed while autofire was still on could be disabled from
+                // Bulk Disable and not from its own menu. That is the original defect reflected.
+                //
+                // This is the predicate `BulkEnableOrDisable` has always used, and it is the action's
+                // rule seen from here: offering DISABLE on an enabled route always works; offering
+                // ENABLE needs a sensor.
+                if (route.hasS88() || route.isEnabled())
+                {
+                    addSeparator();
 
-                if (!route.isEnabled())
-                {
-                    menuItem = new JMenuItem(
-                        I18n.t("route.ui.menuEnableAutoExecution")
-                    );
-                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));
-                    add(menuItem);
-                }
-                else
-                {
-                    menuItem = new JMenuItem(
-                        I18n.t("route.ui.menuDisableAutoExecution")
-                    );
-                    menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));
-                    add(menuItem);
+                    if (!route.isEnabled())
+                    {
+                        menuItem = new JMenuItem(
+                            I18n.t("route.ui.menuEnableAutoExecution")
+                        );
+                        menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, true));
+                        add(menuItem);
+                    }
+                    else
+                    {
+                        menuItem = new JMenuItem(
+                            I18n.t("route.ui.menuDisableAutoExecution")
+                        );
+                        menuItem.addActionListener(event -> ui.enableOrDisableRoute(routeName, false));
+                        add(menuItem);
+                    }
                 }
 
                 if (!route.isLocked())

@@ -38,9 +38,18 @@ public class testAutonomyPathValidation
 
     private static int locCounter = 0;
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
+        // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
+        // this, showUI = true below opens and can write to Adam's own railway (OB-111), and can also
+        // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
+        // the whole battery.
+        sandbox = support.LayoutSandbox.open();
+
         // showUI = true so the failure popup renders and the operator can see the error.
         model = init(null, true, true, false, true);
 
@@ -57,11 +66,13 @@ public class testAutonomyPathValidation
     }
 
     @AfterClass
-    public static void tearDownClass()
+    public static void tearDownClass() throws Exception
     {
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
         Layout.PATH_VALIDATION_MS = 1000;
         Layout.PATH_INTEGRITY_VALIDATION = true;
+
+        if (sandbox != null) sandbox.close();
     }
 
     /**
@@ -81,9 +92,20 @@ public class testAutonomyPathValidation
      */
     private TestPath buildPath(int addressBase, String suffix) throws Exception
     {
+        return buildPath(addressBase, suffix, model);
+    }
+
+    /**
+     * Same fixture, against a caller-supplied ViewListener rather than the model directly - for
+     * testUiAlertFiresAtMostOncePerLayout, which needs to count calls to showAutonomyAlert rather than
+     * just read the latch afterwards.
+     */
+    private TestPath buildPath(int addressBase, String suffix, org.traincontrol.model.ViewListener control)
+        throws Exception
+    {
         TestPath tp = new TestPath();
 
-        tp.layout = new Layout(model);
+        tp.layout = new Layout(control);
         tp.layout.createPoint("A" + suffix, false, null);
 
         // Destination points require an s88 feedback; register one (named Integer.toString(id)) and keep
@@ -300,6 +322,13 @@ public class testAutonomyPathValidation
      * fires at most ONCE per Layout instance: further failures past the threshold keep being logged and
      * counted (the count never resets), but must not re-trigger the popup - the console log is considered
      * sufficient after the first alert.
+     *
+     * hasShownPathValidationAlert() is a latch that is set once and never cleared, so asserting it is
+     * still true after further failures cannot fail no matter how many extra popups those failures
+     * raised - a mutation that moved control.showAutonomyAlert(...) OUT of the "not shown yet" guard
+     * (Layout.java:2807-2812) would leave every one of those assertions green while the operator got a
+     * modal dialog on every failure for the rest of the session.  So this counts the actual calls to
+     * showAutonomyAlert through a proxy ViewListener, rather than only reading the latch.
      */
     @Test
     public void testUiAlertFiresAtMostOncePerLayout() throws Exception
@@ -310,9 +339,21 @@ public class testAutonomyPathValidation
         int originalThreshold = Layout.PATH_VALIDATION_ALERT_THRESHOLD;
         Layout.PATH_VALIDATION_ALERT_THRESHOLD = 3;
 
+        final int[] alertCalls = { 0 };
+
+        org.traincontrol.model.ViewListener counting =
+            (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+                org.traincontrol.model.ViewListener.class.getClassLoader(),
+                new Class<?>[] { org.traincontrol.model.ViewListener.class },
+                (proxy, method, args) ->
+                {
+                    if (method.getName().equals("showAutonomyAlert")) alertCalls[0]++;
+                    return method.invoke(model, args);
+                });
+
         try
         {
-            TestPath tp = buildPath(41, "_thresh");
+            TestPath tp = buildPath(41, "_thresh", counting);
             boolean[] corrupting = startCorrupting(tp);
 
             try
@@ -326,15 +367,20 @@ public class testAutonomyPathValidation
                         "Failure " + i + " should accumulate without alerting");
                     assertFalse(tp.layout.hasShownPathValidationAlert(),
                         "Alert must not fire before the threshold is reached (failure " + i + ")");
+                    assertEquals(alertCalls[0], 0,
+                        "showAutonomyAlert must not be called before the threshold is reached");
                 }
 
                 // The failure that reaches the threshold fires the one-time alert.
                 tp.layout.configureAndLockPath(tp.path, dummyLoc());
                 assertTrue(tp.layout.hasShownPathValidationAlert(),
                     "Alert must fire once the threshold is reached");
+                assertEquals(alertCalls[0], 1,
+                    "showAutonomyAlert must be called exactly once when the threshold is first reached");
 
                 // Further failures keep accumulating (the count is never reset) but must not re-alert -
-                // the latch stays true and no second popup is raised.
+                // the latch stays true, no second popup is raised, and - unlike the latch - this can
+                // actually tell the difference: it counts every call, not just whether one ever happened.
                 for (int i = 0; i < 3; i++)
                 {
                     tp.layout.configureAndLockPath(tp.path, dummyLoc());
@@ -344,6 +390,9 @@ public class testAutonomyPathValidation
                     "The failure count must keep accumulating past the threshold");
                 assertTrue(tp.layout.hasShownPathValidationAlert(),
                     "The alert latch must remain set (no reset, no repeat popups)");
+                assertEquals(alertCalls[0], 1,
+                    "showAutonomyAlert must still have been called only once - three more failures must "
+                        + "not have raised three more popups");
             }
             finally
             {

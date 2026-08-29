@@ -3696,36 +3696,17 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
     }
-    // The four "shift the whole diagram" wrappers used to live here.
+    // The four "shift the whole diagram" wrappers used to live here, then didn't, then did again
+    // (DOC-B2).
     //
-    // Each inserted a row or a column at the hovered square and pushed everything past it along, and
-    // each has been taken off the menu in favour of picking the squares that are in the way and
-    // dragging them.  Removed rather than left behind: a method with no caller is the half of a
-    // removal that gets forgotten, and the next person to read this file would have to work out
-    // whether it was still wanted.
+    // Taken off the menu when multi-select arrived, on the reasoning that making room by dragging
+    // what is in the way out of it can be seen before it happens. Restored below - see shiftUp's own
+    // javadoc - once that reasoning turned out to describe a different job: dragging moves the
+    // squares you picked, this moves everything below or to the right of one, which on a diagram of
+    // two hundred tiles is not a selection anybody wants to make by hand. Left here as a record that
+    // "no caller" was not, and is not, the same test as "not wanted" - check before deleting a set of
+    // methods a second time.
 
-
-    /**
-     * Grows the diagram by one: a column on the right and a row at the bottom.
-     *
-     * NOT a row at the top, which is what was asked for and what the first version of this did.
-     *
-     * Inserting a row at the top moves every tile on the page down by one - and everything autonomy
-     * knows about that page is keyed by SQUARE. Stations, protecting signals, barred arrival sides,
-     * parking and reversing marks, home locomotives, station captions: all of them name a square, and
-     * none of them would move. A user with a set-up page who pressed "+" to make room would find
-     * every station one row above its platform, every signal pairing pointing at plain track, and
-     * every arrival restriction applied to the wrong square - silently, with the diagram still
-     * looking exactly right.
-     *
-     * Doing it properly means rewriting every key the companion store holds for that page, which is a
-     * change with its own test suite and not one to make in passing. Growing at the right and the
-     * bottom moves nothing, so it is safe today; the mirror property that made top-and-bottom
-     * attractive is kept, because shrinkEdges takes away exactly these two.
-     *
-     * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
-     * shift-the-page operation with the store rewritten to match.
-     */
     /**
      * Inserts a row or a column at the hovered square and pushes everything past it along.
      *
@@ -4006,6 +3987,31 @@ public class LayoutEditor extends PositionAwareJFrame
             layout.getSx() + " x " + layout.getSy()));
     }
 
+    /**
+     * Grows the diagram by one: a column on the right and a row at the bottom.
+     *
+     * NOT a row at the top, which is what was asked for and what the first version of this did.
+     *
+     * Inserting a row at the top moves every tile on the page down by one - and everything autonomy
+     * knows about that page is keyed by SQUARE. Stations, protecting signals, barred arrival sides,
+     * parking and reversing marks, home locomotives, station captions: all of them name a square, and
+     * none of them would move. A user with a set-up page who pressed "+" to make room would find
+     * every station one row above its platform, every signal pairing pointing at plain track, and
+     * every arrival restriction applied to the wrong square - silently, with the diagram still
+     * looking exactly right.
+     *
+     * Doing it properly means rewriting every key the companion store holds for that page, which is a
+     * change with its own test suite and not one to make in passing. Growing at the right and the
+     * bottom moves nothing, so it is safe today; the mirror property that made top-and-bottom
+     * attractive is kept, because shrinkEdges takes away exactly these two.
+     *
+     * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
+     * shift-the-page operation with the store rewritten to match.
+     *
+     * (DOC-A3: this block used to sit 280 lines away, above shiftUp, attached to nothing - Java
+     * attaches only the last javadoc before a declaration, and a second block followed it before this
+     * method ever got one. Moved here, onto the method it is actually about.)
+     */
     public void growEdges()
     {
         if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)

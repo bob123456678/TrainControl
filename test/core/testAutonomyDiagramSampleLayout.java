@@ -444,6 +444,13 @@ public class testAutonomyDiagramSampleLayout
 
         Map<String, ReducedEdge> byName = builder.edgesByName();
 
+        // TST-B18: without this, AutonomyBuilder.edgesByName() returning an empty map would leave
+        // `turns` empty by construction - zero Points examined, not zero offenders - and the caller's
+        // assertTrue(turns.isEmpty()) would pass having checked nothing.  testTheDiagramReducesToSomething
+        // pins the raw reducer's own points/edges, but not what this builder derives from them.
+        assertFalse(byName.isEmpty(),
+            "precondition [" + label + "]: edgesByName() built no edges, so nothing was checked");
+
         // Emitted Point name -> the sides trains reach it by and leave it by.  Taken from the emitted
         // EDGE names, since those are what the running model would actually offer.
         Map<String, Set<Side>> arrivals = new LinkedHashMap<>();
@@ -560,6 +567,11 @@ public class testAutonomyDiagramSampleLayout
 
         Map<String, TileKey> tiles = builder.tilesByName();
         Set<String> edgeNames = builder.edgesByName().keySet();
+
+        // TST-B18: same floor as turnsOffered - an empty edgesByName() would leave `offending` empty
+        // because nothing was walked, not because nothing offends.
+        assertFalse(edgeNames.isEmpty(),
+            "precondition [" + label + "]: edgesByName() built no edges, so nothing was checked");
 
         List<String> offending = new ArrayList<>();
 
@@ -776,6 +788,15 @@ public class testAutonomyDiagramSampleLayout
 
         List<ReducedEdge> edges = new ArrayList<>(wideOpen.getEdges());
 
+        assertFalse(edges.isEmpty(), "precondition: the wide-open reduction produced no edges");
+
+        // TST-B18 ("the most dangerous defect in the project", per this class's own framing): if
+        // ReducedEdge.getPath() ever returns empty, sharesATile is false for every pair below and
+        // derivedGaps stays empty because nothing was compared, not because nothing overlaps.  This
+        // counts every pair actually found sharing a tile, so the population is checked, not just the
+        // gap count.
+        int sharedTilePairs = 0;
+
         for (int i = 0; i < edges.size(); i++)
         {
             for (int j = i + 1; j < edges.size(); j++)
@@ -788,6 +809,8 @@ public class testAutonomyDiagramSampleLayout
 
                 if (!sharesATile(a, b)) continue;
 
+                sharedTilePairs++;
+
                 Set<ReducedEdge> locked = wideOpen.getLocks().get(a);
 
                 if (locked == null || !locked.contains(b))
@@ -796,6 +819,11 @@ public class testAutonomyDiagramSampleLayout
                 }
             }
         }
+
+        assertTrue(sharedTilePairs > 0,
+            "precondition: no two derived edges were found sharing a tile at all, on a real layout that "
+            + "certainly has junctions - sharesATile could not have caught an overlap even if one "
+            + "existed, which is exactly what an emptied ReducedEdge.getPath() looks like");
 
         // --- the hand-built graph, judged by the same tiles ---------------------------------------
         Map<String, Set<TileKey>> legacyExtent = new LinkedHashMap<>();
@@ -889,6 +917,14 @@ public class testAutonomyDiagramSampleLayout
         System.out.println("hand-built: overlapping pairs it does lock:    " + legacyCovered);
         System.out.println("hand-built: overlapping pairs it does NOT:     " + legacyGaps.size()
             + "   <- shared track, no shared point, no lock");
+
+        // Same defect, the other side: if exactExtent silently returned null for every legacy edge (the
+        // same emptied-getPath() mutation would do this too, since exactExtent also walks the wide-open
+        // reduction), every edge would come back "ambiguous", legacyExtent would be empty, and the whole
+        // hand-built half above would be skipped without a single pair ever compared.
+        assertTrue(legacyExtent.size() > 0,
+            "precondition: every hand-built edge came back ambiguous - the hand-built half checked "
+            + "nothing, which is silent, not clean");
 
         int shown = 0;
 
@@ -1861,7 +1897,7 @@ public class testAutonomyDiagramSampleLayout
      * has to treat it as shut, which repairs them without anybody running anything.
      */
     @Test
-    public void testALinkSwitchedOffAtOneEndIsShutAtBoth()
+    public void testALinkSwitchedOffAtOneEndIsShutAtBoth() throws Exception
     {
         TileKey here = mainLink;
         TileKey there = bottomLink;
@@ -1869,18 +1905,49 @@ public class testAutonomyDiagramSampleLayout
         assertNotNull(here, "the setup found no link on Main pointing at Bottom");
         assertNotNull(there, "the setup found no link on Bottom pointing at Main");
 
-        graph.pairPortals(here, there);
+        // TST-B20: pairPortals/disablePortal mutate the @BeforeClass-built `graph`, shared by every
+        // test in this class - and TileGraph has no public way to undo either, so without this,
+        // TestNG's arbitrary method order could run testTheDiagramIsNotRefused (:616) or sharesATile
+        // (:918) against a graph this test has already re-paired and half-disabled.  Both fields are
+        // private and final, so they are snapshotted and restored by reflection - mutated in place,
+        // never reassigned.
+        java.lang.reflect.Field portalsField = TileGraph.class.getDeclaredField("portals");
+        portalsField.setAccessible(true);
 
-        // Only ONE end, which is what a file written before 2026-08-23 contains
-        graph.disablePortal(here);
+        java.lang.reflect.Field disabledField = TileGraph.class.getDeclaredField("disabledPortals");
+        disabledField.setAccessible(true);
 
-        assertTrue(graph.isPortalDisabled(here), "the end that was switched off is not off");
+        @SuppressWarnings("unchecked")
+        Map<TileKey, TileKey> portals = (Map<TileKey, TileKey>) portalsField.get(graph);
+        @SuppressWarnings("unchecked")
+        Set<TileKey> disabled = (Set<TileKey>) disabledField.get(graph);
 
-        assertTrue(graph.isPortalDisabled(there),
-            "the far end of a switched-off pairing is still open. A pair of links is one doorway with "
-            + "an end in two places and autonomy walks through it both ways, so this is a route that "
-            + "exists going one way and not the other - and it is the state every setup saved before "
-            + "2026-08-23 is in (TD-2)");
+        Map<TileKey, TileKey> hadPortals = new LinkedHashMap<>(portals);
+        Set<TileKey> hadDisabled = new LinkedHashSet<>(disabled);
+
+        try
+        {
+            graph.pairPortals(here, there);
+
+            // Only ONE end, which is what a file written before 2026-08-23 contains
+            graph.disablePortal(here);
+
+            assertTrue(graph.isPortalDisabled(here), "the end that was switched off is not off");
+
+            assertTrue(graph.isPortalDisabled(there),
+                "the far end of a switched-off pairing is still open. A pair of links is one doorway with "
+                + "an end in two places and autonomy walks through it both ways, so this is a route that "
+                + "exists going one way and not the other - and it is the state every setup saved before "
+                + "2026-08-23 is in (TD-2)");
+        }
+        finally
+        {
+            portals.clear();
+            portals.putAll(hadPortals);
+
+            disabled.clear();
+            disabled.addAll(hadDisabled);
+        }
     }
 
 

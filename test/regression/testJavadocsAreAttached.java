@@ -41,7 +41,7 @@ public class testJavadocsAreAttached
     /**
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
-    private static final int ALLOWED = 98;
+    private static final int ALLOWED = 96;
 
     @Test
     public void testNoNewOrphanedJavadocs() throws Exception

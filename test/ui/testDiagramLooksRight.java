@@ -959,6 +959,49 @@ public class testDiagramLooksRight
     }
 
     /**
+     * Java source with its comments stripped, so a scan reads code and not the prose about it.
+     *
+     * TST-C10: a body scan that does not strip comments passes on the strength of a comment
+     * describing the removed call, not the call itself.
+     */
+    private String withoutComments(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/')
+            {
+                inLine = true;
+            }
+            else if (c == '/' && next == '*')
+            {
+                inBlock = true;
+                i++;
+            }
+            else
+            {
+                out.append(c);
+            }
+        }
+
+        return out.toString();
+    }
+
+    /**
      * A tile lifted for a running train stays BELOW the station captions.
      *
      * OB-117. Adam: "on route departure from 1016 as the origin station, the locomotive icon covers the

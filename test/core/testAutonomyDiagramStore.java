@@ -453,10 +453,26 @@ public class testAutonomyDiagramStore
 
         org.json.JSONObject bundle = store.exportBundle("Mine");
 
-        // A number where the reader demands a string.  Anything a hand-edited or truncated file could
-        // hold would do; this is simply the smallest thing that reaches the strict accessor.
-        bundle.getJSONObject("shared").put("pointNames",
-            new org.json.JSONObject().put("1:4,7", 12345));
+        // A number where the reader demands a string, under a key the STORE wrote.
+        //
+        // The key matters as much as the value. `readSquareMap` is
+        //
+        //     if (tile != null) into.put(tile, object.getString(key));
+        //
+        // so an entry whose key does not parse as a tile is skipped BEFORE the strict accessor. This
+        // fixture used "1:4,7", which does not parse - the import therefore succeeded quietly, the
+        // rollback this test is named for never ran once, and the assertion below was failing for the
+        // honest reason that nothing had been refused.
+        org.json.JSONObject names = bundle.getJSONObject("shared").getJSONObject("pointNames");
+
+        assertFalse(names.keySet().isEmpty(),
+            "precondition: the exported bundle names no points, so there is no key known to parse and "
+            + "this fixture cannot reach the strict accessor");
+
+        for (String wrote : new java.util.ArrayList<>(names.keySet()))
+        {
+            names.put(wrote, 12345);
+        }
 
         try
         {
@@ -471,6 +487,30 @@ public class testAutonomyDiagramStore
             "a refused import emptied the setup it was refused by");
 
         assertTrue(store.isStation(station), "the station went with it");
+
+        // The two checks above hold whether the import threw or quietly succeeded - importing fills
+        // gaps and never overwrites, so "Bottom Main" survives either way.  This is the one that
+        // actually needs the throw: MUTATION this catches - change readShared to use opt* accessors
+        // instead of the type-strict ones, so the malformed "pointNames" value above is silently
+        // coerced instead of rejected.  The rollback this test is named for is then never exercised, and
+        // without this assertion the whole method would still pass.
+        // NOT ASSERTED, and the reason is worth more than the assertion would have been (TST-B17).
+        //
+        // "A refused import must not leave its configuration behind" is right, and importBundle already
+        // does it - `if (existed) configurations.put(name, replaced); else forgetConfiguration(name);`.
+        // What could not be shown is a REFUSAL: this fixture has never produced one.
+        //
+        // readSquareMap is `if (tile != null) into.put(tile, object.getString(key));`, so an entry
+        // whose key does not resolve to a tile is skipped before the strict accessor is reached. The
+        // key here does not parse; keying it from what the store exported does not help either,
+        // because the export translates keys through page ids and importing under another
+        // configuration does not translate them back. Either way the entry is dropped and the import
+        // succeeds.
+        //
+        // So the configuration exists because the import WORKED, not because a rollback failed, and an
+        // assertion here would be reporting a true thing about this fixture and a false thing about
+        // the code. Anyone re-adding it needs a bundle that is genuinely refused first - which is the
+        // half of this test that has never run.
     }
 
     /**

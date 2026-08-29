@@ -521,11 +521,15 @@ public class LayoutGrid
     private volatile boolean discarded = false;
 
     /**
-     * The panel this grid was built into, and the window that holds the caption registry.
+     * The panel this grid was built into.
      *
-     * Kept so that discard() can hand back the labels this grid registered.  They are registered
-     * against the PANEL, which is also what LIVE is keyed by, so "the labels this grid owns" and "the
-     * grid being replaced over this panel" are the same question.
+     * (DOC-B16: assigned once, in the constructor, and never read anywhere in this file.) This used to
+     * be how discard() found the labels to hand back - "the labels this grid owns" answered by asking
+     * which grid was built over this panel - which is the approach `registeredCaptions`'s own javadoc
+     * says was tried and was wrong: one panel serves every page, so forgetting by panel forgets every
+     * page's captions, not just the retired grid's. discard() now uses `registeredCaptions` instead.
+     * This field is a leftover of the design that lost; nothing should be reintroduced that reads it
+     * as if it still decided anything.
      */
     private JPanel owner;
 

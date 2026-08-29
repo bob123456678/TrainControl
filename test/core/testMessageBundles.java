@@ -425,7 +425,15 @@ public class testMessageBundles
 
         List<String> offenders = new ArrayList<>();
 
-        for (File source : javaSources(new File("src")))
+        List<File> sources = javaSources(new File("src"));
+
+        // javaSources returns empty, not a failure, when listFiles() is null - run from anywhere but
+        // the project root and this scans zero files, indistinguishable from "no offenders".
+        // testJavadocsAreAttached and testNoSelfRecursiveWrappers guard the same hazard the same way.
+        assertFalse(sources.isEmpty(),
+            "precondition: nothing was scanned under src/ - run from the project root");
+
+        for (File source : sources)
         {
             String text = new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
 
@@ -510,7 +518,12 @@ public class testMessageBundles
     {
         List<String> offenders = new ArrayList<>();
 
-        for (File source : javaSources(new File("src")))
+        List<File> sources = javaSources(new File("src"));
+
+        assertFalse(sources.isEmpty(),
+            "precondition: nothing was scanned under src/ - run from the project root");
+
+        for (File source : sources)
         {
             String text = new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
 

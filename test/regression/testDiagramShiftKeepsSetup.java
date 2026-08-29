@@ -279,6 +279,145 @@ public class testDiagramShiftKeepsSetup
         }
     }
 
+    /**
+     * The real gesture - `LayoutEditor.shiftDown()`, not this file's own `shift()` helper - carries a
+     * station on the far column.
+     *
+     * Every test above hands `moveTiles` a map this file builds itself, with `otherEnd` hardcoded to
+     * 22. The only production producer of that map is the private `LayoutEditor.setupShift`, called
+     * from `shiftUp`, `shiftDown`, `shiftLeft` and `shiftRight` - and grepping `test/` for `setupShift`
+     * before this method found one hit, a comment on the `shift()` helper above. Adam's own report was
+     * about this exact mapping: "Mostly OK after shifting, but links still got unlinked. Seems the
+     * coordinate mapping there may be an issue."
+     *
+     * The page is 21 columns by 16 rows on purpose - the two dimensions have to differ or a
+     * transposed bound is invisible - and the station sits on column 18: inside 0..20 (`getSx() - 1`,
+     * the correct bound for a ROW shift) but outside 0..15 (`getSy() - 1`, the wrong one).
+     *
+     * MUTATION this catches: transpose `LayoutEditor.java`'s `setupShift` so a row shift
+     * (`across == false`) bounds the column loop by `getSy() - 1` instead of `getSx() - 1`. On this
+     * page that stops the loop at column 15 of 20, and the station on column 18 - deliberately placed
+     * past that - never enters the map: `moveTiles` never hears about it, and it is left behind on the
+     * row the shift moved everything else off of. Every test above stays green, because none of them
+     * ever calls `setupShift` - they build the map by hand, at the width they choose.
+     */
+    @Test
+    public void testTheEditorsShiftDownRespectsThePageWidth() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the editor is a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        try
+        {
+            // Before the model, not just before the window (OB-111) - constructing a TrainControlUI
+            // reads the layout-path preference, and without the sandbox it is Adam's own railway.
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui[0] = new org.traincontrol.gui.TrainControlUI();
+                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            // Our own page, in our own temp folder - not "1 - Main", so this does not depend on what
+            // the sandboxed fixture happens to contain.
+            File autonomyFolder = Files.createTempDirectory("tc-shift-gesture").toFile();
+
+            AutonomySession session = new AutonomySession(autonomyFolder);
+
+            LayoutDiagram diagram = new LayoutDiagram("Shift Gesture Page", 21, 16, null, null);
+
+            // Every square counts towards the bounds - otherwise checkBounds ties an empty diagram's
+            // extent to nothing and the grid built from it is too small to reach column 18 at all.
+            diagram.setEdit(true);
+            diagram.checkBounds();
+
+            session.open(Arrays.asList(diagram));
+
+            int farColumn = 18;
+            int hoverRow = 5;
+
+            session.getStore().setStation(at(diagram.getName(), farColumn, hoverRow), true);
+            session.getStore().setPointName(at(diagram.getName(), farColumn, hoverRow),
+                "Far Column Station");
+
+            // getAutonomySession() only builds a session when the field is still null - pointed here
+            // at ours instead, so the editor's real setupShift/moveTiles call writes to the session
+            // this test can see.
+            java.lang.reflect.Field sessionField =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
+            sessionField.setAccessible(true);
+            sessionField.set(ui[0], session);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+
+            java.lang.reflect.Method drawGrid =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+            drawGrid.setAccessible(true);
+
+            java.lang.reflect.Field hoveredY =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("lastHoveredY");
+            hoveredY.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    // Builds the grid the constructor leaves for the first paint to ask for.
+                    drawGrid.invoke(editor[0]);
+
+                    // What hovering row 5 before the drag would have set.
+                    hoveredY.setInt(editor[0], hoverRow);
+
+                    // The real gesture.
+                    editor[0].shiftDown();
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            assertTrue(session.getStore().isStation(at(diagram.getName(), farColumn, hoverRow + 1)),
+                "the far-column station did not follow the row shift through the real "
+                + "LayoutEditor.shiftDown() gesture - the store-level tests above prove the RULE "
+                + "carries it, so the gap is in the coordinate map the EDITOR builds for it");
+
+            assertEquals(session.getStore().getPointName(at(diagram.getName(), farColumn,
+                hoverRow + 1)), "Far Column Station", "it arrived unnamed");
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
     private static void delete(File file)
     {
         File[] kids = file.listFiles();
@@ -318,5 +457,10 @@ public class testDiagramShiftKeepsSetup
     private static TileKey at(int x, int y)
     {
         return new TileKey(PAGE, x, y);
+    }
+
+    private static TileKey at(String page, int x, int y)
+    {
+        return new TileKey(page, x, y);
     }
 }

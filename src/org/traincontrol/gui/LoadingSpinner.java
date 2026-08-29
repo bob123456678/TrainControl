@@ -183,13 +183,26 @@ public class LoadingSpinner extends JPanel
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int at = frame % CYCLE_FRAMES;
-            int turns = frame / CYCLE_FRAMES;
+            // `turns` no longer reaches the drawing - see below.  int turns = frame / CYCLE_FRAMES;
 
             // How much of the sand has run through, and how far round the glass has been turned.  The
             // sand is all the way through before the turn starts, which is what makes the turn
             // invisible.
             double drained;
-            double halfTurns = turns;
+
+            // NOT `turns` - the drain is always drawn upright (Adam, 2026-08-29).
+            //
+            // The sand is anchored at the bottom of each region: the upper bulb fills from its level
+            // DOWN to the waist, the lower from its level DOWN to the plate. Rotating that mid-fall
+            // inverts the anchors, so the upper sand hangs from the top of the glass with a gap above
+            // the waist and the pile in the lower bulb floats - which is what "weird in how it
+            // empties" was.
+            //
+            // The rotation is for the TURN, and only there does it have to agree with an upright
+            // glass. At the endpoints it does, exactly: a full lower bulb [0, bulbH] rotated is
+            // [-bulbH, 0], which is a full upper bulb. So the seam is pixel for pixel and the drain
+            // never leaves its feet.
+            double halfTurns = 0;
 
             if (at < DRAIN_FRAMES)
             {

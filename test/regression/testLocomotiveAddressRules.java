@@ -1,5 +1,6 @@
 package regression;
 
+import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
@@ -93,5 +94,115 @@ public class testLocomotiveAddressRules
                 type + " refuses address 1, so either it has no branch in validateNewAddress or its "
                 + "maximum is below one - a locomotive of this type cannot be created at all");
         }
+    }
+
+    /**
+     * The dialog asks the rule above rather than restating it.
+     *
+     * Every test in this file pins `MarklinLocomotive.validateNewAddress` itself, and this class's own
+     * javadoc says why that is not enough: the original defect was not in the rule, it was in
+     * `AddLocomotive`'s own copy of it, three separate upper-bound-only `if` blocks with an `abs()`
+     * above them and no branch for MULTI_UNIT - and address 0 passed every one of them, since zero is
+     * not greater than any maximum. Nothing above this test would notice that copy coming back, because
+     * `grep -rn AddLocomotive test/` before this method found nothing at all: the dialog had no test of
+     * its own, only the rule it used to ignore.
+     *
+     * MUTATION this catches: replace the call this checks for with the three-`if` copy the class
+     * javadoc describes. Every test above still passes - they never call `AddLocomotive` - and address
+     * 0 is accepted again for every decoder type this dialog offers.
+     */
+    @Test
+    public void testTheDialogAsksTheRuleRatherThanRestatingIt() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new File("src/org/traincontrol/gui/AddLocomotive.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String body = withoutComments(bodyOf(source,
+            "private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)"));
+
+        assertFalse(body.isEmpty(),
+            "AddLocButtonActionPerformed has moved or been renamed - this scan is reading nothing");
+
+        int validated = body.indexOf("validateNewAddress(");
+
+        assertTrue(validated >= 0,
+            "AddLocomotive no longer calls validateNewAddress at all - either the shared rule has gone "
+            + "and each decoder's range is being restated here again, or it has been renamed and this "
+            + "scan needs updating either way");
+
+        int mfx = body.indexOf("newMFXLocomotive(");
+        int dcc = body.indexOf("newDCCLocomotive(");
+        int mm2 = body.indexOf("newMM2Locomotive(");
+
+        assertTrue(mfx >= 0 && dcc >= 0 && mm2 >= 0,
+            "one of the three locomotive-creation calls has moved or been renamed, so the ordering "
+            + "below cannot be checked");
+
+        // All three, not just the branch this run happened to take - address validation has to gate
+        // creation regardless of which decoder type was selected.
+        assertTrue(validated < mfx && validated < dcc && validated < mm2,
+            "validateNewAddress is called AFTER a locomotive can already be created, which is no "
+            + "refusal at all - a rejected address would be asked about only after the locomotive it "
+            + "was supposed to stop already exists");
+    }
+
+    /**
+     * A line with any comment - `//` or block - removed, so a check does not pass on the strength of
+     * prose describing code that has gone. Copied rather than shared with the other tests that do
+     * this: a test helper reaching into another test class is a dependency between things that are
+     * supposed to fail independently.
+     */
+    private static String withoutComments(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * The body of one method, braces included, or empty when the declaration cannot be found.
+     */
+    private static String bodyOf(String source, String declaration)
+    {
+        int at = source.indexOf(declaration);
+
+        if (at < 0) return "";
+
+        int open = source.indexOf('{', at + declaration.length());
+
+        if (open < 0) return "";
+
+        int depth = 0;
+
+        for (int i = open; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
+        }
+
+        return "";
     }
 }

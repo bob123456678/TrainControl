@@ -230,6 +230,7 @@ public class testParseCS2Routes
         }
     }
     
+    @Test
     public void testDCCRouteNoMags()
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_nomags);
@@ -240,16 +241,25 @@ public class testParseCS2Routes
         }
     }
     
-     public void testMM2RouteMags()
+    @Test
+    public void testMM2RouteMags()
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
         
         for (RouteCommand rc: r.getRoute())
         {
-            assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+            if (rc.getAddress() == 121)
+            {
+                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
+            }
+            else
+            {
+                assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+            }
         }
     }
     
+    @Test
     public void testDCCAcc()
     {
         MarklinAccessory a = this.getAcc(121, accs);
@@ -257,18 +267,20 @@ public class testParseCS2Routes
         assertEquals(a.getDecoderType(), Accessory.accessoryDecoderType.DCC);
     }
     
+    @Test
     public void testMM2Acc()
     {
         MarklinAccessory a = this.getAcc(118, accs);
         
-        assertEquals(a.getDecoderType(), Accessory.accessoryDecoderType.DCC);
+        assertEquals(a.getDecoderType(), Accessory.accessoryDecoderType.MM2);
     }
     
+    @Test
     public void testMM2Acc1()
     {
         MarklinAccessory a = this.getAcc(117, accs);
         
-        assertEquals(a.getDecoderType(), Accessory.accessoryDecoderType.DCC);
+        assertEquals(a.getDecoderType(), Accessory.accessoryDecoderType.MM2);
     }
      
     @BeforeClass

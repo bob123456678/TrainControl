@@ -10594,5 +10594,103 @@ nobody would notice until they looked at a diagram.
 
 **Adam, 2026-08-27 (triage).** Works.
 
+
+---
+
+<a id="mt-204"></a>
+
+### MT-204 - 2026-08-29 - The words in the seven translated bundles
+
+**Disposition:** needs test
+**From:** FR-042
+**Written:** 2026-08-29
+
+All 309 `autosetup.*` keys that were shipping as English are now translated in every bundle. The
+mechanics are verified and are not what this test is for: the files are pure ASCII, the key sets match
+the English exactly, every `{0}` is preserved, there are no straight apostrophes, and "Central Station"
+is left untranslated as a product name.
+
+**Nothing about the WORDING is verified, and it cannot be from here.** That is what you are checking.
+
+1. Switch the language and open the **Autonomy** menu, then **Manage Configurations**. Read the item
+   labels rather than clicking them. Anything that reads as machine-translated or uses a word the rest
+   of the application does not is worth noting.
+2. Open the **autonomy settings** and read the setting names and their explanations. These are the
+   longest strings in the namespace and the ones most likely to have gone stiff.
+3. **The two irreversible confirmations** - deleting a setup, and discarding unsaved autonomy edits.
+   Read them in each language you can judge. An unclear warning on an irreversible action is the worst
+   place for a bad translation, so these matter more than the rest put together.
+4. **The off-page connector.** One term had no precedent anywhere in any bundle and was coined:
+   Verbindung, liaison, enlace, collegamento, verbinding, forbindelse, polaczenie. If any of those is
+   wrong for a model railway rather than merely for software, say so - this is the single most likely
+   thing in the round to be wrong.
+5. German and Polish generally, if you can judge them.
+
+Say which languages you actually read. A note that says "German looks right" is worth more than a pass
+on all seven, because it says what was covered.
+
+---
+
+<a id="mt-205"></a>
+
+### MT-205 - 2026-08-29 - Graceful stop, and when Start comes back
+
+**Disposition:** needs test
+**From:** OB-131
+**Written:** 2026-08-29
+
+Start used to be offered again the moment Graceful Stop was pressed, while trains were still coasting
+to their next station - the buttons were the one surface still claiming autonomy had finished. It now
+waits for the last train to berth.
+
+The wait is unbounded, which matches the rule in that file that a wait for a railway EVENT has no
+deadline while a wait for an acknowledgement does. The question is whether that is right here.
+
+1. Start autonomy and let several trains get moving.
+2. Press **Graceful Stop**. Watch the Start button and the diagram strip.
+3. **While trains are still coasting**, neither surface should offer Start, and the diagram strip
+   should still read Graceful Stop rather than flipping to "Start Autonomous Operation".
+4. When the last train berths, Start should come back on both surfaces at the same moment.
+5. **The case this is really asking about:** if a train ever fails to reach its station - stalled,
+   derailed, a sensor that never fires - Start does not come back at all, and the only way out is
+   restarting the application. If that has ever happened to you, say so, and whether you would rather
+   it gave up after some time and re-enabled Start with a warning.
+
+**Adam, 2026-08-29 (triage).** Works, with notes.
+
+Works, but I'd rather have the start button reappear greyed out, and then reactivate, rather than disappearing.
+
+*Run against commit eac0e392, build\classes, compiled 29 Aug 01:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-206"></a>
+
+### MT-206 - 2026-08-29 - Which surfaces show the wait mark moving
+
+**Disposition:** needs test
+**From:** OB-135
+**Written:** 2026-08-29
+
+OB-129 asked for the wait mark to animate. It now does on the overlay and does NOT on the track
+diagram, and the two have different causes - the diagram build occupies the event thread as a single
+task, so nothing can repaint while it runs.
+
+This test is to confirm which surfaces are which before anything is changed about it, because the
+repair options differ a lot in risk.
+
+1. Do something that puts the **overlay** up - loading a layout from a folder, or a Central Station
+   sync. The hourglass there should run: sand falling, and a flip when it empties.
+2. **Watch the flip.** The sand should keep running downwards afterwards, and the glass should not
+   jump at the moment it turns. Both were wrong earlier today and were fixed separately.
+3. Now switch to a **track diagram page large enough to take a moment to draw**. The mark that appears
+   over the diagram is expected to be STILL - one frame, held until the page appears.
+4. Say whether the still mark reads as broken or merely as a static "please wait". That is the whole
+   question: if a static mark is acceptable, OB-135 closes as documentation. If it is not, the fix is
+   either chunking the diagram build or moving it off the event thread, and the second removes
+   exclusions that were never written down.
+5. Also check the mark is **half the size it used to be** and sits over the **middle** of the page,
+   both of which were part of OB-129.
+
 *Run against commit 309b984f, build\classes, compiled 27 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 

@@ -36,6 +36,9 @@ import org.traincontrol.gui.LoadingSpinner;
  */
 public class testTheWaitMarkIsAnHourglass
 {
+    /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop. */
+    private static final int CYCLE = 62;
+
     /** Big enough that a few pixels of antialiasing either way cannot change a count materially. */
     private static final int SIZE = 240;
 
@@ -596,6 +599,83 @@ public class testTheWaitMarkIsAnHourglass
         finally
         {
             javax.swing.SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * The sand falls DOWN the screen in the flipped cycle too (Adam, 2026-08-29).
+     *
+     * "The hourglass flows backwards after the flip." The animation loops by rotating rather than
+     * resetting, so every other cycle is drawn upside down - and the drain was handed the same rising
+     * value regardless, which under a 180-degree rotation sends the sand up the screen.
+     *
+     * `testItRunsDownwards` shoots frames 0 and 49. Both are inside the FIRST cycle. The frame counter
+     * runs over two cycles precisely because the drawing alternates, and nothing had ever looked at the
+     * second one.
+     *
+     * The repair went further than inverting the sand, which is what the first attempt did: the drain
+     * is now never drawn rotated at all, because the sand is anchored at the bottom of each region -
+     * the upper bulb fills DOWN to the waist, the lower DOWN to the plate - so rotating it mid-fall
+     * hangs the upper sand from the top of the glass. Adam saw that too: "the icon is weird in how it
+     * empties now."
+     *
+     * MUTATION: putting the rotation back into the drain - `halfTurns = turns` rather than 0 - fails
+     * this, which is the regression that would bring the backwards flow with it.
+     */
+    @Test
+    public void testItRunsDownwardsAfterTheFlipToo() throws Exception
+    {
+        // The second cycle: one whole cycle on from the frames the sibling test uses.
+        BufferedImage full = shoot(CYCLE);
+        BufferedImage empty = shoot(CYCLE + 49);
+
+        assertTrue(ink(full, true) > ink(full, false),
+            "after the glass turns, the sand starts in the LOWER bulb - so the flip lands on an empty "
+            + "top and the sand then climbs back up it");
+
+        assertTrue(ink(empty, false) > ink(empty, true),
+            "after the glass turns, the sand ends in the UPPER bulb - it ran uphill for the whole "
+            + "cycle, which is what Adam saw");
+    }
+
+    /**
+     * The turn is seamless: the frame after it looks like the frame before it.
+     *
+     * This is what the class actually claims - "an emptied hourglass turned through half a circle is
+     * pixel for pixel a full one" - and it is a statement about the two ENDPOINTS, not about every
+     * frame. Mid-fall the sand is a cone in the lower bulb and a funnel in the upper one, which are
+     * not each other rotated, so a whole-cycle comparison would be asking for something the drawing
+     * has never promised.
+     *
+     * The seam is where the bug showed. Before the fix the drain after a turn began at drained = 0,
+     * which under the rotation reads as an EMPTY top - so the glass snapped from full-at-top back to
+     * empty-at-top the instant the turn finished, and then ran backwards.
+     *
+     * MUTATION: putting the rotation back into the drain - `halfTurns = turns` - fails both seams.
+     */
+    @Test
+    public void testTheTurnIsSeamless() throws Exception
+    {
+        // The last frame of each turn, and the first frame of the drain that follows it.
+        for (int[] seam : new int[][] { { CYCLE - 1, CYCLE }, { CYCLE * 2 - 1, 0 } })
+        {
+            BufferedImage before = shoot(seam[0]);
+            BufferedImage after = shoot(seam[1]);
+
+            int different = 0;
+
+            for (int y = 0; y < SIZE; y++)
+            {
+                for (int x = 0; x < SIZE; x++)
+                {
+                    if (before.getRGB(x, y) != after.getRGB(x, y)) different++;
+                }
+            }
+
+            // A few pixels may differ from antialiasing on the rotated path.
+            assertTrue(different < 60,
+                "frame " + seam[0] + " and frame " + seam[1] + " are the two sides of a turn and "
+                + "should look the same, or the loop visibly jumps - " + different + " pixels differ");
         }
     }
 }

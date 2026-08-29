@@ -54,11 +54,15 @@ public class testEveryWindowWearsTheIcon
     {
         List<String> naked = new ArrayList<>();
 
+        int windows = 0;
+
         for (File source : javaUnder(new File("src")))
         {
             String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
 
             if (!isAWindow(body)) continue;
+
+            windows++;
 
             if (excused(source.getName())) continue;
 
@@ -73,6 +77,14 @@ public class testEveryWindowWearsTheIcon
 
             if (!withoutGeneratedCode(body).contains("applyWindowIcon")) naked.add(source.getName());
         }
+
+        // A scan run from the wrong directory, or against a `WINDOWS` list nothing matches any more,
+        // finds zero windows and would pass here having examined nothing. Ten window classes exist
+        // today (2026-08-28); five is a floor well under that, not a pin on the count.
+        assertTrue(windows >= 5,
+            "only " + windows + " window classes were found under src/ - the patterns this looks for "
+            + "have gone stale, or this ran from the wrong working directory, and it is now checking "
+            + "almost nothing");
 
         assertTrue(naked.isEmpty(),
             "these windows never ask for the application's icon, so they open with Java's: " + naked
@@ -95,6 +107,8 @@ public class testEveryWindowWearsTheIcon
     {
         List<String> spelling = new ArrayList<>();
 
+        int namesIt = 0;
+
         for (File source : javaUnder(new File("src")))
         {
             String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
@@ -106,11 +120,21 @@ public class testEveryWindowWearsTheIcon
 
             if (!written.contains("locicon.png")) continue;
 
+            namesIt++;
+
             // The one place that is allowed to name it is the helper's own file.
             if (written.contains("public static void applyWindowIcon(")) continue;
 
             spelling.add(source.getName());
         }
+
+        // A positive control: the resource name has to turn up SOMEWHERE (the helper's own file, at
+        // least) for an empty `spelling` list to mean anything. A scan finding zero mentions at all
+        // proves the pattern has gone stale, not that the rule is being followed.
+        assertTrue(namesIt >= 1,
+            "no file under src/ mentions locicon.png at all - the resource was renamed, or this ran "
+            + "from the wrong directory, and this test can no longer tell a violation from nothing to "
+            + "look at");
 
         assertTrue(spelling.isEmpty(),
             "these files load the window icon for themselves rather than calling applyWindowIcon: "
@@ -133,6 +157,8 @@ public class testEveryWindowWearsTheIcon
     {
         List<String> naked = new ArrayList<>();
 
+        int sites = 0;
+
         for (File source : javaUnder(new File("src")))
         {
             String body = withoutGeneratedCode(
@@ -142,6 +168,8 @@ public class testEveryWindowWearsTheIcon
             {
                 for (int at = body.indexOf(made); at >= 0; at = body.indexOf(made, at + 1))
                 {
+                    sites++;
+
                     // Within reach of the construction, which is where a window is dressed.
                     String after = body.substring(at, Math.min(body.length(), at + REACH));
 
@@ -149,6 +177,12 @@ public class testEveryWindowWearsTheIcon
                 }
             }
         }
+
+        // Two inline `new JDialog(` sites exist today. A scan finding none - wrong directory, or the
+        // construction moved to a different spelling - would pass this having examined nothing.
+        assertTrue(sites >= 1,
+            "no inline `new JDialog(...)` construction was found anywhere under src/ - this ran from "
+            + "the wrong directory, or the pattern this looks for has gone stale");
 
         assertTrue(naked.isEmpty(),
             "these dialogs are built without asking for the application's icon, so they open with "

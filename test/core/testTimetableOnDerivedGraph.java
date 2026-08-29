@@ -20,6 +20,9 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.marklin.file.CS2File;
 
 /**
  * Capture a timetable on a graph DERIVED FROM THE TRACK DIAGRAM, then replay it and check it ran.
@@ -79,8 +82,17 @@ public class testTimetableOnDerivedGraph
 
     private static final Random RANDOM = new Random(SEED);
 
-    /** The configuration this runs against, by name. */
-    private static final String CONFIGURATION = "Autonomy 1";
+    /**
+     * The configuration this runs against, by name.
+     *
+     * TST-B11: this named "Autonomy 1", which exists nowhere in test_layout/config/autonomy/ (the
+     * fixture holds only configuration-Main.json, and setup.json's own activeConfiguration is "Main") -
+     * so the guard in derivedLayout() that is supposed to select it deterministically never matched,
+     * and every run silently fell through to "whichever happened to be active", which the comment
+     * there says must not happen.  It only ever worked by coincidence, because Main is also the only
+     * configuration the fixture has.
+     */
+    private static final String CONFIGURATION = "Main";
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -344,6 +356,12 @@ public class testTimetableOnDerivedGraph
 
     /**
      * The configuration the current track diagram produces, parsed and made safe to run.
+     *
+     * The pages come from test_layout ITSELF, parsed directly with CS2File - the same way
+     * testTracedPathIsContinuous does it - rather than from model.getLayoutList(), which reads
+     * whatever TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF names on this machine.  The autonomy store
+     * opened two lines below is test_layout's; pairing it with pages from a DIFFERENT layout silently
+     * derives a graph that is neither one thing nor the other.
      */
     private static Layout derivedLayout() throws Exception
     {
@@ -354,11 +372,14 @@ public class testTimetableOnDerivedGraph
             throw new SkipException("no test_layout to derive a graph from");
         }
 
+        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
+
+        CS2File parser = new CS2File(path, model);
+        parser.setLayoutDataLoc(path);
+
+        List<LayoutDiagram> pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());
+
         AutonomySession session = new AutonomySession(folder);
-
-        List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
-
-        for (String name : model.getLayoutList()) pages.add(model.getLayout(name));
 
         session.open(pages);
 

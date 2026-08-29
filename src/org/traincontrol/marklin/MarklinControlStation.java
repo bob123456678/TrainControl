@@ -3745,12 +3745,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final org.traincontrol.gui.StartupSplash splash = showUI
             ? org.traincontrol.gui.StartupSplash.show(I18n.t("ui.splashConnecting")) : null;
 
-        // Delegate the hard part
-        NetworkProxy proxy = new NetworkProxy(InetAddress.getByName(initIP));
-        
-        // Initialize the central station
-        final MarklinControlStation model = 
-            new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
+        final NetworkProxy proxy;
+        final MarklinControlStation model;
+
+        try
+        {
+            // Delegate the hard part
+            proxy = new NetworkProxy(InetAddress.getByName(initIP));
+
+            // Initialize the central station
+            model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
+        }
+        catch (Exception ex)
+        {
+            // WK-B2: both of the statements above throw on exactly the failures this splash exists
+            // to cover - an unknown host, and (per TrainControl.isPortInUse's own javadoc) the
+            // second-copy-of-TrainControl case, where the bind happens inside NetworkProxy's own
+            // constructor. Before this catch, either exception propagated straight out of init(),
+            // past both closeIfShown calls below - which only run once the window-build block is
+            // reached - so the always-on-top "Connecting..." splash was still standing when the
+            // caller's catch (TrainControl.main) put up the plain-English error dialog underneath
+            // it. A splash left over a failure the operator cannot see through is the exact "looks
+            // hung mid-connect" symptom FR-041 was built to remove.
+            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+
+            throw ex;
+        }
 
         final TrainControlUI theUI = ui;
         
@@ -3835,7 +3855,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
 
-            latch.await();
+            // WK-B2: await() itself can throw InterruptedException, which used to leave the splash
+            // exactly as uncovered as the constructors above did - it would propagate out of init()
+            // before either closeIfShown below ran. closeIfShown is safe to call twice (next
+            // comment), so this finally costs nothing on the ordinary path and only matters on the
+            // interrupted one.
+            try
+            {
+                latch.await();
+            }
+            finally
+            {
+                org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+            }
 
             // Twice over, because close() is safe to repeat and the paths out of here are not all
             // through the block above - a start-up that never reaches the window build must not leave

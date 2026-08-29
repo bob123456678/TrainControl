@@ -157,8 +157,15 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
 
         if (ui.getModel().hasAutoLayout())
-        {     
-            if (!ui.getModel().getAutoLayout().isAutoRunning())
+        {
+            // UXR-B7: this used to ask isAutoRunning(), which stopLocomotives() clears the instant
+            // Graceful Stop is pressed - while the trains it was stopping keep moving until they reach
+            // their next station. Every item INSIDE this branch already asks isAutonomyBusy() for its
+            // own enabled state (place, remove, edit loc, the setup submenu) - only the choice between
+            // this branch and the Graceful Stop item below asked the other question. isAutonomyBusy()
+            // is what Layout.isRunning() feeds and is true for the whole coast-down window, so the
+            // Stop item now stays offered, and Start does not appear, until the trains actually stop.
+            if (!ui.isAutonomyBusy())
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 

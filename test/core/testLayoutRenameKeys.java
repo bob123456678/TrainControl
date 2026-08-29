@@ -54,11 +54,16 @@ public class testLayoutRenameKeys
 
     private static int feedbackBase = 47300;
 
+    /** What model.autoLayout held before this class started installing hand-built ones over it. */
+    private static Layout hadAutoLayout;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         model = init(null, true, false, false, true);
         model.stop();
+
+        hadAutoLayout = readAutoLayout();
     }
 
     @AfterClass
@@ -70,6 +75,20 @@ public class testLayoutRenameKeys
         {
             model.deleteLoc(name);
         }
+
+        // TST-B20: attach() installs a hand-built Layout into the shared model by reflection, and
+        // nothing put back what was there before - so whatever this class ran last stayed installed as
+        // model.getAutoLayout() for every class that shares this JVM after it.
+        attach(hadAutoLayout);
+    }
+
+    private static Layout readAutoLayout() throws Exception
+    {
+        Field field = MarklinControlStation.class.getDeclaredField("autoLayout");
+
+        field.setAccessible(true);
+
+        return (Layout) field.get(model);
     }
 
     /**

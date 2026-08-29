@@ -47,17 +47,30 @@ public class RightClickTimetableMenu extends MouseAdapter
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {
+            // UXR-B12: all four handlers below open with the identical
+            // `if (ui.isAutonomyBusy()) { showMessageDialog(...); return; }` guard, so right-clicking
+            // the timetable during a run - exactly when an operator is likely to be looking at it -
+            // offered four items and refused all four with the same dialog. Greyed here on the same
+            // question the handler asks, with the same sentence as the tooltip, rather than found out
+            // by pressing.
+            boolean busy = ui.isAutonomyBusy();
+            String busyTooltip = busy
+                ? I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop") : null;
+
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuChangeDelay")
             );
             menuItem.addActionListener(event -> ui.updateTimetableDelay(e));
-            menuItem.setToolTipText(I18n.t("timetable.ui.tooltip.changeDelay"));
+            menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.changeDelay"));
+            menuItem.setEnabled(!busy);
             add(menuItem);
 
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuDeleteEntry")
             );
             menuItem.addActionListener(event -> ui.deleteTimetableEntry(e));
+            menuItem.setToolTipText(busyTooltip);
+            menuItem.setEnabled(!busy);
             add(menuItem);
 
             addSeparator();
@@ -66,7 +79,8 @@ public class RightClickTimetableMenu extends MouseAdapter
                 I18n.t("timetable.ui.menuRestartTimetable")
             );
             menuItem.addActionListener(event -> ui.restartTimetable());
-            menuItem.setToolTipText(I18n.t("timetable.ui.tooltip.restartTimetable"));
+            menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.restartTimetable"));
+            menuItem.setEnabled(!busy);
             add(menuItem);
 
             addSeparator();
@@ -76,7 +90,8 @@ public class RightClickTimetableMenu extends MouseAdapter
             );
             menuItem.setForeground(Color.RED);
             menuItem.addActionListener(event -> ui.clearTimetable());
-            menuItem.setToolTipText(I18n.t("timetable.ui.tooltip.clearTimetable"));
+            menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.clearTimetable"));
+            menuItem.setEnabled(!busy);
             add(menuItem);
         }
     }

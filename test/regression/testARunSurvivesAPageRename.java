@@ -46,8 +46,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **What this test can and cannot do.** It cannot press the menu item - the sequence lives in a window.
  * So it does what the window now does, in the same order, and shows that the ORDER is what decides the
  * outcome: capture-then-rename keeps the run, rename-then-capture loses it. That the WINDOW does it in
- * that order is held separately, by `testTheWindowAttachesItsRefreshCallback`, which reads the source -
- * because a test that mirrors the sequence proves the sequence works, not that anybody follows it.
+ * that order used to be claimed as held separately, by `testTheWindowAttachesItsRefreshCallback` - which
+ * checks `AutonomyRefreshCallback.attach` and nothing about capture versus rename, so the claim pointed
+ * at a test that could not have caught this ordering being lost. `testTheWindowCallsThemInThatOrder`
+ * below checks it directly, against `TrainControlUI.duplicateOrRenameCurrentLayout` - because a test
+ * that mirrors the sequence proves the sequence works, not that anybody follows it.
  */
 public class testARunSurvivesAPageRename
 {
@@ -76,6 +79,62 @@ public class testARunSurvivesAPageRename
             "capturing AFTER the rename kept the run's placement, which would mean this test is not "
             + "reproducing DW-A1 at all - and then the assertion above proves nothing.  Either the "
             + "refusal has gone, or the fixture stopped modelling a run");
+    }
+
+    /**
+     * The window itself calls `captureRunningLayout()` before it renames the page.
+     *
+     * The test above proves the RULE - capture first keeps the run - but it drives both orders itself,
+     * so it says nothing about which order `TrainControlUI` actually asks for. This reads the method
+     * that does, `duplicateOrRenameCurrentLayout`, and checks the one line whose position is the whole
+     * fix for DW-A1.
+     *
+     * Bounded to the method's own body, not the whole file: `captureRunningLayout()` and
+     * `renameOrDuplicate(` are declared once each and could not disagree by a stray earlier or later
+     * occurrence, but every other ordering scan in this suite that skipped the presence check first
+     * turned out to be vacuous (TST-B7), so both are proved present before they are compared - an
+     * absent term's index is -1, which is less than every real one and would make a reversed call
+     * pass silently.
+     *
+     * MUTATION this catches: move `captureRunningLayout();` (`TrainControlUI.java:20671`) below the
+     * `renameOrDuplicate(...)` call (`:20686-20689`). Both substrings are still present, so the
+     * presence asserts still pass, and only the ordering assertion goes red - which is the control:
+     * delete either line instead and the presence asserts are what catch it.
+     */
+    @Test
+    public void testTheWindowCallsThemInThatOrder() throws Exception
+    {
+        String ui = new String(Files.readAllBytes(
+            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
+
+        int methodStart = ui.indexOf("private void duplicateOrRenameCurrentLayout(");
+
+        assertTrue(methodStart >= 0,
+            "duplicateOrRenameCurrentLayout has moved or been renamed - this test is reading the "
+            + "wrong method, or none at all");
+
+        int methodEnd = ui.indexOf("\n    private ", methodStart + 1);
+
+        assertTrue(methodEnd > methodStart, "could not find the end of the method to bound the scan");
+
+        String body = ui.substring(methodStart, methodEnd);
+
+        int captured = body.indexOf("captureRunningLayout();");
+        int renamed = body.indexOf("renameOrDuplicate(");
+
+        assertTrue(captured >= 0,
+            "captureRunningLayout() is no longer called from duplicateOrRenameCurrentLayout - DW-A1 is "
+            + "back, because nothing folds the run's placements into the configuration before the "
+            + "rename rekeys it");
+
+        assertTrue(renamed >= 0,
+            "renameOrDuplicate( is no longer called from duplicateOrRenameCurrentLayout - the scan "
+            + "needs updating for whatever replaced it");
+
+        assertTrue(captured < renamed,
+            "captureRunningLayout() no longer runs before renameOrDuplicate() in the window - which is "
+            + "exactly DW-A1: the store is rekeyed by the rename before the run's placements are "
+            + "folded in, and they are discarded on every page, not only the one being renamed");
     }
 
     /**

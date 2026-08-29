@@ -61,7 +61,23 @@ public class testReturnHomeOnRealLayout
     /** Long enough for any single path to finish; short enough that a hang fails instead of hanging. */
     private static final long SETTLE_TIMEOUT_MS = 60000;
 
-    private static final Random RANDOM = new Random();
+    /**
+     * Seeded, and the seed is in every failure message - the same doctrine testTimetableOnDerivedGraph
+     * follows (README.md, Testing).  This test stops autonomy at a random moment on the operator's own
+     * layout; an unseeded Random made a failure unreproducible, which the class comment above used to
+     * concede outright rather than fix.  Pass -Dreturnhome.seed to re-run a particular one.
+     */
+    private static final long SEED = Long.getLong("returnhome.seed", 20260828L);
+
+    private static final Random RANDOM = new Random(SEED);
+
+    /**
+     * The seed, for a failure message, so a failing run can be repeated.
+     */
+    private static String andTheSeed()
+    {
+        return "  (seed " + SEED + " - re-run with -Dreturnhome.seed=" + SEED + ")";
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -173,7 +189,7 @@ public class testReturnHomeOnRealLayout
 
                 fail("locomotives were still running " + (SETTLE_TIMEOUT_MS / 1000)
                     + "s after the graceful stop.  running=" + layout.isAutoRunning()
-                    + ", still active: " + stuck + ".  Arrangement: " + describe(layout));
+                    + ", still active: " + stuck + ".  Arrangement: " + describe(layout) + andTheSeed());
             }
 
             Thread.sleep(250);
@@ -245,6 +261,14 @@ public class testReturnHomeOnRealLayout
                 + describe(layout));
         }
 
+        // TST-B12: the pre-round block above is skipped when already home, and each round below
+        // `continue`s past everything when the random stop also happens to land at home - so nothing
+        // counted whether a single round ever actually reached planReturnToHome()/executeTimetable().
+        // MUTATION this catches: make Layout.planReturnToHome() always return a plan with
+        // isPossible() == false - if every round this run happens to land at home, the mutation is
+        // never exercised and the whole test stays green regardless.
+        int meaningfulRounds = 0;
+
         for (int round = 1; round <= ROUNDS; round++)
         {
             int seconds = RUN_MIN_SECONDS + RANDOM.nextInt(RUN_MAX_SECONDS - RUN_MIN_SECONDS + 1);
@@ -270,24 +294,33 @@ public class testReturnHomeOnRealLayout
                 "round " + round + ": nothing should have removed the homes - got " + trivial
                 + " with " + arrangement);
 
+            meaningfulRounds++;
+
             HomeStaging.Plan plan = layout.planReturnToHome();
 
             assertTrue(plan.isPossible(),
                 "round " + round + ": no way home from " + arrangement
-                + " (outcome " + plan.getOutcome() + ", blocked " + plan.getBlocked() + ")");
+                + " (outcome " + plan.getOutcome() + ", blocked " + plan.getBlocked() + ")" + andTheSeed());
 
             layout.loadReturnToHomeTimetable();
 
             assertTrue(layout.executeTimetable(),
                 "round " + round + ": the plan was accepted but a move gave up on the way, from "
-                + arrangement);
+                + arrangement + andTheSeed());
 
             awaitStopped(layout);
 
             assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.ALREADY_HOME,
                 "round " + round + ": the run finished but not everyone is home - " + describe(layout)
-                + ", started from " + arrangement);
+                + ", started from " + arrangement + andTheSeed());
         }
+
+        // The floor TST-B12 asks for: if every round happened to land at home, planReturnToHome() and
+        // executeTimetable() were never exercised and this test proved nothing about either of them,
+        // however green it reads.  Re-running with a different seed is the escape hatch if this trips.
+        assertTrue(meaningfulRounds > 0,
+            "every one of the " + ROUNDS + " rounds finished already home by chance, so the planner "
+            + "was never actually asked for a plan" + andTheSeed());
     }
 
     /**

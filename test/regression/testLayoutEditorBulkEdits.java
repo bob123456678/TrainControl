@@ -6,6 +6,10 @@ import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -323,6 +327,161 @@ public class testLayoutEditorBulkEdits
             + "rather than moving it");
     }
 
+    /**
+     * The real gesture - cut a column, drop it on another one - carries the station with it.
+     *
+     * Every test above hands `planBulkLine`'s arguments, or its result, straight to the assertions.
+     * Adam's report came through `LayoutEditor.executeTool`'s COL branch, which builds those same
+     * arguments itself from `layout.getName()`, the column a drag started on, the column it ended on,
+     * and whether it was a drag or a paste - and nothing anywhere in the suite ever calls it; grepping
+     * `test/` for `planBulkLine` finds only tests, here and in testDeleteAndInsertKeepTheSetup and
+     * testStationLabelsFollowMoves, that build the call themselves.
+     *
+     * A LayoutEditor that never shows itself and an AutonomySession in a temp folder, wired to each
+     * other the way the running application wires the real ones - through TrainControlUI.
+     * getAutonomySession(), reflectively pointed at this session instead of whatever the sandboxed
+     * fixture would otherwise build - so the call site under test is the actual one, not a stand-in.
+     *
+     * MUTATION this catches: swap the endpoints at the COL branch's call -
+     * `planBulkLine(layout.getName(), true, destCol, startCol, sourceColumn.size(), occupied, isMove)`
+     * - and the station this test sets on the source column arrives nowhere: moveTiles is told the
+     * setup travelled from the empty destination to the square the drag started on, so BOTH squares
+     * end up with nothing, and the assertion that the destination now holds it fails. Passing
+     * `!isMove` has the same effect by a different route: the diagram's track still moves - execCopy
+     * and delete do not consult this argument - but `moves` is never populated, so the station is
+     * left behind, unnamed, on the bare square the track just vacated.
+     */
+    @Test
+    public void testTheRealColumnMoveGestureCarriesTheStation() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the editor is a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        try
+        {
+            // Before the model, not just before the window (OB-111) - constructing a TrainControlUI
+            // reads the layout-path preference, and without the sandbox it is Adam's own railway.
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui[0] = new org.traincontrol.gui.TrainControlUI();
+                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            // Our own page, in our own temp folder - not "1 - Main", so this cannot be confused with
+            // the sandboxed fixture and does not depend on what it happens to contain.
+            java.io.File autonomyFolder =
+                java.nio.file.Files.createTempDirectory("tc-bulk-gesture").toFile();
+
+            AutonomySession session = new AutonomySession(autonomyFolder);
+
+            LayoutDiagram diagram = new LayoutDiagram("Bulk Page", 21, 16, null, null);
+
+            int startCol = 5;
+            int destCol = 15;
+
+            diagram.addComponent(componentType.FEEDBACK, startCol, 3, 0, 0, 1, 1,
+                accessoryDecoderType.MM2, null);
+
+            // Every square counts towards the bounds, not only the one with track on it - otherwise
+            // checkBounds ties the diagram's extent to that single square and the grid built from it
+            // is too narrow to reach column 15 at all (see LayoutDiagram.checkBounds).
+            diagram.setEdit(true);
+            diagram.checkBounds();
+
+            session.open(Arrays.asList(diagram));
+
+            session.getStore().setStation(at(diagram.getName(), startCol, 3), true);
+            session.getStore().setPointName(at(diagram.getName(), startCol, 3),
+                "Moved Along The Column");
+
+            // getAutonomySession() only ever builds a session when the field is still null - pointed
+            // here at ours instead, so the editor's real call site writes to the session this test can
+            // see rather than to whatever the sandboxed fixture would otherwise produce.
+            java.lang.reflect.Field sessionField =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
+            sessionField.setAccessible(true);
+            sessionField.set(ui[0], session);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+
+            java.lang.reflect.Method drawGrid =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+            drawGrid.setAccessible(true);
+
+            java.lang.reflect.Field gridField =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
+            gridField.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    // Builds the grid the constructor leaves for the first paint to ask for.
+                    drawGrid.invoke(editor[0]);
+
+                    org.traincontrol.gui.LayoutGrid grid =
+                        (org.traincontrol.gui.LayoutGrid) gridField.get(editor[0]);
+
+                    org.traincontrol.gui.LayoutLabel source = grid.getValueAt(startCol, 0);
+                    org.traincontrol.gui.LayoutLabel dest = grid.getValueAt(destCol, 0);
+
+                    // The real gesture, in the real order: pick the column up, then drop it on
+                    // another one - see LayoutEditor's mouse handling, which calls these two the
+                    // same way.
+                    editor[0].initCopy(source, null, true);
+                    editor[0].executeTool(dest, org.traincontrol.gui.LayoutEditor.bulk.COL);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            assertTrue(session.getStore().isStation(at(diagram.getName(), destCol, 3)),
+                "the station did not arrive on the column it was dropped on through the real editor "
+                + "gesture - testAMovedColumnTakesItsSetupWithIt proves the RULE carries it correctly, "
+                + "so the gap is in the call that feeds the rule its arguments");
+
+            assertEquals(session.getStore().getPointName(at(diagram.getName(), destCol, 3)),
+                "Moved Along The Column", "it arrived unnamed");
+
+            assertFalse(session.getStore().isStation(at(diagram.getName(), startCol, 3)),
+                "the square the column moved away from is still a station");
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
     // ----------------------------------------------------------------------------------------
     // What the editor does with the plan, in the same order, so that the two calls are exercised
     // together.  applyBulkPlan adds only the null checks and the save - see LayoutEditor.
@@ -352,5 +511,10 @@ public class testLayoutEditorBulkEdits
     private static TileKey at(int x, int y)
     {
         return new TileKey(PAGE, x, y);
+    }
+
+    private static TileKey at(String page, int x, int y)
+    {
+        return new TileKey(page, x, y);
     }
 }

@@ -309,6 +309,21 @@ public class testLayoutTimetable
             runner.setDaemon(true);
             runner.start();
 
+            // Precondition: the run must actually have STARTED before the wait loop below is asked to
+            // see it end.  executeTimetableInternal sets `running = true` only after the worker is
+            // scheduled, so the main thread's very first read can otherwise see `false` before the
+            // retry loop ever ran - the wait loop below exits immediately, and both closing assertions
+            // pass without the give-up bound having been exercised at all.  testAGracefulStopEndsTheRetryLoop
+            // guards this the same way.
+            long startDeadline = System.currentTimeMillis() + 3000;
+
+            while (!layout.isAutoRunning() && System.currentTimeMillis() < startDeadline)
+            {
+                Thread.sleep(50);
+            }
+
+            assertTrue(layout.isAutoRunning(), "precondition: the run should have started by now");
+
             long deadline = System.currentTimeMillis() + 40000;
 
             while (layout.isAutoRunning() && System.currentTimeMillis() < deadline)

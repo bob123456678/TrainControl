@@ -3984,10 +3984,14 @@ public class AutonomySession
     /**
      * What the setup says about one square, for drawing on the ordinary track diagram.
      *
-     * Points only - no direction arrows at all.  The diagram tab is where trains are WATCHED, and the
-     * question there is where they are and where they are heading next, which the running overlay
-     * answers.  Directions belong to the editor, where they are being decided; drawn here they were
-     * just a page of green arrows over a railway nobody was configuring.
+     * Also draws the one-way restriction arrows (FR-037), on tiles that are Points and on plain track
+     * alike - reversed from how this method first shipped. The first attempt gated the arrows on the
+     * same Point test used for the badge below, on the reasoning that direction is a Point question;
+     * it is not. A restriction is a fact about TRACK - straights, curves, the squares either side of a
+     * switch - and almost none of that carries a sensor, so gating on Point made the option appear to
+     * do nothing at all (see the inline comment a few lines down). `directionMarks` is asked before
+     * the Point test for exactly that reason, and `diagramShowsRestrictionArrows()` now defaults to
+     * true, so this is the ordinary case rather than an opt-in corner.
      *
      * @param tile
      * @return the annotation, or null when this square has nothing to say

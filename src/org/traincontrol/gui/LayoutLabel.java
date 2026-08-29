@@ -1056,7 +1056,9 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Brings this tile in front of the address and caption labels, or puts it back behind them.
+     * Brings this tile in front of the address labels, or puts it back behind everything - and, since
+     * OB-117, hands the front straight back to the station captions so this ends up above the
+     * addresses but below them, not above both.
      *
      * Adam, looking at the locomotive icon: "make sure it renders on top of the S88's.  Right now,
      * it's a coin toss."  It was not really a toss - it was fixed and wrong. The overlay is painted
@@ -1163,8 +1165,15 @@ public final class LayoutLabel extends JLabel
      * Draws the tile, then whatever autonomy is saying about it.
      *
      * After super, so it lands over the icon and never touches setIcon - which is what lets it coexist
-     * with the transient highlight.  Note that station and address labels are z-ordered above tiles by
-     * LayoutGrid, so this can never cover their text.
+     * with the transient highlight.
+     *
+     * Do NOT read this as "captions can never be covered, so keepCaptionsInFront is redundant" - that
+     * reasoning is what OB-117 was filed about, and it is only half true. Station captions are pulled
+     * back in front of a lifted tile by keepCaptionsInFront (see liftAboveLabels), and stay covered
+     * only for the instant between the lift and that call running. Address labels get no such rescue:
+     * they are plain JLabels, not StationCaption, so keepCaptionsInFront skips them, and a lifted tile
+     * paints over their text for as long as a train sits on the square - which is the "coin toss"
+     * liftAboveLabels' own javadoc describes.
      *
      * @param g
      */

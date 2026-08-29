@@ -218,6 +218,18 @@ public class testTheCheckerAgreesWithTheBuild
     {
         Map<TileKey, Set<TileKey>> reach = reachFromEachStation();
 
+        // Its two siblings each prove their population is not trivially empty before comparing -
+        // `testDeadEndArrivalsAgree` at :195 asserts ten trapped arrivals, and
+        // `testTheStationsThatReachNothingAreTheOnesTheBuildCannotRouteOutOf` above asserts a KNOWN
+        // stranded station is found. This one had neither: MUTATION that survived, per TST-B18 - make
+        // `AutonomyChecks.checkStations` never report STATION_UNREACHABLE, on the assumption the
+        // frozen fixture has none reachable-checked to begin with. Whether it does was unverified by
+        // the review that found this; this floor is the part worth adding regardless of the answer,
+        // because without it "both sets are empty" and "the checker is silently broken" look identical.
+        assertFalse(reach.isEmpty(),
+            "reachFromEachStation() examined no stations at all, so the comparison below is between "
+            + "two empty sets and proves nothing about whether the checker and the build agree");
+
         Set<TileKey> unreached = new TreeSet<>(BY_KEY);
 
         for (TileKey station : reach.keySet())

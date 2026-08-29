@@ -287,6 +287,208 @@ public class testRouteEditorLocked
     }
 
     /**
+     * moveRow's own guard refuses a move, not just the arrow that is never drawn.
+     *
+     * testALockedRouteDrawsNoRowMarks proves the arrow is not painted; this proves that reaching
+     * moveRow anyway - the way the table's mouse listener reaches it, through
+     * clickCommandMarkForTest rather than by calling shift() directly - still does nothing. One
+     * rule, two guards, under the comment at moveRow's own declaration; this is the second one,
+     * and nothing in the suite drove it before now.
+     *
+     * Mutation this must fail: delete "if (locked) return;" from moveRow (RouteEditorFrame.java,
+     * around :1902). The ordinary-route half runs first as the control: without it, a
+     * clickCommandMarkForTest that stopped reaching moveRow at all would leave both halves
+     * unchanged and green.
+     */
+    @Test
+    public void testALockedRouteRefusesToMoveARow() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame ordinary = open(lockedWithTwoCommands(false));
+
+        int movableFirst = ordinary.commandsAsSaved().get(0).getAddress();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markMoveDown()));
+
+        assertNotEquals(ordinary.commandsAsSaved().get(0).getAddress(), movableFirst,
+            "moving the top row down on an ordinary route left it where it was, so the locked "
+            + "half below would prove nothing about moveRow's own guard");
+
+        close(ordinary);
+
+        org.traincontrol.gui.RouteEditorFrame owned = open(lockedWithTwoCommands(true));
+
+        int lockedFirst = owned.commandsAsSaved().get(0).getAddress();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markMoveDown()));
+
+        assertEquals(owned.commandsAsSaved().get(0).getAddress(), lockedFirst,
+            "moveRow moved a row on a route belonging to the Central Station - the drawing guard "
+            + "is not the only door in");
+
+        close(owned);
+    }
+
+    /**
+     * deleteRow's own guard refuses, not just the trash mark that is never drawn.
+     *
+     * Same pairing as the move test above, for the second of the four guards RouteEditorFrame
+     * carries beside the drawing rule.
+     *
+     * Mutation this must fail: delete "if (locked) return;" from deleteRow (RouteEditorFrame.java,
+     * around :1910).
+     */
+    @Test
+    public void testALockedRouteRefusesToDeleteARow() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
+
+        int before = ordinary.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markDelete()));
+
+        assertEquals(ordinary.commandCount(), before - 1,
+            "deleting a row on an ordinary route did nothing, so the locked half below would "
+            + "prove nothing about deleteRow's own guard");
+
+        close(ordinary);
+
+        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
+
+        int lockedBefore = owned.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markDelete()));
+
+        assertEquals(owned.commandCount(), lockedBefore,
+            "deleteRow removed a row from a route belonging to the Central Station - the drawing "
+            + "guard is not the only door in");
+
+        close(owned);
+    }
+
+    /**
+     * duplicateRow's own guard refuses, not just the copy mark that is never drawn.
+     *
+     * Third of the four guards.
+     *
+     * Mutation this must fail: delete "if (locked || table != commands) return;" from
+     * duplicateRow (RouteEditorFrame.java, around :1925).
+     */
+    @Test
+    public void testALockedRouteRefusesToDuplicateARow() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
+
+        int before = ordinary.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markCopy()));
+
+        assertEquals(ordinary.commandCount(), before + 1,
+            "duplicating a row on an ordinary route did nothing, so the locked half below would "
+            + "prove nothing about duplicateRow's own guard");
+
+        close(ordinary);
+
+        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
+
+        int lockedBefore = owned.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markCopy()));
+
+        assertEquals(owned.commandCount(), lockedBefore,
+            "duplicateRow copied a row on a route belonging to the Central Station - the drawing "
+            + "guard is not the only door in");
+
+        close(owned);
+    }
+
+    /**
+     * addTo's own guard refuses even though nothing can click its way there.
+     *
+     * The fourth guard is different from the other three: a locked table's adding row never
+     * shows ADD_HERE - CommandTable.getValueAt returns "" there when locked - so the mouse
+     * listener that calls addTo(table) never fires on a locked frame, and clickCommandMarkForTest
+     * has no case for it either (there is no mark to name). That makes the drawing guard the
+     * only one a real click, or the test above it in this class, could ever exercise - so the
+     * second guard inside addTo itself was reachable from nothing in the suite. This calls the
+     * private method directly, the only way left to ask whether it would also have stopped a
+     * caller that reached it some other way - reflection standing in for "anything added later
+     * that forgets to ask", which is the reason the comment at moveRow's declaration gives for
+     * having two guards at all.
+     *
+     * Mutation this must fail: delete "if (locked) return;" from addTo (RouteEditorFrame.java,
+     * around :1934).
+     */
+    @Test
+    public void testALockedRouteRefusesToAddARowEvenCalledDirectly() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
+
+        int before = ordinary.commandCount();
+
+        invokeAddTo(ordinary);
+
+        assertEquals(ordinary.commandCount(), before + 1,
+            "calling addTo directly on an ordinary route did nothing, so the locked half below "
+            + "would prove nothing about addTo's own guard");
+
+        close(ordinary);
+
+        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
+
+        int lockedBefore = owned.commandCount();
+
+        invokeAddTo(owned);
+
+        assertEquals(owned.commandCount(), lockedBefore,
+            "addTo appended a command to a route belonging to the Central Station when called "
+            + "directly - the drawing guard that keeps a real click from ever reaching it is not "
+            + "the only thing standing in the way");
+
+        close(owned);
+    }
+
+    /**
+     * RouteEditorFrame.addTo(commands), the private method a real click cannot reach on a locked
+     * table because the adding row never shows ADD_HERE to click on.
+     */
+    private static void invokeAddTo(org.traincontrol.gui.RouteEditorFrame frame) throws Exception
+    {
+        java.lang.reflect.Field commandsField = frame.getClass().getDeclaredField("commands");
+        commandsField.setAccessible(true);
+        Object commandsTable = commandsField.get(frame);
+
+        java.lang.reflect.Method addTo = frame.getClass().getDeclaredMethod("addTo",
+            javax.swing.JTable.class);
+        addTo.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                addTo.invoke(frame, commandsTable);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
      * How many cells of the window's tables hold one of the row marks.
      */
     private static int marksFound(org.traincontrol.gui.RouteEditorFrame frame, List<String> marks)
@@ -387,6 +589,28 @@ public class testRouteEditorLocked
         List<RouteCommand> commands = new ArrayList<>();
 
         commands.add(RouteCommand.RouteCommandAccessory(80,
+            Accessory.accessoryDecoderType.MM2, true));
+
+        MarklinRoute route = new MarklinRoute(null, "Imported", 4242, commands, 0,
+            Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        route.setLocked(owned);
+
+        return route;
+    }
+
+    /**
+     * A route with two DISTINCT commands, locked or not - so a moved row has somewhere to go and
+     * can be told apart from the one it swapped with.
+     */
+    private static Route lockedWithTwoCommands(boolean owned)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandAccessory(80,
+            Accessory.accessoryDecoderType.MM2, true));
+
+        commands.add(RouteCommand.RouteCommandAccessory(81,
             Accessory.accessoryDecoderType.MM2, true));
 
         MarklinRoute route = new MarklinRoute(null, "Imported", 4242, commands, 0,

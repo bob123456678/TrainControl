@@ -737,6 +737,16 @@ public class testLocomotive
         model.deleteLoc("Test loc MU");
         model.deleteLoc("Test loc child 1");
         model.deleteLoc("Test loc child 2");
+
+        // TST-B20: testMultiUnitCommands creates "Test loc child 3" (:720) and nothing ever deleted it -
+        // left in the restored DB image for whatever ran next in this JVM.
+        model.deleteLoc("Test loc child 3");
+
+        // TST-B20: testLocomotiveConstructor (:41) and testMultiUnitCommands (:359) both set this true
+        // with no restore.  Left true, testAutoLayoutRace.testWaitingForPowerGivesUp can have its GO
+        // echoed back by the simulated-packet branch and waitForPowerState(true, 400) return true - a
+        // false failure/pass in a class that never touched this flag itself.
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
     }
 
     @BeforeMethod
@@ -920,15 +930,22 @@ public class testLocomotive
     }
 
     /**
-     * An address with exactly one locomotive on it is reported as in use.
+     * An address with exactly one locomotive on it is not in the duplicate list - the fact the
+     * "check for duplicates" dialog's bug (and its fix) both turn on.
      *
-     * The "check for duplicates" dialog answered this from getDuplicateLocAddresses, which has every
-     * address with a single locomotive REMOVED from it - so it said "address is free" for precisely
-     * the address the user was about to collide with, and stayed silent only for addresses that were
-     * already doubled up.
+     * TST-B14: this used to close with `assertTrue(all.containsKey(single), ...)`, labelled as the
+     * substantive check - but `single` was obtained by iterating `all.entrySet()` in the first place,
+     * so that assertion could never fail; it is true by construction, not by anything about the
+     * database.  Removed rather than kept as padding.
      *
-     * The precondition assert is what makes this meaningful: without it the test would pass on a
-     * database where every address happens to be duplicated, having exercised nothing.
+     * What is left cannot, by itself, catch AddLocomotive.java's checkDuplicatesActionPerformed being
+     * reverted to consult getDuplicateLocAddresses instead of getLocAddresses (the actual regression
+     * this class is named for) - that logic is private, inline in a Swing action handler inside a
+     * JDialog, and exercising it means instantiating AddLocomotive, which is GUI-dialog testing outside
+     * test/core's scope here (see TST-B22: no test file anywhere in test/ mentions AddLocomotive).  What
+     * this DOES verify, with a control proving the check can detect a presence rather than only its
+     * absence, is the contract the fix depends on: getDuplicateLocAddresses() excludes an address with
+     * exactly one locomotive, and includes one that genuinely has more than one.
      */
     @Test
     public void testAnAddressWithOneLocomotiveIsNotReportedFree() throws Exception
@@ -940,14 +957,18 @@ public class testLocomotive
             model.getDuplicateLocAddresses();
 
         Integer single = null;
+        Integer doubled = null;
 
         for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Locomotive>> entry
                 : all.entrySet())
         {
-            if (entry.getValue().size() == 1)
+            if (entry.getValue().size() == 1 && single == null)
             {
                 single = entry.getKey();
-                break;
+            }
+            else if (entry.getValue().size() > 1 && doubled == null)
+            {
+                doubled = entry.getKey();
             }
         }
 
@@ -955,9 +976,15 @@ public class testLocomotive
             "no address in this database has exactly one locomotive, so this test proves nothing");
 
         assertFalse(duplicates.containsKey(single),
-            "precondition: an address with one locomotive is not in the duplicate list");
+            "an address with one locomotive is in the duplicate list - which the dialog would then "
+            + "report as free if it were ever reverted to ask getDuplicateLocAddresses");
 
-        assertTrue(all.containsKey(single),
-            "address " + single + " has a locomotive on it, and the dialog called it free");
+        // Control: proves the absence check above is not vacuously true because getDuplicateLocAddresses
+        // never reports anything at all - a mutation emptying it outright would trip this, not that one.
+        if (doubled != null)
+        {
+            assertTrue(duplicates.containsKey(doubled),
+                "an address with more than one locomotive should be in the duplicate list");
+        }
     }
 }

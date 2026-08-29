@@ -234,6 +234,11 @@ public class testLocDB
     @AfterClass
     public static void tearDownClass() throws Exception
     {
+        // TST-B20: testRenameLoc creates "New locomotive test 2" (MFX 20) and renames it to "New
+        // locomotive test 2 copy" - nothing ever deleted either name, so one of them was left in the
+        // restored DB image for whatever ran next in this JVM.
+        model.deleteLoc("New locomotive test 2");
+        model.deleteLoc("New locomotive test 2 copy");
     }
 
     @BeforeMethod

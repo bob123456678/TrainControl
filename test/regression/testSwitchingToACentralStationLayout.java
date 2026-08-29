@@ -192,14 +192,25 @@ public class testSwitchingToACentralStationLayout
 
         String body = ui.substring(guard, ui.indexOf("\n    }", guard));
 
-        for (String item : new String[] {
-            "modifyLocalLayoutMenu", "editPageMenu", "popUpAllMenuItem" })
+        // MANAGE PAGES IS NOT NAMED HERE ANY MORE (UXR-B2).
+        //
+        // This used to require guardLayoutMenu to write `modifyLocalLayoutMenu.setEnabled` itself,
+        // which made it a second writer of a property `applyLayoutEditingAvailability` already owns -
+        // and the two asked different questions, so they disagreed during every diagram rebuild. What
+        // Adam asked for was the answer being FRESH when the menu opens, not this method doing the
+        // writing, and both hold once the menu asks the owner. That is asserted below instead.
+        for (String item : new String[] { "editPageMenu", "popUpAllMenuItem" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
                 "guardLayoutMenu no longer decides whether " + item + " is available, so it stays "
                 + "clickable with no layout to act on - which is how Add Blank Page was reached "
                 + "after the diagram had been unloaded (OB-128)");
         }
+
+        assertTrue(body.contains("applyLayoutEditingAvailability()"),
+            "guardLayoutMenu no longer asks the owner of the editing controls when the menu opens, so "
+            + "Manage Pages shows whatever it was left at - which is the staleness OB-128 was filed "
+            + "about, arrived at from the other side");
 
         // Every door goes through the guarded helper rather than picking the tab by index.
         assertEquals(count(ui, "KeyboardTab.setSelectedIndex(1)"), 0,
@@ -214,6 +225,14 @@ public class testSwitchingToACentralStationLayout
         assertTrue(ui.contains("clearLayoutPanel();"),
             "nothing empties the track diagram panel when the layout list is emptied, so the tab "
             + "keeps the previous railway mounted and it looks entirely live");
+    }
+
+    /** How many test classes build a model without a sandbox today - see the ratchet above. */
+    private static final int MODELS_WITHOUT_A_SANDBOX = 56;
+
+    private static String stripComments(String source)
+    {
+        return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
     }
 
     private static int count(String haystack, String needle)
@@ -371,6 +390,13 @@ public class testSwitchingToACentralStationLayout
             // too and it is worth settling, but it is a wider sweep than this rule - some of them
             // parse test_layout directly on purpose - and a check that fails for twenty classes
             // nobody has looked at is a check that gets disabled.
+            // THE WINDOW is a hard rule: it has no offenders, and it is the case that writes the
+            // folder and can raise a modal dialog into the middle of a battery.
+            //
+            // The MODEL is a ratchet instead, below. `MarklinControlStation.init` reads the same
+            // preference and is the half that actually loads the pages, so those classes open the
+            // operator\u2019s railway too - but 56 of them do, and a rule that fails for 56 pre-existing
+            // violations is one somebody deletes rather than obeys.
             int opens = code.indexOf("new TrainControlUI()");
 
             if (opens < 0) continue;
@@ -395,6 +421,39 @@ public class testSwitchingToACentralStationLayout
             "only " + checked + " test classes were found to build a window, which is fewer than "
             + "there are - the pattern this looks for has gone stale and it is now checking almost "
             + "nothing");
+
+        // AND THE MODEL HALF, ratcheted (2026-08-28).
+        //
+        // These read the same preference and load the same railway; they simply cannot raise a dialog,
+        // and there are too many to fix in one round. Pinned so the number can only fall - a new one
+        // fails this, and repairing one is a matter of lowering MODELS_WITHOUT_A_SANDBOX by one.
+        int loose = 0;
+
+        for (java.io.File f : filesUnder(root))
+        {
+            if (f.getName().equals("LayoutSandbox.java")) continue;
+
+            String code = stripComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8));
+
+            int builds = earliest(code, "MarklinControlStation.init(", "= init(null");
+
+            if (builds < 0) continue;
+
+            int sandbox = code.indexOf("LayoutSandbox.open()");
+
+            if (sandbox < 0 || sandbox > builds) loose++;
+        }
+
+        assertTrue(loose <= MODELS_WITHOUT_A_SANDBOX,
+            "there are now " + loose + " test classes that build a model without pointing the layout "
+            + "preference at a sandbox first, up from " + MODELS_WITHOUT_A_SANDBOX
+            + ". Every one of them loads whatever layout the machine has, which on Adam\u2019s is his "
+            + "real railway");
+
+        assertEquals(loose, MODELS_WITHOUT_A_SANDBOX,
+            loose + " such classes remain, fewer than the " + MODELS_WITHOUT_A_SANDBOX
+            + " recorded. Lower MODELS_WITHOUT_A_SANDBOX to " + loose + " so the improvement is kept.");
 
         assertEquals(offenders.toString(), "[]",
             "these tests open whatever layout the machine has, which on Adam\u2019s is his real "
@@ -544,12 +603,23 @@ public class testSwitchingToACentralStationLayout
             + "and can throw, and a splash left standing over a working application is worse than "
             + "never having shown one");
 
-        int closedInFinally = init.indexOf("StartupSplash.closeIfShown(splash)");
-        int theFinally = init.lastIndexOf("finally", closedInFinally);
+        // THE PROPERTY, not a byte distance.
+        //
+        // This used to require the first close to sit within 900 characters of a `finally`, which is a
+        // fact about formatting rather than about behaviour - and it failed on an IMPROVEMENT, when
+        // the splash was additionally closed before rethrowing so the "already running" dialog is no
+        // longer hidden behind it. What has to be true is that it comes down on the normal path and on
+        // the exception path.
+        assertTrue(init.contains("finally") && count(init, "StartupSplash.closeIfShown(splash)") >= 2,
+            "the splash is closed on fewer paths than it was - the window build runs on the event "
+            + "thread and can throw, and a splash left standing over a working application is worse "
+            + "than never having shown one");
 
-        assertTrue(theFinally >= 0 && closedInFinally - theFinally < 900,
-            "the first close is no longer inside the finally that follows the window build, so a "
-            + "throw while building leaves the splash on screen for the life of the process");
+        String betweenShowAndAwait = init.substring(shown, init.indexOf("latch.await()", shown));
+
+        assertTrue(betweenShowAndAwait.contains("closeIfShown")
+                || init.indexOf("closeIfShown", init.indexOf("latch.await()", shown)) >= 0,
+            "nothing takes the splash down anywhere near the window build");
 
         // And the words exist to put in it.
         String bundle = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(

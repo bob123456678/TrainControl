@@ -2730,16 +2730,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem combinePagesItem;
 
     /**
-     * "Edit Layout Page..." on the Layouts menu, listing the pages.
-     *
-     * The counterpart to the Autonomy menu's own edit item, and the reason "Edit Current Page" came out
-     * of Manage Pages: managing pages is adding, renaming, duplicating and deleting them, and opening
-     * one to work on is not that.  Each entry opens the editor on that page in whichever mode was last
-     * used, which is what the Edit button does - naming a PAGE is not naming a mode.
-     *
-     * Rebuilt whole on every mount, because the pages change under it.
-     */
-    /**
      * Greys the Layout menu while an editor has the diagram, and offers the way back (OB-033).
      *
      * The same rule the Autonomy menu already followed, and for the same reasons its comment gives:
@@ -2767,8 +2757,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // loop must not switch it back on when no editor is open.
             if (child == localHeading || child == centralStationHeading) continue;
 
+            // TAKEN AWAY, never handed back (UXR-A1).
+            //
+            // These three are owned by `repaintPathLabel`, which greys them when no Central Station
+            // is reachable (OB-098, OB-100) - and that greying IS the guard:
+            // switchCSLayoutMenuItemActionPerformed has no connection check of its own, and clears
+            // the layout path preference and every page the moment it is pressed. This loop knew
+            // nothing about stations and re-enabled them on every opening of the menu, so pressing
+            // Switch to Central Station Layout while disconnected wiped the local layout - which is
+            // the state OB-127 was filed from.
+            //
+            // An open editor may still take them away; only their owner may give them back.
+            if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem)
+            {
+                if (busy) child.setEnabled(false);
+
+                continue;
+            }
+
             child.setEnabled(!busy);
         }
+
+        // THE OWNER, asked at the moment somebody looks (UXR-B2 reconciled with OB-128).
+        //
+        // This method used to set Manage Pages itself, which made it a second writer of a property
+        // `applyLayoutEditingAvailability` already owns - and the two asked different questions, so
+        // they disagreed during every diagram rebuild. Removing the duplicate was right; it also
+        // dropped what Adam asked for in the same breath: "You can make this check when the layout
+        // menu opens."
+        //
+        // Both hold if the menu asks the owner rather than answering for itself. One writer, and its
+        // answer is refreshed at the one moment where it is certainly current.
+        applyLayoutEditingAvailability();
 
         // What the layout is loaded FROM, said rather than offered (FR-040).
         //
@@ -2789,8 +2809,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             boolean workable = layoutCanBeEdited();
 
-            if (modifyLocalLayoutMenu != null) modifyLocalLayoutMenu.setEnabled(workable);
-
+            // Manage Pages is NOT set here (UXR-B2). It used to be, from `workable` alone - and
+            // `applyLayoutEditingAvailability` already owns this same item from `noEditorOpen &&
+            // layoutCanBeEdited()`, called from every editor teardown and from `repaintLayout`. This
+            // menu opens on its own schedule, so it was the later writer whenever somebody looked
+            // during the few seconds `layoutEditingComplete` spends rebuilding the layout database
+            // after a save - `noEditorOpen` is already false there, `isLayoutEditorOpen()` (this
+            // method's `busy`) is already false too, and this line said yes while the Edit Layout
+            // button four inches away correctly said no. Same property, two writers, disagreeing -
+            // the case `repaintPathLabel`'s own comment already argues for the Central Station items.
             if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
 
             // Pop-out windows and the picture export need PAGES, not a local folder - a Central
@@ -2802,6 +2829,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (popUpAllMenuItem != null) popUpAllMenuItem.setEnabled(loaded);
 
             if (exportDiagramItem != null) exportDiagramItem.setEnabled(loaded);
+
+            // ITS OWN QUESTION, because nothing else asks one (VAL-B1).
+            //
+            // This was excluded from the loop above alongside the two items `repaintPathLabel` owns -
+            // and it is not one of them. Its only other writer disables it when the station is not a
+            // CS3 and never puts it back, so excluding it left it with no writer at all: on a CS3,
+            // opening this menu once while an editor was open greyed the item for the session.
+            if (openCS3AppMenuItem != null) openCS3AppMenuItem.setEnabled(
+                this.model != null && this.model.isCS3());
         }
 
         if (goToEditorItem == null)
@@ -2867,6 +2903,68 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int station = indexOnLayoutMenu(switchCSLayoutMenuItem);
 
         if (station >= 0) layoutMenu.add(centralStationHeading, station);
+
+        // BELOW BOTH SECTIONS (Adam, 2026-08-29).
+        //
+        // "Move pop up all... and save as picture to below the central station layout section." They
+        // sat between the two, which put them under the Local Layout heading - and neither is about
+        // where the diagram came FROM. Both take whatever is loaded and put it in a window or a file,
+        // so below both headings they sit under none, which is what they are. The UX review had the
+        // same complaint from the other side (UXR-C11).
+        //
+        // Moved together and in that order, so the export stays beside the pop-out.
+        if (popUpAllMenuItem != null)
+        {
+            layoutMenu.remove(popUpAllMenuItem);
+
+            if (exportDiagramItem != null) layoutMenu.remove(exportDiagramItem);
+
+            layoutMenu.addSeparator();
+            layoutMenu.add(popUpAllMenuItem);
+
+            if (exportDiagramItem != null) layoutMenu.add(exportDiagramItem);
+        }
+
+        tidyLayoutMenuSeparators();
+    }
+
+    /**
+     * Collapses runs of separators on the Layout menu, and drops any left leading or trailing.
+     *
+     * Taking the pop-out out from between two of them leaves those two side by side, and a menu with
+     * two rules in a row reads as a rendering fault. Done by walking the children rather than by
+     * naming `jSeparator8` and `jSeparator24`: those are generated fields, the designer renumbers them
+     * whenever the form is touched, and a rule that names them is one designer save from being wrong.
+     */
+    private void tidyLayoutMenuSeparators()
+    {
+        if (layoutMenu == null) return;
+
+        boolean previousWasSeparator = true;
+
+        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
+        {
+            boolean separator = layoutMenu.getMenuComponent(i) instanceof javax.swing.JSeparator;
+
+            if (separator && previousWasSeparator)
+            {
+                layoutMenu.remove(i);
+
+                i--;
+
+                continue;
+            }
+
+            previousWasSeparator = separator;
+        }
+
+        // And a trailing one, which the loop above cannot see because nothing follows it.
+        int last = layoutMenu.getMenuComponentCount() - 1;
+
+        if (last >= 0 && layoutMenu.getMenuComponent(last) instanceof javax.swing.JSeparator)
+        {
+            layoutMenu.remove(last);
+        }
     }
 
     /**
@@ -2942,6 +3040,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         showCurrentLayoutFolderMenuItem.setText(I18n.f("ui.main.toolbar.dataSource", source));
     }
 
+    /**
+     * "Edit Layout Page..." on the Layouts menu, listing the pages.
+     *
+     * The counterpart to the Autonomy menu's own edit item, and the reason "Edit Current Page" came out
+     * of Manage Pages: managing pages is adding, renaming, duplicating and deleting them, and opening
+     * one to work on is not that.  Each entry opens the editor on that page in whichever mode was last
+     * used, which is what the Edit button does - naming a PAGE is not naming a mode.
+     *
+     * Rebuilt whole on every mount, because the pages change under it.
+     *
+     * DOC-B12: this javadoc used to sit two methods above this one, above `guardLayoutMenu` - an
+     * insertion (`5e45daaf`) landed between it and the declaration it was written for, and Java
+     * attaches only the last doc block before a declaration. Moved here rather than rewritten:
+     * every sentence in it was already true of this method and nothing else.
+     */
     private void mountEditPageMenu()
     {
         if (layoutMenu == null) return;
@@ -3197,6 +3310,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
+        // Wired unconditionally, ABOVE the no-session return below (UXR-B1).
+        //
+        // Both of these are about the Layout menu itself, not about an autonomy session - a Central
+        // Station layout has no local path, so `session` is always null for it, and this whole method
+        // used to return before either line ran. With it, `guardLayoutMenu` was never registered for a
+        // CS session: the FR-040 data-source label never appeared, the two section headings never got
+        // mounted, and popUpAllMenuItem/exportDiagramItem were decided by nobody and kept whatever the
+        // form builder had left them at. None of that has anything to do with whether a local autonomy
+        // setup exists.
+        mountLayoutHeadings();
+
+        if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
+        {
+            layoutMenu.addMenuListener(new javax.swing.event.MenuListener()
+            {
+                @Override
+                public void menuSelected(javax.swing.event.MenuEvent e)
+                {
+                    guardLayoutMenu();
+                }
+
+                @Override
+                public void menuDeselected(javax.swing.event.MenuEvent e) { }
+
+                @Override
+                public void menuCanceled(javax.swing.event.MenuEvent e) { }
+            });
+        }
+
         if (session == null)
         {
             // No local copy, so no setup is possible - put the JSON window back rather than leaving an
@@ -3237,28 +3379,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addCombinePagesItem();
 
         mountEditPageMenu();
-
-        mountLayoutHeadings();
-
-        // Asked every time the menu is opened, which is the only moment the answer is certainly
-        // current - see guardLayoutMenu. Added once; mountEditPageMenu runs on every mount.
-        if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
-        {
-            layoutMenu.addMenuListener(new javax.swing.event.MenuListener()
-            {
-                @Override
-                public void menuSelected(javax.swing.event.MenuEvent e)
-                {
-                    guardLayoutMenu();
-                }
-
-                @Override
-                public void menuDeselected(javax.swing.event.MenuEvent e) { }
-
-                @Override
-                public void menuCanceled(javax.swing.event.MenuEvent e) { }
-            });
-        }
 
         // And the tab it used to fill goes.  Removed here rather than left out of the form, because
         // the form is generated - and it comes BACK below when there is no local layout, where the
@@ -16946,20 +17066,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     public void enableOrDisableRoute(String routeName, boolean enable)
-    {  
-        new Thread(() -> 
+    {
+        new Thread(() ->
         {
             Route r = this.model.getRoute(routeName);
 
-            if (r.hasS88())
+            // UXR-B6: an s88 is what lets the route FIRE itself, so it is only enabling that needs
+            // one - turning auto-fire back off never reads a sensor. This used to require it either
+            // way, so a route that was somehow enabled with no s88 (BulkEnableOrDisable's own filter,
+            // `hasS88() || isEnabled()`, can produce exactly that state) could be disabled from Bulk
+            // and errored from its own right-click item, which offers "Disable Automatic Execution"
+            // on every route with no check of its own - see that menu for the other half of this.
+            if (!enable || r.hasS88())
             {
-                this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable, 
+                this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
                         r.getConditions());
 
                 // Ensure route changes are synced
                 this.syncWithCS2();
                 this.repaintLayout();
-                
+
                 refreshRouteList();
             }
             else
@@ -17330,7 +17456,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0] // default selection = "No"
+                // UXR-B5: index 0 is Yes - this said "No" and pre-selected the option that queries the
+                // Central Station and turns every function off first. Enter on a live dialog took the
+                // destructive path with no warning beyond the pre-selection nobody was reading.
+                YES_NO_OPTS[1] // default selection = "No"
             );
             if(dialogResult == JOptionPane.YES_OPTION)
             {
@@ -17874,7 +18003,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0] // default selection = "No"
+                // UXR-B5: index 0 is Yes - this said "No" and pre-selected Yes. Harmless here (opening
+                // a folder), but the same wrong index as the two destructive sites beside it, and a
+                // pattern worth keeping honest even where the cost of Enter is small.
+                YES_NO_OPTS[1] // default selection = "No"
             );
             if (result == JOptionPane.YES_OPTION)
             {
@@ -18823,16 +18955,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             for (String s : this.model.getRouteList())
             {
                 listModel.addElement(this.model.getRoute(s));
-            } 
-            
-            this.autoRouteList.setEnabled(this.model.getAutoLayout().isActivateRoutes());
+            }
+
             this.autoRouteList.setModel(listModel);
-            
+
             this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
+            refreshActivateRoutesControls();
             applyAutoRouteListSelections();
         }
     }
-    
+
+    /**
+     * Greys "Activate Routes" and its list while autonomy is busy (UXR-B3).
+     *
+     * Both handlers already ask `isAutonomyBusy()` and refuse - `autoRouteListMouseReleased` even
+     * undoes the click first - but refusing is not the same as not offering. A live checkbox that
+     * flips and is flipped back by a dialog reads as a mistake the operator made; a greyed one
+     * reads as the railway being busy, which is what is actually true. Same rule OB-101 applied to
+     * `timetableCapture` one control over, in its own words: "the fix was to make the affordance
+     * agree with the guard rather than to add a guard."
+     *
+     * Called from `repaintAutoLocListLite`, which already runs on every arrival and departure - the
+     * moments `isAutonomyBusy()` can change without either control having been touched - for the
+     * same reason `applyLayoutEditingAvailability` is called from `repaintPathLabel`: a fact that
+     * changes on its own needs a writer that runs on its own, not only from the two clicks that
+     * used to be the sole callers of `setEnabled` here.
+     */
+    private void refreshActivateRoutesControls()
+    {
+        boolean busy = this.isAutonomyBusy();
+
+        if (this.toggleSpecifiedRoutes != null) this.toggleSpecifiedRoutes.setEnabled(!busy);
+
+        if (this.autoRouteList != null)
+        {
+            this.autoRouteList.setEnabled(!busy && this.model != null && this.model.hasAutoLayout()
+                && this.model.getAutoLayout().isActivateRoutes());
+        }
+    }
+
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -19028,7 +19189,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.gracefulStopRequested = true;
 
         this.gracefulStop.setEnabled(false);
-        this.startAutonomy.setEnabled(true);
         this.refreshReturnHomeButton();
 
         new Thread(() ->
@@ -19037,6 +19197,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Ensure list is updated after stopping a timetable run
                 this.repaintAutoLocListLite();
+
+                // UXR-B7, second surface. stopLocomotives() clears the running flag and returns at
+                // once; the trains it was driving keep going until each reaches its next station, and
+                // isRunning() - therefore isAutonomyBusy() - stays true for that whole coast-down
+                // window. Enabling Start here, synchronously, is what AutonomyOverlayToggle was
+                // faithfully mirroring when it flipped the diagram strip from "Graceful Stop" to
+                // "Start Autonomous Operation" while trains were still moving: the strip picks its
+                // button from these two, and LayoutRightclickAutonomyMenu now asks isAutonomyBusy()
+                // for the same choice, so the buttons were the one surface still saying something
+                // else. Waited out here rather than left as a poll somewhere else, because this
+                // thread already exists for exactly this transition and nothing else owns it - an
+                // unbounded wait, like every other wait in this file for a railway event rather than
+                // an acknowledgement.
+                while (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
+                {
+                    try
+                    {
+                        Thread.sleep(REPAINT_ROUTE_INTERVAL);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
             }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
@@ -21198,8 +21385,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
-            
-            this.autoRouteList.setEnabled(this.model.getAutoLayout().isActivateRoutes());
+
+            refreshActivateRoutesControls();
         });
     }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
 
@@ -21300,7 +21487,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     YES_NO_OPTS,
-                    YES_NO_OPTS[0] // default selection = "No"
+                    // UXR-B5: index 0 is Yes - this said "No" and pre-selected the delete. Enter on
+                    // this confirmation deleted the timetable entry with no undo, one keypress rather
+                    // than the two the comment believed it was requiring.
+                    YES_NO_OPTS[1] // default selection = "No"
                 );
 
                 // Anything but Yes.
@@ -21436,9 +21626,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                       }
                   });
             
-            dialog.setVisible(true);
+            // UXR-B4: setVisible(true) on an APPLICATION_MODAL dialog does not return until the
+            // dialog is dismissed, so a call placed after it - as this one used to be - runs on a
+            // component whose window is already gone and focuses nothing. Queued instead: an
+            // invokeLater posted before a modal show enters Swing's nested event loop for that
+            // dialog runs from inside that loop, once the dialog is actually on screen, rather than
+            // after it, which is what the caller wanted a focused field for in the first place.
+            javax.swing.SwingUtilities.invokeLater(edit::focusFno);
 
-            edit.focusFno();
+            dialog.setVisible(true);
         });
     }
     
@@ -21604,9 +21800,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // and stopped there, which removed the wrong behaviour without putting the right one
                 // back: a fifteen-pixel hole where right-clicking the locomotive did nothing at all.
                 //
-                // And the hole is not in a corner any more. The mark was moved to the MIDDLE of the
-                // picture in the same round, which is exactly where a person aims when they right-click
-                // it. Two fixes that were each right on their own, wrong together.
+                // DOC-B10: the hole moves with the mark rather than closing on its own. It sat in the
+                // MIDDLE of the picture for one round (2026-08-27) - exactly where a person aims when
+                // they right-click it - and has since been moved to the upper right corner, below.
+                // Wherever it sits, right-clicking those fifteen pixels lands on the mark, not on
+                // locIcon underneath, which is why this passthrough still matters regardless of where
+                // "there" currently is.
                 if (SwingUtilities.isLeftMouseButton(evt))
                 {
                     recropLocIcon(activeLoc, TrainControlUI.this);
@@ -22749,6 +22948,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // carries the same line: an earlier version of this fix claimed it did, and moved the
             // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
+
+            // Same reasoning, for "Activate Routes" (UXR-B3): isAutonomyBusy can turn false on its
+            // own the moment the last active locomotive arrives, with neither the checkbox nor the
+            // list having been touched, and this is the refresh that already runs at that moment.
+            refreshActivateRoutesControls();
 
             // Which panels there are is read HERE, on the EDT, because the component list belongs to
             // Swing.  What goes in them is worked out somewhere else.

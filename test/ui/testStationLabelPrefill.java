@@ -2,8 +2,13 @@ package ui;
 
 import java.util.Arrays;
 import static org.testng.Assert.*;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.AutonomyEditorPanel;
 
 /**
@@ -136,5 +141,122 @@ public class testStationLabelPrefill
         assertTrue(nearest > used,
             "the nearest station is not consulted after the memory, so either it never runs or it "
             + "overrides the one thing the operator just did");
+    }
+
+    /**
+     * The caller nearestOf serves is untested: nearestStation, which turns the graph into the list
+     * nearestOf chooses from by keeping only the reduced points the user marked as stations.
+     *
+     * TST-B19. The two tests above drive nearestOf hard; nothing before this called
+     * nearestStation itself - the class javadoc said doing so needed "the panel, a session and a
+     * railway" and settled for reading the source instead (testTheLastClickedStationIsSpentAfterOneUse,
+     * above). It does need those three, and this builds the smallest ones that will do: a session
+     * over a temporary folder, a three-feedback diagram, and an AutonomyEditorPanel bound to it -
+     * nearestStation is private, so it is reached by reflection, the way testRouteEditorLocked
+     * reaches addTo.
+     *
+     * The middle point is deliberately the CLOSEST tile to the square asked about, and deliberately
+     * left as an ordinary point of track rather than a station - so the right answer and the
+     * geometrically nearest tile disagree, and only a filter that actually reads isStation() can
+     * tell them apart.
+     *
+     * Mutation this must fail: drop `point.isStation()` from the filter at
+     * AutonomyEditorPanel.java:2147. The excluded middle point would then be offered - it is nearer
+     * than either real station - and win.
+     */
+    @Test
+    public void testNearestStationOnlyOffersRealStations() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs "
+                + "a display");
+        }
+
+        java.io.File layout = java.nio.file.Files.createTempDirectory("tc-station-prefill").toFile();
+
+        try
+        {
+            LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
+
+            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2,
+                null);
+
+            for (int x = 2; x <= 4; x++)
+            {
+                page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0,
+                    accessoryDecoderType.MM2, null);
+            }
+
+            // The excluded point: an ordinary feedback tile, never marked as a station.
+            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2,
+                null);
+
+            for (int x = 6; x <= 9; x++)
+            {
+                page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0,
+                    accessoryDecoderType.MM2, null);
+            }
+
+            page.addComponent(componentType.FEEDBACK, 10, 1, 0, 0, 7, 13, accessoryDecoderType.MM2,
+                null);
+
+            page.setPageId("1");
+
+            AutonomySession session = new AutonomySession(layout);
+
+            session.open(Arrays.asList(page));
+
+            TileKey nearStation = new TileKey("main", 1, 1);
+            TileKey excluded = new TileKey("main", 5, 1);
+            TileKey farStation = new TileKey("main", 10, 1);
+
+            assertTrue(session.getReducer().getPoints().containsKey(excluded),
+                "the middle point was not reduced at all, so this proves nothing about filtering it");
+
+            session.setStation(nearStation, true);
+            session.setPointName(nearStation, "Near");
+
+            session.setStation(farStation, true);
+            session.setPointName(farStation, "Far");
+
+            // "excluded" is deliberately left as it was built - an ordinary point of track.
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            java.lang.reflect.Method nearestStation =
+                AutonomyEditorPanel.class.getDeclaredMethod("nearestStation", TileKey.class);
+            nearestStation.setAccessible(true);
+
+            // Right beside the excluded point, and further from both real stations - so a filter
+            // that let the excluded point through would win on distance alone.
+            TileKey asking = new TileKey("main", 5, 2);
+
+            Object offered = nearestStation.invoke(panel, asking);
+
+            assertEquals(offered, nearStation,
+                "nearestStation offered " + offered + " instead of the nearer REAL station - the "
+                + "excluded point is closer to the square asked about, so this only comes out "
+                + "right if isStation() actually filters it out");
+        }
+        finally
+        {
+            deleteRecursively(layout);
+        }
+    }
+
+    /**
+     * A temporary directory and everything under it.
+     */
+    private static void deleteRecursively(java.io.File file)
+    {
+        java.io.File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (java.io.File child : children) deleteRecursively(child);
+        }
+
+        file.delete();
     }
 }

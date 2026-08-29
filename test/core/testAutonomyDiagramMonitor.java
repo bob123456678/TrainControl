@@ -281,23 +281,50 @@ public class testAutonomyDiagramMonitor
      * The layout fires from whichever thread moved a train, sometimes holding its own monitor.  If the
      * callback computed anything, a slow repaint would hold up the railway - so firing only sets a flag,
      * and nothing is published until something asks.
+     *
+     * TA-B9 applies here too: a null LayoutSource makes compute() return at its null-layout check
+     * before doing anything, so "published stays empty" held no matter when compute ran - a mutation
+     * making markDirty() compute and publish immediately (`dirty.set(true); refresh();`) would pass this
+     * exactly as it stood.  Built with a real claimed path instead, the way
+     * testATrainOnAClaimedPathIsPublishedAndFollowedAsItMoves is, so there is an actual picture that
+     * markDirty() must NOT have published before refreshIfDirty() is asked.
      */
     @Test
-    public void testFiringOnlyMarksDirtyAndPublishesNothing()
+    public void testFiringOnlyMarksDirtyAndPublishesNothing() throws Exception
     {
+        LayoutDiagram page = page("main", 8, 5);
+        feedback(page, 1, 1, 22);
+        straight(page, 2, 1);
+        straight(page, 3, 1);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 24);
+
+        GraphReducer reducer = reduce(graph(page));
+
+        ReducedEdge west = edgeBetween(reducer, key("main", 1, 1), key("main", 5, 1));
+
+        assertNotNull(west, "the fixture did not reduce to an edge, so there is nothing to light");
+
+        Map<String, ReducedEdge> edges = new LinkedHashMap<>();
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        Point west88 = new Point("West", false, null);
+        Point east88 = new Point("East", false, null);
+
+        Edge run = new Edge(west88, east88);
+
+        edges.put(run.getName(), west);
+        tiles.put("West", key("main", 1, 1));
+        tiles.put("East", key("main", 5, 1));
+
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(
-            new DiagramMonitor.LayoutSource()
-            {
-                @Override
-                public org.traincontrol.automation.Layout get()
-                {
-                    return null;
-                }
-            },
-            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
-            new LinkedHashMap<String, TileKey>(),
+        StubLayout layout = new StubLayout();
+
+        layout.active.put(locomotive(), Arrays.asList(run));
+        layout.standingAt = west88;
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
             new DiagramMonitor.Publisher()
             {
                 @Override
@@ -312,12 +339,18 @@ public class testAutonomyDiagramMonitor
             monitor.markDirty();
         }
 
+        // MUTATION this catches: `public void markDirty() { dirty.set(true); refresh(); }` - computing
+        // on the firing thread, which may be holding the layout's own monitor.  There is a genuine
+        // claimed path to publish here, so this can actually fail now, unlike against a null layout.
         assertTrue(published.isEmpty(), "firing must not publish, however many times it fires");
 
         // and a burst collapses into ONE recompute rather than fifty: the flag says something moved,
         // not how often, so the first call does the work and the second finds nothing to do
         assertTrue(monitor.refreshIfDirty(), "fifty firings should leave exactly one recompute owed");
         assertFalse(monitor.refreshIfDirty(), "and nothing owed after it");
+
+        assertEquals(published.size(), 1,
+            "the deferred recompute should have published the claimed path exactly once");
     }
 
     /**
@@ -381,6 +414,84 @@ public class testAutonomyDiagramMonitor
 
         assertNotNull(monitor.getPublished(), "there is always a picture, even if it is empty");
         assertTrue(monitor.getPublished().isEmpty());
+    }
+
+    /**
+     * invalidate() is what the class above is named for, and nothing above calls it: both read the
+     * field initialiser of a monitor that has just been constructed, where "there is always a picture"
+     * is already true before invalidate() does anything.  A no-op invalidate() would pass both.
+     *
+     * The mechanism, per its own javadoc: it forgets the last published picture, so the next refresh()
+     * republishes even an unchanged one - which matters after a view has been rebuilt and lost the
+     * picture the monitor thinks is still current, so an identical picture is news to the new view.
+     *
+     * MUTATION this catches: make invalidate() a no-op (DiagramMonitor.java:118). A rebuilt diagram
+     * would then stay blank until the next train moves, which is the defect invalidate() exists for.
+     */
+    @Test
+    public void testInvalidateForcesTheNextRefreshToRepublish() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 5);
+        feedback(page, 1, 1, 22);
+        straight(page, 2, 1);
+        straight(page, 3, 1);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 24);
+
+        GraphReducer reducer = reduce(graph(page));
+
+        ReducedEdge west = edgeBetween(reducer, key("main", 1, 1), key("main", 5, 1));
+
+        assertNotNull(west, "the fixture did not reduce to an edge, so there is nothing to light");
+
+        Map<String, ReducedEdge> edges = new LinkedHashMap<>();
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        Point west88 = new Point("West", false, null);
+        Point east88 = new Point("East", false, null);
+
+        Edge run = new Edge(west88, east88);
+
+        edges.put(run.getName(), west);
+        tiles.put("West", key("main", 1, 1));
+        tiles.put("East", key("main", 5, 1));
+
+        final int[] publishes = { 0 };
+
+        StubLayout layout = new StubLayout();
+
+        layout.active.put(locomotive(), Arrays.asList(run));
+        layout.standingAt = west88;
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
+            new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    publishes[0]++;
+                }
+            });
+
+        monitor.refresh();
+
+        assertEquals(publishes[0], 1, "precondition: the claimed path is published once");
+
+        // The control: an unchanged picture is not republished by refresh() alone - proves the count
+        // above is not simply incrementing on every call regardless of invalidate().
+        monitor.refresh();
+
+        assertEquals(publishes[0], 1, "precondition: an unchanged picture must not be republished");
+
+        // The view was rebuilt behind this class's back - it has lost the picture the monitor still
+        // holds as "already published".
+        monitor.invalidate();
+
+        monitor.refresh();
+
+        assertEquals(publishes[0], 2,
+            "invalidate() should force the next refresh to republish, even though nothing about the "
+            + "railway changed - to a freshly rebuilt view the same picture is news");
     }
 
     // =============================================================================================

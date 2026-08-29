@@ -5,30 +5,34 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 
 /**
- * When an edge behind a train may be let go, at several train lengths.
+ * When an edge behind a train may be handed back, at several train lengths.
  *
  * Adam, 2026-08-28: "I added train lengths to the layout, so make some tests that include various
  * size trains."
  *
  * **This rule was dead code as far as the suite was concerned.** `Locomotive.trainLength` defaults to
- * zero and no test that executes a path ever set it, so `waiting[1] < loc.getTrainLength()` compared
- * against zero every time, the holding branch was never entered, and a regression in it reached a
- * commit with a green battery behind it. The one test that set a train length is about whether a
- * station will accept one.
+ * zero and no test that executes a path ever set it, so the comparison was against zero every time,
+ * the holding branch was never entered, and a regression in it reached a commit with a green battery
+ * behind it.
  *
- * The regression: the escape for unmeasured track was tested against an accumulator that runs the
- * whole path, so once ANY measured edge had been traversed it could never fire again - and an edge
- * with no measured length adds nothing to the distance behind, so on a path of mixed lengths every
- * edge queued after the first measured one was held until the run ended. On a railway with lengths on
- * its platforms and nowhere else - which is Adam's - that is every run.
+ * The rule then got a second life as TWO rules, for a few hours, and that was the worse mistake. A
+ * looser companion released an edge when the last edge traversed had no measured length - nothing
+ * better could be known over that stretch - and it was allowed to decide whether an edge was reported
+ * CLEAR, on the reasoning that being early there only moves a signal.
  *
- * What it cost with atomicRoutes on: a held edge never reaches `clearedEdges`, so `getActiveAccs` goes
- * on reporting the accessories behind the train as active and route triggers refuse to change those
- * signals for the rest of the run.
+ * It does not. `clearedEdges` is read by `Layout.getActiveAccs`, which `MarklinRoute.heldReason`
+ * consults per command to refuse a route that would set an accessory on an active path. With
+ * atomicRoutes on - Adam's configuration - the lock is held for the whole run by design, so being
+ * reported clear is the ONLY thing that drops an edge's protection. An early clear lets a route throw
+ * a TURNOUT on track the train is still standing on, which is AU-A2 by another door (WK-B1).
+ *
+ * So there is one rule, and "cannot be known" means "assume the train is still there". The single
+ * escape that is not a guess about this train is a path with no measured lengths anywhere, where
+ * distance can never accumulate and holding would hold until the route ended.
  *
  * The rule is asked directly because it cannot be asked any other way without a railway, a locomotive
- * with a length, and a path with lengths on some of its edges. The call site is checked separately, in
- * `testTheClearingLoopAsksTheRule` below - the half that is usually forgotten.
+ * with a length, and a path with lengths on some of its edges. The call site is checked separately -
+ * the half that is usually forgotten, and the half that produced two defects here already.
  *
  * @author Adam
  */
@@ -43,106 +47,104 @@ public class testTrainTailClearsEdges
     @Test
     public void testTheTailHoldsTheEdgeUntilItHasPassed()
     {
-        // A measured path: 200 has been travelled, and this edge was left 40 ago.
-        for (int length : new int[] { 60, 150, 400 })
+        for (int length : new int[] { 40, 60, 150, 400 })
         {
-            assertTrue(Layout.tailMayStillBeOn(200, 40, 1, 40, length),
-                "a train " + length + " long was let off an edge only 40 behind its head, so a "
-                + "turnout under the middle of it could be thrown");
+            assertFalse(Layout.tailHasProvablyPassed(false, length - 1, length),
+                "an edge one unit short of a " + length + " train's length is handed back, so the "
+                + "tail is still on it while another route is offered its turnouts");
+
+            assertTrue(Layout.tailHasProvablyPassed(false, length, length),
+                "an edge exactly a " + length + " train's length behind is still held - the tail "
+                + "ends at the join, which is past it");
+
+            assertTrue(Layout.tailHasProvablyPassed(false, length + 1, length),
+                "an edge more than a " + length + " train's length behind is still held");
         }
 
-        // Far enough back for a short train, not for a long one.
-        assertFalse(Layout.tailMayStillBeOn(500, 200, 3, 60, 150),
-            "a 150 train is still held 200 behind the head, so nothing behind a short train is ever "
-            + "released and its signals stay refused");
+        // No length set is the ordinary case, and it must not hold anything.
+        assertTrue(Layout.tailHasProvablyPassed(false, 0, 0),
+            "a locomotive with no length recorded holds every edge it passes, which is every "
+            + "locomotive on a railway nobody has measured");
 
-        assertTrue(Layout.tailMayStillBeOn(500, 200, 3, 60, 400),
-            "a 400 train was released with only 200 behind the head - its tail is still there");
-
-        // The boundary: the tail ends exactly at the join.
-        assertFalse(Layout.tailMayStillBeOn(500, 150, 2, 50, 150),
-            "a train exactly its own length behind the head is still held, so an edge is never "
-            + "released at the moment the tail clears it");
-
-        // A train with no length recorded is not a reason to hold anything.
-        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, 0, 0),
-            "an edge is held for a train whose length nobody has entered");
-
-        assertFalse(Layout.tailMayStillBeOn(500, 0, 1, 0, null),
-            "a null train length throws or holds, when it means the same as not knowing");
+        assertTrue(Layout.tailHasProvablyPassed(false, 0, null),
+            "a null train length holds every edge it passes");
     }
 
     /**
-     * Where nothing is measured, the railway clears the moment the front passes - as it always has.
+     * A path with no measured lengths anywhere still hands its edges back.
      *
-     * Two shapes of that, and the second is the regression. A path with no lengths at all was handled;
-     * a path with SOME lengths left every later edge held for ever, because the escape was asked of an
-     * accumulator that never went back to zero.
-     *
-     * MUTATION: dropping the `behind == 0 && edgesSince > 0` clause restores the regression and fails
-     * the mixed case.
+     * The one escape that is NOT a guess about where this train is: where nothing has a length,
+     * distance can never accumulate, so holding would hold until the route ended. That is how this
+     * railway behaved before any of the tail bookkeeping existed.
      */
     @Test
-    public void testUnmeasuredTrackDoesNotHoldForEver()
+    public void testAnUnmeasuredPathDoesNotHoldForEver()
     {
-        // Nothing measured anywhere: the historical trade, and the case that was covered.
-        //
-        // BOTH the just-queued edge and one the head has moved on from. The mutation run found that
-        // only the second was tested: with `edgesSince` above zero the unmeasured-stretch clause
-        // answers as well, so deleting the whole-path escape changed nothing and the test stayed
-        // green. The edge the head has only just left is the one that needs this clause.
-        for (int length : new int[] { 60, 150, 400 })
+        for (Integer length : new Integer[] { null, 0, 60, 150, 400 })
         {
-            assertFalse(Layout.tailMayStillBeOn(0, 0, 0, 0, length),
-                "a path with no measured lengths held the edge the head had just left, for a "
-                + length + " train - so on a railway where nobody has measured anything the first "
-                + "edge behind the train is never released");
-
-            assertFalse(Layout.tailMayStillBeOn(0, 0, 1, 0, length),
-                "a path with no measured lengths held an edge for a " + length + " train, so on a "
-                + "railway where nobody has measured anything nothing behind a train is ever released");
+            assertTrue(Layout.tailHasProvablyPassed(true, 0, length),
+                "a path with no measured lengths anywhere holds its edges for a train of "
+                + length + ", so on the ordinary unmeasured railway every edge of every route is "
+                + "held until the route ends - a heavier regression than the one being fixed");
         }
-
-        // THE REGRESSION. Some measured length on the path, but none since this edge was queued: the
-        // head has moved on over track nobody has measured, so where the tail is cannot be known.
-        for (int length : new int[] { 60, 150, 400 })
-        {
-            assertFalse(Layout.tailMayStillBeOn(200, 0, 1, 0, length),
-                "an edge is held although nothing measurable has happened since the head left it - a "
-                + "path with lengths on its platforms and nowhere else therefore holds every edge "
-                + "after the first measured one until the run ends, and with atomic routes on that "
-                + "leaves every signal behind the train refused");
-        }
-
-        // THE CASE A REVIEWER FOUND, which the first version of this rule got wrong.
-        //
-        // Some distance has accrued - short of the train - and then the head runs on over unmeasured
-        // track. Asking the running total, as the first version did, could only ever escape while that
-        // total had stayed at zero, so this held for the rest of the run. Edges [1, 1, 0, 0, 0] with a
-        // train of 3, which is a combination his own railway has.
-        for (int length : new int[] { 60, 150, 400 })
-        {
-            assertFalse(Layout.tailMayStillBeOn(200, 40, 3, 0, length),
-                "an edge with some distance behind it - short of a " + length + " train - is held "
-                + "although the edge just travelled was unmeasured. Every later unmeasured edge "
-                + "leaves the distance exactly where it was, so this is held until the run ends");
-        }
-
-        // But an edge the head has only JUST left is a different thing: no distance yet because
-        // nothing has happened, not because nothing is measured.
-        assertTrue(Layout.tailMayStillBeOn(200, 0, 0, 90, 150),
-            "the edge the head has only just left is released immediately, so a turnout directly "
-            + "under the train can be thrown");
     }
 
     /**
-     * The clearing loop asks this rule, and gives it the right four things.
+     * Unmeasured track HOLDS, and that is the point (WK-B1).
      *
-     * The other half of pulling a rule out of the place that used it. This project has lost four
-     * defects to a rule that was tested while nothing called it, and this one had to be extracted
-     * because it cannot be reached any other way.
+     * The commit before this one released here, on the reasoning that nothing better could be known
+     * over an unmeasured stretch. Nothing better can be known - which is exactly why the answer has to
+     * be "the train may still be there". The consumer is a guard that refuses to throw a turnout under
+     * a train.
      *
-     * MUTATION: passing a constant for `edgesSince`, or dropping the counter that feeds it, fails this.
+     * MUTATION: restoring the escape - release when the last edge had no length and the head has moved
+     * on - fails every assertion here.
+     */
+    @Test
+    public void testUnmeasuredTrackIsNotProof()
+    {
+        // The commit's own example: edges [100, 100, 0] with a train of 250. When the head finishes
+        // the unmeasured third edge, edge 0 has 100 behind it - and 150 of the train on it.
+        assertFalse(Layout.tailHasProvablyPassed(false, 100, 250),
+            "100 measured units behind a 250 train counts as the tail having passed, so a route may "
+            + "throw a turnout on an edge the train is still standing on");
+
+        // Some distance banked, still short, and the head then runs on over unmeasured track: the
+        // distance stays exactly where it was, and that is not proof of anything.
+        for (int length : new int[] { 60, 150, 400 })
+        {
+            assertFalse(Layout.tailHasProvablyPassed(false, 40, length),
+                "an edge with 40 measured units behind it is handed back to a " + length + " train, "
+                + "on a path where some edges are measured and some are not - which is Adam's "
+                + "railway, and every run on it");
+        }
+
+        // VAL-A1: THE UNMEASURED FIRST EDGE, which is what the running total got wrong.
+        //
+        // The escape used to read "how much has the head covered so far", which is zero at the start
+        // of every run - so on edges [0, 100, 100] with a 250 train, edge 0 was handed back on the
+        // first step with the whole train standing on it. The path HAS measured edges; only the head
+        // had not reached one yet.
+        assertFalse(Layout.tailHasProvablyPassed(false, 0, 250),
+            "a path that has measured edges is treated as unmeasured because the head has not reached "
+            + "one yet, so the first edge is handed back with the whole train on it - which on a "
+            + "railway with lengths on its platforms and nowhere else is most runs (VAL-A1)");
+
+        // And the edge the head has only just left, where nothing has accrued because nothing has
+        // happened yet.
+        assertFalse(Layout.tailHasProvablyPassed(false, 0, 150),
+            "the edge the head has only just left is handed back immediately to a 150 train");
+    }
+
+    /**
+     * The clearing loop asks this rule, and gives it the right three things.
+     *
+     * The other half of pulling a rule out of the place that used it. This project has lost several
+     * defects to a rule that was tested while nothing called it, or called it with the wrong
+     * arguments.
+     *
+     * MUTATION: passing a constant for the distance behind, or dropping the accumulator that feeds it,
+     * fails this.
      */
     @Test
     public void testTheClearingLoopAsksTheRule() throws Exception
@@ -151,120 +153,76 @@ public class testTrainTailClearsEdges
             "src/org/traincontrol/automation/Layout.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(source.contains("tailMayStillBeOn(travelledOnThisPath, waiting[1], waiting[2],"),
-            "the clearing loop no longer asks tailMayStillBeOn with the path total, the distance "
-            + "behind and how many edges ago - so the rule is tested here and something else decides "
-            + "what actually happens on the railway");
+        assertTrue(source.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],"),
+            "the clearing loop no longer asks tailHasProvablyPassed with the path total and the "
+            + "distance behind - so the rule is tested here and something else decides what actually "
+            + "happens on the railway");
 
-        // AND the edge just travelled, which is the argument the escape actually turns on.
-        //
-        // Without it the rule is back to asking a running total that never resets - the fault a
-        // reviewer found in the first version of this fix, which is the same fault the fix was for.
-        assertTrue(source.contains("justTravelled, loc.getTrainLength()"),
-            "the rule is no longer told the length of the edge just travelled, so its escape is back "
-            + "to reading an accumulator that never resets - and an edge with some distance behind it "
-            + "is held for the rest of the run");
-
-        assertTrue(source.contains("waiting[2]++"),
-            "nothing counts how many edges have passed since an entry was queued, so the rule cannot "
-            + "tell an edge the head has only just left from one it has walked away from over "
-            + "unmeasured track - and those two want opposite answers");
-
-        assertTrue(source.contains("new int[] { i - 1, 0, 0 }"),
-            "an entry is queued without room for the edge counter, so it is either missing or being "
-            + "read from somewhere that does not hold it");
+        assertTrue(source.contains("loc.getTrainLength()"),
+            "the clearing loop no longer passes the locomotive's length, so the rule compares "
+            + "against nothing and every edge is handed back the moment the head leaves it");
     }
 
     /**
-     * Two standards of proof, and the case where they must disagree.
+     * ONE rule decides both, because both are safety-relevant (WK-B1).
      *
-     * The release does two things. Reporting an edge CLEAR moves a signal behind a train that has gone
-     * by, and being early about it costs a signal. UNLOCKING it lets another route be sent onto that
-     * edge, and being early about it puts a second train on track the first is standing on.
+     * Reporting an edge clear is what stops `heldReason` refusing a route that would set an accessory
+     * on it; unlocking hands the rails to another train. A second, looser rule for the first of those
+     * is what this test exists to stop coming back.
      *
-     * The escape for unmeasured track is a guess - it fires because the last edge had no length, which
-     * says nothing about where the tail is. I wired it into both, and the validator caught it. It now
-     * decides only the first.
-     *
-     * MUTATION: giving `tailHasProvablyPassed` the same escape, or writing it as
-     * `return !tailMayStillBeOn(...)`, fails the first block. Removing the gate at the call site fails
-     * the second.
+     * MUTATION: reintroducing a separate predicate for the clear, however named, fails the count.
      */
     @Test
-    public void testOnlyProofUnlocksTrack() throws Exception
-    {
-        // THE DEFECT. Edges [100, 100, 0], train of 250: when the head finishes the unmeasured third
-        // edge, edge 0 has 100 behind it and the escape fires - with 150 of the train still on it.
-        assertFalse(Layout.tailMayStillBeOn(200, 100, 2, 0, 250),
-            "the unmeasured-track escape no longer clears, so a signal behind a train that has gone "
-            + "by stays refused on a railway with lengths in some places and not others");
-
-        assertFalse(Layout.tailHasProvablyPassed(200, 100, 250),
-            "100 measured behind a 250 train counts as PROOF the tail is past, so non-atomic mode "
-            + "unlocks an edge with 150 of the train standing on it and another route may be sent "
-            + "into it");
-
-        // Said once more as the disagreement it is, so that making the two agree cannot pass.
-        assertTrue(Layout.tailHasProvablyPassed(200, 100, 250)
-                != !Layout.tailMayStillBeOn(200, 100, 2, 0, 250),
-            "the guess and the proof now answer alike for [100, 100, 0] with a train of 250 - one of "
-            + "them has been made to delegate to the other, and whichever way round that happened "
-            + "either the signals stopped moving or the locks stopped waiting");
-
-        // PROOF, when the measurement really does cover the train.
-        assertTrue(Layout.tailHasProvablyPassed(500, 200, 150),
-            "200 measured behind a 150 train is not enough to unlock, so an edge the train has "
-            + "provably left is held to the end of the route");
-
-        assertTrue(Layout.tailHasProvablyPassed(500, 150, 150),
-            "exactly the train's length behind is not enough to unlock - the tail sits on the "
-            + "boundary and the edge is never released early");
-
-        // The unmeasured-path fallback is NOT the same kind of guess and stays on both sides: where
-        // nothing has a length, distance can never accumulate and holding would hold to the end of
-        // every route, which is how this railway ran before any of the bookkeeping existed.
-        for (Integer length : new Integer[] { null, 0, 150, 400 })
-        {
-            assertTrue(Layout.tailHasProvablyPassed(0, 0, length),
-                "a path with no measured lengths anywhere no longer unlocks as it goes, so on the "
-                + "ordinary unmeasured railway every edge of every route is now held until the route "
-                + "ends - which is a heavier regression than the one being fixed");
-        }
-    }
-
-    /**
-     * The call site gates the UNLOCK on proof, and does not gate the clear.
-     *
-     * Both halves matter and they fail in opposite directions, so both are asserted. Extracting a rule
-     * moves the bug to the call.
-     */
-    @Test
-    public void testTheUnlockBranchWaitsForProof() throws Exception
+    public void testTheClearAndTheUnlockAskTheSameQuestion() throws Exception
     {
         String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/automation/Layout.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
         int clears = source.indexOf("if (cleared != null) cleared.add(path.get(waiting[0]));");
-        int proves = source.indexOf("if (!tailHasProvablyPassed(travelledOnThisPath, waiting[1],");
         int unlocks = source.indexOf("path.get(waiting[0]).setLockedEdgeUnoccupied();");
+        int asks = source.indexOf("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],");
 
-        // BOTH PRESENT before either is ordered: indexOf answers -1 for something absent, and -1 is
-        // less than every real index, so an ordering test alone passes when the thing it is protecting
-        // has been deleted outright.
         assertTrue(clears >= 0, "the clearing loop no longer reports any edge clear");
         assertTrue(unlocks >= 0, "the clearing loop no longer unlocks any edge");
+        assertTrue(asks >= 0, "nothing asks the rule");
 
-        assertTrue(proves >= 0,
-            "the unlock is no longer gated on tailHasProvablyPassed, so the guess about unmeasured "
-            + "track decides a lock again and another train can be routed onto track this one is "
-            + "still standing on");
+        assertTrue(asks < clears && asks < unlocks,
+            "the rule is asked after an edge has already been reported clear or unlocked");
 
-        assertTrue(clears < proves,
-            "the clear now happens after the proof gate, so signals behind the train stay refused on "
-            + "unmeasured track - which is the FR this was written for");
+        // COUNTED, not positioned.
+        //
+        // The line above pins where one statement sits. A mutation that ADDS a second write to
+        // clearedEdges in front of the gate - which is exactly the shape WK-B1 describes - leaves that
+        // statement where it was and passes. Exactly one edge is ever added to that set.
+        int adds = 0;
 
-        assertTrue(proves < unlocks,
-            "the proof gate no longer stands in front of the unlock");
+        for (int at = source.indexOf(".add(path.get(waiting[0]))"); at >= 0;
+            at = source.indexOf(".add(path.get(waiting[0]))", at + 1))
+        {
+            adds++;
+        }
+
+        assertEquals(adds, 1,
+            "expected exactly one place where an edge is reported clear, and found " + adds
+            + " - a second one in front of the gate hands an edge back without proof, which is the "
+            + "whole of WK-B1");
+
+        // Exactly one gate, not two. Two is how the looser rule got back in last time.
+        int gates = 0;
+
+        for (int at = source.indexOf("tailHasProvablyPassed("); at >= 0;
+            at = source.indexOf("tailHasProvablyPassed(", at + 1))
+        {
+            gates++;
+        }
+
+        assertEquals(gates, 2,
+            "expected the rule's definition and exactly one call, and found " + gates
+            + " - a second predicate deciding one half of this is what WK-B1 was about");
+
+        assertFalse(source.contains("tailMayStillBeOn"),
+            "the looser companion rule is back. It may not decide whether an edge is reported clear: "
+            + "with atomicRoutes on that is the only thing protecting the turnouts under a train");
     }
 }

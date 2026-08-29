@@ -278,7 +278,19 @@ public class testAutonomyDiagramReversal
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
             marked(key("main", 5, 2)), extras);
 
-        for (JSONObject copy : pointsNamed(built, "Main4"))
+        List<JSONObject> copies = pointsNamed(built, "Main4");
+
+        // MUTATION this catches: change the copy-name separator in AutonomyBuilder from " (" to
+        // anything else.  pointsNamed matches name.startsWith(base + " ("), so it would then return
+        // empty, every assertion below would run zero times, and this would pass while the flag leaked
+        // onto every plain copy - which is what the sibling test above (same fixture) already pins at 4.
+        assertEquals(copies.size(), 4,
+            "precondition: two arrival sides, each with a plain and a turning copy - or every "
+            + "assertion below runs zero times and proves nothing");
+
+        int plainCopiesChecked = 0;
+
+        for (JSONObject copy : copies)
         {
             assertEquals(copy.optInt("maxTrainLength"), 2,
                 "ordinary settings still reach every copy, as they did on BottomMainC");
@@ -287,7 +299,14 @@ public class testAutonomyDiagramReversal
 
             assertFalse(copy.optBoolean("terminus"),
                 "the plain copy must not inherit the flag that made the tile split");
+
+            plainCopiesChecked++;
         }
+
+        // Control: proves the loop above is not accidentally skipping every copy via the "reverse"
+        // filter (which would make the terminus assertion inside it as vacuous as the missing floor did).
+        assertTrue(plainCopiesChecked > 0,
+            "precondition: at least one plain (non-reversing) copy must exist to check the flag against");
     }
 
     /**
