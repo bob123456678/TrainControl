@@ -37,6 +37,8 @@ public class testRenderingCost
     private static List<LayoutDiagram> parsed;
     private static java.util.Set<String> pageExclusions;
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -46,6 +48,13 @@ public class testRenderingCost
         {
             throw new SkipException("no sample layout to measure against");
         }
+
+        // BEFORE THE MODEL (OB-111), and this one also stops a MODAL dialog reaching the operator.
+        //
+        // `init` loads whatever layout the preference names. With none, `setViewListener` below offers
+        // to create a track diagram - and waits for an answer no test will give, so the run stalls
+        // with a window sitting on Adam’s screen. He watched it happen during a battery.
+        sandbox = support.LayoutSandbox.open();
 
         model = init(null, true, false, false, false);
 
@@ -538,5 +547,11 @@ public class testRenderingCost
             + " labels for " + cells + " cells.  Building it constructs exactly one label per cell, "
             + "measured six times; anything materially above that means the grid has started building "
             + "itself more than once");
+    }
+
+    @org.testng.annotations.AfterClass
+    public static void putTheLayoutPreferenceBack()
+    {
+        if (sandbox != null) sandbox.close();
     }
 }

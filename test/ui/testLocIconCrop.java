@@ -35,6 +35,10 @@ public class testLocIconCrop
     {
         // On the EDT, as every other test in this package builds one (C3).  A Swing window put
         // together off the event thread is a race that usually wins, which is the worst kind.
+        // The window reads the layout preference in its constructor, so without this it opens the
+        // operator's own railway (OB-111). Closed in the finally further down, with everything else.
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+
         final TrainControlUI[] built = new TrainControlUI[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
@@ -159,6 +163,8 @@ public class testLocIconCrop
             crop.delete();
             source.delete();
             folder.delete();
+
+            sandbox.close();
         }
     }
 
@@ -258,6 +264,10 @@ public class testLocIconCrop
     @Test
     public void testACropRemembersTheViewItWasTakenAt() throws Exception
     {
+        // The window reads the layout preference in its constructor, so without this it opens the
+        // operator's own railway (OB-111). Closed in the finally further down, with everything else.
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+
         final TrainControlUI[] built = new TrainControlUI[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
@@ -328,6 +338,8 @@ public class testLocIconCrop
         finally
         {
             ui.deleteLocIcon(ours.toPath().toUri().toString());
+
+            sandbox.close();
         }
     }
 

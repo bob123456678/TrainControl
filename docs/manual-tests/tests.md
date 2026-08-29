@@ -10450,6 +10450,10 @@ Diagnosed 2026-08-28, not yet fixed. Adam's icon file was inspected directly: th
 
 OB-125 is fixed: the note now carries the view as well as the source path, and the crop panel opens on it. Five numbers - where in the source picture the middle of the crop window sits, the zoom, and the shape and size of the window - written on a second line of the same sidecar, so every note written before this still reads as a bare path. Restored through startAtCover rather than when it arrives, because the panel has no width until it is laid out and all five numbers are interpreted against a window derived from that width. Handed to the dialog only when the re-crop works from the remembered photograph: the fallback crops the crop, where the same coordinates mean somewhere else. Three tests and three mutations, plus the full battery at 122 green. Still needs your eyes: crop an icon, close, and re-open the crop editor - it should come up framed as you left it.
 
+**Adam, 2026-08-28 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 28 Aug 18:58 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 <a id="mt-201"></a>
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard

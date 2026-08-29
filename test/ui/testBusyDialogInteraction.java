@@ -40,6 +40,8 @@ public class testBusyDialogInteraction
      */
     private static org.traincontrol.marklin.MarklinControlStation model;
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -48,9 +50,21 @@ public class testBusyDialogInteraction
             throw new SkipException("BusyDialog is a window - this needs a display");
         }
 
+        // THE OPERATOR’S RAILWAY IS NOT THIS TEST’S TO OPEN (OB-111).
+        //
+        // This class never had a sandbox. `init` reads the layout preference and loads whatever it
+        // names, which on his machine is his live layout - so every battery opened it here too.
+        sandbox = support.LayoutSandbox.open();
+
         model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
 
         model.stop();
+    }
+
+    @org.testng.annotations.AfterClass
+    public static void putTheLayoutPreferenceBack()
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**

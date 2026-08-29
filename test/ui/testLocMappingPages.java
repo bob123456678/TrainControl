@@ -199,9 +199,21 @@ public class testLocMappingPages
      */
     private TrainControlUI build() throws Exception
     {
+        // The window reads the layout preference in its constructor, so it opens Adam’s railway
+        // unless something points it elsewhere first (OB-111). This was the last class building one
+        // without a sandbox.
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+
         final TrainControlUI[] built = new TrainControlUI[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+        }
+        finally
+        {
+            sandbox.close();
+        }
 
         return built[0];
     }

@@ -1486,8 +1486,15 @@ public class LayoutGrid
 
         final LoadingSpinner spinner = new LoadingSpinner();
 
-        // Sized to the space the diagram will take, so nothing jumps when the two are swapped
-        spinner.setPreferredSize(new Dimension(Math.min(maxWidth, 400), Math.min(maxHeight, 400)));
+        // Sized to the space the diagram will take, so nothing jumps when the two are swapped - and
+        // so the glass lands in the MIDDLE of it (OB-129).
+        //
+        // The 400 cap that used to be here defeated both. The parent is laid out with FlowLayout,
+        // which aligns to the top, so a 400-square box over a larger diagram sat at the top of the
+        // page rather than over the middle of it. The glass is centred within this component already;
+        // what was wrong is how much of the page the component covered. Its drawn size no longer
+        // follows the component - see MAX_GLASS_H.
+        spinner.setPreferredSize(new Dimension(maxWidth, maxHeight));
 
         final boolean[] revealed = {false};
 

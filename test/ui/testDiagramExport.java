@@ -54,12 +54,16 @@ public class testDiagramExport
             throw new SkipException("drawing tiles needs a display");
         }
 
+        // BEFORE THE MODEL, not just before the window (OB-111, corrected 2026-08-28).
+        //
+        // MarklinControlStation.init reads the layout preference too - it is what loads the pages -
+        // so opening the sandbox after it left the model on the operator's real railway while the
+        // window looked at the copy. The comment that used to stand here named only the window.
+        sandbox = support.LayoutSandbox.open();
+
         model = MarklinControlStation.init(null, true, false, false, true);
 
         model.stop();
-
-        // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
-        sandbox = support.LayoutSandbox.open();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

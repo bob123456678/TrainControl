@@ -2153,11 +2153,18 @@ public class testEditorSurfaceRules
         String rule = withoutComments(bodyOf(ui, "private boolean layoutCanBeEdited()"));
         String why = withoutComments(bodyOf(ui, "public String whyLayoutCannotBeEdited()"));
 
-        assertTrue(rule.contains("getLayoutList().isEmpty()") && rule.contains("isLocalLayout()"),
+        // THE FLAG, not the inference it replaced (Adam, 2026-08-28: "we just need a layout loaded
+        // flag in the TrainControlUI class, rather than something that infers").
+        assertTrue(rule.contains("isLayoutLoaded()") && rule.contains("isLocalLayout()"),
             "layoutCanBeEdited has been rewritten, so the pairing below is comparing against "
             + "something else - read it before trusting this test");
 
-        assertTrue(why.contains("getLayoutList().isEmpty()"),
+        assertFalse(rule.contains("getLayoutList()"),
+            "layoutCanBeEdited asks the model directly again instead of reading the stored answer, "
+            + "so it can disagree with everything else that was asked at a different moment - which "
+            + "is the defect behind OB-127 and OB-128");
+
+        assertTrue(why.contains("isLayoutLoaded()"),
             "the explanation no longer has an answer for \"no layout loaded\", which is one of the "
             + "reasons the rule greys the button for");
 
@@ -2191,5 +2198,92 @@ public class testEditorSurfaceRules
         assertEquals(found, 3,
             "expected three message keys in whyLayoutCannotBeEdited, one per reason the button is "
             + "grey, and found " + found);
+    }
+
+    /**
+     * The Layout menu names its two halves, and the guard does not undo them.
+     *
+     * Adam: "Add a 'Local Layout' and 'Central Station Layout' headings into the Layouts jmenu.  Move
+     * 'save as picture' into the same group as the popout option."
+     *
+     * THE TRAP is the second assertion. `guardLayoutMenu` sets every child of this menu enabled or
+     * disabled from one flag, and a heading is disabled because it is a LABEL - not because it is
+     * unavailable. Without an exemption it comes back enabled the moment no editor is open: bold,
+     * live, and doing nothing when clicked.
+     *
+     * MUTATION: removing the exemption fails this. So does putting the export back at the foot of the
+     * menu, where it sat below the Central Station group it has nothing to do with.
+     */
+    @Test
+    public void testTheLayoutMenuNamesItsGroups() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String mount = withoutComments(bodyOf(ui, "private void mountLayoutHeadings()"));
+
+        assertFalse(mount.isEmpty(), "nothing mounts the Layout menu headings any more");
+
+        assertTrue(mount.contains("headingLocalLayout") && mount.contains("headingCentralStationLayout"),
+            "one of the two Layout menu headings is gone, so a menu whose halves do different things "
+            + "to different railways no longer says which is which");
+
+        // Placed relative to the items they head, not at fixed indices - everything above them moves.
+        assertTrue(mount.contains("indexOnLayoutMenu(chooseLocalDataFolderMenuItem)")
+                && mount.contains("indexOnLayoutMenu(switchCSLayoutMenuItem)"),
+            "the headings are placed by counting rather than by looking their neighbours up, so the "
+            + "next item added to this menu puts them in the wrong place");
+
+        // THE TRAP.
+        String guard = withoutComments(bodyOf(ui, "private void guardLayoutMenu()"));
+
+        assertTrue(guard.contains("child == localHeading || child == centralStationHeading"),
+            "the headings are no longer exempt from the enable/disable sweep, so they come back "
+            + "ENABLED whenever no editor is open - a bold, live menu item that does nothing");
+
+        // And a heading really is created disabled, or the exemption protects nothing.
+        String heading = withoutComments(bodyOf(ui, "private javax.swing.JMenuItem menuHeading(String text)"));
+
+        assertTrue(heading.contains("setEnabled(false)"),
+            "a heading is no longer created disabled, so it is an ordinary menu item in bold that "
+            + "does nothing when clicked");
+
+        // The export sits with the pop-out.
+        String export = withoutComments(bodyOf(ui, "private void buildDiagramExportMenu()"));
+
+        assertTrue(export.contains("indexOnLayoutMenu(popUpAllMenuItem)"),
+            "the picture export is no longer placed beside the pop-out - it goes back to the foot of "
+            + "the menu, below the Central Station group it has nothing to do with");
+
+        assertFalse(export.contains("layoutMenu.addSeparator()"),
+            "the export still adds a separator of its own, which now cuts the pop-out group in half");
+    }
+
+    /**
+     * Manage Configurations sits directly under the configuration it manages.
+     *
+     * It was the last item on the autonomy menu, two groups below the thing it acts on.
+     */
+    @Test
+    public void testManageSitsUnderTheConfiguration() throws Exception
+    {
+        String menu = withoutComments(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyMenu.java")),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        int choose = menu.indexOf("add(choose);");
+        int manage = menu.indexOf("add(manageMenu(");
+        int pages = menu.indexOf("add(pages);");
+
+        assertTrue(choose >= 0, "the configuration submenu is no longer added");
+        assertTrue(manage >= 0, "Manage Configurations is no longer added to the autonomy menu");
+        assertTrue(pages >= 0, "the pages submenu is no longer added");
+
+        assertTrue(choose < manage,
+            "Manage Configurations is added before the configuration submenu it manages");
+
+        assertTrue(manage < pages,
+            "Manage Configurations has drifted back down the menu, below the editing tools - it was "
+            + "two groups away from the thing it acts on and they are one subject");
     }
 }

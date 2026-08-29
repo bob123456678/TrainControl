@@ -2763,7 +2763,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (child == goToEditorItem) continue;
 
+            // A heading is disabled BECAUSE it is a label, not because it is unavailable, so this
+            // loop must not switch it back on when no editor is open.
+            if (child == localHeading || child == centralStationHeading) continue;
+
             child.setEnabled(!busy);
+        }
+
+        // What the layout is loaded FROM, said rather than offered (FR-040).
+        //
+        // Outside the `busy` test below: the answer is true whether or not an editor has the diagram,
+        // and a label that stops being right while a window is open is a label nobody can trust.
+        refreshDataSourceLabel();
+
+        // AND the items that need a local layout to act on (OB-128).
+        //
+        // Adam: "grey out inaccessible options: manage, edit, popup all layouts.  You can make this
+        // check when the layout menu opens, and before any menu option is clicked."  Asked here
+        // because this is that moment - a layout can stop being editable between one click and the
+        // next, and the menu opening is the only point where the answer is certainly current.
+        //
+        // Left alone when an editor is open: the loop above has already refused everything, and
+        // turning items back on here would undo it.
+        if (!busy)
+        {
+            boolean workable = layoutCanBeEdited();
+
+            if (modifyLocalLayoutMenu != null) modifyLocalLayoutMenu.setEnabled(workable);
+
+            if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
+
+            // Pop-out windows and the picture export need PAGES, not a local folder - a Central
+            // Station diagram pops out and exports perfectly well. What cannot be done is either of
+            // them to a layout that is not loaded, and the export would be handed the null page that
+            // activeLayoutPage returns when the selector is empty.
+            boolean loaded = isLayoutLoaded();
+
+            if (popUpAllMenuItem != null) popUpAllMenuItem.setEnabled(loaded);
+
+            if (exportDiagramItem != null) exportDiagramItem.setEnabled(loaded);
         }
 
         if (goToEditorItem == null)
@@ -2780,6 +2818,129 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The "an editor has this diagram" item on the Layout menu - see guardLayoutMenu */
     private javax.swing.JMenuItem goToEditorItem;
+
+    /** The two section labels on the Layout menu - see mountLayoutHeadings and guardLayoutMenu */
+    private javax.swing.JMenuItem localHeading;
+    private javax.swing.JMenuItem centralStationHeading;
+
+    /**
+     * A label on a menu, in the shape this project already uses for one.
+     *
+     * Disabled and bold, exactly as LayoutRightclickAutonomyMenu does it: disabled because it is not
+     * an action, bold because a greyed item that is NOT a label looks like an action that happens to
+     * be unavailable, and the difference has to be visible at a glance.
+     *
+     * @param text what the section is
+     * @return the label, ready to be inserted
+     */
+    private javax.swing.JMenuItem menuHeading(String text)
+    {
+        javax.swing.JMenuItem heading = new javax.swing.JMenuItem(text);
+
+        heading.setEnabled(false);
+        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
+
+        return heading;
+    }
+
+    /**
+     * Says which half of the Layout menu is which.
+     *
+     * One half works on a folder of Adam\u2019s and the other talks to the station, and nothing on the
+     * menu said so - the separators grouped the items without naming the groups.
+     *
+     * Inserted by looking items up rather than by counting, because everything above them moves: the
+     * per-page submenu is mounted underneath Manage Pages, the export is placed after the pop-out, and
+     * an editor being open adds an item at the top.
+     */
+    private void mountLayoutHeadings()
+    {
+        if (layoutMenu == null || localHeading != null) return;
+
+        localHeading = menuHeading(I18n.t("ui.main.toolbar.headingLocalLayout"));
+        centralStationHeading = menuHeading(I18n.t("ui.main.toolbar.headingCentralStationLayout"));
+
+        int local = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
+
+        if (local >= 0) layoutMenu.add(localHeading, local);
+
+        int station = indexOnLayoutMenu(switchCSLayoutMenuItem);
+
+        if (station >= 0) layoutMenu.add(centralStationHeading, station);
+    }
+
+    /**
+     * Where something sits on the Layout menu, or -1 when it is not on it.
+     *
+     * @param item the component to find
+     * @return its index among the menu\u2019s children
+     */
+    private int indexOnLayoutMenu(java.awt.Component item)
+    {
+        if (layoutMenu == null || item == null) return -1;
+
+        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
+        {
+            if (layoutMenu.getMenuComponent(i) == item) return i;
+        }
+
+        return -1;
+    }
+
+
+    /**
+     * Empties the track diagram panel, for when there is no longer a diagram (OB-128).
+     *
+     * A greyed tab that still holds the last railway is worse than an empty one: it looks live. The
+     * cache is left alone - those grids belong to pages that may come back, and dropping them would
+     * throw away the captions attached to them.
+     */
+    private void clearLayoutPanel()
+    {
+        if (InnerLayoutPanel == null) return;
+
+        InnerLayoutPanel.removeAll();
+        InnerLayoutPanel.revalidate();
+        InnerLayoutPanel.repaint();
+    }
+
+    /**
+     * Names the current data source on the menu item that opens it (FR-040).
+     *
+     * Adam: "change 'Show current data source' to Data Source: Central Station / Local / None".  The
+     * answer is known the moment the menu opens, so requiring a click to reveal it was a click spent
+     * asking something the menu could simply have said.
+     *
+     * Asked from `guardLayoutMenu` for the reason that method already gives about everything else it
+     * decides: a layout can stop being local between one opening of this menu and the next, and the
+     * moment somebody looks is the only one where the answer is certainly current.
+     *
+     * Order matters, because the three are not exclusive on their face. A local layout whose pages are
+     * not loaded - which is where a failed switch to a Central Station layout leaves things - is None
+     * rather than Local: naming the folder a preference still points at would describe a railway that
+     * is not on screen.
+     */
+    private void refreshDataSourceLabel()
+    {
+        if (showCurrentLayoutFolderMenuItem == null) return;
+
+        String source;
+
+        if (this.model == null || this.model.getLayoutList().isEmpty())
+        {
+            source = I18n.t("ui.main.toolbar.dataSourceNone");
+        }
+        else if (isLocalLayout())
+        {
+            source = I18n.t("ui.main.toolbar.dataSourceLocal");
+        }
+        else
+        {
+            source = I18n.t("ui.main.toolbar.dataSourceCentralStation");
+        }
+
+        showCurrentLayoutFolderMenuItem.setText(I18n.f("ui.main.toolbar.dataSource", source));
+    }
 
     private void mountEditPageMenu()
     {
@@ -3076,6 +3237,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addCombinePagesItem();
 
         mountEditPageMenu();
+
+        mountLayoutHeadings();
 
         // Asked every time the menu is opened, which is the only moment the answer is certainly
         // current - see guardLayoutMenu. Added once; mountEditPageMenu runs on every mount.
@@ -3837,7 +4000,81 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean layoutCanBeEdited()
     {
-        return this.model != null && !this.model.getLayoutList().isEmpty() && isLocalLayout();
+        return isLayoutLoaded() && isLocalLayout();
+    }
+
+    /**
+     * Whether a track diagram is loaded (OB-127, OB-128).
+     *
+     * Stored rather than worked out on demand, because working it out on demand is the defect. Adam,
+     * from a railway that was showing its diagram at the time: "the system thinks no layout is loaded,
+     * and keeps asking me to create a new one every several seconds."
+     *
+     * `getLayoutList().isEmpty()` was asked at sixteen places in this class, each at whatever moment
+     * its own code ran. The diagram was painted when the list was full and the offer to create a
+     * layout was made when it was empty, and neither was wrong about its own instant - which is what
+     * a question asked sixteen times looks like from the outside.
+     *
+     * Volatile because the answer is set on the event thread and read from the workers that rebuild
+     * the grid.
+     */
+    private volatile boolean layoutLoaded = false;
+
+    /**
+     * Whether a track diagram is loaded.
+     *
+     * @return the stored answer, not a fresh guess
+     */
+    public boolean isLayoutLoaded()
+    {
+        return this.layoutLoaded;
+    }
+
+    /**
+     * Takes the answer from the model and stores it.  THE ONLY assignment to {@link #layoutLoaded}.
+     *
+     * Called where the layout set can actually change - start-up, the diagram rebuild, and the clear
+     * a switch to a Central Station layout performs. That list is short because those are the only
+     * moments the answer can move; anything else asking is asking about a change that has not
+     * happened.
+     */
+    private void updateLayoutLoaded()
+    {
+        this.layoutLoaded = this.model != null
+            && this.model.getLayoutList() != null
+            && !this.model.getLayoutList().isEmpty();
+    }
+
+    /**
+     * Whether the application has never run here before.
+     *
+     * PRESENT, not readable - and the difference is the whole of it. A database file that exists and
+     * will not load is not a first launch; it is a machine whose state we have just failed to read,
+     * and acting as though it were empty is how a setup gets replaced by a blank one. `restoreState`
+     * draws the same line in its own words, and `testUiStateIsNotLostWhenUnreadable` is what happens
+     * when it is drawn wrongly. So this asks `exists()` and never `databaseLoadFailed`.
+     *
+     * Static and taking its files so it can be exercised at all: the caller reads two fixed names in
+     * the working directory, and the suite runs somewhere both of them usually exist.
+     *
+     * @param uiState the saved window state
+     * @param locomotives the locomotive database
+     * @return whether neither has ever been written
+     */
+    public static boolean isFirstLaunch(File uiState, File locomotives)
+    {
+        return !uiState.exists() && !locomotives.exists();
+    }
+
+    /**
+     * The same, asked of this installation.
+     *
+     * @return whether neither database file is present in the working directory
+     */
+    private boolean isFirstLaunch()
+    {
+        return isFirstLaunch(new File(TrainControlUI.DATA_FILE_NAME),
+            new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
     }
 
     /**
@@ -3867,7 +4104,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public String whyLayoutCannotBeEdited()
     {
-        if (this.model == null || this.model.getLayoutList().isEmpty())
+        if (!isLayoutLoaded())
         {
             return "layout.ui.errorNoLayoutLoaded";
         }
@@ -6134,9 +6371,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Render layout now that the UI is visible
         repaintLayout();
         
-        if (this.model.getLayoutList().isEmpty())
+        // Asked ONCE, of the stored answer (OB-127).
+        //
+        // This is the offer to create a track diagram. It read the model directly, so it answered for
+        // the instant it happened to run rather than for the state the rest of the window was showing.
+        updateLayoutLoaded();
+
+        if (!isLayoutLoaded())
         {
-            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, true);
+            // ASKED ONLY IF THERE IS SOMEBODY TO ASK (Adam, 2026-08-28).
+            //
+            // "if the app is started FOR THE FIRST TIME (there exist no DB files yet) and there is no
+            // layout, create one instead of prompting the user."  Nobody opening this for the first
+            // time has a view on whether it should make a track diagram - they have not seen one, and
+            // the other answer leaves them an application with nothing in it.
+            //
+            // Every later start still asks, because by then "no layout" means one was there and is
+            // not, and that is worth a question.
+            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch());
         }
         
         // Populate statistics tab
@@ -6633,6 +6885,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(()->
         {
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+
+            // The pages have just been replaced, so this is one of the few moments the answer moves.
+            updateLayoutLoaded();
 
             // the pages just changed wholesale, so a session describing the old ones - and anything
             // still monitoring or capturing against it - has to go
@@ -7769,9 +8024,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         active.addActionListener(event -> exportDiagram(activeLayoutPage()));
 
-        layoutMenu.addSeparator();
-        layoutMenu.add(active);
+        // BESIDE THE POP-OUT, not at the foot of the menu (Adam, 2026-08-28).
+        //
+        // It was appended behind a separator of its own, which left it below the Central Station
+        // group - beside two items about talking to the station, which it has nothing to do with.
+        // Both of these make a picture of the diagram in a window of their own.
+        //
+        // Looked up rather than counted: what sits above the pop-out changes as the headings and the
+        // per-page submenu are mounted.
+        int beside = indexOnLayoutMenu(popUpAllMenuItem);
+
+        if (beside >= 0) layoutMenu.add(active, beside + 1);
+        else layoutMenu.add(active);
+
+        // Kept, so guardLayoutMenu can grey it by name (OB-128). The loop there reaches every child
+        // while an editor is open; deciding availability needs the item itself.
+        exportDiagramItem = active;
     }
+
+    /** "Save Current Track Diagram as a Picture..." on the Layout menu - see guardLayoutMenu */
+    private javax.swing.JMenuItem exportDiagramItem;
 
     /**
      * Asks which page, at what size, and where, and then writes it.
@@ -14921,7 +15193,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int index = this.KeyboardTab.indexOfComponent(this.layoutPanel);
 
-        if (index >= 0) this.KeyboardTab.setSelectedIndex(index);
+        if (index < 0) return;
+
+        // UNLESS THERE IS NOTHING TO SHOW (OB-128).
+        //
+        // `setEnabledAt` stops the USER picking a tab and does nothing about the program picking it,
+        // and nine methods picked it outright by index. The one Adam found is Add Blank Page, which
+        // selected the tab before it asked for a name - so closing that prompt left the diagram tab
+        // open, greyed, showing the railway a failed switch to a Central Station layout had just
+        // unloaded.
+        //
+        // Those nine now come through here, which also stops them assuming the diagram is tab 1.
+        if (!this.KeyboardTab.isEnabledAt(index)) return;
+
+        this.KeyboardTab.setSelectedIndex(index);
     }
 
     /**
@@ -17461,6 +17746,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // its way to fill it, so the refusal is now said out loud.
                 this.model.clearLayouts();
 
+                // Cleared, so the window must not go on believing a diagram is loaded (OB-127).
+                updateLayoutLoaded();
+
                 if (this.syncWithCS2() == SYNC_ALREADY_RUNNING)
                 {
                     JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
@@ -18486,7 +18774,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         int currentIndex = this.KeyboardTab.getSelectedIndex();
         
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
         
         if (currentIndex != 1)
         {
@@ -19916,7 +20204,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void renameLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_renameLayoutMenuItemActionPerformed
 
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
 
         String name = promptUserForLayout(this.LayoutList.getSelectedItem().toString());
 
@@ -19936,7 +20224,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             newName += " " + I18n.t("layout.ui.copy");
         }
 
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
 
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
@@ -20337,7 +20625,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
         
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
@@ -20472,7 +20760,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
 
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
 
         String name = promptUserForLayout("");
 
@@ -20515,7 +20803,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
         
         this.openLegacyTrackDiagramEditor.setEnabled(false);
 
@@ -20595,7 +20883,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void editCurrentPageActionPerformedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editCurrentPageActionPerformedActionPerformed
         
-        this.KeyboardTab.setSelectedIndex(1);
+        showLayoutTab();
 
         this.editLayoutButtonActionPerformed(null);
     }//GEN-LAST:event_editCurrentPageActionPerformedActionPerformed
@@ -20646,7 +20934,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         applyLayoutEditingAvailability();
                         this.syncWithCS2();
                         this.repaintLayout();
-                        this.KeyboardTab.setSelectedIndex(1);
+                        showLayoutTab();
 
                         JOptionPane.showMessageDialog(
                             this,
@@ -21258,6 +21546,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         return out;
     }
+
+    /**
+     * The hover crop mark drawn over locIcon (FR-032); null until the window is built.
+     *
+     * DECLARED HERE, not in the generated variables block, and that is the whole point of this
+     * comment. It sat in that block for months and disappeared twice on 2026-08-28, taking the build
+     * with it - because `cropOverlay` is not a form component. It is created below by hand and
+     * TrainControlUI.form has never heard of it, so every time NetBeans regenerates that block from
+     * the form - which happens whenever the designer is used for anything, a label colour included -
+     * the field is simply not written back out.
+     *
+     * Nothing removed it. It was in a place that gets rewritten from a file that does not mention it.
+     */
+    private javax.swing.JLabel cropOverlay;
 
     /**
      * Puts the hover crop mark on the big locomotive picture (FR-032).
@@ -23215,9 +23517,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
-
-    /** The hover crop mark drawn over locIcon (FR-032); null until the window is built. */
-    private javax.swing.JLabel cropOverlay;
     private javax.swing.JTabbedPane locKeyTabs;
     private javax.swing.JLabel locMappingLabel;
     private javax.swing.JMenu locomotiveControlMenu;
@@ -23471,16 +23770,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
-                this.downloadCSLayoutMenuItem.setEnabled(connected
-                    && !this.model.getLayoutList().isEmpty());
-                this.popUpAllMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
+                this.downloadCSLayoutMenuItem.setEnabled(connected && isLayoutLoaded());
             }
             else
             {
                 // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
                 this.switchCSLayoutMenuItem.setEnabled(connected);
                 this.downloadCSLayoutMenuItem.setEnabled(false);
-                this.popUpAllMenuItem.setEnabled(true);
+
+                // All Layouts is NOT set here any more (OB-128), for the reason given three lines
+                // above about Manage Pages: this said TRUE unconditionally, so a local folder with no
+                // pages loaded still offered to pop them all out, and it re-enabled the item moments
+                // after the menu guard had greyed it. Two writers of one property, disagreeing.
+                // guardLayoutMenu owns it, and asks when the menu opens.
             }
         });
     }
@@ -23533,13 +23835,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (this.model.getLayoutList().isEmpty())
+                updateLayoutLoaded();
+
+                if (!isLayoutLoaded())
                 {
                     this.KeyboardTab.setEnabledAt(1, false);
                     if (this.KeyboardTab.getSelectedIndex() == 1)
                     {
                         this.KeyboardTab.setSelectedIndex(0);
                     }
+
+                    // AND EMPTIED, not just greyed (OB-128).
+                    //
+                    // The grid stayed mounted, so anything that reached this tab - and until
+                    // showLayoutTab there were nine ways to reach it past the greying - showed the
+                    // railway that had just been unloaded, looking entirely live.
+                    clearLayoutPanel();
                     // this.KeyboardTab.remove(this.layoutPanel);
                 }
                 else 
@@ -23638,7 +23949,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Important!
                     this.KeyboardTab.repaint();
                     
-                    if (showTab) this.KeyboardTab.setSelectedIndex(1);
+                    if (showTab) showLayoutTab();
                     
                     // Update auto layout station labels on the track diagram
                     this.updateVisiblePoints();

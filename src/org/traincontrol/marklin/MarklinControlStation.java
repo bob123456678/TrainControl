@@ -3736,6 +3736,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
             initIP = null;
         }
         
+        // SOMETHING ON SCREEN while the station is reached (FR-041).
+        //
+        // A station that is not answering takes its whole timeout to say so, and until the window
+        // below is built there is nothing at all to look at - so a slow start is indistinguishable
+        // from a failed one. Only when a window was actually asked for: every test passes showUI
+        // false, and a suite that opens windows on the operator's screen is one he stops running.
+        final org.traincontrol.gui.StartupSplash splash = showUI
+            ? org.traincontrol.gui.StartupSplash.show(I18n.t("ui.splashConnecting")) : null;
+
         // Delegate the hard part
         NetworkProxy proxy = new NetworkProxy(InetAddress.getByName(initIP));
         
@@ -3816,10 +3825,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // await() - rather than to one waiting for something that is never going to
                     // happen.
                     latch.countDown();
+
+                    // AND THE SPLASH DOWN, in the same finally and for the same reason (FR-041).
+                    //
+                    // The build runs here rather than where it was started, so this is where it
+                    // finishes - including when it throws. A splash left standing over a working
+                    // application is a worse fault than never having shown one.
+                    org.traincontrol.gui.StartupSplash.closeIfShown(splash);
                 }
             });
 
             latch.await();
+
+            // Twice over, because close() is safe to repeat and the paths out of here are not all
+            // through the block above - a start-up that never reaches the window build must not leave
+            // a splash on the screen either.
+            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
 
             // And now the caller the countDown's comment promised (FBR-C3).
             //

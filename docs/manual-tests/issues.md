@@ -59,41 +59,6 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-127 - 2026-08-28 - model error when cs layout fails to load
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-28 01:38  
-**Build:** commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-I get "Model error: no layout loaded." and several offers to init a new layout when I select "switch to CS layout" and it fails.  then a warning window showing the invalid 5 page list pops up and vanishes on its own.  currently, I am not connected, but this could happen in a real setting.  in this case, we need to gray out everything except for trying the CS2 layout again if one is available.
-
-**Claude, 2026-08-28 - the page-list popup is explained and fixed; two parts are not.**
-
-Reproduced without a Central Station.  The switch stores an EMPTY STRING in the layout-path
-preference rather than removing it, and clears the layout list.  `isLocalLayout` read that preference
-with an empty-string default and answered "not local"; `getLocalLayoutPath` read the same preference
-with a null default and handed the empty string back.  An empty path is the working directory, so the
-page-index question was asked about whatever index was lying in it against a layout list that had just
-been emptied - and every page in that index came back absent.  A fixture of five pages asked against
-an empty list reports five, which is the "previously known 5 page list".
-
-The dialog it feeds asks whether those pages were DELETED, and answering wrongly retires the ids the
-autonomy settings hang off.  Three of the accessor's eight callers already guarded for the empty
-string by hand and five did not.  Fixed at the accessor, plus a refusal in `settleAbsentPages` - the
-single gate all three page writers come through - so the five unguarded readers are unreachable in
-this state.  The route was also narrowed by OB-126's greying, which landed after the build this was
-filed against.
-
-STILL OPEN, and needing Adam at the screen:
-
-  - the "several offers to init a new layout".  That prompt comes from `setViewListener`, which runs
-    once at start-up; no path was found by which the switch re-enters it.
-  - the warning window vanishing on its own.  Untested guess: a keystroke dismissing the previous
-    dialog lands on the next one that opens, which would fit both the intermittency and the vanishing.
-    The useful detail next time it happens is whether the first dialog was dismissed with the KEYBOARD
-    or the mouse.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -106,6 +71,11 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-28 | FR-041 | feature request | A splash while the station is reached, before there is a window to put one in | fixed unvalidated | - |
+| 2026-08-28 | OB-129 | bug | The wait mark counted timer ticks on an event thread that coalesces them, and was capped at 400 in a top-aligned parent | fixed unvalidated | - |
+| 2026-08-28 | FR-040 | feature request | The Layout menu names its data source instead of offering to tell you | fixed unvalidated | - |
+| 2026-08-28 | OB-128 | bug | A greyed tab is not a closed door: nine methods opened it by index, and the panel kept the railway that had been unloaded | fixed validated | - |
+| 2026-08-28 | OB-127 | bug | An empty layout path is the working directory, and its index named five pages that were never deleted | fixed validated | - |
 | 2026-08-28 | OB-126 | bug | The grey Edit Layout button named one of its three reasons whatever was true | fixed unvalidated | - |
 | 2026-08-28 | OB-125 | bug | The crop editor reopens where the crop was taken, not on the default view | fixed unvalidated | - |
 | 2026-08-28 | FR-038 | feature request | Mis-filed: the crop editor quirk is a bug, re-filed as OB-125 | cancelled | - |

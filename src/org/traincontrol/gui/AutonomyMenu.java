@@ -335,6 +335,13 @@ public class AutonomyMenu extends JMenu
             // Manage acts on the configuration that is RUNNING, so it means nothing until one is.
             boolean loaded = running != null;
 
+            // DIRECTLY UNDER the configuration it manages (Adam, 2026-08-28).
+            //
+            // This was the last item on the menu, two groups below the thing it acts on, with the
+            // editing tools in between - so picking a configuration and managing the set of them were
+            // as far apart as this menu can put two items. They are one subject.
+            add(manageMenu(actions, session, loaded));
+
             // Editing and page exclusions ask only that a configuration be CHOSEN.  Both are how a
             // setup that will not load gets FIXED - it refuses on blocking errors, and the editor is
             // the only place those can be dealt with - so gating them on a running setup locked the
@@ -402,12 +409,6 @@ public class AutonomyMenu extends JMenu
             pages.setToolTipText(AutonomyEditorPanel.wrapped(chosen ? I18n.t("autosetup.ui.promptExcludePage")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
             add(pages);
-
-            addSeparator();
-
-            JMenu manage = manageMenu(actions, session, loaded);
-            add(manage);
-
         }
 
         // Exporting the derived graph, for a debug session and only when there is a graph to export.

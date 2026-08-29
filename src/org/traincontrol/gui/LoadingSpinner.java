@@ -73,7 +73,26 @@ public class LoadingSpinner extends JPanel
     /** How much of the space offered the glass actually takes, leaving it room to turn in. */
     private static final double FILL = 0.68;
 
+    /**
+     * The tallest the glass is ever drawn, whatever it is given room for (OB-129).
+     *
+     * Adam asked for it half the size. It used to be a fraction of a component capped at 400, so about
+     * 272 tall; the component is now the size of the diagram it covers, which would make a fraction
+     * LARGER rather than smaller. A ceiling says the size it should be regardless of the space.
+     */
+    private static final double MAX_GLASS_H = 136.0;
+
     private final Timer timer;
+
+    /**
+     * When the animation started, for working out which frame is due.
+     *
+     * The frame used to be a counter incremented once per tick, which is wrong for a Swing timer: it
+     * fires on the event thread and coalesces when that thread is busy - and the whole purpose of this
+     * component is to be on screen while a diagram build floods it. A second of ticks arrived as one
+     * and the sand crawled, which is what OB-129 reports.
+     */
+    private long startedAt;
 
     /**
      * Frames since the animation started, modulo two whole cycles.
@@ -93,17 +112,41 @@ public class LoadingSpinner extends JPanel
 
         timer = new Timer(FRAME_MS, e ->
         {
-            frame = (frame + 1) % (CYCLE_FRAMES * 2);
+            // FROM THE CLOCK, not from the number of times this has run (OB-129).
+            frame = frameAt(System.currentTimeMillis() - startedAt);
             repaint();
         });
 
         timer.setRepeats(true);
     }
 
+    /**
+     * Which frame is due after a given time on screen.
+     *
+     * Static and taking the elapsed time so the clock can be checked without waiting for one: every
+     * existing test of this class drives `advanceOneFrame` by hand, which is exactly why a broken
+     * timer went unnoticed.
+     *
+     * @param elapsedMs milliseconds since the animation started
+     * @return the frame to draw, within the two cycles the drawing alternates over
+     */
+    public static int frameAt(long elapsedMs)
+    {
+        if (elapsedMs < 0) return 0;
+
+        return (int) ((elapsedMs / FRAME_MS) % (CYCLE_FRAMES * 2));
+    }
+
     @Override
     public void addNotify()
     {
         super.addNotify();
+
+        // Restarted from now, so a spinner shown a second time does not jump to wherever the clock
+        // had got to while it was off screen.
+        startedAt = System.currentTimeMillis();
+        frame = 0;
+
         timer.start();
     }
 
@@ -159,7 +202,8 @@ public class LoadingSpinner extends JPanel
             }
 
             // Sized off whichever way round the space is tighter, so it never overhangs.
-            double glassH = Math.max(18.0, Math.min(getWidth() / ASPECT, getHeight()) * FILL);
+            double glassH = Math.max(18.0,
+                Math.min(MAX_GLASS_H, Math.min(getWidth() / ASPECT, getHeight()) * FILL));
             double glassW = glassH * ASPECT;
 
             g2.translate(getWidth() / 2.0, getHeight() / 2.0);
@@ -300,5 +344,18 @@ public class LoadingSpinner extends JPanel
         frame = (frame + 1) % (CYCLE_FRAMES * 2);
 
         return frame;
+    }
+
+    /**
+     * Which frame is showing.
+     *
+     * So a test can watch the TIMER move it, rather than moving it itself - which is what every test
+     * of this class did, and why a clock that never ticked went unnoticed (OB-129).
+     *
+     * @return the current frame
+     */
+    public int currentFrame()
+    {
+        return this.frame;
     }
 }

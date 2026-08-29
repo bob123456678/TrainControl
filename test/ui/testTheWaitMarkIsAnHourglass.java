@@ -388,4 +388,214 @@ public class testTheWaitMarkIsAnHourglass
         assertTrue(at.x >= window.x, "the dialog starts left of its window, at x=" + at.x);
         assertTrue(at.y >= window.y, "the dialog starts above its window, at y=" + at.y);
     }
+
+    /**
+     * The frame is taken from the clock, so a coalesced tick lands where it should (OB-129).
+     *
+     * Adam: "track loading hourglass does not animate."
+     *
+     * `javax.swing.Timer` fires on the event thread and COALESCES when that thread is busy - and this
+     * component exists to be on screen while a diagram build floods it. Counting one frame per tick
+     * therefore advanced the sand once for a second's worth of ticks. Taking the frame from elapsed
+     * time makes a late tick land on the frame it should have reached.
+     *
+     * MUTATION: going back to a counter fails the third assertion, which is the whole point - the
+     * first two pass either way.
+     */
+    @Test
+    public void testTheFrameComesFromTheClock() throws Exception
+    {
+        assertEquals(LoadingSpinner.frameAt(0), 0, "the animation does not start at the beginning");
+
+        assertEquals(LoadingSpinner.frameAt(60), 1,
+            "one frame period does not advance exactly one frame");
+
+        // THE CASE THAT MATTERS. Ten frames' worth of time passes while the event thread is busy and
+        // the timer manages a single tick; that tick must land on frame 10, not frame 1.
+        assertEquals(LoadingSpinner.frameAt(600), 10,
+            "600ms after the last frame the animation is still one frame along, so a busy event "
+            + "thread - which is exactly when this component is shown - freezes the sand");
+
+        // It wraps rather than running off the end.
+        assertTrue(LoadingSpinner.frameAt(1000L * 60 * 60) >= 0,
+            "an hour on screen puts the animation on a frame that does not exist");
+
+        assertEquals(LoadingSpinner.frameAt(-5), 0, "a clock that went backwards is not handled");
+    }
+
+    /**
+     * And the timer really does drive it, with nobody calling advanceOneFrame.
+     *
+     * The gap that let OB-129 ship: `shoot` advances the frames by hand, so every drawing test above
+     * passes with a timer that never fires once.
+     */
+    @Test(timeOut = 30000)
+    public void testTheTimerActuallyRuns() throws Exception
+    {
+        final javax.swing.JFrame window = new javax.swing.JFrame();
+        final LoadingSpinner mark = new LoadingSpinner();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                window.getContentPane().add(mark);
+                window.setSize(200, 200);
+                window.setVisible(true);
+            });
+
+            int started = mark.currentFrame();
+
+            // Long enough for several frames at 60ms, without making the suite wait.
+            Thread.sleep(500);
+
+            final int[] now = new int[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> now[0] = mark.currentFrame());
+
+            assertTrue(now[0] != started,
+                "the wait mark is on frame " + now[0] + " half a second after it was on frame "
+                + started + " - nothing is driving it, so it is a still picture on screen");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * The glass has a ceiling, whatever room it is given (OB-129).
+     *
+     * Adam asked for it half the size. The component is now sized to the whole diagram it covers, so a
+     * fraction of that would make the glass grow rather than shrink.
+     */
+    @Test
+    public void testTheGlassDoesNotGrowWithTheSpaceForever() throws Exception
+    {
+        int big = 900;
+
+        LoadingSpinner mark = new LoadingSpinner();
+        mark.setSize(big, big);
+
+        java.awt.image.BufferedImage out =
+            new java.awt.image.BufferedImage(big, big, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = out.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, big, big);
+        mark.paint(g);
+        g.dispose();
+
+        int top = -1;
+        int bottom = -1;
+
+        for (int y = 0; y < big; y++)
+        {
+            for (int x = 0; x < big; x++)
+            {
+                if ((out.getRGB(x, y) & 0xFFFFFF) < 0xF0F0F0)
+                {
+                    if (top < 0) top = y;
+
+                    bottom = y;
+                    break;
+                }
+            }
+        }
+
+        assertTrue(top >= 0, "nothing was drawn at all, so the measurement below means nothing");
+
+        int drawn = bottom - top + 1;
+
+        assertTrue(drawn <= 160,
+            "the glass is " + drawn + " pixels tall in a 900px panel - it grows with the space it is "
+            + "given, so covering a whole track diagram draws an enormous hourglass");
+
+        // And it is still centred in that space, which is the other half of OB-129.
+        int middle = (top + bottom) / 2;
+
+        assertTrue(Math.abs(middle - big / 2) <= 4,
+            "the glass sits at " + middle + " in a " + big + "px panel rather than the middle");
+    }
+
+    /**
+     * The spinner covers the area the diagram will take, which is what puts it in the middle.
+     *
+     * It is centred inside its own component already; what was wrong is how much of the page that
+     * component covered. Capped at 400 and dropped into a FlowLayout parent, it sat at the top.
+     */
+    @Test
+    public void testTheSpinnerCoversTheDiagramArea() throws Exception
+    {
+        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(grid.contains("spinner.setPreferredSize(new Dimension(maxWidth, maxHeight))"),
+            "the wait mark is no longer sized to the whole area the diagram will take, so on a page "
+            + "bigger than it, the FlowLayout parent leaves it sitting at the top instead of over "
+            + "the middle (OB-129)");
+    }
+
+    /**
+     * A blocked event thread does not freeze the sand (OB-129).
+     *
+     * This is the reported fault reproduced rather than described. `javax.swing.Timer` fires on the
+     * event thread and coalesces, so while a diagram build holds that thread the ticks arrive as one -
+     * and a counter advances one frame for half a second of waiting, which is what Adam saw.
+     *
+     * The frame must therefore come back having moved by roughly the time that passed, not by one.
+     *
+     * MUTATION: `frame = (frame + 1) % ...` in the timer passes every other test in this class and
+     * fails this one - which is the gap that let OB-129 ship, since `frameAt` was correct all along
+     * and nothing asserted the timer used it.
+     */
+    @Test(timeOut = 30000)
+    public void testABlockedEventThreadDoesNotFreezeTheSand() throws Exception
+    {
+        final javax.swing.JFrame window = new javax.swing.JFrame();
+        final LoadingSpinner mark = new LoadingSpinner();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                window.getContentPane().add(mark);
+                window.setSize(200, 200);
+                window.setVisible(true);
+            });
+
+            final int[] before = new int[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> before[0] = mark.currentFrame());
+
+            // The event thread held, exactly as a diagram build holds it.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    Thread.sleep(500);
+                }
+                catch (InterruptedException stop)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            });
+
+            final int[] after = new int[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = mark.currentFrame());
+
+            int moved = Math.floorMod(after[0] - before[0], 124);
+
+            // 500ms is a little over eight frames at 60ms. A counter would manage one or two.
+            assertTrue(moved >= 5,
+                "the wait mark advanced " + moved + " frames while the event thread was held for "
+                + "500ms - it is counting ticks rather than reading the clock, so during the very "
+                + "thing it exists to cover the sand barely moves (OB-129)");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
 }
