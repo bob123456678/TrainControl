@@ -2636,6 +2636,37 @@ public class AutonomySession
     }
 
     /**
+     * What the active configuration STORES for a global, or null (RC-A2).
+     *
+     * The counterpart setGlobal never had, and its absence is why a caller asked the wrong thing. The
+     * question "has the configuration already answered this?" cannot be put to the live Layout: the
+     * live Layout carries whatever was last pushed into it in memory, including by the caller itself,
+     * so a migration that writes the value and then asks again is told yes by its own writing.
+     *
+     * Null covers all three ways of having no answer - no active configuration, no configuration
+     * object, no such global - because a caller that has to distinguish them has a different problem.
+     *
+     * @param key the global's name, as it appears at the top level of the built configuration
+     * @return the stored value as text, or null when nothing is stored under that name
+     */
+    public String getGlobal(String key)
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return null;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return null;
+
+        org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null) return null;
+
+        return globals.optString(key, null);
+    }
+
+    /**
      * The globals of the active configuration, which is where pace and speed settings live.
      */
     private AutonomyBuilder.Globals globals()

@@ -8186,9 +8186,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (was == null) return;
 
-        if (live.getPathPreference() != org.traincontrol.automation.Layout.PathPreference.RANDOM)
+        // THE STORED ANSWER, NOT THE LIVE ONE (RC-A2).
+        //
+        // This asked live.getPathPreference(), and on the second call through here that is what THIS
+        // METHOD wrote into memory on the first. So the second call found a non-RANDOM value, decided
+        // the configuration had answered, and deleted the legacy key with nothing ever stored -
+        // leaving RANDOM for ever, and making the promise in the javadoc above, that a migration which
+        // cannot run today runs tomorrow, impossible to keep. Its own in-memory write closed the door.
+        //
+        // The second call is one checkbox away: loadAutoLayoutSettings has fourteen callers and
+        // reaches this from every one of them.
+        //
+        // The field rather than getAutonomySession(), for the reason persistPathPreference is passed
+        // false: this runs from a settings refresh, and the getter is a lazy builder that parses every
+        // page, writes to disk and can raise a dialog (LE2-C16).
+        org.traincontrol.automationui.AutonomySession stored = this.autonomySession;
+
+        if (stored != null && stored.getGlobal("pathPreference") != null)
         {
-            // The configuration has its own answer, so the old one is stale and may go.
+            // The configuration has its own answer, so the old one is stale and may go.  This also
+            // covers a choice made from the dropdown SINCE a failed migration: the stored answer is
+            // that choice, and the pre-upgrade key must not come back and overrule it.
             prefs.remove(legacy);
 
             return;
