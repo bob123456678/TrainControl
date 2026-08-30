@@ -62,8 +62,19 @@ public class testTimetableCaptureThroughARealRun
      * derived from RUN_MS, which is how long a run is watched for rather than how long it takes to
      * start. The two were the same number, and the day a battery ran while the application was open
      * the wait ran out before the railway had moved.
+     *
+     * RAISED AGAIN on 2026-08-30, to 480 seconds, after it ran out twice in two consecutive batteries
+     * on a machine that was also being used - and passed on its own both times, immediately, in the
+     * quiet between them. A test that only fails when the machine is busy reads as a regression every
+     * time it does, which costs an investigation to arrive back at "the machine was busy".
+     *
+     * A higher ceiling is close to free: the wait ends the moment a locomotive moves, so the extra
+     * time is only ever spent on a run that is failing anyway. What it cannot do is tell a slow
+     * machine from a railway that will never move, and no wall-clock number can - that would want
+     * waiting on autonomy's own progress rather than on the clock, which is a bigger change than this
+     * flake justifies today.
      */
-    private static final long STARTUP_CEILING_MS = 240000;
+    private static final long STARTUP_CEILING_MS = 480000;
 
     private static MarklinControlStation model;
 
