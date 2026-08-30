@@ -46,6 +46,17 @@ component, and no origin - so paste had nothing to move the setup FROM. The fix 
 flag saying whether the clipboard was cut or copied, and the flag is cleared once a paste has used it,
 because cut-then-paste-twice is a move followed by a copy.
 
+### A2 - withdrawn, was never a defect
+
+| | |
+|---|---|
+| **Disposition** | withdrawn - see *What the pass got wrong* |
+
+The pass reported that `LayoutEditor` had no `cutSelection` / `deleteSelection` / `pasteSelection`
+methods under those names, which would have made A1's whole chain unverifiable. It was raised here as a
+possible fabrication and is withdrawn: the methods exist as `synchronized public boolean`, and the
+grep that "disproved" them searched for `private void`. Recorded because a withdrawn finding is
+calibration data, and because the mistake was the reviewer-of-the-reviewer's, not the agent's.
 ### A3 - the LE-A1 fix could strip the setup off squares that still held track
 
 | | |
@@ -69,17 +80,6 @@ Cleared on undo and on redo. Not cleared on a page switch, deliberately - cuttin
 pasting on another is a cross-page move, and carrying the setup is the right answer there, the same
 answer the single-tile move gives.
 
-### A2 - withdrawn, was never a defect
-
-| | |
-|---|---|
-| **Disposition** | withdrawn - see *What the pass got wrong* |
-
-The pass reported that `LayoutEditor` had no `cutSelection` / `deleteSelection` / `pasteSelection`
-methods under those names, which would have made A1's whole chain unverifiable. It was raised here as a
-possible fabrication and is withdrawn: the methods exist as `synchronized public boolean`, and the
-grep that "disproved" them searched for `private void`. Recorded because a withdrawn finding is
-calibration data, and because the mistake was the reviewer-of-the-reviewer's, not the agent's.
 
 ---
 
