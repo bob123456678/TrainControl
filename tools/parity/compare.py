@@ -63,7 +63,7 @@ def read(path):
 AUTO_NAMED = re.compile(r'^.+ \d+,\d+$')
 
 
-def waypoints(edges):
+def waypoints(edges, shared=None):
     """The named places a path visits, in order.
 
     EDGE SEQUENCES ARE NOT COMPARABLE BETWEEN THE TWO ENGINES, and comparing them was this script's
@@ -91,14 +91,33 @@ def waypoints(edges):
             if not name or AUTO_NAMED.match(name):
                 continue
 
+            # Only places both graphs have - see routes_of for why.
+            if shared is not None and name not in shared:
+                continue
+
             if not out or out[-1] != name:
                 out.append(name)
 
     return tuple(out)
 
 
-def routes_of(data):
-    """(loc, fromStation, toStation) -> set of routes, as waypoint sequences, unioned over facings."""
+def routes_of(data, shared=None):
+    """(loc, fromStation, toStation) -> set of routes, as waypoint sequences, unioned over facings.
+
+    HELPER POINTS ARE NOT PART OF THE ROUTE, and leaving them in was the second thing this comparison
+    got wrong. The hand-built graph carries points that exist only to make the modelling work -
+    TopMainR1Bypass, TopMainR2Bypass, BottomSecondaryPre, BottomExitVIrt - and the derived graph does
+    not need them, because of how it is constructed. Adam: "these should no longer be needed in the new
+    graph due to the way we construct it."
+
+    Counting their absence as four lost routes described the modelling rather than the railway. So when
+    `shared` is given, a route is reduced to the places BOTH graphs know about: anything only one of
+    them has is that engine's own bookkeeping, and dropping it symmetrically means neither engine is
+    credited or blamed for how finely it chose to chop the track up.
+
+    What this deliberately still catches: a place both graphs have that a route no longer passes
+    through. That is a real change of route rather than a change of vocabulary.
+    """
     out = defaultdict(set)
 
     for row in data['PATH']:
@@ -106,9 +125,14 @@ def routes_of(data):
 
         edges = row[4].split('|') if len(row) > 4 and row[4] else []
 
-        out[(loc, base(start), base(end))].add(waypoints(edges))
+        out[(loc, base(start), base(end))].add(waypoints(edges, shared))
 
     return out
+
+
+def point_names(data):
+    """Every place one graph knows about, by base name."""
+    return set(base(row[0]) for row in data['POINT'])
 
 
 def normalise_edge(name):
@@ -167,7 +191,9 @@ def main():
 
     old, new = read(sys.argv[1]), read(sys.argv[2])
 
-    old_routes, new_routes = routes_of(old), routes_of(new)
+    shared = point_names(old) & point_names(new)
+
+    old_routes, new_routes = routes_of(old, shared), routes_of(new, shared)
     old_locks, new_locks = locks_of(old), locks_of(new)
 
     parking = reversing(old)
@@ -188,6 +214,8 @@ def main():
     add('|---|---|---|')
     add('| points | %d | %d |' % (len(old['POINT']), len(new['POINT'])))
     add('| routes enumerated | %d | %d |' % (len(old_routes), len(new_routes)))
+    add('| places the other lacks | %d | %d |'
+        % (len(point_names(old) - shared), len(point_names(new) - shared)))
     add('')
 
     # ==================================================================== 1. destinations

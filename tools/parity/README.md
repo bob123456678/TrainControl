@@ -64,3 +64,24 @@ stations in the 2.8.1 setup, as these are used for parking."* They still count a
 pass through.
 
 `compare.py` exits non-zero when the superset claim fails, so this can gate something later.
+
+## Helper points
+
+The hand-built graph carries points that exist only to make the modelling work - `TopMainR1Bypass`,
+`BottomSecondaryPre`, `BottomExitVIrt` - and the derived graph does not need them. Counting their
+absence described the modelling rather than the railway, so routes are compared only on places **both**
+graphs know about, dropped symmetrically. What that still catches, deliberately: a place both graphs
+have that a route no longer passes through.
+
+## PathPreferenceProbe
+
+3.0.0 only, because the preference is. It asks each routing-logic setting what it would actually
+choose, rather than reading the code and inferring. Two ways the setting can silently not apply, both
+worth knowing:
+
+- `Layout.pathPreference` is **static** and defaults to RANDOM, and the only thing that loads the saved
+  value into it is the menu builder in the window. Anything running autonomy without building that
+  menu - a script, an example - is on RANDOM whatever is saved.
+- Length-based options rank by `lengthOf`, so on edges with no length they all score zero and
+  SHORTEST_LENGTH and LONGEST_LENGTH become the same setting. 18 of 132 edges in the derived graph
+  carry a length.

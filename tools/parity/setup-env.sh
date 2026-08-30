@@ -123,6 +123,14 @@ done
     "$REPO/tools/parity/BuildDiagramSetup.java"
 
 echo "compiled BuildDiagramSetup against v3_0_0"
+
+# The routing-logic preference exists only in 3.0.0, so its probe does too.
+"$JAVAC" -nowarn -encoding UTF-8 \
+    -cp "$TARGET/v3_0_0/TrainControl.jar" \
+    -d "$TARGET/v3_0_0/classes" \
+    "$REPO/tools/parity/PathPreferenceProbe.java"
+
+echo "compiled PathPreferenceProbe against v3_0_0"
 echo ""
 echo "environment ready: $TARGET"
 echo "next: sh tools/parity/run.sh \"$TARGET\""

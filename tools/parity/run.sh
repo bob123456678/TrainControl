@@ -67,6 +67,16 @@ cd "$TARGET/v3_0_0"
 
 tail -1 "$TARGET/out/run-v3_0_0.log"
 
+echo "probing the routing-logic preference..."
+
+"$JAVA" -Dtraincontrol.anyReceivePort=true \
+    -cp "classes;TrainControl.jar" PathPreferenceProbe \
+    "$TARGET/v3_0_0/cs2_sample_layout" \
+    "$TARGET/v3_0_0/autonomy.json" \
+    "$TARGET/out/pathpref.tsv" > "$TARGET/out/pathpref.log" 2>&1
+
+tail -1 "$TARGET/out/pathpref.log"
+
 cd "$REPO"
 
 # compare.py exits non-zero when the superset claim fails, which is a result rather than an error.
