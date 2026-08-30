@@ -198,6 +198,70 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
+     * Which of the two real buttons this strip is standing in for, if either.
+     */
+    public enum RunButton
+    {
+        /** Nothing to offer - no setup loaded, or this page is not part of it. */
+        HIDDEN,
+
+        /** Autonomy can be started. */
+        START,
+
+        /** Autonomy is running and can be stopped. */
+        STOP,
+
+        /** A stop has been asked for and the trains are still finishing: shown, but greyed. */
+        STOP_PENDING
+    }
+
+    /**
+     * What the strip should be showing, as a rule rather than as a side effect (OB-143).
+     *
+     * Adam: "the button disappears rather than being greyed out prior to replacement by the start
+     * button. make it get greyed out and then replaced."
+     *
+     * The strip mirrors whichever real button is ENABLED, and pressing Graceful Stop disables it at
+     * once while autonomy keeps running - `stopLocomotives()` returns immediately and the trains coast
+     * on to their next station. So for that whole window neither button was enabled, and the strip's
+     * answer to "neither" was to hide itself. The control vanished from under the hand that had just
+     * pressed it and came back seconds later as something else.
+     *
+     * Greying rather than hiding is the honest thing to show: the brake IS applied, and the strip
+     * saying so - in the same place, at the same size - is what makes the eventual swap to Start read
+     * as the run ending rather than as the interface changing its mind.
+     *
+     * **Only when a stop is genuinely pending.** "Neither button is enabled" has other causes - most
+     * of them before anything has run at all - and a greyed Graceful Stop offered to somebody who has
+     * never started anything would be worse than the gap it replaces. `isGracefulStopPending` is the
+     * narrow question: was a stop asked for, and is autonomy still busy.
+     *
+     * Extracted so it can be exercised without a window, and so that the answer is one sentence in one
+     * place rather than a chain of ternaries whose middle case nobody wrote down.
+     *
+     * @param loaded whether a setup is loaded
+     * @param excluded whether the page on screen is left out of it
+     * @param stopEnabled whether the real Graceful Stop is enabled
+     * @param startEnabled whether the real Start is enabled
+     * @param stopPending whether a graceful stop is still being carried out
+     * @return what to show
+     */
+    public static RunButton runButtonFor(boolean loaded, boolean excluded, boolean stopEnabled,
+        boolean startEnabled, boolean stopPending)
+    {
+        if (!loaded || excluded) return RunButton.HIDDEN;
+
+        // Stop wins when both are: once autonomy is running, stopping it is the only thing left to
+        // offer, and that is the moment the button has to change under the user's hand rather than the
+        // moment a second button appears beside it.
+        if (stopEnabled) return RunButton.STOP;
+
+        if (startEnabled) return RunButton.START;
+
+        return stopPending ? RunButton.STOP_PENDING : RunButton.HIDDEN;
+    }
+
+    /**
      * Tells the strip which buttons it is standing in for.
      *
      * @param start the main window's Start Autonomous Operation
@@ -231,9 +295,13 @@ public class AutonomyOverlayToggle extends JPanel
             return;
         }
 
-        source = !loaded || excluded ? null
-            : stop != null && stop.isEnabled() ? stop
-            : start != null && start.isEnabled() ? start : null;
+        RunButton showing = runButtonFor(loaded, excluded,
+            stop != null && stop.isEnabled(),
+            start != null && start.isEnabled(),
+            ui != null && ui.isGracefulStopPending());
+
+        source = showing == RunButton.START ? start
+            : showing == RunButton.STOP || showing == RunButton.STOP_PENDING ? stop : null;
 
         // Fix it rather than Start, when starting would be refused (OB-090).
         //
@@ -306,6 +374,15 @@ public class AutonomyOverlayToggle extends JPanel
         // pixels looks bigger on one than the other.
         run.setPreferredSize(new java.awt.Dimension(wanted.width,
             Math.max(show.getPreferredSize().height - 3, 14)));
+
+        // GREYED, NOT GONE, while the stop it already carries is being carried out (OB-143).
+        //
+        // The button keeps its place, its size and its words; all that changes is that it stops
+        // accepting presses, because the thing it asks for has been asked for. Pressing it again is
+        // the one gesture this window has no answer to - requestStopAutonomy throws
+        // "stop already issued, wait for the trains" at exactly this moment - so refusing the click
+        // here says the same thing without a dialog.
+        run.setEnabled(showing != RunButton.STOP_PENDING);
 
         run.setVisible(true);
 

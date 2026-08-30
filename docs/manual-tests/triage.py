@@ -76,7 +76,9 @@ BACKUPS_KEPT = 40
 # is about; checking here means the launch button says so before the app does.
 CS2_PORT = 15730
 
-# Known good JDK on this machine, used only if nothing else answers.
+# Known good JDK on this machine.  find_java() below checks it ahead of PATH on purpose - see
+# that function's docstring - and only ever falls through to it if TC_JAVA_HOME does not name a
+# better answer.
 FALLBACK_JAVA = r"C:\Program Files\Java\jdk1.8.0_361\bin\java.exe"
 
 VALIDATED = "fixed validated"
@@ -893,8 +895,8 @@ def _java_version_report(path):
         return ""
 
 
-def find_java():
-    """The java to launch TrainControl with, verified rather than assumed.
+def find_java(require_javac=False):
+    """The java to launch or compile TrainControl with, verified rather than assumed.
 
     JAVA_HOME is not safe to trust blindly on a real dev machine.  On this one it points at
     Android Studio's bundled JetBrains Runtime - JDK 21, with its own IDE-tuned HiDPI scaling -
@@ -904,36 +906,86 @@ def find_java():
     tested it against.
 
     So every candidate is checked with its own `-version` rather than trusted for existing, in
-    the order most likely to actually be the project's JDK 8: the known-good install this
-    project's own test harness already uses, then PATH, then JAVA_HOME last - and only ever
-    returned if it reports 1.8.  If nothing on the machine verifies as 1.8, the first candidate
-    that exists is still returned so a launch remains possible, but the caller is told the
-    version was never confirmed, since guessing silently is exactly the bug being fixed here.
+    this priority order:
+
+      1. TC_JAVA_HOME.  Nothing else on this machine sets this variable, so if it is present it
+         can only mean someone is deliberately pointing this tool at a JDK, which outranks any
+         guess this function would otherwise make.
+      2. The known-good install this project's own CLI test harness already uses (FALLBACK_JAVA).
+         This goes ahead of PATH on purpose: on this machine PATH's `java` resolves to Oracle's
+         auto-updater stub (java8path), which reports a perfectly convincing "1.8.0_something"
+         but has no javac sitting next to it, so letting it win here would trade the JAVA_HOME
+         scaling bug below for a silent compile failure instead of actually fixing anything.
+      3. `java` on PATH.
+      4. JAVA_HOME, checked last for the reason given above.
+
+    A candidate is only ever returned if it reports 1.8.  If nothing on the machine verifies as
+    1.8, the first candidate that exists is still returned so a launch remains possible, but the
+    caller is told the version was never confirmed, since guessing silently is exactly the bug
+    being fixed here.
+
+    require_javac restricts candidates to ones with a javac.exe sitting next to the java.exe.
+    Launching never needs a compiler, so launch_plan() leaves this False; compile_plan() sets it
+    True, because deriving JAVA_HOME from a javac-less JRE hands Ant a folder it cannot compile
+    with, and Ant's own error for that names neither the missing javac nor this script - see the
+    java8path case above, which is exactly that trap.
+
+    Returns (path_or_None, verified_bool, tried).  `tried` is every (label, path) candidate this
+    call actually constructed, in the order checked, purely so a "nothing found" message can say
+    what it looked for instead of just failing.
     """
 
+    tried = []
     candidates = []
 
-    if os.path.exists(FALLBACK_JAVA):
-        candidates.append(FALLBACK_JAVA)
+    def consider(label, path):
+        if not path or path in [seen for _, seen in tried]:
+            return
 
-    found = shutil.which("java")
+        tried.append((label, path))
 
-    if found and found not in candidates:
-        candidates.append(found)
+        if not os.path.exists(path):
+            return
+
+        if require_javac and not os.path.exists(
+                os.path.join(os.path.dirname(path), "javac.exe")):
+            return
+
+        candidates.append(path)
+
+    override = os.environ.get("TC_JAVA_HOME")
+
+    if override:
+        consider("TC_JAVA_HOME", os.path.join(override, "bin", "java.exe"))
+
+    consider("known-good default", FALLBACK_JAVA)
+
+    consider("java on PATH", shutil.which("java"))
 
     home = os.environ.get("JAVA_HOME")
 
     if home:
-        candidate = os.path.join(home, "bin", "java.exe")
-
-        if os.path.exists(candidate) and candidate not in candidates:
-            candidates.append(candidate)
+        consider("JAVA_HOME", os.path.join(home, "bin", "java.exe"))
 
     for c in candidates:
         if TARGET_JAVA_VERSION in _java_version_report(c):
-            return c, True
+            return c, True, tried
 
-    return (candidates[0], False) if candidates else (None, False)
+    return (candidates[0], False, tried) if candidates else (None, False, tried)
+
+
+def _describe_tried(tried):
+    """Turns find_java()'s candidate trail into one line for an error message - what was
+    checked, and whether it actually existed - so "nothing found" says where it looked instead
+    of just failing.
+    """
+
+    if not tried:
+        return "nothing to check - TC_JAVA_HOME, PATH and JAVA_HOME were all unset"
+
+    return "; ".join(
+        "%s (%s)%s" % (label, path, "" if os.path.exists(path) else " - not found")
+        for label, path in tried)
 
 
 def newest_mtime(folder):
@@ -993,10 +1045,12 @@ def launch_plan():
     recorded against a stale jar is the exact failure the disposition rule exists to stop.
     """
 
-    java, verified = find_java()
+    java, verified, tried = find_java()
 
     if not java:
-        return None, "No java found.  Set JAVA_HOME, or put java on the PATH."
+        return None, (
+            "No Java 8 found.  Tried: %s.  Set TC_JAVA_HOME (or JAVA_HOME) to a JDK 8 install, "
+            "or put java on the PATH." % _describe_tried(tried))
 
     java_note = java if verified else (
         "%s - COULD NOT CONFIRM THIS IS JAVA 8, the version TrainControl is built for; if the "
@@ -1055,7 +1109,10 @@ def compile_plan():
 
     Forces JAVA_HOME to the same verified JDK 8 launch_plan() insists on, for the same reason:
     Ant is a JVM too, and this machine's ambient JAVA_HOME is Android Studio's JBR, not this
-    project's compiler.
+    project's compiler.  Unlike launch_plan(), this calls find_java(require_javac=True): Ant
+    needs a real compiler, not just a runtime, so a java that verifies as 1.8 but has no javac
+    next to it (PATH's java8path stub on this machine, for instance) is rejected here rather
+    than being handed to Ant as JAVA_HOME and failing three steps later with no mention of why.
     """
 
     ant = find_ant()
@@ -1063,10 +1120,23 @@ def compile_plan():
     if not ant:
         return None, None, "No NetBeans ant found (looked for %s) and none on PATH." % ANT_GLOB
 
-    java, verified = find_java()
+    java, verified, tried = find_java(require_javac=True)
 
     if not java:
-        return None, None, "No java found to run Ant with.  Set JAVA_HOME, or put java on PATH."
+        # A java that exists but was rejected for having no javac is a different, more specific
+        # problem than no java at all, and worth naming as such rather than reporting the same
+        # generic "not found" for both.
+        any_java, _, any_tried = find_java()
+
+        if any_java:
+            return None, None, (
+                "Found java (%s) but no javac next to it - that is a JRE, not a JDK, and Ant "
+                "cannot compile without a compiler.  Set TC_JAVA_HOME (or JAVA_HOME) to a JDK 8 "
+                "install, such as %s." % (any_java, FALLBACK_JAVA))
+
+        return None, None, (
+            "No java found to run Ant with.  Tried: %s.  Set TC_JAVA_HOME (or JAVA_HOME) to a "
+            "JDK 8 install, or put java on PATH." % _describe_tried(any_tried))
 
     env = dict(os.environ)
     env["JAVA_HOME"] = os.path.dirname(os.path.dirname(java))     # .../bin/java.exe -> ...

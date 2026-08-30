@@ -3336,6 +3336,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // form builder had left them at. None of that has anything to do with whether a local autonomy
         // setup exists.
         mountLayoutHeadings();
+        mountFindRoute();
 
         if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
         {
@@ -5819,8 +5820,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Nothing in the main window may hold the keyboard: bare key presses drive locomotives
         AutonomyViewerPanel.unfocusable(strip);
 
-        this.LayoutArea.setColumnHeaderView(strip);
-        this.LayoutArea.revalidate();
+        // ABOVE THE SCROLL PANE, NOT INSIDE IT (OB-148).
+        //
+        // Adam: "if a track diagram is wide, the header above a track diagram flickers while scrolling
+        // sideways" - and it is the whole strip, not just the button on the end of it.
+        //
+        // It was the scroll pane's COLUMN HEADER. A column header is as wide as the view and scrolls
+        // horizontally with it, which is right for column labels and wrong for a strip of controls:
+        // every sideways scroll step repainted a panel as wide as the diagram, and the checkbox and
+        // the Start button slid away from under the hand that was reaching for them.
+        //
+        // Outside the viewport it does not scroll, so there is nothing to repaint on scroll and
+        // nothing to slide. The flicker goes because its cause goes.
+        //
+        // SWAPPED AT RUNTIME, because the container's layout comes from the form and hand-editing a
+        // GEN block is how cropOverlay disappeared twice. GroupLayout.replace exists for exactly this:
+        // it takes the scroll pane out of the layout's groups and puts a wrapper in its place, with
+        // the same constraints, and the wrapper then holds both.
+        java.awt.Container home = this.LayoutArea.getParent();
+
+        if (home != null && home.getLayout() instanceof javax.swing.GroupLayout)
+        {
+            javax.swing.JPanel stacked = new javax.swing.JPanel(new java.awt.BorderLayout());
+
+            stacked.setOpaque(false);
+
+            ((javax.swing.GroupLayout) home.getLayout()).replace(this.LayoutArea, stacked);
+
+            stacked.add(strip, java.awt.BorderLayout.NORTH);
+            stacked.add(this.LayoutArea, java.awt.BorderLayout.CENTER);
+
+            home.revalidate();
+            home.repaint();
+        }
+        else
+        {
+            // Whatever the form does next, the strip has to appear somewhere - the column header is
+            // where it used to live and is still better than nowhere.
+            this.LayoutArea.setColumnHeaderView(strip);
+            this.LayoutArea.revalidate();
+        }
     }
 
     /**
@@ -8077,9 +8116,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the same bulk edit that routed the sixteen call sites through here, which made the
             // wrapper call itself: off the event thread immediately, and on it via the worker, which is
             // also off it.  Every Sync was a StackOverflowError.
+            // BEHIND THE SPINNER EITHER WAY (OB-140).
+            //
+            // Adam: "the hourglass flyover isn't shown when syncing the CS database from the
+            // Locomotives JMenu, locomotive database popup, or the Functions Jmenu."
+            //
+            // Those three doors are not special - they are simply the ones that sync from a background
+            // thread, which is the correct thing for them to do, and this method's answer to being off
+            // the event thread was to fetch the whole Central Station database in silence. Whether the
+            // user is told that something slow is happening depended on which thread the door happened
+            // to be on, which is not a distinction anybody can see.
+            //
+            // The work stays HERE rather than moving to a worker, because the caller wants the answer:
+            // `BusyDialog.run` would hand the sync to a second thread and return at once, and the
+            // result would arrive after this method had already returned -1 to whoever asked.
+            // Every play button comes back (FR-043).  Sixteen doors sync through this method, which
+            // is why the spinner in OB-140 went here too rather than into the three that were reported.
+            resetRouteSpinners();
+
             if (!javax.swing.SwingUtilities.isEventDispatchThread())
             {
-                return this.model.syncWithCS2();
+                BusyDialog.Closer busy =
+                    BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
+
+                try
+                {
+                    return this.model.syncWithCS2();
+                }
+                finally
+                {
+                    // In a finally for the reason BusyDialog itself gives about its own continuation:
+                    // work that throws would otherwise leave a modal window on screen with no close
+                    // button and nothing left alive to dismiss it.
+                    busy.close();
+                }
             }
 
             // Held in an array because a lambda cannot assign a local, and read after the dialog
@@ -15566,50 +15636,95 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void executeRoute(String route)
     {
+        // Marked before the thread starts, so the spinner is up by the time the pointer leaves the
+        // button (FR-043).  Every door that runs a route comes through here, including the right-click
+        // menu's own Execute - which is what Adam asked for: "executing the route from there should
+        // also start the spinner."
+        routeStarted(route);
+
         new Thread(() ->
         {
-            // Asked here rather than inside the model, which has no business showing a dialog - and
-            // asked BEFORE the run, so the answer is about the route the operator picked.
-            // The model is held as a ViewListener, whose getRoute is typed as the base Route; only a
-            // MarklinRoute knows about the autonomy graph, and every route the station holds is one.
-            org.traincontrol.base.Route found = this.model.getRoute(route);
-
-            org.traincontrol.marklin.MarklinRoute picked =
-                found instanceof org.traincontrol.marklin.MarklinRoute
-                ? (org.traincontrol.marklin.MarklinRoute) found : null;
-
-            // Asked once, and the answer decides HOW it runs (A3).
-            //
-            // The conflict used to be checked here and again inside, and a conflict that cleared
-            // between the two came back as "yes, override" - so the route ran with every guard off.
-            // One question now, with three answers, and only the operator's own yes overrides
-            // anything.
-            if (picked != null)
+            runAndTimeTheRoute(route, () ->
             {
-                RouteConflict answer = askAboutRouteConflict(picked, this, null);
+                // Asked here rather than inside the model, which has no business showing a dialog - and
+                // asked BEFORE the run, so the answer is about the route the operator picked.
+                // The model is held as a ViewListener, whose getRoute is typed as the base Route; only a
+                // MarklinRoute knows about the autonomy graph, and every route the station holds is one.
+                org.traincontrol.base.Route found = this.model.getRoute(route);
 
-                if (answer == RouteConflict.OVERRIDE)
+                org.traincontrol.marklin.MarklinRoute picked =
+                    found instanceof org.traincontrol.marklin.MarklinRoute
+                    ? (org.traincontrol.marklin.MarklinRoute) found : null;
+
+                // Asked once, and the answer decides HOW it runs (A3).
+                //
+                // The conflict used to be checked here and again inside, and a conflict that cleared
+                // between the two came back as "yes, override" - so the route ran with every guard off.
+                // One question now, with three answers, and only the operator's own yes overrides
+                // anything.
+                if (picked != null)
                 {
-                    picked.execRouteOverridingConflicts();
+                    RouteConflict answer = askAboutRouteConflict(picked, this, null);
 
-                    refreshRouteList();
+                    if (answer == RouteConflict.OVERRIDE)
+                    {
+                        picked.execRouteOverridingConflicts();
 
-                    return;
+                        refreshRouteList();
+
+                        return;
+                    }
+
+                    if (answer == RouteConflict.REFUSED)
+                    {
+                        refreshRouteList();
+
+                        return;
+                    }
                 }
 
-                if (answer == RouteConflict.REFUSED)
-                {
-                    refreshRouteList();
+                // Nothing to confirm: run it the ordinary way, guarded, so a conflict appearing while it
+                // runs still stops and asks.
+                this.model.execRoute(route);
+                refreshRouteList();
+            });
+        }).start();
+    }
 
-                    return;
-                }
+    /**
+     * The three ways out of executeRoute's thread, wrapped so all of them are timed.
+     *
+     * Left as a wrapper rather than a try/finally around the body because the body returns early twice
+     * - an overridden conflict and a refused one - and a measurement that misses those two is a
+     * measurement of the happy path only.
+     *
+     * It used to put the button back here as well. It no longer does: see routeStarted, where the
+     * clearing became a fixed second so that what Adam sees answers a question rather than raising
+     * another one.
+     *
+     * @param route the route's name
+     * @param work what to run
+     */
+    private void runAndTimeTheRoute(String route, Runnable work)
+    {
+        long began = System.currentTimeMillis();
+
+        try
+        {
+            work.run();
+        }
+        finally
+        {
+            // The route's own ending puts the button back again, through the floor in routeFinished -
+            // so a fast route still shows, and a slow one is not declared finished early.
+            if (this.model != null && this.model.isDebug())
+            {
+                this.model.log("Route " + route + " finished executing in "
+                    + (System.currentTimeMillis() - began) + "ms");
             }
 
-            // Nothing to confirm: run it the ordinary way, guarded, so a conflict appearing while it
-            // runs still stops and asks.
-            this.model.execRoute(route);
-            refreshRouteList();
-        }).start();
+            routeFinished(route);
+        }
     }
         
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
@@ -17578,22 +17693,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             );
             if(dialogResult == JOptionPane.YES_OPTION)
             {
-                this.syncMenuItem.setEnabled(false);
-                this.functionsMenu.setEnabled(false);
-
                 this.model.allFunctionsOff();
-                
-                new Thread(() ->
+
+                // BEHIND THE SPINNER, AND NO LONGER BEHIND A GREYOUT (OB-140).
+                //
+                // Adam: "the hourglass flyover isn't shown when syncing the CS database from the
+                // Locomotives JMenu, locomotive database popup, or the Functions Jmenu.  Do we still
+                // need the greyout of the Functions menu?"
+                //
+                // The first two of those doors sync through syncWithCS2 and now get the spinner from
+                // there. This one never did: it walks the locomotive list calling syncLocomotive on
+                // each, which is a slower thing again, and it showed nothing while it ran.
+                //
+                // The greyout WAS doing a real job - it was the only sign of life this door had - and
+                // it was doing it three ways wrong. Both menus were re-enabled from inside the raw
+                // thread, which is Swing off the event thread. There was no finally, so one locomotive
+                // throwing left the Functions menu dead until the application was restarted. And
+                // grey on two menus does not stop the rest of the window accepting clicks while the
+                // Central Station is being read.
+                //
+                // BusyDialog answers all three: modal, so every door is shut rather than two; its own
+                // finally, so a throw still takes the window down; and the spinner that was asked for.
+                // So the greyout goes - not because it was unnecessary, but because what replaces it
+                // does the same job properly.
+                BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () ->
                 {
                     for (String s : this.model.getLocList())
                     {
                         this.model.syncLocomotive(s);
                     }
-                    
-                    this.syncMenuItem.setEnabled(true);
-                    this.functionsMenu.setEnabled(true);
-
-                }).start();
+                }, null);
             }
         });
     }//GEN-LAST:event_syncFullLocStateMenuItemActionPerformed
@@ -17625,8 +17754,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 this.model.lightsOn(locs);
-                this.syncMenuItem.setEnabled(true);
-                this.functionsMenu.setEnabled(true);
+
+                // Back on the event thread (OB-140).
+                //
+                // These two were re-enabled from inside this raw thread. Swing is single-threaded, and
+                // the sibling above lost its greyout altogether rather than keep doing this - these
+                // keep theirs, because they are quick model calls rather than a Central Station round
+                // trip and a modal window over them would be worse than the wait they cover.
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.syncMenuItem.setEnabled(true);
+                    this.functionsMenu.setEnabled(true);
+                });
 
             }).start();
         });
@@ -17641,8 +17780,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new Thread(() ->
             {
                 this.model.allFunctionsOff();
-                this.syncMenuItem.setEnabled(true);
-                this.functionsMenu.setEnabled(true);
+
+                // Back on the event thread (OB-140).
+                //
+                // These two were re-enabled from inside this raw thread. Swing is single-threaded, and
+                // the sibling above lost its greyout altogether rather than keep doing this - these
+                // keep theirs, because they are quick model calls rather than a Central Station round
+                // trip and a modal window over them would be worse than the wait they cover.
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.syncMenuItem.setEnabled(true);
+                    this.functionsMenu.setEnabled(true);
+                });
             }).start();
         });
     }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
@@ -18599,39 +18748,68 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_AddRouteButtonActionPerformed
 
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseClicked
-        if (SwingUtilities.isLeftMouseButton(evt))
+
+        // THREE ANSWERS, ONE FOR EACH WAY OF CLICKING A ROUTE (FR-043, revised at MT-217).
+        //
+        // Adam: "if play button is hit, route executes without confirming.  If route is left-clicked
+        // elsewhere, pop up the confirmation first.  If right-clicked, then show the right click menu."
+        //
+        // The middle one puts back the confirmation this feature had removed, and that is not a step
+        // backwards. It was removed because a left click ANYWHERE ran the route, so the dialog was the
+        // only thing between a stray click and a train moving. What makes it unnecessary is having to
+        // AIM, and only the button asks that.
+        // The highlight has answered its question by the time somebody clicks in this table.
+        clearFoundRoute();
+
+        Route route = this.getRouteAtCursor(evt);
+
+        if (route == null) return;
+
+        if (!javax.swing.SwingUtilities.isLeftMouseButton(evt))
         {
-            //Object route = this.RouteList.getValueAt(this.RouteList.getSelectedRow(), this.RouteList.getSelectedColumn());
-            Route route = this.getRouteAtCursor(evt);
-
-            if (route != null && route instanceof Route)
-            {
-                // We need to set this in case there are popup windows
-                this.setAlwaysOnTop(true);
-                
-                int dialogResult = JOptionPane.showOptionDialog(
-                    RoutePanel,
-                    I18n.f("route.ui.confirmExecuteRouteWithId", route.getName(), this.model.getRouteId(route.getName())),
-                    I18n.t("route.ui.dialogExecution"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    YES_NO_OPTS,
-                    YES_NO_OPTS[0] // default selection
-                );
-
-                if (dialogResult == JOptionPane.YES_OPTION)
-                {
-                    new Thread(() ->
-                    {
-                        executeRoute(route.getName());
-                    }).start();
-                }
-                
-                // Revert preference
-                windowAlwaysOnTopMenuItemActionPerformed(null);
-            }
+            // The right-click menu is RightClickRouteMenu's own business - it listens for the popup
+            // trigger on press and release, which is where a platform decides what a right click is.
+            return;
         }
+
+        if (isOverTheRoutePlayButton(evt))
+        {
+            // DISABLED MEANS DISABLED (MT-217).
+            //
+            // The button greys while its route runs, and a greyed button that still fires when pressed
+            // is a lie - it would also start the same route twice, which is the thing the greying is
+            // there to say cannot happen. Silently, because the button already says why: this is the
+            // guard and the affordance asking one question, which is the OB-057 and OB-090 shape.
+            if (!routesExecuting.contains(route.getName()))
+            {
+                executeRoute(route.getName());
+            }
+
+            return;
+        }
+
+        // We need to set this in case there are popup windows
+        this.setAlwaysOnTop(true);
+
+        int dialogResult = JOptionPane.showOptionDialog(
+            RoutePanel,
+            I18n.f("route.ui.confirmExecuteRouteWithId", route.getName(),
+                this.model.getRouteId(route.getName())),
+            I18n.t("route.ui.dialogExecution"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            YES_NO_OPTS,
+            YES_NO_OPTS[0] // default selection
+        );
+
+        if (dialogResult == JOptionPane.YES_OPTION)
+        {
+            executeRoute(route.getName());
+        }
+
+        // Revert preference
+        windowAlwaysOnTopMenuItemActionPerformed(null);
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
@@ -19677,6 +19855,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether a graceful stop has been asked for and the trains are still finishing (OB-143).
+     *
+     * The window between pressing Graceful Stop and Start coming back. `stopLocomotives()` clears the
+     * running flag and returns at once; every train it was driving carries on to its next station, and
+     * during that coast-down neither button is enabled - the stop has been issued so there is nothing
+     * left to stop, and autonomy is still running so there is nothing to start.
+     *
+     * The diagram strip needs to know because it picks its button from those two, and "neither" used
+     * to mean "show nothing at all".
+     *
+     * @return true while a requested stop is still being carried out
+     */
+    boolean isGracefulStopPending()
+    {
+        return this.gracefulStopRequested && isAutonomyBusy();
+    }
+
+    /**
      * Sets the return home button to match what the layout can actually do right now.
      *
      * Called wherever the button would otherwise simply be switched back on, and whenever the autonomy
@@ -20371,7 +20567,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLayout();
                 this.repaintLoc();
 
-                refreshRouteList();
+                resetRouteSpinners();
+                    refreshRouteList();
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
@@ -20508,6 +20705,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private int lastColumn = -1;
     
     private void RouteListMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseMoved
+
+        // A HAND OVER THE PLAY BUTTON (OB-147).
+        //
+        // Adam: "the play button in routes should show a finger/pointer icon when hovered to indicate
+        // clickability."
+        //
+        // The strip is the only part of a route cell that does something different from the rest of
+        // it, and nothing said so - the triangle looks like a button but a drawn triangle is just
+        // paint, and the cell around it is clickable too, for something else entirely. The cursor is
+        // how a surface says "this part is a control", and it is the same question the click asks, so
+        // it goes through the same method: a hand over pixels that do not run the route would be the
+        // affordance and the guard disagreeing, which this project has paid for more than once.
+        Route under = getRouteAtCursor(evt);
+
+        boolean pressable = isOverTheRoutePlayButton(evt)
+            && under != null && !routesExecuting.contains(under.getName());
+
+        RouteList.setCursor(java.awt.Cursor.getPredefinedCursor(
+            pressable ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+
         int row = RouteList.rowAtPoint(evt.getPoint());
         int column = RouteList.columnAtPoint(evt.getPoint());
 
@@ -20530,7 +20747,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_RouteListMouseMoved
 
     private void RouteListMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseExited
-        
+
+        // The hand goes with the pointer (OB-147).  A cursor is set on the COMPONENT, not per pixel,
+        // so leaving the table over a play button would otherwise leave the hand behind - and the next
+        // thing the pointer crossed would claim to be clickable.
+        RouteList.setCursor(java.awt.Cursor.getDefaultCursor());
+
         for (int column = 0; column < RouteList.getColumnCount(); column++)
         {
             CustomTableRenderer renderer = (CustomTableRenderer) RouteList.getColumnModel().getColumn(column).getCellRenderer();
@@ -23446,6 +23668,464 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
          
+
+    /**
+     * The routes whose play button is currently a spinner (FR-043).
+     *
+     * A name rather than a Route, because the table is rebuilt from the model constantly and the object
+     * in a cell is not the object the run was started against - `refreshRouteList` maps names to Routes
+     * afresh every time, so holding the object would leave a spinner attached to a discarded copy.
+     *
+     * Concurrent: written from the route threads and read by the renderer on the event thread.
+     */
+    private final java.util.Set<String> routesExecuting =
+        java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * When each running route was marked, so the debug line can say how long it lasted.
+     *
+     * The number that settles whether a state nobody saw was never set or merely brief.
+     */
+    private final java.util.Map<String, Long> startedRunningAt =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+
+    /**
+     * The play button: the glyph's size, and the strip of cell that presses it.
+     *
+     * Adam asked for a mark "about the same height as the text", which is Segoe UI 14 here - so the
+     * GLYPH stays that size. What changed is that the target is not the glyph.
+     *
+     * The first version made the two the same thing: thirteen pixels square, eight in from the right
+     * edge, in a row thirty tall. That is about one and a half percent of the cell, hard against its
+     * border, and Adam's verdict was "play buttons not clickable". The geometry was right - built
+     * headless, a click at the drawn centre lands in the hit box in every cell - it was simply too
+     * small to hit, and missing it opened the right-click menu.
+     *
+     * So the pressable part is a strip the full height of the row, with the glyph drawn in the middle
+     * of it. The strip is also what keeps the text off the icon (OB-146): the renderer reserves it as
+     * a border inset, so a long route name runs out of room before the glyph rather than over it.
+     */
+    private static final int ROUTE_PLAY_SIZE = 13;
+    private static final int ROUTE_PLAY_STRIP = 30;
+
+    /**
+     * Marks a route as running and starts the animation.
+     *
+     * @param route the route's name
+     */
+    private void routeStarted(String route)
+    {
+        if (route == null) return;
+
+        routesExecuting.add(route);
+
+        startedRunningAt.put(route, System.currentTimeMillis());
+
+        // SAID OUT LOUD, in debug, because "nothing happens visually" cannot be told apart from "it
+        // happened and was too quick to see" without a measurement - and I have guessed wrong about
+        // which of those it is once already.
+        if (this.model != null && this.model.isDebug())
+        {
+            this.model.log("Route " + route + " marked as running");
+        }
+
+        // A REBUILD RATHER THAN A REPAINT (MT-217, third report).
+        //
+        // Adam: "the routes fire, but the play buttons next to the route name just don't change at
+        // all." The route running is the fact that settles it - executeRoute marks the route before it
+        // starts the thread, so the mark IS set and the repaint is simply not landing on the cell.
+        //
+        // refreshRouteList replaces the table's model, which cannot fail to redraw every cell. It is
+        // what the rest of this window uses whenever a route changes and it already runs at the end of
+        // every route execution, so this is the mechanism that is known to work here rather than a
+        // second one that ought to.
+        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
+    }
+
+    /**
+     * The route has finished, so its button comes back.
+     *
+     * @param route the route's name
+     */
+    private void routeFinished(String route)
+    {
+        if (route == null) return;
+
+        // LATER OF THE TWO: when the route ended, or when the grey has been on screen long enough.
+        //
+        // Adam's one-second experiment settled what three rounds of reading could not. The drawing was
+        // never the problem - the CLEAR was. A route finishes fast enough that the button was put back
+        // before the grey had been on screen long enough to see, so the state was correct, brief, and
+        // invisible.
+        //
+        // A floor rather than a fixed hold, because the two say different things when a route is slow:
+        // a fixed second would put the button back while the route was still running, which is the
+        // interface saying something untrue at the one moment the operator might press it again. This
+        // way the button is grey exactly while pressing it again would be refused - which is what
+        // routesExecuting means everywhere else it is read.
+        Long since = startedRunningAt.get(route);
+
+        long showFor = since == null ? 0
+            : ROUTE_MINIMUM_VISIBLE_MS - (System.currentTimeMillis() - since);
+
+        if (showFor > 0)
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                javax.swing.Timer rest = new javax.swing.Timer((int) showFor,
+                    e -> clearRunningRoute(route));
+
+                rest.setRepeats(false);
+                rest.start();
+            });
+
+            return;
+        }
+
+        clearRunningRoute(route);
+    }
+
+    /**
+     * How long a pressed play button stays grey at the very least, in milliseconds.
+     *
+     * Long enough to register as a state rather than a flicker; short enough that firing several
+     * routes one after another does not feel gated by an animation.
+     */
+    private static final int ROUTE_MINIMUM_VISIBLE_MS = 600;
+
+    /**
+     * Puts the button back, now.
+     *
+     * @param route the route's name
+     */
+    private void clearRunningRoute(String route)
+    {
+        routesExecuting.remove(route);
+
+        Long began = startedRunningAt.remove(route);
+
+        if (this.model != null && this.model.isDebug())
+        {
+            this.model.log("Route " + route + " no longer running"
+                + (began == null ? "" : " after " + (System.currentTimeMillis() - began) + "ms"));
+        }
+
+        // The same rebuild that put the grey there takes it away again.
+        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
+    }
+
+    /**
+     * Puts every play button back, whatever it was doing.
+     *
+     * Adam: "any database sync, import, or completed route edits should reset all spinners in this
+     * view."
+     *
+     * CALLED FROM THOSE THREE, and not from `refreshRouteList`, which is where I first put it. All
+     * three do end there, which is what made it look like the one place worth wiring - but so does a
+     * route FINISHING, so the first route to complete wiped the spinner off every other route still
+     * running. On a table where firing several in a row is the ordinary thing to do, that is the
+     * feature failing exactly when it is being used.
+     *
+     * Three callers of one method, rather than one rule with an accidental fourth.
+     *
+     * A spinner is a claim that something is running. After a sync or an import there is no longer any
+     * way to know whether it still is, and a spinner that cannot be trusted is worse than none: it
+     * makes a route look busy for ever, and the button that would run it is not there to press.
+     */
+    public void resetRouteSpinners()
+    {
+        routesExecuting.clear();
+        startedRunningAt.clear();
+    }
+
+    /**
+     * Whether a click landed on a cell's play button rather than on the cell.
+     *
+     * The button is painted by the renderer at the right-hand end of the cell, so its box is worked out
+     * the same way here - from the cell's own rectangle - rather than from anything the renderer
+     * remembers. A renderer is one component reused for every cell; asking it where it last drew would
+     * be asking about whichever cell was painted most recently.
+     *
+     * @param evt the click
+     * @return true if the pointer is over the button of a cell that has one
+     */
+    private boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
+    {
+        int row = RouteList.rowAtPoint(evt.getPoint());
+        int column = RouteList.columnAtPoint(evt.getPoint());
+
+        if (row < 0 || column < 0) return false;
+
+        // An empty cell has no button: the last row is padded out to three columns with nulls.
+        if (RouteList.getValueAt(row, column) == null) return false;
+
+        java.awt.Rectangle cell = RouteList.getCellRect(row, column, true);
+
+        java.awt.Rectangle button = routePlayButtonBox(cell);
+
+        return button.contains(evt.getPoint());
+    }
+
+    /**
+     * Where the play button sits inside a cell.
+     *
+     * One answer, used by the renderer that draws it and by the click that has to hit it. Two
+     * calculations of the same rectangle is how a control comes to be drawn in one place and pressed in
+     * another.
+     *
+     * @param cell the cell's rectangle
+     * @return the button's rectangle
+     */
+    public static java.awt.Rectangle routePlayButtonBox(java.awt.Rectangle cell)
+    {
+        return new java.awt.Rectangle(cell.x + cell.width - ROUTE_PLAY_STRIP, cell.y,
+            ROUTE_PLAY_STRIP, cell.height);
+    }
+
+    /**
+     * Where the triangle is drawn inside that strip.
+     *
+     * Separate from the strip because they are different sizes on purpose: the mark is the size Adam
+     * asked for and the target is the size a target has to be. Keeping them as one number is what made
+     * the button unhittable.
+     *
+     * @param strip the pressable strip
+     * @return the glyph's box, centred in it
+     */
+    public static java.awt.Rectangle routePlayGlyphBox(java.awt.Rectangle strip)
+    {
+        return new java.awt.Rectangle(
+            strip.x + (strip.width - ROUTE_PLAY_SIZE) / 2,
+            strip.y + (strip.height - ROUTE_PLAY_SIZE) / 2,
+            ROUTE_PLAY_SIZE, ROUTE_PLAY_SIZE);
+    }
+
+
+    /**
+     * The route Find Route last landed on, drawn highlighted until something else happens (FR-044).
+     *
+     * A name rather than a cell, because the table is rebuilt constantly and re-sorted by preference -
+     * a row and column would point at whatever moved into that square afterwards. It is also why the
+     * highlight survives a refresh: the route is still that route wherever it has been put.
+     */
+    private String foundRoute;
+
+    /**
+     * The wash behind a route Find Route has just landed on.
+     *
+     * A pale yellow rather than the selection blue: this is the application pointing at something, not
+     * the user having selected it, and a cell that looks selected invites the next click to be about
+     * that selection.
+     */
+    private static final Color FOUND_BACKGROUND = new Color(255, 246, 190);
+
+    /**
+     * The wash behind a route that is running.
+     *
+     * Grey rather than a colour, because this is the cell saying "not just now" - the same thing the
+     * greyed triangle says, at a size that is noticed rather than looked for.
+     */
+    private static final Color RUNNING_BACKGROUND = new Color(226, 226, 226);
+
+    /**
+     * Adds Find Route to the routes menu.
+     *
+     * Hand-mounted, like the layout menu's headings and for the same reason: anything declared inside
+     * a GEN-BEGIN block is deleted the next time the form is regenerated. Guarded so that being called
+     * twice cannot mount it twice.
+     */
+    private void mountFindRoute()
+    {
+        if (routesMenu == null || findRouteMenuItem != null) return;
+
+        findRouteMenuItem = new javax.swing.JMenuItem(I18n.t("route.ui.menuFindRoute"));
+
+        findRouteMenuItem.addActionListener(e -> findRoute());
+
+        // At the top, above Export and Import.  Those two are about the route list as a file; this is
+        // about finding your way around it, which is what somebody opening this menu while looking at
+        // the routes is far more likely to want.
+        routesMenu.add(findRouteMenuItem, 0);
+        routesMenu.add(new javax.swing.JPopupMenu.Separator(), 1);
+    }
+
+    private javax.swing.JMenuItem findRouteMenuItem;
+
+    /**
+     * Asks for a route by name and goes to it (FR-044).
+     *
+     * Adam: "'Find Route' popup that asks the user for the route name.  system jumps to the route page
+     * and highlights the matched cell (scrolling to it if needed), otherwise shows a notice that it
+     * doesn't exist."
+     *
+     * Matched case-insensitively, and on a unique CONTAINS when nothing matches exactly - somebody who
+     * types "yard" and has one route with that in its name meant that route, and refusing them on
+     * exactness would be pedantry. Ambiguity is not resolved by guessing: two matches is treated as no
+     * match, because landing on the wrong one silently is worse than being told to be specific.
+     */
+    private void findRoute()
+    {
+        String asked = JOptionPane.showInputDialog(this, I18n.t("route.ui.promptFindRoute"),
+            I18n.t("route.ui.menuFindRoute"), JOptionPane.PLAIN_MESSAGE);
+
+        // Cancel returns null, which is not the same as an empty search - and neither is worth a
+        // "no such route" complaint about a question nobody answered.
+        if (asked == null || asked.trim().isEmpty()) return;
+
+        String wanted = asked.trim();
+
+        List<String> matches = routesMatchingIn(this.model.getRouteList(), wanted);
+
+        if (matches.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorNoSuchRoute", wanted));
+
+            return;
+        }
+
+        String found = matches.get(0);
+
+        // MORE THAN ONE: ASK, rather than guess or refuse (MT-218).
+        //
+        // The key this asks with was already in all eight bundles and used by nothing - written for
+        // this and never wired up.
+        if (matches.size() > 1)
+        {
+            found = (String) JOptionPane.showInputDialog(this,
+                I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuFindRoute"),
+                JOptionPane.PLAIN_MESSAGE, null, matches.toArray(), matches.get(0));
+
+            // Cancelled, which is not the same as choosing the first one.
+            if (found == null) return;
+        }
+
+        showRouteInTheList(found);
+    }
+
+    /**
+     * The route this text names, or null when it names none or more than one.
+     *
+     * @param wanted what was typed
+     * @return the route's real name
+     */
+    private String routeNamed(String wanted)
+    {
+        return routeNamedIn(this.model.getRouteList(), wanted);
+    }
+
+    /**
+     * The same question, asked of a plain list so it can be exercised without a railway.
+     *
+     * EXACT MATCHES FIRST, and that order is the whole of it rather than a tidy-up. A layout with
+     * "Yard" and "Yard Bypass" on it makes "Yard" both an exact name and a substring of another - and
+     * a rule that looked for substrings first would call that ambiguous and refuse to find a route
+     * whose name the user typed in full.
+     *
+     * @param names every route there is
+     * @param wanted what was typed, already trimmed
+     * @return the one route this names, or null for none and for more than one
+     */
+    public static String routeNamedIn(List<String> names, String wanted)
+    {
+        List<String> matches = routesMatchingIn(names, wanted);
+
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    /**
+     * Every route this text could mean, best first.
+     *
+     * An exact name is not one candidate among several - it is the answer, so it comes back alone.
+     * Anything else comes back as the list of routes whose names contain the text, in the order the
+     * model lists them.
+     *
+     * Ambiguity is handled by ASKING rather than by guessing or refusing (MT-218). Adam: "let's
+     * support partial matching if there is no exact match as entered." Partial matching was already
+     * there; what it did when a fragment fitted several routes was give up, on the reasoning that
+     * landing silently on one of them is worse than saying no. That reasoning is right and refusing
+     * was still the wrong conclusion - the third option is to put the list in front of the user.
+     *
+     * @param names every route there is
+     * @param wanted what was typed, already trimmed
+     * @return the candidates, empty when nothing matches, exactly one when the answer is certain
+     */
+    public static List<String> routesMatchingIn(List<String> names, String wanted)
+    {
+        List<String> found = new ArrayList<>();
+
+        if (names == null || wanted == null || wanted.trim().isEmpty()) return found;
+
+        // EXACT FIRST, and alone.  A layout with "Yard" and "Yard Bypass" makes "Yard" both a name and
+        // part of another - and offering a choice there would be asking somebody to confirm a name
+        // they had already typed in full, which is the most definite thing they can do.
+        for (String name : names)
+        {
+            if (name.equalsIgnoreCase(wanted))
+            {
+                found.add(name);
+
+                return found;
+            }
+        }
+
+        for (String name : names)
+        {
+            if (name.toLowerCase().contains(wanted.toLowerCase())) found.add(name);
+        }
+
+        return found;
+    }
+
+    /**
+     * Brings the route list up, scrolls to a route and highlights it.
+     *
+     * @param name the route's name, as the model spells it
+     */
+    private void showRouteInTheList(String name)
+    {
+        foundRoute = name;
+
+        // The routes tab, found by identity rather than counted to - the same reasoning as the sidebar
+        // icons, where getComponentAt(4) was right only by luck of the designer's ordering.
+        int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
+
+        if (routesAt >= 0) this.KeyboardTab.setSelectedIndex(routesAt);
+
+        for (int row = 0; row < this.RouteList.getRowCount(); row++)
+        {
+            for (int column = 0; column < this.RouteList.getColumnCount(); column++)
+            {
+                Object at = this.RouteList.getValueAt(row, column);
+
+                if (!(at instanceof Route) || !name.equals(((Route) at).getName())) continue;
+
+                this.RouteList.scrollRectToVisible(this.RouteList.getCellRect(row, column, true));
+
+                this.RouteList.repaint();
+
+                return;
+            }
+        }
+
+        // In the model but not in the table, which means the table is mid-rebuild or the route is
+        // filtered out of it. The highlight is already set, so the next repaint shows it wherever it
+        // lands; there is simply nothing to scroll to yet.
+        this.RouteList.repaint();
+    }
+
+    /**
+     * Forgets the found route, so the highlight does not outlive the question it answered.
+     */
+    private void clearFoundRoute()
+    {
+        if (foundRoute == null) return;
+
+        foundRoute = null;
+
+        this.RouteList.repaint();
+    }
+
     public class CustomTableRenderer extends DefaultTableCellRenderer
     {
         // Support hover events
@@ -23463,6 +24143,75 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             hoveredRow = -1;
             hoveredColumn = -1;
         }
+
+        /**
+         * Which route this stamp is currently set up to draw, or null for an empty cell.
+         */
+        private String paintingRoute;
+
+        /**
+         * Draws the cell, then the play button on the right of it (FR-043).
+         *
+         * Adam: "there is a green play button (execute) icon on the right side of each cell.  make it
+         * be about the same height as the text... when the execute button is pressed, convert it to a
+         * spinner animation that reverts back to the button once the route execution is finished."
+         *
+         * Painted rather than added, because a table cell is not a live component - it is this one
+         * renderer, configured and stamped once per cell. That is also why the spinner needs the timer
+         * in the window: nothing here animates on its own.
+         *
+         * A TURNING ARC rather than the hourglass the rest of the application waits behind. The
+         * hourglass is the mark for a modal wait with nothing else to do; this is a small busy mark
+         * inside a list that stays usable, and Adam asked for "a spinner animation" in those words.
+         * The 60ms frame is shared with LoadingSpinner even so, because two marks turning at visibly
+         * different rates read as two different kinds of waiting.
+         */
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            super.paintComponent(g);
+
+            if (paintingRoute == null) return;
+
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // The renderer is stamped at the cell's origin, so the button's box is worked out
+                // against a rectangle of this component's own size - the same arithmetic the click
+                // uses, through the same method, so the two cannot drift.
+                java.awt.Rectangle box = routePlayGlyphBox(routePlayButtonBox(
+                    new java.awt.Rectangle(0, 0, getWidth(), getHeight())));
+
+                // GREY WHILE IT RUNS, GREEN WHEN IT DOES NOT (MT-217).
+                //
+                // Adam: "there is no animation / change in state while it is running.  It should gray
+                // out and then become reenabled once the route finishes."
+                //
+                // This was a turning arc, and the timer that drove it is gone with it. A disabled
+                // button needs two repaints in its whole life rather than sixteen a second, and it is
+                // a state that is either true or false rather than one you have to catch happening -
+                // which matters for a route that finishes in under a second.
+                boolean running = routesExecuting.contains(paintingRoute);
+
+                g2.setColor(running ? new java.awt.Color(170, 170, 170) : new java.awt.Color(0, 150, 0));
+
+                java.awt.Polygon play = new java.awt.Polygon();
+
+                play.addPoint(box.x, box.y);
+                play.addPoint(box.x + box.width, box.y + box.height / 2);
+                play.addPoint(box.x, box.y + box.height);
+
+                g2.fillPolygon(play);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
         
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
@@ -23474,7 +24223,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Hover effect
             JLabel j = (JLabel) c;
             
-            if (row == hoveredRow && column == hoveredColumn && value != null)
+            // FOUND FIRST, then hover, then plain (FR-044).
+            //
+            // A found route outranks the pointer resting on something: Find Route exists to show you
+            // where a route is, and the answer disappearing because the mouse happens to be elsewhere
+            // would be the feature undoing itself. It is cleared by the next find, by a click, or by
+            // anything that rebuilds the table.
+            if (value != null && routesExecuting.contains(((Route) value).getName()))
+            {
+                // THE WHOLE CELL, not just the triangle (MT-217, third attempt).
+                //
+                // Adam has reported twice that nothing changes when he presses a play button. The
+                // triangle greying is a thirteen-pixel shape changing hue at the end of a cell nobody
+                // is looking at; a cell that washes grey is seen without being looked for. If this is
+                // still not visible then the mark is not being set at all, which is what the debug
+                // lines in routeStarted and routeFinished are there to say.
+                j.setBackground(RUNNING_BACKGROUND);
+            }
+            else if (value != null && ((Route) value).getName().equals(foundRoute))
+            {
+                j.setBackground(FOUND_BACKGROUND);
+            }
+            else if (row == hoveredRow && column == hoveredColumn && value != null)
             {
                 j.setBackground(new Color(240,240,240));
             }
@@ -23501,9 +24271,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int right = 1;
 
             j.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            j.setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, new Color(208,208,208)));
+
+            // THE STRIP IS RESERVED FROM THE TEXT (OB-146).
+            //
+            // Adam: "play icons in routes can be on top of text - make the text (route titles) wrap
+            // before hitting them."  A long name ran the full width of the cell and the glyph was
+            // painted on top of whatever was there.
+            //
+            // Reserved as an inset rather than policed by the drawing, so the label lays its own text
+            // out inside a narrower box and ellipsises when it runs out - the text cannot reach the
+            // icon because the space is not the text's to use.
+            //
+            // NOT wrapped, which is the letter of what he asked. A JLabel wraps only as HTML, and the
+            // rows here are a fixed thirty pixels: two lines of Segoe UI 14 need about thirty-eight,
+            // so wrapping would hide the second line rather than show it. Wrapping wants a taller row,
+            // which changes the look of the whole table - his call, and asked in MT-217.
+            j.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(top, left, bottom, right, new Color(208,208,208)),
+                BorderFactory.createEmptyBorder(0, 0, 0, ROUTE_PLAY_STRIP)));
             // End hover effect
             
+            // Remembered for paintComponent, which is called immediately after this and has no other
+            // way to know which cell it is drawing: one renderer serves every cell in the table.
+            this.paintingRoute = value == null ? null : ((Route) value).getName();
+
             if (value != null)
             {
                 String name = ((Route) value).getName();

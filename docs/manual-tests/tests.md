@@ -19,11 +19,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
-| [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | fixed unvalidated | hands-on testing |
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
@@ -32,63 +30,25 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | 2026-08-18 manual test plan, Tier 6 - real hardware, optional |
-| [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
-| [MT-134](#mt-134) | 2026-08-23 | Four things the night review found | fixed unvalidated | NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md) |
-| [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
-| [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | Adam's request to capture a confirmed-good baseline |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
-| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
-| [MT-153](#mt-153) | 2026-08-24 | A locomotive rename reaches the diagram labels | fixed unvalidated | OB-081, OB-074 |
-| [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
-| [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
-| [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
+| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | needs test | OB-069 |
+| [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | needs test | OB-067, FR-013 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
-| [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
-| [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
-| [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
+| [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
-| [MT-173](#mt-173) | 2026-08-24 | The diagram strip offers Fix, not Start, when the setup has errors | fixed unvalidated | OB-090 |
-| [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092, and Adam's request for a real round-trip test |
-| [MT-175](#mt-175) | 2026-08-24 | Capture fills the timetable, and the table shows it filling | fixed unvalidated | MT-149, OB-097 |
-| [MT-176](#mt-176) | 2026-08-24 | What a run did survives renaming or deleting a page | fixed unvalidated | DW-A1, DW-C1 (the day review) |
-| [MT-178](#mt-178) | 2026-08-25 | Importing a legacy autonomy file onto a layout with none | fixed unvalidated | OB-106 |
 | [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | needs test | OB-098, OB-100, OB-101, OB-104 |
-| [MT-180](#mt-180) | 2026-08-25 | Three things the interface was not saying | fixed unvalidated | OB-102, OB-103, OB-105 |
-| [MT-181](#mt-181) | 2026-08-25 | Show Inactive Labels | fixed unvalidated | FR-023 |
-| [MT-182](#mt-182) | 2026-08-25 | The signal window opens beside the diagram, not on it | fixed unvalidated | OB-107 |
-| [MT-183](#mt-183) | 2026-08-25 | The wait mark is a grey hourglass | fixed unvalidated | FR-024 |
-| [MT-184](#mt-184) | 2026-08-25 | Cropping a locomotive icon | fixed unvalidated | FR-022 |
+| [MT-182](#mt-182) | 2026-08-25 | The signal window opens beside the diagram, not on it | needs test | OB-107 |
 | [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
-| [MT-186](#mt-186) | 2026-08-25 | Nothing about the railway changed when the last string key went | fixed unvalidated | FR-013 |
 | [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
-| [MT-188](#mt-188) | 2026-08-25 | The blocked-points picker names what it is offering | fixed unvalidated | OB-086 |
-| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | the whole-application review pass of 2026-08-25 (AU-A2) |
-| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | the three-day review pass of 2026-08-25 (AU-B7) |
-| [MT-191](#mt-191) | 2026-08-25 | An edit that never finished | needs test | OB-108, on your ruling "revert to pre save state" |
-| [MT-192](#mt-192) | 2026-08-26 | The diagram menu says which square it is about, and opens the editor | needs test | OB-112 and FR-026, both about the right-click menu on the track diagram |
-| [MT-193](#mt-193) | 2026-08-26 | A reversing point that leads nowhere | needs test | OB-113, on your note "we need to add a warning if a reversing point leads to nothing else" |
-| [MT-194](#mt-194) | 2026-08-26 | Placing tiles without the diagram blinking | needs test | OB-109 |
-| [MT-195](#mt-195) | 2026-08-26 | Picking what holds a station back by clicking it | needs test | FR-025 |
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
-| [MT-197](#mt-197) | 2026-08-26 | Station captions as blue ovals | needs test | FR-028 |
-| [MT-198](#mt-198) | 2026-08-26 | The sidebar icons | needs test | FR-029 |
-| [MT-199](#mt-199) | 2026-08-26 | What the captions say in each editor | needs test | FR-030 |
-| [MT-200](#mt-200) | 2026-08-26 | Grey station labels | needs test | FR-031 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-202](#mt-202) | 2026-08-26 | Which conflict the route question is about | fixed unvalidated | LR-2 (2026-08-26 last-reviewer pass) |
-| [MT-203](#mt-203) | 2026-08-27 | Cropping an icon again without reselecting it | fixed unvalidated | FR-032 |
-| [MT-204](#mt-204) | 2026-08-29 | The words in the seven translated bundles | needs test | FR-042 |
-| [MT-205](#mt-205) | 2026-08-29 | Graceful stop, and when Start comes back | needs test | OB-131 |
-| [MT-206](#mt-206) | 2026-08-29 | Which surfaces show the wait mark moving | needs test | OB-135 |
-| [MT-207](#mt-207) | 2026-08-29 | simulate: true, and what a save does to it | needs test | OB-136 |
-| [MT-208](#mt-208) | 2026-08-29 | Importing routes, and the table behind the dialog | needs test | OB-137 |
-| [MT-209](#mt-209) | 2026-08-29 | Double-clicking a station on the running diagram | needs test | OB-138 |
-| [MT-210](#mt-210) | 2026-08-29 | The move cursor over labels that are not drawn | needs test | OB-139 |
-| [MT-212](#mt-212) | 2026-08-29 | The facing choice on a square trains turn round on | needs test | OB-145 |
+| [MT-217](#mt-217) | 2026-08-29 | The play button on each route | needs test | FR-043 |
+| [MT-218](#mt-218) | 2026-08-29 | Find Route | needs test | FR-044 |
+| [MT-219](#mt-219) | 2026-08-29 | The autonomy strip above the track diagram | needs test | OB-148 |
 
-Everything else - 144 of 212 - is **fixed validated** and needs nothing from you unless the
+Everything else - 191 of 219 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1213,7 +1173,7 @@ test failed for exactly that reason, on syntax I had invented.
 
 ### MT-004 - 2026-08-20 - A three-way point in a route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** LT-B5  
 **Written:** 2026-08-20
 
@@ -3105,7 +3065,7 @@ nothing left to do and nothing left to check.
 
 ### MT-060 - 2026-08-22 - testAutoDetect needs a Central Station
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** hands-on testing  
 **Written:** 2026-08-22
 
@@ -5228,7 +5188,7 @@ nothing left to do and nothing left to check.
 
 ### MT-124 - 2026-08-23 - The train star, and the mark that says where the train is
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-037  
 **Written:** 2026-08-23
 
@@ -5844,7 +5804,7 @@ Filed from this test: OB-047 (bug - layout editor openable while autonomy runnin
 
 ### MT-134 - 2026-08-23 - Four things the night review found
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md)  
 **Written:** 2026-08-23
 
@@ -5938,7 +5898,7 @@ flagged as still to do.
 
 ### MT-135 - 2026-08-23 - Renaming a page keeps its autonomy setup
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** OB-049  
 **Written:** 2026-08-23
 
@@ -6191,7 +6151,7 @@ Update: I don't understand the steps to reproduce.
 
 ### MT-137 - 2026-08-23 - The round of bugs from Adam's last test pass
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052  
 **Written:** 2026-08-23
 
@@ -7040,7 +7000,7 @@ to anything working in page names - and it is exactly the state in which they mu
 
 ### MT-149 - 2026-08-24 - The timetable survives renaming a locomotive
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** OB-069
 **Written:** 2026-08-24
 
@@ -7325,7 +7285,7 @@ entry reopens - which is the whole reason the test is named rather than merely p
 
 ### MT-153 - 2026-08-24 - A locomotive rename reaches the diagram labels
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-081, OB-074
 **Written:** 2026-08-24
 
@@ -7454,7 +7414,7 @@ user was about to Cancel could be committed on the way out.
 
 ### MT-156 - 2026-08-24 - A timetable run that fails says so
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-072
 **Written:** 2026-08-24
 
@@ -7698,7 +7658,7 @@ exactly what the disposition is for (RA-C4).
 
 ### MT-161 - 2026-08-24 - A page may be called "2" without stealing page 2's settings
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** OB-067, FR-013
 **Written:** 2026-08-24
 
@@ -7792,7 +7752,7 @@ test checks every collection, and checks the OTHER page as hard as the renamed o
 
 ### MT-162 - 2026-08-24 - The caption menu says which station a square is showing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-014
 **Written:** 2026-08-24
 
@@ -8098,7 +8058,7 @@ drives the model directly, and none of them has an event thread to freeze.
 
 ### MT-168 - 2026-08-24 - Capture records what full autonomy does, not only hand-driven moves
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-088
 **Written:** 2026-08-24
 
@@ -8220,7 +8180,7 @@ silently has nothing to put in the archive.
 
 ### MT-170 - 2026-08-24 - Backing up a layout that lives on the Central Station
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** FR-020
 **Written:** 2026-08-24
 
@@ -8313,7 +8273,7 @@ these are examples of files that should be downloaded when connected to a CS3 on
 
 ### MT-171 - 2026-08-24 - Nothing about the railway changed when the store started holding objects
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-013
 **Written:** 2026-08-24
 
@@ -8528,13 +8488,23 @@ testing this. It passes the state explicitly now and checks both.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.**
+
+Your question from item 3, answered late - sorry it sat. Neither file is new.
+
+autonomy.json in the root is the LEGACY autonomy configuration: hand-authored, and still the fallback the application auto-loads when the running layout did not come from a track diagram. It predates the diagram feature rather than being produced by it. TrainControlUI.AUTONOMY_FILE_NAME names it, and the autosave that writes it is explicitly gated on activeDiagramConfiguration == null - the comment there says why, which is that writing a diagram-derived graph into it once replaced named points with generated coordinates on every clean exit and took the ground-truth baseline with it. So while you are on a diagram configuration it should not be rewritten; the companion store under config/autonomy is the source of truth then, and autonomy.json is left alone. It is no longer tracked in git, which is why it shows up as a loose file.
+
+The autorun folder is a layout folder of the Central Station's, not ours - it appears under test_layout/config/autorun and inside tc_backup, and nothing in src/ refers to it by that name at all. So yes, it is carried along as part of a copied layout, exactly as you guessed; it is not something the application creates.
+
+One thing worth your eye rather than mine: the root autonomy.json carries a modified time of 28 Aug 20:58. On the reading above it should only be written when no diagram configuration is active, so if you have been on the diagram throughout, that timestamp is worth a second look - it would mean the gate is not holding. I have not been able to attribute it, and I would rather say so than guess.
+
 ---
 
 <a id="mt-173"></a>
 
 ### MT-173 - 2026-08-24 - The diagram strip offers Fix, not Start, when the setup has errors
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-090
 **Written:** 2026-08-24
 
@@ -8662,7 +8632,7 @@ Warnings do nothing, per the second half of Adam's sentence. [MT-173](tests.md#m
 
 ### MT-174 - 2026-08-24 - A page renamed and renamed back, through the menu
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-092, and Adam's request for a real round-trip test
 **Written:** 2026-08-24
 
@@ -8731,7 +8701,7 @@ checks. It now does both.
 
 ### MT-175 - 2026-08-24 - Capture fills the timetable, and the table shows it filling
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-149, OB-097
 **Written:** 2026-08-24
 
@@ -8797,7 +8767,7 @@ every `parseAuto`. See [MT-149](tests.md#mt-149) for the full account and
 
 ### MT-176 - 2026-08-24 - What a run did survives renaming or deleting a page
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** DW-A1, DW-C1 (the day review)
 **Written:** 2026-08-24
 
@@ -9011,7 +8981,7 @@ here. The family still comes from the look and feel; only the size is pinned.
 
 ### MT-178 - 2026-08-25 - Importing a legacy autonomy file onto a layout with none
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-106
 **Written:** 2026-08-25
 
@@ -9187,13 +9157,17 @@ rest not yet tested
 
 *Run against commit 309b984f, build\classes, compiled 28 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.**
+
+The two items you found still ungreyed - Switch to Central Station Layout, and Download Central Station Layout Files - were reworked on 2026-08-29 under OB-126 and OB-128, after this run. guardLayoutMenu now leaves both out of the re-enable pass rather than switching them back on, and openCS3App got a predicate of its own. So this result predates the change and the two items want looking at again; items 3 onward were never reached and still want a first look.
+
 ---
 
 <a id="mt-180"></a>
 
 ### MT-180 - 2026-08-25 - Three things the interface was not saying
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-102, OB-103, OB-105
 **Written:** 2026-08-25
 
@@ -9265,7 +9239,7 @@ no traincontrol window icon in IP prompt
 
 ### MT-181 - 2026-08-25 - Show Inactive Labels
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-023
 **Written:** 2026-08-25
 
@@ -9328,7 +9302,7 @@ something unrelated redrew the diagram.
 
 ### MT-182 - 2026-08-25 - The signal window opens beside the diagram, not on it
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** OB-107
 **Written:** 2026-08-25
 
@@ -9364,13 +9338,17 @@ Still opens smack in the middle.
 
 *Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.**
+
+Moved back to needs test. It was sitting at fixed unvalidated, which claims a fix is in place awaiting a check - you have now checked it twice, on 25 and 26 August, and it opens in the middle both times. A fix that has been disproved is not an unvalidated fix, and leaving it in that state kept it out of the ledger of outstanding work.
+
 ---
 
 <a id="mt-183"></a>
 
 ### MT-183 - 2026-08-25 - The wait mark is a grey hourglass
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-024
 **Written:** 2026-08-25
 
@@ -9418,7 +9396,7 @@ that is a real report and nothing will have caught it.
 
 ### MT-184 - 2026-08-25 - Cropping a locomotive icon
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-022
 **Written:** 2026-08-25
 
@@ -9555,7 +9533,7 @@ need a file that will not open and a restart.
 
 ### MT-186 - 2026-08-25 - Nothing about the railway changed when the last string key went
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-013
 **Written:** 2026-08-25
 
@@ -9676,7 +9654,7 @@ agreeing with the runtime is a property of the model, and the train actually sto
 
 ### MT-188 - 2026-08-25 - The blocked-points picker names what it is offering
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-086
 **Written:** 2026-08-25
 
@@ -9708,7 +9686,7 @@ Filed from this test: FR-025 (feature request - visually choose station exclusio
 
 ### MT-189 - 2026-08-25 - A route while a train is running
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** the whole-application review pass of 2026-08-25 (AU-A2)
 **Written:** 2026-08-25
 
@@ -9844,7 +9822,7 @@ steps 2, 6, 7, 8 and 9 and be useless.
 
 ### MT-190 - 2026-08-25 - Signals when a train is dispatched by hand
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** the three-day review pass of 2026-08-25 (AU-B7)
 **Written:** 2026-08-25
 
@@ -9883,7 +9861,7 @@ the same switches and signals set, and guards applied."
 
 ### MT-191 - 2026-08-25 - An edit that never finished
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-108, on your ruling "revert to pre save state"
 **Written:** 2026-08-25
 
@@ -9960,7 +9938,7 @@ something, then do whatever re-reads the pages wholesale - your edit should stil
 
 ### MT-192 - 2026-08-26 - The diagram menu says which square it is about, and opens the editor
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-112 and FR-026, both about the right-click menu on the track diagram
 **Written:** 2026-08-26
 
@@ -10013,7 +9991,7 @@ whether the four are still the right four, which is what step 5 is for.
 
 ### MT-193 - 2026-08-26 - A reversing point that leads nowhere
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-113, on your note "we need to add a warning if a reversing point leads to nothing else"
 **Written:** 2026-08-26
 
@@ -10050,7 +10028,7 @@ nothing was watching the result.
 
 ### MT-194 - 2026-08-26 - Placing tiles without the diagram blinking
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-109
 **Written:** 2026-08-26
 
@@ -10088,7 +10066,7 @@ up the hold-back altogether would trade this report for the one it was written t
 
 ### MT-195 - 2026-08-26 - Picking what holds a station back by clicking it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-025
 **Written:** 2026-08-26
 
@@ -10189,7 +10167,7 @@ about.
 
 ### MT-197 - 2026-08-26 - Station captions as blue ovals
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-028
 **Written:** 2026-08-26
 
@@ -10286,7 +10264,7 @@ Two changes on 2026-08-27 that show on this screen. Station captions sit lower -
 
 ### MT-198 - 2026-08-26 - The sidebar icons
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-029
 **Written:** 2026-08-26
 
@@ -10360,7 +10338,7 @@ Settled 2026-08-27 after eight passes. The locomotive is now ONE closed path wal
 
 ### MT-199 - 2026-08-26 - What the captions say in each editor
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-030
 **Written:** 2026-08-26
 
@@ -10399,7 +10377,7 @@ it must ask whether this grid is in an editor and whether that editor is the aut
 
 ### MT-203 - 2026-08-27 - Cropping an icon again without reselecting it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-032
 **Written:** 2026-08-27
 
@@ -10521,7 +10499,7 @@ method at all, which is why a review found it and not a test.
 
 ### MT-202 - 2026-08-26 - Which conflict the route question is about
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** LR-2 (2026-08-26 last-reviewer pass)
 **Written:** 2026-08-26
 
@@ -10584,7 +10562,7 @@ did. Left alone rather than changed quietly; say the word either way.
 
 ### MT-200 - 2026-08-26 - Grey station labels
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-031
 **Written:** 2026-08-26
 
@@ -10623,7 +10601,7 @@ nobody would notice until they looked at a diagram.
 
 ### MT-204 - 2026-08-29 - The words in the seven translated bundles
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-042
 **Written:** 2026-08-29
 
@@ -10651,13 +10629,17 @@ is left untranslated as a product name.
 Say which languages you actually read. A note that says "German looks right" is worth more than a pass
 on all seven, because it says what was covered.
 
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 18:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-205"></a>
 
 ### MT-205 - 2026-08-29 - Graceful stop, and when Start comes back
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-131
 **Written:** 2026-08-29
 
@@ -10684,13 +10666,17 @@ Works, but I'd rather have the start button reappear greyed out, and then reacti
 
 *Run against commit eac0e392, build\classes, compiled 29 Aug 01:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.**
+
+Settled, 2026-08-29: "stop button greyed is OK as is." So the note above is answered and no longer open - the diagram strip shows the GRACEFUL STOP greyed while the trains finish, and it is then replaced by Start. The alternative recorded here, a greyed Start appearing in that window, is not being built.
+
 ---
 
 <a id="mt-206"></a>
 
 ### MT-206 - 2026-08-29 - Which surfaces show the wait mark moving
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-135
 **Written:** 2026-08-29
 
@@ -10716,13 +10702,17 @@ repair options differ a lot in risk.
 
 *Run against commit 309b984f, build\classes, compiled 27 Aug 01:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-207"></a>
 
 ### MT-207 - 2026-08-29 - simulate: true, and what a save does to it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-136
 **Written:** 2026-08-29
 
@@ -10747,13 +10737,19 @@ it survives a restart in sumulate mode, but should be automatically turned off w
 
 *Run against commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-29.**
+
+That explains OB-136, and I have checked the mechanism rather than taking it on trust: the connection flag is decided ONCE during startup - false at line 319 of MarklinControlStation, true at 372 after a successful sync - and nothing changes it for the rest of the session. So there is no moment where you connect and simulation needs switching off; the only moment that matters is the load, and the load already refuses it. Layout.fromJSON sets simulate false, then tries to set it from the file, and setSimulate throws when a station is connected. That refusal is the flip you saw, and it is working as you describe.
+
+ONE WART, which I am flagging rather than changing. The refused value is not remembered: the next capture writes simulate back to the file as false, so connecting to a station once ERASES the preference permanently. Run without a station afterwards and simulation is off, with nothing to say it used to be on. If you would rather the file kept your choice and the load simply declined to honour it while a station is present, that is a small change to Layout.fromJSON and the capture - say the word. I have not made it because it changes what the file means, which is your call not mine.
+
 ---
 
 <a id="mt-208"></a>
 
 ### MT-208 - 2026-08-29 - Importing routes, and the table behind the dialog
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-137
 **Written:** 2026-08-29
 
@@ -10791,7 +10787,7 @@ right to you**, which is the whole of this test.
 
 ### MT-209 - 2026-08-29 - Double-clicking a station on the running diagram
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-138
 **Written:** 2026-08-29
 
@@ -10821,7 +10817,7 @@ double-click is simply two ordinary clicks again and each one activates.
 
 ### MT-210 - 2026-08-29 - The move cursor over labels that are not drawn
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-139
 **Written:** 2026-08-29
 
@@ -10934,5 +10930,370 @@ The frozen fixture had the same defect on the same square, which is how it is no
 **Adam, 2026-08-29 (triage).** Works.
 
 Works.
+
+---
+
+<a id="mt-213"></a>
+
+### MT-213 - 2026-08-29 - The hourglass on a Central Station sync
+
+**Disposition:** fixed validated
+**From:** OB-140
+**Written:** 2026-08-29
+
+You: "the hourglass flyover isn't shown when syncing the CS database from the Locomotives JMenu,
+locomotive database popup, or the Functions Jmenu.  Do we still need the greyout of the Functions menu?"
+
+Those three doors were not special. `syncWithCS2` already put the spinner up - but only when it was
+called ON the event thread, and off it it fetched the whole database in silence. Whether you were told
+that something slow was happening depended on which thread the door happened to use, which is not a
+distinction anyone can see. Sixteen doors go through that method.
+
+**On the greyout: it was doing a real job and doing it three ways wrong.** The Functions menu's own
+sync does not go through `syncWithCS2` at all - it walks the locomotive list one at a time - so it had
+no spinner to fall back on. But it re-enabled both menus from inside its own background thread, which is
+Swing off the event thread; it had no `finally`, so one locomotive throwing left the Functions menu dead
+until a restart; and greying two menus does not stop the rest of the window being clicked. It now runs
+behind the modal spinner instead, which shuts every door, has its own `finally`, and says what is
+happening. So the greyout is gone - replaced, not just removed.
+
+1. **Locomotives menu -> Sync**, and the same from the **locomotive database popup**. The hourglass
+   should appear for as long as the fetch takes.
+2. **Functions menu -> sync full locomotive state.** Same, and note this one is the slow one.
+3. While it runs, try to click elsewhere in the window. It should be blocked, not merely greyed.
+4. **Then check the Functions menu is usable again afterwards** - that is the failure mode the missing
+   `finally` used to cause, and the new arrangement should make it impossible.
+5. Anywhere else you know of that syncs. Every door through `syncWithCS2` should now show it; tell me
+   if you find one that does not.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-214"></a>
+
+### MT-214 - 2026-08-29 - No s88 in the route command list
+
+**Disposition:** fixed validated
+**From:** OB-141
+**Written:** 2026-08-29
+
+You: "a route command should not be able to contain s88 sensors. these should only be in the conditions
+only. remove s88 from the 'Kind' dropdown. advise what happens in the model when this is selected (if
+anything)."
+
+**Nothing happened.** `MarklinRoute.execRoute` dispatches on a chain of isAccessory / isStop /
+isFunctionsOff / isAutonomyLightsOn / isLightsOn / isLocomotiveSpeed / isLocomotiveDirection / isFunction
+/ isRoute, and there is no `isFeedback` branch and no final `else`. A feedback row fell through all of
+it: nothing sent, nothing logged. Its only effect was the pause the loop takes for every row, so an s88
+command was a delay wearing the name of an instruction - and it was still saved, re-read and exported,
+so the route kept a sentence in it that could never be obeyed. The model had always agreed with you:
+`isConditionCommand()` returns true for feedback. Only the dropdown disagreed.
+
+1. **Open a route for editing and drop the Kind dropdown in the COMMAND table.** S88 Sensor should be
+   gone.
+2. **Open the Kind dropdown in the CONDITIONS table.** S88 Sensor should still be there - that is where
+   it belongs and the whole point of the change.
+3. **If you have a route that already contains an s88 command**, open it. The row should still be there
+   and still readable; what you cannot do is add another. If such a row has disappeared or the editor
+   refuses to open the route, that is worse than the bug and I want to know.
+4. Build and save a route with a feedback CONDITION and check it still fires on the sensor.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-215"></a>
+
+### MT-215 - 2026-08-29 - Capitalisation in the Kind dropdown
+
+**Disposition:** fixed validated
+**From:** OB-142
+**Written:** 2026-08-29
+
+You: "the Kind dropdown in the route editor has inconsistent capitalization for its items. make all
+words start with capitals."
+
+Nine were sentence case beside four that were not - "Locomotive Function" next to "Locomotive speed" -
+and they sit in one list, which is where a mixture shows most.
+
+**English only, and that is deliberate.** French, Spanish, Italian, Dutch, Danish and Polish use
+sentence case for interface labels, and German capitalises nouns on its own rules; applying "every word"
+to those would be wrong rather than merely unnecessary.
+
+1. Open the Kind dropdown in both tables and read down it. Every word should start with a capital.
+2. **One to rule on: "Train At A Sensor".** I took you literally. Ordinary title case would be "Train
+   at a Sensor" - lower case for the short joining words. Say which you want and I will change it.
+3. If you read any of the other languages, check I have not disturbed them - they should be exactly as
+   they were.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-216"></a>
+
+### MT-216 - 2026-08-29 - The stop button greys before it becomes Start
+
+**Disposition:** fixed validated
+**From:** OB-143
+**Written:** 2026-08-29
+
+You: "the button disappears rather than being greyed out prior to replacement by the start button. make
+it get greyed out and then replaced."
+
+The strip mirrors whichever of the two real buttons is enabled. Pressing Graceful Stop disables it at
+once while autonomy keeps running - `stopLocomotives` returns immediately and the trains coast on to
+their next station - so for that whole window neither was enabled, and the strip's answer to "neither"
+was to hide. The control vanished from under the hand that had just pressed it.
+
+1. Start autonomy, then press **Graceful Stop on the diagram strip**. The button must stay where it is,
+   with the same words, and go grey.
+2. **Watch it through to the end.** When the last train berths it should become Start Autonomous
+   Operation, in the same place. What should never happen is a gap with nothing there.
+3. Try **clicking it while it is grey**. Nothing should happen - pressing it again is the one gesture
+   the window has no answer to.
+4. The same from the **main window's own Graceful Stop**, watching the diagram strip while it runs.
+5. **The case that must NOT have changed**: with a setup loaded but nothing running and Start
+   unavailable for some other reason, the strip should show nothing at all - not a greyed stop.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-29.**
+
+Your note on MT-205 asks for something slightly different from what OB-143 asked, and I have followed OB-143 - flagging it rather than choosing silently.
+
+MT-205 (01:59): "I'd rather have the start button reappear greyed out, and then reactivate, rather than disappearing."
+OB-143 (14:27): "the button disappears rather than being greyed out prior to replacement by the start button. make it get greyed out and then replaced."
+
+Both are about the same window, and they name different buttons. OB-143 says the STOP greys and is then replaced by Start; MT-205 says the START appears greyed and then activates. I implemented OB-143, because it is the later and the more explicit of the two, and because during that window the true statement is "the stop you asked for is being carried out" rather than "start is nearly available".
+
+If you would rather see a greyed START there instead, it is a one-line change to the rule - say which.
+
+**Claude, 2026-08-29.**
+
+Settled, 2026-08-29: "stop button greyed is OK as is, please update the notes." The tension I raised between this and MT-205 is closed in favour of what is built - the stop greys and is then replaced. Nothing to change.
+
+---
+
+<a id="mt-217"></a>
+
+### MT-217 - 2026-08-29 - The play button on each route
+
+**Disposition:** needs test
+**From:** FR-043
+**Written:** 2026-08-29
+
+Your whole request, and almost none of it can be checked by a test - what a test holds is that the
+button is drawn where it can be pressed, which is the one way this fails invisibly. Everything below is
+the part only you can answer.
+
+1. **Look at the table.** Every route cell should carry a green play triangle at its right-hand end,
+   about the height of the text. Is it the right size, and is it clear of the name on a long one?
+2. **Press one.** It should run immediately - no confirmation - and the triangle should become a
+   turning spinner until the route finishes, then go back to a triangle.
+3. **Click a cell anywhere else, with either button.** The right-click menu should open. This replaces
+   the old "execute this route?" dialog entirely.
+4. **Run a route from that menu.** Its spinner should start too.
+5. **Run two or three routes at once** and watch that each spinner belongs to its own route. This is the
+   case I got wrong first time: the reset was wired to the route table's refresh, so the first route to
+   finish wiped every other spinner. It is now wired to your three triggers only.
+6. **The three resets**: do a Central Station sync, an import, and a route edit while something is
+   spinning. Each should put every button back.
+7. **A spinner is a claim that something is running** - if you can find a way to leave one turning on a
+   route that has finished, that is the bug worth having.
+8. On the spinner itself: I drew a turning arc rather than the hourglass the rest of the application
+   waits behind, because you asked for "a spinner animation" and the hourglass is the mark for a modal
+   wait with nothing else to do. Say if you would rather it matched.
+
+**Adam, 2026-08-29 (triage).** Does not work.
+
+Play buttons not clickable.  Make them clickable.
+
+Change behavior from my prior request: if play button is hit, route executes without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If right-clicked, then show the right click menu.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 17:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-29.**
+
+Reworked, and OB-146 is folded in here because it is the same strip of pixels.
+
+WHY IT WAS NOT CLICKABLE, measured rather than guessed. I rebuilt the same JTable headless and asked whether a click at the pixel the renderer draws lands inside the box the click test uses. It does, in every cell, off by one pixel - so the button was not in the wrong place. It was thirteen pixels square, eight in from the right edge, in a row thirty pixels tall: about one and a half percent of the cell, hard against its border. Missing it opened the right-click menu, which is what "not clickable" looked like from the outside.
+
+So the target is no longer the glyph. The pressable part is a strip the full height of the row and thirty wide, with the triangle drawn in the middle of it - the mark stays the size you asked for, the target is the size a target has to be.
+
+That strip is also the answer to OB-146. The label now reserves it as a border inset, so a long route name runs out of room before the icon rather than under it.
+
+NOT WRAPPED, which is the letter of what OB-146 asked, and here is why. A JLabel wraps only as HTML, and these rows are a fixed thirty pixels; two lines of Segoe UI 14 need about thirty-eight, so wrapping would hide the second line rather than show it. Real wrapping wants a taller row, which changes the look of the whole table. Say if you want that and I will raise the row height; for now a long name ellipsises before the icon.
+
+The three click rules are yours: play button runs it with no confirmation, left click elsewhere asks first, right click opens the menu. The confirmation coming back is not a step backwards - it went away because a left click ANYWHERE ran the route, and what makes it unnecessary is having to aim, which only the button now does.
+
+Retest wanted: the strip should be easy to hit anywhere down the right-hand end of a cell, and no route name should touch the icon.
+
+**Claude, 2026-08-29.**
+
+OB-147 is folded in here too - it is the same strip. The pointer now becomes a hand over the play button and goes back to an arrow everywhere else in the table, and it asks isOverTheRoutePlayButton to decide, which is the same method the click asks. Working that out separately is how a hand ends up over pixels that do nothing, which is the affordance and the guard disagreeing - the shape of OB-057 and OB-090. Leaving the table restores the cursor, because a cursor belongs to the component rather than to a pixel and the hand would otherwise be left behind.
+
+Worth checking when you retest: the hand should appear over the whole right-hand strip, not just over the triangle - if it appears over a smaller area than you can click, one of the two has grown its own arithmetic again.
+
+**Adam, 2026-08-29 (triage).** Does not work.
+
+The button itself works, but there is no animation / change in state while it is running.  It should gray out and then become reenabled once the route finishes.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 18:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-29.**
+
+Reworked to what you asked for: the play button GREYS while its route runs and goes green again when it finishes. The spinner is gone, and the timer that drove it went with it - a disabled button needs two repaints in its whole life rather than sixteen a second, and a state is either true or false rather than something you have to catch happening. That last part matters here, because a route with a handful of accessories in it can finish faster than an animation reads.
+
+Two things I added that you did not ask for, because a greyed button that is not actually disabled is a lie: while a route is running its strip REFUSES the click - silently, since the button already says why - and it shows an arrow rather than a hand. Otherwise the same route could be started twice, which is the thing the greying is there to say cannot happen. The renderer, the click and the cursor all ask one question, and a test fails if any of the three stops asking it.
+
+Retest: press a play button and watch it grey and come back. Press it again while it is grey - nothing should happen. The pointer over a greyed button should be an arrow.
+
+**Claude, 2026-08-29.**
+
+Third attempt, and this time with a way to find out rather than another guess.
+
+I cannot find the fault by reading, and I have now been wrong about it once. The chain is intact - the click calls executeRoute, executeRoute marks the route BEFORE it starts the thread, the renderer asks the same set, and a route with three accessories in it takes about 600ms, which is not too fast to see. So either the mark is not being set, or the change was too small to notice. I have addressed both rather than picking one, because guessing wrong costs another round trip:
+
+TOO SMALL - the WHOLE CELL now washes grey while its route runs, not just the thirteen-pixel triangle at the end of it. A background is noticed without being looked for; a small shape changing hue is not.
+
+NOT SET - two lines in the log, behind the debug flag, saying when a route is marked as running and when it stops, with the milliseconds between them.
+
+**If it still does not change, please run with debug on, press one play button, and send me those two lines.** They answer the question I cannot answer from here: whether the mark happens at all, and if it does, how long it lasted. 'Nothing happens visually' and 'it happened and was over in 40ms' look identical from where you are sitting and need opposite fixes.
+
+**Claude, 2026-08-29.**
+
+Your experiment, done - and you were right to propose it. Two things could be wrong and I had not been able to tell them apart from here:
+
+- THE DRAWING: the cell never changes appearance, whatever the state says.
+- THE WIRING: the appearance follows the state correctly, and the state is cleared again before anyone could see it.
+
+Tying the clear to a fixed second removes the second possibility, so what you see now answers the question rather than raising another one. The button greys the moment you press it and goes back exactly one second later, WHATEVER the route does - the route finishing no longer clears it, which is what makes this deterministic rather than 'usually about a second'.
+
+What each outcome means:
+
+- It greys for a second and goes back -> the drawing works, and the fault was always the timing of the clear. The fix is then a minimum visible duration, or clearing on the later of the two.
+- It still does nothing at all -> the drawing never worked, and everything I have written about repaints is beside the point. That would send me looking at the renderer itself rather than at when it is asked to run.
+
+The debug log still measures the route's REAL duration, separately, because that number decides what this should settle into permanently. If a route genuinely takes two seconds, a one-second hold is the wrong answer even if it looks right.
+
+This is a diagnostic arrangement and I am not proposing to leave it as the final behaviour.
+
+**Adam, 2026-08-29 (triage).** Works.
+
+Confirmed it works.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 19:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-218"></a>
+
+### MT-218 - 2026-08-29 - Find Route
+
+**Disposition:** needs test
+**From:** FR-044
+**Written:** 2026-08-29
+
+You: "addition to the route jmenu: 'Find Route' popup that asks the user for the route name.  system
+jumps to the route page and highlights the matched cell (scrolling to it if needed), otherwise shows a
+notice that it doesn't exist."
+
+It is the first item on the **Routes** menu, above Export and Import - those two are about the route
+list as a file, and this is about finding your way around it, which is far more likely to be what
+somebody opening that menu wants.
+
+What a test can hold is which route a search picks, because that has no appearance and fails silently -
+it would confidently highlight the wrong one. The jumping, the scrolling and the highlight need your
+eye.
+
+1. **Routes -> Find Route.** Type a route's name exactly. It should switch to the routes tab, scroll to
+   that route if it is out of view, and wash the cell pale yellow.
+2. **Type it in the wrong case.** Same result - matching ignores case.
+3. **Type a fragment that fits one route only**, say part of a name. It should find it.
+4. **Type a fragment that fits several.** You should get the "no route called..." notice rather than
+   being landed on one of them. Guessing between two would put you in front of a route you did not ask
+   for with nothing on screen saying which it chose.
+5. **A name that fits nothing at all**, and **Cancel**, and **an empty box**. The first should say so;
+   the last two should do nothing quietly.
+6. **The highlight should not outstay its welcome**: it clears when you click anywhere in the route
+   table, and when the table is rebuilt by a sync, an import or an edit.
+7. **One case worth trying deliberately**: if you have a route whose whole name is also part of another
+   route's name, type the short one in full. It must find that route rather than calling it ambiguous -
+   typing a name in full is the most definite thing you can do and the worst thing to refuse.
+
+---
+
+**Adam, 2026-08-29 (triage).** Works, with notes.
+
+Works, but let's support partial matching if there is no exact match as entered.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 18:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-29.**
+
+Partial matching was there; what it did when your fragment fitted MORE than one route was give up and tell you there was no such route, which is what you will have hit. The reasoning was that landing silently on one of two candidates puts you in front of a route you did not ask for - that still holds, and refusing was still the wrong conclusion, because the third option is to ask.
+
+So a fragment matching several now offers them in a dropdown. An exact name still comes back alone and is never offered as a choice: with 'Yard' and 'Yard Bypass' on a layout, typing 'Yard' in full must find that route rather than asking you to confirm the name you just typed.
+
+The prompt it asks with, route.ui.promptWhichRoute - 'Which route?' - was already in all eight bundles and used by nothing at all. It was written for this and never wired up, so no new string was needed.
+
+**Adam, 2026-08-29 (triage).** Works, with notes.
+
+Works, but have a hover over the highlight turn it off.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 19:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-219"></a>
+
+### MT-219 - 2026-08-29 - The autonomy strip above the track diagram
+
+**Disposition:** needs test
+**From:** OB-148
+**Written:** 2026-08-29
+
+You: "if a track diagram is wide, the 'show autonomy controls ... start' header above a track diagram
+flickers while scrolling sideways" - and, asked which part: "It's the whole strip."
+
+It was the scroll pane's **column header**. A column header is as wide as the view and scrolls
+horizontally with it, which is right for column labels and wrong for a strip of controls: every
+sideways scroll step repainted a panel as wide as the whole diagram, and the checkbox and Start button
+slid away from under the hand reaching for them. You chose to take it out of the scroll pane, so it now
+sits above the viewport and neither scrolls nor repaints on scroll.
+
+The container's layout comes from the form and must not be hand-edited, so the swap is made at runtime
+through `GroupLayout.replace`, which exists for exactly this.
+
+1. **A wide diagram, scrolled sideways.** No flicker in the strip.
+2. **The controls should stay put** while the diagram moves under them - that is the part you did not
+   ask for and get anyway, and it is worth confirming you want it.
+3. **The strip should still be the full width of the panel**, sitting directly above the diagram with
+   no gap or step between them.
+4. **Vertical scrolling**, and **resizing the window**, and **switching between pages** - the strip has
+   a new parent, so the ways it could now be laid out wrongly are the ordinary ones.
+5. **Everything on it still works**: the Show Autonomy checkbox, the findings count and its click
+   through to the editor, and Start / Graceful Stop.
+6. The **autonomy banner** sits above the strip in the same stack - check the two still read as one
+   thing rather than two panels that happen to be adjacent.
+
+---
+
+**Adam, 2026-08-29 (triage).** Works, with notes.
+
+Looks good, but: 
+1. remove the gap below the gray bar and the track diagram when there is autonomy but not loaded yet.  the red "this page is excluded" banner already does this correctly.
+
+*Run against commit 3f8e9691, build\classes, compiled 29 Aug 19:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

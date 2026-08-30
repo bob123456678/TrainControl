@@ -77,7 +77,7 @@ public class testTimetableOnDerivedGraph
      *
      * This used to be a flat `Thread.sleep(RUN_SECONDS * 1000L)` with no wait for a first move - fine
      * on the small hand-built layouts most timetable tests use, where dispatch is close to instant, but
-     * this test derives a 56-point graph from test_layout and does a real path search before its first
+     * this test derives a real graph from the frozen snapshot and does a real path search before its first
      * command. On a machine running a full battery - several JVMs at once, autonomy competing for CPU -
      * that search can take much longer than twelve seconds, and a skip after a short fixed sleep cannot
      * tell "nothing to see here" from "the clock ran out before the railway did anything". Matches the
@@ -101,7 +101,7 @@ public class testTimetableOnDerivedGraph
     /**
      * The configuration this runs against, by name.
      *
-     * TST-B11: this named "Autonomy 1", which exists nowhere in test_layout/config/autonomy/ (the
+     * TST-B11: this named "Autonomy 1", which exists nowhere in the fixture's config/autonomy/ (the
      * fixture holds only configuration-Main.json, and setup.json's own activeConfiguration is "Main") -
      * so the guard in derivedLayout() that is supposed to select it deterministically never matched,
      * and every run silently fell through to "whichever happened to be active", which the comment
@@ -266,7 +266,7 @@ public class testTimetableOnDerivedGraph
                 + "found (" + stationNames(stations) + "); " + startedAt.size() + " locomotive(s) "
                 + "stand on a destination out of " + layout.getLocomotivesToRun().size()
                 + " autonomy knows about.  If this keeps happening on an unloaded machine too, check "
-                + "whether test_layout's active autonomy configuration still leaves enough live "
+                + "whether test_layout_snapshot's active autonomy configuration still leaves enough live "
                 + "destinations for that many trains to move between - several of its points are "
                 + "marked inactive.");
         }
@@ -400,19 +400,32 @@ public class testTimetableOnDerivedGraph
     /**
      * The configuration the current track diagram produces, parsed and made safe to run.
      *
-     * The pages come from test_layout ITSELF, parsed directly with CS2File - the same way
+     * The pages come from the FIXTURE ITSELF, parsed directly with CS2File - the same way
      * testTracedPathIsContinuous does it - rather than from model.getLayoutList(), which reads
      * whatever TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF names on this machine.  The autonomy store
-     * opened two lines below is test_layout's; pairing it with pages from a DIFFERENT layout silently
+     * opened two lines below is that folder's; pairing it with pages from a DIFFERENT layout silently
      * derives a graph that is neither one thing nor the other.
      */
     private static Layout derivedLayout() throws Exception
     {
-        File folder = new File("test_layout");
+        // THE SNAPSHOT, not test_layout (OB-132).
+        //
+        // Adam: "we should have a test fixture that doesn't change, and is a snapshot of my current
+        // layout."
+        //
+        // This test starts autonomy on the derived graph and records where the trains go. On
+        // test_layout nothing moves inside the run window - several of its points are marked inactive
+        // and its Main configuration leaves too few live destinations - so it threw a SkipException
+        // every time, and a class that skips everything covers nothing while reading as green.
+        //
+        // test_layout_snapshot is a real railway with somewhere for trains to go. It is frozen for the
+        // same reason test_layout is; its README says why re-taking it would quietly turn every
+        // assertion here into a statement about the railway rather than about the code.
+        File folder = new File("test_layout_snapshot");
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no test_layout to derive a graph from");
+            throw new SkipException("no test_layout_snapshot to derive a graph from");
         }
 
         String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -421,6 +434,18 @@ public class testTimetableOnDerivedGraph
         parser.setLayoutDataLoc(path);
 
         List<LayoutDiagram> pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());
+
+        // THE IRONWORK, without which two thirds of the track does not connect (OB-132).
+        //
+        // parseLayout is handed an empty accessory list, so every switch and signal tile comes back
+        // with an address on it and nothing behind that address.  testTheCheckerAgreesWithTheBuild
+        // says what that costs in as many words, and wires them in its own setup for the same reason.
+        //
+        // This test is the one that actually tries to RUN trains, so it is the one that most needs
+        // points it can throw - and it was the one not doing it.  It derived a graph with the ironwork
+        // missing, could configure no path, dispatched nothing, and reported that honestly as a skip.
+        // A class that skips everything reads as green, which is how this survived several batteries.
+        wireAccessories(pages);
 
         AutonomySession session = new AutonomySession(folder);
 
@@ -576,4 +601,51 @@ public class testTimetableOnDerivedGraph
 
         return out.toString().trim();
     }
+    /**
+     * Gives every switch and signal tile a real Accessory, the way the application does.
+     *
+     * A diagram parsed on its own carries addresses and no objects, and the reduction cannot join
+     * track through a point it has no accessory for.  Copied in shape from
+     * testTheCheckerAgreesWithTheBuild, which needs the same thing for the same reason.
+     *
+     * @param pages the parsed diagram
+     */
+    private static void wireAccessories(List<LayoutDiagram> pages)
+    {
+        for (LayoutDiagram page : pages)
+        {
+            for (org.traincontrol.base.LayoutDiagramComponent component : page.getAll())
+            {
+                if (!component.isSwitch() && !component.isSignal()) continue;
+
+                // the application skips tiles drawn without a digital address, and so does this
+                if (component.getAddress() <= 0) continue;
+
+                org.traincontrol.base.Accessory.accessoryType type = component.isSignal()
+                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
+                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
+
+                component.setAccessory(accessory(component.getAddress(), type,
+                    component.getProtocol()));
+
+                if (component.isThreeWay())
+                {
+                    component.setAccessory2(accessory(component.getAddress() + 1,
+                        org.traincontrol.base.Accessory.accessoryType.SWITCH, component.getProtocol()));
+                }
+            }
+        }
+    }
+
+    /**
+     * One accessory, addressed the way the station addresses them.
+     */
+    private static MarklinAccessory accessory(int logicalAddress,
+        org.traincontrol.base.Accessory.accessoryType type,
+        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
+    {
+        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
+            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
+    }
+
 }

@@ -186,12 +186,29 @@ public final class CommandRow
      * because the list offered every kind there is, and a route built with one would have been a
      * route with a sentence in it that cannot be obeyed.
      *
+     * FEEDBACK is the second of these, and it was offered here for the same reason (OB-141).
+     *
+     * Adam: "a route command should not be able to contain s88 sensors. these should only be in the
+     * conditions only." The model had always agreed with him - `RouteCommand.isConditionCommand()`
+     * answers true for feedback - and only this method disagreed.
+     *
+     * WHAT IT DID WHEN SELECTED, which is the half worth writing down: nothing. `MarklinRoute.execRoute`
+     * dispatches on a chain of isAccessory / isStop / isFunctionsOff / isAutonomyLightsOn / isLightsOn
+     * / isLocomotiveSpeed / isLocomotiveDirection / isFunction / isRoute, with no isFeedback branch and
+     * no final else, so the row fell through the lot. It sent nothing and logged nothing; its only
+     * effect was the sleep the loop takes for every row, which made an s88 command a pure delay wearing
+     * the name of an instruction. It was still saved, re-read and exported, so a route kept a sentence
+     * in it that could never be obeyed.
+     *
+     * A row that already holds one still opens and still shows, the way an AUTO_LOCOMOTIVE row always
+     * has - what changes is that no new one can be added.
+     *
      * @param kind the kind
      * @return true if a route may contain it as a command
      */
     public static boolean canBeACommand(Kind kind)
     {
-        return kind != Kind.AUTO_LOCOMOTIVE;
+        return kind != Kind.AUTO_LOCOMOTIVE && kind != Kind.FEEDBACK;
     }
 
     /**

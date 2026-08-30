@@ -61,72 +61,47 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-130 - 2026-08-29 - Ruling needed: may importing a legacy graph shut pages you already decided about
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-08-29  
-
-excludeRepeatedSensorPages has TWO call sites and they carry contradictory intentions, both deliberate. The comment on testRunningAgainOverASettledSetupChangesNothing says the method is safe only where there are no operator decisions to overrule - "the first configuration on a layout is created, which is the one moment there are no decisions to overrule" - and that a second call site is the bug. The second site, AutonomyViewerPanel.importLegacyGraph, carries a justification written later: a setup made before this existed, or one whose pages have been redrawn since, has never had it applied, and importing is exactly when that matters. The question is whether importing may shut pages you had already chosen to keep. A test currently ratchets the count at 2 so a third site cannot appear unnoticed; settling this means changing that number and recording which way it went. Found by the test-suite review (TST-B15).
-
-### OB-132 - 2026-08-29 - testTimetableOnDerivedGraph now skips, so it covers nothing
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-08-29  
-
-This class ran clean through several batteries and began skipping after the review round, with "nothing moved in 12s, so there is no timetable to replay". The cause is a correct fix: TST-B11 found it was reading model.getLayoutList(), i.e. whatever layout the machine happened to have - your real railway - and pointed it at test_layout instead, correcting the configuration name from "Autonomy 1" (which matched nothing) to "Main". Against the fixture, two stations are found and five of seven locomotives are placed, and then nothing runs in the window. So it is now honest and vacuous, which by this repo own rule is the same as having no test. Unknown whether the cause is the run window, the Main configuration paths, or the placement.
-
-### OB-140 - 2026-08-29 - syncing cs db from button shows no hourglass
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:08  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the hourglass flyover isn't shown when syncing the CS database from the Locomotives JMenu, locomotive database popup, or the Functions Jmenu.  Do we still need the greyout of the Functions menu?
-
-### OB-141 - 2026-08-29 - route commands contain s88 sensor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:15  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-a route command should not be able to contain s88 sensors.  these should only be in the conditions only.  remove s88 from the "Kind" dropdown.  avise what happens in the model when this is selected (if anything)
-
-### OB-142 - 2026-08-29 - route command editor capitalization
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:16  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the Kind dropdown in the route editor has inconsistent capitalization for its items.  make all works start with capitals
-
-### FR-043 - 2026-08-29 - route view user experience
+### FR-045 - 2026-08-29 - easier autonomy function management
 
 **Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:22  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-29 19:00  
+**Build:** commit 3f8e9691
 
-update the route table view so that there is a green play button (execute) icon on the right side of each cell. make it be about the same height as the text. wire it so that no confirmation is needed prior to execution when this is pressed.
+To the RightClickFunctionMenu, add a checkbox right clik entry to designate the function as the autonomy departure function, and an other as the autonomy arrival function.  Remember that each locomotive can only have one function for each slot (but they can be the same function).
 
-when the execute button is pressed, convert it to a spinner animation that reverts back to the button once the route execution is finished.
+Add checkboxes to the full edit function popup, remembering that no 2 functions should ever be selectable (since the "Edit Locomotive" view in the autonomy editor has them as dropdowns).
 
-make all other left or clicks on the table cells open the right-click menu.  executing the route from there should also start the spinner.
+Only show these controls if autonomy is loaded.
 
-any database sync, import, or completed route edits should reset all spinners in this view
+### FR-046 - 2026-08-29 - warning if train length is not set
 
-### OB-143 - 2026-08-29 - graceful stop from track diagram
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 19:02  
+**Build:** commit 3f8e9691
+
+add a warning to the autonomy list if any train placed on that page does not have a length set, and also add a warning if any station doesn't have a maximum length set. 
+
+also, move the Maximum Train Length right click setting into the Station submenu, rather than Advanced, and hide it if the point is not a station.
+
+### FR-047 - 2026-08-29 - autonomy train length easier configuration.
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-29 19:04  
+**Build:** commit 3f8e9691, build\classes, compiled 29 Aug 19:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+allow the train length to be set both from the right click locomotive menu on the key mappings, and the right click menu in the locomotive database editor, visible only when autonomy is loaded.  also, SAFELY consolidate the code between these two right click menus to minimize duplication.
+
+### OB-149 - 2026-08-29 - padding above "start autonomous operation" in track diagram
 
 **Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 14:27  
-**Build:** commit eac0e392, build\classes, compiled 29 Aug 02:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-29 19:31  
+**Build:** commit 3f8e9691, build\classes, compiled 29 Aug 19:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-the button disappears rather than being greyed out prior to replacement by the start button.  make it get greyed out and then replaced.
+there is slightly more top padding than bottom.  reduce the top to match.
 
 ## What has been picked up
 
@@ -142,6 +117,17 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-148 | bug | flickering of top bar in layout viewer | - | [MT-219](tests.md#mt-219) |
+| 2026-08-29 | OB-147 | bug | play button in routes | - | [MT-217](tests.md#mt-217) |
+| 2026-08-29 | FR-044 | feature request | find route feature | - | [MT-218](tests.md#mt-218) |
+| 2026-08-29 | OB-132 | bug | testTimetableOnDerivedGraph now skips, so it covers nothing | fixed validated | - |
+| 2026-08-29 | OB-130 | bug | Ruling needed: may importing a legacy graph shut pages you already chose to keep | fixed validated | - |
+| 2026-08-29 | OB-146 | bug | play icons in routes can be on top of text | - | [MT-217](tests.md#mt-217) |
+| 2026-08-29 | FR-043 | feature request | route view user experience | - | [MT-217](tests.md#mt-217) |
+| 2026-08-29 | OB-143 | bug | graceful stop from track diagram | - | [MT-216](tests.md#mt-216) |
+| 2026-08-29 | OB-142 | bug | route command editor capitalization | - | [MT-215](tests.md#mt-215) |
+| 2026-08-29 | OB-141 | bug | route commands contain s88 sensor | - | [MT-214](tests.md#mt-214) |
+| 2026-08-29 | OB-140 | bug | syncing cs db from button shows no hourglass | - | [MT-213](tests.md#mt-213) |
 | 2026-08-29 | OB-145 | bug | loc facing direction choice | - | [MT-212](tests.md#mt-212) |
 | 2026-08-29 | OB-144 | bug | Critical: trains teleport | - | [MT-211](tests.md#mt-211) |
 | 2026-08-29 | OB-139 | bug | move pointer in autonomy editor. | - | [MT-210](tests.md#mt-210) |

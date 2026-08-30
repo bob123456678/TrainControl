@@ -35,9 +35,31 @@ public class RightClickRouteMenu extends MouseAdapter
 
     private void showPopup(MouseEvent e)
     {
+        openFor(ui, e);
+    }
+
+    /**
+     * Opens this menu wherever the pointer is, for a click that was not a popup trigger (FR-043).
+     *
+     * Adam: "make all other left or clicks on the table cells open the right-click menu."  A left click
+     * on a route used to ask "execute this?" in a dialog; the play button on the cell now does that
+     * without asking, and everything else about a route is in this menu - so every other click on the
+     * cell opens it rather than doing nothing.
+     *
+     * Here rather than copied into the window, because the menu knows how to refuse: a click that is
+     * not over a route opens nothing at all.
+     *
+     * @param ui the main window
+     * @param e the click
+     */
+    public static void openFor(TrainControlUI ui, MouseEvent e)
+    {
         if (ui.getRouteAtCursor(e) != null)
         {
-            RightClickMenu menu = new RightClickMenu(ui, e);
+            RightClickRouteMenu owner = new RightClickRouteMenu(ui);
+
+            RightClickMenu menu = owner.new RightClickMenu(ui, e);
+
             menu.show(e.getComponent(), e.getX(), e.getY());
         }
     }

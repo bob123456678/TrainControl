@@ -2072,9 +2072,15 @@ public class testAutonomyDiagramSession
      * Note what this does NOT promise.  A page the user deliberately switches back on WOULD be shut
      * again by another run - the method has no record of having been overruled, and inventing one to
      * carry that would be a second source of truth beside the checkbox itself.  What protects that
-     * choice is the caller: this runs only when the first configuration on a layout is created, which
-     * is the one moment there are no decisions to overrule.  If a second call site ever appears, this
-     * is the test whose comment explains why it must not.
+     * choice is the caller, and there are TWO of them (OB-130, settled 2026-08-29). Creating the
+     * first configuration on a layout is the one moment there are no decisions to overrule. Importing
+     * a legacy graph is not - it will overrule them - and Adam has ruled that it may: "yes, it may
+     * override." A page repeating another page’s sensors is not a preference but a diagram the
+     * reduction cannot read, and a setting made before the rule existed is not a decision the rule
+     * has to honour.
+     *
+     * This comment used to end "if a second call site ever appears, this is the test whose comment
+     * explains why it must not". It appeared, it was argued over as TST-B15, and it stays.
      */
     @Test
     public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
@@ -2106,12 +2112,11 @@ public class testAutonomyDiagramSession
      * safe call site from an unsafe one - both look identical from here. The comment names the actual
      * protection as "the caller", so this checks the caller.
      *
-     * Left failing on purpose. AutonomyViewerPanel.java now calls excludeRepeatedSensorPages() from
-     * two places - configuration creation (:885, the sanctioned one) and legacy import into an
-     * existing setup (:1137) - which is exactly the second call site the javadoc says must not exist:
-     * a page the user deliberately switched back on is silently re-excluded by the next legacy import.
-     * This is TST-B15 in docs/reviews/2026-08-28-test-suite-review.md; the fix belongs in
-     * AutonomyViewerPanel.java (outside test/core), not in this test.
+     * TWO CALL SITES, BOTH SANCTIONED (OB-130, settled 2026-08-29). Configuration creation (:885) and
+     * legacy import into an existing setup (:1137). The second was raised as TST-B15 on the reading
+     * that it silently re-excludes a page the user had switched back on, and Adam has ruled on it:
+     * "yes, it may override." So this is no longer a count held while an argument runs - it is the
+     * number of places the behaviour is wanted, and a third would still be one nobody has argued for.
      */
     @Test
     public void testExcludeRepeatedSensorPagesHasOnlyOneCallSite() throws IOException
@@ -2134,25 +2139,25 @@ public class testAutonomyDiagramSession
             }
         }
 
-        // TWO, AND WHETHER THAT IS RIGHT IS ADAM\u2019S RULING (TST-B15, open).
+        // TWO, AND THAT IS NOW A DECISION RATHER THAN A TRUCE (OB-130).
         //
-        // The comment on testRunningAgainOverASettledSetupChangesNothing says this method is safe only
-        // where there are no operator decisions to overrule - "the first configuration on a layout is
-        // created" - and that a second call site is the bug. The second site, in importLegacyGraph,
-        // carries its own justification written later: a setup made before this existed has never had
-        // it applied, and importing is when that matters.
+        // This used to say the number was held while a question ran: the comment on
+        // testRunningAgainOverASettledSetupChangesNothing called a second call site the bug, and the
+        // second site carried its own later justification, and the two contradicted each other. The
+        // question was whether importing a legacy graph may shut pages the operator had already
+        // decided about.
         //
-        // Both are deliberate and they contradict each other. The question is whether importing a
-        // legacy graph may shut pages the operator had already decided about, which is about how the
-        // railway behaves rather than a defect with an obvious repair - so asserting either number
-        // here would be picking a side by fiat and calling it a test.
+        // Adam, 2026-08-29: "yes, it may override." A page that repeats another page\u2019s sensors is
+        // not a preference - it is a diagram the reduction cannot make sense of - and a setting made
+        // before the rule existed is not a decision the rule has to honour.
         //
-        // Ratcheted instead: a THIRD site cannot appear unnoticed, and settling the ruling is a matter
-        // of changing this number and saying why.
+        // So the ratchet stands for a different reason than it did: not "nobody has settled this" but
+        // "these two are wanted and a third has never been argued for".
         assertEquals(calls, 2,
             "excludeRepeatedSensorPages() is called from " + calls + " place(s) in src/, not the 2 "
-            + "recorded. If a site was added, it inherits an argument nobody has settled - see "
-            + "TST-B15. If one was removed, lower this number and record which way the ruling went.");
+            + "that are wanted - creating a configuration, and importing a legacy graph. Both are "
+            + "settled (OB-130); a third site would be shutting pages somewhere nobody has argued "
+            + "for, and a removed one means the behaviour was dropped without the ruling changing.");
     }
 
     /**

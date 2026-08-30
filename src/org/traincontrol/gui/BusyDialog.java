@@ -59,6 +59,95 @@ public final class BusyDialog extends JDialog
     }
 
     /**
+     * Puts the spinner up now, and hands back the thing that takes it down (OB-140).
+     *
+     * `run` below owns the work as well as the dialog, which is right when the caller has nothing to
+     * do but wait. It is no use to a caller that is ALREADY on a background thread doing the slow
+     * thing itself and needs the answer back - `run` would hand the work to a second thread and return
+     * immediately, and the value would arrive after the caller had gone.
+     *
+     * That is exactly `TrainControlUI.syncWithCS2`'s shape: on the event thread it wraps itself in a
+     * `run`, and off it, it just did the sync silently. Sixteen doors go through that method and any
+     * of them that syncs from a worker - which is most of the well-behaved ones - showed nothing at
+     * all while the Central Station database was fetched.
+     *
+     * Safe to close from any thread, and safe to close before the dialog has managed to appear: both
+     * halves land on the event thread in the order they were posted, and the flag covers the case
+     * where the work finishes so fast that the close is queued behind a show that has not run yet.
+     *
+     * @param parent the window to centre on
+     * @param message what is happening, in words
+     * @return the handle that dismisses it
+     */
+    public static Closer showUntilClosed(Window parent, String message)
+    {
+        Closer closer = new Closer(parent, message);
+
+        // Posted rather than run: showing a modal dialog blocks the thread it is shown on inside a
+        // nested event loop, and the caller has work to get on with.
+        SwingUtilities.invokeLater(closer::open);
+
+        return closer;
+    }
+
+    /**
+     * A spinner that is already on screen, and the way to take it down.
+     */
+    public static final class Closer
+    {
+        private final Window parent;
+        private final String message;
+
+        private BusyDialog dialog;
+        private boolean closed;
+
+        private Closer(Window parent, String message)
+        {
+            this.parent = parent;
+            this.message = message;
+        }
+
+        /**
+         * Shows it, on the event thread, unless it has already been closed.
+         */
+        private void open()
+        {
+            synchronized (this)
+            {
+                // Closed before it ever opened, which happens when the work finishes in less time
+                // than it takes this to reach the front of the queue.  Nothing to show, and showing
+                // it now would leave an undecorated modal dialog with nothing left to dismiss it.
+                if (closed) return;
+
+                dialog = new BusyDialog(parent, message);
+            }
+
+            // Blocks here, in a nested event loop, until close() disposes it - the same arrangement
+            // `run` uses, and the reason the spinner keeps animating.
+            dialog.setVisible(true);
+        }
+
+        /**
+         * Takes it down.  Callable from any thread, and more than once.
+         */
+        public void close()
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                BusyDialog showing;
+
+                synchronized (this)
+                {
+                    closed = true;
+                    showing = dialog;
+                }
+
+                if (showing != null) showing.dispose();
+            });
+        }
+    }
+
+    /**
      * Runs slow work behind a spinner, then hands back to the event thread.
      *
      * @param parent the window to centre on

@@ -458,6 +458,69 @@ public class testMessageBundles
     }
 
     /**
+     * Every word of an English route-command kind starts with a capital (OB-142).
+     *
+     * Adam: "the Kind dropdown in the route editor has inconsistent capitalization for its items.
+     * make all words start with capitals." It was a genuine mixture - "Locomotive Function" beside
+     * "Locomotive speed", "Three-way Switch" beside "Stop everything" - and the two sit next to each
+     * other in one dropdown, which is where inconsistency is most visible.
+     *
+     * **English only, deliberately.** This is a rule about English capitalisation and applying it to
+     * the other seven would be wrong rather than merely unnecessary: French, Spanish, Italian, Dutch,
+     * Danish and Polish all use sentence case for interface labels, and German capitalises nouns for
+     * reasons of its own that a rule about every word would trample. The bundles are checked for
+     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalises
+     * is that language's business.
+     *
+     * A word here is a run between spaces, and a hyphenated pair counts as two - "Three-Way", not
+     * "Three-way" - because that is the case the report was actually about.
+     *
+     * MUTATION: change any of these back to sentence case and this fails, naming the key.
+     */
+    @Test
+    public void testTheRouteKindLabelsAreCapitalised() throws Exception
+    {
+        java.util.Properties english = valuesOf(new File("src" + BUNDLE_DIR + ENGLISH_BUNDLE));
+
+        StringBuilder wrong = new StringBuilder();
+
+        int checked = 0;
+
+        for (String key : english.stringPropertyNames())
+        {
+            if (!key.startsWith("route.kind.")) continue;
+
+            checked++;
+
+            String value = english.getProperty(key);
+
+            for (String word : value.split("[ \\-]+"))
+            {
+                if (word.isEmpty()) continue;
+
+                char first = word.charAt(0);
+
+                // A word that opens with a digit - "3-way", were it ever written that way - has no
+                // case to get wrong, and neither has a placeholder.
+                if (!Character.isLetter(first)) continue;
+
+                if (Character.isUpperCase(first)) continue;
+
+                wrong.append("\n  ").append(key).append(" = \"").append(value)
+                     .append("\"  (the word \"").append(word).append("\" is lower case)");
+            }
+        }
+
+        assertTrue(checked >= 12,
+            "only " + checked + " route.kind.* labels were found, so this checked almost nothing - "
+            + "either the prefix has changed or the bundle is not being read");
+
+        assertEquals(wrong.toString(), "",
+            "a route command kind is not capitalised the way the rest of the dropdown is. These sit "
+            + "beside each other in one list, which is exactly where a mixture shows (OB-142):" + wrong);
+    }
+
+    /**
      * A bundle's key/value pairs.
      *
      * Read as ISO-8859-1, which is what Java 8's PropertyResourceBundle does, so what this sees is

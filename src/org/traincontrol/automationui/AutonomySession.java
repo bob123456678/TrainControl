@@ -808,9 +808,18 @@ public class AutonomySession
      * A page that is shut does NOT contribute its sensors to what counts as seen: the next page
      * repeating them is then repeating the page that is still in play, not one nobody is using.
      *
-     * Only ever run when a setup is brand new - see the caller.  It is a starting point, not a policy:
-     * the page checkboxes are still there, and turning one back on must not be undone by this the next
-     * time a configuration is added.
+     * TWO CALLERS, AND THAT IS SETTLED (OB-130). A new configuration runs this because a starting
+     * point is wanted; a legacy import runs it because a setup built before this rule existed has
+     * never been held to it, and importing is the moment it first is.
+     *
+     * Adam, 2026-08-29, asked whether the second may shut pages he had already chosen to keep: "yes,
+     * it may override." The reasoning is that a page repeating another page\u2019s sensors is not a
+     * preference to be respected - it is a diagram the reduction cannot make sense of, because the
+     * same s88 becomes two destinations and nothing downstream can say which square a train is on. A
+     * setting made in ignorance of a rule is not a decision the rule has to honour.
+     *
+     * It remains a starting point rather than a policy everywhere else: the page checkboxes are still
+     * there, and turning one back on is not undone by adding a configuration.
      *
      * @return the pages this shut, in the order they appear
      */

@@ -2495,6 +2495,11 @@ public class RouteEditorFrame extends JFrame
                 return;
             }
 
+            // A finished edit puts every play button back (FR-043).  The route that was edited is a
+            // different route now - possibly under a different name - so a spinner still turning on it
+            // is a claim about something that no longer exists.
+            parent.resetRouteSpinners();
+
             parent.refreshRouteList();
             parent.repaintLayout();
 

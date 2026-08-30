@@ -48,7 +48,45 @@ CP="$(cat "$S/cp.txt")"
 #
 # Compiled into a directory of this script's own and PREPENDED, so every class the run loads is one
 # this compile produced and one.sh's output cannot reach the classpath ahead of it.
-BUILD="$S/build/battery"
+#
+# ONE BATTERY AT A TIME, and the directory belongs to the run.
+#
+# On 2026-08-29 I started a battery while another was still going. They compiled into the same fixed
+# directory, so each one's `rm -rf` deleted the other's classes underneath it, and the run came back
+# with twenty-seven classes reported as DID NOT RUN. Nothing was wrong with the code.
+#
+# That is the third defect in this harness to report a FALSE RESULT rather than an error, and they all
+# have the same shape: the runner decided what a run meant while something else was changing what it
+# was running.
+#
+# The lock is the fix - the second battery now refuses to start and says which process is already
+# going. The per-run directory is the belt: if two ever do overlap despite it, a stale lock or a killed
+# run, they no longer compile over each other, and the failure is slow rather than wrong.
+LOCK="$S/battery.lock"
+
+if [ -f "$LOCK" ] && kill -0 "$(cat "$LOCK" 2>/dev/null)" 2>/dev/null
+then
+    echo "*** ANOTHER BATTERY IS ALREADY RUNNING (pid $(cat "$LOCK")) ***"
+    echo ""
+    echo "Two at once compile over each other and report classes that ran perfectly well as"
+    echo "DID NOT RUN.  Wait for it, or stop it, and run this again."
+    exit 2
+fi
+
+echo $$ > "$LOCK"
+
+BUILD="$S/build/battery-$$"
+
+# The lock and this run's classes go whichever way the script leaves - including the live-layout
+# guard's exit 1, which is the one somebody is most likely to be reading when it fires, and including
+# being killed.
+#
+# INT and TERM as well as EXIT, because a battery is usually stopped rather than waited for, and a run
+# that is killed without releasing its lock blocks every later one - a guard that has to be cleared by
+# hand is worse than no guard, because the first thing anybody does is delete the lock and stop
+# believing in it.
+trap 'rm -f "$LOCK"; rm -rf "$BUILD"; exit 130' INT TERM
+trap 'rm -f "$LOCK"; rm -rf "$BUILD"' EXIT
 
 rm -rf "$BUILD"
 mkdir -p "$BUILD"

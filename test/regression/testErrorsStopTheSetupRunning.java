@@ -13,6 +13,7 @@ import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.gui.AutonomyOverlayToggle;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
@@ -378,4 +379,144 @@ public class testErrorsStopTheSetupRunning
 
         return session;
     }
+    /**
+     * The strip greys the stop it has already carried out, rather than removing it (OB-143).
+     *
+     * Adam: "the button disappears rather than being greyed out prior to replacement by the start
+     * button. make it get greyed out and then replaced."
+     *
+     * The strip mirrors whichever of the two real buttons is ENABLED. Pressing Graceful Stop disables
+     * it at once while autonomy keeps running - `stopLocomotives()` returns immediately and the trains
+     * coast on to their next station - so for that whole window neither was enabled, and "neither"
+     * meant hide. The control vanished from under the hand that had just pressed it and came back
+     * seconds later as a different button.
+     *
+     * The decision is exercised here rather than the panel, because the panel needs a window and the
+     * thing that was wrong is a rule, not a paint. `testTheStripAsksThatQuestion` below is the other
+     * half: a rule that nobody calls is a rule that is not in force.
+     *
+     * The case that must NOT change is the last one. "Neither button is enabled" has causes that have
+     * nothing to do with stopping - most of them before anything has been started at all - and a
+     * greyed Graceful Stop shown to somebody who has never run anything would be worse than the gap.
+     *
+     * MUTATION: return HIDDEN for the pending case and the third assertion fails; return STOP_PENDING
+     * whenever neither is enabled and the last one fails.
+     */
+    @Test
+    public void testAStopBeingCarriedOutIsShownGreyedRatherThanHidden()
+    {
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, false, true, false, false),
+            AutonomyOverlayToggle.RunButton.STOP,
+            "autonomy is running and can be stopped, so the strip must offer the stop");
+
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, false, true, true, false),
+            AutonomyOverlayToggle.RunButton.STOP,
+            "with both enabled the stop still has to win - once trains are moving, stopping them is "
+            + "the only thing worth offering, and it has to appear where the start was rather than "
+            + "beside it");
+
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, false, false, false, true),
+            AutonomyOverlayToggle.RunButton.STOP_PENDING,
+            "a graceful stop has been asked for and the trains are still finishing, which is exactly "
+            + "the window OB-143 is about: the button must stay where it is and go grey, not vanish "
+            + "and be replaced seconds later");
+
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, false, false, false, false),
+            AutonomyOverlayToggle.RunButton.HIDDEN,
+            "neither button is available and no stop is pending, so there is nothing to offer - "
+            + "showing a greyed Graceful Stop to somebody who has never started anything would be "
+            + "worse than showing nothing");
+
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, false, false, true, false),
+            AutonomyOverlayToggle.RunButton.START,
+            "autonomy can be started, so the strip must offer the start");
+
+        // Not loaded, and the page left out of the setup: both hide whatever else is true, including
+        // a pending stop, because a strip for a page that is not part of the setup has nothing to say
+        // about it.
+        assertEquals(AutonomyOverlayToggle.runButtonFor(false, false, true, true, true),
+            AutonomyOverlayToggle.RunButton.HIDDEN,
+            "no setup is loaded, so the strip has nothing to stand in for");
+
+        assertEquals(AutonomyOverlayToggle.runButtonFor(true, true, true, true, true),
+            AutonomyOverlayToggle.RunButton.HIDDEN,
+            "this page is excluded from the setup, so the strip has nothing to stand in for");
+    }
+
+    /**
+     * The strip actually asks that question, and greys the button when the answer says to.
+     *
+     * The rule above is only in force if `syncRun` calls it and acts on the answer. Extracting a rule
+     * and testing the rule leaves the call site as the only uncovered part, which is how two defects
+     * got into one method earlier in this project - so both halves are asserted.
+     */
+    @Test
+    public void testTheStripAsksThatQuestion() throws Exception
+    {
+        String strip = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyOverlayToggle.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int from = strip.indexOf("public final void syncRun()");
+
+        assertTrue(from >= 0, "syncRun has moved or been renamed - this test is reading nothing");
+
+        String body = withoutComments(strip.substring(from));
+
+        assertTrue(body.contains("runButtonFor("),
+            "syncRun no longer asks runButtonFor, so the rule above is not the one the strip follows "
+            + "and could drift from it without anything failing");
+
+        assertTrue(body.contains("setEnabled(showing != RunButton.STOP_PENDING)"),
+            "syncRun no longer greys the button for a pending stop. Choosing to show the stop is only "
+            + "half of OB-143: shown but still clickable, it invites a second press that "
+            + "requestStopAutonomy answers with an error saying the stop was already issued");
+    }
+
+    /**
+     * The autonomy strip is not the scroll pane's column header (OB-148).
+     *
+     * Adam: "if a track diagram is wide, the header above a track diagram flickers while scrolling
+     * sideways" - the whole strip, not just the button on it.
+     *
+     * A column header is as wide as the view and scrolls horizontally with it. That is right for
+     * column labels and wrong for a strip of controls: every sideways scroll step repainted a panel as
+     * wide as the diagram, and the checkbox and Start button slid away from under the hand reaching
+     * for them. Above the viewport it does neither.
+     *
+     * The swap is made at runtime through GroupLayout.replace because the container's layout comes
+     * from the form, and a hand-edited GEN block is how cropOverlay disappeared twice. So what this
+     * checks is that the runtime swap is still there and the column header is not being set again -
+     * the two are easy to reintroduce separately, and either alone brings the flicker back.
+     */
+    @Test
+    public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int from = ui.indexOf("autonomyDiagramStrip = new javax.swing.JPanel");
+
+        assertTrue(from >= 0, "the strip is no longer built where this test can see it");
+
+        String body = withoutComments(ui.substring(from, from + 4000));
+
+        assertTrue(body.contains(".replace(this.LayoutArea, stacked)"),
+            "the strip is no longer moved out of the scroll pane with GroupLayout.replace, so it is "
+            + "back to scrolling sideways with the diagram - which is OB-148's flicker and takes the "
+            + "controls off screen with it");
+
+        int header = body.indexOf("setColumnHeaderView(strip)");
+
+        // The fallback still names it, for a form whose layout is no longer a GroupLayout - so this
+        // asserts it is only reachable when the swap could not be made, not that the words are absent.
+        if (header >= 0)
+        {
+            assertTrue(body.lastIndexOf("else") < header && body.lastIndexOf("else") > 0,
+                "setColumnHeaderView(strip) is called outside the fallback branch, so the strip is "
+                + "being made a column header again after being taken out of one");
+        }
+    }
+
 }
