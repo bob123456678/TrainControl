@@ -165,7 +165,24 @@ public class Layout
          * ranked options have to enumerate the alternatives before they can compare them, and this one
          * stops at the first route that works.
          */
-        RANDOM
+        RANDOM,
+
+        /**
+         * Priority weighed against how far away it is, rather than priority winning outright.
+         *
+         * Adam: "one that balances priority vs distance as a ratio."
+         *
+         * THE ONLY RULE THAT SEES PAST THE TOP PRIORITY BAND. Every other one ranks within a band,
+         * because pickPath settles the highest band before it looks at the next - which is what makes
+         * priority absolute and makes "highest priority available station" the behaviour already. A
+         * ratio is the rule under which a nearer, less important station may win, so for this one the
+         * band gate is opened and every candidate competes.
+         *
+         * Worth knowing before choosing it: with every priority left at its default this ranks purely
+         * by 1/distance, which is SHORTEST_LENGTH with extra arithmetic. It earns its place only on a
+         * railway where priorities have been set.
+         */
+        BALANCED_PRIORITY
     }
 
     /**
@@ -228,6 +245,9 @@ public class Layout
             case FEWEST_STATIONS:
                 return stationsOn(path);
 
+            case BALANCED_PRIORITY:
+                return -ratioOf(path);
+
             case MOST_STATIONS:
                 return -stationsOn(path);
 
@@ -236,6 +256,37 @@ public class Layout
         }
     }
 
+
+    /**
+     * How much priority a route buys per unit of track (BALANCED_PRIORITY).
+     *
+     * SCALED BEFORE THE DIVISION, because costOf deals in ints: priority 3 over 7 units and priority 2
+     * over 7 both come out as zero otherwise, and every route would tie - which is the failure the
+     * length rule already had once, for the same reason.
+     *
+     * Distance is measured exactly as SHORTEST_LENGTH measures it, floor included, so the two rules
+     * cannot disagree about which of two routes is longer.
+     *
+     * @param path the route being weighed
+     * @return priority per unit of track, larger being better
+     */
+    private int ratioOf(List<Edge> path)
+    {
+        if (path == null || path.isEmpty()) return 0;
+
+        Point end = path.get(path.size() - 1).getEnd();
+
+        int length = Math.max(1, lengthOf(path));
+
+        // PRIORITY PLUS ONE, because the default priority is ZERO.
+        //
+        // A bare priority/distance makes every ordinary station score 0 however close it is, so the
+        // rule could only ever choose a station somebody had prioritised - and among unprioritised
+        // ones everything would tie. Adding the baseline means an unprioritised railway ranks purely
+        // by 1/distance, which is Over the Shortest Track, and each step of priority multiplies what a
+        // station is worth against the track it costs to reach.
+        return ((end.getPriority() + 1) * 1000) / length;
+    }
     /**
      * How long a route is, from the lengths set on its tiles.
      *
@@ -3334,7 +3385,15 @@ public class Layout
                 for (Point end : ends)
                 {
                     // A band is settled before the next one is looked at
-                    if (best != null && band != null && !band.equals(end.getPriority()))
+                    // THE BAND GATE, WHICH ONE RULE DELIBERATELY DOES NOT PASS THROUGH.
+                    //
+                    // Settling the top band first is what makes priority absolute for every other
+                    // rule, and it is why "the highest priority available station" needs no preference
+                    // of its own - it is the behaviour. BALANCED_PRIORITY is the rule that weighs
+                    // priority AGAINST distance, so a nearer, less important station is allowed to
+                    // win; returning here would make that impossible by construction.
+                    if (this.pathPreference != PathPreference.BALANCED_PRIORITY
+                        && best != null && band != null && !band.equals(end.getPriority()))
                     {
                         return best;
                     }

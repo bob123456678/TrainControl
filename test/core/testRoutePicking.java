@@ -51,7 +51,8 @@ public class testRoutePicking
         Layout.PathPreference.MOST_STATIONS,
         Layout.PathPreference.SHORTEST_LENGTH,
         Layout.PathPreference.LONGEST_LENGTH,
-        Layout.PathPreference.RANDOM);
+        Layout.PathPreference.RANDOM,
+        Layout.PathPreference.BALANCED_PRIORITY);
 
     /**
      * And the ones whose ranking needs a different railway, with where they are tested instead.
@@ -373,6 +374,18 @@ public class testRoutePicking
         return loc;
     }
 
+
+    /**
+     * Where a chosen route ENDS, as against wayTaken, which names where it goes first.
+     */
+    private static String destinationTaken(Layout layout, Locomotive loc)
+    {
+        List<Edge> path = layout.pickPath(loc);
+
+        assertNotNull(path, "no route was chosen at all");
+
+        return path.get(path.size() - 1).getEnd().getName();
+    }
     /**
      * Which way the chosen route went, named by the square it takes first.
      *
@@ -388,4 +401,86 @@ public class testRoutePicking
 
         return path.get(0).getEnd().getName();
     }
+    /**
+     * Importance weighed against distance can send a train past the more important station.
+     *
+     * Adam: "one that balances priority vs distance as a ratio."
+     *
+     * THE POINT OF THE RULE IS THE BAND IT CROSSES. Every other preference ranks candidates within one
+     * priority band, because pickPath settles the highest band before looking at the next - which is
+     * why "the highest priority available station" needed no rule of its own, it is the behaviour. So
+     * the fixture here is built to make the two answers differ: a high-priority station a long way
+     * off, and an ordinary one close by.
+     *
+     * BOTH DIRECTIONS, because either alone is satisfied by a constant. Under FEWEST_STATIONS - any
+     * banded rule - the important station must still win outright; under the ratio the near one must.
+     * A rule that always took the near one would pass the second assertion and fail the first.
+     */
+    @Test
+    public void testImportanceIsWeighedAgainstDistance() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = placedLocomotive(layout);
+
+        layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
+
+        // The DESTINATION, not the first hop.  wayTaken names the second point of the route, which is
+        // the same thing only when the route is one edge long - and the whole fixture here is that one
+        // of them is not.
+        assertEquals(destinationTaken(layout, loc), "RP_Plain1",
+            "a banded rule must still take the important station whatever it costs to get there - if "
+            + "this fails the fixture is not testing what the ratio is for");
+
+        layout.setPathPreference(Layout.PathPreference.BALANCED_PRIORITY);
+
+        assertEquals(destinationTaken(layout, loc), "RP_ViaStation",
+            "the ratio has to be able to prefer a near ordinary station to a distant important one; "
+            + "taking the important one anyway means the priority band was never opened");
+    }
+
+    /**
+     * A long way to an important station, and a short way to an ordinary one.
+     *
+     * Priorities: the far station is 5, the near one the default of 0. The near one therefore scores
+     * (0+1)*1000/2 = 500 and the far one (5+1)*1000/18 = 333, so priority-per-unit favours the near
+     * station while raw priority favours the far one - which is the disagreement the test needs.
+     *
+     * The baseline in that arithmetic is not decoration: without it the near station scores 0/2 = 0
+     * and could never win, whatever the distance.
+     */
+    private static Layout importantButFarAway() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback start = model.newFeedback(221, null);
+        MarklinFeedback nearer = model.newFeedback(222, null);
+        MarklinFeedback hopOne = model.newFeedback(223, null);
+        MarklinFeedback hopTwo = model.newFeedback(224, null);
+        MarklinFeedback far = model.newFeedback(225, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{start, nearer, hopOne, hopTwo, far})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("RP_Start", true, start.getName());
+
+        // the near, ordinary one - reached in one short edge
+        layout.createPoint("RP_ViaStation", true, nearer.getName());
+        layout.createEdge("RP_Start", "RP_ViaStation").setLength(2);
+
+        // and the important one, four times the track away
+        layout.createPoint("RP_Plain2", false, hopOne.getName());
+        layout.createPoint("RP_End", false, hopTwo.getName());
+        layout.createPoint("RP_Plain1", true, far.getName());
+
+        layout.createEdge("RP_Start", "RP_Plain2").setLength(6);
+        layout.createEdge("RP_Plain2", "RP_End").setLength(6);
+        layout.createEdge("RP_End", "RP_Plain1").setLength(6);
+
+        layout.getPoint("RP_Plain1").setPriority(5);
+
+        return layout;
+    }
+
 }

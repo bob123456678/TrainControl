@@ -8147,7 +8147,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
         org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS,
         org.traincontrol.automation.Layout.PathPreference.MOST_POINTS,
-        org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED
+        org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED,
+        org.traincontrol.automation.Layout.PathPreference.BALANCED_PRIORITY
     };
     /**
      * Writes the routing rule into the configuration it belongs to (LE-B5).
