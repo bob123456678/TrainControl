@@ -39,6 +39,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-234](#mt-234) | 2026-08-30 | A train passing through a station says which way it is going | fixed unvalidated | OB-158 |
+| [MT-235](#mt-235) | 2026-08-30 | A route button that would conduct track it was not drawn to conduct | fixed unvalidated | OB-160 |
 | [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
 | [MT-233](#mt-233) | 2026-08-30 | Start with nothing that can start leaves the railway alone | fixed unvalidated | RC-B5 |
 
@@ -12227,6 +12228,43 @@ drawn in, and you said it is fine.
 **Adam, 2026-08-30 (triage).** Works.
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 14:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-235"></a>
+
+### MT-235 - 2026-08-30 - A route button that would conduct track it was not drawn to conduct
+
+**Disposition:** fixed unvalidated
+**From:** OB-160
+**Written:** 2026-08-30
+
+A route button carries no track of its own - what it conducts is decided entirely by what is beside it.
+Two placements are now refused, and both are blocking errors, so it is worth checking they do not fire
+on anything you have drawn.
+
+**Two buttons side by side that reach real track at BOTH ends.** Your rule. The pair conducts a route
+across squares that have no rails on them. One end is not enough and is not reported - which is the
+case on your own layout at `1 - Main:3,7`, where past the far button is a straight lying north-south
+that presents no face, so the pair splices nothing.
+
+**Track running into a button from three sides.** The through-pair wins and the third arm is dropped in
+silence - the only drop in the reduction that said nothing. Four sides is a fixed crossing, both pairs
+are carried, and that is not reported: your "static crossing under the hood".
+
+An automated test runs both checks over the frozen snapshot of your railway and fails if either fires
+on it, so a rule that is too strict should be caught before you see it. That test found two mistakes of
+mine before this shipped.
+
+1. **Draw two route buttons side by side with track running into both ends.** The setup checks should
+   refuse it, naming the square.
+2. **Take the track off one end.** The error should go - a pair reaching track at one end conducts
+   nothing.
+3. **Draw track into a button from three sides.** Refused, naming the square.
+4. **Add the fourth side.** The error should go: that is a crossing.
+5. **Check your own layout still starts.** Nothing on it should be refused by either rule.
+
+*Run against commit fb3722f5 or later.*
 
 ---
 

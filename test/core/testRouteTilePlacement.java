@@ -18,7 +18,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Route buttons placed where what they conduct is not what was drawn (OB-159).
+ * Route buttons placed where what they conduct is not what was drawn (OB-160).
  *
  * A route button carries no track of its own.  What it conducts is decided entirely by what is beside
  * it: `transparentRoutes` collects the sides where a neighbour presents a real port OR is itself
@@ -106,7 +106,7 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-159).
+     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-160).
      *
      * Adam, on the square this first fired on: "since the two route icons are next to each other but
      * there is no connect to the link nor the straight track, it should not emit an error.  There is no
@@ -131,7 +131,7 @@ public class testRouteTilePlacement
 
         assertFalse(reports(page, TileGraph.ERROR_ADJACENT_ROUTE_TILES),
             "a pair of buttons with track against one end only was refused - a route through them "
-            + "needs two ends, and with one there is nothing to splice and nothing ambiguous (OB-159)");
+            + "needs two ends, and with one there is nothing to splice and nothing ambiguous (OB-160)");
     }
 
     /**
@@ -201,7 +201,7 @@ public class testRouteTilePlacement
     }
 
     /**
-     * A button at the end of a line conducts nothing, and that is not a dropped arm (OB-159).
+     * A button at the end of a line conducts nothing, and that is not a dropped arm (OB-160).
      *
      * The narrowing this rule needed, found by running it over the operator's railway before it
      * shipped: at `1 - Main:3,5` a feedback to the east is rotated a quarter turn, so it presents no
@@ -224,7 +224,7 @@ public class testRouteTilePlacement
         assertFalse(reports(page, TileGraph.ERROR_ROUTE_TILE_THREE_WAY),
             "a button with a single arm was refused as though an arm had been dropped - nothing was "
             + "carried, so nothing was displaced, and this is how a button at the end of a line is "
-            + "drawn (OB-159)");
+            + "drawn (OB-160)");
     }
 
     /**

@@ -533,7 +533,7 @@ public class TileGraph
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
     /**
-     * Two route buttons side by side, with real track running into the pair (OB-159).
+     * Two route buttons side by side, with real track running into the pair (OB-160).
      *
      * A button carries no track; it conducts whatever is beside it.  Two of them beside each other
      * each count the OTHER as a side worth conducting to, so the pair can splice two lines together
@@ -545,7 +545,7 @@ public class TileGraph
     public static final String ERROR_ADJACENT_ROUTE_TILES = "autosetup.ui.errorAdjacentRouteTiles";
 
     /**
-     * Track running into a route button from three sides, one of which is silently dropped (OB-159).
+     * Track running into a route button from three sides, one of which is silently dropped (OB-160).
      *
      * transparentRoutes joins N to S and E to W where both face; with three sides facing, the pair
      * wins and the odd arm is discarded - so a line drawn into the side of a button on a running line
@@ -654,7 +654,7 @@ public class TileGraph
             }
         }
 
-        // AFTER every page is in, because these questions are about neighbours (OB-159).
+        // AFTER every page is in, because these questions are about neighbours (OB-160).
         checkTransparentTiles();
     }
 
@@ -1206,7 +1206,7 @@ public class TileGraph
     }
 
     /**
-     * The sides of a transparent tile that something conducts to (OB-159).
+     * The sides of a transparent tile that something conducts to (OB-160).
      *
      * Extracted so that transparentRoutes and the checks below cannot disagree about what "facing"
      * means.  Written out twice they drift, and a check that disagrees with the thing it is checking
@@ -1253,7 +1253,7 @@ public class TileGraph
     }
 
     /**
-     * Whether the run of buttons this one belongs to meets real track on two different sides (OB-159).
+     * Whether the run of buttons this one belongs to meets real track on two different sides (OB-160).
      *
      * A single button conducts what is beside it, which is ordinary and correct.  A RUN of them - two
      * or more touching - conducts across squares that have no rails at all, and that only matters when
@@ -1305,7 +1305,7 @@ public class TileGraph
     }
 
     /**
-     * Route buttons placed where what they conduct is not what was drawn (OB-159).
+     * Route buttons placed where what they conduct is not what was drawn (OB-160).
      *
      * A SECOND PASS, after every page is in `tiles`.  The per-tile scan that raises the other problems
      * runs while the map is still being filled, so a tile there cannot see its neighbours - and every
