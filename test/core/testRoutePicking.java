@@ -439,6 +439,105 @@ public class testRoutePicking
     }
 
     /**
+     * Priority high enough, and the ratio takes the LONG way - which distance alone never would.
+     *
+     * The sibling above cannot tell the ratio from plain 1/distance: at priority 5 the far station
+     * scores (5+1)*1000/18 = 333 against the near one's 500, so both rules choose the near station and
+     * a numerator replaced by a constant passes.  That was the hole the suite review found, and it is
+     * the hole the negative-priority inversion (RC-B2) sat in.
+     *
+     * At 9 the far station scores (9+1)*1000/18 = 555 and wins.  Nothing that ignores priority can
+     * produce that answer, because the near station is closer under every measure.
+     */
+    @Test
+    public void testEnoughPriorityOutweighsTheDistance() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = placedLocomotive(layout);
+
+        layout.getPoint("RP_Plain1").setPriority(9);
+
+        layout.setPathPreference(Layout.PathPreference.BALANCED_PRIORITY);
+
+        assertEquals(destinationTaken(layout, loc), "RP_Plain1",
+            "priority stopped counting: the far station is worth (9+1)*1000/18 = 555 against the near "
+            + "one's (0+1)*1000/2 = 500, so the ratio must take it.  A rule that always takes the "
+            + "nearest station gives the same answer as this test's sibling and a different one here, "
+            + "which is the whole reason this test exists");
+    }
+
+    /**
+     * A de-prioritised station is not reached by the longest route available (RC-B2).
+     *
+     * ratioOf was ((priority + 1) * 1000) / length, reasoned about only from a default of zero.  Point.
+     * setPriority takes negatives and the editor calls them perfectly valid, so at -1 the numerator was
+     * 0 - every route to that station scored the same and distance stopped mattering - and at -2 and
+     * below the numerator was negative, where dividing by a LARGER length gives a LARGER value.  Among
+     * de-prioritised stations the rule therefore chose the most distant one it could find.
+     *
+     * Two assertions, because the two halves fail apart: the de-prioritised station must lose to an
+     * ordinary one at all, and - the inversion itself - it must not beat it BY BEING FURTHER.
+     */
+    @Test
+    public void testADePrioritisedStationIsNotReachedByTheLongestRoute() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = placedLocomotive(layout);
+
+        // The FAR station is the one told to go away.  Under the inversion that made it the winner:
+        // -2 gives a numerator of -1000, and -1000/18 is greater than -1000/2, so the longest route to
+        // the least wanted station scored highest of anything on the layout.
+        layout.getPoint("RP_Plain1").setPriority(-2);
+
+        layout.setPathPreference(Layout.PathPreference.BALANCED_PRIORITY);
+
+        assertEquals(destinationTaken(layout, loc), "RP_ViaStation",
+            "a station the user pushed DOWN to -2 was chosen over an ordinary one, and chosen because "
+            + "it was eighteen units away rather than two - a negative numerator makes a longer route "
+            + "score higher, so \"go here less\" was read as \"go here the long way round\" (RC-B2)");
+
+        // And the same station, de-prioritised the same amount, must not become MORE attractive as the
+        // route to it grows.  This is the inversion stated on its own, without a rival station.
+        int near = ratioFor(layout, 2);
+        int away = ratioFor(layout, 18);
+
+        assertTrue(near > away,
+            "a shorter route to a de-prioritised station must still be worth more than a longer one: "
+            + "scored " + near + " at length 2 against " + away + " at length 18 (RC-B2)");
+    }
+
+    /**
+     * What the ratio makes of a de-prioritised destination at a given distance.
+     *
+     * Asked of the real method rather than recomputed here, which is the point: a copy of the
+     * arithmetic in the test would agree with whatever the arithmetic says, including a sign error.
+     */
+    private static int ratioFor(Layout layout, int length) throws Exception
+    {
+        java.lang.reflect.Method ratioOf =
+            Layout.class.getDeclaredMethod("ratioOf", java.util.List.class);
+        ratioOf.setAccessible(true);
+
+        org.traincontrol.automation.Edge edge = layout.getEdge("RP_Start", "RP_ViaStation");
+
+        int was = edge.getLength();
+        int wasPriority = layout.getPoint("RP_ViaStation").getPriority();
+
+        try
+        {
+            edge.setLength(length);
+            layout.getPoint("RP_ViaStation").setPriority(-2);
+
+            return (int) ratioOf.invoke(layout, java.util.Arrays.asList(edge));
+        }
+        finally
+        {
+            edge.setLength(was);
+            layout.getPoint("RP_ViaStation").setPriority(wasPriority);
+        }
+    }
+
+    /**
      * A long way to an important station, and a short way to an ordinary one.
      *
      * Priorities: the far station is 5, the near one the default of 0. The near one therefore scores

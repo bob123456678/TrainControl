@@ -194,6 +194,249 @@ public class testLayoutFolderRobustness
     }
 
     /**
+     * A page that will not read does not cost the sensors that only appear on it (RC-A3).
+     *
+     * syncLayouts deletes every s88 in the database that no LOADED page mentions.  That was safe while
+     * one bad page took the whole parse down with it; the per-page guard the tests above are about made
+     * it unsafe, because four pages of five now load and the loop reads that as "the railway", so every
+     * sensor whose only appearance was on the fifth is deleted - permanently, and into LocDB.data on
+     * exit.  The autonomy points watching them lose them too.
+     *
+     * The existing guard, `!feedbackAddresses.isEmpty()`, covers only TOTAL failure.  That is why the
+     * total case was safe and the partial case, which is the likely one, was not.
+     */
+    @Test
+    public void testAnUnreadablePageDoesNotDeleteTheSensorsOnlyItHad() throws Exception
+    {
+        File folder = brokenSecondPage();
+
+        try
+        {
+            MarklinControlStation model =
+                MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                // 5 is on the page that reads; 6 is on the page that does not.
+                model.newFeedback(5, null);
+                model.newFeedback(6, null);
+
+                syncFrom(model, folder);
+
+                assertTrue(model.isFeedbackSet("5"),
+                    "the sensor on the page that DID read was deleted, so this test is not measuring "
+                    + "what it thinks it is");
+
+                assertTrue(model.isFeedbackSet("6"),
+                    "the sensor whose only appearance was on the page that could not be read was "
+                    + "deleted.  Nothing on the layout changed - a file was truncated or half-copied - "
+                    + "and the accumulated feedback for a whole page is gone, with the autonomy points "
+                    + "watching it (RC-A3)");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            delete(folder);
+        }
+    }
+
+    /**
+     * A folder that reads completely still prunes - the control (RC-A3).
+     *
+     * Without this, "do not prune when a page failed" is satisfied by never pruning at all, and the
+     * stale-sensor cleanup the loop exists for is silently gone.
+     */
+    @Test
+    public void testAFolderThatReadsCompletelyStillPrunes() throws Exception
+    {
+        File folder = onePageThatReads();
+
+        try
+        {
+            MarklinControlStation model =
+                MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                model.newFeedback(5, null);
+                model.newFeedback(6, null);
+
+                syncFrom(model, folder);
+
+                assertTrue(model.isFeedbackSet("5"), "the sensor that IS on the page went");
+
+                assertFalse(model.isFeedbackSet("6"),
+                    "a sensor on no page at all survived a complete, successful read - so the pruning "
+                    + "the loop exists for has stopped happening, which is the wrong way to satisfy "
+                    + "RC-A3");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            delete(folder);
+        }
+    }
+
+    /**
+     * A folder where every page fails still throws, so the fallback runs (RC-A4).
+     *
+     * The revert to the Central Station lives in a catch around syncLayouts, so it needs a throw.  One
+     * bad page used to provide it; with the per-page guard an all-bad folder returns an empty list
+     * instead, the catch never runs, and the user gets an empty diagram with no message and the
+     * override preference kept - so the same nothing happens at every launch.
+     *
+     * And it must throw BEFORE clearing, or the fallback is handed a window that has already been
+     * emptied.
+     */
+    @Test
+    public void testAFolderWhereEveryPageFailsStillFails() throws Exception
+    {
+        File folder = everyPageBroken();
+
+        try
+        {
+            MarklinControlStation model =
+                MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                int before = model.getLayoutList().size();
+
+                boolean threw = false;
+
+                try
+                {
+                    syncFrom(model, folder);
+                }
+                catch (Exception expected)
+                {
+                    threw = true;
+                }
+
+                assertTrue(threw,
+                    "a layout folder where not one page could be read came back as a success, so the "
+                    + "revert to the Central Station never runs: an empty diagram, no message, and the "
+                    + "override preference kept, at every launch (RC-A4)");
+
+                assertEquals(model.getLayoutList().size(), before,
+                    "the diagram already on screen was cleared before the failure was noticed, so the "
+                    + "fallback has nothing to fall back from (RC-A4)");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            delete(folder);
+        }
+    }
+
+    /** Two pages, the second one truncated mid-element so that reading it throws. */
+    private static File brokenSecondPage() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-partial").toFile();
+        File pages = new File(new File(folder, "config"), "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not build the fixture");
+
+        write(new File(new File(folder, "config"), "gleisbild.cs2"),
+            "[gleisbild]\nversion\n .major=1\ngroesse\n .wert=0\nseite\n .name=Reads\nseite\n .name=Broken\n");
+
+        write(new File(pages, "Reads.cs2"), page(5));
+
+        // An element whose id is not a number at all, which throws where the page is parsed rather
+        // than being skipped as an unknown component.
+        write(new File(pages, "Broken.cs2"),
+            "[gleisbildseite]\nversion\n .major=1\nelement\n .id=not a number\n .typ=s88kontakt\n .artikel=6\n");
+
+        return folder;
+    }
+
+    /** One page, which reads, mentioning sensor 5 and nothing else. */
+    private static File onePageThatReads() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-complete").toFile();
+        File pages = new File(new File(folder, "config"), "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not build the fixture");
+
+        write(new File(new File(folder, "config"), "gleisbild.cs2"),
+            "[gleisbild]\nversion\n .major=1\ngroesse\n .wert=0\nseite\n .name=Reads\n");
+
+        write(new File(pages, "Reads.cs2"), page(5));
+
+        return folder;
+    }
+
+    /** One page, and it does not read. */
+    private static File everyPageBroken() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-allbad").toFile();
+        File pages = new File(new File(folder, "config"), "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not build the fixture");
+
+        write(new File(new File(folder, "config"), "gleisbild.cs2"),
+            "[gleisbild]\nversion\n .major=1\ngroesse\n .wert=0\nseite\n .name=Broken\n");
+
+        write(new File(pages, "Broken.cs2"),
+            "[gleisbildseite]\nversion\n .major=1\nelement\n .id=not a number\n .typ=s88kontakt\n .artikel=6\n");
+
+        return folder;
+    }
+
+    /** A page holding one feedback tile at the given address. */
+    private static String page(int address)
+    {
+        return "[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=s88kontakt\n .artikel="
+            + address + "\n";
+    }
+
+    /**
+     * Points the model's parser at a folder and runs the real sync.
+     *
+     * Reflective because both the parser field and syncLayouts are private, and standing in for either
+     * would test the stand-in: the pruning loop and the empty-parse decision are IN syncLayouts, and
+     * the whole finding is about what that method concludes from a partial read.
+     */
+    private static void syncFrom(MarklinControlStation model, File folder) throws Exception
+    {
+        String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        java.lang.reflect.Field parserField =
+            MarklinControlStation.class.getDeclaredField("fileParser");
+        parserField.setAccessible(true);
+
+        CS2File parser = (CS2File) parserField.get(model);
+        parser.setLayoutDataLoc(path);
+
+        java.lang.reflect.Method sync =
+            MarklinControlStation.class.getDeclaredMethod("syncLayouts");
+        sync.setAccessible(true);
+
+        try
+        {
+            sync.invoke(model);
+        }
+        catch (java.lang.reflect.InvocationTargetException wrapped)
+        {
+            if (wrapped.getCause() instanceof Exception) throw (Exception) wrapped.getCause();
+
+            throw wrapped;
+        }
+    }
+
+    /**
      * And a setup folder that has been deleted by hand is simply a layout with no setup.
      *
      * The other half of Adam's request.  Nothing to recover and nothing to complain about: a folder with

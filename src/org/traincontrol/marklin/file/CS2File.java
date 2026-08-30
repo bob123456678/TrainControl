@@ -2278,6 +2278,23 @@ public final class CS2File
     }
     
     /**
+     * How many pages the last parseLayout could not read (RC-A3).
+     *
+     * Not a total across the life of the parser - parseLayout resets it - so it always describes the
+     * list it just handed back.  A caller holding that list has no other way to tell a complete railway
+     * from most of one, and two things downstream were quietly assuming complete.
+     */
+    private int pagesThatCouldNotBeRead;
+
+    /**
+     * @return how many pages the last parseLayout could not read
+     */
+    public int getPagesThatCouldNotBeRead()
+    {
+        return this.pagesThatCouldNotBeRead;
+    }
+
+    /**
      * Processes a layout
      * @param accDB
      * @return
@@ -2285,6 +2302,9 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
+        // Answers about THIS parse, not about every parse this object has ever done (RC-A3).
+        this.pagesThatCouldNotBeRead = 0;
+
         // How a file word maps to a type, handed to the component class so that its export can tell
         // "still what was read" from "redrawn by the user" without owning a second copy of this table.
         // The address is irrelevant to the question being asked - whether the word still means this type
@@ -2554,8 +2574,20 @@ public final class CS2File
             }
             catch (Exception | Error bad)
             {
+                // COUNTED, AND SAID OUT LOUD (RC-A3, RC-A5).
+                //
+                // This was debugOnly, so the one thing that explains an incomplete railway was
+                // invisible unless debug mode happened to be on.  A page that will not read is a fault
+                // the user can act on - re-copy the file, check the folder - which is what separates a
+                // warning worth showing from noise.
+                //
+                // The count is what everything downstream needs.  A caller that prunes, or reverts, is
+                // entitled to know it is not looking at the whole railway, and until RC-A3 nothing
+                // could tell: most of a railway and all of one came back the same way.
+                this.pagesThatCouldNotBeRead++;
+
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
-                    null, true);
+                    null, false);
             }
         }
         

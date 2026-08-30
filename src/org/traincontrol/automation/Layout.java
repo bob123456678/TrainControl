@@ -278,14 +278,34 @@ public class Layout
 
         int length = Math.max(1, lengthOf(path));
 
-        // PRIORITY PLUS ONE, because the default priority is ZERO.
+        // WHAT A STATION IS WORTH, which must never be zero or below (RC-B2).
         //
-        // A bare priority/distance makes every ordinary station score 0 however close it is, so the
-        // rule could only ever choose a station somebody had prioritised - and among unprioritised
-        // ones everything would tie. Adding the baseline means an unprioritised railway ranks purely
-        // by 1/distance, which is Over the Shortest Track, and each step of priority multiplies what a
-        // station is worth against the track it costs to reach.
-        return ((end.getPriority() + 1) * 1000) / length;
+        // At and above zero this is priority plus one, times a thousand, because the default priority
+        // is ZERO. A bare priority/distance makes every ordinary station score 0 however close it is,
+        // so the rule could only ever choose a station somebody had prioritised, and among
+        // unprioritised ones everything would tie. The baseline means an unprioritised railway ranks
+        // purely by 1/distance - which is Over the Shortest Track - and each step of priority
+        // multiplies what a station is worth against the track it costs to reach.
+        //
+        // BELOW ZERO IT SHRINKS INSTEAD OF GOING NEGATIVE, and until RC-B2 it did not.
+        //
+        // Negative priorities are supported and meant - Point.setPriority takes them and the editor
+        // says this is a field "where negatives are perfectly valid" - and the baseline above was
+        // reasoned about only from a floor of zero. At -1 the numerator was 0, so every route to that
+        // station scored 0 and distance stopped mattering. At -2 and below it was NEGATIVE, and
+        // dividing a negative by a larger length makes it LARGER: among de-prioritised stations the
+        // rule picked the most distant route it could find. "Go here less" was read as "go here the
+        // long way round".
+        //
+        // Shrinking rather than clamping at 1. A clamp stops the inversion and then ties every
+        // de-prioritised station with an ordinary one, which is a different wrong answer. This is 500
+        // at -1, 333 at -2, 166 at -5: always positive, always below the 1000 an ordinary station
+        // gets, and still ordered among themselves. Nothing at or above zero changes.
+        int worth = end.getPriority() >= 0
+            ? (end.getPriority() + 1) * 1000
+            : 1000 / (1 - end.getPriority());
+
+        return worth / length;
     }
     /**
      * How long a route is, from the lengths set on its tiles.

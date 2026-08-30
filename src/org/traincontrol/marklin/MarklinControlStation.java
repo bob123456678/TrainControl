@@ -530,6 +530,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // as long as a loop over already-parsed objects instead of as long as a network round trip.
         List<LayoutDiagram> parsed = fileParser.parseLayout(accs);
 
+        // NOTHING READ IS STILL A FAILURE (RC-A4).
+        //
+        // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch, so the revert
+        // needs this to throw.  Before the per-page guard it did: one bad page took the whole parse
+        // down.  Now every page is caught individually, so a folder where they ALL fail returns an
+        // empty list, the catch never runs, and the user gets an empty track diagram with no message
+        // and the override preference kept - which means it happens again at every launch.
+        //
+        // Thrown BEFORE clearLayouts, so the diagram already on screen survives the attempt.  An empty
+        // folder is not this: it fails no pages, so it comes through as the empty layout it is.
+        if (parsed.isEmpty() && fileParser.getPagesThatCouldNotBeRead() > 0)
+        {
+            throw new Exception(I18n.f("layout.warningPageCouldNotBeRead",
+                String.valueOf(fileParser.getPagesThatCouldNotBeRead()), "*"));
+        }
+
         this.clearLayouts();
 
         for (LayoutDiagram l : parsed)
@@ -661,8 +677,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
         
-        // Prune stale feedback
-        if (!feedbackAddresses.isEmpty())
+        // Prune stale feedback - but only when the whole railway was read (RC-A3).
+        //
+        // This deletes every s88 in the database that no LOADED page mentions.  With the per-page
+        // guard above, a five-page folder whose third page is truncated loads four pages and then
+        // permanently deletes every sensor that only appeared on the third - and the autonomy points
+        // watching them lose them with it.  The deletions go into LocDB.data on exit.
+        //
+        // The isEmpty() guard covers only TOTAL failure, which is why the total case was safe and the
+        // partial case was not.  A partial read is exactly the state in which this loop's question -
+        // "is this sensor on any page?" - cannot be answered.
+        if (fileParser.getPagesThatCouldNotBeRead() > 0)
+        {
+            this.logf("layout.pruningSkippedPageUnreadable",
+                fileParser.getPagesThatCouldNotBeRead());
+        }
+        else if (!feedbackAddresses.isEmpty())
         {
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
