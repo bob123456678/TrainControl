@@ -40,10 +40,28 @@ public class testLocomotiveExclusions
 {
     private static MarklinControlStation model;
 
+    /**
+     * The sandbox, opened BEFORE the model and held for the class.
+     *
+     * init() loads whatever layout the machine's preferences point at, which on Adam's machine is his
+     * real railway - and the suite has a ratchet counting the classes that do this without a sandbox,
+     * which is how this one was caught before it ever ran on his layout. Opened first, because a
+     * sandbox after the model protects nothing.
+     */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
+    }
+
+    @org.testng.annotations.AfterClass
+    public static void tearDownClass()
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**

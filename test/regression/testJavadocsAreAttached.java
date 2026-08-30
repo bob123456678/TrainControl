@@ -41,10 +41,11 @@ public class testJavadocsAreAttached
     /**
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
+    // 95 -> 94 on 2026-08-30: removing the double-curve check took its javadoc with it (MT-223).
     // 96 -> 95 on 2026-08-30: LE-C7 re-attached TileSelection.bounds()'s javadoc, which had been
     // orphaned above handle().  Lowered so the improvement cannot be given back - which is what makes
     // this a ratchet rather than a ceiling, and why its per-file list had to lose that entry too.
-    private static final int ALLOWED = 95;
+    private static final int ALLOWED = 94;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -65,7 +66,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomySession.java (10)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "GraphReducer.java (3)",
+            + "automationui" + File.separator + "GraphReducer.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "TileAnnotation.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
