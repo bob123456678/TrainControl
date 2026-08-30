@@ -246,8 +246,16 @@ public class Layout
      *
      * Adam: "a min length option that tries to minimize total track length, where we count each s88 as
      * length 1 by default." An edge runs from one sensor to the next, so crossing one is one s88's
-     * worth of track until somebody says otherwise. A measured length still wins where there is one:
-     * this supplies a floor for the unmeasured, it does not overrule the measured.
+     * worth of track until somebody says otherwise.
+     *
+     * THE FLOOR ONLY WORKS BECAUSE THE UNITS ARE SMALL, and that was measured rather than assumed
+     * (LE2-B9). A reviewer pointed out that if lengths ran to tens or hundreds, an unmeasured edge
+     * counting 1 would make SHORTEST_LENGTH route AROUND every measured section - the opposite of what
+     * it says. On this railway they are 1 to 6 in the hand-built graph and 2 to 4 in the derived one,
+     * so the floor is the same size as the smallest real edge and the ranking holds.
+     *
+     * It would not hold for a railway measured in centimetres. If lengths ever grow, this needs to
+     * become a floor proportional to the measured ones rather than a flat 1.
      */
     private int lengthOf(List<Edge> path)
     {

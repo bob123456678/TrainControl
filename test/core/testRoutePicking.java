@@ -250,16 +250,27 @@ public class testRoutePicking
         Layout layout = twoWaysAcrossUnmeasured();
         Locomotive loc = placedLocomotive(layout);
 
-        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+        // REPEATED, because the regression it names is settled by a coin toss (LE2-C14).
+        //
+        // Without the floor every route scores 0, every route ties, and `cost < bestCost` keeps
+        // whichever the search reached first - which getNeighbors and pickPath both shuffle. A single
+        // pair of assertions therefore passed about one run in four with the bug present, which reads
+        // as protection and is not. Twenty rounds is the number this folder's README settled on after
+        // a guard was measured at 247 catches in 500.
+        for (int round = 0; round < 20; round++)
+        {
+            layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
 
-        assertEquals(wayTaken(layout, loc), "RP_ViaStation",
-            "with no lengths anywhere, the two-edge way is the shorter track and has to be chosen");
+            assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+                "round " + round + ": with no lengths anywhere, the two-edge way is the shorter track "
+                + "and has to be chosen");
 
-        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
+            layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
 
-        assertEquals(wayTaken(layout, loc), "RP_Plain1",
-            "and the three-edge way is the longer - if this matches the line above, both rules are "
-            + "seeing a tie at zero and neither is ranking anything");
+            assertEquals(wayTaken(layout, loc), "RP_Plain1",
+                "round " + round + ": the three-edge way is the longer - if this matches the line "
+                + "above, both rules are seeing a tie at zero and neither is ranking anything");
+        }
     }
 
     /**

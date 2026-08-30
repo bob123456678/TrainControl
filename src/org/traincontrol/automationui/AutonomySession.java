@@ -4564,6 +4564,8 @@ public class AutonomySession
 
             Map<Integer, String> here = new LinkedHashMap<>();
 
+            boolean repeated = false;
+
             for (LayoutDiagramComponent component : page.getAll())
             {
                 if (component == null || !component.isFeedback()) continue;
@@ -4578,14 +4580,23 @@ public class AutonomySession
                     // rolled into one line, fixing two of them changes nothing about the message.
                     repeats.add(I18n.f("autosetup.ui.duplicateSensorSubject",
                         sensor, page.getName(), seen.get(sensor)));
+
+                    // AND THE PAGE STOPS COUNTING, which is what excludeRepeatedSensorPages does and
+                    // what this claimed to do (LE2-B8).  There a repeating page is shut and
+                    // contributes nothing further; here it went on feeding its OTHER sensors into
+                    // `seen`, so a third page sharing one of those was reported too - named against
+                    // the very page the automatic rule would have switched off.  That is an ERROR, so
+                    // it refused the whole setup over a page nothing was wrong with.
+                    repeated = true;
+
+                    break;
                 }
-                else
-                {
-                    here.put(sensor, page.getName());
-                }
+
+                here.put(sensor, page.getName());
             }
 
-            seen.putAll(here);
+            // Only a page that is staying in contributes what it holds.
+            if (!repeated) seen.putAll(here);
         }
 
         return repeats;

@@ -2798,6 +2798,19 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow at = entry.getRow();
 
+                // A KIND THE DROPDOWN DOES NOT OFFER CANNOT BE EDITED (LE2-B20).
+                //
+                // The Kind dropdown is built from canBeACommand, which since OB-141 excludes FEEDBACK
+                // - but a stored row may still hold one, from the old text editor, from
+                // RouteCommand.fromLine, or from an imported route.  A non-editable JComboBox silently
+                // REFUSES a selected item that is not in its model, so the editor opened showing some
+                // other kind, and a single click and a click away wrote that kind back.  An s88
+                // command became an emergency stop, and the route saved without complaint.
+                //
+                // Read-only rather than offered-and-refused, which is the guard and the affordance
+                // asking one question.
+                if (column == 3) return CommandRow.canBeACommand(at.getKind());
+
                 if (column == 4) return CommandRow.hasTarget(at.getKind());
                 if (column == 5) return CommandRow.isFunction(at.getKind());
                 if (column == 6) return CommandRow.hasSetting(at.getKind());

@@ -70,9 +70,25 @@ public class testTheEditorTellsAutonomy
         // before deleteSelection, because deleting clears the selection.  Collected after, the set is
         // empty, every origin is skipped and the paste carries nothing - and an assertion that only
         // asked for the assignment could not see it (LE-C8).
-        assertTrue(cut.indexOf("this.selection.all()") < cut.indexOf("this.deleteSelection()"),
+        int collected = cut.indexOf("this.selection.all()");
+        int deleted = cut.indexOf("this.deleteSelection(");
+
+        // Both proved present before they are compared, which this class's own header promises and
+        // this one assertion was not doing: an absent term's index is -1, which is less than every
+        // real one, so a rename would have made it pass whatever the order (LE2-C13).  It went red
+        // for exactly that reason when deleteSelection gained an argument.
+        assertTrue(collected >= 0, "cutSelection no longer collects the picked squares (LE-A5)");
+        assertTrue(deleted >= 0, "cutSelection no longer calls deleteSelection - scan needs updating");
+
+        assertTrue(collected < deleted,
             "cutSelection collects the emptied squares AFTER deleting them, and deleting clears the "
             + "selection - so it collects nothing and the paste carries nothing (LE-A5)");
+
+        // LE2-B7: the cut must NOT let the per-square delete forget the captions, or the paste has
+        // none left to carry - the four bulk movers pass false for the same reason.
+        assertTrue(cut.contains("deleteSelection(false)"),
+            "cutSelection lets the delete forget the captions, so a cut and paste carries the station, "
+            + "its length and its locomotive but loses the name drawn on the diagram (LE2-B7)");
 
         // LE-A7: the whole of A1, A4 and A5 was unreachable because cutMoves re-read the field that
         // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
@@ -80,7 +96,10 @@ public class testTheEditorTellsAutonomy
         // reachability a source scan can actually see.
         String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut)");
 
-        assertFalse(moves.contains("this.clipboardWasCut"),
+        // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read and
+        // Java requires neither spelling - pinning one let the other through (LE2-C12).  The method
+        // has no legitimate mention of the field: its whole point is that the caller decides.
+        assertFalse(moves.contains("clipboardWasCut"),
             "cutMoves reads the cut flag from the field again. snapshotLayout clears it and the caller "
             + "snapshots before calling this, so the guard is false on every paste, cutMoves returns "
             + "null on every paste, and the entire group-cut fix is dead code while these tests stay "

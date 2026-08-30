@@ -3047,7 +3047,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 layout.getName(), at.getX(), at.getY()));
         }
 
-        boolean cut = this.deleteSelection();
+        // FALSE: the paste carries the setup, captions included, and forgetting them here would
+        // delete the one part of it that is drawn on the diagram (LE2-B7).
+        boolean cut = this.deleteSelection(false);
 
         this.groupClipboard = carried;
         this.clipboardOrigins = from;
@@ -3143,6 +3145,22 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public boolean deleteSelection()
     {
+        return deleteSelection(true);
+    }
+
+    /**
+     * Empties every picked square (LE2-B7).
+     *
+     * @param tellAutonomy whether the setup should forget what was on those squares. TRUE for a plain
+     *        delete, where the track is going and its name should go with it. FALSE for a CUT, where
+     *        the paste that follows carries the setup to wherever the block lands - and where
+     *        forgetting the captions here destroys the one part of it that is drawn on the diagram,
+     *        because forgetCaptionsAt deletes the caption on the square AND every caption naming it.
+     *        The four bulk row and column movers pass false for the same reason.
+     * @return true if anything was picked to delete
+     */
+    synchronized public boolean deleteSelection(boolean tellAutonomy)
+    {
         if (this.selection.isEmpty()) return false;
 
         this.snapshotLayout();
@@ -3158,7 +3176,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
-                if (label != null) this.delete(label);
+                if (label != null) this.delete(label, tellAutonomy);
             }
         }
         finally

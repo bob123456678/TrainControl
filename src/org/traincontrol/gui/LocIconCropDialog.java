@@ -198,8 +198,14 @@ public class LocIconCropDialog extends JDialog
 
         reset.addActionListener(event ->
         {
+            // JUST resetView (LE2-B21).
+            //
+            // It restores the covering view and pushes that fraction into the slider itself, under the
+            // syncingZoom guard.  A zoom.setValue(0) after it is outside that guard, so it fires the
+            // listener straight back at MIN_ZOOM - and resetView's own javadoc says why that is wrong:
+            // zoom 0 is "the whole photograph visible" and leaves white down two sides of an icon
+            // nobody asked to change.  Reset is supposed to put the crop back where it opened.
             this.cropPanel.resetView();
-            zoom.setValue(0);
         });
 
         ok.addActionListener(event ->

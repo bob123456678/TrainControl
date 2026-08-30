@@ -8085,7 +8085,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Said out loud when it cannot be kept.  A rule that applies now and reverts on the next
             // start is the shape of "it did not save" that costs an hour to work out (LE-B5).
-            if (!persistPathPreference(option))
+            // true: somebody just chose this from the dropdown.
+            if (!persistPathPreference(option, true))
             {
                 this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
                     I18n.t("autolayout.ui.pathPreference" + option.name())));
@@ -8114,9 +8115,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         stacked.add(javax.swing.Box.createVerticalStrut(2));
         stacked.add(routingLogic);
         stacked.add(javax.swing.Box.createVerticalStrut(6));
-        stacked.add(turnOnFunctionsOnDeparture);
 
+        // REPLACE FIRST, RE-PARENT SECOND, and getting that order wrong stopped the application
+        // starting at all (LE2-A8).
+        //
+        // stacked.add(checkbox) re-parents it, and Container.addImpl removes it from jPanel3 on the
+        // way - which calls GroupLayout.removeLayoutComponent and DELETES the springs that hold its
+        // place. replace() then looks for those springs, finds none, and throws "Component must
+        // already exist" out of the constructor.
+        //
+        // Done this way round, replace() swaps the stack into the checkbox's slot while the checkbox
+        // is still known to the layout, and only then is the checkbox moved inside the stack.
         ((javax.swing.GroupLayout) jPanel3.getLayout()).replace(turnOnFunctionsOnDeparture, stacked);
+
+        stacked.add(turnOnFunctionsOnDeparture);
     }
 
     /**
@@ -8147,13 +8159,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * alone is null after every diagram edit, which is precisely when a choice made here went nowhere.
      *
      * @param option the rule chosen
+     * @param mayBuildSession true only when a person just clicked something. The session getter is a
+     *        lazy builder that parses every page, runs the caption migration - which writes to disk -
+     *        and can raise a dialog; a settings refresh must not do any of that, so it passes false
+     *        and settles for the session that already exists (LE2-C16).
      * @return true when it was stored, false when there was nothing to store it in
      */
-    private boolean persistPathPreference(org.traincontrol.automation.Layout.PathPreference option)
+    private boolean persistPathPreference(org.traincontrol.automation.Layout.PathPreference option,
+        boolean mayBuildSession)
     {
         try
         {
-            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+            // THE FIELD WHEN NOBODY CLICKED, THE BUILDER WHEN THEY DID (LE2-C16).
+            //
+            // LE-B5 justified getAutonomySession() here on the grounds that a menu click is not the
+            // layout-index write path SV-B2 bans it from. That was true of a click. It is not true of
+            // loadAutoLayoutSettings, which has fourteen callers - every autonomy settings checkbox
+            // among them - and which now reaches this through the migration. A lazy builder that
+            // parses every page, can write to disk and can raise a dialog must not run from a settings
+            // refresh, so the caller says which context it is.
+            org.traincontrol.automationui.AutonomySession session = mayBuildSession
+                ? getAutonomySession() : autonomySession;
 
             return session != null && session.setGlobal("pathPreference", option.name());
         }
@@ -8211,7 +8237,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // no session, no active configuration - threw away the only durable copy of a choice made
             // before the setting moved. The next restart was RANDOM, for ever. Kept until it has
             // landed, so a migration that cannot run today runs tomorrow.
-            if (persistPathPreference(option)) prefs.remove(legacy);
+            // false: this runs from loadAutoLayoutSettings, which is a refresh and not a click.
+            if (persistPathPreference(option, false)) prefs.remove(legacy);
         }
         catch (Exception e)
         {
