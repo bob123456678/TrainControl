@@ -11631,4 +11631,12 @@ value across. It is carried once, into the configuration, and the old setting re
    now genuinely differ - most of your edges carry no length, and until this week both of those scored
    every route as zero and picked the same one.
 
+**Adam, 2026-08-30 (triage).** Does not work.
+
+When switching from one config to the other, the option stays put.
+
+Since it is now tied to the autonomy config, move the preference to a DROPDOWN below the "maximum active trains" slider in the autonomy settings tab on the autonomy sidebar page.  Be sure it fits within the current panel, not outside of it where the "edit..." button is.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
