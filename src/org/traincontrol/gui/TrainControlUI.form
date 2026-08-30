@@ -4376,13 +4376,13 @@
                                               <Component id="simulate" alignment="0" min="-2" max="-2" attributes="0"/>
                                           </Group>
                                           <EmptySpace max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" attributes="0">
-                                              <Component id="maxActiveTrains" alignment="0" min="-2" pref="230" max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                              <Component id="maxActiveTrains" alignment="0" max="32767" attributes="0"/>
                                               <Component id="jLabel53" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="jLabel44" alignment="0" min="-2" max="-2" attributes="0"/>
-                                              <Component id="maximumLatency" alignment="0" min="-2" pref="230" max="-2" attributes="0"/>
+                                              <Component id="maximumLatency" alignment="0" max="32767" attributes="0"/>
                                               <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
-                                              <Component id="algorithmType" min="-2" max="-2" attributes="0"/>
+                                              <Component id="algorithmType" alignment="0" max="32767" attributes="0"/>
                                           </Group>
                                       </Group>
                                   </Group>

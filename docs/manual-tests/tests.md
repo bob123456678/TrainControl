@@ -11349,6 +11349,10 @@ Works, but if a page is excluded, instruct the user to click on edit to modify.
 
 *Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-30.** Addressed: the strip said only that the page was left out, with the remedy
+buried in a tooltip. It now reads "This page is left out of autonomy - click Edit to change that", in
+all eight languages.
+
 ---
 
 <a id="mt-221"></a>
@@ -11503,7 +11507,7 @@ Also, the error about duple curved tiles doesn't make sense.  Only one track has
 
 *Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
-#### 2026-08-30 - what changed after your run
+**Claude, 2026-08-30.** What changed after your run:
 
 **The duplicate now names the sensor.** It said only which page repeated something; it now reports one
 finding per repeated s88, naming the address and BOTH pages it appears on - the one it is on and the
@@ -11692,7 +11696,7 @@ Since it is now tied to the autonomy config, move the preference to a DROPDOWN b
 
 *Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
-#### 2026-08-30 - what changed after your run
+**Claude, 2026-08-30.** What changed after your run:
 
 **Moved, as you asked.** The routing rule is now a dropdown in the autonomy settings, directly beneath
 the maximum-active-trains slider and inside that bordered panel - not out where the Edit button is.
@@ -11705,7 +11709,7 @@ a configuration switch for the same reason they do.
 The menu entry is gone. Two places to set one value is what produced the always-says-RANDOM bug in the
 first place.
 
-**2026-08-30, second attempt.** My version of the dropdown was built in code, taking the departure
+**Claude, 2026-08-30.** Second attempt: my version of the dropdown was built in code, taking the departure
 checkbox's slot with GroupLayout.replace because the slider's slot is pinned at 55 pixels - and it
 looked wrong, which you said. It is gone, along with the layout surgery.
 

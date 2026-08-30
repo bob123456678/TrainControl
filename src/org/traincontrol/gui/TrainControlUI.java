@@ -8056,6 +8056,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             algorithmType.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
         }
 
+        // CAPPED AT THE WIDTH IT IS ALIGNED TO (Adam: "cap the length at the width that it is aligned
+        // to in the editor, 230px").
+        //
+        // Its slot is laid out at GroupLayout.PREFERRED_SIZE, so the control asks for whatever its
+        // widest ITEM needs - and the rule names are sentences, so it grew past the slider it sits
+        // under. Fixed here rather than in the designer because the width belongs to the text this
+        // code puts in, and that text changes with the language.
+        java.awt.Dimension capped = new java.awt.Dimension(230,
+            algorithmType.getPreferredSize().height);
+
+        algorithmType.setPreferredSize(capped);
+        algorithmType.setMaximumSize(capped);
+
+        // The full name still reaches the user, on the control that was too narrow to show it.
         algorithmType.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
 
         algorithmType.addActionListener(event ->
@@ -11916,13 +11930,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             .addComponent(jLabel50)
                             .addComponent(simulate))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(maxActiveTrains, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(maxActiveTrains, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jLabel53)
                             .addComponent(jLabel44)
-                            .addComponent(maximumLatency, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(maximumLatency, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jLabel2)
-                            .addComponent(algorithmType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(algorithmType, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addGap(25, 25, 25))
         );
         jPanel3Layout.setVerticalGroup(
