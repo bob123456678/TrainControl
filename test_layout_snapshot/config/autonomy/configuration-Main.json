@@ -31,12 +31,14 @@
   },
   "name": "Main",
   "points": {
+    "3 - Top Parking:18,15": {},
+    "3 - Top Parking:18,11": {},
     "1 - Main:0,11": {
-      "loc": {"name": "EN57-947"},
       "maxTrainLength": 0,
       "facing": "E",
       "priority": -1
     },
+    "3 - Top Parking:10,10": {},
     "1 - Main:19,14": {
       "loc": {"name": "EN57-203"},
       "maxTrainLength": 0,
@@ -45,6 +47,7 @@
       "canReverse": true
     },
     "1 - Main:21,6": {"canReverse": true},
+    "3 - Top Parking:4,9": {},
     "1 - Main:7,6": {
       "parking": true,
       "mustReverse": true,
@@ -87,6 +90,7 @@
       "maxTrainLength": 0,
       "priority": -2
     },
+    "3 - Top Parking:17,10": {},
     "2 - Bottom:16,9": {
       "parking": true,
       "mustReverse": true,
@@ -94,8 +98,8 @@
       "active": false
     },
     "1 - Main:6,1": {},
+    "3 - Top Parking:17,12": {},
     "1 - Main:4,4": {
-      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 0,
       "facing": "N",
       "priority": 2
@@ -124,7 +128,11 @@
       "autoDestination": false
     },
     "1 - Main:10,7": {"speedMultiplier": 0.9},
-    "1 - Main:12,11": {"maxTrainLength": 0},
+    "1 - Main:12,11": {
+      "loc": {"name": "2-8-4 3505 SP"},
+      "maxTrainLength": 0,
+      "facing": "W"
+    },
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {
@@ -141,8 +149,11 @@
       "active": false
     },
     "1 - Main:9,13": {},
+    "3 - Top Parking:5,9": {},
+    "3 - Top Parking:7,6": {},
     "1 - Main:6,7": {
       "maxTrainLength": 0,
+      "facing": "S",
       "priority": -2
     },
     "1 - Main:4,9": {},
@@ -176,7 +187,9 @@
     "1 - Main:3,3": {},
     "1 - Main:1,3": {},
     "1 - Main:5,4": {
+      "loc": {"name": "EN57-947"},
       "maxTrainLength": 0,
+      "facing": "N",
       "priority": 1
     },
     "2 - Bottom:17,8": {
@@ -185,12 +198,17 @@
       "maxTrainLength": 0,
       "active": false
     },
+    "3 - Top Parking:19,15": {},
     "1 - Main:3,5": {
       "mustReverse": true,
       "maxTrainLength": 0,
       "active": false,
       "priority": 1
     },
+    "3 - Top Parking:11,10": {},
+    "3 - Top Parking:5,17": {},
+    "3 - Top Parking:19,11": {},
+    "3 - Top Parking:5,16": {},
     "2 - Bottom:8,7": {
       "parking": true,
       "mustReverse": true,
