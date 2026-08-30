@@ -970,6 +970,17 @@ public class AutonomySession
      * what the next build reads, so it is where a second placement can hide.  The running layout has
      * already refused to hold one twice by the time anybody could ask it.
      *
+     * PAGES THE USER SWITCHED OFF ARE LEFT OUT, and leaving them in was a real fault. Every other check
+     * in this class reads from the reducer, which is built with excluded pages already dropped; this
+     * one reads raw JSON, so it alone could report a square that is not in play. The duplicate-
+     * locomotive finding it feeds is an ERROR whose message says autonomy "refuses the whole setup" -
+     * so a placement left behind on a page somebody excluded could refuse the railway and send them to
+     * a page they had deliberately turned off in order to fix it.
+     *
+     * A placement on an excluded page is not wrong, either. Excluding a page does not move the trains
+     * standing on it, and it is meant to be reversible: switch the page back on and the placement is
+     * there, which is the point of keeping it.
+     *
      * @return square to locomotive name, empty when nothing is loaded
      */
     private Map<TileKey, String> placedLocomotives()
@@ -1002,7 +1013,12 @@ public class AutonomySession
 
             TileKey tile = AutonomyCompanionStore.parseTileKey(key);
 
-            if (tile != null) out.put(tile, name);
+            if (tile == null) continue;
+
+            // Not in play, so not worth reporting - see above.
+            if (store.getExcludedPages().contains(tile.getPage())) continue;
+
+            out.put(tile, name);
         }
 
         return out;

@@ -226,6 +226,93 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A page that is switched off cannot refuse the railway (Adam).
+     *
+     * "the first few times it told me there was a conflict with page 2, and the changes didn't save,
+     * even though page 2 was off."
+     *
+     * `placedLocomotives` read the configuration's points straight out of the JSON, so it handed the
+     * checks placements on pages the user had excluded - the only reader in that class not going
+     * through the reducer, which drops excluded pages for everybody else. The duplicate-locomotive
+     * finding it feeds is an ERROR that says autonomy "refuses the whole setup", so a placement left
+     * behind on a switched-off page could refuse the railway and send the user to that page to fix it.
+     *
+     * BOTH HALVES, because either alone is worthless. "An excluded page raises nothing" is satisfied
+     * by a check that never fires - including by deleting the check - so the same placement on a page
+     * still in play has to be reported, in the same test, from the same setup.
+     */
+    @Test
+    public void testAPageThatIsOffCannotRefuseTheRailway() throws Exception
+    {
+        LayoutDiagram first = runOfTrack();
+
+        LayoutDiagram other = new LayoutDiagram("other", 6, 4, null, null);
+
+        // 11 is the first page's own sensor, so this page repeats it and is the one shut out
+        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        other.setPageId("2");
+        other.checkBounds();
+
+        session.open(Arrays.asList(first, other));
+        session.initialize("Default");
+
+        assertEquals(session.excludeRepeatedSensorPages(), Arrays.asList("other"),
+            "the fixture depends on the repeating page being the one excluded");
+
+        // THE DUPLICATE SPANS THE EXCLUSION: one copy on a page in use, one on the page just
+        // switched off.  Written straight into the configuration because that is where a stale
+        // placement lives - excluding a page does not move the trains standing on it.
+        org.json.JSONObject configuration = session.getStore().getConfiguration("Default");
+
+        // A fresh configuration has no points object until something writes one.
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        points.put(new TileKey("other", 1, 1).toString(),
+            new org.json.JSONObject().put("loc", new org.json.JSONObject().put("name", "BR 218")));
+
+        points.put(new TileKey(first.getName(), 1, 1).toString(),
+            new org.json.JSONObject().put("loc", new org.json.JSONObject().put("name", "BR 218")));
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertFalse("other".equals(finding.getTile() == null ? null : finding.getTile().getPage()),
+                "a page the user switched off raised " + finding.getSeverity() + " "
+                + finding.getMessageKey() + " - excluding a page has to stop it having an opinion, "
+                + "or the only way to fix the railway is on a page that is not in use");
+
+            assertFalse(
+                org.traincontrol.automationui.AutonomyChecks.DUPLICATE_LOCOMOTIVE.equals(
+                    finding.getMessageKey()),
+                "the only other copy of this locomotive is on a page that is switched off, so there "
+                + "is no duplicate among the pages in play - and this finding refuses the whole setup");
+        }
+
+        // THE CONTROL: a duplicate wholly on pages in use must still refuse the setup.  Without it,
+        // the assertions above are equally satisfied by deleting the check.
+        points.put(new TileKey(first.getName(), 3, 1).toString(),
+            new org.json.JSONObject().put("loc", new org.json.JSONObject().put("name", "BR 218")));
+
+        boolean refused = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.DUPLICATE_LOCOMOTIVE.equals(
+                finding.getMessageKey()))
+            {
+                refused = true;
+            }
+        }
+
+        assertTrue(refused,
+            "a locomotive standing on two squares of a page that IS in play was not reported, so the "
+            + "assertions above prove nothing - scoping the check to live pages must not turn it off");
+    }
+
+    /**
      * What was decided comes back after a restart, and the graph derived from it matches.
      */
     @Test

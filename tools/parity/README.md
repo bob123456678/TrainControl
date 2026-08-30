@@ -73,6 +73,26 @@ absence described the modelling rather than the railway, so routes are compared 
 graphs know about, dropped symmetrically. What that still catches, deliberately: a place both graphs
 have that a route no longer passes through.
 
+## Differences already ruled on
+
+**Routing through TopMainR1 / TopMainR2 rather than past them is EXPECTED.** 2.8.1 went
+`TopMainR1Pre -> TopMainPost`, around the platform; 3.0.0 goes through it. Adam: "The TopMainR1 pre
+bypass is expected, because previously, we had no way of switching the guard signal green, but now we
+do." The old graph needed a bypass because the guard signal could not be set; the derived graph can
+set it, so the platform road is available and the bypass is not a separate place any more. Do not
+re-open this one - it is the new engine being able to do something the old one could not.
+
+**Helper points absent from the derived graph are expected** - `TopMainR1Bypass`, `BottomSecondaryPre`,
+`BottomExitVIrt` and the rest exist only to make the hand-built model work. Where the old graph had
+both a place and its parking twin - `TopMainR0` and `TopMainR0Park` - the derived graph needs only the
+one it kept. Routes are compared on places both graphs know, so these cost nothing either way.
+
+**Parking destinations that exist but are not offered** are expected too: reversing points are parking,
+and `pickPath` excludes them from fully autonomous selection by design.
+
+Still open: `BottomInner -> Tunnel` has lost its alternative via `BottomCrossover` and `TunnelPre`, and
+both of those exist in the derived graph.
+
 ## PathPreferenceProbe
 
 3.0.0 only, because the preference is. It asks each routing-logic setting what it would actually
