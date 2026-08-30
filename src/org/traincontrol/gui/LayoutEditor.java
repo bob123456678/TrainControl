@@ -2507,6 +2507,9 @@ public class LayoutEditor extends PositionAwareJFrame
             // around the square.  A mark that moves the thing it marks is not a mark.
             grip.setBorder(new SelectionGrip());
 
+        // Set directly rather than through applyBorder, so the record has to be dropped (OB-157).
+        forgetBorderState(grip);
+
             grip.setToolTipText(I18n.t("layout.ui.tooltipSelectionHandle"));
         }
     }
@@ -3919,10 +3922,65 @@ public class LayoutEditor extends PositionAwareJFrame
         this.captionDropTarget = null;
 
         was.setBorder(restingBorder(false, isAutonomyMode()));
+
+        // Set directly rather than through applyBorder, so the record has to be dropped (OB-157).
+        forgetBorderState(was);
     }
 
     /** The square currently wearing the drag mark, so it can be given its own border back. */
     private LayoutLabel captionDropTarget;
+
+    /**
+     * The border each tile is currently wearing, as a key rather than as an object (OB-157).
+     *
+     * Borders are built fresh every time and do not compare equal, so "is it already right?" cannot be
+     * asked of the component.  A short string describing what was applied can be.
+     *
+     * WEAK, so that a rebuilt grid takes its records with it.  The keys are labels that no longer
+     * exist once drawGrid has run, and holding them here would keep a whole discarded grid alive.
+     */
+    private final java.util.Map<JLabel, String> borderState = new java.util.WeakHashMap<>();
+
+    /**
+     * Sets a tile's border, unless it is already wearing that one (OB-157).
+     *
+     * setBorder repaints whether or not anything changed, and refreshSelectionBorders runs on every
+     * mouse-motion event of a selection drag - so a few hundred tiles were repainted per mouse move to
+     * change the outline on one or two of them.  That is the flickering Adam reported.
+     *
+     * The key has to describe everything the border depends on.  A resting border is a different
+     * border in the palette, in autonomy mode, and with the grey grid off, and any of those can change
+     * while the same tiles stay on screen - so a key that left one out would skip a repaint that was
+     * needed, and leave a stale outline behind.  That is worse than the flicker.
+     *
+     * @param label the tile
+     * @param border what it should wear
+     * @param key what that border IS, for comparing against next time
+     */
+    private void applyBorder(JLabel label, Border border, String key)
+    {
+        if (label == null) return;
+
+        if (key.equals(this.borderState.get(label))) return;
+
+        label.setBorder(border);
+
+        this.borderState.put(label, key);
+    }
+
+    /**
+     * Forgets what a tile was wearing, for the paths that set a border without going through
+     * applyBorder (OB-157).
+     *
+     * Two do - the caption drag mark being put back, and the drag grip - and both must say so, or the
+     * next refresh trusts a key that no longer describes the tile and skips a repaint it needs.
+     *
+     * @param label the tile whose border something else has just changed
+     */
+    private void forgetBorderState(JLabel label)
+    {
+        if (label != null) this.borderState.remove(label);
+    }
 
     private void highlightLabel(JLabel label, Color color)
     {
@@ -3944,8 +4002,10 @@ public class LayoutEditor extends PositionAwareJFrame
             boolean reservesRoom = resting != null
                 && resting.getBorderInsets(label).left > 0;
 
-            label.setBorder(reservesRoom
-                ? BorderFactory.createLineBorder(color, width) : overlayLine(color, width));
+            applyBorder(label,
+                reservesRoom
+                    ? BorderFactory.createLineBorder(color, width) : overlayLine(color, width),
+                "hl:" + color.getRGB() + ":" + width + ":" + reservesRoom);
         }
     }
     
@@ -3973,7 +4033,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     // constructor never gives them a border; this is the door that was putting one on.
                     if (label instanceof LayoutLabel && !((LayoutLabel) label).isSpacer())
                     {
-                        label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));
+                        boolean palette = newComponents.equals(panel);
+
+                        applyBorder(label, restingBorder(palette, isAutonomyMode()),
+                            "rest:" + palette + ":" + isAutonomyMode() + ":" + showGrid());
                     }
                 }
             }

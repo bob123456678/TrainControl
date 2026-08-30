@@ -38,8 +38,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
+| [MT-234](#mt-234) | 2026-08-30 | A train passing through a station says which way it is going | fixed unvalidated | OB-158 |
 | [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
-| [MT-231](#mt-231) | 2026-08-30 | A station you push down is not visited by the longest route | fixed unvalidated | RC-B2 |
 | [MT-233](#mt-233) | 2026-08-30 | Start with nothing that can start leaves the railway alone | fixed unvalidated | RC-B5 |
 
 Everything else - 206 of 233 - is **fixed validated** and needs nothing from you unless the
@@ -11916,6 +11916,29 @@ can't we fix it by remembering which tiles were just added/removed to/from the s
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-30 (second round).** Done, the way you described - only the tiles whose outline
+changed are repainted.
+
+It is done one level below the selection, which covers more than the selection alone.
+`clearBordersFromChildren` has eight callers and `highlightLabel` several more, so changing what either
+of them MEANS would change all of them. Instead each records the border it just applied, as a short
+key, and skips the call when the key has not changed. Every caller keeps its contract and the repaints
+go away.
+
+**The key has to name everything the border depends on** - palette or diagram, autonomy mode or not,
+grey grid on or off - because all three can change while the same tiles stay on screen, and a key that
+left one out would skip a repaint that was needed. A stale outline is worse than the flicker.
+
+Two other places set a tile's border directly, the caption drag mark and the drag grip, and both now
+drop their record - otherwise the next refresh would trust a key that no longer describes the tile.
+
+1. **Drag a selection box** across a busy page. It should follow the mouse without the whole diagram
+   flashing.
+2. **Watch a tile that is already picked** as the box passes over it - it should not flicker at all.
+3. **Toggle the grey grid** (and switch in and out of the autonomy editor) while a selection is live.
+   The outlines must survive: this is the case a careless version of this fix breaks.
+4. **Drag a caption onto a tile and off again**, then re-select - the outline must come back.
+
 ---
 
 <a id="mt-229"></a>
@@ -11992,7 +12015,7 @@ explained it was debug-only, so nothing said why.
 
 ### MT-231 - 2026-08-30 - A station you push down is not visited by the longest route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-B2
 **Written:** 2026-08-30
 
@@ -12141,6 +12164,65 @@ Instead of default speed.
 It was added via contorl+V on the track diagram viewer.
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30 (second round).** Fixed - and you found the exact case I had named and left open.
+
+`parseAuto` applies the default as it LOADS, so anything from a file has a speed. A locomotive placed by
+hand has not been through that path, which is why Ctrl+V on the diagram and then Start gave you "Invalid
+speed specified" - that is `runLocomotive`'s own guard, doing its job on a locomotive nothing had given
+a speed to.
+
+`moveLocomotive` is the single door onto the graph - the diagram paste, the right-click menu and the
+autonomy editor all arrive there - so the same rule the load path applies now runs there too.
+
+Two tests: a placed locomotive gets the default, and one that already has a speed keeps it.
+
+1. **Add a locomotive to the diagram with Ctrl+V**, without ever opening its speed dialog.
+2. **Press Start.** It should run at the default speed, and the log should say it applied one - not
+   "Invalid speed specified".
+3. **Set a locomotive's speed to something of your own**, place it, and check that placing it did not
+   overwrite your choice.
+
+---
+
+<a id="mt-234"></a>
+
+### MT-234 - 2026-08-30 - A train passing through a station says which way it is going
+
+**Disposition:** fixed unvalidated
+**From:** OB-158
+**Written:** 2026-08-30
+
+Adam: "previously blocked stations with an active train would get [xxx].  Now I see ... on the label
+instead, which is fine.  Those also turn red." - and: "make the ... not be bold, and change it to one
+arrow that correctly shows the direction of travel."
+
+The "..." is three bullet characters, put on every station a running route passes through that is
+neither its start nor its destination. Nothing sets a bold font on these captions - the bullets are
+simply heavier glyphs than the names and arrows beside them, which is what reads as bold. They are now
+one arrow.
+
+**The direction needed no working out.** The graph is split by facing, so the copy a route runs through
+IS the direction of travel through that square - the same helper the standing train's caption uses,
+asked about a station the train has not reached yet. That also settles a complaint its own comment
+makes a few lines above: the arrow used to come from the square's stored facing, which is only written
+when a train is placed by hand, so it appeared for a train you had placed and vanished for one autonomy
+had driven there.
+
+The bullets remain as the fallback, for a graph whose stations are not split and so have no direction
+to draw. The red is unchanged - it is the pending-milestone colour every unreached part of a route is
+drawn in, and you said it is fine.
+
+1. **Start a run** and watch a train cross a station it does not stop at. The label should show one
+   arrow, pointing the way it is travelling, rather than three dots.
+2. **Check the arrow is right** - compare it against which way the train actually goes through that
+   platform, on a station where the route runs the "wrong" way round.
+3. **Watch the same platform on a later run** where the train goes the other way through it. The arrow
+   should follow the route, not the platform.
+4. **The start and the destination are unchanged** - the origin stays white-on-grey, the destination
+   stays yellow with the train's name.
+
+*Run against commit c386be96 or later.*
 
 ---
 

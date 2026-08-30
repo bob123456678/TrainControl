@@ -460,6 +460,80 @@ public class testRoutePicking
     }
 
     /**
+     * A locomotive placed on the graph is given the default speed, as a loaded one already is (MT-233).
+     *
+     * Adam: "added MT-233 Test Loc.  After initial placement, error: Invalid speed specified.  Instead
+     * of default speed.  It was added via control+V on the track diagram viewer."
+     *
+     * parseAuto applies defaultLocSpeed as it LOADS, so anything out of a file has a speed - and a
+     * locomotive placed by hand has not been through that path.  Start then refused it, which is
+     * runLocomotive's own guard doing its job on a locomotive nothing had given a speed to.
+     *
+     * moveLocomotive is the single door onto the graph: the diagram paste, the right-click menu and the
+     * autonomy editor all arrive here.
+     */
+    @Test
+    public void testAPlacedLocomotiveIsGivenTheDefaultSpeed() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        int was = loc.getPreferredSpeed();
+
+        try
+        {
+            layout.setDefaultLocSpeed(35);
+
+            // What a locomotive that has never had its speed dialog opened looks like.
+            loc.setPreferredSpeed(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RP_Start", false),
+                "precondition: the locomotive could not be placed at all");
+
+            assertEquals(loc.getPreferredSpeed(), 35,
+                "a locomotive placed on the graph still has no speed, so Start answers \"Invalid speed "
+                + "specified\" instead of running it at the default - which is what the load path has "
+                + "always done for a locomotive read from a file (MT-233)");
+        }
+        finally
+        {
+            loc.setPreferredSpeed(was);
+        }
+    }
+
+    /**
+     * And a speed already chosen is not overwritten by the default (MT-233).
+     *
+     * The control.  Without it, "always set the default on placement" passes the test above and quietly
+     * throws away every speed the user has ever picked.
+     */
+    @Test
+    public void testPlacingDoesNotOverwriteASpeedAlreadyChosen() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        int was = loc.getPreferredSpeed();
+
+        try
+        {
+            layout.setDefaultLocSpeed(35);
+
+            loc.setPreferredSpeed(72);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RP_Start", false),
+                "precondition: the locomotive could not be placed at all");
+
+            assertEquals(loc.getPreferredSpeed(), 72,
+                "placing the locomotive replaced the speed its owner had chosen with the default");
+        }
+        finally
+        {
+            loc.setPreferredSpeed(was);
+        }
+    }
+
+    /**
      * Puts a locomotive at the start and hands it back.
      */
     private static Locomotive placedLocomotive(Layout layout) throws Exception

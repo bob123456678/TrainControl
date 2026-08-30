@@ -5029,7 +5029,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Don't display locomotive name at intermediate stations to avoid confusion
                                 if (!p.equals(start))
                                 {
-                                    j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
+                                    // ONE ARROW, THE WAY THE TRAIN IS GOING (OB-158).
+                                    //
+                                    // Adam: "make the ... not be bold, and change it to one arrow that
+                                    // correctly shows the direction of travel."  What stood here was
+                                    // LAYOUT_STATION_OCCUPIED - three bullets - which says only that
+                                    // something is passing through.  Nothing sets a bold font on these
+                                    // captions; the bullets are simply heavier glyphs than the names
+                                    // and arrows beside them, which is what reads as bold.
+                                    //
+                                    // The direction needs no working out from the path: the graph is
+                                    // split by facing, so the COPY the route runs through IS the
+                                    // direction of travel through that square.  facingArrowOf is the
+                                    // same helper the standing train's caption uses, asked about a
+                                    // point the train has not reached yet.
+                                    //
+                                    // The bullets stay as the fallback.  A hand-built graph need not
+                                    // split its stations, and a copy with no recorded facing has no
+                                    // direction to draw - "something is passing through here" is still
+                                    // worth saying when which way cannot be.
+                                    String through = facingArrowOf(p, square).trim();
+
+                                    j.setText(through.isEmpty()
+                                        ? LayoutGrid.LAYOUT_STATION_OCCUPIED : through);
+
                                     j.setBackground(StationCaption.restingFill());
                                 }
                                 // Originating station highlighted differently

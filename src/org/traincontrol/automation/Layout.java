@@ -5464,6 +5464,28 @@ public class Layout
             {
                 this.locomotivesToRun.add(l);
             }
+
+            // AND A SPEED, IF NOBODY HAS EVER GIVEN IT ONE (MT-233).
+            //
+            // parseAuto applies defaultLocSpeed as it loads, so every locomotive that came out of a
+            // file has a speed.  One placed by hand has not been through that path - and Adam placed
+            // one with Ctrl+V on the diagram, pressed Start, and got "Invalid speed specified" from
+            // runLocomotive's guard instead of the default he expected.
+            //
+            // This is the same rule as the load path, in the other door.  moveLocomotive is the single
+            // way a locomotive gets onto the graph - the diagram paste, the right-click menu and the
+            // autonomy editor all arrive here - so one place covers them.
+            //
+            // Only when the default is usable.  setDefaultLocSpeed refuses anything outside 1 to 100,
+            // so a layout read from a file always has one; a Layout built by hand in a test may still
+            // be at zero, and swapping one unusable speed for another would just move the complaint.
+            if (l.getPreferredSpeed() < 1 && this.defaultLocSpeed >= 1)
+            {
+                l.setPreferredSpeed(this.defaultLocSpeed);
+
+                this.control.logf("autolayout.warnLocomotiveDefaultSpeedApplied",
+                    l.getName(), this.defaultLocSpeed);
+            }
             
             // Resolved once and null-checked, as the locomotive == null branch below already does.
             // An unknown point name used to be dereferenced straight away and thrown, rather than
