@@ -530,6 +530,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // as long as a loop over already-parsed objects instead of as long as a network round trip.
         List<LayoutDiagram> parsed = fileParser.parseLayout(accs);
 
+        // ASKED ONCE, HERE, AND CARRIED (RC-B9).
+        //
+        // The pruning decision a hundred and sixty lines below used to ask the parser again, and
+        // `fileParser` is a field that syncWithCS2 reassigns OUTSIDE the lock that serialises this
+        // method - so a concurrent refresh could have put a fresh parser there, the second question
+        // would have been answered with its zero, and the pruning would have run on a partial read.
+        // A local removes the question rather than answering it.
+        final int couldNotBeRead = fileParser.getPagesThatCouldNotBeRead();
+
         // NOTHING READ IS STILL A FAILURE (RC-A4).
         //
         // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch, so the revert
@@ -540,10 +549,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         //
         // Thrown BEFORE clearLayouts, so the diagram already on screen survives the attempt.  An empty
         // folder is not this: it fails no pages, so it comes through as the empty layout it is.
-        if (parsed.isEmpty() && fileParser.getPagesThatCouldNotBeRead() > 0)
+        if (parsed.isEmpty() && couldNotBeRead > 0)
         {
-            throw new Exception(I18n.f("layout.warningPageCouldNotBeRead",
-                String.valueOf(fileParser.getPagesThatCouldNotBeRead()), "*"));
+            throw new Exception(I18n.f("layout.errorNoPageCouldBeRead", couldNotBeRead));
         }
 
         this.clearLayouts();
@@ -687,10 +695,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // The isEmpty() guard covers only TOTAL failure, which is why the total case was safe and the
         // partial case was not.  A partial read is exactly the state in which this loop's question -
         // "is this sensor on any page?" - cannot be answered.
-        if (fileParser.getPagesThatCouldNotBeRead() > 0)
+        if (couldNotBeRead > 0)
         {
-            this.logf("layout.pruningSkippedPageUnreadable",
-                fileParser.getPagesThatCouldNotBeRead());
+            this.logf("layout.pruningSkippedPageUnreadable", couldNotBeRead);
         }
         else if (!feedbackAddresses.isEmpty())
         {

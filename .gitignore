@@ -56,3 +56,10 @@ replay_pid*.log
 # Python bytecode from the parity harness scripts
 __pycache__/
 *.pyc
+
+# The locomotive icon crops TrainControl writes at runtime (RC-C13).
+#
+# Swept into a commit by a `git add -A` on 2026-08-30.  They are the operator's own data, rewritten
+# whenever an icon is cropped, so tracking them means every crop turns up as an uncommitted change or
+# gets committed by accident.
+/tc_loc_icons/

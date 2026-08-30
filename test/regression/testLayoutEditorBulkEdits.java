@@ -328,6 +328,94 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
+     * A paste that overlaps the squares it was cut from still carries all of them (RC-A6).
+     *
+     * RC-A1 made cutMoves ask, per origin, whether that square is still empty.  Right question, wrong
+     * moment: pasteSelection places its tiles first, so an origin that is also a LANDING has been
+     * refilled by this very paste before cutMoves looks at it.
+     *
+     * That is not merely a skipped move.  A landing square is in `builtOver`, and the per-index sparing
+     * only spares a landing that equals its OWN origin - so the setup on such a square was forgotten as
+     * built-over while nothing had carried it anywhere.  Destroyed, where before RC-A1 it moved.
+     *
+     * Cut a column and paste it one square down and that is every square on the column except the top.
+     * Two stations, one square apart, so both the moved-onto-a-landing case and the ordinary case are
+     * in the same run.
+     */
+    @Test
+    public void testAPasteOverlappingItsOwnOriginCarriesEveryone() throws Exception
+    {
+        withEditor("tc-cut-overlap", (editor, session, page) ->
+        {
+            // A second station, one square below the one withEditor sets up.
+            session.getStore().setStation(at(page, 5, 4), true);
+            session.getStore().setPointName(at(page, 5, 4), "The One Below");
+
+            // A THREE-SQUARE STRIP, not the whole column.  A full-height selection shifted down can
+            // never fit - pasteSelection refuses it with a modal dialog, and a modal dialog inside
+            // invokeAndWait is a deadlock, which is how this test hung a suite for six hours (RC-B10).
+            editor.getSelection().addRectangle(5, 2, 5, 4);
+            editor.cutSelection();
+
+            // One square DOWN, so the middle and bottom origins are also landings.
+            editor.pasteSelection(5, 3);
+        }, (session, page) ->
+        {
+            assertTrue(session.getStore().isStation(at(page, 5, 4)),
+                "the upper station did not arrive one square down - and its origin (5,3) was the top "
+                + "of the strip, so if this failed the whole carry is broken, not just the overlap");
+
+            assertEquals(session.getStore().getPointName(at(page, 5, 4)), "Cut And Carried",
+                "the upper station arrived, but not as itself");
+
+            assertTrue(session.getStore().isStation(at(page, 5, 5)),
+                "the LOWER station did not arrive.  Its origin square (5,4) is also where the upper "
+                + "one landed, so the paste had already refilled it by the time cutMoves asked "
+                + "whether it was empty - and a refilled origin is a landing, so its setup was then "
+                + "forgotten as built over rather than carried (RC-A6)");
+
+            assertEquals(session.getStore().getPointName(at(page, 5, 5)), "The One Below",
+                "the lower station arrived carrying the wrong name, so the two moves crossed");
+        });
+    }
+
+    /**
+     * Undo after a shrink does not put a station’s name back outside the page (RC-B1).
+     *
+     * shrinkEdges snapshots for undo BEFORE it drops the captions on the row and column it is about to
+     * remove - that is LE-B1’s fix, and correct on its own path.  Undo then restores the components
+     * and the captions, but the page SIZE is not part of an undo entry, and a shrink is only offered
+     * when the trimmed edge holds no track, so no restored component pins the size back either.
+     *
+     * So Ctrl+Z after "-" gives the caption back and not the row it stood on: a name that is present in
+     * the setup, never drawn, and with no square left to click to remove it.  Exactly the state LE-B1
+     * was raised for, reached through undo instead of through the shrink.
+     *
+     * RC-B1 was fixed with no test of its own and its disposition said otherwise, which is the failure
+     * this file exists to catch in the editor and did not catch in itself.
+     */
+    @Test
+    public void testUndoingAShrinkDoesNotRestoreACaptionOffThePage() throws Exception
+    {
+        withEditor("tc-shrink-undo", (editor, session, page) ->
+        {
+            // On the last row, which is what the shrink takes away.  A caption goes on a blank square
+            // by preference, so this is where one naturally ends up.
+            session.setCaption(at(page, 3, 15), at(page, 5, 3));
+
+            editor.shrinkEdges();
+
+            editor.undo();
+        }, (session, page) ->
+        {
+            assertFalse(session.captionsOnPage(page).containsKey(at(page, 3, 15)),
+                "undo put the station name back on a square the page no longer has - present in the "
+                + "setup, never drawn, and with nowhere left to click to remove it, which is the whole "
+                + "of LE-B1 reached through undo instead of through the shrink (RC-B1)");
+        });
+    }
+
+    /**
      * A cut still carries its setup when the paste is not the very next thing the user does (RC-A1).
      *
      * `clipboardWasCut` is the ONLY thing that carries a group cut's setup - cutSelection calls
@@ -510,20 +598,60 @@ public class testLayoutEditorBulkEdits
                 }
             });
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> gesture.run(editor[0], session, page));
+            // ON A DEADLINE, not invokeAndWait (RC-B10).
+            //
+            // A gesture that makes the editor raise a modal dialog - an out-of-bounds paste is one -
+            // deadlocks invokeAndWait outright: the gesture waits for the dialog and the dialog waits
+            // for a click.  One did, and the suite sat on it for six hours using twelve seconds of CPU,
+            // reporting nothing, because a class that prints no summary reads like a class that passed.
+            //
+            // A minute is far more than any of these gestures needs and far less than a working day.
+            // The failure names the likely cause, because the stack trace of a blocked event thread
+            // does not.
+            final java.util.concurrent.CountDownLatch finished =
+                new java.util.concurrent.CountDownLatch(1);
+
+            final Throwable[] thrown = new Throwable[1];
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    gesture.run(editor[0], session, page);
+                }
+                catch (Throwable bad)
+                {
+                    thrown[0] = bad;
+                }
+                finally
+                {
+                    finished.countDown();
+                }
+            });
+
+            assertTrue(finished.await(60, java.util.concurrent.TimeUnit.SECONDS),
+                "the gesture did not finish in a minute.  The event thread is blocked - the usual "
+                + "cause is the editor raising a modal dialog that nothing will ever click, and the "
+                + "usual reason for THAT is a paste or a shift that does not fit on the page "
+                + "(RC-B10)");
+
+            if (thrown[0] instanceof Error) throw (Error) thrown[0];
+            if (thrown[0] != null) throw new RuntimeException(thrown[0]);
 
             check.run(session, page);
         }
         finally
         {
+            // POSTED, NOT WAITED ON (RC-B10).  If the deadline above expired the event thread is
+            // still blocked, and waiting for it here would turn a reported failure back into a hang.
             if (editor[0] != null)
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+                javax.swing.SwingUtilities.invokeLater(() -> editor[0].dispose());
             }
 
             if (ui[0] != null)
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+                javax.swing.SwingUtilities.invokeLater(() -> ui[0].dispose());
             }
 
             if (model != null) model.stop();

@@ -234,7 +234,10 @@ public class RouteEditorFrame extends JFrame
         // only one missed, and it is missed exactly where it matters: capture is ticked here and the
         // switches are thrown on the layout window, so clicking over there put the window being
         // watched behind the one being clicked.
-        setAlwaysOnTop(parent.isAlwaysOnTop());
+        // Null-checked, because this window is built with a null parent by five test classes and
+        // every other line of this constructor tolerates that - setLocationRelativeTo(null) is legal
+        // and centres on the screen (RC-B6).
+        if (parent != null) setAlwaysOnTop(parent.isAlwaysOnTop());
 
         pack();
         setLocationRelativeTo(parent);

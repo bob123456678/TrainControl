@@ -298,14 +298,27 @@ public class Layout
         // long way round".
         //
         // Shrinking rather than clamping at 1. A clamp stops the inversion and then ties every
-        // de-prioritised station with an ordinary one, which is a different wrong answer. This is 500
-        // at -1, 333 at -2, 166 at -5: always positive, always below the 1000 an ordinary station
-        // gets, and still ordered among themselves. Nothing at or above zero changes.
-        int worth = end.getPriority() >= 0
-            ? (end.getPriority() + 1) * 1000
-            : 1000 / (1 - end.getPriority());
+        // de-prioritised station with an ordinary one, which is a different wrong answer. Below zero a
+        // station is worth 1/(1 - priority) of an ordinary one: half at -1, a third at -2, a sixth at
+        // -5 - always positive, always below what priority 0 gets, and ordered among themselves.
+        // Nothing at or above zero changes.
+        //
+        // A MILLION RATHER THAN A THOUSAND, and in long (RC-B8). This is integer division, so the
+        // ratio ties at zero for every route longer than `worth` - and at a thousand, `worth` for a
+        // de-prioritised station was at most 500, so on any layout with real lengths every route to it
+        // scored 0 and distance stopped mattering. That is exactly the symptom this arithmetic was
+        // rewritten to remove, moved rather than removed.
+        //
+        // It cannot be pushed away entirely; integer division always ties eventually. What it can be
+        // is pushed past anything real: the tie needs a route longer than 1000000/(1 - priority), so
+        // half a million tiles at -1, and still a thousand at -1000. Every ordering below that holds.
+        long worth = end.getPriority() >= 0
+            ? (end.getPriority() + 1L) * 1000000L
+            : 1000000L / (1L - end.getPriority());
 
-        return worth / length;
+        // Clamped rather than wrapped: a priority somebody typed with a stuck key must not come back
+        // as a negative cost.
+        return (int) Math.min(Integer.MAX_VALUE, worth / length);
     }
     /**
      * How long a route is, from the lengths set on its tiles.
@@ -1600,7 +1613,15 @@ public class Layout
         // cannot ask up front the way the timetable does, because the skips are decided one locomotive
         // at a time, so it asks afterwards.  The window's own guard covers an empty run LIST, not a
         // list where every entry was skipped.
-        if (started.get() == 0)
+        // AND ONLY WHEN THERE WAS SOMETHING TO START (RC-B7).
+        //
+        // An empty run list is not the case this guards.  The Start handler refuses one before it gets
+        // here, so it cannot arrive from the application; and `setLocomotivesToRun(empty)` followed by
+        // this method is how four tests say "autonomy is on" without moving anything, which is a
+        // legitimate thing for a caller to mean.  Clearing the flag there would change what this
+        // method MEANS rather than fix the defect reported, which is about every locomotive in a
+        // non-empty list being skipped.
+        if (!this.locomotivesToRun.isEmpty() && started.get() == 0)
         {
             synchronized (this.activeLocomotives)
             {

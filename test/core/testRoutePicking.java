@@ -397,7 +397,11 @@ public class testRoutePicking
 
             layout.runLocomotives();
 
-            assertFalse(layout.isRunning(),
+            // isAutoRunning(), not isRunning().  isRunning() is `running || anything active ||
+            // any thread alive`, so it answers about three things and RC-B5 is about one of them -
+            // and the extra two are set from the started thread, which is a race in the control
+            // below.  The flag is set and cleared on this thread, so there is nothing to wait for.
+            assertFalse(layout.isAutoRunning(),
                 "every locomotive was skipped and the layout is still \"running\", with no thread that "
                 + "can ever clear the flag.  Until Stop is pressed, moving a locomotive by hand, "
                 + "renaming a point and switching simulation all refuse, and hand dispatches are "
@@ -432,7 +436,7 @@ public class testRoutePicking
 
             layout.runLocomotives();
 
-            assertTrue(layout.isRunning(),
+            assertTrue(layout.isAutoRunning(),
                 "a locomotive that can be started did not leave the layout running, so Start has "
                 + "become a no-op - which is the wrong way to satisfy RC-B5");
         }
@@ -580,12 +584,33 @@ public class testRoutePicking
 
         // And the same station, de-prioritised the same amount, must not become MORE attractive as the
         // route to it grows.  This is the inversion stated on its own, without a rival station.
-        int near = ratioFor(layout, 2);
-        int away = ratioFor(layout, 18);
+        int near = ratioFor(layout, 2, -2);
+        int away = ratioFor(layout, 18, -2);
 
         assertTrue(near > away,
             "a shorter route to a de-prioritised station must still be worth more than a longer one: "
             + "scored " + near + " at length 2 against " + away + " at length 18 (RC-B2)");
+
+        // AND ORDERED AMONG THEMSELVES, at one distance (RC-B2, RC-B8).
+        //
+        // The fix says a station pushed further down is worth less.  Without this, replacing the whole
+        // weight with a constant passes everything above - the inversion is gone and so is the reason
+        // for having a weight at all, and "-20 is visited as often as -1" is invisible.
+        //
+        // It is also what RC-B8 was about: at the original scale the two tied at zero on any route
+        // longer than a few hundred, because the division is integer.
+        int gently = ratioFor(layout, 100, -1);
+        int firmly = ratioFor(layout, 100, -20);
+
+        assertTrue(gently > firmly,
+            "a station pushed down to -20 is worth the same as one pushed to -1 over the same track: "
+            + gently + " against " + firmly + ".  Either the weight is a constant, or the ratio has "
+            + "collapsed to zero for both - which is the integer division RC-B8 rescaled for");
+
+        assertTrue(firmly > 0,
+            "the ratio for a de-prioritised station has collapsed to zero over an ordinary route, so "
+            + "distance has stopped mattering for it - which is the symptom RC-B2 was raised for, at "
+            + "priority -1, reappearing at -20 (RC-B8)");
     }
 
     /**
@@ -594,7 +619,7 @@ public class testRoutePicking
      * Asked of the real method rather than recomputed here, which is the point: a copy of the
      * arithmetic in the test would agree with whatever the arithmetic says, including a sign error.
      */
-    private static int ratioFor(Layout layout, int length) throws Exception
+    private static int ratioFor(Layout layout, int length, int priority) throws Exception
     {
         java.lang.reflect.Method ratioOf =
             Layout.class.getDeclaredMethod("ratioOf", java.util.List.class);
@@ -608,7 +633,7 @@ public class testRoutePicking
         try
         {
             edge.setLength(length);
-            layout.getPoint("RP_ViaStation").setPriority(-2);
+            layout.getPoint("RP_ViaStation").setPriority(priority);
 
             return (int) ratioOf.invoke(layout, java.util.Arrays.asList(edge));
         }

@@ -2637,7 +2637,8 @@ public class LayoutEditor extends PositionAwareJFrame
      * @return origin square to landing square, empty when there is nothing to carry
      */
     private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut)
+        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut,
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> vacated)
     {
         // THE FLAG IS NOT RE-READ HERE, and reading it was LE-A7.
         //
@@ -2649,7 +2650,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // RC-A1 took that stand-down out, so the field would answer correctly today.  The argument
         // stays: the caller has already decided, and a decision passed in cannot go stale between
         // being made and being used.
-        if (!wasCut || this.clipboardOrigins == null
+        if (!wasCut || vacated == null || this.clipboardOrigins == null
             || this.groupClipboard == null
             || this.clipboardOrigins.size() != this.groupClipboard.size())
         {
@@ -2677,7 +2678,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 continue;
             }
 
-            // AND ONLY SQUARES THAT ARE STILL EMPTY, ON THIS PAGE (RC-A1).
+            // AND ONLY SQUARES THE CUT LEFT EMPTY, ON THIS PAGE (RC-A1, corrected by RC-A6).
             //
             // This is what the flag was standing in for, asked per square instead of assumed for the
             // whole clipboard.  LE-A6 stood the flag down inside snapshotLayout, on the reasoning that
@@ -2690,13 +2691,17 @@ public class LayoutEditor extends PositionAwareJFrame
             // diagram changes neither.  Nothing has to be enumerated, and a square that is full again
             // is skipped on its own rather than taking the other nineteen with it.
             //
+            // ASKED OF THE CALLER, NOT OF THE LAYOUT (RC-A6).  pasteSelection places its tiles before
+            // it gets here, so an origin that is also a landing is full again by now - and asking the
+            // layout at this point skipped it, after which it was forgotten as "built over".  The
+            // caller reads the squares before it places anything, exactly as it reads the flag.
+            //
             // The page half keeps a decision LE-A6 made deliberately: a setup is not carried ACROSS
             // pages, because paste snapshots only the destination page and arriveAt has thrown away
             // the source page's undo history, so a cross-page move could not be undone.  Left on the
             // source page instead, where it is recoverable - and where coming BACK to that page and
             // pasting now picks it up correctly, which the flag could not do.
-            if (!layout.getName().equals(origin.getPage())
-                || layout.getComponent(origin.getX(), origin.getY()) != null)
+            if (!vacated.contains(origin))
             {
                 continue;
             }
@@ -2706,6 +2711,37 @@ public class LayoutEditor extends PositionAwareJFrame
 
         return moves;
     }
+    /**
+     * Which of the cut squares are still empty, on this page (RC-A6).
+     *
+     * Taken by pasteSelection BEFORE it places anything, because the paste refills any origin that is
+     * also a landing - and an origin read as "full" after that is skipped by cutMoves and then
+     * forgotten as built over, which destroys the setup the cut was carrying.
+     *
+     * The page test is here rather than in cutMoves for the same reason it is asked at all: it is a
+     * fact about the world at the moment the gesture was made.
+     *
+     * @return the cut squares that are on this page and still empty, never null
+     */
+    private java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptyCutOrigins()
+    {
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> empty =
+            new java.util.LinkedHashSet<>();
+
+        if (this.clipboardCutSquares == null) return empty;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : this.clipboardCutSquares)
+        {
+            if (layout.getName().equals(square.getPage())
+                && layout.getComponent(square.getX(), square.getY()) == null)
+            {
+                empty.add(square);
+            }
+        }
+
+        return empty;
+    }
+
     /**
      * Pastes a copied group with its top left corner at a square, as ONE undoable step.
      *
@@ -2739,13 +2775,22 @@ public class LayoutEditor extends PositionAwareJFrame
             return false;
         }
 
-        // Read here and passed down as an argument, never re-read (LE-A7).
+        // BOTH HALVES OF THE DECISION ARE TAKEN HERE, before anything is placed (LE-A7, RC-A6).
         //
-        // The snapshot below no longer stands the flag down - RC-A1 replaced that with a per-square
-        // test in cutMoves - so the ORDER of these two lines is no longer load-bearing.  It is kept
-        // this way because the decision belongs to the gesture, not to whatever the field says by the
-        // time the work is done.
+        // The flag is read here and passed down as an argument, never re-read: that is LE-A7, where a
+        // guard consulting the field after the snapshot was false on every paste.
+        //
+        // The squares are read here for the same reason and it took a second defect to see it. RC-A1
+        // made cutMoves ask "is this origin still empty?", which is the right question asked too late:
+        // the placement loop below runs first, so an origin that is also a LANDING has just been
+        // refilled by this very paste. Its setup was then skipped as "not empty" and forgotten as
+        // "built over" - destroyed, where before RC-A1 it moved correctly. Cut a column and paste it
+        // one square down and that is every square on it.
+        //
+        // A decision about the state before the work has to be taken before the work.
         boolean wasCut = this.clipboardWasCut;
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> vacated = emptyCutOrigins();
 
         this.snapshotLayout();
 
@@ -2790,7 +2835,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Calling forgetBuiltOver as well would clear the setup this has just delivered.
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
                 org.traincontrol.automationui.TileGraph.TileKey> moves = wasCut
-                    ? cutMoves(atX, atY, wasCut) : null;
+                    ? cutMoves(atX, atY, wasCut, vacated) : null;
 
             if (moves != null)
             {

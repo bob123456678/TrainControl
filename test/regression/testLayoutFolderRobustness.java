@@ -341,6 +341,60 @@ public class testLayoutFolderRobustness
         }
     }
 
+    /**
+     * An EMPTY folder is not a failed one, and must not revert anything (RC-A4).
+     *
+     * The throw RC-A4 added is gated on pages having FAILED, not on the list coming back empty - and
+     * the difference matters: syncLayoutsFromConfiguredSource answers a throw by clearing the user’s
+     * layout-path preference and reverting to the Central Station.  A folder that simply holds no
+     * pages must not trigger that.
+     *
+     * Nothing asserted it, so dropping the count clause from the guard left every test green.
+     */
+    @Test
+    public void testAnEmptyFolderIsNotAFailedOne() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-emptyfolder").toFile();
+
+        try
+        {
+            File config = new File(folder, "config");
+            File pages = new File(config, "gleisbilder");
+
+            assertTrue(pages.mkdirs(), "could not build the fixture");
+
+            // An index that promises nothing at all.
+            // Built without an escape sequence, so that no backslash has to survive the script that
+            // writes this file.
+            String nl = new String(new char[] { 10 });
+
+            write(new File(config, "gleisbild.cs2"),
+                "[gleisbild]" + nl + "version" + nl + " .major=1" + nl + "groesse" + nl + " .wert=0" + nl);
+
+            MarklinControlStation model =
+                MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                syncFrom(model, folder);
+            }
+            catch (Exception thrown)
+            {
+                fail("an empty layout folder was treated as a failed one, so the user\u2019s layout path "
+                    + "preference is cleared and TrainControl reverts to the Central Station over a "
+                    + "folder that is merely empty (RC-A4): " + thrown);
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            delete(folder);
+        }
+    }
+
     /** Two pages, the second one truncated mid-element so that reading it throws. */
     private static File brokenSecondPage() throws Exception
     {

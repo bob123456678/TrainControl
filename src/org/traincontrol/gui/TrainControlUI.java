@@ -8161,6 +8161,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     /**
+     * Whether this session has already carried the pre-3.0.0 routing preference across (RC-A8).
+     *
+     * Not derivable from the state: see migrateStoredPathPreference, where both ways of reading the
+     * running layout give the wrong answer on the second call.
+     */
+    private boolean pathPreferenceCarried = false;
+
+    /**
      * Carries a routing choice made before it lived in the configuration (LE-B2).
      *
      * Until this became a per-configuration setting the choice was a java Preference, read at startup
@@ -8186,6 +8194,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (was == null) return;
 
+        // ALREADY CARRIED, ONCE, THIS SESSION (RC-A8).
+        //
+        // The flag is here because the STATE cannot answer the question, in either direction.  On the
+        // second call through this method, `live` holds a non-RANDOM rule - and that is either the
+        // answer read out of the user’s own autonomy.json, which must not be overwritten, or the
+        // value THIS METHOD wrote a moment ago, which must not be mistaken for the configuration
+        // having answered.  RC-A2 read it the first way and deleted the key; reading it the second way
+        // pushes the pre-upgrade rule over the file’s own answer on every settings refresh.
+        //
+        // Both readings are wrong because the question is not about the state.  It is "have I done
+        // this yet", and a flag is the honest way to ask it.
+        if (this.pathPreferenceCarried) return;
+
         // THE STORED ANSWER, NOT THE LIVE ONE (RC-A2).
         //
         // This asked live.getPathPreference(), and on the second call through here that is what THIS
@@ -8201,6 +8222,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // false: this runs from a settings refresh, and the getter is a lazy builder that parses every
         // page, writes to disk and can raise a dialog (LE2-C16).
         org.traincontrol.automationui.AutonomySession stored = this.autonomySession;
+
+        // THE LOADED LAYOUT’S OWN ANSWER COUNTS TOO (RC-A8).
+        //
+        // Layout.fromJSON reads pathPreference, so a legacy user’s autonomy.json can carry a rule
+        // even though getGlobal cannot see it - there is no active configuration for it to look in.
+        // Checked before the store rather than after, because it is the cheaper question and the one
+        // that is true for the whole legacy population.
+        //
+        // Safe to read here only because of the flag above: on a second call this would be reading
+        // this method’s own writing, and the flag has already returned by then.
+        if (live.getPathPreference() != org.traincontrol.automation.Layout.PathPreference.RANDOM)
+        {
+            prefs.remove(legacy);
+
+            return;
+        }
 
         if (stored != null && stored.getGlobal("pathPreference") != null)
         {
@@ -8218,6 +8255,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 org.traincontrol.automation.Layout.PathPreference.valueOf(was);
 
             live.setPathPreference(option);
+
+            // Before the persist, not after: the carry has happened either way, and what
+            // persistPathPreference answers is only whether it is DURABLE yet.
+            this.pathPreferenceCarried = true;
 
             // THE OLD KEY GOES ONLY ONCE THE NEW HOME HAS IT (LE-B5).
             //
