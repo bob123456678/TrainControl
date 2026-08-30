@@ -37,14 +37,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | needs test | OB-067, FR-013 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
-| [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-227](#mt-227) | 2026-08-30 | Undo after shrinking a page does not strand a station name | fixed unvalidated | RC-B1 |
 | [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
-| [MT-229](#mt-229) | 2026-08-30 | The routing rule survives the upgrade even when it cannot be stored yet | fixed unvalidated | RC-A2 |
-| [MT-230](#mt-230) | 2026-08-30 | A layout page that will not read does not cost you its sensors | fixed unvalidated | RC-A3, RC-A4, RC-A5 |
 | [MT-231](#mt-231) | 2026-08-30 | A station you push down is not visited by the longest route | fixed unvalidated | RC-B2 |
-| [MT-232](#mt-232) | 2026-08-30 | Add Route offers a name, and the editor stays where you can see it | fixed unvalidated | RC-B3, RC-B4 |
 | [MT-233](#mt-233) | 2026-08-30 | Start with nothing that can start leaves the railway alone | fixed unvalidated | RC-B5 |
 
 Everything else - 206 of 233 - is **fixed validated** and needs nothing from you unless the
@@ -8493,7 +8488,7 @@ Your question from item 3, answered late - sorry it sat. Neither file is new.
 
 autonomy.json in the root is the LEGACY autonomy configuration: hand-authored, and still the fallback the application auto-loads when the running layout did not come from a track diagram. It predates the diagram feature rather than being produced by it. TrainControlUI.AUTONOMY_FILE_NAME names it, and the autosave that writes it is explicitly gated on activeDiagramConfiguration == null - the comment there says why, which is that writing a diagram-derived graph into it once replaced named points with generated coordinates on every clean exit and took the ground-truth baseline with it. So while you are on a diagram configuration it should not be rewritten; the companion store under config/autonomy is the source of truth then, and autonomy.json is left alone. It is no longer tracked in git, which is why it shows up as a loose file.
 
-The autorun folder is a layout folder of the Central Station's, not ours - it appears under test_layout/config/autorun and inside tc_backup, and nothing in src/ refers to it by that name at all. So yes, it is carried along as part of a copied layout, exactly as you guessed; it is not something the application creates.
+The autorun folder is a layout folder of the Central Station's, not ours - it appears under test/test_layout/config/autorun and inside tc_backup, and nothing in src/ refers to it by that name at all. So yes, it is carried along as part of a copied layout, exactly as you guessed; it is not something the application creates.
 
 One thing worth your eye rather than mine: the root autonomy.json carries a modified time of 28 Aug 20:58. On the reading above it should only be written when no diagram configuration is active, so if you have been on the diagram throughout, that timestamp is worth a second look - it would mean the gate is not holding. I have not been able to attribute it, and I would rather say so than guess.
 
@@ -9466,7 +9461,7 @@ them.
 
 ### MT-185 - 2026-08-25 - A page the layout cannot see, when you edit another one
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-018
 **Written:** 2026-08-25
 
@@ -9537,6 +9532,10 @@ need a file that will not open and a restart.
 **Disposition unchanged: still needs your run for the dialog.**
 
 *Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -11818,7 +11817,7 @@ Shortest Track.
 
 ### MT-227 - 2026-08-30 - Undo after shrinking a page does not strand a station name
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-B1
 **Written:** 2026-08-30
 
@@ -11839,6 +11838,10 @@ it.
    That one must survive the undo untouched.
 
 *Run against commit 204a13ca or later.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -11878,13 +11881,48 @@ standing in for.
 
 *Run against commit 204a13ca or later.*
 
+**Adam, 2026-08-30 (triage).** Could not run this.
+
+When the size is changed, the selection vanishes, so I cannot cut/move it.  Cut only applies to a single square.  This is probably OK as is, though I'd prefer less flickering when making the selection.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** The group cut IS there - it is the ORDER that defeated it.
+
+Cut selected is on the right-click menu, and there is a keyboard shortcut, but both only appear while
+something is selected - and changing the diagram size clears the selection. So selecting, then resizing,
+then looking for Cut leaves only the single-square one.
+
+**The steps below already said to cut first** - step 2, before the resize in step 3 - and I wrote here
+that I had reworded them, which was not true and is the sort of thing this round has spent all day
+fixing. They are unchanged. What was missing is the warning, which is now step 0: resizing the diagram
+clears the selection, so anything you meant to cut has to be cut before you touch the size.
+
+**The flickering is real and I found the cause, but have not fixed it.** Dragging out a selection calls
+refreshSelectionBorders on every mouse-motion event, and that calls clearBordersFromChildren, which
+calls setBorder on EVERY tile in the grid before re-applying the outline to the picked ones. Several
+hundred setBorder calls per mouse move, each one a repaint.
+
+Fixing it properly means remembering which border each tile currently carries so that only the
+difference is touched - and four separate places set a tile's border (the hover reset, the highlight,
+the clear, and the drag grip), so all four have to keep that record or a tile is left with a stale
+outline. That is a worse failure than the flicker, and this is the same code RC-C10 was about, so I
+have left it rather than rush it. Filed as OB-157.
+
+
+**Adam, 2026-08-30 (triage).** Does not work.
+
+can't we fix it by remembering which tiles were just added/removed to/from the selection area, and then only repaining those?
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-229"></a>
 
 ### MT-229 - 2026-08-30 - The routing rule survives the upgrade even when it cannot be stored yet
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-A2
 **Written:** 2026-08-30
 
@@ -11907,13 +11945,17 @@ for you. Worth a look anyway:
 
 *Run against commit eac4f73c or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-230"></a>
 
 ### MT-230 - 2026-08-30 - A layout page that will not read does not cost you its sensors
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-A3, RC-A4, RC-A5
 **Written:** 2026-08-30
 
@@ -11939,6 +11981,10 @@ explained it was debug-only, so nothing said why.
 7. **Point it back at your real folder** and confirm everything is as it was.
 
 *Run against commit 10694670 or later.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -11971,13 +12017,41 @@ nothing at zero or above is changed at all.
 
 *Run against commit 10694670 or later.*
 
+**Adam, 2026-08-30 (triage).** Could not run this.
+
+make an automated test case for this aganst the current layout, by varying the priority dynamically at test time. use bottommainA/B/C, as these are all reachable by a train arriving from tunnel. try at least 10 combinations of priorities. for test execution speed, set loc delays to 0-1s.  as validation, make sure the distribution is as expected.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Automated, as asked - `core.testStationPriorityDistribution`.
+
+Twenty-two priority combinations over BottomMainA/B/C on the frozen snapshot of your railway, with the
+train starting at Tunnel, counting where 400 decisions land in each case. It counts DECISIONS rather
+than journeys: pickPath is the whole of the rule, so running the trains would add minutes and change
+nothing about the answer. The fixture delays are 0 and 1 either way.
+
+**Two things about your railway came out of building it**, and both are why this was confusing by hand:
+
+- **BottomMainC takes a train of 2, and the locomotive parked at Tunnel is 4.** So every route to C was
+  refused on length, whatever its priority - C simply never appeared. The test gives its train a length
+  of 1 so all three platforms are eligible.
+- **The snapshot has trains parked all over it**, and one standing anywhere along a route makes it
+  unavailable. The test takes the others off the railway first, so the counts measure the rule rather
+  than where things happened to be parked.
+
+There is nothing to run by hand here now.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-232"></a>
 
 ### MT-232 - 2026-08-30 - Add Route offers a name, and the editor stays where you can see it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-B3, RC-B4
 **Written:** 2026-08-30
 
@@ -11999,6 +12073,10 @@ window you are watching went behind the one you were clicking.
 5. **Turn always-on-top off** and confirm the editor behaves like an ordinary window again.
 
 *Run against commit ed33fbdc or later.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -12029,6 +12107,40 @@ rules. Only Stop got you out, and nothing said so.
    name in the log, and Stop works as usual.
 
 *Run against commit ed33fbdc or later.*
+
+**Adam, 2026-08-30 (triage).** Works, with notes.
+
+The UI won't allow a preferred speed of 0.  If none is set, it should default to 35.  I thought that was already the behavior, verify it.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Verified - you remembered it right, and my note was wrong.
+
+`Layout.parseAuto` applies `defaultLocSpeed` to any locomotive whose preferred speed is 0 as it loads,
+and says so in the log. So a zero has never reached the railway, and my comment claiming a zero is "the
+state of any locomotive placed on the graph without the speed dialog ever being opened" was false for
+anything loaded from a file. Corrected to name the case that really is left: a locomotive placed AFTER
+the load, which has not been through that path.
+
+**And the write side is closed** - `Point.toJSON` wrote the speed whatever it was, so a locomotive
+placed after a load was saved with `"speed": 0`. Nothing broke on the way back in, but the file then
+carried a value that means "no value". It is now omitted entirely when it is not a speed, which is what
+`arrivalFunc` and `departureFunc` beside it have always done. No config in the repository carries a zero.
+
+1. **Place a locomotive on the diagram** without ever opening its speed dialog, and save.
+2. **Look at the configuration file** - the locomotive should have no `speed` at all, rather than 0.
+3. **Reload and start autonomy.** It should run at the default speed, and the log should say it applied
+   one.
+
+**Adam, 2026-08-30 (triage).** Does not work.
+
+Fails.  added MT-233 Test Loc.  After initial placement, error: Invalid speed specified
+
+Instead of default speed.
+
+It was added via contorl+V on the track diagram viewer.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

@@ -18,12 +18,26 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.util.I18n;
 
 /**
- * Graph edge - includes start and end points and occupied state
+ * Graph edge - includes start and end points and how many claims are standing on it
  * @author Adam
  */
 public class Edge
 {
-    private boolean occupied;
+    /**
+     * HOW MANY CLAIMS ARE STANDING ON THIS EDGE, not whether any is (RC-A9).
+     *
+     * This was a boolean, and a boolean cannot hold two claims.  Two different edges may name this one
+     * as a lock edge - which is what a crossing looks like when the editor writes it - and with a
+     * boolean the second claim wrote the same true as the first while the FIRST release wrote false
+     * for both, freeing track a second train was still crossing.
+     *
+     * Every raise is matched by exactly one release.  setOccupied raises this edge and each of its
+     * lock edges; setUnoccupied lowers both; the two "LockedEdge" methods are the same operations
+     * without the cascade, and exist so that a lock relation cannot recurse.
+     *
+     * FLOORED AT ZERO rather than allowed to go negative - see release().
+     */
+    private int occupancy;
     private final Point start;
     private final Point end;
     private final Map<String, Accessory.accessorySetting> configCommands;
@@ -41,7 +55,7 @@ public class Edge
     {
         this.start = start;
         this.end = end;
-        this.occupied = false;
+        this.occupancy = 0;
         this.lockEdges = new LinkedList<>();
         this.configCommands = new HashMap<>();
     }
@@ -358,7 +372,7 @@ public class Edge
      */
     synchronized public boolean isLockHeld(Locomotive loc)
     {
-        return occupied;
+        return occupancy > 0;
     }
 
     /**
@@ -388,7 +402,23 @@ public class Edge
             return true;
         }
 
-        return occupied;
+        return occupancy > 0;
+    }
+
+    /**
+     * Gives up one claim, and never fewer than none (RC-A9).
+     *
+     * The floor is not defensive tidiness, it is a contract something already depends on.
+     * configureAndLockPath counts an edge as taken BEFORE it takes it, so that an edge a throw leaves
+     * occupied is still inside the range its recovery releases - and its comment says the reason out
+     * loud: "setUnoccupied on an edge that is already clear does nothing".  It still does nothing.
+     *
+     * Going negative would be worse than either: an edge released once too often would need two claims
+     * before it read as occupied again, so the NEXT train to lock it would find it free.
+     */
+    private void release()
+    {
+        if (this.occupancy > 0) this.occupancy--;
     }
     
     /**
@@ -396,7 +426,7 @@ public class Edge
      */
     synchronized protected void setLockedEdgeOccupied()
     {
-        occupied = true;    
+        occupancy++;
     }
     
     /**
@@ -404,7 +434,7 @@ public class Edge
      */
     synchronized public void setLockedEdgeUnoccupied()
     {
-        occupied = false;
+        release();
     }
     
     /**
@@ -421,7 +451,7 @@ public class Edge
      */
     synchronized public void setOccupied()
     {
-        occupied = true;
+        occupancy++;
         
         for (Edge e : this.lockEdges)
         {
@@ -434,7 +464,7 @@ public class Edge
      */
     synchronized public void setUnoccupied()
     {
-        occupied = false;
+        release();
         
         for (Edge e : this.lockEdges)
         {

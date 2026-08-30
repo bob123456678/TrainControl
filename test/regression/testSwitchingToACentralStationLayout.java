@@ -454,7 +454,7 @@ public class testSwitchingToACentralStationLayout
             //
             // Deliberately not every class that builds a MODEL. Those read the operator’s layout
             // too and it is worth settling, but it is a wider sweep than this rule - some of them
-            // parse test_layout directly on purpose - and a check that fails for twenty classes
+            // parse test/test_layout directly on purpose - and a check that fails for twenty classes
             // nobody has looked at is a check that gets disabled.
             // THE WINDOW is a hard rule: it has no offenders, and it is the case that writes the
             // folder and can raise a modal dialog into the middle of a battery.

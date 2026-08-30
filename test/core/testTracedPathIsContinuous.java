@@ -52,7 +52,7 @@ public class testTracedPathIsContinuous
     {
         model = init(null, true, false, false, false);
 
-        File folder = new File("test_layout");
+        File folder = new File("test/test_layout");
 
         assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
 

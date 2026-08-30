@@ -1,13 +1,13 @@
 {
   "globals": {
-    "minDelay": 1,
+    "minDelay": 0,
     "atomicRoutes": true,
     "maxActiveTrains": 0,
     "preArrivalSpeedReduction": 0.5,
     "defaultLocSpeed": 35,
     "maxLatency": 0,
     "timetable": [],
-    "maxDelay": 5,
+    "maxDelay": 1,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
     "activateRoutes": false,

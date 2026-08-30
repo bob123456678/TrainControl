@@ -2536,8 +2536,8 @@
             ]
         }
     ],
-    "minDelay": 3,
-    "maxDelay": 13,
+    "minDelay": 0,
+    "maxDelay": 1,
     "defaultLocSpeed": 35,
     "preArrivalSpeedReduction": 0.5,
     "maxLatency": 0,

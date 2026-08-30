@@ -1015,7 +1015,21 @@ public class Point
             
             locObj.put("name", this.currentLoc.getName());
             locObj.put("reversible", this.currentLoc.isReversible());
-            locObj.put("speed", this.currentLoc.getPreferredSpeed());
+            // WRITTEN ONLY WHEN IT IS A SPEED (MT-233).
+            //
+            // Adam: "ensure a locomotive cannot have a speed of 0 set anywhere in the autonomy config
+            // input files."  Zero is how this field says "not set", and parseAuto reads it that way
+            // twice over - it applies a stored speed only between 1 and 100, and then fills anything
+            // still at zero from defaultLocSpeed.  So a zero here was never dangerous; it was a value
+            // in the file that means "no value", which is the shape that invites the next reader to
+            // trust it.
+            //
+            // Absence says the same thing and cannot be misread.  It is also what arrivalFunc and
+            // departureFunc below already do, for the same reason - the format had the idiom already.
+            if (this.currentLoc.getPreferredSpeed() > 0)
+            {
+                locObj.put("speed", this.currentLoc.getPreferredSpeed());
+            }
             
             if (this.currentLoc.getArrivalFunc() != null)
             {

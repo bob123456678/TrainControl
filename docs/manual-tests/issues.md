@@ -61,6 +61,33 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### OB-155 - 2026-08-30 - synchronizing with cs2 after deleting routes
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-30 12:38  
+**Build:** commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the route page should not have to sync with the cs2 after edits/deletions for routes >= ID 1000
+
+### OB-156 - 2026-08-30 - missing autonomy routing logic
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-30 13:16  
+**Build:** commit c386be96, build\classes, compiled 30 Aug 12:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+there should also be a "by station priority" option that simply uses the station priority and randomly choose from the highest available.
+
+### OB-158 - 2026-08-30 - ... on traversing trains in station labels
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-30 14:07  
+**Build:** commit c386be96, build\classes, compiled 30 Aug 14:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+... on traversing trains in station labels make the ... not be bold, and change it to one arrow that correctly shows the direction of travel.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -357,3 +384,26 @@ they were filed under, and this mapping is how to trace one to the other.*
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
+
+### OB-157 - 2026-08-30 - selection drag repaints every tile on the diagram
+
+**Kind:** bug  
+**Raised from:** MT-228  
+**Filed:** 2026-08-30  
+**Build:** commit 72234e18 plus the release-candidate round
+
+Adam, testing MT-228: "I'd prefer less flickering when making the selection."
+
+**Cause found, fix not attempted.** Dragging a selection box calls `refreshSelectionBorders` on every
+mouse-motion event, and that begins with `clearBordersFromChildren`, which calls `setBorder` on EVERY
+tile label in the grid before re-applying the outline to the picked ones. On a diagram of a few hundred
+squares that is a few hundred repaints per mouse move, which is what the flickering is.
+
+**Why it was not fixed in the same round.** The fix is to remember which border each tile currently
+carries and touch only the difference - but four separate places set a tile's border: the hover reset
+(`LayoutEditor:3921`), the highlight (`:3947`), the clear (`:3976`) and the drag grip (`:2508`). All
+four have to maintain that record or a tile is left carrying a stale outline, which is a worse failure
+than the flicker. It is also the same resting-border logic RC-C10 was raised about, where the previous
+mistake was a comment describing a guard that had been removed.
+
+Worth doing, worth doing carefully, and not worth doing at the end of a long round.

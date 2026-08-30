@@ -29,7 +29,7 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * Adam's own railway, read and checked, and never written to.
  *
- * Every other test in this suite runs against `test_layout`, a frozen copy. That is right: a fixture
+ * Every other test in this suite runs against `test/test_layout`, a frozen copy. That is right: a fixture
  * has to hold still or the tests are measuring the fixture. But it means the only thing the suite
  * knows about the layout Adam actually drives is what was true on the day the copy was taken - and he
  * goes on drawing track, naming stations and setting up autonomy, which is exactly where the next

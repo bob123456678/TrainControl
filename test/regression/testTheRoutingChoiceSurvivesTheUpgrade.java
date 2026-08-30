@@ -1,6 +1,8 @@
 package regression;
 
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
@@ -27,8 +29,226 @@ import org.testng.annotations.Test;
  */
 public class testTheRoutingChoiceSurvivesTheUpgrade
 {
+    /** What TrainControlUI's preference node was before this class swapped it out. */
+    private static java.util.prefs.Preferences realPrefs;
+
+    /** The throwaway node the tests read and write instead. */
+    private static java.util.prefs.Preferences ourPrefs;
+
+    /**
+     * Gives this class its own preference node, so nothing it writes can reach the operator (RC-A12).
+     *
+     * These tests have to put a pre-3.0.0 preference somewhere the migration will find it, and the
+     * migration reads TrainControlUI's own node.  Writing there and restoring afterwards looks safe and
+     * is not: TrainControl started DURING a battery run read the key this class had just written,
+     * migrated it exactly as designed, and stored it into the operator's live configuration over the
+     * rule he had chosen.  A finally cannot close a window that another process is looking through.
+     *
+     * So the field is swapped rather than the value.  `prefs` is private static final, which on JDK 8
+     * can be reassigned by clearing the final bit on its Field; from JDK 12 that is refused, and this
+     * asserts rather than falling back - a guard that silently stops guarding is worse than none, and
+     * what it is guarding is a railway that took years to set up.
+     */
+    @BeforeClass
+    public void useOurOwnPreferences() throws Exception
+    {
+        java.lang.reflect.Field field =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
+        field.setAccessible(true);
+
+        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
+        modifiers.setAccessible(true);
+        modifiers.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+
+        realPrefs = (java.util.prefs.Preferences) field.get(null);
+
+        ourPrefs = java.util.prefs.Preferences.userRoot()
+            .node("org/traincontrol/test/routingChoice");
+
+        field.set(null, ourPrefs);
+
+        assertSame(org.traincontrol.gui.TrainControlUI.getPrefs(), ourPrefs,
+            "the preference node could not be swapped, so this class would write the operator's own "
+            + "settings - which is how a battery once changed his routing rule underneath him "
+            + "(RC-A12).  On JDK 12 and later the Field.modifiers trick is refused and this needs "
+            + "another way in");
+    }
+
+    /** Puts the real node back, and takes the throwaway one away with it. */
+    @AfterClass
+    public void giveThePreferencesBack() throws Exception
+    {
+        java.lang.reflect.Field field =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
+        field.setAccessible(true);
+
+        if (realPrefs != null) field.set(null, realPrefs);
+
+        if (ourPrefs != null) ourPrefs.removeNode();
+    }
+
     /** The key as it was spelled before the setting moved - written out, as the migration writes it. */
     private static final String LEGACY = "AutonomyPathPreference";
+
+    /**
+     * A refused routing change puts the dropdown back, without asking twice (RC-B11).
+     *
+     * Choosing a rule while trains are running is refused, and the dropdown used to keep showing the
+     * rule the user picked - so the one control that reports which rule is in force reported the one
+     * that is not.  Its two siblings, timetableCapture and toggleSpecifiedRoutes, have always restored
+     * themselves after the same refusal; the dropdown had a TODO instead.
+     *
+     * TWO THINGS ARE ASSERTED, and the second is the one the TODO called "safely":
+     *
+     *   the control ends up on the rule the layout is actually using;
+     *   and putting it there does not re-enter the listener that asked for it.
+     *
+     * The second is measured by a DEADLINE rather than a value.  setSelectedIndex on a JComboBox fires
+     * an ActionEvent, so an unguarded restore re-enters the listener, finds the railway still busy,
+     * and opens a modal dialog - which on the event thread never returns.  Guarded, this takes a
+     * millisecond.  A checkbox needs none of this, which is why the siblings could restore in one line.
+     */
+    @Test
+    public void testARefusedRoutingChangePutsTheDropdownBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the dropdown lives on a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui[0] = new org.traincontrol.gui.TrainControlUI();
+                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            // The rule the railway is actually following.  getAutoLayout builds one if there is none,
+            // which is what makes hasAutoLayout true for the helper.
+            model.getAutoLayout().setPathPreference(
+                org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH);
+
+            // Busy, without a train moving: isAutonomyBusy() answers true on this flag alone.
+            java.lang.reflect.Field staging =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("stagingFlowActive");
+            staging.setAccessible(true);
+            staging.set(ui[0], true);
+
+            java.lang.reflect.Field combo =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("algorithmType");
+            combo.setAccessible(true);
+
+            final javax.swing.JComboBox<String> dropdown =
+                (javax.swing.JComboBox<String>) combo.get(ui[0]);
+
+            assertNotNull(dropdown, "the dropdown was never mounted, so this test proves nothing");
+
+            java.lang.reflect.Method restore =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
+                    "restoreRoutingLogicSelection");
+            restore.setAccessible(true);
+
+            // What a user's refused choice leaves behind: a control showing something else.  Set with
+            // the guard held, so that arranging the fixture does not itself go through the listener.
+            java.lang.reflect.Field guard =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("restoringRoutingLogic");
+            guard.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    guard.set(ui[0], true);
+                    dropdown.setSelectedIndex(0);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    try { guard.set(ui[0], false); } catch (ReflectiveOperationException ignored) { }
+                }
+            });
+
+            assertEquals(dropdown.getSelectedIndex(), 0, "precondition: the control is on the wrong rule");
+
+            final java.util.concurrent.CountDownLatch done =
+                new java.util.concurrent.CountDownLatch(1);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    restore.invoke(ui[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(20, java.util.concurrent.TimeUnit.SECONDS),
+                "restoring the dropdown never returned.  setSelectedIndex fires an ActionEvent, so an "
+                + "unguarded restore re-enters the listener, finds the railway still busy and opens a "
+                + "modal dialog on the event thread - which is the second dialog a user would have had "
+                + "to dismiss, and here is a hang.  That is what the TODO meant by safely (RC-B11)");
+
+            assertEquals(dropdown.getSelectedIndex(),
+                java.util.Arrays.asList(routingOrder()).indexOf(
+                    org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH),
+                "the dropdown does not show the rule the layout is actually using, so the one control "
+                + "that reports the routing rule is reporting one that is not in force (RC-B11)");
+
+            assertEquals(model.getAutoLayout().getPathPreference(),
+                org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
+                "restoring the control changed the railway's rule, so the restore is writing through "
+                + "the listener instead of being ignored by it");
+        }
+        finally
+        {
+            if (ui[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> ui[0].dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The order the dropdown speaks, read from the window rather than copied. */
+    private static org.traincontrol.automation.Layout.PathPreference[] routingOrder() throws Exception
+    {
+        java.lang.reflect.Field order =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("ROUTING_ORDER");
+        order.setAccessible(true);
+
+        return (org.traincontrol.automation.Layout.PathPreference[]) order.get(null);
+    }
 
     /**
      * With nowhere to store it, the choice stays on disk however many times the migration runs.
@@ -48,8 +268,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        java.util.prefs.Preferences prefs =
-            java.util.prefs.Preferences.userNodeForPackage(org.traincontrol.gui.TrainControlUI.class);
+        // The window's node, whichever one it is - which is the throwaway this class installed.
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
 
@@ -149,8 +369,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        java.util.prefs.Preferences prefs =
-            java.util.prefs.Preferences.userNodeForPackage(org.traincontrol.gui.TrainControlUI.class);
+        // The window's node, whichever one it is - which is the throwaway this class installed.
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
 
@@ -255,8 +475,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        java.util.prefs.Preferences prefs =
-            java.util.prefs.Preferences.userNodeForPackage(org.traincontrol.gui.TrainControlUI.class);
+        // The window's node, whichever one it is - which is the throwaway this class installed.
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
 
@@ -349,8 +569,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        java.util.prefs.Preferences prefs =
-            java.util.prefs.Preferences.userNodeForPackage(org.traincontrol.gui.TrainControlUI.class);
+        // The window's node, whichever one it is - which is the throwaway this class installed.
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
 

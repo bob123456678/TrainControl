@@ -164,7 +164,7 @@ public class testMockCentralStation
         if (path.endsWith("/lokomotive.cs2")) return new File("test/lokomotive.cs2");
         if (path.endsWith("/fahrstrassen.cs2")) return new File("test/fahrstrassen.cs2");
         if (path.endsWith("/magnetartikel.cs2")) return new File("test/magnetartikel.cs2");
-        if (path.endsWith("/gleisbild.cs2")) return new File("test_layout/config/gleisbild.cs2");
+        if (path.endsWith("/gleisbild.cs2")) return new File("test/test_layout/config/gleisbild.cs2");
 
         return null;
     }

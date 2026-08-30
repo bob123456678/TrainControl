@@ -56,7 +56,7 @@ import org.traincontrol.marklin.file.CS2File;
  */
 public class testAutonomyDiagramSampleLayout
 {
-    private static final String LAYOUT = "test_layout";
+    private static final String LAYOUT = "test/test_layout";
 
     /**
      * The two ends of the one doorway between the pages autonomy is looking at.

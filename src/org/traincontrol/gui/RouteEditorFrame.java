@@ -2562,7 +2562,25 @@ public class RouteEditorFrame extends JFrame
             // last sync.  A layout whose routes are all local cannot have one: every id in the database
             // came from the database.  So the round trip - layouts, locomotives, accessories and routes,
             // over the network - buys nothing there, and Adam asked why it was happening at all.
-            if (originalName.isEmpty() && anyRouteCameFromTheStation()) parent.syncWithCS2();
+            // AND ONLY WHEN THE NEW ROUTE'S OWN ID COULD COLLIDE (OB-155).
+            //
+            // The paragraph above is about a new route's id clashing with one added on the station
+            // since the last sync.  newRoute allocates from ROUTE_STARTING_ID upwards, so the ids it
+            // hands out are ones the station has never issued - and Adam asked for exactly this:
+            // "the route page should not have to sync with the cs2 after edits/deletions for routes
+            // >= ID 1000."
+            //
+            // Read back from the database rather than assumed, because newRoute picks the id and this
+            // window does not.
+            org.traincontrol.base.Route saved = parent.getModel().getRoute(name);
+
+            boolean couldCollide = saved == null
+                || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(saved.getId());
+
+            if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation())
+            {
+                parent.syncWithCS2();
+            }
 
             dispose();
         }

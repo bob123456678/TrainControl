@@ -60,9 +60,16 @@ public class testRoutePicking
      * LEAST_RECENTLY_VISITED ranks DESTINATIONS by when a train last arrived at them, so it cannot be
      * told apart on a fixture whose routes all end in the same place. It has its own test in
      * testAutoLayout, on a fixture with two destinations and an arrival recorded at one of them.
+     *
+     * RANDOM_ANY_STATION cannot be told apart by picking one winner at all: it differs from RANDOM
+     * only in WHICH stations are eligible, and this fixture's routes share their destination. It is
+     * measured instead - a distribution over 400 decisions per case, on the frozen snapshot of the
+     * operator's railway, where a train leaving Tunnel can reach three platforms with priorities the
+     * test varies (MT-231, OB-156).
      */
     private static final Set<Layout.PathPreference> COVERED_ELSEWHERE = EnumSet.of(
-        Layout.PathPreference.LEAST_RECENTLY_VISITED);
+        Layout.PathPreference.LEAST_RECENTLY_VISITED,
+        Layout.PathPreference.RANDOM_ANY_STATION);
 
     /**
      * Where each COVERED_ELSEWHERE rule is actually tested: fully-qualified class name and method
@@ -80,6 +87,10 @@ public class testRoutePicking
     {
         COVERED_ELSEWHERE_LOCATION.put(Layout.PathPreference.LEAST_RECENTLY_VISITED,
             new String[]{"core.testAutoLayout", "testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen"});
+
+        COVERED_ELSEWHERE_LOCATION.put(Layout.PathPreference.RANDOM_ANY_STATION,
+            new String[]{"core.testStationPriorityDistribution",
+                "testTheCompletelyRandomRuleIgnoresPriority"});
     }
 
     @BeforeClass

@@ -41,7 +41,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * application itself, so a baseline pointing at it would go stale the first time he moved a tile, and
  * the failure would look like a regression in TrainControl rather than a change he made on purpose.
  *
- * `test_layout` is a frozen copy now, and his railway is `cs2_sample_layout`, so the hazard that
+ * `test/test_layout` is a frozen copy now, and his railway is `cs2_sample_layout`, so the hazard that
  * motivated this is gone. The copy stays: a baseline that carries its own inputs is answerable on its
  * own terms, and nothing about that depended on which folder was volatile.
  *
@@ -160,12 +160,12 @@ public class testConfirmedGoodState
      */
     private AutonomySession openBaseline() throws Exception
     {
-        File from = capturing ? new File("test_layout") : LAYOUT;
+        File from = capturing ? new File("test/test_layout") : LAYOUT;
 
         if (!from.isDirectory())
         {
             throw new SkipException(capturing
-                ? "no test_layout to capture from"
+                ? "no test/test_layout to capture from"
                 : "no blessed baseline yet - capture one with -Dbaseline.capture=true once the "
                 + "railway is in a state you have confirmed is right");
         }

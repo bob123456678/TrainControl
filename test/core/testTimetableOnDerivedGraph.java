@@ -266,7 +266,7 @@ public class testTimetableOnDerivedGraph
                 + "found (" + stationNames(stations) + "); " + startedAt.size() + " locomotive(s) "
                 + "stand on a destination out of " + layout.getLocomotivesToRun().size()
                 + " autonomy knows about.  If this keeps happening on an unloaded machine too, check "
-                + "whether test_layout_snapshot's active autonomy configuration still leaves enough live "
+                + "whether test/test_layout_snapshot's active autonomy configuration still leaves enough live "
                 + "destinations for that many trains to move between - several of its points are "
                 + "marked inactive.");
         }
@@ -408,24 +408,24 @@ public class testTimetableOnDerivedGraph
      */
     private static Layout derivedLayout() throws Exception
     {
-        // THE SNAPSHOT, not test_layout (OB-132).
+        // THE SNAPSHOT, not test/test_layout (OB-132).
         //
         // Adam: "we should have a test fixture that doesn't change, and is a snapshot of my current
         // layout."
         //
         // This test starts autonomy on the derived graph and records where the trains go. On
-        // test_layout nothing moves inside the run window - several of its points are marked inactive
+        // test/test_layout nothing moves inside the run window - several of its points are marked inactive
         // and its Main configuration leaves too few live destinations - so it threw a SkipException
         // every time, and a class that skips everything covers nothing while reading as green.
         //
-        // test_layout_snapshot is a real railway with somewhere for trains to go. It is frozen for the
-        // same reason test_layout is; its README says why re-taking it would quietly turn every
+        // test/test_layout_snapshot is a real railway with somewhere for trains to go. It is frozen for the
+        // same reason test/test_layout is; its README says why re-taking it would quietly turn every
         // assertion here into a statement about the railway rather than about the code.
-        File folder = new File("test_layout_snapshot");
+        File folder = new File("test/test_layout_snapshot");
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no test_layout_snapshot to derive a graph from");
+            throw new SkipException("no test/test_layout_snapshot to derive a graph from");
         }
 
         String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";

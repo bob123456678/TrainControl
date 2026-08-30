@@ -96,7 +96,7 @@ public class testDiagramLooksRight
 
         java.util.List<String> pages = model.getLayoutList();
 
-        assertFalse(pages.isEmpty(), "no pages to render - is test_layout present?");
+        assertFalse(pages.isEmpty(), "no pages to render - is test/test_layout present?");
 
         int written = 0;
 
@@ -1311,7 +1311,7 @@ public class testDiagramLooksRight
     {
         java.util.List<String> pages = model.getLayoutList();
 
-        assertFalse(pages.isEmpty(), "no pages - is test_layout present?");
+        assertFalse(pages.isEmpty(), "no pages - is test/test_layout present?");
 
         java.awt.Container box = null;
         org.traincontrol.gui.StationCaption caption = null;
@@ -1919,7 +1919,7 @@ public class testDiagramLooksRight
     {
         java.util.List<String> pages = model.getLayoutList();
 
-        assertFalse(pages.isEmpty(), "no pages to build - is test_layout present?");
+        assertFalse(pages.isEmpty(), "no pages to build - is test/test_layout present?");
 
         final LayoutDiagram layout = model.getLayout(pages.get(0));
 

@@ -21,10 +21,10 @@ import org.traincontrol.gui.TrainControlUI;
  *
  * **The cause is not a test that names his folder - none of them do.** Three classes construct the real
  * window, and the window opens whatever the saved layout preference names. On his machine that is his
- * railway. The fixture separation of b87c4f05 moved the suite onto `test_layout` and could not reach
+ * railway. The fixture separation of b87c4f05 moved the suite onto `test/test_layout` and could not reach
  * this, because the path is not written in the suite at all: it is in his preferences.
  *
- * So the preference is what this changes, and it changes it to a COPY rather than to `test_layout`
+ * So the preference is what this changes, and it changes it to a COPY rather than to `test/test_layout`
  * itself - the window writes as well as reads, and the fixture is tracked, so pointing it at the real
  * fixture would move the same problem one folder over and put it in the repository.
  *
@@ -57,7 +57,7 @@ public final class LayoutSandbox
      */
     public static LayoutSandbox open() throws IOException
     {
-        File fixture = new File("test_layout");
+        File fixture = new File("test/test_layout");
 
         Path to = Files.createTempDirectory("tc-sandbox-layout");
 

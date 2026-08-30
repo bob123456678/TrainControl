@@ -40,7 +40,7 @@ public class testRouteRoundTrip
     private static MarklinControlStation model;
 
     /** Relative to the project root, which is where the tests run (build-impl sets work.dir=basedir). */
-    private static final String SAMPLE_ROUTES = "test_layout/config/gleisbilder/routes.json";
+    private static final String SAMPLE_ROUTES = "test/test_layout/config/gleisbilder/routes.json";
 
     @BeforeClass
     public static void setUpClass() throws Exception

@@ -168,6 +168,25 @@ public class Layout
         RANDOM,
 
         /**
+         * Whatever is found first, with station priority ignored entirely (OB-156).
+         *
+         * The opposite of RANDOM, which sounds like this one and is not: RANDOM shuffles and then
+         * SORTS by priority, and the band gate settles the highest band before it looks at the next -
+         * so RANDOM is "at random among the highest-priority stations available", which is what a
+         * railway usually wants and what the name never said.
+         *
+         * This is the other thing Adam asked for: "one completely random, and one that respects
+         * priority".  Every reachable destination is equally likely, however its priority is set - so
+         * a station pushed down to -5 is visited exactly as often as one raised to 9.
+         *
+         * One line carries it: the priority comparator answers "equal" for this rule, and Collections.
+         * sort is stable, so the shuffle survives untouched.  The band gate needs no exception - both
+         * random rules take the first route that works, and the gate cannot fire until a ranked rule
+         * has stored one.
+         */
+        RANDOM_ANY_STATION,
+
+        /**
          * Priority weighed against how far away it is, rather than priority winning outright.
          *
          * Adam: "one that balances priority vs distance as a ratio."
@@ -524,8 +543,16 @@ public class Layout
      *
      * Claimed inside the same monitor that locks the path, so the check and the claim cannot be
      * separated, and given up when the locomotive is registered or the path is released.
+     *
+     * AND IT CARRIES THE PATH ITSELF, not merely the fact that one was claimed (RC-A10).
+     *
+     * This was a Set, and the path was thrown away - so for the whole of that seconds-wide gap
+     * getActiveAccs could not say which accessories the dispatch had already thrown, and an
+     * s88-triggered route with nobody present could move a turnout on a half-configured path with the
+     * route guard having nothing to refuse it with.  Membership means exactly what it always did;
+     * there is simply an answer attached to it now.
      */
-    private final Set<Locomotive> takingPath;
+    private final Map<Locomotive, List<Edge>> takingPath;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
 
     /**
@@ -705,7 +732,7 @@ public class Layout
         // executePath iterates callbacks.values() on loco threads - a plain HashMap would CME.
         this.callbacks = new ConcurrentHashMap<>();
         this.activeLocomotives = new ConcurrentHashMap<>();
-        this.takingPath = Collections.newSetFromMap(new ConcurrentHashMap<Locomotive, Boolean>());
+        this.takingPath = new ConcurrentHashMap<>();
         this.locomotiveMilestones = new ConcurrentHashMap<>();
         // Same reason as the rest of these: written on locomotive threads, read by the UI and by the
         // route guard without a lock.
@@ -847,8 +874,35 @@ public class Layout
     public Set<Accessory> getActiveAccs()
     {
         Set<Accessory> activeAccessories = new HashSet<>();
-        
-        for (Map.Entry<Locomotive, List<Edge>> active : this.activeLocomotives.entrySet())
+
+        // EVERY TRAIN UNDERWAY, INCLUDING ONE STILL BEING DISPATCHED (RC-A10).
+        //
+        // This walked activeLocomotives alone, and a locomotive does not arrive there until
+        // configureAndLockPath has returned - several seconds on a six-edge path, during which its
+        // turnouts and signals have already been thrown.  For that window the guard reported nothing
+        // for the path, so an s88-triggered route could set an accessory the dispatch had just set and
+        // heldReason had no reason to refuse it.  That is AU-A2 again, from the other end: there the
+        // dispatch was invisible because it had already started, here because it had not finished
+        // registering.
+        //
+        // No queue is needed for this.  Nothing is missing - the path is known at the moment it is
+        // claimed, and takingPath now carries it.  trainsUnderway has counted both sets for the
+        // max-trains cap since the lock-symmetry work; this is the same union, asked for the same
+        // reason.
+        //
+        // activeLocomotives wins where both hold an entry: it is the fuller answer, and it is the one
+        // the milestone and clearing bookkeeping is keyed to.
+        Map<Locomotive, List<Edge>> underway = new LinkedHashMap<>(this.activeLocomotives);
+
+        for (Map.Entry<Locomotive, List<Edge>> claiming : this.takingPath.entrySet())
+        {
+            if (claiming.getValue() != null && !underway.containsKey(claiming.getKey()))
+            {
+                underway.put(claiming.getKey(), claiming.getValue());
+            }
+        }
+
+        for (Map.Entry<Locomotive, List<Edge>> active : underway.entrySet())
         {
             Set<Edge> cleared = this.clearedEdges.get(active.getKey());
 
@@ -1613,6 +1667,13 @@ public class Layout
         // cannot ask up front the way the timetable does, because the skips are decided one locomotive
         // at a time, so it asks afterwards.  The window's own guard covers an empty run LIST, not a
         // list where every entry was skipped.
+        //
+        // WHICH LOCOMOTIVES CAN ACTUALLY BE SKIPPED FOR SPEED (MT-233).  Not, as this used to say,
+        // "any locomotive placed on the graph without the speed dialog ever being opened" - parseAuto
+        // fills an unset speed from defaultLocSpeed as it loads, so anything that came out of a file
+        // has one.  What is left is a locomotive placed on the graph AFTER the load, which has not
+        // been through that path.  The inactive-start-point skip has no such qualification and is the
+        // ordinary way into this.
         // AND ONLY WHEN THERE WAS SOMETHING TO START (RC-B7).
         //
         // An empty run list is not the case this guards.  The Start handler refuses one before it gets
@@ -2010,7 +2071,7 @@ public class Layout
             new java.util.IdentityHashMap<Locomotive, Boolean>());
 
         both.addAll(this.activeLocomotives.keySet());
-        both.addAll(this.takingPath);
+        both.addAll(this.takingPath.keySet());
 
         return both.size();
     }
@@ -2676,7 +2737,7 @@ public class Layout
             // Claimed HERE, in the same monitor that just did the counting.  Anywhere later and the
             // check and the claim can be pulled apart by another thread doing its own check in between
             // - which is exactly what let two trains past a cap of one.
-            this.takingPath.add(loc);
+            this.takingPath.put(loc, path);
 
             try
             {
@@ -3049,7 +3110,34 @@ public class Layout
                     (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
                 )
                 {
-                    e.setUnoccupied();
+                    Set<Edge> alreadyGivenUp = this.clearedEdges.get(loc);
+
+                    if (alreadyGivenUp != null && alreadyGivenUp.contains(e))
+                    {
+                        // ALREADY RELEASED ONCE, WHEN THE TAIL PASSED IT (RC-A9).
+                        //
+                        // With atomicRoutes off this path gives each edge up twice: early, the moment
+                        // tailHasProvablyPassed says the train is clear of it, and again here.  While
+                        // occupancy was a boolean that was harmless - false written twice is false.
+                        // Now that it counts, the second release would take away a claim somebody else
+                        // made in between:
+                        //
+                        //   this path releases the edge early, keeping its lock edges held on purpose;
+                        //   another path locks an edge that NAMES this one, so it is protected again;
+                        //   this path finishes, reaches the edge here, and frees it under that train.
+                        //
+                        // What the early release deliberately did NOT do is give up the lock edges -
+                        // they are held until the path completes, which is now.  So that half, and
+                        // only that half, is what is left to do.
+                        for (Edge lockEdge : e.getLockEdges())
+                        {
+                            lockEdge.setLockedEdgeUnoccupied();
+                        }
+                    }
+                    else
+                    {
+                        e.setUnoccupied();
+                    }
                 }
                 else
                 {
@@ -3425,9 +3513,31 @@ public class Layout
         List<Point> ends = new LinkedList<>(this.points.values());
         Collections.shuffle(ends);
 
-        // Now sort by priority
+        // Now sort by priority - and it is a STABLE sort, which is the whole mechanism.
+        //
+        // The shuffle above is what makes every rule pick at random between equals; a stable sort
+        // keeps that order within a band.  The band gate downstream READS THIS ORDER to decide when a
+        // band has ended, so nothing may reorder `ends` after this without teaching the gate about it.
         Collections.sort(ends, (Point p1, Point p2) ->
         {
+            // EQUAL, ALWAYS, FOR THE RULE THAT IGNORES PRIORITY (OB-156).
+            //
+            // A stable sort whose comparator never distinguishes anything leaves the shuffle exactly
+            // as it was, which is what "completely at random" means.  Expressed here rather than by
+            // skipping the sort, so that there is one statement to read and no second code path in
+            // which `ends` is built a different way.
+            //
+            // THIS IS THE WHOLE MECHANISM, and a first attempt also excused RANDOM_ANY_STATION from
+            // the band gate below "because the gate reads the order of this list".  That condition
+            // was dead: the gate needs `best`, and both random rules return the first route that
+            // works before `best` is ever assigned.  Removing it changed no behaviour and no test,
+            // which is how it was found - a mutation nothing caught, because there was nothing to
+            // catch.
+            if (this.pathPreference == PathPreference.RANDOM_ANY_STATION)
+            {
+                return 0;
+            }
+
             // Random order if equivalent
             if (p1.getPriority() == p2.getPriority())
             {
@@ -3502,7 +3612,11 @@ public class Layout
                                     // before the preference existed had, and it is the cheap one: the
                                     // ranked options have to enumerate the alternatives to compare
                                     // them, and this one does not have to look at any of them.
-                                    if (this.pathPreference == PathPreference.RANDOM) return path;
+                                    if (this.pathPreference == PathPreference.RANDOM
+                                        || this.pathPreference == PathPreference.RANDOM_ANY_STATION)
+                                    {
+                                        return path;
+                                    }
 
                                     int cost = this.costOf(path);
 
@@ -4641,6 +4755,26 @@ public class Layout
                 // one left behind lowers the cap for good.
                 this.takingPath.remove(loc);
 
+                // AND THE RUN STOPS ITSELF, GRACEFULLY (RC-A11).
+                //
+                // Adam: "we need a way to alert the operator so they can park the trains and restart
+                // them.  Autonomy gracefully stopping itself so that it can be resumed is the right
+                // approach."
+                //
+                // Everything above is about the locomotive that failed.  Its path is deliberately left
+                // LOCKED - it may be standing on those edges - so there is now a stretch of track held
+                // by nobody, with no thread watching it, and every other train still running.  Nothing
+                // said so.
+                //
+                // This is the same graceful stop the button performs: `running` goes false, so no new
+                // path is dispatched, and each train already underway finishes its current path and
+                // stops at a station.  Start puts the railway back afterwards, which is the point -
+                // the run is stopped, not abandoned.  The end-of-run callback still fires from the
+                // finally below, so the interface learns about it exactly as it does for any ending.
+                stopLocomotives();
+
+                this.control.logf("autolayout.errorRunStoppedByFailure", loc.getName());
+
                 // And the sensor this locomotive was said to be heading for.  A route condition asking
                 // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
                 // failure is one nothing will ever clear: the thread evaluating that route parks until
@@ -4664,7 +4798,7 @@ public class Layout
 
                 throw e;
             }
-            }
+        }
         finally
         {
             // In a finally for the reason runLocomotive's is: a thread killed by anything at all still
@@ -4763,7 +4897,7 @@ public class Layout
         // takingPath has been maintained since the lock-symmetry work and was only ever counted, for
         // the maximum-trains cap - never asked whether a particular locomotive is in it. Found by
         // review.
-        if (this.takingPath.contains(loc))
+        if (this.takingPath.containsKey(loc))
         {
             this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
             return false;

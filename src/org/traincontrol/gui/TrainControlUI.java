@@ -8025,6 +8025,63 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
 
     /**
+     * Whether the routing dropdown is being put back by us rather than chosen by a person (RC-B11).
+     *
+     * A JComboBox fires an ActionEvent from setSelectedIndex, so restoring the control re-enters the
+     * listener that asked for the restore.  Unguarded that is a second dialog on top of the first, and
+     * it is the whole of what "safely restore the current setting" meant.
+     *
+     * Its checkbox siblings need nothing of the kind - setSelected fires no ActionEvent - which is why
+     * they could restore in one line and this could not.
+     *
+     * Neither volatile nor synchronized: every read and every write is on the event thread, which is
+     * also the only thread that can deliver the event it guards.
+     */
+    private boolean restoringRoutingLogic = false;
+
+    /**
+     * Puts the routing dropdown back to the rule the layout is actually using (RC-B11).
+     *
+     * Two callers wanting the same thing for different reasons: a refused change has to stop the
+     * control reporting a rule that is not in force, and loading a configuration has to show that
+     * configuration's rule rather than the last one seen.
+     *
+     * loadAutoLayoutSettings had its own copy of this loop and relied on the listener returning early
+     * when nothing had changed.  That worked, and it was the same rule in two places - which is how
+     * the two come to disagree.  This holds the flag instead, so the listener does not run at all.
+     *
+     * ROUTING_ORDER covers every PathPreference, so the loop always finds its rule; one it could not
+     * find leaves the control alone, which is the right way to fail - a dropdown showing the previous
+     * rule is wrong, and one showing an arbitrary rule is wrong AND convincing.
+     */
+    private void restoreRoutingLogicSelection()
+    {
+        if (algorithmType == null || this.model == null || !this.model.hasAutoLayout()) return;
+
+        org.traincontrol.automation.Layout.PathPreference now =
+            this.model.getAutoLayout().getPathPreference();
+
+        this.restoringRoutingLogic = true;
+
+        try
+        {
+            for (int at = 0; at < ROUTING_ORDER.length; at++)
+            {
+                if (ROUTING_ORDER[at] == now)
+                {
+                    algorithmType.setSelectedIndex(at);
+
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            this.restoringRoutingLogic = false;
+        }
+    }
+
+    /**
      * Fills in the routing-logic dropdown Adam put in the autonomy settings panel (MT-226).
      *
      * The control itself is his, added in the designer beside its label, so nothing here touches the
@@ -8074,29 +8131,64 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         algorithmType.addActionListener(event ->
         {
-            int at = algorithmType.getSelectedIndex();
-
-            if (at < 0 || at >= ROUTING_ORDER.length) return;
-
-            org.traincontrol.automation.Layout.PathPreference option = ROUTING_ORDER[at];
+            // OUR OWN RESTORE, NOT A PERSON (RC-B11).
+            //
+            // Checked out here rather than inside the invokeLater below, because setSelectedIndex
+            // delivers this event synchronously and the flag is only held for that call.
+            if (this.restoringRoutingLogic) return;
 
             if (this.model == null || !this.model.hasAutoLayout()
                 || this.model.getAutoLayout() == null) return;
 
-            // Nothing to do, and saying so would write the setup on every refresh.
-            if (this.model.getAutoLayout().getPathPreference() == option) return;
-
-            this.model.getAutoLayout().setPathPreference(option);
-
-            // Said out loud when it cannot be kept.  A rule that applies now and reverts on the next
-            // start is the shape of "it did not save" that costs an hour to work out (LE-B5).
-            //
-            // true: somebody just chose this from the dropdown.
-            if (!persistPathPreference(option, true))
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
-                this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
-                    I18n.t("autolayout.ui.pathPreference" + option.name())));
-            }
+                if (this.model.hasAutoLayout())
+                {
+                    if (this.isAutonomyBusy())
+                    {
+                        this.applyAutoRouteListSelections();
+
+                        // AND THE DROPDOWN GOES BACK, BEFORE THE MESSAGE (RC-B11).
+                        //
+                        // The rule is read as each path is chosen, so changing it while trains are
+                        // running would leave the railway following two rules at once - hence the
+                        // refusal.  What the refusal must not do is leave this control naming the rule
+                        // it just refused: it is the only place the rule in force is reported.
+                        //
+                        // Before the dialog, not after.  The dialog is modal, so anything below it
+                        // waits for the click - and the control would sit there contradicting the
+                        // message for as long as the message was on screen.
+                        restoreRoutingLogicSelection();
+
+                        JOptionPane.showMessageDialog(this,
+                            I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    }
+                    else
+                    {
+                        int at = algorithmType.getSelectedIndex();
+
+                        if (at < 0 || at >= ROUTING_ORDER.length) return;
+
+                        org.traincontrol.automation.Layout.PathPreference option = ROUTING_ORDER[at];
+
+                        // Nothing to do, and saying so would write the setup on every refresh.
+                        if (this.model.getAutoLayout().getPathPreference() == option) return;
+
+                        this.model.getAutoLayout().setPathPreference(option);
+
+                        // Said out loud when it cannot be kept.  A rule that applies now and reverts
+                        // on the next start is the shape of "it did not save" that costs an hour to
+                        // work out (LE-B5).
+                        //
+                        // true: somebody just chose this from the dropdown.
+                        if (!persistPathPreference(option, true))
+                        {
+                            this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
+                                I18n.t("autolayout.ui.pathPreference" + option.name())));
+                        }
+                    }
+                }
+            });
         });
     }
 
@@ -8110,6 +8202,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final org.traincontrol.automation.Layout.PathPreference[] ROUTING_ORDER =
     {
         org.traincontrol.automation.Layout.PathPreference.RANDOM,
+        org.traincontrol.automation.Layout.PathPreference.RANDOM_ANY_STATION,
         org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS,
         org.traincontrol.automation.Layout.PathPreference.MOST_STATIONS,
         org.traincontrol.automation.Layout.PathPreference.SHORTEST_LENGTH,
@@ -15736,11 +15829,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (dialogResult == JOptionPane.YES_OPTION)
             {
+                // The id is read BEFORE the delete, which is the only moment it exists (OB-155).
+                boolean wasLocal =
+                    org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(route.getId());
+
                 this.model.deleteRoute(route.getName());
                 refreshRouteList();
 
-                // Ensure route changes are synced
-                this.syncWithCS2();
+                // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155).
+                //
+                // This synced after every delete, to "ensure route changes are synced".  A route at or
+                // above ROUTE_STARTING_ID was allocated here and the station has never heard of it, so
+                // the round trip - the whole database, behind a modal spinner, and twice the connect
+                // timeout when the station is off - can bring back nothing about it.
+                if (!wasLocal) this.syncWithCS2();
                 this.repaintLayout();
                 this.repaintLoc();
             }
@@ -16203,7 +16305,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             );
                         }
 
-                        this.syncWithCS2();
+                        // Both ends, because either could be the station's (OB-155).  Changing one
+                        // local id to another local id is invisible to the station both before and
+                        // after, so there is nothing for a sync to reconcile.
+                        if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
+                            || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(
+                                currentRoute.getId()))
+                        {
+                            this.syncWithCS2();
+                        }
+
                         this.repaintLayout();
                         this.refreshRouteList();
                     }
@@ -22151,7 +22262,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Collect IDs of all selected routes
                     List<Integer> activateRouteIDs = new ArrayList<>();
 
-                    for (Route r :  this.autoRouteList.getSelectedValuesList())
+                    for (Route r:  this.autoRouteList.getSelectedValuesList())
                     {
                         activateRouteIDs.add(r.getId());
                     }
@@ -23516,19 +23627,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             migrateStoredPathPreference(this.model.getAutoLayout());
 
-            org.traincontrol.automation.Layout.PathPreference now =
-                this.model.getAutoLayout().getPathPreference();
-
-            for (int at = 0; at < ROUTING_ORDER.length; at++)
-            {
-                if (ROUTING_ORDER[at] == now)
-                {
-                    // The listener would write the setup back on every load otherwise; it returns
-                    // early when nothing changed, and this is that case.
-                    algorithmType.setSelectedIndex(at);
-                    break;
-                }
-            }
+            // THE SAME RESTORE THE REFUSAL USES (RC-B11).
+            //
+            // This had its own copy of the loop and relied on the listener returning early when
+            // nothing had changed, to stop it writing the setup back on every load.  That was true and
+            // it was the same rule in two places.  The helper holds the guard instead, so the listener
+            // does not run here at all - the same outcome by a rule that cannot drift.
+            restoreRoutingLogicSelection();
         }        
     }
     

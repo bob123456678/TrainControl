@@ -1,6 +1,6 @@
 {
   "globals": {
-    "minDelay": 1,
+    "minDelay": 0,
     "pathPreference": "MOST_STATIONS",
     "atomicRoutes": true,
     "maxActiveTrains": 0,
@@ -22,7 +22,7 @@
         }
       ]
     }],
-    "maxDelay": 2,
+    "maxDelay": 1,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
     "activateRoutes": false,

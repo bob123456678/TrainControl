@@ -58,7 +58,7 @@ import org.traincontrol.marklin.file.CS2File;
  * itself: `Layout.getNeighbors` knows nothing about arrival sides, entry sides or turn sets, only about
  * the edges the builder chose to write down.
  *
- * The fixture is `test_layout`, frozen, wired the way `testAutonomyDiagramSampleLayout` wires it - a
+ * The fixture is `test/test_layout`, frozen, wired the way `testAutonomyDiagramSampleLayout` wires it - a
  * diagram parsed on its own has addresses on its tiles but no Accessory objects behind them, and
  * without them two thirds of the track does not connect.
  *
@@ -92,7 +92,7 @@ public class testTheCheckerAgreesWithTheBuild
     {
         model = init(null, true, false, false, false);
 
-        File folder = new File("test_layout");
+        File folder = new File("test/test_layout");
 
         assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
 

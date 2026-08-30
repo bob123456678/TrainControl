@@ -342,7 +342,7 @@ public class testErrorsStopTheSetupRunning
      */
     private static AutonomySession openOnACopy() throws Exception
     {
-        File folder = new File(System.getProperty("user.dir"), "test_layout");
+        File folder = new File(System.getProperty("user.dir"), "test/test_layout");
 
         assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
 

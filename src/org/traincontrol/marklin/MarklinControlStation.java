@@ -1827,6 +1827,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Whether a route id is one this application allocated rather than one the station could know
+     * about (OB-155).
+     *
+     * newRoute below hands out ids from ROUTE_STARTING_ID upwards, so anything at or above it was made
+     * here.  The Central Station has never been told about such a route and cannot answer a question
+     * about it, which is what makes a sync after editing one a round trip that buys nothing - and a
+     * sync is the whole database over the network, behind a modal spinner, twice the connect timeout
+     * if the station is switched off.
+     *
+     * Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >=
+     * ID 1000."
+     *
+     * @param id the route id in question
+     * @return true when no sync could tell us anything about it
+     */
+    public static boolean isLocalRouteId(int id)
+    {
+        return id >= ROUTE_STARTING_ID;
+    }
+
+    /**
      * Returns a route
      * @param name
      * @return 

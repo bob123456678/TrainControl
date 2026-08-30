@@ -67,7 +67,7 @@ public class testARunSurvivesADiagramEdit
         // Adam's machine is his real railway. This class did not have it on its first run and the
         // ratchet in testSwitchingToACentralStationLayout caught it as the 57th such class - which is
         // the guard doing exactly its job, and the reason the answer is a sandbox rather than a bigger
-        // number. The fixture this test actually reads is a temp copy of test_layout made below; the
+        // number. The fixture this test actually reads is a temp copy of test/test_layout made below; the
         // sandbox is about what `init` opens behind it.
         sandbox = support.LayoutSandbox.open();
 
@@ -279,7 +279,7 @@ public class testARunSurvivesADiagramEdit
 
     private static File aWorkingCopy() throws Exception
     {
-        File from = new File(System.getProperty("user.dir"), "test_layout");
+        File from = new File(System.getProperty("user.dir"), "test/test_layout");
 
         assertTrue(from.isDirectory(), "sample layout not found");
 

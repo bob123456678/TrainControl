@@ -94,7 +94,7 @@ public class testTheEditorTellsAutonomy
         // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
         // this one asks that the decision is taken from the ARGUMENT, which is the only part of
         // reachability a source scan can actually see.
-        String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut)");
+        String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut,");
 
         // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read and
         // Java requires neither spelling - pinning one let the other through (LE2-C12).  The method
@@ -104,21 +104,38 @@ public class testTheEditorTellsAutonomy
             + "The decision belongs to the gesture, and a field re-read is how LE-A7 turned the whole "
             + "group-cut fix into dead code while every one of these tests stayed green");
 
-        // AND IT ASKS WHETHER THE SQUARE IS STILL EMPTY (RC-A1).
+        // AND IT USES THE ANSWER IT WAS HANDED (RC-A1, RC-A6).
         //
-        // This replaced LE-A6, which stood the flag down inside snapshotLayout - and since every edit
-        // snapshots, any edit at all between the cut and the paste turned the move into a copy and
-        // abandoned the setup on the emptied squares.  The per-square test is what makes that correct
-        // without a list of doors, so it is what this pins.
-        assertTrue(moves.contains("getComponent(origin.getX(), origin.getY()) != null"),
-            "cutMoves no longer checks that the origin square is still EMPTY, so a cut whose squares "
+        // The per-square test replaced LE-A6, which stood the flag down inside snapshotLayout - and
+        // since every edit snapshots, any edit between the cut and the paste turned the move into a
+        // copy and abandoned the setup on the emptied squares.
+        //
+        // RC-A6 then moved the question OUT of this method, because asking it here was asking it too
+        // late: pasteSelection places its tiles first, so an origin that is also a landing had been
+        // refilled by the paste itself.  So what this method must do now is exactly what it must do
+        // with the flag - use what the caller worked out, and not go and look again.
+        assertTrue(moves.contains("!vacated.contains(origin)"),
+            "cutMoves does not consult the set of squares the caller found empty, so either it is "
+            + "carrying setup off squares that are full or it is asking the diagram itself - and "
+            + "asking the diagram from here is RC-A6, where the paste had already refilled them");
+
+        assertFalse(moves.contains("layout.getComponent("),
+            "cutMoves asks the diagram which squares are empty.  By the time it runs, pasteSelection "
+            + "has placed its tiles, so an origin that is also a landing reads as full and its setup "
+            + "is skipped and then forgotten as built over (RC-A6)");
+
+        // WHERE THE QUESTION LIVES NOW.  Both halves of it, asked before anything is placed.
+        String vacated = bodyOf(EDITOR, "> emptyCutOrigins()");
+
+        assertTrue(vacated.contains("getComponent(square.getX(), square.getY()) == null"),
+            "emptyCutOrigins no longer checks that the square is still EMPTY, so a cut whose squares "
             + "have been refilled - by an undo, or by a page switch answered with Discard - would "
             + "carry their setup to the paste target and strip squares that still hold track (RC-A1)");
 
-        assertTrue(moves.contains("layout.getName().equals(origin.getPage())"),
-            "cutMoves no longer checks that the origin is on the page being pasted onto, so a cut on "
-            + "one page and a paste on another would move the setup across pages - which cannot be "
-            + "undone, because arriveAt has thrown the source page's history away (RC-A1)");
+        assertTrue(vacated.contains("layout.getName().equals(square.getPage())"),
+            "emptyCutOrigins no longer checks that the square is on the page being pasted onto, so a "
+            + "cut on one page and a paste on another would move the setup across pages - which "
+            + "cannot be undone, because arriveAt has thrown the source page's history away (RC-A1)");
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.

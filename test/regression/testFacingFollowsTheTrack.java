@@ -54,7 +54,7 @@ public class testFacingFollowsTheTrack
     {
         model = init(null, true, false, false, false);
 
-        File folder = new File("test_layout");
+        File folder = new File("test/test_layout");
 
         assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
 
@@ -67,7 +67,7 @@ public class testFacingFollowsTheTrack
 
         // A throwaway copy, not the tracked fixture itself (TST-C17). `session.open` runs
         // `migrateStationLabels`, which calls `store.save()` and `page.saveChanges(...)` the moment a
-        // `Point:` label turns up in a page - not the case today, but `test_layout` is checked in and
+        // `Point:` label turns up in a page - not the case today, but `test/test_layout` is checked in and
         // shared with every other class in the suite, and this one is the only sibling that opened a
         // session on it directly instead of copying `config/autonomy` first, following
         // `testDiscardedEditsDoNotDeleteSetup`'s and `testErrorsStopTheSetupRunning`'s precedent.

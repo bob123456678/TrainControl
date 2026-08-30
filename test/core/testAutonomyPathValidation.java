@@ -491,6 +491,154 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * Two paths holding one crossing, and the first to finish does not free it (RC-A9).
+     *
+     * `Edge.occupied` was a boolean, so it could hold one claim however many were made.  Two edges
+     * naming a third as a lock edge is what a crossing looks like when the editor writes it, and with
+     * a boolean the second lock wrote the same true the first had while the first release wrote false
+     * for both - so the crossing went free with a train still on it.
+     *
+     * Nothing about atomicRoutes here: this is the flag itself, and it is shared by both modes.
+     */
+    @Test
+    public void testTwoPathsHoldingOneCrossingBothHaveToLetGo() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+
+        layout.createPoint("CT_A", false, null);
+        layout.createPoint("CT_B", false, null);
+        layout.createPoint("CT_C", false, null);
+        layout.createPoint("CT_D", false, null);
+        layout.createPoint("CT_X", false, null);
+        layout.createPoint("CT_Y", false, null);
+
+        // The crossing, which is on neither path and protected by both
+        Edge crossing = layout.createEdge("CT_X", "CT_Y");
+
+        Edge first = layout.createEdge("CT_A", "CT_B");
+        Edge second = layout.createEdge("CT_C", "CT_D");
+
+        first.addLockEdge(crossing);
+        second.addLockEdge(crossing);
+
+        MarklinLocomotive asking = dummyLoc();
+
+        first.setOccupied();
+        second.setOccupied();
+
+        assertTrue(crossing.isLockHeld(asking), "precondition: two locks make a crossing held");
+
+        first.setUnoccupied();
+
+        assertTrue(crossing.isLockHeld(asking),
+            "one of the two paths across this crossing finished and the crossing went free, with the "
+            + "other train still holding it.  A boolean cannot count claims: the second lock wrote the "
+            + "same true as the first, and the first release wrote false for both (RC-A9)");
+
+        second.setUnoccupied();
+
+        assertFalse(crossing.isLockHeld(asking),
+            "both paths let go and the crossing is still held, so a count is being raised more often "
+            + "than it is lowered and this track is blocked for the rest of the session");
+    }
+
+    /**
+     * A path does not give up an edge twice, because the second time it may not be its own (RC-A9).
+     *
+     * With atomicRoutes off, executePath releases each edge the moment the train's tail has provably
+     * passed it - deliberately keeping that edge's own lock edges held, since a crossing behind the
+     * train may still be in use - and unlockPath releases everything again at the end.  Two releases
+     * per edge, which a boolean could not tell from one.
+     *
+     * The sequence, in the order the railway performs it:
+     *
+     *   A locks an edge with no lock edges of its own.
+     *   A's tail passes it, so it is released early.
+     *   B locks a DIFFERENT edge that names A's edge as a lock edge, so it is protected again.
+     *   A reaches its destination and unlockPath walks A's path.
+     *
+     * The last step must not touch it.  It is not A's any more.
+     *
+     * The asymmetry this needs - B's edge names A's, A's names nothing - is what GraphEdgeEdit writes,
+     * and 104 of the 118 relations in the shipped sample layout are asymmetric.
+     */
+    @Test
+    public void testAPathDoesNotReleaseAnEdgeItHasAlreadyReleased() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+        layout.setAtomicRoutes(false);
+
+        layout.createPoint("DR_A", false, null);
+
+        MarklinFeedback fb = model.newFeedback(83, null);
+        model.setFeedbackState(fb.getName(), false);
+        layout.createPoint("DR_B", true, fb.getName());
+
+        layout.createPoint("DR_M1", false, null);
+        layout.createPoint("DR_M2", false, null);
+
+        // A's path.  It names nothing, which is what lets a second train reach it at all.
+        Edge shared = layout.createEdge("DR_A", "DR_B");
+
+        // B's path, which protects A's edge while B is crossing
+        Edge protector = layout.createEdge("DR_M1", "DR_M2");
+        protector.addLockEdge(shared);
+
+        MarklinLocomotive first = dummyLoc();
+        MarklinLocomotive second = dummyLoc();
+        MarklinLocomotive third = dummyLoc();
+
+        layout.getPoint("DR_A").setLocomotive(first);
+
+        List<Edge> path = Arrays.asList(shared);
+
+        assertTrue(layout.configureAndLockPath(path, first), "precondition: the path locks cleanly");
+
+        // What executePath does once the tail has provably passed: release the edge, and record that
+        // it has been released.  Both halves, because unlockPath reads the record.
+        java.lang.reflect.Field clearedField = Layout.class.getDeclaredField("clearedEdges");
+        clearedField.setAccessible(true);
+
+        java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> cleared =
+            (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
+                clearedField.get(layout);
+
+        cleared.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
+        cleared.get(first).add(shared);
+
+        shared.setLockedEdgeUnoccupied();
+
+        assertFalse(shared.isLockHeld(third),
+            "precondition: the early release lets the edge go");
+
+        // And by now a second train has locked something that protects it
+        protector.setOccupied();
+
+        assertTrue(shared.isLockHeld(third),
+            "precondition: the second train's lock protects the edge the first has left");
+
+        layout.unlockPath(path, first);
+
+        assertTrue(shared.isLockHeld(third),
+            "the first train's path released this edge a SECOND time when it finished, and by then the "
+            + "claim standing on it belonged to the second train - so the track is now free while a "
+            + "train is crossing it, and the next path over it will be allowed out (RC-A9)");
+
+        // And the second train letting go really does free it, so this is not simply stuck
+        protector.setUnoccupied();
+
+        assertFalse(shared.isLockHeld(third),
+            "the second train let go and the edge is still held, so something is raising the count "
+            + "more often than it lowers it and this track is blocked for the rest of the session");
+    }
+
+    /**
      * With atomic routes disabled, unlockPath must release a skipped edge's LOCK edges.
      *
      * executePath's early unlock frees each edge as the train clears it, using
