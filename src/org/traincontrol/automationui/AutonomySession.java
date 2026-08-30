@@ -4553,15 +4553,16 @@ public class AutonomySession
 
         if (pages == null) return repeats;
 
-        Set<Integer> seen = new LinkedHashSet<>();
+        // WHICH sensor, and where it was first seen (MT-223).  Adam: "the error about a duplicate
+        // s88 does not specify which one is the duplicate."  The addresses were known here and thrown
+        // away, leaving a page name and a hunt through forty sensors.
+        Map<Integer, String> seen = new LinkedHashMap<>();
 
         for (LayoutDiagram page : pages)
         {
             if (store.getExcludedPages().contains(page.getName())) continue;
 
-            Set<Integer> here = new LinkedHashSet<>();
-
-            boolean repeated = false;
+            Map<Integer, String> here = new LinkedHashMap<>();
 
             for (LayoutDiagramComponent component : page.getAll())
             {
@@ -4571,13 +4572,20 @@ public class AutonomySession
 
                 if (sensor <= 0) continue;
 
-                if (seen.contains(sensor)) repeated = true;
-
-                here.add(sensor);
+                if (seen.containsKey(sensor))
+                {
+                    // One per repeated sensor: three repeats on one page are three things to fix, and
+                    // rolled into one line, fixing two of them changes nothing about the message.
+                    repeats.add(I18n.f("autosetup.ui.duplicateSensorSubject",
+                        sensor, page.getName(), seen.get(sensor)));
+                }
+                else
+                {
+                    here.put(sensor, page.getName());
+                }
             }
 
-            if (repeated) repeats.add(page.getName());
-            else seen.addAll(here);
+            seen.putAll(here);
         }
 
         return repeats;

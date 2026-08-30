@@ -45,11 +45,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-220](#mt-220) | 2026-08-29 | The autonomy notices above the diagram | needs test | OB-149, OB-151, MT-219 |
-| [MT-221](#mt-221) | 2026-08-29 | Warnings when a length is missing | needs test | FR-046 |
-| [MT-222](#mt-222) | 2026-08-29 | Setting a train's length, and naming the autonomy functions | needs test | FR-045, FR-047 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
-| [MT-224](#mt-224) | 2026-08-29 | The two train-length warnings, and what they name | needs test | OB-153, OB-154 |
-| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-A4, LE-A5, LE-A6, LE-A7, LE-B1, LE-B6, LE-C1, LE-C2 |
 | [MT-226](#mt-226) | 2026-08-30 | The routing-logic menu says what the railway is doing | needs test | LE-B3, LE-B4, LE-B5 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
@@ -11347,13 +11343,19 @@ not right, which is the exact failure that document was written after.
    centring. Both insets came down together instead. If anything now looks *too* tight, say so - that
    is the direction I moved.
 
+**Adam, 2026-08-30 (triage).** Works, with notes.
+
+Works, but if a page is excluded, instruct the user to click on edit to modify.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-221"></a>
 
 ### MT-221 - 2026-08-29 - Warnings when a length is missing
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-046
 **Written:** 2026-08-29
 
@@ -11382,13 +11384,17 @@ a platform, and Advanced is shown on squares that are not platforms.
    per station and per train at once. If that reads as noise rather than as a to-do list, tell me and
    I will make it one finding per kind rather than per square.
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-222"></a>
 
 ### MT-222 - 2026-08-29 - Setting a train's length, and naming the autonomy functions
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-045, FR-047
 **Written:** 2026-08-29
 
@@ -11418,6 +11424,10 @@ names the current holder first. Both slots may be the same function.
 9. **The consolidated menus.** Set/clear icon, customise function icons, edit name and address, edit
    notes, find similar, delete - these are now one implementation shared by both menus. Their order and
    their keyboard tooltips are unchanged, but please try each one from BOTH menus.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -11485,13 +11495,44 @@ is not in autonomy, so there is nothing to pair it with.
    unpaired arrows on it. That is what this whole distinction exists to keep runnable, and one real
    diagram agreeing is not the same as yours agreeing.
 
+**Adam, 2026-08-30 (triage).** Does not work.
+
+Mostly works, but the error about a duplicate s88 does not specify which one is the duplicate.
+
+Also, the error about duple curved tiles doesn't make sense.  Only one track has the s88, the other one is a static connector track between other tiles.  It should work just as normal within the model, and the user will know where the train is because only one track has a possible station.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+#### 2026-08-30 - what changed after your run
+
+**The duplicate now names the sensor.** It said only which page repeated something; it now reports one
+finding per repeated s88, naming the address and BOTH pages it appears on - the one it is on and the
+one it was first seen on. That is what "does not specify which one is the duplicate" was asking for.
+
+**The double-curve warning is NOT changed, and I want to check with you before touching it.** Your
+reasoning is that only one track carries the s88 and the other is a static connector between other
+tiles, so the model is fine and you know where the train is because only one track has a possible
+station. The warning fires whenever both curves on the square are connected to something, which does
+not distinguish your case from one where autonomy really could route a train over the sensor-less
+curve and then expect a trigger that never comes.
+
+Two ways to narrow it, and they are different rules:
+
+1. **Only warn when a train could actually be routed over the other curve** - that is, when the second
+   curve leads somewhere autonomy uses. That is the honest version of the rule and needs the reduction
+   to have run, so it means moving the check after the edges are built.
+2. **Only warn when both curves could lead to a station** - closer to your own words, and cheaper.
+
+Tell me which, or tell me the warning should just go. I did not want to guess at a reachability rule I
+cannot check against your railway.
+
 ---
 
 <a id="mt-224"></a>
 
 ### MT-224 - 2026-08-29 - The two train-length warnings, and what they name
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-153, OB-154
 **Written:** 2026-08-29
 
@@ -11524,13 +11565,17 @@ sentence just never used it, and said "This station has..." where it could say w
    finding goes through the line I touched. Nothing else should have changed wording at all - if
    another message has gained or lost a name, that is a regression from this.
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-225"></a>
 
 ### MT-225 - 2026-08-30 - What the diagram editor tells the autonomy setup
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** LE-A1, LE-A4, LE-A5, LE-A6, LE-A7, LE-B1, LE-B6, LE-C1, LE-C2
 **Written:** 2026-08-30
 
@@ -11595,6 +11640,10 @@ right thing, and the difference is what these steps are.
    lost and the checker will ask you to place it again. If you would rather the shrink refused and kept
    the caption where it was, say so - it is a small change in the other direction.
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-226"></a>
@@ -11638,5 +11687,23 @@ When switching from one config to the other, the option stays put.
 Since it is now tied to the autonomy config, move the preference to a DROPDOWN below the "maximum active trains" slider in the autonomy settings tab on the autonomy sidebar page.  Be sure it fits within the current panel, not outside of it where the "edit..." button is.
 
 *Run against commit 794d56b9, build\classes, compiled 30 Aug 01:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+#### 2026-08-30 - what changed after your run
+
+**Moved, as you asked.** The routing rule is now a dropdown in the autonomy settings, directly beneath
+the maximum-active-trains slider and inside that bordered panel - not out where the Edit button is.
+
+**That is also the fix for "the option stays put".** Every other setting in that panel is pulled from
+the loaded layout by one method, which runs when a configuration is loaded; the rule was the only one
+living in a menu that read the layout whenever it happened to be opened. Beside its siblings it follows
+a configuration switch for the same reason they do.
+
+The menu entry is gone. Two places to set one value is what produced the always-says-RANDOM bug in the
+first place.
+
+Worth knowing when you retest: the panel is GUI-Builder generated and the slider's slot is pinned at
+exactly 55 pixels, so nothing can sit under the slider itself without squashing it. The dropdown is
+mounted in place of the departure checkbox, with that checkbox moved below it - which puts it where you
+asked without editing the .form. If the spacing looks wrong, that is the reason and it is adjustable.
 
 ---

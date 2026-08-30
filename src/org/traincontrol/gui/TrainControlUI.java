@@ -854,7 +854,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
         // Restore UI component state
-        buildPathPreferenceMenu();
+        // The routing rule is a setting now, not a menu - see mountRoutingLogic (MT-226).
+        mountRoutingLogic();
         buildDiagramDrawingMenu();
         buildDiagramExportMenu();
 
@@ -3581,6 +3582,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private String activeDiagramConfiguration;
+
+    /**
+     * The routing-logic dropdown, in the autonomy settings beside the settings it belongs with.
+     *
+     * Hand-written and declared HERE, not in the generated variables block - a field in there is
+     * deleted the next time the designer regenerates, which this project has been bitten by twice.
+     */
+    private javax.swing.JComboBox<String> routingLogic;
 
     /**
      * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.
@@ -8021,6 +8030,113 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
 
 
+
+    /**
+     * Puts the routing-logic dropdown into the autonomy settings panel (MT-226).
+     *
+     * Adam: "move the preference to a DROPDOWN below the 'maximum active trains' slider in the
+     * autonomy settings tab ... Be sure it fits within the current panel, not outside of it where the
+     * 'edit...' button is."
+     *
+     * WHY IT REPLACES THE DEPARTURE CHECKBOX rather than the slider. jPanel3 is generated, and the
+     * slider's slot is pinned at exactly 55 pixels - a stack under the slider would be squashed into
+     * it. turnOnFunctionsOnDeparture is the next component after the group that holds the slider and
+     * carries no size constraint, so a stack put in its place grows freely and lands directly beneath
+     * the slider block, inside the bordered panel. The alternative was editing the .form, which is the
+     * designer's file and not this class's to write.
+     *
+     * The VALUE is not set here. loadAutoLayoutSettings pulls it from the live layout along with every
+     * other autonomy setting, which is what makes it follow a configuration being switched - the half
+     * of MT-226 that a menu could not do.
+     */
+    private void mountRoutingLogic()
+    {
+        if (turnOnFunctionsOnDeparture == null || jPanel3 == null) return;
+
+        if (!(jPanel3.getLayout() instanceof javax.swing.GroupLayout)) return;
+
+        routingLogic = new javax.swing.JComboBox<>();
+
+        for (org.traincontrol.automation.Layout.PathPreference option : ROUTING_ORDER)
+        {
+            routingLogic.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
+        }
+
+        routingLogic.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        routingLogic.setMaximumSize(new java.awt.Dimension(230, 26));
+        routingLogic.setPreferredSize(new java.awt.Dimension(230, 26));
+        routingLogic.setFocusable(false);
+
+        routingLogic.addActionListener(event ->
+        {
+            int at = routingLogic.getSelectedIndex();
+
+            if (at < 0 || at >= ROUTING_ORDER.length) return;
+
+            org.traincontrol.automation.Layout.PathPreference option = ROUTING_ORDER[at];
+
+            if (this.model == null || !this.model.hasAutoLayout()
+                || this.model.getAutoLayout() == null) return;
+
+            // Nothing to do, and saying so would write the setup on every refresh.
+            if (this.model.getAutoLayout().getPathPreference() == option) return;
+
+            this.model.getAutoLayout().setPathPreference(option);
+
+            // Said out loud when it cannot be kept.  A rule that applies now and reverts on the next
+            // start is the shape of "it did not save" that costs an hour to work out (LE-B5).
+            if (!persistPathPreference(option))
+            {
+                this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
+                    I18n.t("autolayout.ui.pathPreference" + option.name())));
+            }
+        });
+
+        javax.swing.JLabel caption = new javax.swing.JLabel(I18n.t("ui.main.routingLogic"));
+
+        caption.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        caption.setForeground(new java.awt.Color(0, 0, 115));
+        caption.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
+        caption.setFocusable(false);
+
+        routingLogic.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
+
+        javax.swing.JPanel stacked = new javax.swing.JPanel();
+
+        stacked.setOpaque(false);
+        stacked.setLayout(new javax.swing.BoxLayout(stacked, javax.swing.BoxLayout.Y_AXIS));
+
+        caption.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        routingLogic.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        turnOnFunctionsOnDeparture.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        stacked.add(caption);
+        stacked.add(javax.swing.Box.createVerticalStrut(2));
+        stacked.add(routingLogic);
+        stacked.add(javax.swing.Box.createVerticalStrut(6));
+        stacked.add(turnOnFunctionsOnDeparture);
+
+        ((javax.swing.GroupLayout) jPanel3.getLayout()).replace(turnOnFunctionsOnDeparture, stacked);
+    }
+
+    /**
+     * The order the routing rules are offered in, and the index the dropdown speaks.
+     *
+     * The default first - which is the behaviour every existing railway already has - then the
+     * measured choices in pairs, each rule beside its opposite, so the symmetry is visible rather than
+     * something to work out from six similar labels.
+     */
+    private static final org.traincontrol.automation.Layout.PathPreference[] ROUTING_ORDER =
+    {
+        org.traincontrol.automation.Layout.PathPreference.RANDOM,
+        org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS,
+        org.traincontrol.automation.Layout.PathPreference.MOST_STATIONS,
+        org.traincontrol.automation.Layout.PathPreference.SHORTEST_LENGTH,
+        org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
+        org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS,
+        org.traincontrol.automation.Layout.PathPreference.MOST_POINTS,
+        org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED
+    };
     /**
      * Writes the routing rule into the configuration it belongs to (LE-B5).
      *
@@ -8103,130 +8219,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // this can be tried again.
             if (this.model != null) this.model.log(e);
         }
-    }
-    /**
-     * The routing-logic menu.
-     *
-     * PER CONFIGURATION, NOT PER APPLICATION. It was the other way round - a java Preference read here
-     * and pushed into a static on Layout - and Adam moved it: "so it travels with the config, not the
-     * UI". The layout loaded from the configuration is now the thing that knows which rule is in
-     * force, and this only reports and sets it.
-     *
-     * THE TICK IS SET WHEN THE MENU OPENS, not when it is built. This runs from the constructor, where
-     * `model` is still null - it is assigned in setViewListener, afterwards - so anything read here at
-     * build time is read from nothing, and the menu is never rebuilt. Ticking on open is also the only
-     * version that cannot go stale when a different configuration is loaded (LE-B1).
-     */
-    private void buildPathPreferenceMenu()
-    {
-        if (autonomyToolbarMenu == null) return;
-
-        // ASKED OF THE LAYOUT, NOT OF THE UI PREFERENCES (Adam) - and asked when the menu is
-        // SHOWN, not now.  This runs from the constructor, where `model` is still null, so a value
-        // read here would be RANDOM for ever whatever the configuration said (LE-B1).
-
-        javax.swing.JMenu choose = new javax.swing.JMenu(I18n.t("autolayout.ui.menuPathPreference"));
-
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
-
-        final java.util.Map<org.traincontrol.automation.Layout.PathPreference,
-            javax.swing.JRadioButtonMenuItem> items = new java.util.LinkedHashMap<>();
-
-        // The default first - which is also the behaviour every existing railway already has - then
-        // the measured choices in pairs, each rule beside its opposite, so the symmetry is visible
-        // rather than something to work out from six similar labels.  Null is a separator.
-        org.traincontrol.automation.Layout.PathPreference[] order =
-        {
-            org.traincontrol.automation.Layout.PathPreference.RANDOM,
-            null,
-            org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS,
-            org.traincontrol.automation.Layout.PathPreference.MOST_STATIONS,
-            null,
-            org.traincontrol.automation.Layout.PathPreference.SHORTEST_LENGTH,
-            org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
-            null,
-            org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS,
-            org.traincontrol.automation.Layout.PathPreference.MOST_POINTS,
-            null,
-            // On its own at the bottom, because it is the only one that ranks by where trains have
-            // BEEN rather than by the shape of the route
-            org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED
-        };
-
-        for (final org.traincontrol.automation.Layout.PathPreference option : order)
-        {
-            if (option == null)
-            {
-                choose.addSeparator();
-                continue;
-            }
-
-            javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(
-                I18n.t("autolayout.ui.pathPreference" + option.name()));
-
-            items.put(option, item);
-
-            item.setToolTipText(I18n.t("autolayout.ui.tooltip.pathPreference" + option.name()));
-
-            item.addActionListener(event ->
-            {
-                // The running layout takes it at once, and the configuration keeps it.  Both, because
-                // one without the other is either a change that does not last or a change that does
-                // not happen until the next load.
-                if (this.model != null && this.model.hasAutoLayout()
-                    && this.model.getAutoLayout() != null)
-                {
-                    this.model.getAutoLayout().setPathPreference(option);
-                }
-
-                // Said out loud when it cannot be kept.  A rule that applies now and reverts on the
-                // next start is the shape of "it did not save" that costs an hour to work out
-                // (LE-B5).
-                if (!persistPathPreference(option) && this.model != null)
-                {
-                    this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
-                        I18n.t("autolayout.ui.pathPreference" + option.name())));
-                }
-            });
-
-            group.add(item);
-            choose.add(item);
-        }
-
-        // Ticked on the way open, which is the only moment the answer is both known and wanted.
-        choose.addMenuListener(new javax.swing.event.MenuListener()
-        {
-            @Override
-            public void menuSelected(javax.swing.event.MenuEvent event)
-            {
-                org.traincontrol.automation.Layout live = model == null || !model.hasAutoLayout()
-                    ? null : model.getAutoLayout();
-
-                migrateStoredPathPreference(live);
-
-                org.traincontrol.automation.Layout.PathPreference now = live == null
-                    ? org.traincontrol.automation.Layout.PathPreference.RANDOM
-                    : live.getPathPreference();
-
-                for (java.util.Map.Entry<org.traincontrol.automation.Layout.PathPreference,
-                    javax.swing.JRadioButtonMenuItem> entry : items.entrySet())
-                {
-                    entry.getValue().setSelected(entry.getKey() == now);
-                }
-            }
-
-            @Override
-            public void menuDeselected(javax.swing.event.MenuEvent event)
-            {
-            }
-
-            @Override
-            public void menuCanceled(javax.swing.event.MenuEvent event)
-            {
-            }
-        });
-
-        autonomyToolbarMenu.add(choose);
     }
 
     /**
@@ -23424,7 +23416,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.atomicRoutes.setSelected(this.model.getAutoLayout().isAtomicRoutes());
         this.turnOffFunctionsOnArrival.setSelected(this.model.getAutoLayout().isTurnOffFunctionsOnArrival());
         this.turnOnFunctionsOnDeparture.setSelected(this.model.getAutoLayout().isTurnOnFunctionsOnDeparture());
-        this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());        
+        this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());
+
+        // THE ROUTING RULE, PULLED FROM THE LAYOUT LIKE EVERY OTHER SETTING HERE (MT-226).
+        //
+        // This is the whole of the "when switching from one config to the other, the option stays put"
+        // half. A menu read the layout when it happened to be opened; this runs when a configuration
+        // is loaded, so the control cannot show one configuration's rule while another is running.
+        if (routingLogic != null)
+        {
+            migrateStoredPathPreference(this.model.getAutoLayout());
+
+            org.traincontrol.automation.Layout.PathPreference now =
+                this.model.getAutoLayout().getPathPreference();
+
+            for (int at = 0; at < ROUTING_ORDER.length; at++)
+            {
+                if (ROUTING_ORDER[at] == now)
+                {
+                    // The listener would write the setup back on every load otherwise; it returns
+                    // early when nothing changed, and this is that case.
+                    routingLogic.setSelectedIndex(at);
+                    break;
+                }
+            }
+        }        
     }
     
     /**
