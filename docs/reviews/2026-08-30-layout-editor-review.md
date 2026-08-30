@@ -46,6 +46,29 @@ component, and no origin - so paste had nothing to move the setup FROM. The fix 
 flag saying whether the clipboard was cut or copied, and the flag is cleared once a paste has used it,
 because cut-then-paste-twice is a move followed by a copy.
 
+### A3 - the LE-A1 fix could strip the setup off squares that still held track
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testTheEditorTellsAutonomy` |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+Found by attacking the fix rather than the defect, which is a pass every fix in this round now owes.
+
+`clipboardWasCut` means "the squares these tiles came from are empty now, so the setup should follow
+the paste". **Undo makes that false and nothing was telling it.** Cut a block, press Ctrl+Z - the track
+and its setup come back - then paste anywhere, and the paste moved the setup off the restored
+originals onto the copy. The squares still visibly held track and their station, name, length, facing
+and locomotive were gone.
+
+That is worse than the defect A1 fixed: there the setup was orphaned on squares that really were
+empty, and a reconciling save eventually said so. Here it is taken off squares that are plainly still
+there.
+
+Cleared on undo and on redo. Not cleared on a page switch, deliberately - cutting on one page and
+pasting on another is a cross-page move, and carrying the setup is the right answer there, the same
+answer the single-tile move gives.
+
 ### A2 - withdrawn, was never a defect
 
 | | |

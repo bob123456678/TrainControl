@@ -65,6 +65,18 @@ public class testTheEditorTellsAutonomy
         assertTrue(copy.contains("clipboardWasCut = false"),
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
             + "onto the copy and leave the original squares bare (LE-A1)");
+
+        // LE-A3: undo makes the cut untrue, and nothing else would say so.  Cut, Ctrl+Z - the track
+        // and its setup come back - then paste, and without this the paste moves the setup OFF the
+        // restored originals, stripping squares that still visibly hold track.  That is worse than the
+        // defect LE-A1 fixed, where the setup was at least orphaned on squares that were empty.
+        for (String method : new String[] {"public void undo()", "public void redo()"})
+        {
+            assertTrue(bodyOf(EDITOR, method).contains("clipboardWasCut = false"),
+                method + " no longer stands the cut flag down, so a cut that has been undone still "
+                + "counts as a move and the next paste strips the setup off the restored squares "
+                + "(LE-A3)");
+        }
     }
 
     /**

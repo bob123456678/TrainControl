@@ -4587,6 +4587,18 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void undo()
     {
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3).
+        //
+        // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
+        // follow the paste". Stepping through history makes that false and nothing else would say so:
+        // cut, Ctrl+Z - the track and its setup come back - then paste, and the paste would move the
+        // setup off the restored originals onto the copy, stripping squares that still visibly hold
+        // track. That is worse than the defect LE-A1 fixed, where the setup was at least orphaned on
+        // squares that were actually empty.
+        //
+        // The tiles stay on the clipboard: pasting them is still a perfectly good copy.
+        this.clipboardWasCut = false;
+
         try
         {     
             if (!this.previousLayoutComponents.isEmpty())
@@ -4643,6 +4655,18 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void redo()
     {
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3).
+        //
+        // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
+        // follow the paste". Stepping through history makes that false and nothing else would say so:
+        // cut, Ctrl+Z - the track and its setup come back - then paste, and the paste would move the
+        // setup off the restored originals onto the copy, stripping squares that still visibly hold
+        // track. That is worse than the defect LE-A1 fixed, where the setup was at least orphaned on
+        // squares that were actually empty.
+        //
+        // The tiles stay on the clipboard: pasting them is still a perfectly good copy.
+        this.clipboardWasCut = false;
+
         try
         {     
             if (!this.previousLayoutComponentsRedo.isEmpty())
