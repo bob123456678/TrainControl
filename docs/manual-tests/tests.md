@@ -9648,6 +9648,10 @@ agreeing with the runtime is a property of the model, and the train actually sto
 
 *Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-188"></a>
@@ -10160,6 +10164,10 @@ release, every square that ever held a moving train would end up permanently ove
 "Moving" is asked of the locomotive's speed rather than of its path, because a train with a path can be
 standing - waiting at a platform, or held while another route clears - and those are the ones step 2 is
 about.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9.*
 
 ---
 
@@ -11353,6 +11361,10 @@ Works, but if a page is excluded, instruct the user to click on edit to modify.
 buried in a tooltip. It now reads "This page is left out of autonomy - click Edit to change that", in
 all eight languages.
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9.*
+
 ---
 
 <a id="mt-221"></a>
@@ -11533,6 +11545,12 @@ GraphReducer.buildPoints where the check used to be, so it is not lost.
 1. **Switch "3 - Top Parking" back on** and confirm the double-curve notice is gone.
 2. **The duplicate-sensor error should still be there** and should now name the sensor - it is the same
    page, so the two were easy to confuse.
+
+**Adam, 2026-08-30 (triage).** Does not work.
+
+clicking on the sensor notice still does not highlight the sensor on the current page (i.e. page 3)
+
+*Run against commit 697417f9.*
 
 ---
 
@@ -11722,5 +11740,9 @@ Also new since your run: an eighth rule, **Weighing Station Priority Against Dis
 that looks past the highest priority band - the others settle that first, which is why "highest
 priority available station" needed no rule of its own. With no priorities set it behaves like Over the
 Shortest Track.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9.*
 
 ---
