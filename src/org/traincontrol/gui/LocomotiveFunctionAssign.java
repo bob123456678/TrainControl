@@ -487,8 +487,30 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         displayCustomizationButtons();
     }//GEN-LAST:event_resetButtonActionPerformed
 
+    /**
+     * Told when the function this panel is editing changes (FR-045).
+     *
+     * The panel is a form, so anything added to it has to go through the designer - which is why the
+     * autonomy slot ticks live on the DIALOG around it instead. They still have to follow the fNo
+     * dropdown, because switching function inside the panel changes what a tick would be about, and a
+     * tick about a function nobody is looking at is worse than no tick.
+     *
+     * A hook rather than a public getter the dialog polls: there is no moment the dialog could poll at.
+     */
+    private java.util.function.IntConsumer onFunctionChanged;
+
+    /**
+     * @param listener told the new function number whenever it changes, or null
+     */
+    public void setOnFunctionChanged(java.util.function.IntConsumer listener)
+    {
+        this.onFunctionChanged = listener;
+    }
+
     private void updateFNumber(int targetFNo)
     {
+        if (this.onFunctionChanged != null) this.onFunctionChanged.accept(targetFNo);
+
         this.fIcon.setSelectedIndex(this.loc.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
         
         if (loc.isFunctionTimed(targetFNo) > 0)

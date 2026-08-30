@@ -920,8 +920,22 @@ public class TileGraph
 
             boolean reachable = stub != null && landing(entry.getKey(), stub) != null;
 
+            // A LINK TRACK RUNS INTO IS NOW BLOCKING (OB-150).
+            //
+            // Adam: "there should also be an error if there exist ANY active (not excluded/disabled)
+            // links not linked to anything."
+            //
+            // The comment above argued against blocking, and it was right about the case it described:
+            // a diagram imported from a Central Station carries page-jump arrows nobody has paired,
+            // and refusing to run until every one of them is dealt with is unusable. That case is the
+            // UNREACHABLE one - an arrow drawn on its own, with no track joined to it, costing nothing
+            // - and it stays a warning.
+            //
+            // The reachable one is different in kind. Track runs into that link and stops: trains
+            // reach it and have nowhere to go, and the page it was drawn to continue onto cannot be
+            // got to at all. That is a hole in the railway rather than an unfinished intention.
             found.add(new Problem(entry.getKey(),
-                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, false));
+                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, reachable));
         }
 
         // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the

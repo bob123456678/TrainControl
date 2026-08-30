@@ -156,6 +156,44 @@ public class AutonomyChecks
      */
     public static final String DUPLICATE_LOCOMOTIVE = "autosetup.ui.checkDuplicateLocomotive";
 
+    /**
+     * A train standing on the railway with no length recorded (FR-046).
+     *
+     * Autonomy refuses a platform to a train too long for it, and that comparison needs a number at
+     * both ends. A locomotive with no length is never refused anything - it does not fail the rule, it
+     * opts out of it - so a railway can be carefully set up with maximum lengths everywhere and still
+     * run as though they were not there.
+     *
+     * A warning rather than an error, because a layout where nothing is ever close to too long is a
+     * perfectly good layout and this is a reminder, not a refusal.
+     */
+    public static final String NO_TRAIN_LENGTH = "autosetup.ui.checkNoTrainLength";
+
+    /**
+     * The other end of the same sum: a station that will take a train of any length (FR-046).
+     *
+     * Said separately because the two are set in different places by different people - the length on
+     * the locomotive, the maximum on the platform - and knowing which half is missing is the whole of
+     * knowing what to do about it.
+     */
+    public static final String NO_MAX_TRAIN_LENGTH = "autosetup.ui.checkNoMaxTrainLength";
+
+    /**
+     * Two included pages carrying the same s88 sensor (OB-150).
+     *
+     * Adam: "when turning ON 'page 3 - top parking', there is no autonomy error telling me that its s88
+     * sensors are duplicative with ones on page 1.  This config should not be possible to run."
+     *
+     * An ERROR, because it is not a preference. One sensor on two squares becomes two Points after the
+     * reduction, and nothing downstream can say which of them a train is standing on - the railway
+     * cannot be modelled correctly in that state, however carefully everything else is set up.
+     *
+     * `excludeRepeatedSensorPages` shuts a repeating page when a configuration is created, and OB-130
+     * settled that a legacy import may do the same. Neither covers a page switched back on by hand
+     * afterwards, which is the case this is for.
+     */
+    public static final String DUPLICATE_SENSOR_PAGE = "autosetup.ui.checkDuplicateSensorPage";
+
     private AutonomyChecks()
     {
     }
@@ -299,11 +337,37 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred)
     {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes, signalsGone,
+            stationsWithoutSignal, facingsImpossible, barred,
+            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
+            Collections.<String>emptyList());
+    }
+
+    /**
+     * @param withoutTrainLength squares whose locomotive has no length recorded (FR-046)
+     * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
+     * @param withoutMaxLength station squares with no maximum train length
+     *
+     * The two halves of the length comparison, supplied rather than derived: one lives on the
+     * Locomotive in the model and the other is a point property, and neither is visible from the graph.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
+        Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
+        java.util.List<String> repeatedSensorPages)
+    {
         List<Finding> findings = new ArrayList<>();
 
         findings.addAll(checkFacings(reducer, facingsImpossible));
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
+        findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, placedLocomotives));
+        findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
 
         findings.addAll(checkArrivalsLeft(reducer, shutStations));
 
@@ -695,6 +759,72 @@ public class AutonomyChecks
             findings.add(new Finding(Severity.WARNING, CAPTION_COVERED,
                 station == null ? String.valueOf(entry.getValue()) : station.getName(),
                 entry.getKey()));
+        }
+
+        return findings;
+    }
+
+
+    /**
+     * Included pages that repeat another included page's sensors (OB-150).
+     *
+     * The subject is a PAGE rather than a square, and there is no tile to jump to: the fault is that
+     * two squares somewhere carry one address, and naming one of them would send the reader to an
+     * innocent-looking sensor. The page is the thing that can be switched back off.
+     *
+     * @param pages the offending page names, worked out by the caller against the store's own list of
+     *        what is included
+     * @return one error per page
+     */
+    private static List<Finding> checkRepeatedSensorPages(java.util.List<String> pages)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (pages == null) return findings;
+
+        for (String page : pages)
+        {
+            findings.add(new Finding(Severity.ERROR, DUPLICATE_SENSOR_PAGE, page, null));
+        }
+
+        return findings;
+    }
+    /**
+     * Trains with no length, and stations with no maximum (FR-046).
+     *
+     * Handed the answers rather than working them out: a station's maximum is a point property the
+     * session holds, and a train's length is on the Locomotive in the model, which nothing in this
+     * class can reach. Both arrive as sets of squares for the same reason every other check here takes
+     * one - the caller knows things about the configuration that the graph does not.
+     *
+     * @param withoutTrainLength squares holding a locomotive whose length is not set
+     * @param withoutMaxLength station squares with no maximum train length
+     * @param placed which locomotive stands where, for naming the train in the message
+     * @return one warning per square
+     */
+    private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
+        Set<TileKey> withoutMaxLength, Map<TileKey, String> placed)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey square : withoutTrainLength)
+        {
+            // Named, because "a train has no length" sends the reader looking at seven of them. The
+            // square is what the editor jumps to; the name is what says which train to go and measure.
+            String standing = placed == null ? null : placed.get(square);
+
+            findings.add(new Finding(Severity.WARNING, NO_TRAIN_LENGTH,
+                standing == null ? "" : standing, square));
+        }
+
+        for (TileKey square : withoutMaxLength)
+        {
+            // The station's name as the subject, the way every other finding about a station does it -
+            // the editor jumps to the square, and the sentence needs something to be about.
+            GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(square);
+
+            findings.add(new Finding(Severity.WARNING, NO_MAX_TRAIN_LENGTH,
+                point == null ? String.valueOf(square) : point.getName(), square));
         }
 
         return findings;

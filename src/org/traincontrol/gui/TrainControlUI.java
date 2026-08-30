@@ -2602,6 +2602,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
+        // HOW THE SESSION FINDS OUT HOW LONG A TRAIN IS (FR-046).
+        //
+        // Autonomy refuses a platform to a train too long for it, and the checks want to warn when
+        // either half of that comparison is missing. The station's maximum is a point property the
+        // session already holds; the train's length is on the Locomotive, in the model, which the
+        // session has never had a reference to.
+        //
+        // A function rather than a copied map, so there is no second record of a number the model
+        // already owns - a map would be wrong the first time a length was edited, and nothing would
+        // say so.
+        session.setTrainLengthSource(name ->
+        {
+            org.traincontrol.base.Locomotive loc =
+                name == null ? null : this.model.getLocByName(name);
+
+            return loc == null ? null : loc.getTrainLength();
+        });
+
         autonomySession = session;
 
         return autonomySession;
@@ -3541,6 +3559,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public String getActiveDiagramConfiguration()
     {
         return activeDiagramConfiguration;
+    }
+
+    /**
+     * Whether an autonomy configuration is actually LOADED, rather than merely possible.
+     *
+     * Adam: "only show these options if autonomy is fully loaded, not just if it's available."
+     *
+     * The distinction matters and I got it wrong first time. `hasAutoLayout()` is true whenever a graph
+     * object exists, which includes a layout whose setup nobody has loaded - so autonomy-only controls
+     * appeared on railways with no autonomy running and nothing to apply them to.
+     *
+     * This is the application's own answer, not a new one: `activeDiagramConfiguration` is what the
+     * diagram strip is told through setLoaded, and what decides whether it offers Start. Asked here so
+     * that the menus, the ticks and the strip cannot drift into three different ideas of "loaded".
+     *
+     * @return true when a configuration is loaded
+     */
+    public boolean isAutonomyLoaded()
+    {
+        return activeDiagramConfiguration != null;
     }
 
     private String activeDiagramConfiguration;
@@ -20719,6 +20757,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // affordance and the guard disagreeing, which this project has paid for more than once.
         Route under = getRouteAtCursor(evt);
 
+        // THE POINTER ARRIVING IS THE ANSWER BEING READ (MT-218).
+        //
+        // Adam: "have a hover over the highlight turn it off."  Find Route's wash exists to say "it is
+        // this one"; once the pointer is on it, it has been read, and a highlight that outstays that
+        // is a mark on the table with no way to dismiss it short of clicking.
+        if (under != null && under.getName().equals(foundRoute)) clearFoundRoute();
+
         boolean pressable = isOverTheRoutePlayButton(evt)
             && under != null && !routesExecuting.contains(under.getName());
 
@@ -22435,6 +22480,70 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * parsed into a view.
      */
     private static final String CROP_VIEW_PREFIX = "view=";
+
+    /**
+     * Asks how long a train is, and remembers the answer (FR-047).
+     *
+     * Adam: "allow the train length to be set both from the right click locomotive menu on the key
+     * mappings, and the right click menu in the locomotive database editor."  Two doors, and this is
+     * the only implementation - the menus differ in where they are opened from and in nothing else.
+     *
+     * The number matters because autonomy refuses a platform to a train too long for it. A train with
+     * no length is never refused anything, which is why FR-046 warns about one; this is the other half
+     * of that, somewhere to set it without opening the autonomy editor.
+     *
+     * Zero means "not set", the way it does everywhere else this number is used - the station maximum
+     * uses the same convention, and a train of length zero and a train of unknown length are the same
+     * thing to the railway.
+     *
+     * @param l the locomotive
+     * @param evt where the click was, so the dialog opens near it, or null
+     */
+    public void promptTrainLength(Locomotive l, MouseEvent evt)
+    {
+        if (l == null) return;
+
+        Integer current = l.getTrainLength();
+
+        // THE SAME LIST THE AUTONOMY EDITOR OFFERS: 0 to 20 (Adam).
+        //
+        // It was a text box, and a text box can hold 400, or "twelve", or a minus sign - so it needed
+        // parsing, a range check and two error dialogs to say what a list simply cannot express. The
+        // Edit Locomotive view in the autonomy editor has always used this dropdown for the same
+        // field, and two places that set one number should not disagree about what a legal value is.
+        String[] lengths = new String[ROUTE_TRAIN_LENGTH_MAX + 1];
+
+        for (int i = 0; i < lengths.length; i++) lengths[i] = String.valueOf(i);
+
+        int start = current == null || current < 0 || current > ROUTE_TRAIN_LENGTH_MAX ? 0 : current;
+
+        String answer = (String) JOptionPane.showInputDialog(
+            evt == null ? this : evt.getComponent(),
+            I18n.t("autolayout.ui.trainLength"),
+            l.getName(),
+            JOptionPane.PLAIN_MESSAGE,
+            null, lengths, lengths[start]);
+
+        // Cancel, which is not the same as choosing zero - and zero is a real choice here, being how
+        // this field says "not set".
+        if (answer == null) return;
+
+        l.setTrainLength(Integer.parseInt(answer));
+
+        this.model.logf("autolayout.infoSetTrainLength", answer, l.getName());
+
+        // The findings follow the number: FR-046 warns about a train with no length, and that warning
+        // has to go when the length arrives rather than at the next rebuild.
+        refreshAutonomyPrompt();
+    }
+
+    /**
+     * The longest train the length dropdowns offer.
+     *
+     * Twenty, which is what the autonomy editor's Edit Locomotive view has always listed. Named rather
+     * than written twice, so the two dropdowns cannot come to disagree.
+     */
+    public static final int ROUTE_TRAIN_LENGTH_MAX = 20;
 
     /**
      * Removes the local icon override, so the Central Station's own picture is shown again.

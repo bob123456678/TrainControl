@@ -1102,6 +1102,27 @@ public class AutonomyEditorPanel extends JPanel
 
             stationMenu.add(auto);
 
+            // HOW LONG A TRAIN MAY BE TO STOP HERE (FR-046).
+            //
+            // With the three usage choices and the auto-destination tick, because it belongs to the
+            // same question they answer: what may stand at this platform. It is added only when the
+            // square IS a station, so it cannot be set on somewhere no train can stop - which is what
+            // it used to be, sitting in Advanced on every square there is.
+            //
+            // The label carries the current value, as everything on this menu does: "Maximum Train
+            // Length" alone makes the user open it to find out what it is.
+            if (isStation)
+            {
+                stationMenu.addSeparator();
+
+                int maxLength = number(target, "maxTrainLength", 0);
+
+                stationMenu.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
+                    maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
+                    () -> promptNumber(target, "maxTrainLength",
+                        "autolayout.ui.promptEnterMaxTrainLength", 0)));
+            }
+
 
             menu.add(stationMenu);
 
@@ -1253,19 +1274,17 @@ public class AutonomyEditorPanel extends JPanel
             advanced = new javax.swing.JMenu(
                 I18n.t("autolayout.ui.menuEditAdvancedParameters"));
 
-            // Back inside Advanced Parameters (MT-104).
+            // Maximum Train Length is not here any more - see the Station submenu above (FR-046).
             //
-            // OB-013 brought it out on the reasoning that a train too long for a platform is refused
-            // outright, so it decides whether a station can be used at all rather than how well. Adam
-            // put it back, and his order is the one that ships: it is a number you set once and rarely
-            // look at, which is what that submenu is for.
-            int maxLength = number(target, "maxTrainLength", 0);
-
-            advanced.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
-                maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
-                () -> promptNumber(target, "maxTrainLength",
-                    "autolayout.ui.promptEnterMaxTrainLength", 0)));
-
+            // It has been moved twice before: OB-013 took it out of Advanced because a train too long
+            // for a platform is refused outright, and at MT-104 Adam put it back because it is a number
+            // you set once and rarely look at. Both of those are about WHEN you set it.
+            //
+            // What settles it is what it is ABOUT. A maximum train length is a fact about a platform,
+            // and it means nothing on a square that is not one - and Advanced is shown for squares that
+            // are not stations, so this submenu could never express that. Adam: "move the Maximum Train
+            // Length right click setting into the Station submenu, rather than Advanced, and hide it if
+            // the point is not a station."
             int priority = number(target, "priority", 0);
 
             advanced.add(item(I18n.f("autolayout.ui.menuStationPriority",

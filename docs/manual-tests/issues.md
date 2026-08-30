@@ -61,48 +61,6 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### FR-045 - 2026-08-29 - easier autonomy function management
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 19:00  
-**Build:** commit 3f8e9691
-
-To the RightClickFunctionMenu, add a checkbox right clik entry to designate the function as the autonomy departure function, and an other as the autonomy arrival function.  Remember that each locomotive can only have one function for each slot (but they can be the same function).
-
-Add checkboxes to the full edit function popup, remembering that no 2 functions should ever be selectable (since the "Edit Locomotive" view in the autonomy editor has them as dropdowns).
-
-Only show these controls if autonomy is loaded.
-
-### FR-046 - 2026-08-29 - warning if train length is not set
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 19:02  
-**Build:** commit 3f8e9691
-
-add a warning to the autonomy list if any train placed on that page does not have a length set, and also add a warning if any station doesn't have a maximum length set. 
-
-also, move the Maximum Train Length right click setting into the Station submenu, rather than Advanced, and hide it if the point is not a station.
-
-### FR-047 - 2026-08-29 - autonomy train length easier configuration.
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 19:04  
-**Build:** commit 3f8e9691, build\classes, compiled 29 Aug 19:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-allow the train length to be set both from the right click locomotive menu on the key mappings, and the right click menu in the locomotive database editor, visible only when autonomy is loaded.  also, SAFELY consolidate the code between these two right click menus to minimize duplication.
-
-### OB-149 - 2026-08-29 - padding above "start autonomous operation" in track diagram
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-29 19:31  
-**Build:** commit 3f8e9691, build\classes, compiled 29 Aug 19:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-there is slightly more top padding than bottom.  reduce the top to match.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -117,6 +75,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-151 | bug | font size and alignment of autonomy notices above track diagram viewer | - | [MT-220](tests.md#mt-220) |
+| 2026-08-29 | OB-150 | bug | no error on duplicate s88 | - | [MT-223](tests.md#mt-223) |
+| 2026-08-29 | OB-149 | bug | padding above "start autonomous operation" in track diagram | - | [MT-220](tests.md#mt-220) |
+| 2026-08-29 | FR-047 | feature request | autonomy train length easier configuration | - | [MT-222](tests.md#mt-222) |
+| 2026-08-29 | FR-046 | feature request | warning if train length is not set | - | [MT-221](tests.md#mt-221) |
+| 2026-08-29 | FR-045 | feature request | easier autonomy function management | - | [MT-222](tests.md#mt-222) |
 | 2026-08-29 | OB-148 | bug | flickering of top bar in layout viewer | - | [MT-219](tests.md#mt-219) |
 | 2026-08-29 | OB-147 | bug | play button in routes | - | [MT-217](tests.md#mt-217) |
 | 2026-08-29 | FR-044 | feature request | find route feature | - | [MT-218](tests.md#mt-218) |

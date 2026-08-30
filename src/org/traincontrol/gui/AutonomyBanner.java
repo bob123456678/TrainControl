@@ -64,9 +64,17 @@ public class AutonomyBanner extends JPanel
     /**
      * What a banner message is set in, shared so that anything sitting beside one can match it rather
      * than guess at it.
+     *
+     * FOURTEEN, which is what docs/UI-standards.md calls regular text (OB-151). Adam: "increase font
+     * size of 'this layout has an autonomy' and 'this page is left out of autonomy' slightly, to match
+     * the standard size."  It was thirteen - close enough to look deliberate and not right, which is
+     * the exact failure that document was written after.
+     *
+     * Changing it here moves the strip's notices too: the excluded-page label and the findings count
+     * both take this font rather than naming a size of their own, which is why one number was enough.
      */
     public static final java.awt.Font MESSAGE_FONT =
-        new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13);
+        new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
 
     /**
      * The message itself.
@@ -161,7 +169,30 @@ public class AutonomyBanner extends JPanel
 
         scroller.getVerticalScrollBar().setUnitIncrement(16);
 
-        add(scroller, BorderLayout.CENTER);
+        // CENTRED IN THE BAND, not resting on the top of it (OB-151).
+        //
+        // Adam: "center them vertically within their shaded backgrounds."  The band has a height floor
+        // so that messages coming and going do not move the diagram, and a BorderLayout centre stretches
+        // its child to fill - so a one-line message sat at the top of a taller band with the slack
+        // underneath it.
+        //
+        // GridBag with weighty and a horizontal fill gives the scroller its PREFERRED height and puts
+        // the leftover space equally above and below. A long message still fills and still scrolls,
+        // because GridBag shrinks a child to the space available rather than letting it overflow.
+        javax.swing.JPanel centred = new javax.swing.JPanel(new java.awt.GridBagLayout());
+
+        centred.setOpaque(false);
+
+        java.awt.GridBagConstraints middle = new java.awt.GridBagConstraints();
+
+        middle.weightx = 1;
+        middle.weighty = 1;
+        middle.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        middle.anchor = java.awt.GridBagConstraints.CENTER;
+
+        centred.add(scroller, middle);
+
+        add(centred, BorderLayout.CENTER);
 
         // An offer that goes with the message, for the states where saying what is wrong is only half
         // the answer.  Hidden unless something has been offered, so an ordinary message is unchanged.

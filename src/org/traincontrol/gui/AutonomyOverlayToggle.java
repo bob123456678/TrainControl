@@ -172,7 +172,17 @@ public class AutonomyOverlayToggle extends JPanel
         // thing that reads as "something is broken" without the reader being able to say what.
         //
         // Four here plus the FlowLayout's own four makes eight at the leading edge, matching.
-        setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        // Two all round rather than four (OB-149 and OB-151 together).
+        //
+        // OB-149: "there is slightly more top padding than bottom.  reduce the top to match."  The
+        // border was symmetric at four, so what he was seeing is this strip's own top inset stacked
+        // under whatever sits above it - the banner has four of its own below its text.
+        //
+        // The first attempt took two off the TOP only, which fixed that and broke the other half of
+        // OB-151: "center them vertically within their shaded backgrounds."  An asymmetric border is
+        // exactly what off-centre means. So both insets come down together - less space above, and
+        // still the same above as below.
+        setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         right.setOpaque(false);
@@ -582,10 +592,43 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
+     * The strip itself goes when it has nothing in it (MT-219).
+     *
+     * Adam: "remove the gap below the gray bar and the track diagram when there is autonomy but not
+     * loaded yet.  the red 'this page is excluded' banner already does this correctly."
+     *
+     * A setup that exists and is not loaded hides every child here: the checkbox wants a loaded setup,
+     * so does the run button, the findings count stands down under a banner already saying the same
+     * thing in words, and the excluded label belongs to a different state. What is left is a panel
+     * with nothing in it and its own border, between the banner and the diagram - a band the user can
+     * neither act on nor get rid of.
+     *
+     * AutonomyBanner solved this for itself and wrote down why, one band higher: "the banner itself
+     * goes when it has nothing to offer". This is the same sentence applied to the same stack.
+     *
+     * Asked of the children rather than of the state, because the state is decided in two setters and
+     * a repaint, and a fourth copy of "is there anything worth showing" would be the one that drifts.
+     */
+    private void hideIfEmpty()
+    {
+        boolean anything = show.isVisible() || left_out.isVisible()
+            || findings.isVisible() || run.isVisible();
+
+        if (isVisible() == anything) return;
+
+        setVisible(anything);
+
+        revalidate();
+        repaint();
+    }
+
+    /**
      * Colours the strip for the state it is in.
      */
     private void paintState()
     {
+        hideIfEmpty();
+
         // Excluded wins, and the two cannot both be true anyway: an excluded page shows no run button
         // at all, so `fixing` is false there by construction.  Ordered explicitly regardless, because
         // "cannot happen" is a poor reason for the answer to depend on which branch is written first.

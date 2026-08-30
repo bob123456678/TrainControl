@@ -2950,7 +2950,11 @@ public class AutonomySession
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
             // The red arrows, so the findings walk the railway a train can actually use (OB-120).
-            barredArrivals());
+            barredArrivals(),
+            // The two halves of the length rule (FR-046).
+            placedTrainsWithoutLength(), stationsWithoutMaxLength(),
+            // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
+            repeatedSensorPages());
     }
 
     /**
@@ -4388,4 +4392,134 @@ public class AutonomySession
 
         dirty = false;
     }
+    /**
+     * How to find out how long a train is, when somebody has told us (FR-046).
+     *
+     * A function rather than a map, because the length lives on the Locomotive in the model and this
+     * class has never held one. A copied map would be a second record of something the model already
+     * knows, and would be wrong the first time a length was edited.
+     *
+     * Null until the window installs it, and every check that uses it is silent while it is - a
+     * session built without one simply does not raise that warning, rather than raising it about every
+     * train on the railway.
+     */
+    private java.util.function.Function<String, Integer> trainLengths;
+
+    /**
+     * Tells this session how to look a train's length up.
+     *
+     * @param lengths a function from locomotive name to length, or null to stop asking
+     */
+    public void setTrainLengthSource(java.util.function.Function<String, Integer> lengths)
+    {
+        this.trainLengths = lengths;
+    }
+
+    /**
+     * The squares holding a train whose length nobody has set.
+     *
+     * Empty when no source has been installed, which is the honest answer: not knowing a length and
+     * knowing it is unset are different things, and only one of them is worth a warning.
+     *
+     * @return the squares, in the order the placements are held
+     */
+    private java.util.Set<TileKey> placedTrainsWithoutLength()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        if (trainLengths == null) return out;
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            if (placed.getValue() == null || placed.getValue().trim().isEmpty()) continue;
+
+            Integer length = trainLengths.apply(placed.getValue());
+
+            // Zero and unset mean the same thing here, and both mean the same to the railway: a train
+            // of no length is never too long for anywhere.
+            if (length == null || length <= 0) out.add(placed.getKey());
+        }
+
+        return out;
+    }
+
+    /**
+     * The station squares that will take a train of any length.
+     *
+     * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
+     * reason the setting itself moved into the station submenu (FR-046).
+     *
+     * @return the squares
+     */
+    private java.util.Set<TileKey> stationsWithoutMaxLength()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        if (reducer == null) return out;
+
+        for (TileKey square : reducer.getPoints().keySet())
+        {
+            if (!store.isStation(square)) continue;
+
+            Object value = getPointProperty(square, "maxTrainLength");
+
+            int max = value instanceof Number ? ((Number) value).intValue() : 0;
+
+            if (max <= 0) out.add(square);
+        }
+
+        return out;
+    }
+
+    /**
+     * Included pages that repeat an s88 another included page already uses (OB-150).
+     *
+     * The same walk `excludeRepeatedSensorPages` does, and deliberately so: that method decides which
+     * pages to shut when a configuration is created, and this reports the pages that are open and
+     * should not be. Two spellings of "repeats a sensor" would eventually disagree about which page
+     * was at fault, and the answer would differ depending on whether you created the configuration or
+     * switched a page back on afterwards.
+     *
+     * Earliest page wins, as it does there: the first page to use a sensor keeps it, and a later page
+     * repeating it is the one named. That is the rule the shutting already follows, so the error names
+     * the page the automatic answer would have shut.
+     *
+     * @return the offending page names, in the order the layout lists them
+     */
+    private java.util.List<String> repeatedSensorPages()
+    {
+        java.util.List<String> repeats = new ArrayList<>();
+
+        if (pages == null) return repeats;
+
+        Set<Integer> seen = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (store.getExcludedPages().contains(page.getName())) continue;
+
+            Set<Integer> here = new LinkedHashSet<>();
+
+            boolean repeated = false;
+
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component == null || !component.isFeedback()) continue;
+
+                int sensor = component.getRawAddress();
+
+                if (sensor <= 0) continue;
+
+                if (seen.contains(sensor)) repeated = true;
+
+                here.add(sensor);
+            }
+
+            if (repeated) repeats.add(page.getName());
+            else seen.addAll(here);
+        }
+
+        return repeats;
+    }
+
 }

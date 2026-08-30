@@ -39,60 +39,37 @@ public class RightClickSelectorMenu extends JPopupMenu
             add(menuItem);
         }
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuSetLocalLocomotiveIcon")
-        );
-        menuItem.addActionListener(event -> ui.setLocIcon(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.setLocalIcon(ui, loc, e));
 
         if (loc.getLocalImageURL() != null)
         {
-            menuItem = new JMenuItem(
-                I18n.t("loc.ui.menuClearLocalLocomotiveIcon")
-            );
-            menuItem.addActionListener(event -> ui.clearLocIcon(loc));
-            add(menuItem);
+            add(LocomotiveMenuItems.clearLocalIcon(ui, loc));
         }
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuCustomizeFunctionIcons")
-        );
-        menuItem.addActionListener(event -> ui.setFunctionIcon(loc, null, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.customiseFunctionIcons(ui, loc, null, e));
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuEditNameAddressDecoder")
-        );
-        menuItem.addActionListener(event -> ui.changeLocAddress(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.editNameAddressDecoder(ui, loc, e));
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuEditNotes")
-        );
-        menuItem.addActionListener(event -> ui.changeLocNotes(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.editNotes(ui, loc, e));
 
-        addSeparator();
+        // HOW LONG THIS TRAIN IS, when there is autonomy to care (FR-047).
+        //
+        // Beside the other facts about the locomotive itself rather than with the icons: it is a
+        // number about the train, like its name and address, and the items above it are about how it
+        // is drawn.
+        JMenuItem length = LocomotiveMenuItems.trainLength(ui, loc, e);
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuFindSimilarLocomotives")
-        );
-        menuItem.addActionListener(event -> ui.findSimilarLocs(loc, e));
-        menuItem.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
-        add(menuItem);
+        if (length != null) add(length);
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuDeleteFromDatabase")
-        );
-        menuItem.setForeground(Color.RED);
-        menuItem.addActionListener(event -> {
-            ui.deleteLoc(loc.getName(), e);
-        });
-        add(menuItem);
+        add(LocomotiveMenuItems.findSimilar(ui, loc, e));
+
+        addSeparator();
+
+        add(LocomotiveMenuItems.deleteFromDatabase(ui, loc, e));
     }
 }
    
