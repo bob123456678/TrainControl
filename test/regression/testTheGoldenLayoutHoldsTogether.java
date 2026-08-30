@@ -123,7 +123,7 @@ public class testTheGoldenLayoutHoldsTogether
      * `before` was taken, and this cannot see it. What it catches now is every write this class's own
      * reading could cause, which is the property the class exists for and no longer only a slice of it.
      *
-     * The protection against another class writing to that folder lives in `tools/battery.sh`, which
+     * The protection against another class writing to that folder lives in `docs/tools/battery.sh`, which
      * fingerprints it around the whole run and says so explicitly - and which `ant test` does not
      * use.
      *

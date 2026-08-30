@@ -41,5 +41,5 @@ At the moment it was taken it carried, among other things:
 - four locomotives placed, and the `Main` configuration active.
 
 `cs2_sample_layout/` itself is the operator's live railway and is **not** a fixture: it is written by
-the application whenever trains move, and `tools/battery.sh` fingerprints it before and after a run
+the application whenever trains move, and `docs/tools/battery.sh` fingerprints it before and after a run
 precisely so that a test writing to it is noticed. Nothing may point a test at that folder.

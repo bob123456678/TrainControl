@@ -52,7 +52,7 @@ matrix test written specifically to catch this project's commonest bug class.
 
 ## Running them
 
-**The real gate is `tools/battery.sh`, not `ant test`.** `ant test` runs everything except
+**The real gate is `docs/tools/battery.sh`, not `ant test`.** `ant test` runs everything except
 `testAutoDetect` (which probes the network for a real Central Station), one class per JVM, and it is
 useful for driving a single class while iterating. But it is weaker than `battery.sh` in two ways that
 matter: a class that skips every test in it (via a `SkipException`, or a `@BeforeClass` failure) reads as
@@ -62,7 +62,7 @@ to it, which `ant test` has no way to do. `battery.sh` also sets the
 `-Dtraincontrol.anyReceivePort=true` system property that lets tests share a machine without binding the
 same UDP port; `ant test` does not, so a class whose `@BeforeClass` fails to bind can silently test
 nothing. Use `ant test` (or the scratchpad runners below) for a fast loop on the classes you are
-changing, but treat `tools/battery.sh` as the one that actually has to pass.
+changing, but treat `docs/tools/battery.sh` as the one that actually has to pass.
 
 While iterating, the scratchpad holds two scripts that run classes in their own JVMs and print one line
 each: a full runner and a fast one that excludes the handful of slow classes. The fast one is an

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs both engines over the same four trains and compares what each will do.
 #
-# Usage: sh tools/parity/run.sh [targetFolder] [runSeconds]
+# Usage: sh docs/tools/parity/run.sh [targetFolder] [runSeconds]
 #
 # runSeconds drives the optional timed autonomy run.  Zero - the default - records only what each
 # engine would CONSIDER, which is what the superset question actually asks.  On a simulated station a
@@ -23,7 +23,7 @@ JAVA="$JDK/bin/java.exe"
 
 if [ ! -d "$TARGET/v2_8_1" ]
 then
-    echo "*** no environment at $TARGET - run tools/parity/setup-env.sh first ***"
+    echo "*** no environment at $TARGET - run docs/tools/parity/setup-env.sh first ***"
     exit 2
 fi
 
@@ -82,7 +82,7 @@ cd "$REPO"
 # compare.py exits non-zero when the superset claim fails, which is a result rather than an error.
 set +e
 
-python tools/parity/compare.py "$TARGET/out/v2_8_1.tsv" "$TARGET/out/v3_0_0.tsv" \
+python docs/tools/parity/compare.py "$TARGET/out/v2_8_1.tsv" "$TARGET/out/v3_0_0.tsv" \
     "$TARGET/out/report.md"
 
 STATUS=$?

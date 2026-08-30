@@ -12,9 +12,9 @@ kept for FR-028's horizontal centring, where the requirement was that nothing el
 ## Running it
 
 ```
-javac -d <out> -cp <build>;<classpath> tools/Bounds.java
+javac -d <out> -cp <build>;<classpath> docs/tools/Bounds.java
 java -Dtraincontrol.anyReceivePort=true -cp <out>;<build>;<classpath> Bounds <layout folder> <dump dir>
-python tools/compare-bounds.py <before dump dir> <after dump dir>
+python docs/tools/compare-bounds.py <before dump dir> <after dump dir>
 ```
 
 `<layout folder>` must be a **copy**. The harness points the window's layout preference at it and puts

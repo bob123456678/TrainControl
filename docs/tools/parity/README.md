@@ -3,7 +3,7 @@
 Does the diagram-derived graph offer at least the routes the hand-built one did?
 
 ```bash
-sh tools/parity/setup-env.sh && sh tools/parity/run.sh
+sh docs/tools/parity/setup-env.sh && sh docs/tools/parity/run.sh
 ```
 
 The first builds `../traincontrol-parity/`; the second writes `out/report.md`. Neither touches

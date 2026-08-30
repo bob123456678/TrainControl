@@ -47,7 +47,7 @@ public class testSidebarIcons
     /**
      * The one colour every icon is drawn in.
      *
-     * Written down twice on purpose - once in `tools/tab-icons.py`, which drew the files, and once here
+     * Written down twice on purpose - once in `docs/tools/tab-icons.py`, which drew the files, and once here
      * - because the two are not connected by anything the compiler can see. If they ever disagree,
      * this is where it is noticed, and the message says which one to change.
      */

@@ -16,7 +16,7 @@
 # neither the experiment nor the other engine can touch the original, and so the two runs cannot
 # contaminate each other through a shared placement file.
 #
-# Usage: sh tools/parity/setup-env.sh [targetFolder]
+# Usage: sh docs/tools/parity/setup-env.sh [targetFolder]
 
 set -e
 
@@ -133,4 +133,4 @@ echo "compiled BuildDiagramSetup against v3_0_0"
 echo "compiled PathPreferenceProbe against v3_0_0"
 echo ""
 echo "environment ready: $TARGET"
-echo "next: sh tools/parity/run.sh \"$TARGET\""
+echo "next: sh docs/tools/parity/run.sh \"$TARGET\""

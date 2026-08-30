@@ -88,6 +88,15 @@ there should also be a "by station priority" option that simply uses the station
 
 ... on traversing trains in station labels make the ... not be bold, and change it to one arrow that correctly shows the direction of travel.
 
+### OB-159 - 2026-08-30 - locomotive icon over stations while running
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-30 14:59  
+**Build:** commit c386be96, build\classes, compiled 30 Aug 14:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the locomotive icon sometimes appears BELOW stations while running, as rendered in the track diagram viewer under autonomy.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

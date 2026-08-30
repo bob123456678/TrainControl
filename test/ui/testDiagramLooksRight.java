@@ -1301,7 +1301,7 @@ public class testDiagramLooksRight
      * it does not need a golden file to compare against.
      *
      * Found with a harness that dumps every component's bounds for both builds and diffs them - see
-     * tools/README-bounds.md. What it reported, once it had been made deterministic, was "0 tile
+     * docs/tools/README-bounds.md. What it reported, once it had been made deterministic, was "0 tile
      * placements differ, and these four named labels moved by three pixels".
      *
      * MUTATION: anchoring captions BASELINE_LEADING again fails this.

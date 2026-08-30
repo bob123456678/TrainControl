@@ -230,6 +230,7 @@
         <test-one-class class="testLocomotiveExclusions"/>
         <test-one-class class="testTheRoutingChoiceSurvivesTheUpgrade"/>
         <test-one-class class="testStationPriorityDistribution"/>
+        <test-one-class class="testRouteTilePlacement"/>
         <test-one-class class="testTheRoutePlayButton"/>
         <test-one-class class="testFindRoute"/>
         <test-one-class class="testUdpMessagesReachTheWire"/>

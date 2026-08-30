@@ -533,6 +533,30 @@ public class TileGraph
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
     /**
+     * Two route buttons side by side, with real track running into the pair (OB-159).
+     *
+     * A button carries no track; it conducts whatever is beside it.  Two of them beside each other
+     * each count the OTHER as a side worth conducting to, so the pair can splice two lines together
+     * through a length of diagram that has no rails on it at all.
+     *
+     * Only when the pair touches real track: two buttons alone in a corner of the page conduct
+     * nothing and are a control panel, which is what they are for.
+     */
+    public static final String ERROR_ADJACENT_ROUTE_TILES = "autosetup.ui.errorAdjacentRouteTiles";
+
+    /**
+     * Track running into a route button from three sides, one of which is silently dropped (OB-159).
+     *
+     * transparentRoutes joins N to S and E to W where both face; with three sides facing, the pair
+     * wins and the odd arm is discarded - so a line drawn into the side of a button on a running line
+     * is severed with nothing said about it.
+     *
+     * Ambiguous rather than wrong: a crossing carries two routes, so three arms cannot be one, and
+     * there is no honest guess for this to make.  Four IS a crossing and is not reported.
+     */
+    public static final String ERROR_ROUTE_TILE_THREE_WAY = "autosetup.ui.errorRouteTileThreeWay";
+
+    /**
      * The route identifier a portal traversal carries.  A portal is not one of the tile's drawn routes,
      * so it needs an identity of its own to hang direction off - and it takes the default, both ways.
      */
@@ -629,6 +653,9 @@ public class TileGraph
                 }
             }
         }
+
+        // AFTER every page is in, because these questions are about neighbours (OB-159).
+        checkTransparentTiles();
     }
 
     /**
@@ -1160,6 +1187,36 @@ public class TileGraph
     {
         List<Route> out = new ArrayList<>();
 
+        List<Side> facing = facingSides(tile);
+
+        for (Side side : new Side[]{Side.N, Side.E})
+        {
+            if (facing.contains(side) && facing.contains(side.opposite()))
+            {
+                out.add(new Route(side, side.opposite(), null));
+            }
+        }
+
+        if (out.isEmpty() && facing.size() == 2)
+        {
+            out.add(new Route(facing.get(0), facing.get(1), null));
+        }
+
+        return out;
+    }
+
+    /**
+     * The sides of a transparent tile that something conducts to (OB-159).
+     *
+     * Extracted so that transparentRoutes and the checks below cannot disagree about what "facing"
+     * means.  Written out twice they drift, and a check that disagrees with the thing it is checking
+     * is worse than no check at all.
+     *
+     * @param tile the transparent square
+     * @return the sides, in N E S W order
+     */
+    private List<Side> facingSides(TileKey tile)
+    {
         List<Side> facing = new ArrayList<>();
 
         for (Side side : Side.values())
@@ -1178,20 +1235,148 @@ public class TileGraph
             }
         }
 
-        for (Side side : new Side[]{Side.N, Side.E})
+        return facing;
+    }
+
+    /**
+     * Whether the tile on this side of a transparent one is real track rather than another button.
+     *
+     * @param tile the transparent square
+     * @param side which way to look
+     * @return true when something with rails on it faces back
+     */
+    private boolean realTrackOn(TileKey tile, Side side)
+    {
+        LayoutDiagramComponent neighbourComponent = tiles.get(neighbour(tile, side));
+
+        return neighbourComponent != null && !TilePorts.isTransparent(neighbourComponent.getType());
+    }
+
+    /**
+     * Whether the run of buttons this one belongs to meets real track on two different sides (OB-159).
+     *
+     * A single button conducts what is beside it, which is ordinary and correct.  A RUN of them - two
+     * or more touching - conducts across squares that have no rails at all, and that only matters when
+     * there is something to conduct at each end.  One end is a siding stub or a panel beside the
+     * track; two is a splice.
+     *
+     * The whole run is walked rather than this tile's neighbours, so that three buttons in a row with
+     * track at each end is caught as readily as two.
+     *
+     * @param from any button in the run
+     * @return true when the run has real track against it on at least two sides
+     */
+    private boolean runReachesTrackOnBothSides(TileKey from)
+    {
+        Set<TileKey> run = new LinkedHashSet<>();
+        List<TileKey> pending = new ArrayList<>();
+
+        run.add(from);
+        pending.add(from);
+
+        boolean adjacent = false;
+
+        // The real faces, as SQUARES rather than as a count: two buttons in a run can each face the
+        // same piece of track, and that is one end, not two.
+        Set<TileKey> reached = new LinkedHashSet<>();
+
+        while (!pending.isEmpty())
         {
-            if (facing.contains(side) && facing.contains(side.opposite()))
+            TileKey tile = pending.remove(pending.size() - 1);
+
+            for (Side side : facingSides(tile))
             {
-                out.add(new Route(side, side.opposite(), null));
+                TileKey neighbourKey = neighbour(tile, side);
+
+                if (realTrackOn(tile, side))
+                {
+                    reached.add(neighbourKey);
+
+                    continue;
+                }
+
+                adjacent = true;
+
+                if (run.add(neighbourKey)) pending.add(neighbourKey);
             }
         }
 
-        if (out.isEmpty() && facing.size() == 2)
-        {
-            out.add(new Route(facing.get(0), facing.get(1), null));
-        }
+        return adjacent && reached.size() >= 2;
+    }
 
-        return out;
+    /**
+     * Route buttons placed where what they conduct is not what was drawn (OB-159).
+     *
+     * A SECOND PASS, after every page is in `tiles`.  The per-tile scan that raises the other problems
+     * runs while the map is still being filled, so a tile there cannot see its neighbours - and every
+     * question here is about neighbours.
+     */
+    private void checkTransparentTiles()
+    {
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
+        {
+            if (!TilePorts.isTransparent(entry.getValue().getType())) continue;
+
+            TileKey tile = entry.getKey();
+
+            List<Side> facing = facingSides(tile);
+
+            // ADJACENT BUTTONS THAT REACH TRACK AT BOTH ENDS (Adam).
+            //
+            // "Only if they are connected to something else on the graph" - and a run of buttons
+            // touching track at ONE end connects nothing to anything: a route through them needs two
+            // ends.  Counted over the whole RUN rather than this tile, because three in a row with
+            // track at each end is the same fault as two.
+            //
+            // Adam, on the pair this first fired on: "since the two route icons are next to each other
+            // but there is no connect to the link nor the straight track, it should not emit an error.
+            // There is no ambiguity there."  He is right - past the far button of that pair is a
+            // straight lying north-south, which presents no face, so the run reaches track only on one
+            // side and splices nothing.  Turn that straight a quarter turn and it becomes a splice
+            // across two squares of blank diagram, which is the case this is for.
+            if (runReachesTrackOnBothSides(tile))
+            {
+                problems.add(new Problem(tile, ERROR_ADJACENT_ROUTE_TILES, true));
+
+                continue;
+            }
+
+            // AND AN ARM THAT WOULD BE DROPPED.
+            //
+            // Asked of the routes this tile actually produces rather than of the count, so it reports
+            // the case that loses something and stays quiet about the one that does not: four sides
+            // are emitted as two routes, which is a crossing and is what a crossing should be.
+            Set<Side> carried = new LinkedHashSet<>();
+
+            for (Route route : transparentRoutes(tile))
+            {
+                carried.add(route.getA());
+                carried.add(route.getB());
+            }
+
+            // AND ONLY WHERE SOMETHING WAS ACTUALLY CARRIED.
+            //
+            // An empty result is not a dropped arm - it is a button that conducts nothing, which is
+            // what a button beside the rails or at the end of a line IS.  Without this the check fired
+            // on three squares of the operator's own railway that are drawn correctly: at 1 - Main:3,5
+            // the feedback to the east is rotated a quarter turn, so it presents no face at all and
+            // the single western arm was reported as "dropped" by a pair that never existed.
+            //
+            // Measured before it shipped, by the test that runs these checks over his frozen snapshot.
+            if (carried.isEmpty()) continue;
+
+            for (Side side : facing)
+            {
+                // Only a REAL arm is worth reporting.  Dropping a face that a neighbouring button
+                // contributed loses no track, and the adjacency error above has already spoken.
+                if (!carried.contains(side) && realTrackOn(tile, side))
+                {
+                    problems.add(new Problem(tile, ERROR_ROUTE_TILE_THREE_WAY, true));
+
+                    break;
+                }
+            }
+        }
     }
 
     /**
