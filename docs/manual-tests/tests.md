@@ -39,7 +39,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -11456,7 +11455,7 @@ names the current holder first. Both slots may be the same function.
 
 ### MT-223 - 2026-08-29 - Two configurations that should refuse to run
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-150
 **Written:** 2026-08-29
 
@@ -11608,6 +11607,10 @@ page brought must produce none. Checked failing with the `break` back in.
 3. **Tell me if that is now too much noise.** Forty errors for one zoomed page is honest but it may
    read as a wall; if so the right shape is probably one finding per page with the sensors listed
    inside it, and that is a small change from here.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

@@ -63,8 +63,8 @@ element
  .artikel=-1
 element
  .id=0x11
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=9
 element
  .id=0x12
  .typ=gerade
@@ -145,11 +145,7 @@ element
  .drehung=3
  .artikel=-1
 element
- .id=0x112
- .typ=fahrstrasse
- .artikel=9
-element
- .id=0x113
+ .id=0x111
  .artikel=-1
  .text=Circuit
 element
@@ -197,14 +193,6 @@ element
  .typ=bogen
  .drehung=3
  .artikel=-1
-element
- .id=0x213
- .typ=fahrstrasse
- .artikel=8
-element
- .id=0x214
- .artikel=-1
- .text=Loopback
 element
  .id=0x216
  .typ=gerade
@@ -260,8 +248,8 @@ element
  .artikel=-1
 element
  .id=0x313
- .typ=gerade
- .artikel=-1
+ .typ=fahrstrasse
+ .artikel=8
 element
  .id=0x314
  .typ=gerade
@@ -331,6 +319,10 @@ element
  .id=0x412
  .artikel=-1
  .text= 8
+element
+ .id=0x413
+ .artikel=-1
+ .text=Loopback
 element
  .id=0x416
  .typ=gerade
