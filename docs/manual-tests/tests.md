@@ -49,6 +49,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-222](#mt-222) | 2026-08-29 | Setting a train's length, and naming the autonomy functions | needs test | FR-045, FR-047 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
 | [MT-224](#mt-224) | 2026-08-29 | The two train-length warnings, and what they name | needs test | OB-153, OB-154 |
+| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-B1, LE-C1, LE-C2 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -11521,5 +11522,53 @@ sentence just never used it, and said "This station has..." where it could say w
 6. **The rest of the findings list.** This is the change most likely to have side effects: every
    finding goes through the line I touched. Nothing else should have changed wording at all - if
    another message has gained or lost a name, that is a regression from this.
+
+---
+
+<a id="mt-225"></a>
+
+### MT-225 - 2026-08-30 - What the diagram editor tells the autonomy setup
+
+**Disposition:** needs test
+**From:** LE-A1, LE-B1, LE-C1, LE-C2
+**Written:** 2026-08-30
+
+Five fixes from [the layout editor review](../reviews/2026-08-30-layout-editor-review.md), all of the
+same shape: you change the track, and something has to carry - or drop - the autonomy setup that was
+keyed to it.
+
+**Why this needs you.** Nothing in the suite builds a `LayoutEditor`, so all five are pinned by reading
+the source and checking the call is in the right place. That is not the same as checking it does the
+right thing, and the difference is what these steps are.
+
+1. **The one that lost work (LE-A1).** Set a platform up properly - station, name, a maximum length, a
+   facing, and stand a locomotive on it. Select it **as part of a group** (drag a box round it and at
+   least one neighbour), **Ctrl+X**, move a couple of squares away, **Ctrl+V**. Everything should
+   arrive with the track: the station, the name, the length, the facing, the locomotive.
+2. **The same move by dragging** the selection, and **the same move one tile at a time**. Both always
+   worked; check they still do. If the group cut now works and one of these has broken, I traded one
+   for the other.
+3. **Cut once, paste TWICE.** The first paste is the move and should carry everything. The second is a
+   copy: it should NOT bring the station, the name or the locomotive with it, or one train ends up
+   recorded on two squares.
+4. **Copy - not cut - and paste.** The original must keep everything. This is the case I could most
+   easily have broken while fixing 1.
+5. **Undo after each of those.** All three fixes snapshot before they change anything, so Ctrl+Z should
+   put both the track and the setup back.
+6. **The stranded name (LE-B1).** Name a station on the bottom row so its caption lands on the blank
+   row beneath it, then press **-** to shrink the page. The name should disappear from the diagram and
+   the autonomy list should start saying that station is not shown anywhere - which is the prompt to
+   place it again. What must NOT happen is the old behaviour: the name silently gone and nothing
+   reporting it.
+7. **Clear Diagram (LE-C2)** on a page with a setup, then look at the autonomy findings. They should be
+   about a page with no track, not about squares that still claim stations and locomotives. Undo, and
+   the setup should come back.
+8. **Right-click the bottom row** and open the diagram submenu. **Shift Up** should be greyed, with a
+   tooltip saying why. Same for **Shift Left** on the rightmost column. Anywhere else both should be
+   available and work (LE-C1).
+9. **Judgement call for you**, on step 6: I chose to DROP the caption rather than refuse the shrink,
+   on the grounds that a caption is where a name is drawn and not the name itself, so nothing is really
+   lost and the checker will ask you to place it again. If you would rather the shrink refused and kept
+   the caption where it was, say so - it is a small change in the other direction.
 
 ---

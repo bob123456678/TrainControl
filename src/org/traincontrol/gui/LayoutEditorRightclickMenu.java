@@ -474,16 +474,18 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         // In the order somebody reaches for them: down and right make room, up and left take it back.
         addShift(diagramSubmenu, "layout.ui.shiftDown", "layout.ui.tooltip.shiftDiagramDown",
-            () -> edit.shiftDown());
+            () -> edit.shiftDown(), true);
 
         addShift(diagramSubmenu, "layout.ui.shiftRight", "layout.ui.tooltip.shiftDiagramRight",
-            () -> edit.shiftRight());
+            () -> edit.shiftRight(), true);
 
+        // Greyed where they would refuse, with the reason - the same treatment Shrink gets above, and
+        // asking the editor's own predicate rather than restating it here (LE-C1).
         addShift(diagramSubmenu, "layout.ui.shiftUp", "layout.ui.tooltip.shiftDiagramUp",
-            () -> edit.shiftUp());
+            () -> edit.shiftUp(), edit.canShiftUp());
 
         addShift(diagramSubmenu, "layout.ui.shiftLeft", "layout.ui.tooltip.shiftDiagramLeft",
-            () -> edit.shiftLeft());
+            () -> edit.shiftLeft(), edit.canShiftLeft());
 
         diagramSubmenu.addSeparator();
         
@@ -511,7 +513,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
      * Written once rather than four times: they differ only in their words and in which method they
      * call, and four copies of the same try/catch is four places for one of them to drift.
      */
-    private void addShift(JMenu into, String label, String tooltip, Runnable action)
+    private void addShift(JMenu into, String label, String tooltip, Runnable action, boolean enabled)
     {
         JMenuItem item = new JMenuItem(I18n.t(label));
 
@@ -527,7 +529,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        item.setToolTipText(I18n.t(tooltip));
+        // Disabled, say why - the pattern UXR-C12 records for this menu.  Enabled, the item's own
+        // tooltip describes what it does.
+        item.setEnabled(enabled);
+        item.setToolTipText(enabled ? I18n.t(tooltip) : I18n.t("layout.ui.errorShiftAtEdge"));
 
         into.add(item);
     }

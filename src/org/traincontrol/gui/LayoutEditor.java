@@ -299,6 +299,28 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    /**
+     * Where each carried tile came from, square for square with the group clipboard (LE-A1).
+     *
+     * CarriedTile carries an offset within the block and the component, which is all pasting track
+     * needs and not enough to move a setup: without an origin there is nothing to move it FROM. Every
+     * other way of moving track already carries the setup - moveTile for a single tile, moveTiles for
+     * a drag or a bulk row - and the group cut and paste was the one that could not.
+     *
+     * Recorded by a copy as well as a cut. It costs nothing, and it keeps one shape for both.
+     */
+    private java.util.List<org.traincontrol.automationui.TileGraph.TileKey> clipboardOrigins;
+
+    /**
+     * Whether what is on the clipboard was CUT rather than copied (LE-A1).
+     *
+     * The difference is the whole of it: a cut is a move and its setup should follow the track; a copy
+     * is a copy and the original keeps everything. Cleared once a paste has used it, because cut then
+     * paste twice is a move followed by a copy - carrying the setup to both landings would put one
+     * station's name, length and locomotive on two squares.
+     */
+    private boolean clipboardWasCut = false;
+
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
     
@@ -2522,6 +2544,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         java.util.List<CarriedTile> taken = new java.util.ArrayList<>();
 
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> origins =
+            new java.util.ArrayList<>();
+
         try
         {
             for (int x = bounds[0]; x <= bounds[2]; x++)
@@ -2532,6 +2557,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     taken.add(new CarriedTile(x - bounds[0], y - bounds[1],
                         lc == null ? null : new LayoutDiagramComponent(lc)));
+
+                    // Square for square with `taken`, including the empty ones - an empty square can
+                    // still hold a caption, so it has a setup worth moving (LE-A1).
+                    origins.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), x, y));
                 }
             }
         }
@@ -2543,6 +2573,11 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         this.groupClipboard = taken;
+        this.clipboardOrigins = origins;
+
+        // A copy is not a move: the original keeps its setup, so pasting one only clears what it
+        // builds over, exactly as it did before LE-A1.
+        this.clipboardWasCut = false;
 
         return true;
     }
@@ -2555,6 +2590,46 @@ public class LayoutEditor extends PositionAwareJFrame
         return this.groupClipboard != null && !this.groupClipboard.isEmpty();
     }
 
+
+    /**
+     * Where each cut square is landing, or null when what is on the clipboard was copied (LE-A1).
+     *
+     * A square that is not moving is left out - pasting a block back exactly where it came from is a
+     * move to itself, and asking the setup to move a square onto itself is at best wasted work.
+     *
+     * @param atX the column the block is being pasted at
+     * @param atY the row
+     * @return origin square to landing square, empty when there is nothing to carry
+     */
+    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY)
+    {
+        if (!this.clipboardWasCut || this.clipboardOrigins == null
+            || this.groupClipboard == null
+            || this.clipboardOrigins.size() != this.groupClipboard.size())
+        {
+            return null;
+        }
+
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            org.traincontrol.automationui.TileGraph.TileKey> moves =
+                new java.util.LinkedHashMap<>();
+
+        for (int at = 0; at < this.groupClipboard.size(); at++)
+        {
+            CarriedTile tile = this.groupClipboard.get(at);
+
+            org.traincontrol.automationui.TileGraph.TileKey to =
+                new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), atX + tile.dx, atY + tile.dy);
+
+            org.traincontrol.automationui.TileGraph.TileKey origin = this.clipboardOrigins.get(at);
+
+            if (!to.equals(origin)) moves.put(origin, to);
+        }
+
+        return moves;
+    }
     /**
      * Pastes a copied group with its top left corner at a square, as ONE undoable step.
      *
@@ -2624,7 +2699,25 @@ public class LayoutEditor extends PositionAwareJFrame
                     layout.getName(), x, y));
             }
 
-            forgetBuiltOver(builtOver);
+            // THE SETUP FOLLOWS THE TRACK, when the track was cut rather than copied (LE-A1).
+            //
+            // moveTiles is given what was built over as well, so it does both jobs in one write: the
+            // landing squares are cleared of whatever they held and the carried setup lands on them.
+            // Calling forgetBuiltOver as well would clear the setup this has just delivered.
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                org.traincontrol.automationui.TileGraph.TileKey> moves = cutMoves(atX, atY);
+
+            if (autonomy != null && moves != null && !moves.isEmpty())
+            {
+                if (autonomy.moveTiles(moves, builtOver)) rememberAutonomy(autonomy);
+
+                // Used up.  Cut then paste twice is a move and then a copy.
+                this.clipboardWasCut = false;
+            }
+            else
+            {
+                forgetBuiltOver(builtOver);
+            }
 
             // What was just pasted becomes the selection, so it can be nudged into place
             this.selection.clear();
@@ -2865,9 +2958,17 @@ public class LayoutEditor extends PositionAwareJFrame
         // is the one outcome this method's own comment says it was written to avoid.
         java.util.List<CarriedTile> carried = this.groupClipboard;
 
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> from = this.clipboardOrigins;
+
         boolean cut = this.deleteSelection();
 
         this.groupClipboard = carried;
+        this.clipboardOrigins = from;
+
+        // SET AFTER THE DELETE, not before: delete() ends by resetting the clipboard, which is the
+        // reason the list above has to be held across it, and a flag set first would be cleared with
+        // it.  The paste that follows is the move half of this gesture (LE-A1).
+        this.clipboardWasCut = cut;
 
         return cut;
     }
@@ -3710,6 +3811,40 @@ public class LayoutEditor extends PositionAwareJFrame
     // "no caller" was not, and is not, the same test as "not wanted" - check before deleting a set of
     // methods a second time.
 
+
+    /**
+     * Whether shiftUp would do anything (LE-C1).
+     *
+     * Public because the menu asks it before offering the item, and the method asks it before acting -
+     * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
+     * drift is exactly this finding: the item was offered on the last row, where it returned in
+     * silence.
+     *
+     * False on the edge, where there is no the row below it to move up into.
+     *
+     * @return true when there is a hovered square this can work from
+     */
+    public boolean canShiftUp()
+    {
+        return !(lastHoveredY < 0 || lastHoveredY > layout.getSy() - 2);
+    }
+
+    /**
+     * Whether shiftLeft would do anything (LE-C1).
+     *
+     * Public because the menu asks it before offering the item, and the method asks it before acting -
+     * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
+     * drift is exactly this finding: the item was offered on the last row, where it returned in
+     * silence.
+     *
+     * False on the edge, where there is no the column to its right to move left into.
+     *
+     * @return true when there is a hovered square this can work from
+     */
+    public boolean canShiftLeft()
+    {
+        return !(lastHoveredX < 0 || lastHoveredX > layout.getSx() - 2);
+    }
     /**
      * Inserts a row or a column at the hovered square and pushes everything past it along.
      *
@@ -3743,7 +3878,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // pairing on the page stayed on the square it used to be on.  Nothing was dropped by the next
         // reconcile either, because every square still had a tile - the whole page's setup was simply
         // attached to the wrong tiles, silently.
-        if (lastHoveredY < 0 || lastHoveredY > layout.getSy() - 2) return;
+        if (!canShiftUp()) return;
 
         this.snapshotLayout();
 
@@ -3795,6 +3930,13 @@ public class LayoutEditor extends PositionAwareJFrame
         // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
         // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
         // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
+        // GUARDED BEFORE THE SNAPSHOT (LE-B2).
+        //
+        // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
+        // square this method does nothing, but the entry clears the redo stack and makes the editor
+        // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
+        if (lastHoveredY < 0) return;
+
         this.snapshotLayout();
         
         try
@@ -3838,7 +3980,7 @@ public class LayoutEditor extends PositionAwareJFrame
     public void shiftLeft()
     {
         // Refused on the last column - see shiftUp, which has the same normalisation behind it
-        if (lastHoveredX < 0 || lastHoveredX > layout.getSx() - 2) return;
+        if (!canShiftLeft()) return;
 
         this.snapshotLayout();
 
@@ -3890,6 +4032,13 @@ public class LayoutEditor extends PositionAwareJFrame
         // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
         // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
         // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
+        // GUARDED BEFORE THE SNAPSHOT (LE-B2).
+        //
+        // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
+        // square this method does nothing, but the entry clears the redo stack and makes the editor
+        // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
+        if (lastHoveredX < 0) return;
+
         this.snapshotLayout();
 
         try
@@ -4047,6 +4196,34 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
+
+    /**
+     * Drops any caption sitting on the row and column a shrink is about to remove (LE-B1).
+     *
+     * Called before trimEdges, while those squares still exist to be named.
+     */
+    private void forgetCaptionsOnTrimmedEdge()
+    {
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy == null) return;
+
+        boolean changed = false;
+
+        for (int y = 0; y < layout.getSy(); y++)
+        {
+            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                layout.getName(), layout.getSx() - 1, y));
+        }
+
+        for (int x = 0; x < layout.getSx(); x++)
+        {
+            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                layout.getName(), x, layout.getSy() - 1));
+        }
+
+        if (changed) rememberAutonomy(autonomy);
+    }
     /**
      * Shrinks the diagram by one, undoing exactly what growEdges adds.
      *
@@ -4067,6 +4244,21 @@ public class LayoutEditor extends PositionAwareJFrame
 
         try
         {
+            // THE EDGE MAY HOLD A NAME EVEN WHEN IT HOLDS NO TRACK (LE-B1).
+            //
+            // edgesAreEmpty looks at the grid, which is track. A station's caption is placed on a blank
+            // square by preference - placeCaption looks for "an empty square next to it" - and the
+            // bottom row and right column are blank squares like any other. Trimmed away underneath
+            // one, the caption kept coordinates that are now off the page: not drawn on the diagram,
+            // still present, so the "station is not shown anywhere" check stayed quiet, and no square
+            // remained for the user to click to move or remove it.
+            //
+            // Forgotten rather than refused. The caption is where a name is DRAWN, not the name
+            // itself: the station keeps its name, the check notices it has nowhere to show it, and the
+            // user is offered it again. Refusing the shrink instead would block a tidy-up over a label
+            // that can be re-placed in one click.
+            forgetCaptionsOnTrimmedEdge();
+
             layout.trimEdges();
 
             showDiagramSize();
@@ -4179,6 +4371,34 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+
+    /**
+     * Tells the setup that every square on this page has gone (LE-C2).
+     *
+     * One call for the page rather than one per square, for the reason forgetBuiltOver gives at
+     * length: per square this rebuilds the graph twice and writes the whole setup to disk, and a page
+     * is hundreds of squares.
+     */
+    private void forgetWholePage()
+    {
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy == null) return;
+
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> everywhere =
+            new java.util.ArrayList<>();
+
+        for (int x = 0; x < layout.getSx(); x++)
+        {
+            for (int y = 0; y < layout.getSy(); y++)
+            {
+                everywhere.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), x, y));
+            }
+        }
+
+        if (autonomy.forgetTiles(everywhere)) rememberAutonomy(autonomy);
+    }
     /**
      * Toggles the display of text
      */
@@ -4218,6 +4438,17 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.snapshotLayout();
                 
+                // WHAT AUTONOMY KNEW ABOUT THIS PAGE GOES WITH IT (LE-C2).
+                //
+                // Deleting one square tells the setup so; emptying the whole page told it nothing at
+                // all, so every station, name, length, facing, signal pairing, portal and placement
+                // stayed keyed to squares that now hold nothing. A reconciling save would eventually
+                // prune them, but the non-reconciling writes on the way out - the window captures the
+                // running layout and saves without reconciling when it closes - commit that state to
+                // disk first, and the page's setup outlives the diagram it describes until somebody
+                // opens the autonomy editor and presses Save.
+                forgetWholePage();
+
                 layout.clear();
                 this.resetClipboard();
 
