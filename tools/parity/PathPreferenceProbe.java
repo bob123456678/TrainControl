@@ -18,24 +18,25 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Adam: "The pathing is a preference only in 3.0.0, in the autonomy menu.  Not sure how it's built, not
  * sure if it does anything."
  *
- * Reading the code says it should: the menu writes the choice to a preference AND pushes it into
- * Layout's static `pathPreference`; `pickPath` short-circuits on RANDOM and otherwise ranks every
+ * Reading the code says it should: `pickPath` short-circuits on RANDOM and otherwise ranks every
  * candidate route by `costOf`. But "should" is what this whole exercise exists not to rely on, so this
- * asks each setting what it would choose and prints the answers side by side. If they are all the same
- * route, the setting does nothing on this railway, whatever the code implies.
+ * asks each setting what it would choose and prints the answers side by side. If they all name the
+ * same route, the setting does nothing on this railway, whatever the code implies.
  *
  * 3.0.0 ONLY, which is why it is not part of ParityDriver: the preference does not exist in 2.8.1, so
  * there is nothing to compare it against and nothing to be a superset of. This answers a different
  * question - not "did we lose routes" but "does this control work".
  *
- * TWO WAYS IT CAN SILENTLY NOT APPLY, both worth knowing:
+ * WHAT IT FOUND, FIRST TIME OUT: the setting works, and barely mattered. One train of four chose
+ * differently under it, and SHORTEST_LENGTH and LONGEST_LENGTH picked the SAME route as each other -
+ * which is what a tie at zero looks like, because only 18 of 132 edges carried a length and lengthOf
+ * summed the rest to nothing. Both of those have since been addressed: the rule now travels with the
+ * configuration rather than living in a static loaded only by the window, and an unmeasured edge
+ * counts as one s88 of track.
  *
- *   - `pathPreference` is STATIC on Layout and defaults to RANDOM, and the only thing that loads the
- *     saved value into it is the menu builder in the window. Anything that runs autonomy without
- *     building that menu - a script, an example, this probe unless it sets the value itself - runs on
- *     RANDOM no matter what is saved.
- *   - RANDOM returns the first route that works without enumerating alternatives, so it is not one
- *     ranking among several; it is the absence of ranking.
+ * Still worth knowing when reading the output: RANDOM returns the first route that works without
+ * enumerating the alternatives, so it is not one ranking among several - it is the absence of ranking,
+ * and it agreeing with a ranked rule means nothing.
  *
  * Usage: PathPreferenceProbe &lt;layoutFolder&gt; &lt;autonomyJson&gt; &lt;outFile&gt;
  */
@@ -86,13 +87,16 @@ public class PathPreferenceProbe
 
         for (Layout.PathPreference preference : Layout.PathPreference.values())
         {
-            Layout.setPathPreference(preference);
+            // ON THE LAYOUT, because the rule now belongs to the configuration rather than to the
+            // running program.  It was static when this probe was written, and the change is the
+            // reason the probe stopped compiling against a freshly built jar - which is a better
+            // signal than any comment: this file is compiled against both engines, so it notices.
+            layout.setPathPreference(preference);
 
-            // Proof that the value took, since it is a static somebody else may also be setting.
-            if (Layout.getPathPreference() != preference)
+            if (layout.getPathPreference() != preference)
             {
                 throw new IllegalStateException("setPathPreference did not take: asked for " + preference
-                    + ", Layout reports " + Layout.getPathPreference());
+                    + ", the layout reports " + layout.getPathPreference());
             }
 
             // Placed fresh for every preference, so each one is choosing from the same board rather
