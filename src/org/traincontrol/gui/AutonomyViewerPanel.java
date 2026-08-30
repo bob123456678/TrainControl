@@ -1512,7 +1512,18 @@ public class AutonomyViewerPanel extends JPanel
             }
 
             (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
-                new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
+            // BOTH, because {0} alone cannot say which train (OB-153).
+            //
+            // The line above deliberately prefers the tile's description to the finding's own subject,
+            // and is right to for every finding whose subject IS the point - an unnamed Point's name is
+            // its coordinate, which tells the reader nothing. FR-046's train-length warning is the
+            // first whose subject is a LOCOMOTIVE, and that preference swallowed it, so the warning
+            // named the station the train was standing at instead of the train.
+            //
+            // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
+            // this list changes, and lets the two that need a name use {1}.
+                new Object[] {finding.getTile(),
+                    describe(finding.getMessageKey(), subject, finding.getSubject())});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
@@ -1612,15 +1623,15 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    private String describe(String key, String subject)
+    private String describe(String key, Object... args)
     {
         try
         {
-            return I18n.f(key, subject);
+            return I18n.f(key, args);
         }
         catch (RuntimeException e)
         {
-            return key + " " + subject;
+            return key + " " + (args.length > 0 ? args[0] : "");
         }
     }
 

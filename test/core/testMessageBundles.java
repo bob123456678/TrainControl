@@ -648,4 +648,71 @@ public class testMessageBundles
 
         return null;
     }
+    /**
+     * The two train-length warnings name what they are about (OB-153, OB-154).
+     *
+     * Adam, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train
+     * at that station name.  state both ({train} and {station} has no...)"  OB-154:
+     * "autosetup.ui.checkNoMaxTrainLength does not specify the station name".
+     *
+     * Both panels build a finding's text as
+     *
+     *     subject = finding.getTile() == null ? finding.getSubject() : describeTile(finding.getTile())
+     *
+     * which is right for every finding whose subject IS the point it is about - an unnamed Point's name
+     * is its coordinate, and the tile's description is the more useful of the two. FR-046's
+     * train-length warning is the first whose subject is a LOCOMOTIVE, so that preference threw the
+     * train's name away and the warning named the station it was standing at.
+     *
+     * The fix passes BOTH, leaving {0} meaning what it always meant so no other message moved.
+     *
+     * BOTH HALVES, because either alone passes while the bug is present. A message that says {1} with
+     * nothing supplying it renders the literal text "{1}" - which is what the reader would see - and
+     * panels that pass an argument no message asks for change nothing at all.
+     */
+    @Test
+    public void testTheLengthWarningsNameTheTrainAndTheStation() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String train = values.getProperty("autosetup.ui.checkNoTrainLength");
+            String station = values.getProperty("autosetup.ui.checkNoMaxTrainLength");
+
+            // {1} is the train, {0} the place it stands - a warning naming only one of them sends the
+            // reader to a station to look for a train it did not name.
+            if (train == null || !train.contains("{0}") || !train.contains("{1}"))
+            {
+                offenders.add(bundle.getName() + " checkNoTrainLength must name the train {1} and "
+                    + "where it stands {0}: " + train);
+            }
+
+            if (station == null || !station.contains("{0}"))
+            {
+                offenders.add(bundle.getName() + " checkNoMaxTrainLength must name the station {0}: "
+                    + station);
+            }
+        }
+
+        assertTrue(offenders.isEmpty(), "the length warnings do not name their subject: " + offenders);
+
+        // and something has to supply the {1} they now ask for
+        for (String source : new String[] {"src/org/traincontrol/gui/AutonomyViewerPanel.java",
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java"})
+        {
+            File file = new File(source);
+
+            assertTrue(file.isFile(), source + " was not found - run this from the project root");
+
+            String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+            assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject())"),
+                source + " no longer passes the finding's own subject alongside the tile description, "
+                + "so {1} in the length warning has nothing to fill it and renders as the literal "
+                + "text \"{1}\" (OB-153)");
+        }
+    }
 }

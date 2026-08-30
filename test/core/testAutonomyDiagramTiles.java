@@ -734,8 +734,15 @@ public class testAutonomyDiagramTiles
             "a link to a page left out of autonomy cannot be paired, so refusing the diagram over it "
             + "asks for something the user cannot do");
 
-        assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, false),
+        assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_EXCLUDED_PAGE, false),
             "it is still worth saying - it stopped blocking, it did not stop being reported");
+
+        // ITS OWN MESSAGE, not a quieter copy of the other one.  warnLinkNeverPaired tells the reader
+        // to right-click and pair it, which is the one thing that cannot work when the page on the far
+        // side was left out of autonomy.
+        assertFalse(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, false),
+            "this case has its own message and should not also be reported as an ordinary "
+            + "never-paired link");
     }
 
     // --- helpers ----------------------------------------------------------------------------------

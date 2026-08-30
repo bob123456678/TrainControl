@@ -75,6 +75,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-29 | OB-154 | bug | checkNoMaxTrainLength does not specify the station name | - | [MT-224](tests.md#mt-224) |
+| 2026-08-29 | OB-153 | bug | checkNoTrainLength names the station, not the train at it | - | [MT-224](tests.md#mt-224) |
+| 2026-08-29 | OB-152 | bug | translate checkNoTrainLength per manual change - cancelled, the change was reverted | declined | - |
 | 2026-08-29 | OB-151 | bug | font size and alignment of autonomy notices above track diagram viewer | - | [MT-220](tests.md#mt-220) |
 | 2026-08-29 | OB-150 | bug | no error on duplicate s88 | - | [MT-223](tests.md#mt-223) |
 | 2026-08-29 | OB-149 | bug | padding above "start autonomous operation" in track diagram | - | [MT-220](tests.md#mt-220) |

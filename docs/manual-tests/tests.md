@@ -48,6 +48,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-221](#mt-221) | 2026-08-29 | Warnings when a length is missing | needs test | FR-046 |
 | [MT-222](#mt-222) | 2026-08-29 | Setting a train's length, and naming the autonomy functions | needs test | FR-045, FR-047 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
+| [MT-224](#mt-224) | 2026-08-29 | The two train-length warnings, and what they name | needs test | OB-153, OB-154 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -11453,12 +11454,17 @@ to bill you for one you already decided on.
 
 So, in full:
 
-| The link | Reported as |
-|---|---|
-| Nothing joined to it | Warning |
-| Track runs into it, destination page is **excluded** | Warning |
-| Track runs into it, destination page is **in autonomy** | **Error** |
-| Disabled, or its partner is | Not reported |
+| The link | Reported as | What it tells you to do |
+|---|---|---|
+| Nothing joined to it | Warning | pair it, or leave it out |
+| Track runs into it, destination page is **excluded** | Warning | include that page, or switch the link off |
+| Track runs into it, destination page is **in autonomy** | **Error** | pair it, or switch it off |
+| Disabled, or its partner is | Not reported | - |
+
+The middle row has its **own message** now, added after you asked for one. It was borrowing the error's
+wording, so two findings read identically and differed only in severity - and that wording tells you to
+"right-click it to pair it", which is the single thing that cannot work here: the page on the far side
+is not in autonomy, so there is nothing to pair it with.
 
 1. **Switch "3 - Top Parking" back on.** You should get an error naming the page, and the setup should
    refuse to run.
@@ -11468,10 +11474,52 @@ So, in full:
 4. **Draw a link with nothing joined to it.** A warning only, and the setup still runs - this is the
    case the old comment was protecting and I have deliberately kept it.
 5. **Draw a link with track running into it that points at an EXCLUDED page.** A warning, and the setup
-   still runs. This is the third kind, and it is the one that was wrong for a while.
+   still runs. This is the third kind, and it is the one that was wrong for a while. **Read the message
+   itself**: it should talk about the page not being part of autonomy and offer to include the page or
+   switch the link off - not tell you to pair it. If it reads the same as step 3's error, the new
+   message is not reaching this case.
 6. **Disable a link** that is unpaired. Neither should be reported.
 7. **The case still worth trying hardest**: a diagram imported from the Central Station with several
    unpaired arrows on it. That is what this whole distinction exists to keep runnable, and one real
    diagram agreeing is not the same as yours agreeing.
+
+---
+
+<a id="mt-224"></a>
+
+### MT-224 - 2026-08-29 - The two train-length warnings, and what they name
+
+**Disposition:** needs test
+**From:** OB-153, OB-154
+**Written:** 2026-08-29
+
+You, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train at that
+station name. state both ({train} and {station} has no...)"  OB-154: "autosetup.ui.checkNoMaxTrainLength
+does not specify the station name".
+
+**One line caused OB-153, and it is written twice.** Both the viewer and the editor build a finding's
+text as `subject = tile == null ? finding.getSubject() : describeTile(tile)` - so a finding that has a
+tile has its own subject thrown away and replaced by the tile's description. That is right for every
+finding whose subject IS the point it is about: an unnamed Point's name is its coordinate, and the
+tile's description is far more use. FR-046's train-length warning is the first whose subject is a
+**locomotive**, and that preference silently swallowed it, so the warning named the station the train
+was standing at instead of the train.
+
+Fixed by giving the message **both** rather than by changing which one wins: `{0}` still means exactly
+what it meant everywhere, so no other message in the list moved, and `{1}` is new and carries the
+finding's own subject. OB-154 needed no code at all - the station's name was always being passed, the
+sentence just never used it, and said "This station has..." where it could say which.
+
+1. **A train with no length, standing at a named station.** The warning should name **both** - the
+   train, and where it is standing.
+2. **The same train at an unnamed square.** The place becomes the square's description rather than a
+   name; the train should still be named.
+3. **A station with no maximum length.** It should name the station, not say "This station".
+4. **Both warnings at once**, on the same page. They should agree about what the station is called.
+5. **Look for a literal `{1}`** anywhere in the findings list. That is what an unfilled placeholder
+   renders as, and it is how this fix fails if only half of it is present.
+6. **The rest of the findings list.** This is the change most likely to have side effects: every
+   finding goes through the line I touched. Nothing else should have changed wording at all - if
+   another message has gained or lost a name, that is a regression from this.
 
 ---

@@ -454,6 +454,16 @@ public class TileGraph
     public static final String WARN_PORTAL_UNREACHABLE = "autosetup.ui.warnLinkNeverPairedUnreachable";
 
     /**
+     * A link pointing at a page that is not part of autonomy (OB-150).
+     *
+     * Its own message rather than a quieter WARN_PORTAL_NEVER_PAIRED, because that one tells the reader
+     * to "right-click it to pair it" - the single thing that cannot work here. There is no tile on the
+     * far side to pair it with, the page having been left out, so the remedy is to include the page or
+     * switch the link off.
+     */
+    public static final String WARN_PORTAL_EXCLUDED_PAGE = "autosetup.ui.warnLinkToExcludedPage";
+
+    /**
      * Links the user has told autonomy to leave alone.
      *
      * A diagram can carry a link that belongs to the drawing rather than to the railway autonomy runs -
@@ -957,9 +967,16 @@ public class TileGraph
             // The reachable one is different in kind. Track runs into that link and stops: trains
             // reach it and have nowhere to go, and the page it was drawn to continue onto cannot be
             // got to at all. That is a hole in the railway rather than an unfinished intention.
-            found.add(new Problem(entry.getKey(),
-                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE,
-                reachable && !unpairable));
+            // Three outcomes, and each says a different thing to do.  The unreachable case keeps its
+            // own message even when its destination is excluded: nothing runs into it, which is both
+            // the more useful fact and the reason it costs nothing either way.
+            String key;
+
+            if (!reachable) key = WARN_PORTAL_UNREACHABLE;
+            else if (unpairable) key = WARN_PORTAL_EXCLUDED_PAGE;
+            else key = WARN_PORTAL_NEVER_PAIRED;
+
+            found.add(new Problem(entry.getKey(), key, reachable && !unpairable));
         }
 
         // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the

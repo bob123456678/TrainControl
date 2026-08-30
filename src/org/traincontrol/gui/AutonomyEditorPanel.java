@@ -6101,7 +6101,17 @@ public class AutonomyEditorPanel extends JPanel
             String subject = finding.getTile() == null
                 ? finding.getSubject() : describeTile(finding.getTile());
 
-            String text = describe(finding.getMessageKey(), subject);
+            // BOTH, because {0} alone cannot say which train (OB-153).
+            //
+            // The line above deliberately prefers the tile's description to the finding's own subject,
+            // and is right to for every finding whose subject IS the point - an unnamed Point's name is
+            // its coordinate, which tells the reader nothing. FR-046's train-length warning is the
+            // first whose subject is a LOCOMOTIVE, and that preference swallowed it, so the warning
+            // named the station the train was standing at instead of the train.
+            //
+            // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
+            // this list changes, and lets the two that need a name use {1}.
+            String text = describe(finding.getMessageKey(), subject, finding.getSubject());
 
             boolean here = onThisPage(finding.getTile());
 
@@ -6506,16 +6516,16 @@ public class AutonomyEditorPanel extends JPanel
         this.locomotiveNames = locomotiveNames;
     }
 
-    private String describe(String key, String subject)
+    private String describe(String key, Object... args)
     {
         try
         {
-            return I18n.f(key, subject);
+            return I18n.f(key, args);
         }
         catch (RuntimeException e)
         {
             // a key that has not reached the bundles yet should not blank the whole list
-            return key + " " + subject;
+            return key + " " + (args.length > 0 ? args[0] : "");
         }
     }
 
