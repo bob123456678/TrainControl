@@ -11705,9 +11705,18 @@ a configuration switch for the same reason they do.
 The menu entry is gone. Two places to set one value is what produced the always-says-RANDOM bug in the
 first place.
 
-Worth knowing when you retest: the panel is GUI-Builder generated and the slider's slot is pinned at
-exactly 55 pixels, so nothing can sit under the slider itself without squashing it. The dropdown is
-mounted in place of the departure checkbox, with that checkbox moved below it - which puts it where you
-asked without editing the .form. If the spacing looks wrong, that is the reason and it is adjustable.
+**2026-08-30, second attempt.** My version of the dropdown was built in code, taking the departure
+checkbox's slot with GroupLayout.replace because the slider's slot is pinned at 55 pixels - and it
+looked wrong, which you said. It is gone, along with the layout surgery.
+
+The control is now the `algorithmType` combo you added in the designer, beside your "Path Selection
+Logic" label, so nothing in the code touches that panel's layout at all. What the code does is fill it
+in, translate the label at runtime (the designer wrote the English straight into the form, and the form
+is yours), and keep the selection in step with the loaded configuration.
+
+Also new since your run: an eighth rule, **Weighing Importance Against Distance**. It is the only one
+that looks past the highest priority band - the others settle that first, which is why "highest
+priority available station" needed no rule of its own. With no priorities set it behaves like Over the
+Shortest Track.
 
 ---

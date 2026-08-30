@@ -3583,13 +3583,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private String activeDiagramConfiguration;
 
-    /**
-     * The routing-logic dropdown, in the autonomy settings beside the settings it belongs with.
-     *
-     * Hand-written and declared HERE, not in the generated variables block - a field in there is
-     * deleted the next time the designer regenerates, which this project has been bitten by twice.
-     */
-    private javax.swing.JComboBox<String> routingLogic;
 
     /**
      * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.
@@ -8032,44 +8025,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
 
     /**
-     * Puts the routing-logic dropdown into the autonomy settings panel (MT-226).
+     * Fills in the routing-logic dropdown Adam put in the autonomy settings panel (MT-226).
      *
-     * Adam: "move the preference to a DROPDOWN below the 'maximum active trains' slider in the
-     * autonomy settings tab ... Be sure it fits within the current panel, not outside of it where the
-     * 'edit...' button is."
-     *
-     * WHY IT REPLACES THE DEPARTURE CHECKBOX rather than the slider. jPanel3 is generated, and the
-     * slider's slot is pinned at exactly 55 pixels - a stack under the slider would be squashed into
-     * it. turnOnFunctionsOnDeparture is the next component after the group that holds the slider and
-     * carries no size constraint, so a stack put in its place grows freely and lands directly beneath
-     * the slider block, inside the bordered panel. The alternative was editing the .form, which is the
-     * designer's file and not this class's to write.
+     * The control itself is his, added in the designer beside its label, so nothing here touches the
+     * layout. An earlier version of this built its own panel and took the departure checkbox's slot
+     * with GroupLayout.replace, because the slider's slot is pinned at 55 pixels and nothing can be
+     * stacked under it - that looked wrong on screen, and getting the order of replace and re-parent
+     * wrong in it stopped the application starting (LE2-A8). A component placed in the designer has
+     * neither problem.
      *
      * The VALUE is not set here. loadAutoLayoutSettings pulls it from the live layout along with every
-     * other autonomy setting, which is what makes it follow a configuration being switched - the half
-     * of MT-226 that a menu could not do.
+     * other autonomy setting, which is what makes it follow a configuration being switched.
      */
     private void mountRoutingLogic()
     {
-        if (turnOnFunctionsOnDeparture == null || jPanel3 == null) return;
+        if (algorithmType == null) return;
 
-        if (!(jPanel3.getLayout() instanceof javax.swing.GroupLayout)) return;
+        // Translated at runtime.  The designer wrote the label's text into the form in English, and
+        // the form is not this class's file to edit.
+        if (jLabel2 != null)
+        {
+            jLabel2.setText(I18n.t("ui.main.routingLogic"));
+            jLabel2.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
+        }
 
-        routingLogic = new javax.swing.JComboBox<>();
+        algorithmType.removeAllItems();
 
         for (org.traincontrol.automation.Layout.PathPreference option : ROUTING_ORDER)
         {
-            routingLogic.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
+            algorithmType.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
         }
 
-        routingLogic.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        routingLogic.setMaximumSize(new java.awt.Dimension(230, 26));
-        routingLogic.setPreferredSize(new java.awt.Dimension(230, 26));
-        routingLogic.setFocusable(false);
+        algorithmType.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
 
-        routingLogic.addActionListener(event ->
+        algorithmType.addActionListener(event ->
         {
-            int at = routingLogic.getSelectedIndex();
+            int at = algorithmType.getSelectedIndex();
 
             if (at < 0 || at >= ROUTING_ORDER.length) return;
 
@@ -8085,6 +8076,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Said out loud when it cannot be kept.  A rule that applies now and reverts on the next
             // start is the shape of "it did not save" that costs an hour to work out (LE-B5).
+            //
             // true: somebody just chose this from the dropdown.
             if (!persistPathPreference(option, true))
             {
@@ -8092,43 +8084,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     I18n.t("autolayout.ui.pathPreference" + option.name())));
             }
         });
-
-        javax.swing.JLabel caption = new javax.swing.JLabel(I18n.t("ui.main.routingLogic"));
-
-        caption.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        caption.setForeground(new java.awt.Color(0, 0, 115));
-        caption.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
-        caption.setFocusable(false);
-
-        routingLogic.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
-
-        javax.swing.JPanel stacked = new javax.swing.JPanel();
-
-        stacked.setOpaque(false);
-        stacked.setLayout(new javax.swing.BoxLayout(stacked, javax.swing.BoxLayout.Y_AXIS));
-
-        caption.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        routingLogic.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        turnOnFunctionsOnDeparture.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-        stacked.add(caption);
-        stacked.add(javax.swing.Box.createVerticalStrut(2));
-        stacked.add(routingLogic);
-        stacked.add(javax.swing.Box.createVerticalStrut(6));
-
-        // REPLACE FIRST, RE-PARENT SECOND, and getting that order wrong stopped the application
-        // starting at all (LE2-A8).
-        //
-        // stacked.add(checkbox) re-parents it, and Container.addImpl removes it from jPanel3 on the
-        // way - which calls GroupLayout.removeLayoutComponent and DELETES the springs that hold its
-        // place. replace() then looks for those springs, finds none, and throws "Component must
-        // already exist" out of the constructor.
-        //
-        // Done this way round, replace() swaps the stack into the checkbox's slot while the checkbox
-        // is still known to the layout, and only then is the checkbox moved inside the stack.
-        ((javax.swing.GroupLayout) jPanel3.getLayout()).replace(turnOnFunctionsOnDeparture, stacked);
-
-        stacked.add(turnOnFunctionsOnDeparture);
     }
 
     /**
@@ -9380,6 +9335,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel44 = new javax.swing.JLabel();
         maxActiveTrains = new javax.swing.JSlider();
         jLabel53 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        algorithmType = new javax.swing.JComboBox<>();
         jLabel51 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         toggleSpecifiedRoutes = new javax.swing.JCheckBox();
@@ -11922,6 +11879,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel53.setToolTipText("");
         jLabel53.setFocusable(false);
 
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(0, 0, 115));
+        jLabel2.setText("Path Selection Logic");
+
+        algorithmType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -11929,7 +11892,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(simulate)
                     .addComponent(jLabel46)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -11951,13 +11913,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 .addComponent(preArrivalSpeedReduction, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(atomicRoutes)
                             .addComponent(turnOffFunctionsOnArrival)
-                            .addComponent(jLabel50))
+                            .addComponent(jLabel50)
+                            .addComponent(simulate))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(maxActiveTrains, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel53)
                             .addComponent(jLabel44)
-                            .addComponent(maximumLatency, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(maximumLatency, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel2)
+                            .addComponent(algorithmType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(25, 25, 25))
         );
         jPanel3Layout.setVerticalGroup(
@@ -12002,9 +11967,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(maxActiveTrains, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(turnOnFunctionsOnDeparture)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(simulate))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(turnOnFunctionsOnDeparture)
+                            .addComponent(jLabel2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(simulate))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addComponent(algorithmType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
         );
 
         jLabel51.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
@@ -23451,7 +23423,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // This is the whole of the "when switching from one config to the other, the option stays put"
         // half. A menu read the layout when it happened to be opened; this runs when a configuration
         // is loaded, so the control cannot show one configuration's rule while another is running.
-        if (routingLogic != null)
+        if (algorithmType != null)
         {
             migrateStoredPathPreference(this.model.getAutoLayout());
 
@@ -23464,7 +23436,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // The listener would write the setup back on every load otherwise; it returns
                     // early when nothing changed, and this is that case.
-                    routingLogic.setSelectedIndex(at);
+                    algorithmType.setSelectedIndex(at);
                     break;
                 }
             }
@@ -24924,6 +24896,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBoxMenuItem activeLocInTitle;
     private javax.swing.JMenuItem addBlankPageMenuItem;
     private javax.swing.JMenuItem addLocomotiveMenuItem;
+    private javax.swing.JComboBox<String> algorithmType;
     private javax.swing.JCheckBox atomicRoutes;
     private javax.swing.JPanel autoLocPanel;
     private javax.swing.JScrollPane autoLocScroll;
@@ -25001,6 +24974,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu interfaceMenu;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel19;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel43;
     private javax.swing.JLabel jLabel44;
     private javax.swing.JLabel jLabel46;
