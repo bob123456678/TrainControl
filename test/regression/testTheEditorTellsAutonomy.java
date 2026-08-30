@@ -100,10 +100,25 @@ public class testTheEditorTellsAutonomy
         // Java requires neither spelling - pinning one let the other through (LE2-C12).  The method
         // has no legitimate mention of the field: its whole point is that the caller decides.
         assertFalse(moves.contains("clipboardWasCut"),
-            "cutMoves reads the cut flag from the field again. snapshotLayout clears it and the caller "
-            + "snapshots before calling this, so the guard is false on every paste, cutMoves returns "
-            + "null on every paste, and the entire group-cut fix is dead code while these tests stay "
-            + "green (LE-A7)");
+            "cutMoves reads the cut flag from the field again instead of the argument it was handed. "
+            + "The decision belongs to the gesture, and a field re-read is how LE-A7 turned the whole "
+            + "group-cut fix into dead code while every one of these tests stayed green");
+
+        // AND IT ASKS WHETHER THE SQUARE IS STILL EMPTY (RC-A1).
+        //
+        // This replaced LE-A6, which stood the flag down inside snapshotLayout - and since every edit
+        // snapshots, any edit at all between the cut and the paste turned the move into a copy and
+        // abandoned the setup on the emptied squares.  The per-square test is what makes that correct
+        // without a list of doors, so it is what this pins.
+        assertTrue(moves.contains("getComponent(origin.getX(), origin.getY()) != null"),
+            "cutMoves no longer checks that the origin square is still EMPTY, so a cut whose squares "
+            + "have been refilled - by an undo, or by a page switch answered with Discard - would "
+            + "carry their setup to the paste target and strip squares that still hold track (RC-A1)");
+
+        assertTrue(moves.contains("layout.getName().equals(origin.getPage())"),
+            "cutMoves no longer checks that the origin is on the page being pasted onto, so a cut on "
+            + "one page and a paste on another would move the setup across pages - which cannot be "
+            + "undone, because arriveAt has thrown the source page's history away (RC-A1)");
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
@@ -113,17 +128,18 @@ public class testTheEditorTellsAutonomy
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
             + "onto the copy and leave the original squares bare (LE-A1)");
 
-        // LE-A3: undo makes the cut untrue, and nothing else would say so.  Cut, Ctrl+Z - the track
-        // and its setup come back - then paste, and without this the paste moves the setup OFF the
-        // restored originals, stripping squares that still visibly hold track.  That is worse than the
-        // defect LE-A1 fixed, where the setup was at least orphaned on squares that were empty.
-        for (String method : new String[] {"public void undo()", "public void redo()"})
-        {
-            assertTrue(bodyOf(EDITOR, method).contains("clipboardWasCut = false"),
-                method + " no longer stands the cut flag down, so a cut that has been undone still "
-                + "counts as a move and the next paste strips the setup off the restored squares "
-                + "(LE-A3)");
-        }
+        // LE-A3 - undo makes the cut untrue - IS NOT PINNED HERE ANY MORE, and deliberately.
+        //
+        // It used to be, as `undo` and `redo` each containing "clipboardWasCut = false".  RC-A1 took
+        // those out: the rule is now the per-square emptiness test above, which undo satisfies by
+        // refilling the squares rather than by being told about them.
+        //
+        // The rule itself is tested by RUNNING it, in
+        // regression.testLayoutEditorBulkEdits.testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs,
+        // which cuts, undoes, pastes and asserts the setup stayed where the track came back - and its
+        // sibling asserts an unrelated edit does NOT cost the move.  A scan for a line of text could
+        // never have told those two cases apart; a source scan cannot see reachability, which is the
+        // whole lesson of LE-A7.
     }
 
     /**

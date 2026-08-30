@@ -84,9 +84,12 @@ public class RightClickFunctionMenu extends MouseAdapter
             //
             // ONE PER SLOT is the model's rule rather than one enforced here: each slot is a single
             // Integer, so ticking F3 does not add it, it replaces whatever held the slot. That makes
-            // these read as a radio choice spread across the functions - ticking one unticks another,
-            // which is why the item is disabled with a note when a DIFFERENT function holds the slot,
-            // rather than silently taking it.
+            // these read as a radio choice spread across the functions - ticking one unticks another.
+            //
+            // When a DIFFERENT function holds the slot the item stays clickable, shows unticked, and
+            // says which function has it; choosing it moves the slot here, because that is what the
+            // user just asked for.  See autonomySlot, which is where that is done.  This said the item
+            // was DISABLED in that case, which the method has never done (RC-C9).
             //
             // Both may be the same function, which Adam asked for explicitly and which the model
             // allows: two Integers, nothing stopping them being equal.

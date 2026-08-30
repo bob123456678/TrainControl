@@ -385,9 +385,14 @@ public class AutonomyMenu extends JMenu
             add(settings);
 
             // Fenced off by itself, because it is the only item here that changes the RAILWAY.
-            // Everything above chooses which setup is in force and everything below is housekeeping on
-            // the file that holds it; this one opens the editor and starts naming stations and setting
-            // which way trains may run.
+            // Everything above picks a setup or keeps the file that holds it - choosing, importing,
+            // exporting, renaming, deleting, and the settings that go with it; below the line this one
+            // opens the editor and starts naming stations and setting which way trains may run, and
+            // the pages submenu decides which pages it sees.
+            //
+            // The split used to be described as choosing above and housekeeping below, which stopped
+            // being true when the manage submenu moved up to sit under the configuration it manages
+            // (RC-C7).
             addSeparator();
 
             JMenu edit = editMenu(session);

@@ -12,7 +12,9 @@ import org.traincontrol.util.I18n;
  * CHANGES autonomy lives in the Auto tab or the layout editor - so nothing here can be pressed by
  * accident while operating trains.
  *
- * Mounted as the diagram scroll pane's column header, a thin strip above the track that the pane
+ * A thin strip above the track diagram. It was the scroll pane's column header until OB-148 took
+ * it out of the pane, and it is now a sibling above the diagram - so it no longer scrolls with the
+ * track, which was the point of moving it (RC-C2). A strip above the track that the pane
  * reserves anyway, so no generated layout is touched and the grid keeps the whole viewport.
  *
  * @author Adam
@@ -69,7 +71,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         this.ui = ui;
 
-        // Opaque, and the same white as the diagram beneath it.  A transparent column header has
+        // Opaque, and the same white as the diagram beneath it.  A transparent strip has
         // nothing painting behind it, so unticking the box left the old ticked pixels on screen: the
         // checkbox appeared stuck on even though the overlay had switched off underneath.
         setOpaque(true);
@@ -370,7 +372,7 @@ public class AutonomyOverlayToggle extends JPanel
         // says the same thing about the whole strip rather than about the button.
         run.setBackground(fixing ? java.awt.Color.WHITE : source.getBackground());
 
-        // Held to the checkbox's height.  This strip is the scroll pane's column header, so its height
+        // Held to the checkbox's height.  The strip is a fixed band above the diagram, so its height
         // is whatever its tallest child asks for - and a button at its natural size is taller than a
         // checkbox, which pushed the whole strip down and left the checkbox floating in the middle of
         // it.  Cleared first, because asking a component its preferred size after setting one just

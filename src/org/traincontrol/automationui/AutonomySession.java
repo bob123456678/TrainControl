@@ -4336,10 +4336,16 @@ public class AutonomySession
     }
 
     /**
-     * Writes the setup out, and forgets what the diagram no longer has.
+     * Writes the setup out, and forgets what the diagram no longer has - UNLESS it cannot tell.
      *
      * Reconciled at save rather than at load, so a diagram edited between sessions is tidied at the
      * moment somebody is present to be told about it.
+     *
+     * A page that did not load, or numbering caught mid-renumber, means the diagram cannot say what it
+     * no longer has - everything on the page that is missing looks deleted.  Nothing is pruned in that
+     * state, and the Reconciliation returned reports a decline instead (DR-B10).  The two sentences
+     * above were the whole of this javadoc, and read as though pruning always happens; that summary is
+     * what a reader trusts without reading the sixty lines of reasoning below it (RC-C4).
      *
      * @return what reconciling found, for showing
      * @throws IOException

@@ -328,6 +328,211 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
+     * A cut still carries its setup when the paste is not the very next thing the user does (RC-A1).
+     *
+     * `clipboardWasCut` is the ONLY thing that carries a group cut's setup - cutSelection calls
+     * deleteSelection(false), which deliberately tells autonomy nothing, because the paste is the other
+     * half of the gesture. LE-A6 stood that flag down inside snapshotLayout, on the reasoning that any
+     * edit falsifies it. Every edit snapshots, so any edit at all between the two halves - growing the
+     * diagram to make room, rotating a tile, dropping one from the palette - turned the move back into
+     * a delete-and-lose, with nothing on screen to say so.
+     *
+     * Here the user cuts a set-up column, presses "+" to make room, and pastes. Growing is the most
+     * likely of those gestures and the most obviously harmless: it adds a column on the right and a row
+     * at the bottom, and moves nothing.
+     *
+     * A SOURCE SCAN CANNOT SEE THIS, which is why it is here and not in testTheEditorTellsAutonomy.
+     * The flag is read in the right place and written in the right place; what is wrong is when the
+     * write happens relative to the read, and that is only visible by driving the two gestures apart.
+     */
+    @Test
+    public void testAnEditBetweenTheCutAndThePasteStillCarriesTheSetup() throws Exception
+    {
+        withEditor("tc-cut-then-edit", (editor, session, page) ->
+        {
+            editor.selectColumn(5);
+            editor.cutSelection();
+
+            // The unrelated edit.  Right and bottom only, so no square this test names moves.
+            editor.growEdges();
+
+            editor.pasteSelection(9, 0);
+        }, (session, page) ->
+        {
+            assertTrue(session.getStore().isStation(at(page, 9, 3)),
+                "the station did not arrive with the pasted column, because an unrelated edit between "
+                + "the cut and the paste stood the cut flag down - so the paste ran as a copy and the "
+                + "setup was left on squares the cut had emptied, where the next reconciling save "
+                + "prunes it (RC-A1)");
+
+            assertEquals(session.getStore().getPointName(at(page, 9, 3)), "Cut And Carried",
+                "it arrived unnamed");
+
+            assertFalse(session.getStore().isStation(at(page, 5, 3)),
+                "the square the cut emptied is still a station");
+        });
+    }
+
+    /**
+     * An undo between the cut and the paste leaves the setup where the track came back (RC-A1).
+     *
+     * The other direction, and the reason LE-A6 stood the flag down in the first place. Undo puts the
+     * cut track back on the squares it emptied, so those squares are occupied again and their setup
+     * belongs to what is standing on them - carrying it to the paste target would be the loss LE-A6
+     * was written to prevent, arriving from the opposite side.
+     *
+     * The fix is not the flag but the question it was standing in for, asked per square: is the square
+     * this setup came from still EMPTY? Undo makes the answer no for exactly the squares it refilled,
+     * which is why this test and the one above can both pass.
+     */
+    @Test
+    public void testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs() throws Exception
+    {
+        withEditor("tc-cut-then-undo", (editor, session, page) ->
+        {
+            editor.selectColumn(5);
+            editor.cutSelection();
+
+            editor.undo();
+
+            editor.pasteSelection(9, 0);
+        }, (session, page) ->
+        {
+            assertFalse(session.getStore().isStation(at(page, 9, 3)),
+                "the setup was carried to the paste target even though undo had put the cut track "
+                + "back on the squares it came from - so a station now names a square whose track was "
+                + "never moved, and the square it belongs to has lost it (RC-A1)");
+
+            assertTrue(session.getStore().isStation(at(page, 5, 3)),
+                "undo put the track back and the station did not come with it");
+        });
+    }
+
+    /** What the editor does between the cut and the paste. */
+    private interface Gesture
+    {
+        void run(LayoutEditor editor, AutonomySession session, String page);
+    }
+
+    /** What has to be true of the setup afterwards. */
+    private interface Check
+    {
+        void run(AutonomySession session, String page);
+    }
+
+    /**
+     * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.
+     *
+     * The same wiring as testTheRealColumnMoveGestureCarriesTheStation - a LayoutEditor that never
+     * shows itself and an AutonomySession in a temp folder, joined through the reflectively-set
+     * TrainControlUI field, so the call sites under test are the real ones. Factored out because two
+     * tests need it and a third copy of forty lines of wiring is where the drift starts.
+     *
+     * @param folder a name for the temp autonomy folder, so a failure says which test left it
+     * @param gesture what to do to the editor, run on the event thread
+     * @param check what to assert afterwards, run on this thread
+     */
+    private void withEditor(String folder, Gesture gesture, Check check) throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the editor is a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        try
+        {
+            // Before the model, not just before the window (OB-111).
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui[0] = new org.traincontrol.gui.TrainControlUI();
+                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            java.io.File autonomyFolder = java.nio.file.Files.createTempDirectory(folder).toFile();
+
+            AutonomySession session = new AutonomySession(autonomyFolder);
+
+            LayoutDiagram diagram = new LayoutDiagram("Cut Page", 21, 16, null, null);
+
+            diagram.addComponent(componentType.FEEDBACK, 5, 3, 0, 0, 1, 1,
+                accessoryDecoderType.MM2, null);
+
+            // Every square counts towards the bounds, not only the one with track on it.
+            diagram.setEdit(true);
+            diagram.checkBounds();
+
+            session.open(Arrays.asList(diagram));
+
+            final String page = diagram.getName();
+
+            session.getStore().setStation(at(page, 5, 3), true);
+            session.getStore().setPointName(at(page, 5, 3), "Cut And Carried");
+
+            java.lang.reflect.Field sessionField =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
+            sessionField.setAccessible(true);
+            sessionField.set(ui[0], session);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+
+            java.lang.reflect.Method drawGrid =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+            drawGrid.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    drawGrid.invoke(editor[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> gesture.run(editor[0], session, page));
+
+            check.run(session, page);
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+            }
+
+            if (ui[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The real gesture - cut a column, drop it on another one - carries the station with it.
      *
      * Every test above hands `planBulkLine`'s arguments, or its result, straight to the assertions.

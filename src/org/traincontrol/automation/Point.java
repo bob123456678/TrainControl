@@ -567,7 +567,7 @@ public class Point
     /**
      * Replaces the list of points that hold this station back.
      *
-     * @param pointNames the point names, or null to clear
+     * @param points the points, or null to clear
      * @return this
      */
     public Point setBlockedBy(List<Point> points)
@@ -878,7 +878,7 @@ public class Point
     }
     
     /**
-     * The locomotive assigned to this station, by name, or null.
+     * The locomotive assigned to this station, or null.
      * @return
      */
     public Locomotive getHomeLoc()
@@ -887,7 +887,11 @@ public class Point
     }
 
     /**
-     * Assigns this station to a locomotive by name, or clears it with null.
+     * Assigns this station to a locomotive, or clears it with null.
+     *
+     * Held as the locomotive itself; its NAME is what gets written out and matched back on load, which
+     * is why the naming rules below decide what survives a round trip.  This pair used to say the
+     * assignment was made by name, which the signature has never done (RC-C8).
      *
      * Not validated here: a name that matches nothing is a legitimate stored state, reported on load
      * rather than refused.

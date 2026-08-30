@@ -384,6 +384,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
         autonomy.restorePage(layout.getName(), captions);
 
+        // AND NOTHING OUTSIDE THE PAGE (RC-B1).
+        //
+        // A snapshot taken before a shrink holds captions on the row and column the shrink then
+        // removed, and an undo does not give those back - the page SIZE is not part of an undo entry,
+        // and a shrink is only allowed when that edge holds no track, so no component pins it back
+        // either. Restored blind, the name returns to a square that no longer exists: present, never
+        // drawn, and with nowhere to click to remove it. That is exactly the state LE-B1 was raised
+        // for, reached through undo instead of through the shrink.
+        //
+        // A caption outside the page is never valid, whatever put it there, so it is enforced here
+        // rather than by teaching undo about page size - which would change what an undo entry is, on
+        // the path every edit in this editor goes through.
+        forgetCaptionsOutsideThePage();
+
         // Straight to disk, for the same reason the move itself goes straight to disk - see
         // rememberAutonomy.  An undo that only reached memory would be forgotten by the reset that
         // follows the next edit, and the thing it undid would come back.
@@ -2627,12 +2641,14 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         // THE FLAG IS NOT RE-READ HERE, and reading it was LE-A7.
         //
-        // snapshotLayout stands the flag down - that is LE-A6's invariant - and pasteSelection
-        // snapshots before it gets this far. So a guard that consulted the field was false on every
-        // paste, this returned null every time, and the whole of LE-A1, A4 and A5 was unreachable
-        // while every test stayed green, because a source scan cannot see reachability.
+        // snapshotLayout used to stand the flag down, and pasteSelection snapshots before it gets this
+        // far - so a guard that consulted the field was false on every paste, this returned null every
+        // time, and the whole of LE-A1, A4 and A5 was unreachable while every test stayed green,
+        // because a source scan cannot see reachability.
         //
-        // The caller has already decided; it says so in the argument.
+        // RC-A1 took that stand-down out, so the field would answer correctly today.  The argument
+        // stays: the caller has already decided, and a decision passed in cannot go stale between
+        // being made and being used.
         if (!wasCut || this.clipboardOrigins == null
             || this.groupClipboard == null
             || this.clipboardOrigins.size() != this.groupClipboard.size())
@@ -2657,6 +2673,30 @@ public class LayoutEditor extends PositionAwareJFrame
             // Only squares the cut actually emptied.  The clipboard covers a bounding box; the cut
             // emptied the picked squares inside it, and the rest still hold their track (LE-A5).
             if (this.clipboardCutSquares != null && !this.clipboardCutSquares.contains(origin))
+            {
+                continue;
+            }
+
+            // AND ONLY SQUARES THAT ARE STILL EMPTY, ON THIS PAGE (RC-A1).
+            //
+            // This is what the flag was standing in for, asked per square instead of assumed for the
+            // whole clipboard.  LE-A6 stood the flag down inside snapshotLayout, on the reasoning that
+            // any edit could falsify it and listing the doors would leave the next one unswept - and
+            // every edit snapshots, so cut, press "+" to make room, paste, and the move had quietly
+            // become a delete-and-lose.
+            //
+            // The question is exact and free.  Undo refills the squares it refilled and no others; a
+            // page switch changes which page this is and not which squares are empty; growing the
+            // diagram changes neither.  Nothing has to be enumerated, and a square that is full again
+            // is skipped on its own rather than taking the other nineteen with it.
+            //
+            // The page half keeps a decision LE-A6 made deliberately: a setup is not carried ACROSS
+            // pages, because paste snapshots only the destination page and arriveAt has thrown away
+            // the source page's undo history, so a cross-page move could not be undone.  Left on the
+            // source page instead, where it is recoverable - and where coming BACK to that page and
+            // pasting now picks it up correctly, which the flag could not do.
+            if (!layout.getName().equals(origin.getPage())
+                || layout.getComponent(origin.getX(), origin.getY()) != null)
             {
                 continue;
             }
@@ -2699,7 +2739,12 @@ public class LayoutEditor extends PositionAwareJFrame
             return false;
         }
 
-        // READ BEFORE THE SNAPSHOT, which stands it down (LE-A6).
+        // Read here and passed down as an argument, never re-read (LE-A7).
+        //
+        // The snapshot below no longer stands the flag down - RC-A1 replaced that with a per-square
+        // test in cutMoves - so the ORDER of these two lines is no longer load-bearing.  It is kept
+        // this way because the decision belongs to the gesture, not to whatever the field says by the
+        // time the work is done.
         boolean wasCut = this.clipboardWasCut;
 
         this.snapshotLayout();
@@ -3503,10 +3548,15 @@ public class LayoutEditor extends PositionAwareJFrame
      * is - an inset with nothing drawn in it shows the panel behind, so the grey grid was replaced by
      * a white one, which is not what "as it appears in the viewer" means.
      *
-     * The shift it was guarding against cannot happen: `receiveMoveEvent` returns immediately in
-     * autonomy mode - "hover previews what a diagram edit would place; in autonomy mode nothing is
-     * being placed" - so nothing ever swaps this border for another one. The care was real and aimed
-     * at the wrong mode; FR-006's version of it, for the layout editor, still applies.
+     * The shift it was guarding against still cannot happen, though not for the reason that stood
+     * here until RC-C10. That reason was that `receiveMoveEvent` returns immediately in autonomy mode,
+     * so nothing ever swaps this border - which OB-091 ended, in this same round, by giving the blue
+     * outline to this editor as well. The hover DOES swap the border now.
+     *
+     * What keeps the artwork still is overlayLine: it is sized to the room the resting border takes,
+     * so the swap costs no insets in either direction. The three-argument javadoc below says as much.
+     * The care was real and aimed at the wrong mode; FR-006's version of it, for the layout editor,
+     * still applies.
      *
      * The palette keeps its visible border in both modes: those tiles are a menu of things to place, not
      * a picture of a railway, and the border is what separates one from the next.
@@ -3956,9 +4006,12 @@ public class LayoutEditor extends PositionAwareJFrame
      * Whether shiftDown would do anything (LE-C2).
      *
      * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is the drift LE-C1 was about. Not reachable from the menu
-     * today, because the popup only opens over a square and that sets the hovered position; it is a
-     * trap for the next caller rather than a live defect.
+     * expressed one rule two ways, which is the drift LE-C1 was about.
+     *
+     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
+     * setEnabled - so this is live, not the dormant trap it was described as until RC-C11. It is
+     * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
+     * not the same as "never asked".
      *
      * @return true when there is a hovered square this can work from
      */
@@ -3971,9 +4024,12 @@ public class LayoutEditor extends PositionAwareJFrame
      * Whether shiftRight would do anything (LE-C2).
      *
      * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is the drift LE-C1 was about. Not reachable from the menu
-     * today, because the popup only opens over a square and that sets the hovered position; it is a
-     * trap for the next caller rather than a live defect.
+     * expressed one rule two ways, which is the drift LE-C1 was about.
+     *
+     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
+     * setEnabled - so this is live, not the dormant trap it was described as until RC-C11. It is
+     * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
+     * not the same as "never asked".
      *
      * @return true when there is a hovered square this can work from
      */
@@ -4333,6 +4389,41 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
 
+
+    /**
+     * Drops any caption whose square is off the page (RC-B1).
+     *
+     * Reuses the sweep the shrink itself does, widened from the edge to everything beyond it: after a
+     * shrink and an undo, a caption can sit anywhere outside the current bounds, not only on the row
+     * that was trimmed.
+     */
+    private void forgetCaptionsOutsideThePage()
+    {
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy == null) return;
+
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> gone = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.TileGraph.TileKey tile
+            : autonomy.captionsOnPage(layout.getName()).keySet())
+        {
+            if (tile.getX() >= layout.getSx() || tile.getY() >= layout.getSy()
+                || tile.getX() < 0 || tile.getY() < 0)
+            {
+                gone.add(tile);
+            }
+        }
+
+        boolean changed = false;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey tile : gone)
+        {
+            changed |= autonomy.forgetCaptionsAt(tile);
+        }
+
+        if (changed) rememberAutonomy(autonomy);
+    }
     /**
      * Drops any caption sitting on the row and column a shrink is about to remove (LE-B1).
      *
@@ -4700,15 +4791,20 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized private void snapshotLayout()
     {
-        // ANY EDIT MAKES A PENDING CUT UNTRUE (LE-A6).
+        // A PENDING CUT IS NO LONGER STOOD DOWN HERE (RC-A1, replacing LE-A6).
         //
-        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY. Undo was not the
-        // only thing that falsifies it: a page or mode switch answered with Discard restores the cut
-        // track without anybody touching Ctrl+Z, and dragging another station onto a vacated square
-        // fills it. Listing those doors would leave the next one unswept, so the invariant is asserted
-        // here instead - every edit that can change the diagram snapshots first, so every edit stands
-        // the cut down. pasteSelection reads the flag before it calls this.
-        this.clipboardWasCut = false;
+        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY, and LE-A6
+        // asserted that invariant in this method because every edit that can change the diagram
+        // snapshots first - so no door that could falsify it had to be listed.
+        //
+        // That was true and far too wide.  The claim is about EACH square, and standing the whole
+        // clipboard down gives it up for all of them: cut a set-up yard, press "+" to make room, paste
+        // it, and the move had become a copy with the setup abandoned on the squares the cut emptied.
+        // Growing the diagram moves nothing and falsifies nothing.
+        //
+        // cutMoves asks the real question instead, per origin square, at the moment it matters.  It
+        // needs no list of doors either, and it does not punish nineteen innocent squares for the one
+        // that was refilled.
         
         // Enforce size limit
         if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
@@ -4733,17 +4829,21 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void undo()
     {
-        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3).
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3), and cutMoves is where that is
+        // settled now (RC-A1).
         //
         // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
-        // follow the paste". Stepping through history makes that false and nothing else would say so:
-        // cut, Ctrl+Z - the track and its setup come back - then paste, and the paste would move the
-        // setup off the restored originals onto the copy, stripping squares that still visibly hold
-        // track. That is worse than the defect LE-A1 fixed, where the setup was at least orphaned on
-        // squares that were actually empty.
+        // follow the paste", and stepping through history can make that false: cut, Ctrl+Z - the track
+        // and its setup come back - then paste, and the paste would move the setup off the restored
+        // originals onto the copy, stripping squares that still visibly hold track.  Worse than the
+        // defect LE-A1 fixed, where the setup was at least orphaned on squares that really were empty.
         //
-        // The tiles stay on the clipboard: pasting them is still a perfectly good copy.
-        this.clipboardWasCut = false;
+        // Standing the flag down here said that about every square on the clipboard.  cutMoves asks
+        // each square whether it is still empty, so the ones this restored are skipped and the ones it
+        // did not restore are still carried - and redo, which empties them again, needs no undoing of
+        // an undoing.
+        //
+        // The tiles stay on the clipboard either way: pasting them is still a perfectly good copy.
 
         try
         {     
@@ -4801,17 +4901,21 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void redo()
     {
-        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3).
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3), and cutMoves is where that is
+        // settled now (RC-A1).
         //
         // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
-        // follow the paste". Stepping through history makes that false and nothing else would say so:
-        // cut, Ctrl+Z - the track and its setup come back - then paste, and the paste would move the
-        // setup off the restored originals onto the copy, stripping squares that still visibly hold
-        // track. That is worse than the defect LE-A1 fixed, where the setup was at least orphaned on
-        // squares that were actually empty.
+        // follow the paste", and stepping through history can make that false: cut, Ctrl+Z - the track
+        // and its setup come back - then paste, and the paste would move the setup off the restored
+        // originals onto the copy, stripping squares that still visibly hold track.  Worse than the
+        // defect LE-A1 fixed, where the setup was at least orphaned on squares that really were empty.
         //
-        // The tiles stay on the clipboard: pasting them is still a perfectly good copy.
-        this.clipboardWasCut = false;
+        // Standing the flag down here said that about every square on the clipboard.  cutMoves asks
+        // each square whether it is still empty, so the ones this restored are skipped and the ones it
+        // did not restore are still carried - and redo, which empties them again, needs no undoing of
+        // an undoing.
+        //
+        // The tiles stay on the clipboard either way: pasting them is still a perfectly good copy.
 
         try
         {     
@@ -5417,14 +5521,18 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // switch would name squares on a page that is no longer on screen - the same class of bug
             // as the setup keys that outlive a move.  Cleared before the diagram changes underneath
             // them, not after.
-            // A pending cut does not survive leaving the page (LE-A6, and it settles B3).
+            // A pending cut is not stood down here either (RC-A1, replacing LE-A6 and settling B3).
             //
-            // Discard on the way out restores the cut track, so the flag would be asserting something
-            // untrue about squares that are full again. It also gives up carrying a setup ACROSS
-            // pages, deliberately: paste snapshots only the destination page and this method has just
-            // thrown away the source page's undo history, so a cross-page move could not be undone.
-            // Left on the source page instead, which is recoverable.
-            this.clipboardWasCut = false;
+            // Both reasons it was are now asked as questions by cutMoves, per square.  Discard on the
+            // way out restores the cut track, and a restored square is not empty.  And a setup is
+            // still not carried ACROSS pages - paste snapshots only the destination page and this
+            // method has just thrown away the source page's undo history, so a cross-page move could
+            // not be undone - because cutMoves skips an origin whose page is not the page being
+            // pasted onto.
+            //
+            // What that buys: leaving the page and COMING BACK no longer costs the cut.  The squares
+            // are still empty and it is the same page again, so the paste carries the setup, which is
+            // what the user who left to check something else expects.
 
             this.selection.clear();
             this.previewSelection.clear();

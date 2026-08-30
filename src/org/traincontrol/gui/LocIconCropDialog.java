@@ -1032,8 +1032,10 @@ public class LocIconCropDialog extends JDialog
          * subject is once the user has framed it, and it is the only fixed point that behaves the
          * same whether the zoom came from the wheel, the slider or the reset button.
          *
-         * @param fraction 0 (whole window filled) to 1 (maximum enlargement); out of range values are
-         *        clamped rather than rejected, because the wheel routinely asks for them
+         * @param fraction 0 (MIN_ZOOM of what it takes to fill the window - so half size, with white
+         *        on every side, and NOT the whole window filled as this said until RC-C6) to 1
+         *        (MAX_ZOOM); out of range values are clamped rather than rejected, because the wheel
+         *        routinely asks for them
          */
         public void setZoomFraction(double fraction)
         {

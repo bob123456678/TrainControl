@@ -1274,11 +1274,13 @@ public class TileGraph
      *
      * Geometric, not routing: it answers "which way is that square from this one".
      *
-     * Named apart from the static `gridSideTowards` because they are NOT the same question, however
-     * alike they read. That one is grid arithmetic - two squares whose coordinates differ by one - and
-     * knows nothing about the layout. This one asks the graph, so it answers for whatever the graph
-     * counts as a neighbour. They were `sideTowards` and `sideToward`, one letter apart, which is a
-     * defect waiting for a tired reader (DD-C9).
+     * Named apart from the static `gridSideTowards` to end the collision between `sideTowards` and
+     * `sideToward`, one letter apart, which is a defect waiting for a tired reader (DD-C9).
+     *
+     * NOT because they ask different questions, which is what this said until RC-C5. This one walks the
+     * private `neighbour` helper, which is the same grid arithmetic - two squares whose coordinates
+     * differ by one - so the two answer identically for any pair of squares on one page. The paragraph
+     * below, saying a portal is not reachable here, contradicted the claim on its own.
      *
      * A portal's partner is not reachable here: the two squares are neighbours in the graph without
      * touching, so there is no side to name, and callers that care use landing() instead. The javadoc

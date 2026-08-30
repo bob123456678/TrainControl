@@ -18394,8 +18394,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Calling the model directly went round it: this sync neither set the flag - so a guarded sync
         // could start alongside it - nor respected one already set.
         //
-        // No second dialog results: BusyDialog runs its work OFF the event thread, and off it the
-        // wrapper is a plain guarded call to the model.
+        // A SECOND SPINNER DOES APPEAR HERE, and the comment that used to stand in this place said
+        // the opposite (RC-C1).
+        //
+        // It read "No second dialog results: BusyDialog runs its work OFF the event thread, and off it
+        // the wrapper is a plain guarded call to the model." That was true until OB-140 gave
+        // syncWithCS2 a spinner of its own on precisely that branch - it opens one when it finds
+        // itself off the event thread - so the condition the old reasoning rested on is now the one
+        // that guarantees a second dialog.
+        //
+        // Left as it is, deliberately. The two do not deadlock: both are shown and disposed on the
+        // event thread in posted order. Suppressing a nested spinner would mean BusyDialog deciding
+        // not to show, and a mistake in that hides EVERY spinner - a far worse failure than seeing
+        // two of them for a moment.
         BusyDialog.run(this, I18n.t("layout.ui.busyLoadingLayout"),
             () -> this.syncWithCS2(),
             () ->

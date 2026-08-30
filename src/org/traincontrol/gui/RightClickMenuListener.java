@@ -221,7 +221,10 @@ public class RightClickMenuListener extends MouseAdapter
 
                 submenu.add(LocomotiveMenuItems.setLocalIcon(ui, subject, null));
 
-                if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
+                // Through `subject`, like every other line here.  This asked the button twice more,
+                // three lines under the paragraph above saying the locomotive is resolved ONCE - the
+                // comment had the intent right and this one line did not follow it (RC-C12).
+                if (subject != null && subject.getLocalImageURL() != null)
                 {
                     submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
                 }

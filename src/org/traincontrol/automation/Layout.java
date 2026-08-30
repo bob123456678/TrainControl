@@ -6648,11 +6648,14 @@ public class Layout
 
                 // The points whose occupancy makes this station unavailable to autonomy (FR-001).
                 //
-                // Names, read verbatim: they may name a Point this loop has not created yet, and
-                // nothing resolves them at load - the rule asks by name at the moment it is applied, so
-                // a name matching nothing simply blocks nothing.  That is the tolerant direction and
-                // the deliberate one: refusing the configuration would take a whole layout out of
-                // service because one station lost the point it was paired with.
+                // Names here, resolved to points after the loop - not never, which is what this said
+                // until RC-C3, three lines above a comment saying the opposite.
+                //
+                // They may name a Point this loop has not created yet, so nothing can be looked up
+                // until every point exists; a name that matches nothing even then is logged and
+                // dropped.  That is the tolerant direction and the deliberate one: refusing the
+                // configuration would take a whole layout out of service because one station lost the
+                // point it was paired with.
                 if (point.has("blockedBy"))
                 {
                     // Kept as names for now and resolved after the loop.
