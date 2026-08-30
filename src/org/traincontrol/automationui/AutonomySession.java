@@ -2601,19 +2601,25 @@ public class AutonomySession
      * Saved immediately rather than on the next explicit save: a setting the user picked from a menu
      * and did not see written is a setting they will pick again.
      *
+     * ANSWERS WHETHER IT STORED, because two of its three ways of doing nothing are silent (LE-B5).
+     * A caller that deletes its own copy of a setting on the strength of having called this needs to
+     * know, and one did.
+     *
      * @param key the global's name, as it appears at the top level of the built configuration
      * @param value the value to store
+     * @return true when the value was written and saved, false when there was no configuration to
+     *         write it to
      * @throws IOException if the setup cannot be written
      */
-    public void setGlobal(String key, Object value) throws IOException
+    public boolean setGlobal(String key, Object value) throws IOException
     {
         String active = store.getActiveConfiguration();
 
-        if (active == null) return;
+        if (active == null) return false;
 
         org.json.JSONObject configuration = store.getConfiguration(active);
 
-        if (configuration == null) return;
+        if (configuration == null) return false;
 
         if (!configuration.has("globals"))
         {
@@ -2625,6 +2631,8 @@ public class AutonomySession
         // Without reconciling, for the reason the diagram-replacement path gives: reconciling compares
         // against the pages this session holds, and nothing about this edit has touched a page.
         saveWithoutReconciling();
+
+        return true;
     }
 
     /**

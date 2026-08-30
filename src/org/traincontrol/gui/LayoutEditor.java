@@ -2586,6 +2586,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.groupClipboard = taken;
         this.clipboardOrigins = origins;
+        this.clipboardCutSquares = null;
 
         // A copy is not a move: the original keeps its setup, so pasting one only clears what it
         // builds over, exactly as it did before LE-A1.
@@ -2606,17 +2607,33 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Where each cut square is landing, or null when what is on the clipboard was copied (LE-A1).
      *
-     * A square that is not moving is left out - pasting a block back exactly where it came from is a
-     * move to itself, and asking the setup to move a square onto itself is at best wasted work.
+     * A square that is not moving is left out: it already holds its own setup, and moving a square
+     * onto itself would be work with nothing to show for it.
+     *
+     * THAT SENTENCE USED TO END "at best wasted work", AND IT WAS THE WRONG REASON (LE-A4). Skipping
+     * the identity case is right; what was wrong was the belief that skipping it cost nothing. Every
+     * square in a block shares one offset, so a paste back over the origin makes the map EMPTY, and an
+     * empty map used to fall to the branch that forgets what it built over - which in that case is the
+     * whole block. The consequence of a skip lives at the call site, not here.
      *
      * @param atX the column the block is being pasted at
      * @param atY the row
+     * @param wasCut whether the clipboard was cut, decided by the caller BEFORE it snapshotted - this
+     *        must not be re-read from the field, which the snapshot has by then cleared (LE-A7)
      * @return origin square to landing square, empty when there is nothing to carry
      */
     private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY)
+        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut)
     {
-        if (!this.clipboardWasCut || this.clipboardOrigins == null
+        // THE FLAG IS NOT RE-READ HERE, and reading it was LE-A7.
+        //
+        // snapshotLayout stands the flag down - that is LE-A6's invariant - and pasteSelection
+        // snapshots before it gets this far. So a guard that consulted the field was false on every
+        // paste, this returned null every time, and the whole of LE-A1, A4 and A5 was unreachable
+        // while every test stayed green, because a source scan cannot see reachability.
+        //
+        // The caller has already decided; it says so in the argument.
+        if (!wasCut || this.clipboardOrigins == null
             || this.groupClipboard == null
             || this.clipboardOrigins.size() != this.groupClipboard.size())
         {
@@ -2728,21 +2745,41 @@ public class LayoutEditor extends PositionAwareJFrame
             // Calling forgetBuiltOver as well would clear the setup this has just delivered.
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
                 org.traincontrol.automationui.TileGraph.TileKey> moves = wasCut
-                    ? cutMoves(atX, atY) : null;
+                    ? cutMoves(atX, atY, wasCut) : null;
 
             if (moves != null)
             {
-                // THE BLOCK'S OWN SQUARES ARE NOT "BUILT OVER" (LE-A4).
+                // A LANDING SQUARE IS SPARED ONLY IF IT GOT ITS OWN TILE BACK (LE-A4, LE-B6).
                 //
-                // builtOver is every landing square, and where the paste overlaps where the block came
-                // from those are the very squares whose setup is being carried. Forgetting them
-                // destroys what the move is delivering - and paste it back exactly where it was and
-                // EVERY square is one of them, which is how a cut-and-put-back wiped a whole yard: the
-                // moves map came out empty, the else branch ran, and it forgot the lot.
+                // builtOver is every landing square. Forgetting a square whose own setup is being
+                // carried onto it destroys what the move is delivering - paste a block back exactly
+                // where it came from and EVERY square is one of those, which is how a cut and put back
+                // wiped a whole yard.
+                //
+                // Subtracting the origins wholesale was too broad, and leaked (LE-B6): the origins are
+                // the bounding BOX and only the picked squares moved, so a landing square inside the
+                // box that was never cut escaped being forgotten while nothing moved onto it - its
+                // track replaced and its station, length and facings surviving, describing a tile that
+                // is gone.
+                //
+                // The question is per square and per index: did THIS square receive the tile that was
+                // already on it? Nothing else spares it.
                 java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> overwritten =
                     new java.util.LinkedHashSet<>(builtOver);
 
-                if (this.clipboardOrigins != null) overwritten.removeAll(this.clipboardOrigins);
+                for (int at = 0; at < this.groupClipboard.size(); at++)
+                {
+                    org.traincontrol.automationui.TileGraph.TileKey landing =
+                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(),
+                            atX + this.groupClipboard.get(at).dx,
+                            atY + this.groupClipboard.get(at).dy);
+
+                    if (this.clipboardOrigins != null && at < this.clipboardOrigins.size()
+                        && landing.equals(this.clipboardOrigins.get(at)))
+                    {
+                        overwritten.remove(landing);
+                    }
+                }
 
                 if (autonomy != null && (!moves.isEmpty() || !overwritten.isEmpty())
                     && autonomy.moveTiles(moves, overwritten))

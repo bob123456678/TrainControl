@@ -62,9 +62,29 @@ public class testTheEditorTellsAutonomy
             "cutSelection no longer sets the cut flag FROM the delete's result, so the paste cannot "
             + "tell a move from a copy and will not carry the setup (LE-A1)");
 
-        assertTrue(cut.contains("clipboardCutSquares"),
+        assertTrue(cut.contains("this.clipboardCutSquares = emptied"),
             "cutSelection no longer records WHICH squares it emptied, so a non-rectangular cut moves "
             + "the setup off squares that still hold their track (LE-A5)");
+
+        // The ORDER, which is what LE-A5's fix turns on: the picked squares have to be collected
+        // before deleteSelection, because deleting clears the selection.  Collected after, the set is
+        // empty, every origin is skipped and the paste carries nothing - and an assertion that only
+        // asked for the assignment could not see it (LE-C8).
+        assertTrue(cut.indexOf("this.selection.all()") < cut.indexOf("this.deleteSelection()"),
+            "cutSelection collects the emptied squares AFTER deleting them, and deleting clears the "
+            + "selection - so it collects nothing and the paste carries nothing (LE-A5)");
+
+        // LE-A7: the whole of A1, A4 and A5 was unreachable because cutMoves re-read the field that
+        // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
+        // this one asks that the decision is taken from the ARGUMENT, which is the only part of
+        // reachability a source scan can actually see.
+        String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut)");
+
+        assertFalse(moves.contains("this.clipboardWasCut"),
+            "cutMoves reads the cut flag from the field again. snapshotLayout clears it and the caller "
+            + "snapshots before calling this, so the guard is false on every paste, cutMoves returns "
+            + "null on every paste, and the entire group-cut fix is dead code while these tests stay "
+            + "green (LE-A7)");
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
@@ -189,17 +209,31 @@ public class testTheEditorTellsAutonomy
     {
         String menu = read(MENU);
 
-        assertTrue(menu.contains("edit.canShiftUp()"),
-            "the Shift Up item no longer asks canShiftUp, so it is offered on the last row where the "
-            + "method refuses without a word (LE-C1)");
+        // EACH ITEM AGAINST ITS OWN PREDICATE (LE-C9).
+        //
+        // This asked whether the four strings appeared anywhere in the file, so swapping which
+        // predicate greys which item - Shift Up enabled by canShiftDown - passed, and the menu was
+        // back to offering Shift Up on the bottom row where it refuses in silence. That is LE-C1
+        // restored with the test watching. Bounded to the one addShift call each.
+        for (String pair : new String[] {"shiftUp|canShiftUp", "shiftLeft|canShiftLeft",
+            "shiftDown|canShiftDown", "shiftRight|canShiftRight"})
+        {
+            String method = pair.split("\\|")[0];
+            String predicate = pair.split("\\|")[1];
 
-        assertTrue(menu.contains("edit.canShiftLeft()"),
-            "the Shift Left item no longer asks canShiftLeft (LE-C1)");
+            int at = menu.indexOf("() -> edit." + method + "()");
 
-        // All FOUR, or the submenu expresses one rule two ways again (LE-C2).
-        assertTrue(menu.contains("edit.canShiftDown()") && menu.contains("edit.canShiftRight()"),
-            "Shift Down and Shift Right are back to a literal instead of the editor's predicate, so "
-            + "the silent refusal LE-B2 gave them is offered rather than greyed (LE-C2)");
+            assertTrue(at >= 0, "the " + method + " item is no longer in the diagram submenu");
+
+            // The whole call, up to the semicolon that ends it.
+            int ends = menu.indexOf(");", at);
+
+            assertTrue(ends > at, "the " + method + " item's addShift call does not close");
+
+            assertTrue(menu.substring(at, ends).contains("edit." + predicate + "()"),
+                "the " + method + " item is not greyed by " + predicate + " - a shift greyed by "
+                + "another shift's predicate is offered where it refuses in silence (LE-C1, LE-C9)");
+        }
 
         // and the parameter has to reach setEnabled, or asking the predicate changes nothing
         assertTrue(bodyOf(MENU, "private void addShift(").contains("setEnabled(enabled)"),

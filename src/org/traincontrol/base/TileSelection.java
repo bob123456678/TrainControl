@@ -202,12 +202,12 @@ public final class TileSelection
      * only the picked squares would paste a shape with holes in it, and a piece of railway with holes
      * is not the piece the user pointed at.
      *
-     * @return the bounds, or null when nothing is picked
-         *
      * READ THIS BEFORE PAIRING IT WITH A DELETE. What a copy takes and what a delete removes are not
      * the same set - delete walks the picked squares, this walks the box around them - and LE-A5 is
      * what happens when something assumes they match: a cut carried origins for sixteen squares when
      * two had been emptied, and moved the setup off fourteen that still held their track.
+     *
+     * @return the bounds, or null when nothing is picked
      */
     public int[] bounds()
     {

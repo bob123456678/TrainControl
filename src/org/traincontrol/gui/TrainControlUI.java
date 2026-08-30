@@ -8020,6 +8020,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
 
+
+    /**
+     * Writes the routing rule into the configuration it belongs to (LE-B5).
+     *
+     * ASKS getAutonomySession() RATHER THAN THE FIELD. SV-B2 forbids the getter in the layout-index
+     * write path, because it is a lazy builder that parses every page, runs the caption migration -
+     * which writes to disk - and can raise a dialog on the event thread. None of that applies to a
+     * deliberate click on a menu, which is the context the builder exists to serve; and the field
+     * alone is null after every diagram edit, which is precisely when a choice made here went nowhere.
+     *
+     * @param option the rule chosen
+     * @return true when it was stored, false when there was nothing to store it in
+     */
+    private boolean persistPathPreference(org.traincontrol.automation.Layout.PathPreference option)
+    {
+        try
+        {
+            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+            return session != null && session.setGlobal("pathPreference", option.name());
+        }
+        catch (Exception e)
+        {
+            if (this.model != null) this.model.log(e);
+
+            return false;
+        }
+    }
     /**
      * Carries a routing choice made before it lived in the configuration (LE-B2).
      *
@@ -8046,11 +8074,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (was == null) return;
 
-        prefs.remove(legacy);
-
         if (live.getPathPreference() != org.traincontrol.automation.Layout.PathPreference.RANDOM)
         {
-            // The configuration has its own answer; the old one is stale and now gone.
+            // The configuration has its own answer, so the old one is stale and may go.
+            prefs.remove(legacy);
+
             return;
         }
 
@@ -8061,12 +8089,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             live.setPathPreference(option);
 
-            if (autonomySession != null) autonomySession.setGlobal("pathPreference", option.name());
+            // THE OLD KEY GOES ONLY ONCE THE NEW HOME HAS IT (LE-B5).
+            //
+            // This deleted it first and persisted afterwards, so a run where nothing could be stored -
+            // no session, no active configuration - threw away the only durable copy of a choice made
+            // before the setting moved. The next restart was RANDOM, for ever. Kept until it has
+            // landed, so a migration that cannot run today runs tomorrow.
+            if (persistPathPreference(option)) prefs.remove(legacy);
         }
         catch (Exception e)
         {
-            // A choice this build does not have, or a setup that would not save.  The default stands,
-            // which is what the user would have got anyway had this never run.
+            // A choice this build does not have, or a setup that would not save.  The key stays, so
+            // this can be tried again.
             if (this.model != null) this.model.log(e);
         }
     }
@@ -8145,14 +8179,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.getAutoLayout().setPathPreference(option);
                 }
 
-                try
+                // Said out loud when it cannot be kept.  A rule that applies now and reverts on the
+                // next start is the shape of "it did not save" that costs an hour to work out
+                // (LE-B5).
+                if (!persistPathPreference(option) && this.model != null)
                 {
-                    if (autonomySession != null) autonomySession.setGlobal("pathPreference",
-                        option.name());
-                }
-                catch (Exception e)
-                {
-                    if (this.model != null) this.model.log(e);
+                    this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
+                        I18n.t("autolayout.ui.pathPreference" + option.name())));
                 }
             });
 

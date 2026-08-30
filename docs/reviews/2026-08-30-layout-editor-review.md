@@ -118,6 +118,35 @@ and then stood the flag down on undo and redo only. Two other doors falsify it:
 `snapshotLayout` first, so the flag is stood down there - which covers the doors nobody has thought of
 yet. Listing them was what produced A6 in the first place.
 
+### A7 - the whole of A1, A4 and A5 was dead code, and nothing could see it
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testTheEditorTellsAutonomy` |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+**The most important finding in this document.** A6 moved the invariant into `snapshotLayout`, which
+stands the cut flag down on every edit. `pasteSelection` was correctly taught to sample the flag into a
+local *before* it snapshots - the comment says so and the code does it. And then it called `cutMoves`,
+which re-read **the field**.
+
+By then the field is false. So `cutMoves` returned null on every paste, `moves` was null on every
+paste, and control fell to the `else` branch every time: `forgetBuiltOver`. A1 was back, and A4 was
+back and live - cut a set-up yard, paste it straight back, and the whole block's setup was forgotten
+against a byte-identical diagram.
+
+Three findings' worth of fix, none of it reachable, **and every test still green**, because a source
+scan asks whether a call is present and cannot ask whether it runs.
+
+This is `extracted-rule-moves-the-bug-to-the-call` exactly: the rule moved to `snapshotLayout`, the
+caller learned to read before it, and the helper was left asking the old question. The decision is now
+passed in as an argument and `cutMoves` does not consult the field at all - there is no second copy of
+the question left to go stale.
+
+The test added for it is the one scan here that asks the opposite question: that `cutMoves` does NOT
+read the field. That is a property of the code rather than of the call graph, which is the only part of
+reachability this kind of test can see.
+
 ### A2 - withdrawn, was never a defect
 
 | | |
@@ -225,6 +254,45 @@ no message - and, with B3, a menu that agreed.
 Carried across once, into the configuration where it now lives, and the old key removed so it cannot
 come back later and overrule a choice made since.
 
+### B5 - the routing choice could be applied and never stored, and the migration deleted its own source
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+| **Manual test** | [MT-226](../manual-tests/tests.md#mt-226) |
+
+Three silent no-ops and one unconditional delete. Both the menu action and the migration persisted
+through the FIELD `autonomySession`, which `resetAutonomySession` nulls after every diagram edit - so
+straight after closing the layout editor a chosen rule applied to the running railway and was written
+nowhere, reverting at the next restart with no message. `setGlobal` returned void and returned silently
+when there was no active configuration, so even a live session could store nothing without saying so.
+
+Worst: `migrateStoredPathPreference` removed the legacy key BEFORE writing anything, so a run that
+could store nothing threw away the only durable copy of a pre-upgrade choice. **B4's fix made B4's
+defect irreversible.**
+
+`setGlobal` now answers whether it stored; the old key is kept until something has; and both paths ask
+`getAutonomySession()` rather than the field. SV-B2 forbids that getter in the layout-index write path
+because it is a lazy builder that can write to disk and raise a dialog on the event thread - none of
+which is an objection to a deliberate menu click, which is the context the builder exists to serve.
+
+### B6 - subtracting the origins wholesale preserved setup on squares that were built over
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+A4's fix excluded `clipboardOrigins` from what a paste forgets. The origins are the whole bounding box
+and only the picked squares move, so a landing square inside the box that was never cut escaped being
+forgotten while nothing moved onto it: its track replaced by the pasted block, its station, length,
+facings and locomotive surviving to describe a tile that is gone. Reconcile never catches that - the
+square is not empty, it is occupied by something else.
+
+Replaced by the per-index identity test: a landing square is spared only when it received **its own
+tile back**. One condition instead of a set difference, and it makes A4's case fall out of the
+arithmetic rather than being defended by a comment.
+
 ---
 
 ## C - low
@@ -321,6 +389,52 @@ Two javadoc blocks in a row, so Java attaches only the second: `handle()` got `b
 documentation and `bounds()` had none. Fixed for more than tidiness - the orphaned paragraph is the one
 sentence explaining the bounding-box-versus-picked-squares asymmetry behind **A5**, and it is now
 where somebody pairing `bounds()` with a delete will read it.
+
+### C8 - the LE-C3 fix repeated LE-C3, one line below itself
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+The assertion added for A5 pinned a *mention* of `clipboardCutSquares`, exactly as the one C3 was
+raised for pinned a mention of `clipboardWasCut` - written one line below it, in the same commit, by
+someone who had just read the finding. Setting the field to null, or moving the loop that fills it to
+after `deleteSelection` (which clears the selection, so it collects nothing), both left it green.
+
+It now pins the assignment and the ORDER, which is what A5's fix turns on.
+
+### C9 - the menu assertions could not tell which item got which predicate
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+They searched the whole file for four strings, so swapping which predicate greys which item - Shift Up
+enabled by `canShiftDown` - passed while the menu offered Shift Up on the bottom row where it refuses
+in silence. That is C1 restored with the test watching. Each assertion is now bounded to its own
+`addShift` call.
+
+### C10 - one of the three clipboard fields was not reset with the others
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+`copySelection` reset the flag and the origins but not `clipboardCutSquares`, so after a cut then a
+copy it held keys from the wrong gesture. Not reachable - `cutMoves` is gated on the flag - but the
+three fields are documented as one invariant, and A7 exists precisely because one of them was read from
+the wrong place.
+
+### C11 - two javadocs the round's own findings contradicted
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+`cutMoves` still said skipping the identity case was "at best wasted work" - the sentence A4's entry
+singles out as the reasoning that was wrong - on the very method A4 fixed. And C7's restored paragraph
+had been placed *after* the `@return` tag, so the sentence explaining A5 would not render where a
+reader looking at the generated documentation expects it.
 
 ---
 
