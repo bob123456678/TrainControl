@@ -39,8 +39,15 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
+| [MT-227](#mt-227) | 2026-08-30 | Undo after shrinking a page does not strand a station name | fixed unvalidated | RC-B1 |
+| [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
+| [MT-229](#mt-229) | 2026-08-30 | The routing rule survives the upgrade even when it cannot be stored yet | fixed unvalidated | RC-A2 |
+| [MT-230](#mt-230) | 2026-08-30 | A layout page that will not read does not cost you its sensors | fixed unvalidated | RC-A3, RC-A4, RC-A5 |
+| [MT-231](#mt-231) | 2026-08-30 | A station you push down is not visited by the longest route | fixed unvalidated | RC-B2 |
+| [MT-232](#mt-232) | 2026-08-30 | Add Route offers a name, and the editor stays where you can see it | fixed unvalidated | RC-B3, RC-B4 |
+| [MT-233](#mt-233) | 2026-08-30 | Start with nothing that can start leaves the railway alone | fixed unvalidated | RC-B5 |
 
-Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
+Everything else - 206 of 233 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -11806,3 +11813,222 @@ Shortest Track.
 *Run against commit 697417f9.*
 
 ---
+
+<a id="mt-227"></a>
+
+### MT-227 - 2026-08-30 - Undo after shrinking a page does not strand a station name
+
+**Disposition:** fixed unvalidated
+**From:** RC-B1
+**Written:** 2026-08-30
+
+Shrinking a page drops the captions on the row and column it removes - that is LE-B1, which you have
+already tested. What it did not cover is undoing the shrink: the caption comes back, and the row it
+stood on does not, because the page SIZE is not part of an undo entry. The name was then present in the
+setup, never drawn, and with no square left to click to remove it.
+
+A caption outside the page is now dropped wherever it came from, rather than only where the shrink put
+it.
+
+1. **Put a station name on the last row or last column of a page**, on a blank square next to the
+   platform.
+2. **Press "-" to shrink the page.** The name goes, as it did before.
+3. **Press Ctrl+Z.** The track comes back. **The name must not** - it belonged to a square the page no
+   longer has, and it would have nowhere to be clicked.
+4. **Do the same with a caption well inside the page** and shrink from an edge that does not touch it.
+   That one must survive the undo untouched.
+
+*Run against commit 204a13ca or later.*
+
+---
+
+<a id="mt-228"></a>
+
+### MT-228 - 2026-08-30 - A cut keeps its setup when the paste is not the very next thing you do
+
+**Disposition:** fixed unvalidated
+**From:** RC-A1
+**Written:** 2026-08-30
+
+This is the one worth your time. A group cut carries everything the setup knows about the squares it
+empties - station flags, names, lengths, facings, barred arrivals, signal pairings, portal partners,
+placed locomotives - and it carries them on the PASTE, because that is the other half of the gesture.
+
+Any edit in between used to cancel that. Not because the edit had anything to do with it: the rule was
+"any edit stands a pending cut down", and every edit in the editor goes through the same place. So cut a
+yard, press "+" to make room, paste it, and the move had silently become a copy with the whole setup
+abandoned on the empty squares - where the next save prunes it.
+
+It now asks, per square, whether that square is still empty and on this page, which is what the flag was
+standing in for.
+
+1. **Set up a small block of squares properly** - two or three stations with names, lengths, and a
+   locomotive placed on one.
+2. **Select them and Cut.**
+3. **Do something unrelated:** press "+" to grow the diagram, or rotate a tile somewhere else, or drop a
+   tile from the palette.
+4. **Paste the block somewhere empty.** Everything should have travelled: names, lengths, the placed
+   locomotive, the lot. Check the autonomy editor, not just the diagram.
+5. **The other direction.** Cut a block, press **Ctrl+Z** so the track comes back, then paste. The setup
+   must have STAYED on the restored squares and must NOT be on the copy - the originals still hold
+   track, and stripping them would be worse than the bug this fixes.
+6. **And across pages.** Cut on one page, switch to another, paste. The setup stays on the source page
+   (deliberately - a cross-page move could not be undone). Then switch BACK to the source page and paste
+   there: that one SHOULD carry it, which it never used to.
+
+*Run against commit 204a13ca or later.*
+
+---
+
+<a id="mt-229"></a>
+
+### MT-229 - 2026-08-30 - The routing rule survives the upgrade even when it cannot be stored yet
+
+**Disposition:** fixed unvalidated
+**From:** RC-A2
+**Written:** 2026-08-30
+
+MT-226 covered the migration working. This is the case where it cannot work yet - no configuration
+loaded, or autonomy coming from `autonomy.json` rather than a diagram configuration - and has to wait.
+
+It did not wait. The first attempt kept the old setting correctly and stored nothing; the second attempt
+looked at the running layout, saw the value the FIRST attempt had put there in memory, decided the
+configuration had answered, and deleted the old setting. The rule was then gone for good and everything
+routed at random. The second attempt is one autonomy checkbox away.
+
+This is hard to see unless you still have the old preference, so it may already have migrated cleanly
+for you. Worth a look anyway:
+
+1. **Open the autonomy settings and tick something - anything - two or three times**, then check Choose
+   Routing Logic. It must still show your rule.
+2. **Restart and look again.** Still yours.
+3. **If you have a configuration with no routing rule set**, load it, tick a settings checkbox twice,
+   restart, and confirm the rule did not fall back to At Random.
+
+*Run against commit eac4f73c or later.*
+
+---
+
+<a id="mt-230"></a>
+
+### MT-230 - 2026-08-30 - A layout page that will not read does not cost you its sensors
+
+**Disposition:** fixed unvalidated
+**From:** RC-A3, RC-A4, RC-A5
+**Written:** 2026-08-30
+
+**Take a backup of your layout folder before running this one.** It is about what happens when a page
+is damaged, and the point of it is that nothing is lost - but it is a test about losing things.
+
+TrainControl tolerates a page it cannot read: the others load and the failure is logged. What was not
+tolerated is what came after. The sensor cleanup deletes every s88 the LOADED pages do not mention, so a
+folder with one damaged page loaded the rest and then permanently deleted every sensor that only
+appeared on the damaged one - with the autonomy points watching them. And the warning that would have
+explained it was debug-only, so nothing said why.
+
+1. **Copy your layout folder somewhere safe first.**
+2. **In the copy, damage one page** - open a `.cs2` file under `gleisbilder` and delete half of it, or
+   rename it so the index cannot find it. Pick a page that has sensors of its own.
+3. **Point TrainControl at the copy and start it.** You should see a warning naming the page, in plain
+   view, not only in debug mode.
+4. **Check your feedback list.** The sensors from the damaged page must still be there.
+5. **Check the autonomy setup** for the pages that DID load - it should be untouched.
+6. **Then damage every page** and start again. This time it should give up on the folder and fall back
+   to the Central Station's layout, telling you so - rather than showing you an empty diagram in
+   silence, which is what it did.
+7. **Point it back at your real folder** and confirm everything is as it was.
+
+*Run against commit 10694670 or later.*
+
+---
+
+<a id="mt-231"></a>
+
+### MT-231 - 2026-08-30 - A station you push down is not visited by the longest route
+
+**Disposition:** fixed unvalidated
+**From:** RC-B2
+**Written:** 2026-08-30
+
+Only relevant if you use **Weighing Station Priority Against Distance** and set a station's priority
+below zero.
+
+The rule scores a station as priority-per-unit-of-track. It was written for priorities of zero and up,
+and negatives go through the same arithmetic: at -1 every route scored the same, so distance stopped
+mattering, and at -2 and below the score went negative - where a LONGER route scores higher. So a
+station you had pushed down became the most attractive on the layout, reached by the longest way round.
+
+A de-prioritised station is now worth less than an ordinary one and still ordered among its peers, and
+nothing at zero or above is changed at all.
+
+1. **Choose Weighing Station Priority Against Distance.**
+2. **Set one station's priority to -2** and leave the others alone.
+3. **Run for a while.** That station should be visited LESS than the others, not more, and when it is
+   visited it should be by a sensible route rather than the longest available.
+4. **Set another station to -5.** It should be visited less often than the -2 one.
+5. **Set everything back to 0 and run again** - the behaviour should be exactly what you are used to,
+   since nothing at or above zero was touched.
+
+*Run against commit 10694670 or later.*
+
+---
+
+<a id="mt-232"></a>
+
+### MT-232 - 2026-08-30 - Add Route offers a name, and the editor stays where you can see it
+
+**Disposition:** fixed unvalidated
+**From:** RC-B3, RC-B4
+**Written:** 2026-08-30
+
+Two things the route editor lost against 2.7.4c.
+
+**It stopped proposing a name.** The next free name is still worked out and was then thrown away, so the
+box opened empty and the first Save was refused for not having a name.
+
+**It does not follow the main window's always-on-top.** Every other child window does. It matters during
+capture: you tick "capture commands" here and then throw the switches on the layout window, and the
+window you are watching went behind the one you were clicking.
+
+1. **Press Add Route.** The name box should already say "Route 4", or whatever the next free number is.
+2. **Add one command and press Save.** It should save, without asking you to invent a name.
+3. **Press Add Route again** and close it immediately. It should close without asking whether to discard
+   anything - the offered name is not your typing.
+4. **Turn on always-on-top for the main window**, open the route editor, tick capture, and click over to
+   the layout window to throw a switch. The editor must stay visible.
+5. **Turn always-on-top off** and confirm the editor behaves like an ordinary window again.
+
+*Run against commit ed33fbdc or later.*
+
+---
+
+<a id="mt-233"></a>
+
+### MT-233 - 2026-08-30 - Start with nothing that can start leaves the railway alone
+
+**Disposition:** fixed unvalidated
+**From:** RC-B5
+**Written:** 2026-08-30
+
+Start marks the layout as running before it looks at a single locomotive, and it skips any locomotive
+whose start point is inactive or whose preferred speed has never been set. Skip every one of them and
+the layout was left "running" with nothing running - and nothing could ever clear it, because the flag
+is cleared by the last locomotive thread finishing and there were none.
+
+While it was in that state, moving a locomotive by hand, renaming a point and switching simulation all
+refused, every protecting signal had been commanded, and hand dispatches were judged by the autonomy
+rules. Only Stop got you out, and nothing said so.
+
+1. **Pick a locomotive that has never had a preferred speed set** - or set one to 0 - and make it the
+   only locomotive in the run list.
+2. **Press Start.** It should refuse to run and say that nothing could be started, and the railway
+   should be left alone: you should be able to move a locomotive by hand, rename a point, and toggle
+   simulation immediately, without pressing Stop first.
+3. **The control.** Give it a real speed and press Start again. It should run normally.
+4. **Mixed.** One locomotive with a speed and one without: the good one runs, the other is skipped by
+   name in the log, and Stop works as usual.
+
+*Run against commit ed33fbdc or later.*
+
+---
+
