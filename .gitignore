@@ -52,3 +52,7 @@ docs/manual-tests/triage.db
 # of these in the project root, and they are worth reading once and never committing.
 hs_err_pid*.log
 replay_pid*.log
+
+# Python bytecode from the parity harness scripts
+__pycache__/
+*.pyc
