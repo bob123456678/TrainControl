@@ -226,6 +226,7 @@
         <test-one-class class="testBackupArchiveNamesTheLayout"/>
         <test-one-class class="testARunSurvivesAPageRename"/>
         <test-one-class class="testARunSurvivesADiagramEdit"/>
+        <test-one-class class="testTheEditorTellsAutonomy"/>
         <test-one-class class="testTheRoutePlayButton"/>
         <test-one-class class="testFindRoute"/>
         <test-one-class class="testUdpMessagesReachTheWire"/>

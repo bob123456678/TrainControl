@@ -49,8 +49,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-222](#mt-222) | 2026-08-29 | Setting a train's length, and naming the autonomy functions | needs test | FR-045, FR-047 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
 | [MT-224](#mt-224) | 2026-08-29 | The two train-length warnings, and what they name | needs test | OB-153, OB-154 |
-| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-A4, LE-A5, LE-A6, LE-B1, LE-C1, LE-C2 |
-| [MT-226](#mt-226) | 2026-08-30 | The routing-logic menu says what the railway is doing | needs test | LE-B3, LE-B4 |
+| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-A4, LE-A5, LE-A6, LE-A7, LE-B1, LE-B6, LE-C1, LE-C2 |
+| [MT-226](#mt-226) | 2026-08-30 | The routing-logic menu says what the railway is doing | needs test | LE-B3, LE-B4, LE-B5 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -11531,7 +11531,7 @@ sentence just never used it, and said "This station has..." where it could say w
 ### MT-225 - 2026-08-30 - What the diagram editor tells the autonomy setup
 
 **Disposition:** needs test
-**From:** LE-A1, LE-A4, LE-A5, LE-A6, LE-B1, LE-C1, LE-C2
+**From:** LE-A1, LE-A4, LE-A5, LE-A6, LE-A7, LE-B1, LE-B6, LE-C1, LE-C2
 **Written:** 2026-08-30
 
 Five fixes from [the layout editor review](../reviews/2026-08-30-layout-editor-review.md), all of the
@@ -11583,7 +11583,14 @@ right thing, and the difference is what these steps are.
    across. That is deliberate: a cross-page move could not be undone, because the paste only snapshots
    the destination page and leaving the source page throws its history away. Tell me if you would
    rather have the carry and lose the undo.
-14. **Judgement call for you**, on step 6: I chose to DROP the caption rather than refuse the shrink,
+14. **The one that was actually broken in what I pushed** (LE-A7): steps 1 and 9 are the two that
+   matter most, because for two commits the whole carry-the-setup fix was unreachable - it was there,
+   it compiled, the tests passed, and it never ran. If either of those two behaves like the old bug,
+   that is what has happened again.
+15. **The routing-rule warning** (LE-B5): if you ever pick a routing rule and see a log line saying it
+   could not be stored, that is working as intended - it means there was no autonomy configuration to
+   put it in. Tell me if you see it when a configuration IS loaded.
+16. **Judgement call for you**, on step 6: I chose to DROP the caption rather than refuse the shrink,
    on the grounds that a caption is where a name is drawn and not the name itself, so nothing is really
    lost and the checker will ask you to place it again. If you would rather the shrink refused and kept
    the caption where it was, say so - it is a small change in the other direction.
@@ -11595,7 +11602,7 @@ right thing, and the difference is what these steps are.
 ### MT-226 - 2026-08-30 - The routing-logic menu says what the railway is doing
 
 **Disposition:** needs test
-**From:** LE-B3, LE-B4
+**From:** LE-B3, LE-B4, LE-B5
 **Written:** 2026-08-30
 
 Two findings about the menu that reports and sets the routing rule, both from the second review pass.
