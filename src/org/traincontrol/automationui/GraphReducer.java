@@ -324,7 +324,6 @@ public class GraphReducer
      * A double-curve sensor with track on both of its curves.  The s88 is on ONE of them; the other is
      * a second track that happens to cross the same square.
      */
-    public static final String WARN_DOUBLE_CURVE_SENSOR = "autosetup.ui.warnDoubleCurveSensor";
 
     public GraphReducer(TileGraph graph, Authored authored)
     {
@@ -760,18 +759,28 @@ public class GraphReducer
                 continue;
             }
 
-            // A double-curve sensor draws two curves on one square, and the s88 is on ONE of them -
-            // the other is simply a second track crossing the same tile (author, 2026-08-16).  This
-            // was blocking, and refused to make the tile a Point at all, on the reading that one
-            // sensor covered both tracks.  It does not, so the sensor is real and the Point is
-            // emitted; what remains is that nothing here records WHICH curve carries it, so a train
-            // on the other one is expected to trigger a sensor it never reaches.  That is worth
-            // saying and is not worth refusing.
-            if (component.getType() == componentType.FEEDBACK_DOUBLE_CURVE
-                && bothCurvesConnected(tile))
-            {
-                problems.add(new TileGraph.Problem(tile, WARN_DOUBLE_CURVE_SENSOR, false));
-            }
+            // A DOUBLE-CURVE SENSOR IS NO LONGER REPORTED, and the reasoning is worth keeping.
+            //
+            // Such a square draws two curves, the reduction makes ONE Point of it, and that Point
+            // carries one s88. If the physical contact is on only one of the two tracks, a train
+            // routed over the other passes without triggering it and autonomy waits for an arrival
+            // that never reports. That was the warning, and it was a real hazard to describe.
+            //
+            // It could never be turned into a finding, because WHICH track carries the contact is not
+            // in the diagram. The .cs2 records one tile, one type, one article number; the wiring is
+            // in the layout and nowhere this program can read. So the check could only say "two curves
+            // and one sensor, and I do not know whether that matters" - to every such square, every
+            // time, whether or not anything was wrong.
+            //
+            // Adam, asked for a failure scenario and given none: "I don't see any problem with such
+            // tiles, unless you can point out a specific failure scenario.  No warning needed
+            // otherwise."  The only one on his railway sits on a page normally excluded from autonomy,
+            // with track on all four sides, so it fired and said nothing he did not know.
+            //
+            // WHAT WOULD BRING IT BACK: a way to record which curve carries the contact - a per-tile
+            // setting, or a second Point for the second curve. The check then becomes "a route uses
+            // the curve without the sensor", which has a remedy. Until then this is a guess dressed as
+            // a warning.
 
             String name = authored.getPointName(tile);
 
@@ -807,27 +816,6 @@ public class GraphReducer
      * is not.  landing() already refuses a neighbour with no facing port, so this is exactly "is there
      * track on the other side".
      */
-    /**
-     * Whether both curves of a double-curve tile actually have track on them.
-     *
-     * One of them alone is harmless - the tile is then just a curved sensor.
-     */
-    private boolean bothCurvesConnected(TileKey tile)
-    {
-        Map<RouteId, Route> routes = graph.getRoutes(tile);
-
-        if (routes.size() < 2) return false;
-
-        int connected = 0;
-
-        for (Route route : routes.values())
-        {
-            if (graph.landing(tile, route.getA()) != null
-                || graph.landing(tile, route.getB()) != null) connected++;
-        }
-
-        return connected > 1;
-    }
 
     private boolean hasAnyConnection(TileKey tile)
     {

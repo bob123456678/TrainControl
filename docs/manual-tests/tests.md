@@ -11509,22 +11509,26 @@ Also, the error about duple curved tiles doesn't make sense.  Only one track has
 finding per repeated s88, naming the address and BOTH pages it appears on - the one it is on and the
 one it was first seen on. That is what "does not specify which one is the duplicate" was asking for.
 
-**The double-curve warning is NOT changed, and I want to check with you before touching it.** Your
-reasoning is that only one track carries the s88 and the other is a static connector between other
-tiles, so the model is fine and you know where the train is because only one track has a possible
-station. The warning fires whenever both curves on the square are connected to something, which does
-not distinguish your case from one where autonomy really could route a train over the sensor-less
-curve and then expect a trigger that never comes.
+**The double-curve warning is gone.** You asked for a specific failure scenario and I could not give
+one.
 
-Two ways to narrow it, and they are different rules:
+The hazard it described is real in the abstract: such a square draws two curves, the reduction makes
+ONE Point of it, and that Point carries one s88 - so if the contact is on only one of the two tracks, a
+train routed over the other passes without triggering it. What makes it unreportable is that **which
+track carries the contact is not in the diagram**. The .cs2 records one tile, one type, one article
+number; the wiring is in your layout and nowhere the program can read. So the check could only ever say
+"two curves and one sensor, and I do not know whether that matters" - to every such square, every time.
 
-1. **Only warn when a train could actually be routed over the other curve** - that is, when the second
-   curve leads somewhere autonomy uses. That is the honest version of the rule and needs the reduction
-   to have run, so it means moving the check after the edges are built.
-2. **Only warn when both curves could lead to a station** - closer to your own words, and cheaper.
+For the record, there is exactly one on your railway: (5,16) on "3 - Top Parking", article 1015, track
+on all four sides - which is why it fired. It is on a page normally excluded from autonomy.
 
-Tell me which, or tell me the warning should just go. I did not want to guess at a reachability rule I
-cannot check against your railway.
+What would bring it back: a way to record which curve carries the contact, at which point the check
+becomes "a route uses the curve without the sensor" and has a remedy. The reasoning is in
+GraphReducer.buildPoints where the check used to be, so it is not lost.
+
+1. **Switch "3 - Top Parking" back on** and confirm the double-curve notice is gone.
+2. **The duplicate-sensor error should still be there** and should now name the sensor - it is the same
+   page, so the two were easy to confuse.
 
 ---
 
