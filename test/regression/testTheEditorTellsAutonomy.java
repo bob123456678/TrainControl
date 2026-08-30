@@ -54,9 +54,17 @@ public class testTheEditorTellsAutonomy
 
         String cut = bodyOf(EDITOR, "public boolean cutSelection()");
 
-        assertTrue(cut.contains("clipboardWasCut"),
-            "cutSelection no longer marks the clipboard as cut, so the paste cannot tell a move from "
-            + "a copy and will not carry the setup (LE-A1)");
+        // The ASSIGNMENT, not a mention of the name.  This asked only that the identifier appeared,
+        // so setting the flag to false here - which is precisely "the paste cannot tell a move from a
+        // copy" - left the test green.  A test that cannot fail for the reason it names is worse than
+        // no test, because it reads as protection (LE-C1).
+        assertTrue(cut.contains("clipboardWasCut = cut"),
+            "cutSelection no longer sets the cut flag FROM the delete's result, so the paste cannot "
+            + "tell a move from a copy and will not carry the setup (LE-A1)");
+
+        assertTrue(cut.contains("clipboardCutSquares"),
+            "cutSelection no longer records WHICH squares it emptied, so a non-rectangular cut moves "
+            + "the setup off squares that still hold their track (LE-A5)");
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
@@ -146,7 +154,10 @@ public class testTheEditorTellsAutonomy
         {
             String body = bodyOf(EDITOR, method);
 
-            int guarded = body.indexOf("< 0) return;");
+            // Any refusal, not one spelling of it: LE-C2 replaced the inline comparison with a named
+            // predicate, and a scan pinned to the old wording would have gone red for a change that
+            // improved the thing it was guarding.
+            int guarded = body.indexOf(") return;");
             int snapshot = body.indexOf("snapshotLayout()");
 
             assertTrue(guarded >= 0,
@@ -184,6 +195,16 @@ public class testTheEditorTellsAutonomy
 
         assertTrue(menu.contains("edit.canShiftLeft()"),
             "the Shift Left item no longer asks canShiftLeft (LE-C1)");
+
+        // All FOUR, or the submenu expresses one rule two ways again (LE-C2).
+        assertTrue(menu.contains("edit.canShiftDown()") && menu.contains("edit.canShiftRight()"),
+            "Shift Down and Shift Right are back to a literal instead of the editor's predicate, so "
+            + "the silent refusal LE-B2 gave them is offered rather than greyed (LE-C2)");
+
+        // and the parameter has to reach setEnabled, or asking the predicate changes nothing
+        assertTrue(bodyOf(MENU, "private void addShift(").contains("setEnabled(enabled)"),
+            "addShift no longer wires its enabled parameter to setEnabled, so every item is offered "
+            + "whatever its predicate says (LE-C1)");
 
         // and the method must ask it too, or the two can still disagree
         for (String pair : new String[] {"public void shiftUp()|canShiftUp",

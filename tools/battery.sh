@@ -224,7 +224,12 @@ do
         # its heap is the machine being busy, and the answer is to run it again; anything else is the
         # class, and the answer is to go and read it.  They read identically before this, which cost a
         # round of hunting for a fault in three classes that were fine.
-        if echo "$out" | grep -q "Could not reserve enough space for object heap"
+        # BOTH WORDINGS, and neither is the one this first grepped for.  A 64-bit JDK 8 says
+        # "Unable to allocate NNN bitmaps ... for the requested NNNKB heap" when -Xmx cannot be met,
+        # and its other reservation message embeds the size - "Could not reserve enough space for
+        # %I64uKB object heap" - so matching the bare sentence matched neither, and the branch was
+        # dead for the very incident it was written for.
+        if echo "$out" | grep -qE "Could not reserve enough space|Unable to allocate.*heap"
         then
             fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN - no heap (machine busy, rerun)"
         else

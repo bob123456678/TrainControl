@@ -49,7 +49,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-222](#mt-222) | 2026-08-29 | Setting a train's length, and naming the autonomy functions | needs test | FR-045, FR-047 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
 | [MT-224](#mt-224) | 2026-08-29 | The two train-length warnings, and what they name | needs test | OB-153, OB-154 |
-| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-B1, LE-C1, LE-C2 |
+| [MT-225](#mt-225) | 2026-08-30 | What the diagram editor tells the autonomy setup | needs test | LE-A1, LE-A4, LE-A5, LE-A6, LE-B1, LE-C1, LE-C2 |
+| [MT-226](#mt-226) | 2026-08-30 | The routing-logic menu says what the railway is doing | needs test | LE-B3, LE-B4 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -11530,7 +11531,7 @@ sentence just never used it, and said "This station has..." where it could say w
 ### MT-225 - 2026-08-30 - What the diagram editor tells the autonomy setup
 
 **Disposition:** needs test
-**From:** LE-A1, LE-B1, LE-C1, LE-C2
+**From:** LE-A1, LE-A4, LE-A5, LE-A6, LE-B1, LE-C1, LE-C2
 **Written:** 2026-08-30
 
 Five fixes from [the layout editor review](../reviews/2026-08-30-layout-editor-review.md), all of the
@@ -11566,9 +11567,61 @@ right thing, and the difference is what these steps are.
 8. **Right-click the bottom row** and open the diagram submenu. **Shift Up** should be greyed, with a
    tooltip saying why. Same for **Shift Left** on the rightmost column. Anywhere else both should be
    available and work (LE-C1).
-9. **Judgement call for you**, on step 6: I chose to DROP the caption rather than refuse the shrink,
+9. **Cut it and paste it straight back** where it came from, same top-left square. The diagram ends
+   up identical, and everything - station, name, length, facing, locomotive - must still be there. This
+   one used to wipe the whole block's setup with nothing on screen to say so (LE-A4).
+10. **A non-rectangular cut.** Shift-click two squares that are NOT adjacent - say opposite corners of
+   a 4x4 area - so the selection has holes in it. Cut, then paste somewhere else. The squares you did
+   NOT pick must keep everything: they still hold their track, and their stations, names and
+   locomotives must not have moved (LE-A5).
+11. **Cut, then leave the page and answer Discard** when it asks about unsaved work. The track comes
+   back. Now paste somewhere: it must behave as a COPY - the restored squares keep their setup
+   (LE-A6).
+12. **Cut a block, drag a different set-up station onto one of the squares you emptied, then paste the
+   block elsewhere.** The station you dragged must keep its setup (LE-A6).
+13. **Cut on one page and paste on another.** The setup stays on the source page - it does NOT follow
+   across. That is deliberate: a cross-page move could not be undone, because the paste only snapshots
+   the destination page and leaving the source page throws its history away. Tell me if you would
+   rather have the carry and lose the undo.
+14. **Judgement call for you**, on step 6: I chose to DROP the caption rather than refuse the shrink,
    on the grounds that a caption is where a name is drawn and not the name itself, so nothing is really
    lost and the checker will ask you to place it again. If you would rather the shrink refused and kept
    the caption where it was, say so - it is a small change in the other direction.
+
+---
+
+<a id="mt-226"></a>
+
+### MT-226 - 2026-08-30 - The routing-logic menu says what the railway is doing
+
+**Disposition:** needs test
+**From:** LE-B3, LE-B4
+**Written:** 2026-08-30
+
+Two findings about the menu that reports and sets the routing rule, both from the second review pass.
+
+**It always ticked "At Random" (LE-B3).** The menu is built in the window's constructor, and reads the
+current rule from a model that is not assigned until afterwards - so it read nothing, ticked the
+default, and was never rebuilt. Your railway would route by whatever the configuration said while the
+menu insisted it was random. It is now ticked when you open it.
+
+**A choice made before this moved would have been lost (LE-B4).** The rule used to live in the
+application's own preferences; it lives in the autonomy configuration now, and nothing carried the old
+value across. It is carried once, into the configuration, and the old setting removed.
+
+1. **Open the autonomy menu and look at Choose Routing Logic.** Whatever is ticked should be what the
+   railway is actually using.
+2. **Pick a different rule, close the menu, reopen it.** The new one is ticked.
+3. **Restart TrainControl and open it again.** Still the one you picked - it is in the configuration
+   now, not in the window.
+4. **Load a DIFFERENT autonomy configuration**, if you have one, and open the menu. It should show that
+   configuration's rule, not the one you set on the other.
+5. **The migration (LE-B4)** only happens once and only if you had an old preference saved, so it may
+   already have run silently by the time you read this. If the rule you find ticked on first opening is
+   one you remember choosing months ago, that is it working.
+6. **Worth watching for**, since I could not test this end to end: pick a rule, then check the autonomy
+   findings and a route actually taken. "Over the Shortest Track" and "Over the Longest Track" should
+   now genuinely differ - most of your edges carry no length, and until this week both of those scored
+   every route as zero and picked the same one.
 
 ---

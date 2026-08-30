@@ -7,10 +7,14 @@
 **Reviewed:** `LayoutEditor.java`, `LayoutEditorRightclickMenu.java` and their autonomy touchpoints in
 `AutonomySession` / `AutonomyCompanionStore`, at commit `34653bbb` (2026-08-30).
 
-**Method.** One reviewer agent over the editor's autonomy touchpoints, prompted with the five
-categories `docs/reviews/README.md` asks for. Every finding below was then re-derived by hand before
-being fixed - see *What the pass got wrong* at the end, because one of its citations did not survive
-that.
+**Method.** Two passes. The first, one agent over the editor's autonomy touchpoints, produced A1, B1,
+B2, C1 and C2. The second, one agent over those fixes and the preceding two days of commits, produced
+A4, A5, A6, B3, B4 and C3-C7 - **three of them holes in the first round's own fixes**, which is the
+single most useful thing either pass did. Every finding was re-derived by hand before being fixed.
+
+**The second pass is why this document is worth reading.** A1's fix introduced two ways to destroy more
+setup than the defect ever did, and a third way for its flag to go stale. A round that had stopped at
+"the tests are green" would have shipped them.
 
 **Why this pass happened.** Adam hit a save problem while adding stations to the diagram: *"the first
 few times it told me there was a conflict with page 2, and the changes didn't save, even though page 2
@@ -45,6 +49,74 @@ codebase - the same operation implemented twice, and only one copy doing all of 
 component, and no origin - so paste had nothing to move the setup FROM. The fix adds the origins and a
 flag saying whether the clipboard was cut or copied, and the flag is cleared once a paste has used it,
 because cut-then-paste-twice is a move followed by a copy.
+
+### A4 - pasting a cut block back where it came from destroyed the whole block's setup
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testTheEditorTellsAutonomy` |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+`cutMoves` skipped a square that maps to itself, and since every square in a block shares one offset
+that is all-or-nothing: pasting at the cut's own top-left produced an **empty** moves map. The empty map
+fell to the `else` branch, which called `forgetBuiltOver` on what in that case are exactly the origin
+squares - wiping the station flag, name, maximum length, facings, barred arrivals, protecting signal,
+portal partner and placed locomotive for the entire rectangle.
+
+Cut a set-up yard, think better of it, paste it back: the diagram is byte-identical to before and the
+setup is gone, with nothing on screen to say so, so nobody presses Ctrl+Z.
+
+`cutMoves`'s javadoc had called the identity case "at best wasted work". It was not wasted work - it
+routed the gesture into the branch that forgets. **The one case the method reasoned about explicitly is
+the one whose consequence it got wrong**, which is worth more than the fix: an argument for skipping
+something is not an argument about what happens next.
+
+Fixed by taking the block's own squares out of what counts as built over. Where a paste overlaps where
+the block came from, those squares are the ones whose setup is being carried, and forgetting them
+destroys what the move is delivering.
+
+### A5 - a non-rectangular cut moved the setup off squares that were never cut
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testTheEditorTellsAutonomy` |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+`copySelection` walks the bounding **box** - its own javadoc says "INCLUDING squares inside it that were
+not picked" - while `deleteSelection` empties only the squares that were **picked**. A1 filled
+`clipboardOrigins` from the former and assumed the latter.
+
+Shift-click two opposite corners of a 4x4 box: two squares are emptied, fourteen are not, and all
+sixteen origins were mapped. The setup came off fourteen squares that still visibly held their track.
+
+The asymmetry is pre-existing and deliberate - copying only the picked squares would paste a shape with
+holes in it - and until A1 it only duplicated track. A1 turned it into setup destruction. The cut now
+records which squares it actually emptied, and only those may move.
+
+That javadoc, the one sentence that explains the whole asymmetry, was **orphaned** (C7) - two javadoc
+blocks in a row, so Java attached it to the wrong method. It is now on `bounds()`, where anybody
+pairing it with a delete will meet it.
+
+### A6 - the cut flag went stale through doors A3 did not sweep
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testTheEditorTellsAutonomy` |
+| **Manual test** | [MT-225](../manual-tests/tests.md#mt-225) |
+
+A3 identified the invariant correctly - `clipboardWasCut` asserts "the origin squares are empty now" -
+and then stood the flag down on undo and redo only. Two other doors falsify it:
+
+- **A page or mode switch answered with Discard.** The cut pushed a snapshot, so `settleUnsavedWork`
+  offers Save/Discard/Stay; Discard re-reads the pages from disk and restores the setup as at
+  window-open. The cut track is back and the flag still says otherwise - the exact scenario A3's own
+  comment describes, reached without touching Ctrl+Z.
+- **Any later edit that refills the vacated squares.** Cut a block at (5,5), drag a set-up station onto
+  (5,5), paste the block at (30,30): the station's setup is taken off (5,5). Two ordinary gestures.
+
+**Fixed as the invariant rather than as a list of doors.** Every edit that can change the diagram calls
+`snapshotLayout` first, so the flag is stood down there - which covers the doors nobody has thought of
+yet. Listing them was what produced A6 in the first place.
 
 ### A2 - withdrawn, was never a defect
 
@@ -118,6 +190,41 @@ pushed an undo entry for an edit that never happened - which also clears the red
 editor ask about saving work nobody did. `shiftUp` and `shiftLeft` guarded first, which is what makes
 this a drift between siblings rather than a design.
 
+### B3 - the routing menu always ticked RANDOM
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+| **Manual test** | [MT-226](../manual-tests/tests.md#mt-226) |
+
+`buildPathPreferenceMenu` reads the current rule from `model.getAutoLayout()` and is called from the
+`TrainControlUI` **constructor**, where `model` is still null - it is assigned afterwards, in
+`setViewListener`. The menu is never rebuilt, so the tick was unconditionally RANDOM.
+
+Set SHORTEST_LENGTH, save, restart: the railway routes by SHORTEST_LENGTH, and the one control that
+reports the rule says RANDOM.
+
+**The static version could not have had this defect.** It read the preference and pushed it, so the
+tick and the value came from the same place; splitting them into "the configuration knows" and "the
+menu shows" created a second answer, and the second answer was wrong. Now ticked when the menu opens,
+which is the only moment the answer is both known and wanted, and which cannot go stale when a
+different configuration is loaded.
+
+### B4 - the routing choice was silently lost on upgrade
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+| **Manual test** | [MT-226](../manual-tests/tests.md#mt-226) |
+
+`fromJSON`'s comment claimed an absent `pathPreference` left "the behaviour those railways already
+had". It did not: the old build read the choice from a java Preference at startup and applied it. That
+key is gone and nothing migrated it, so anyone who had chosen a rule got RANDOM after upgrading, with
+no message - and, with B3, a menu that agreed.
+
+Carried across once, into the configuration where it now lives, and the old key removed so it cannot
+come back later and overrule a choice made since.
+
 ---
 
 ## C - low
@@ -151,6 +258,69 @@ Bounded rather than severe: a reconciling save prunes them. But the non-reconcil
 out - the window captures the running layout and saves without reconciling when it closes - commit the
 inconsistent state to disk first, so the page's setup outlives the diagram it describes until somebody
 opens the autonomy editor and presses Save.
+
+### C3 - a test that could not fail for the reason it named
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+`testAGroupCutCarriesItsSetupToWhereItIsPasted` asserted that `cutSelection`'s body **contains the
+identifier** `clipboardWasCut`. Setting it to `false` there - precisely "the paste cannot tell a move
+from a copy", the failure its own message describes - left the test green. Its three sibling assertions
+all pin an assignment; this one pinned a mention.
+
+Worth more than its severity suggests: it was written in the same commit as the fix it guards, by
+someone who had just read the code, and it still could not fail. The rule it breaks is one this folder
+already records - *prove the guard actually guards*.
+
+### C4 - two of the four shifts kept the rule the other two stopped restating
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+C1's own principle - ask the editor's predicate rather than restate the condition - was applied to
+Shift Up and Shift Left, while Shift Down and Shift Right were passed a literal `true`. B2 had just
+given those two a brand-new **silent refusal**, which is the exact condition C1 exists to grey out.
+
+Not reachable from the menu today: the popup only opens over a square, and that sets the hovered
+position. A trap for the next caller rather than a live defect - but two fixes in one commit left one
+submenu expressing one rule two different ways, which is what C1 was about.
+
+### C5 - battery.sh's heap message never matched
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+The grep was for the literal `Could not reserve enough space for object heap`. On the JDK the script
+actually uses, an unsatisfiable `-Xmx` reports `Unable to allocate ... for the requested ...KB heap`,
+and the other reservation message embeds the size. So the branch was dead for the very incident it was
+written for - a "no heap" report that could never fire, which is the same shape as a guard that always
+passes.
+
+### C6 - buildPathPreferenceMenu's javadoc said the opposite of its body
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+The surviving javadoc still described an application preference that "has to outlive a configuration
+being reloaded", while the body's own comment said the opposite in capitals. This folder's README is
+explicit that the documentation is part of the method, and a javadoc is the form a reader trusts
+without checking.
+
+### C7 - `TileSelection.bounds()`'s javadoc was attached to the wrong method
+
+| | |
+|---|---|
+| **Disposition** | fixed |
+
+Two javadoc blocks in a row, so Java attaches only the second: `handle()` got `bounds()`'s
+documentation and `bounds()` had none. Fixed for more than tidiness - the orphaned paragraph is the one
+sentence explaining the bounding-box-versus-picked-squares asymmetry behind **A5**, and it is now
+where somebody pairing `bounds()` with a delete will read it.
 
 ---
 

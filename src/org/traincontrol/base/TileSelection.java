@@ -173,15 +173,6 @@ public final class TileSelection
     }
 
     /**
-     * The smallest rectangle holding everything picked, as {minX, minY, maxX, maxY}.
-     *
-     * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked. Copying
-     * only the picked squares would paste a shape with holes in it, and a piece of railway with holes
-     * is not the piece the user pointed at.
-     *
-     * @return the bounds, or null when nothing is picked
-     */
-    /**
      * The square that drags the whole selection: the top right corner of its bounding box.
      *
      * Here rather than in the editor because it is a rule about a selection rather than about a
@@ -204,6 +195,20 @@ public final class TileSelection
         return box == null ? null : new int[]{box[2], box[1]};
     }
 
+    /**
+     * The smallest rectangle holding everything picked, as {minX, minY, maxX, maxY}.
+     *
+     * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked. Copying
+     * only the picked squares would paste a shape with holes in it, and a piece of railway with holes
+     * is not the piece the user pointed at.
+     *
+     * @return the bounds, or null when nothing is picked
+         *
+     * READ THIS BEFORE PAIRING IT WITH A DELETE. What a copy takes and what a delete removes are not
+     * the same set - delete walks the picked squares, this walks the box around them - and LE-A5 is
+     * what happens when something assumes they match: a cut carried origins for sixteen squares when
+     * two had been emptied, and moved the setup off fourteen that still held their track.
+     */
     public int[] bounds()
     {
         if (chosen.isEmpty()) return null;

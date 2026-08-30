@@ -474,10 +474,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         // In the order somebody reaches for them: down and right make room, up and left take it back.
         addShift(diagramSubmenu, "layout.ui.shiftDown", "layout.ui.tooltip.shiftDiagramDown",
-            () -> edit.shiftDown(), true);
+            () -> edit.shiftDown(), edit.canShiftDown());
 
         addShift(diagramSubmenu, "layout.ui.shiftRight", "layout.ui.tooltip.shiftDiagramRight",
-            () -> edit.shiftRight(), true);
+            () -> edit.shiftRight(), edit.canShiftRight());
 
         // Greyed where they would refuse, with the reason - the same treatment Shrink gets above, and
         // asking the editor's own predicate rather than restating it here (LE-C1).

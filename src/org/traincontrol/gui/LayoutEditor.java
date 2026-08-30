@@ -321,6 +321,18 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private boolean clipboardWasCut = false;
 
+    /**
+     * The squares a cut actually emptied (LE-A5).
+     *
+     * NOT the same as the clipboard, and that difference destroyed setup. copySelection walks the
+     * bounding BOX - its own javadoc says "including squares inside it that were not picked" - while
+     * deleteSelection empties only the squares that were PICKED. Shift-click two opposite corners and
+     * the two differ by fourteen squares, every one of which still holds its track.
+     *
+     * Only these may have their setup moved: a square that was not emptied has not moved anywhere.
+     */
+    private java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> clipboardCutSquares;
+
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
     
@@ -2625,6 +2637,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
             org.traincontrol.automationui.TileGraph.TileKey origin = this.clipboardOrigins.get(at);
 
+            // Only squares the cut actually emptied.  The clipboard covers a bounding box; the cut
+            // emptied the picked squares inside it, and the rest still hold their track (LE-A5).
+            if (this.clipboardCutSquares != null && !this.clipboardCutSquares.contains(origin))
+            {
+                continue;
+            }
+
             if (!to.equals(origin)) moves.put(origin, to);
         }
 
@@ -2662,6 +2681,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             return false;
         }
+
+        // READ BEFORE THE SNAPSHOT, which stands it down (LE-A6).
+        boolean wasCut = this.clipboardWasCut;
 
         this.snapshotLayout();
 
@@ -2705,13 +2727,30 @@ public class LayoutEditor extends PositionAwareJFrame
             // landing squares are cleared of whatever they held and the carried setup lands on them.
             // Calling forgetBuiltOver as well would clear the setup this has just delivered.
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                org.traincontrol.automationui.TileGraph.TileKey> moves = cutMoves(atX, atY);
+                org.traincontrol.automationui.TileGraph.TileKey> moves = wasCut
+                    ? cutMoves(atX, atY) : null;
 
-            if (autonomy != null && moves != null && !moves.isEmpty())
+            if (moves != null)
             {
-                if (autonomy.moveTiles(moves, builtOver)) rememberAutonomy(autonomy);
+                // THE BLOCK'S OWN SQUARES ARE NOT "BUILT OVER" (LE-A4).
+                //
+                // builtOver is every landing square, and where the paste overlaps where the block came
+                // from those are the very squares whose setup is being carried. Forgetting them
+                // destroys what the move is delivering - and paste it back exactly where it was and
+                // EVERY square is one of them, which is how a cut-and-put-back wiped a whole yard: the
+                // moves map came out empty, the else branch ran, and it forgot the lot.
+                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> overwritten =
+                    new java.util.LinkedHashSet<>(builtOver);
 
-                // Used up.  Cut then paste twice is a move and then a copy.
+                if (this.clipboardOrigins != null) overwritten.removeAll(this.clipboardOrigins);
+
+                if (autonomy != null && (!moves.isEmpty() || !overwritten.isEmpty())
+                    && autonomy.moveTiles(moves, overwritten))
+                {
+                    rememberAutonomy(autonomy);
+                }
+
+                // Used up either way.  Cut then paste twice is a move and then a copy.
                 this.clipboardWasCut = false;
             }
             else
@@ -2960,10 +2999,22 @@ public class LayoutEditor extends PositionAwareJFrame
 
         java.util.List<org.traincontrol.automationui.TileGraph.TileKey> from = this.clipboardOrigins;
 
+        // Taken BEFORE the delete, which clears the selection, and covering only the picked squares -
+        // the clipboard above covers their whole bounding box (LE-A5).
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptied =
+            new java.util.LinkedHashSet<>();
+
+        for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+        {
+            emptied.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                layout.getName(), at.getX(), at.getY()));
+        }
+
         boolean cut = this.deleteSelection();
 
         this.groupClipboard = carried;
         this.clipboardOrigins = from;
+        this.clipboardCutSquares = emptied;
 
         // SET AFTER THE DELETE, not before: delete() ends by resetting the clipboard, which is the
         // reason the list above has to be held across it, and a flag set first would be cleared with
@@ -3845,6 +3896,36 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         return !(lastHoveredX < 0 || lastHoveredX > layout.getSx() - 2);
     }
+
+    /**
+     * Whether shiftDown would do anything (LE-C2).
+     *
+     * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
+     * expressed one rule two ways, which is the drift LE-C1 was about. Not reachable from the menu
+     * today, because the popup only opens over a square and that sets the hovered position; it is a
+     * trap for the next caller rather than a live defect.
+     *
+     * @return true when there is a hovered square this can work from
+     */
+    public boolean canShiftDown()
+    {
+        return lastHoveredY >= 0;
+    }
+
+    /**
+     * Whether shiftRight would do anything (LE-C2).
+     *
+     * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
+     * expressed one rule two ways, which is the drift LE-C1 was about. Not reachable from the menu
+     * today, because the popup only opens over a square and that sets the hovered position; it is a
+     * trap for the next caller rather than a live defect.
+     *
+     * @return true when there is a hovered square this can work from
+     */
+    public boolean canShiftRight()
+    {
+        return lastHoveredX >= 0;
+    }
     /**
      * Inserts a row or a column at the hovered square and pushes everything past it along.
      *
@@ -3935,7 +4016,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
         // square this method does nothing, but the entry clears the redo stack and makes the editor
         // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
-        if (lastHoveredY < 0) return;
+        if (!canShiftDown()) return;
 
         this.snapshotLayout();
         
@@ -4037,7 +4118,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
         // square this method does nothing, but the entry clears the redo stack and makes the editor
         // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
-        if (lastHoveredX < 0) return;
+        if (!canShiftRight()) return;
 
         this.snapshotLayout();
 
@@ -4563,7 +4644,17 @@ public class LayoutEditor extends PositionAwareJFrame
      * Saves a previous version of the layout
      */
     synchronized private void snapshotLayout()
-    {        
+    {
+        // ANY EDIT MAKES A PENDING CUT UNTRUE (LE-A6).
+        //
+        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY. Undo was not the
+        // only thing that falsifies it: a page or mode switch answered with Discard restores the cut
+        // track without anybody touching Ctrl+Z, and dragging another station onto a vacated square
+        // fills it. Listing those doors would leave the next one unswept, so the invariant is asserted
+        // here instead - every edit that can change the diagram snapshots first, so every edit stands
+        // the cut down. pasteSelection reads the flag before it calls this.
+        this.clipboardWasCut = false;
+        
         // Enforce size limit
         if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
         {
@@ -5271,6 +5362,15 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // switch would name squares on a page that is no longer on screen - the same class of bug
             // as the setup keys that outlive a move.  Cleared before the diagram changes underneath
             // them, not after.
+            // A pending cut does not survive leaving the page (LE-A6, and it settles B3).
+            //
+            // Discard on the way out restores the cut track, so the flag would be asserting something
+            // untrue about squares that are full again. It also gives up carrying a setup ACROSS
+            // pages, deliberately: paste snapshots only the destination page and this method has just
+            // thrown away the source page's undo history, so a cross-page move could not be undone.
+            // Left on the source page instead, which is recoverable.
+            this.clipboardWasCut = false;
+
             this.selection.clear();
             this.previewSelection.clear();
             this.landingSelection.clear();

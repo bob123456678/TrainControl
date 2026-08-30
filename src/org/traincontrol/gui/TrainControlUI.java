@@ -8019,39 +8019,84 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+
     /**
-     * Adds "how should autonomy choose a route" to the Autonomy preferences submenu.
+     * Carries a routing choice made before it lived in the configuration (LE-B2).
      *
-     * Built here rather than in the form, because the generated block is the GUI builder\u2019s and
-     * hand edits to it do not survive the next time somebody opens the form.
+     * Until this became a per-configuration setting the choice was a java Preference, read at startup
+     * and pushed into a static on Layout. Removing that left an existing user's choice on disk with
+     * nothing reading it: they got RANDOM after the upgrade, silently, and - before LE-B1 - a menu that
+     * agreed.
      *
-     * An application preference rather than a per-configuration one: it is how the user wants their
-     * trains to behave, not a fact about a particular railway, and it has to outlive a configuration
-     * being reloaded.  Applied to the model as soon as it is read, so the choice is in force before
-     * anything is loaded.
+     * Moved once and the old key deleted, so it cannot come back later and overrule a choice made
+     * since. Only when the configuration does not already carry one: a configuration that has been
+     * given a rule has already answered this question.
+     *
+     * @param live the loaded layout, or null when there is none yet
+     */
+    private void migrateStoredPathPreference(org.traincontrol.automation.Layout live)
+    {
+        if (live == null) return;
+
+        // The key as it was spelled before the move.  Written out rather than named, because the
+        // constant is gone and reintroducing it would suggest something still writes it.
+        final String legacy = "AutonomyPathPreference";
+
+        String was = prefs.get(legacy, null);
+
+        if (was == null) return;
+
+        prefs.remove(legacy);
+
+        if (live.getPathPreference() != org.traincontrol.automation.Layout.PathPreference.RANDOM)
+        {
+            // The configuration has its own answer; the old one is stale and now gone.
+            return;
+        }
+
+        try
+        {
+            org.traincontrol.automation.Layout.PathPreference option =
+                org.traincontrol.automation.Layout.PathPreference.valueOf(was);
+
+            live.setPathPreference(option);
+
+            if (autonomySession != null) autonomySession.setGlobal("pathPreference", option.name());
+        }
+        catch (Exception e)
+        {
+            // A choice this build does not have, or a setup that would not save.  The default stands,
+            // which is what the user would have got anyway had this never run.
+            if (this.model != null) this.model.log(e);
+        }
+    }
+    /**
+     * The routing-logic menu.
+     *
+     * PER CONFIGURATION, NOT PER APPLICATION. It was the other way round - a java Preference read here
+     * and pushed into a static on Layout - and Adam moved it: "so it travels with the config, not the
+     * UI". The layout loaded from the configuration is now the thing that knows which rule is in
+     * force, and this only reports and sets it.
+     *
+     * THE TICK IS SET WHEN THE MENU OPENS, not when it is built. This runs from the constructor, where
+     * `model` is still null - it is assigned in setViewListener, afterwards - so anything read here at
+     * build time is read from nothing, and the menu is never rebuilt. Ticking on open is also the only
+     * version that cannot go stale when a different configuration is loaded (LE-B1).
      */
     private void buildPathPreferenceMenu()
     {
         if (autonomyToolbarMenu == null) return;
 
-        // ASKED OF THE LAYOUT, NOT OF THE UI PREFERENCES (Adam).
-        //
-        // The routing rule belongs to the configuration and travels with it, so the loaded layout is
-        // the thing that knows which one is in force - fromJSON has already applied whatever the file
-        // carried. Reading it from a preference here would put a second answer beside that one, and
-        // the two would disagree the moment a different configuration was loaded.
-        //
-        // Nothing is pushed INTO the layout here any more either. That push was the only thing that
-        // ever applied the saved choice, which is why anything running autonomy without opening this
-        // window ran on the default no matter what had been chosen.
-        org.traincontrol.automation.Layout.PathPreference stored =
-            this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != null
-                ? this.model.getAutoLayout().getPathPreference()
-                : org.traincontrol.automation.Layout.PathPreference.RANDOM;
+        // ASKED OF THE LAYOUT, NOT OF THE UI PREFERENCES (Adam) - and asked when the menu is
+        // SHOWN, not now.  This runs from the constructor, where `model` is still null, so a value
+        // read here would be RANDOM for ever whatever the configuration said (LE-B1).
 
         javax.swing.JMenu choose = new javax.swing.JMenu(I18n.t("autolayout.ui.menuPathPreference"));
 
         javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        final java.util.Map<org.traincontrol.automation.Layout.PathPreference,
+            javax.swing.JRadioButtonMenuItem> items = new java.util.LinkedHashMap<>();
 
         // The default first - which is also the behaviour every existing railway already has - then
         // the measured choices in pairs, each rule beside its opposite, so the symmetry is visible
@@ -8083,7 +8128,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(
-                I18n.t("autolayout.ui.pathPreference" + option.name()), option == stored);
+                I18n.t("autolayout.ui.pathPreference" + option.name()));
+
+            items.put(option, item);
 
             item.setToolTipText(I18n.t("autolayout.ui.tooltip.pathPreference" + option.name()));
 
@@ -8112,6 +8159,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             group.add(item);
             choose.add(item);
         }
+
+        // Ticked on the way open, which is the only moment the answer is both known and wanted.
+        choose.addMenuListener(new javax.swing.event.MenuListener()
+        {
+            @Override
+            public void menuSelected(javax.swing.event.MenuEvent event)
+            {
+                org.traincontrol.automation.Layout live = model == null || !model.hasAutoLayout()
+                    ? null : model.getAutoLayout();
+
+                migrateStoredPathPreference(live);
+
+                org.traincontrol.automation.Layout.PathPreference now = live == null
+                    ? org.traincontrol.automation.Layout.PathPreference.RANDOM
+                    : live.getPathPreference();
+
+                for (java.util.Map.Entry<org.traincontrol.automation.Layout.PathPreference,
+                    javax.swing.JRadioButtonMenuItem> entry : items.entrySet())
+                {
+                    entry.getValue().setSelected(entry.getKey() == now);
+                }
+            }
+
+            @Override
+            public void menuDeselected(javax.swing.event.MenuEvent event)
+            {
+            }
+
+            @Override
+            public void menuCanceled(javax.swing.event.MenuEvent event)
+            {
+            }
+        });
 
         autonomyToolbarMenu.add(choose);
     }
