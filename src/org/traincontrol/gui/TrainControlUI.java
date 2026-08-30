@@ -223,7 +223,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether the editor draws its grey grid.  On unless somebody has turned it off (FR-006). */
     public static final String EDITOR_GRID_PREF = "EditorGrid";
 
-    public static final String PATH_PREFERENCE_PREF = "AutonomyPathPreference";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
     public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
@@ -8035,21 +8034,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (autonomyToolbarMenu == null) return;
 
-        org.traincontrol.automation.Layout.PathPreference stored;
-
-        try
-        {
-            stored = org.traincontrol.automation.Layout.PathPreference.valueOf(
-                prefs.get(PATH_PREFERENCE_PREF,
-                    org.traincontrol.automation.Layout.PathPreference.RANDOM.name()));
-        }
-        catch (IllegalArgumentException e)
-        {
-            // Written by a version that had a choice this one does not
-            stored = org.traincontrol.automation.Layout.PathPreference.RANDOM;
-        }
-
-        org.traincontrol.automation.Layout.setPathPreference(stored);
+        // ASKED OF THE LAYOUT, NOT OF THE UI PREFERENCES (Adam).
+        //
+        // The routing rule belongs to the configuration and travels with it, so the loaded layout is
+        // the thing that knows which one is in force - fromJSON has already applied whatever the file
+        // carried. Reading it from a preference here would put a second answer beside that one, and
+        // the two would disagree the moment a different configuration was loaded.
+        //
+        // Nothing is pushed INTO the layout here any more either. That push was the only thing that
+        // ever applied the saved choice, which is why anything running autonomy without opening this
+        // window ran on the default no matter what had been chosen.
+        org.traincontrol.automation.Layout.PathPreference stored =
+            this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != null
+                ? this.model.getAutoLayout().getPathPreference()
+                : org.traincontrol.automation.Layout.PathPreference.RANDOM;
 
         javax.swing.JMenu choose = new javax.swing.JMenu(I18n.t("autolayout.ui.menuPathPreference"));
 
@@ -8091,8 +8089,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             item.addActionListener(event ->
             {
-                org.traincontrol.automation.Layout.setPathPreference(option);
-                prefs.put(PATH_PREFERENCE_PREF, option.name());
+                // The running layout takes it at once, and the configuration keeps it.  Both, because
+                // one without the other is either a change that does not last or a change that does
+                // not happen until the next load.
+                if (this.model != null && this.model.hasAutoLayout()
+                    && this.model.getAutoLayout() != null)
+                {
+                    this.model.getAutoLayout().setPathPreference(option);
+                }
+
+                try
+                {
+                    if (autonomySession != null) autonomySession.setGlobal("pathPreference",
+                        option.name());
+                }
+                catch (Exception e)
+                {
+                    if (this.model != null) this.model.log(e);
+                }
             });
 
             group.add(item);

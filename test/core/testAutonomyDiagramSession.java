@@ -180,6 +180,52 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The routing rule travels with the configuration (Adam).
+     *
+     * "Let's update it so that the preference is written into the autonomy config, not the UI
+     * preferences.  that way it travels with the config, not the UI."
+     *
+     * It used to be a static on Layout, loaded from a UI preference by the window's menu builder - so
+     * it belonged to the running application rather than to the railway, one value shared by every
+     * configuration, and anything that ran autonomy without opening that window used the default no
+     * matter what had been chosen.
+     *
+     * THE MIDDLE IS WHAT THIS TESTS. Writing it in toJSON and reading it in fromJSON are two ends;
+     * what makes it travel is captureFromLayout copying every top-level key into "globals" and the
+     * builder putting them back. That road already carried the timetable, which is a reason to expect
+     * it to work and not a reason to assert that it does.
+     *
+     * Checked at both ends of that middle, since a break in either is invisible from the other.
+     */
+    @Test
+    public void testTheRoutingRuleTravelsWithTheConfiguration() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        org.json.JSONObject running = new org.json.JSONObject();
+
+        running.put("points", new org.json.JSONArray());
+        running.put("edges", new org.json.JSONArray());
+        running.put("pathPreference", "SHORTEST_LENGTH");
+
+        session.captureFromLayout(running.toString());
+
+        org.json.JSONObject globals =
+            session.getStore().getConfiguration("Default").getJSONObject("globals");
+
+        assertEquals(globals.optString("pathPreference"), "SHORTEST_LENGTH",
+            "the rule has to be kept in the configuration, or it is a UI preference by another name");
+
+        // and out the other side, which is the half the running railway actually reads
+        String built = session.buildConfiguration();
+
+        assertEquals(new org.json.JSONObject(built).optString("pathPreference"), "SHORTEST_LENGTH",
+            "a configuration built from the setup must still name the rule - kept but not emitted "
+            + "would load as the default and look like the setting being ignored");
+    }
+
+    /**
      * What was decided comes back after a restart, and the graph derived from it matches.
      */
     @Test

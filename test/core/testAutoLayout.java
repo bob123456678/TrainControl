@@ -522,7 +522,7 @@ public class testAutoLayout
     @Test
     public void testTheRoutePreferenceDefaultsToTheOldBehaviour()
     {
-        assertEquals(Layout.getPathPreference(), Layout.PathPreference.RANDOM,
+        assertEquals(new Layout(model).getPathPreference(), Layout.PathPreference.RANDOM,
             "the default must be the behaviour existing layouts already have");
     }
 
@@ -540,8 +540,7 @@ public class testAutoLayout
     @Test
     public void testEachRuleMeasuresWhatItSaysItMeasures() throws Exception
     {
-        Layout.PathPreference was = Layout.getPathPreference();
-
+        // No save and restore: the rule belongs to this Layout, so it cannot reach another test.
         Layout layout = new Layout(model);
 
         MarklinFeedback start = model.newFeedback(91, null);
@@ -584,27 +583,20 @@ public class testAutoLayout
 
         layout.moveLocomotive(loc.getName(), "RP_Start", false);
 
-        try
-        {
-            Layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+        layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_ViaStation",
-                "fewest sensors must take the two-hop route");
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_ViaStation",
+            "fewest sensors must take the two-hop route");
 
-            Layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
+        layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
-                "fewest stations must take the way round that passes none");
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
+            "fewest stations must take the way round that passes none");
 
-            Layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
-                "shortest track must take the 12-long route over the 100-long one");
-        }
-        finally
-        {
-            Layout.setPathPreference(was);
-        }
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
+            "shortest track must take the 12-long route over the 100-long one");
     }
 
     /**
@@ -622,8 +614,7 @@ public class testAutoLayout
     @Test
     public void testFewestSensorsCountsSensorsAndNotGraphHops() throws Exception
     {
-        Layout.PathPreference was = Layout.getPathPreference();
-
+        // No save and restore: the rule belongs to this Layout, so it cannot reach another test.
         Layout layout = new Layout(model);
 
         MarklinFeedback start = model.newFeedback(81, null);
@@ -668,19 +659,12 @@ public class testAutoLayout
 
         layout.moveLocomotive(loc.getName(), "SC_Start", false);
 
-        try
-        {
-            Layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+        layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "SC_Split1",
-                "the two routes are the same length in hops, so a hop count cannot tell them apart - "
-                + "but one crosses ONE sensor and the other crosses two, and fewest-sensors has to "
-                + "take the one that crosses one");
-        }
-        finally
-        {
-            Layout.setPathPreference(was);
-        }
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "SC_Split1",
+            "the two routes are the same length in hops, so a hop count cannot tell them apart - "
+            + "but one crosses ONE sensor and the other crosses two, and fewest-sensors has to "
+            + "take the one that crosses one");
     }
 
     /**
@@ -693,8 +677,7 @@ public class testAutoLayout
     @Test
     public void testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen() throws Exception
     {
-        Layout.PathPreference was = Layout.getPathPreference();
-
+        // No save and restore: the rule belongs to this Layout, so it cannot reach another test.
         Layout layout = new Layout(model);
 
         MarklinFeedback start = model.newFeedback(86, null);
@@ -717,30 +700,23 @@ public class testAutoLayout
 
         layout.moveLocomotive(loc.getName(), "LR_Start", false);
 
-        try
-        {
-            Layout.setPathPreference(Layout.PathPreference.LEAST_RECENTLY_VISITED);
+        layout.setPathPreference(Layout.PathPreference.LEAST_RECENTLY_VISITED);
 
-            // One of them has just had a train.  The other has never had one.
-            layout.noteArrivalForTest("LR_Nearby");
+        // One of them has just had a train.  The other has never had one.
+        layout.noteArrivalForTest("LR_Nearby");
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Faraway",
-                "a station that has just had a train was chosen over one that has never had one, so "
-                + "the rule is not ranking by where trains have been at all");
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Faraway",
+            "a station that has just had a train was chosen over one that has never had one, so "
+            + "the rule is not ranking by where trains have been at all");
 
-            // And now the other way round, so this cannot be passing by luck of the ordering
-            Thread.sleep(1100);
+        // And now the other way round, so this cannot be passing by luck of the ordering
+        Thread.sleep(1100);
 
-            layout.noteArrivalForTest("LR_Faraway");
+        layout.noteArrivalForTest("LR_Faraway");
 
-            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Nearby",
-                "with the far station now the more recently visited, the choice has to swap - a rule "
-                + "that always picks the same one is indistinguishable from no rule");
-        }
-        finally
-        {
-            Layout.setPathPreference(was);
-        }
+        assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Nearby",
+            "with the far station now the more recently visited, the choice has to swap - a rule "
+            + "that always picks the same one is indistinguishable from no rule");
     }
 
     /**

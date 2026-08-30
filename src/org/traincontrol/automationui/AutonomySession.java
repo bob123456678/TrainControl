@@ -2575,6 +2575,43 @@ public class AutonomySession
     }
 
     /**
+     * Writes one run-wide setting into the active configuration and saves.
+     *
+     * TARGETED, because the whole-layout route is wrong for this. captureFromLayout copies everything
+     * Layout.toJSON knows - including where every train is standing - and the window's wrapper around
+     * it declines to run while autonomy is running. Choosing a routing rule should not record the
+     * position of every train as a side effect, and should not be quietly ignored mid-session.
+     *
+     * Saved immediately rather than on the next explicit save: a setting the user picked from a menu
+     * and did not see written is a setting they will pick again.
+     *
+     * @param key the global's name, as it appears at the top level of the built configuration
+     * @param value the value to store
+     * @throws IOException if the setup cannot be written
+     */
+    public void setGlobal(String key, Object value) throws IOException
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return;
+
+        if (!configuration.has("globals"))
+        {
+            configuration.put("globals", new org.json.JSONObject());
+        }
+
+        configuration.getJSONObject("globals").put(key, value);
+
+        // Without reconciling, for the reason the diagram-replacement path gives: reconciling compares
+        // against the pages this session holds, and nothing about this edit has touched a page.
+        saveWithoutReconciling();
+    }
+
+    /**
      * The globals of the active configuration, which is where pace and speed settings live.
      */
     private AutonomyBuilder.Globals globals()

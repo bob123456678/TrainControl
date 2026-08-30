@@ -42,7 +42,6 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 public class testRoutePicking
 {
     private static MarklinControlStation model;
-    private static Layout.PathPreference was;
 
     /** Every rule this class chooses a winner for. */
     private static final Set<Layout.PathPreference> COVERED_HERE = EnumSet.of(
@@ -86,16 +85,11 @@ public class testRoutePicking
     public static void setUpClass() throws Exception
     {
         model = init(null, true, false, false, false);
-
-        was = Layout.getPathPreference();
     }
 
-    @AfterClass
-    public static void tearDownClass()
-    {
-        // Static and process-wide: left set, it would change how every later class in this JVM routes
-        if (was != null) Layout.setPathPreference(was);
-    }
+    // NO TEARDOWN ANY MORE, and the comment that was here is the reason it is gone: "Static and
+    // process-wide: left set, it would change how every later class in this JVM routes."  The rule now
+    // belongs to the Layout that was asked, so each test builds its own and nothing escapes it.
 
     /**
      * Fewest sensors takes the two-sensor way; most sensors takes the three-sensor way.
@@ -106,12 +100,12 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        Layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+        layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
 
         assertEquals(wayTaken(layout, loc), "RP_ViaStation",
             "fewest sensors must take the way across two of them rather than three");
 
-        Layout.setPathPreference(Layout.PathPreference.MOST_POINTS);
+        layout.setPathPreference(Layout.PathPreference.MOST_POINTS);
 
         assertEquals(wayTaken(layout, loc), "RP_Plain1",
             "most sensors must take the way across three.  A mirror that picks the same route as the "
@@ -127,12 +121,12 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        Layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
+        layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
 
         assertEquals(wayTaken(layout, loc), "RP_Plain1",
             "fewest stations must take the way that passes none");
 
-        Layout.setPathPreference(Layout.PathPreference.MOST_STATIONS);
+        layout.setPathPreference(Layout.PathPreference.MOST_STATIONS);
 
         assertEquals(wayTaken(layout, loc), "RP_ViaStation",
             "most stations must take the way that calls past one - this is the rule for a layout "
@@ -148,12 +142,12 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        Layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
 
         assertEquals(wayTaken(layout, loc), "RP_Plain1",
             "shortest track must take the 12-long way over the 100-long one");
 
-        Layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
+        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
 
         assertEquals(wayTaken(layout, loc), "RP_ViaStation",
             "longest track must take the 100-long way");
@@ -173,7 +167,7 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        Layout.setPathPreference(Layout.PathPreference.RANDOM);
+        layout.setPathPreference(Layout.PathPreference.RANDOM);
 
         String taken = wayTaken(layout, loc);
 
@@ -235,6 +229,40 @@ public class testRoutePicking
     }
 
     /**
+     * With no lengths recorded, an edge counts as one s88 of track (Adam).
+     *
+     * "a min length option that tries to minimize total track length, where we count each s88 as
+     * length 1 by default."
+     *
+     * THE FIXTURE ABOVE CANNOT TEST THIS, because every edge in it has a length. On a railway where
+     * none do - which is most of Adam's derived graph, 114 edges of 132 - lengthOf summed to zero for
+     * every route, every route tied, and the tie went to whichever the search happened to reach first.
+     * So SHORTEST_LENGTH and LONGEST_LENGTH returned the SAME route, which is what "the setting does
+     * nothing" looks like from outside, and is exactly what the parity probe found on the real layout.
+     *
+     * BOTH DIRECTIONS, deliberately. Asserting only that shortest takes the two-edge way is satisfied
+     * by a rule that always takes it - including by the tie-break that was already doing so. The pair
+     * only passes if the two rules can be told apart.
+     */
+    @Test
+    public void testUnmeasuredTrackCountsOneEachAndStillRanks() throws Exception
+    {
+        Layout layout = twoWaysAcrossUnmeasured();
+        Locomotive loc = placedLocomotive(layout);
+
+        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+
+        assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+            "with no lengths anywhere, the two-edge way is the shorter track and has to be chosen");
+
+        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
+
+        assertEquals(wayTaken(layout, loc), "RP_Plain1",
+            "and the three-edge way is the longer - if this matches the line above, both rules are "
+            + "seeing a tie at zero and neither is ranking anything");
+    }
+
+    /**
      * One junction with two ways across it, built fresh so no test can disturb another.
      */
     private static Layout twoWaysAcross() throws Exception
@@ -273,6 +301,50 @@ public class testRoutePicking
         // Without this the fixture cannot tell the rules apart: "go to RP_ViaStation" is itself a
         // route past no stations, so fewest-stations would pick it and the assertion could not say
         // whether the rule had measured the route or simply chosen a nearer destination.
+        layout.getPoint("RP_ViaStation").setAutoDestination(false);
+
+        return layout;
+    }
+
+    /**
+     * The same two ways across, with no lengths set on anything.
+     *
+     * Sensor addresses of its own rather than the ones twoWaysAcross uses: these fixtures share a
+     * MarklinControlStation, and reusing an address would hand back the feedback the other fixture
+     * already built. The POINT names are deliberately the same - they live on the Layout rather than
+     * the model, so there is no clash, and placedLocomotive puts the train on "RP_Start".
+     */
+    private static Layout twoWaysAcrossUnmeasured() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback start = model.newFeedback(211, null);
+        MarklinFeedback viaStation = model.newFeedback(212, null);
+        MarklinFeedback plainOne = model.newFeedback(213, null);
+        MarklinFeedback plainTwo = model.newFeedback(214, null);
+        MarklinFeedback end = model.newFeedback(215, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{start, viaStation, plainOne, plainTwo, end})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("RP_Start", true, start.getName());
+        layout.createPoint("RP_ViaStation", true, viaStation.getName());
+        layout.createPoint("RP_End", true, end.getName());
+
+        layout.createPoint("RP_Plain1", false, plainOne.getName());
+        layout.createPoint("RP_Plain2", false, plainTwo.getName());
+
+        // Two edges, no lengths.  Two s88 to cross, so two.
+        layout.createEdge("RP_Start", "RP_ViaStation");
+        layout.createEdge("RP_ViaStation", "RP_End");
+
+        // Three edges, no lengths.  Three.
+        layout.createEdge("RP_Start", "RP_Plain1");
+        layout.createEdge("RP_Plain1", "RP_Plain2");
+        layout.createEdge("RP_Plain2", "RP_End");
+
         layout.getPoint("RP_ViaStation").setAutoDestination(false);
 
         return layout;

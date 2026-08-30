@@ -168,16 +168,32 @@ public class Layout
         RANDOM
     }
 
-    private static volatile PathPreference pathPreference = PathPreference.RANDOM;
+    /**
+     * Which routing logic this layout uses.
+     *
+     * PER LAYOUT, NOT PER PROGRAM. This was static, which made it a property of the running
+     * application: one value shared by every configuration, surviving one being swapped out for
+     * another, and loaded from the UI preferences by the window's menu builder - so it did not travel
+     * with the configuration it belonged to, and anything running autonomy without opening that window
+     * was on RANDOM whatever had been chosen.
+     *
+     * Adam: "Let's update it so that the preference is written into the autonomy config, not the UI
+     * preferences.  that way it travels with the config, not the UI."
+     *
+     * It reaches the file through the road every other run-wide setting already uses: toJSON writes it,
+     * captureFromLayout copies every top-level key into the configuration's globals, and the builder
+     * puts them back for fromJSON.
+     */
+    private volatile PathPreference pathPreference = PathPreference.RANDOM;
 
-    public static void setPathPreference(PathPreference preference)
+    public void setPathPreference(PathPreference preference)
     {
-        if (preference != null) Layout.pathPreference = preference;
+        if (preference != null) this.pathPreference = preference;
     }
 
-    public static PathPreference getPathPreference()
+    public PathPreference getPathPreference()
     {
-        return Layout.pathPreference;
+        return this.pathPreference;
     }
 
     /**
@@ -192,7 +208,7 @@ public class Layout
      */
     private int costOf(List<Edge> path)
     {
-        switch (Layout.pathPreference)
+        switch (this.pathPreference)
         {
             case FEWEST_POINTS:
                 return sensorsOn(path);
@@ -222,12 +238,22 @@ public class Layout
 
     /**
      * How long a route is, from the lengths set on its tiles.
+     *
+     * AN EDGE WITH NO LENGTH COUNTS ONE, and without that this whole ranking was a tie at zero. Only 18
+     * of the 132 edges in the derived graph carry a recorded length, so every route scored 0, every
+     * route tied, and SHORTEST_LENGTH and LONGEST_LENGTH chose the same route as each other - which is
+     * what "the setting does nothing" looks like from outside.
+     *
+     * Adam: "a min length option that tries to minimize total track length, where we count each s88 as
+     * length 1 by default." An edge runs from one sensor to the next, so crossing one is one s88's
+     * worth of track until somebody says otherwise. A measured length still wins where there is one:
+     * this supplies a floor for the unmeasured, it does not overrule the measured.
      */
     private int lengthOf(List<Edge> path)
     {
         int total = 0;
 
-        for (Edge e : path) total += Math.max(0, e.getLength());
+        for (Edge e : path) total += e.getLength() > 0 ? e.getLength() : 1;
 
         return total;
     }
@@ -3338,7 +3364,7 @@ public class Layout
                                     // before the preference existed had, and it is the cheap one: the
                                     // ranked options have to enumerate the alternatives to compare
                                     // them, and this one does not have to look at any of them.
-                                    if (Layout.pathPreference == PathPreference.RANDOM) return path;
+                                    if (this.pathPreference == PathPreference.RANDOM) return path;
 
                                     int cost = this.costOf(path);
 
@@ -6202,6 +6228,7 @@ public class Layout
         jsonObj.put("preArrivalSpeedReduction", this.preArrivalSpeedReduction);
         jsonObj.put("maxLatency", this.getMaxLatency());
         jsonObj.put("turnOffFunctionsOnArrival", this.isTurnOffFunctionsOnArrival());
+        jsonObj.put("pathPreference", this.pathPreference.name());
         jsonObj.put("turnOnFunctionsOnDeparture", this.isTurnOnFunctionsOnDeparture());
         jsonObj.put("atomicRoutes", this.isAtomicRoutes());
         jsonObj.put("maxActiveTrains", this.maxActiveTrains);
@@ -6297,6 +6324,25 @@ public class Layout
             layout.setMaxDelay(maxDelay);
             layout.setMinDelay(minDelay);
             layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+
+            // The routing logic, if this configuration carries one.  Absent on every file written
+            // before it did, and on those the model's own default stands - which is the behaviour
+            // those railways already had.
+            if (o.has("pathPreference"))
+            {
+                try
+                {
+                    layout.setPathPreference(PathPreference.valueOf(o.getString("pathPreference")));
+                }
+                catch (IllegalArgumentException | JSONException e)
+                {
+                    // Written by a version that had a choice this one does not - the same case the
+                    // window's menu builder has always handled this way.  Not worth refusing a whole
+                    // railway over, and not worth a message in eight bundles either: the default is a
+                    // working setting, and every other key read here is load-bearing in a way this one
+                    // is not.
+                }
+            }
             
             if (!o.has("turnOnFunctionsOnDeparture"))
             {
