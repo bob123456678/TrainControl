@@ -11579,6 +11579,36 @@ giving this finding a tile would have replaced the sentence naming the sensor an
 2. **Read the message while you are there** - it should still name the s88 and both pages, not just
    the square.
 
+**Adam, 2026-08-30 (triage).** Works, with notes.
+
+I only see 2015 reported as a conflict, but there are many other sensors that conflict between page 1 and page 3, since page 3 is basically a zoomed view of page 1.  all conflicting sensors should be listed.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Fixed, and it was my own over-correction from one round earlier.
+
+A reviewer had pointed out that a page which repeats a sensor must not go on feeding its OTHER sensors
+into what counts as already seen - otherwise a third page sharing one of those is reported too, blamed
+against the page that should itself have been switched off. That is a rule about the seen set, and one
+flag is the whole of it.
+
+I also added a `break`, which stopped the scan at the first clash. So a page that duplicates forty
+sensors reported one. **The comment directly above it says "three repeats on one page are three things
+to fix, and rolled into one line, fixing two of them changes nothing about the message"** - I wrote the
+reason for reporting them all and then broke out of the loop that would have. A zoomed-in copy of
+another page is exactly the case that makes it obvious, and it is the case you have.
+
+Both rules are now pinned by one test, because satisfying either by breaking the other is easy: a page
+clashing on TWO sensors must produce two findings, and a third page sharing only what the repeating
+page brought must produce none. Checked failing with the `break` back in.
+
+1. **Switch "3 - Top Parking" on.** Every sensor it shares with page 1 should now be listed, not just
+   2015 - so expect a lot of them, one per clashing sensor.
+2. **Click a few** and confirm each lands on its own sensor on page 3.
+3. **Tell me if that is now too much noise.** Forty errors for one zoomed page is honest but it may
+   read as a wall; if so the right shape is probably one finding per page with the sensors listed
+   inside it, and that is a small change from here.
+
 ---
 
 <a id="mt-224"></a>

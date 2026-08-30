@@ -226,6 +226,87 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223, LE2-B8).
+     *
+     * TWO RULES THAT PULL IN OPPOSITE DIRECTIONS, which is why they are tested together.
+     *
+     * Adam: "I only see 2015 reported as a conflict, but there are many other sensors that conflict
+     * between page 1 and page 3, since page 3 is basically a zoomed view of page 1.  all conflicting
+     * sensors should be listed." A page that duplicates forty sensors is forty things to fix.
+     *
+     * And LE2-B8: a page that repeats anything must contribute NOTHING to what counts as seen, or a
+     * third page sharing one of its other sensors is reported too - blamed against the page that
+     * should itself have been switched off.
+     *
+     * Satisfying one by breaking the other is easy in both directions, so the fixture does both at
+     * once: "repeat" clashes on TWO sensors and must produce two findings, and "third" shares a sensor
+     * that only "repeat" holds and must produce none.
+     */
+    @Test
+    public void testEveryClashingSensorIsReportedAndOnlyTheRepeatingPageIs() throws Exception
+    {
+        LayoutDiagram first = new LayoutDiagram("main", 8, 4, null, null);
+
+        first.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        first.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        first.setPageId("1");
+        first.checkBounds();
+
+        // a zoomed copy: it repeats BOTH of main's sensors, and carries one of its own
+        LayoutDiagram repeat = new LayoutDiagram("repeat", 8, 4, null, null);
+
+        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        repeat.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        repeat.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        repeat.setPageId("2");
+        repeat.checkBounds();
+
+        // and a page sharing only the sensor that "repeat" alone holds
+        LayoutDiagram third = new LayoutDiagram("third", 8, 4, null, null);
+
+        third.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        third.setPageId("3");
+        third.checkBounds();
+
+        session.open(Arrays.asList(first, repeat, third));
+        session.initialize("Default");
+
+        java.util.List<String> clashes = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.DUPLICATE_SENSOR_PAGE.equals(
+                finding.getMessageKey()))
+            {
+                clashes.add(finding.getSubject() + " @ " + finding.getTile());
+            }
+        }
+
+        assertEquals(clashes.size(), 2,
+            "both of the repeated sensors have to be reported - a page that duplicates forty of them "
+            + "is forty things to fix, and reporting one leaves the other thirty-nine invisible "
+            + "(MT-223).  Found: " + clashes);
+
+        for (String clash : clashes)
+        {
+            assertTrue(clash.contains("repeat"),
+                "the finding must name and point at the REPEATING page, not the one that had the "
+                + "sensor first: " + clash);
+        }
+
+        // and the page that only shares what "repeat" alone brought is innocent (LE2-B8)
+        for (String clash : clashes)
+        {
+            assertFalse(clash.contains("third"),
+                "a page sharing a sensor that only the REPEATING page holds was reported, so that "
+                + "page is still feeding what it holds into the seen set (LE2-B8): " + clash);
+        }
+    }
+
+    /**
      * A page that is switched off cannot refuse the railway (Adam).
      *
      * "the first few times it told me there was a conflict with page 2, and the changes didn't save,

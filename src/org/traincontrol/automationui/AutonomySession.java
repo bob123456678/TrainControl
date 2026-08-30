@@ -4593,9 +4593,14 @@ public class AutonomySession
                     // `seen`, so a third page sharing one of those was reported too - named against
                     // the very page the automatic rule would have switched off.  That is an ERROR, so
                     // it refused the whole setup over a page nothing was wrong with.
+                    // FLAGGED, NOT BROKEN OUT OF (MT-223).
+                    //
+                    // The flag is the whole of what LE2-B8 asked for: a page that repeats anything
+                    // contributes NOTHING to `seen` below, so a third page sharing one of its other
+                    // sensors is not blamed against it. Stopping the scan was my own addition and it
+                    // cost the rest of the page - Adam's page 3 is a zoomed view of page 1 and clashes
+                    // on many sensors, and one was reported.
                     repeated = true;
-
-                    break;
                 }
 
                 here.put(sensor, page.getName());
