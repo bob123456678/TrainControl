@@ -402,7 +402,7 @@ public class testRoutePicking
         return path.get(0).getEnd().getName();
     }
     /**
-     * Importance weighed against distance can send a train past the more important station.
+     * Station priority weighed against distance can send a train past the higher-priority station.
      *
      * Adam: "one that balances priority vs distance as a ratio."
      *
@@ -417,7 +417,7 @@ public class testRoutePicking
      * A rule that always took the near one would pass the second assertion and fail the first.
      */
     @Test
-    public void testImportanceIsWeighedAgainstDistance() throws Exception
+    public void testStationPriorityIsWeighedAgainstDistance() throws Exception
     {
         Layout layout = importantButFarAway();
         Locomotive loc = placedLocomotive(layout);

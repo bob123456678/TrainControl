@@ -11718,7 +11718,7 @@ Logic" label, so nothing in the code touches that panel's layout at all. What th
 in, translate the label at runtime (the designer wrote the English straight into the form, and the form
 is yours), and keep the selection in step with the loaded configuration.
 
-Also new since your run: an eighth rule, **Weighing Importance Against Distance**. It is the only one
+Also new since your run: an eighth rule, **Weighing Station Priority Against Distance**. It is the only one
 that looks past the highest priority band - the others settle that first, which is why "highest
 priority available station" needed no rule of its own. With no priorities set it behaves like Over the
 Shortest Track.
