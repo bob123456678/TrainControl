@@ -18940,6 +18940,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     routeEditor = new RouteEditorFrame(this, null, null);
 
+                    // The name the loop above worked out, which until RC-B3 was computed and dropped -
+                    // so Add Route opened with an empty name box and the first Save was refused for
+                    // not having one.  Offered rather than imposed: it is ordinary text in the box.
+                    routeEditor.proposeName(newName);
+
                     routeEditor.setTitle(I18n.t("route.ui.dialogAddNewRoute"));
                     routeEditor.setVisible(true);
                 });

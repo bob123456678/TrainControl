@@ -363,6 +363,88 @@ public class testRoutePicking
     }
 
     /**
+     * Start with nothing startable leaves the layout NOT running (RC-B5).
+     *
+     * runLocomotives sets `running` before it looks at a single locomotive, and both of its skips -
+     * start point inactive, preferred speed outside 1 to 100 - return out of the forEach without
+     * starting a thread.  Skip every locomotive and the flag is set with nothing that will ever clear
+     * it: announceRunFinished is only reached from a thread decrement that never happens.
+     *
+     * What that costs while it lasts: moveLocomotive, renamePoint and setSimulate all refuse, every
+     * protecting signal on the layout has been commanded, and isPathClear starts applying the
+     * autonomy-only rules to hand dispatches.  Recoverable only by pressing Stop, which is why this is
+     * a B and not an A - and why nothing tells the user to.
+     *
+     * executeTimetableInternal guards exactly this and says so; runLocomotives did not inherit it.
+     *
+     * A preferred speed of 0 is not exotic: it is the state of any locomotive that has been placed on
+     * the graph without the speed dialog ever being opened.
+     */
+    @Test
+    public void testStartWithNothingStartableDoesNotLeaveTheLayoutRunning() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = placedLocomotive(layout);
+
+        int was = loc.getPreferredSpeed();
+
+        try
+        {
+            // The one thing runLocomotives will skip it for.
+            loc.setPreferredSpeed(0);
+
+            layout.setLocomotivesToRun(java.util.Arrays.asList(loc));
+
+            layout.runLocomotives();
+
+            assertFalse(layout.isRunning(),
+                "every locomotive was skipped and the layout is still \"running\", with no thread that "
+                + "can ever clear the flag.  Until Stop is pressed, moving a locomotive by hand, "
+                + "renaming a point and switching simulation all refuse, and hand dispatches are "
+                + "judged by the autonomy-only rules (RC-B5)");
+        }
+        finally
+        {
+            loc.setPreferredSpeed(was);
+
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * And a locomotive that CAN start still starts it - the control (RC-B5).
+     *
+     * Without this, "never set running" passes the test above and turns Start into a no-op.
+     */
+    @Test
+    public void testStartWithSomethingStartableDoesRun() throws Exception
+    {
+        Layout layout = importantButFarAway();
+        Locomotive loc = placedLocomotive(layout);
+
+        int was = loc.getPreferredSpeed();
+
+        try
+        {
+            loc.setPreferredSpeed(40);
+
+            layout.setLocomotivesToRun(java.util.Arrays.asList(loc));
+
+            layout.runLocomotives();
+
+            assertTrue(layout.isRunning(),
+                "a locomotive that can be started did not leave the layout running, so Start has "
+                + "become a no-op - which is the wrong way to satisfy RC-B5");
+        }
+        finally
+        {
+            loc.setPreferredSpeed(was);
+
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
      * Puts a locomotive at the start and hands it back.
      */
     private static Locomotive placedLocomotive(Layout layout) throws Exception

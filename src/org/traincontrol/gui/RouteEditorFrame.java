@@ -227,8 +227,37 @@ public class RouteEditorFrame extends JFrame
         // asks about is the difference between this and the same question asked later.
         loadedSignature = stateSignature();
 
+        // ABOVE THE MAIN WINDOW IF IT IS (RC-B4).
+        //
+        // Every other child window does this - AddLocomotive, LayoutEditor, LayoutPopupUI,
+        // LocomotiveSelector, UsageHistogram - and so did the text editor this replaced.  It was the
+        // only one missed, and it is missed exactly where it matters: capture is ticked here and the
+        // switches are thrown on the layout window, so clicking over there put the window being
+        // watched behind the one being clicked.
+        setAlwaysOnTop(parent.isAlwaysOnTop());
+
         pack();
         setLocationRelativeTo(parent);
+    }
+
+    /**
+     * Fills in a name for a route that does not exist yet (RC-B3).
+     *
+     * NOT the constructor’s routeName, which is a different thing wearing the same word: that
+     * becomes originalName, and a non-empty originalName is what makes Save an EDIT of an existing
+     * route instead of an add.  Passing the proposal there would make Add Route try to rename a route
+     * nobody has created.
+     *
+     * The signature is re-taken afterwards, so that closing the window straight away is still "nothing
+     * to throw away".  The proposal is not the user’s typing and must not be treated as it.
+     *
+     * @param name the name to offer
+     */
+    public void proposeName(String name)
+    {
+        nameField.setText(name);
+
+        loadedSignature = stateSignature();
     }
 
     private JPanel build()

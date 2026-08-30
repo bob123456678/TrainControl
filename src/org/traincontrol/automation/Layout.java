@@ -1535,6 +1535,10 @@ public class Layout
             this.running = true;
         }
 
+        // What actually got started, for the check at the bottom (RC-B5).
+        final java.util.concurrent.atomic.AtomicInteger started =
+            new java.util.concurrent.atomic.AtomicInteger();
+
         // The signals are about a railway that has since been arranged by hand
         refreshAllProtectingSignals();
         
@@ -1570,6 +1574,8 @@ public class Layout
             try 
             {
                 runLocomotive(loc, loc.getPreferredSpeed());
+
+                started.incrementAndGet();
             } 
             catch (Exception ex)
             {
@@ -1579,6 +1585,30 @@ public class Layout
                 this.stopLocomotives();
             }
         });
+
+        // NOT RUNNING IF NOTHING RUNS (RC-B5).
+        //
+        // `running` is set before a single locomotive is looked at, and both skips above - start point
+        // inactive, and preferred speed outside 1 to 100 - return without starting a thread.  Skip
+        // every locomotive and the layout is left running with nothing running, and nothing will ever
+        // clear it: announceRunFinished is only reached from a thread decrement that never happens.
+        // From then on moveLocomotive, renamePoint and setSimulate all refuse, isPathClear applies the
+        // autonomy-only rules to hand dispatches, and the only way out is Stop.
+        //
+        // executeTimetableInternal guards exactly this and says so - "Returning after setting running
+        // would leave it set with nothing to clear it" - and this method did not inherit it.  It
+        // cannot ask up front the way the timetable does, because the skips are decided one locomotive
+        // at a time, so it asks afterwards.  The window's own guard covers an empty run LIST, not a
+        // list where every entry was skipped.
+        if (started.get() == 0)
+        {
+            synchronized (this.activeLocomotives)
+            {
+                this.running = false;
+            }
+
+            control.logf("autolayout.errorNoLocomotivesCouldBeStarted");
+        }
     }     
     
     /**
