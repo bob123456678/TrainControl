@@ -555,6 +555,16 @@ public class TileGraph
     private final List<Problem> problems = new ArrayList<>();
 
     /**
+     * Every page in the layout IN FILE ORDER, excluded ones included.
+     *
+     * A link tile records where it goes as a raw address counting from zero, so the page it means is
+     * this list's nth entry - the same arithmetic the tooltip does when it prints a destination. It has
+     * to hold the excluded pages too, because the whole question this answers is whether an arrow
+     * points at a page autonomy was told to leave out, and `pages` above has already dropped those.
+     */
+    private final List<String> allPages = new ArrayList<>();
+
+    /**
      * Builds the tile graph from a set of diagram pages.
      *
      * @param diagrams every page of the layout
@@ -565,6 +575,11 @@ public class TileGraph
     {
         for (LayoutDiagram diagram : diagrams)
         {
+            // BEFORE the exclusion, because a link's destination is an index into every page rather
+            // than into the kept ones, and skipping here would shift every address after the first
+            // excluded page.
+            allPages.add(diagram.getName());
+
             if (excludedPages != null && excludedPages.contains(diagram.getName()))
             {
                 continue;
@@ -920,6 +935,14 @@ public class TileGraph
 
             boolean reachable = stub != null && landing(entry.getKey(), stub) != null;
 
+            // AN ARROW TO A PAGE AUTONOMY WAS TOLD TO LEAVE OUT CANNOT BE PAIRED.
+            //
+            // There is no tile on the other side to pair it to - that page is not in this graph - so
+            // reporting it as an error would be reporting a fault with no remedy but to disable the
+            // arrow. Excluding the page was already the deliberate act saying autonomy does not go
+            // there, and it should not have to be said twice.
+            boolean unpairable = leadsOutsideAutonomy(entry.getValue());
+
             // A LINK TRACK RUNS INTO IS NOW BLOCKING (OB-150).
             //
             // Adam: "there should also be an error if there exist ANY active (not excluded/disabled)
@@ -935,7 +958,8 @@ public class TileGraph
             // reach it and have nowhere to go, and the page it was drawn to continue onto cannot be
             // got to at all. That is a hole in the railway rather than an unfinished intention.
             found.add(new Problem(entry.getKey(),
-                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, reachable));
+                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE,
+                reachable && !unpairable));
         }
 
         // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the
@@ -993,6 +1017,28 @@ public class TileGraph
         return Collections.unmodifiableSet(pages);
     }
 
+
+    /**
+     * Whether a link points at a page that is not part of autonomy (OB-150).
+     *
+     * A link records its destination as a raw address counting from zero over EVERY page, so the page
+     * it means is `allPages.get(address)`. If that page was excluded - or the address does not name a
+     * page at all, which a hand-edited file can manage - then nothing on the far side exists to pair
+     * this to, and no amount of work by the user would produce a pairing.
+     *
+     * @param link the link tile
+     * @return true when the destination page is outside autonomy, so pairing is impossible
+     */
+    private boolean leadsOutsideAutonomy(LayoutDiagramComponent link)
+    {
+        if (link == null) return false;
+
+        int address = link.getRawAddress();
+
+        if (address < 0 || address >= allPages.size()) return true;
+
+        return !pages.contains(allPages.get(address));
+    }
     /**
      * @return everything wrong with the diagram as drawn; blocking entries must stop the build
      */

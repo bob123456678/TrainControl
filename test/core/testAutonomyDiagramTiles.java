@@ -673,6 +673,71 @@ public class testAutonomyDiagramTiles
         assertTrue(graph.getFeedbackTiles().contains(key("main", 2, 1)));
     }
 
+    /**
+     * A link with track running into it, pointing at a page autonomy uses, refuses the diagram (OB-150).
+     *
+     * Adam: "there should also be an error if there exist ANY active (not excluded/disabled) links not
+     * linked to anything."  Track runs into this one and stops - trains reach it and have nowhere to go
+     * - and the page it was drawn to continue onto is real and never joined up. That is a hole.
+     */
+    @Test
+    public void testAnUnpairedLinkToAnIncludedPageBlocks() throws Exception
+    {
+        LayoutDiagram main = page("main", 6, 6);
+        LayoutDiagram other = page("other", 6, 6);
+
+        // Track either side, so whichever way the stub faces there is something to arrive from.
+        straight(main, 0, 1);
+        linkTo(main, 1, 1, 1);
+        straight(main, 2, 1);
+
+        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(main, other)),
+            Collections.<String>emptySet());
+
+        // The unpaired-link sweep lives in validatePortals, not the constructor.
+        graph.validatePortals();
+
+        assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, true),
+            "a reachable unpaired link to a page inside autonomy has to refuse the diagram");
+    }
+
+    /**
+     * The same link, once its destination page is left out of autonomy, is a warning (OB-150).
+     *
+     * THE CASE THE SAMPLE LAYOUT FOUND. An arrow to an excluded page cannot be paired - there is no
+     * tile on the far side to pair it to - so an error here names a fault whose only remedy is to
+     * switch the arrow off one at a time, and excluding the page was already the deliberate act saying
+     * autonomy does not go there.
+     *
+     * Written beside the test above rather than on its own, because what matters is that these two
+     * disagree. Either one by itself is satisfied by a rule that always answers the same way, and a
+     * rule that always answers "outside autonomy" turns OB-150 off without failing anything.
+     */
+    @Test
+    public void testAnUnpairedLinkToAnExcludedPageDoesNotBlock() throws Exception
+    {
+        LayoutDiagram main = page("main", 6, 6);
+        LayoutDiagram other = page("other", 6, 6);
+
+        straight(main, 0, 1);
+        linkTo(main, 1, 1, 1);
+        straight(main, 2, 1);
+
+        Set<String> excluded = new java.util.LinkedHashSet<>();
+        excluded.add("other");
+
+        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(main, other)), excluded);
+
+        graph.validatePortals();
+
+        assertFalse(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, true),
+            "a link to a page left out of autonomy cannot be paired, so refusing the diagram over it "
+            + "asks for something the user cannot do");
+
+        assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, false),
+            "it is still worth saying - it stopped blocking, it did not stop being reported");
+    }
+
     // --- helpers ----------------------------------------------------------------------------------
 
     private LayoutDiagram page(String name, int sx, int sy)
@@ -694,6 +759,20 @@ public class testAutonomyDiagramTiles
     private void feedback(LayoutDiagram page, int x, int y, int address) throws IOException
     {
         page.addComponent(componentType.FEEDBACK, x, y, 0, 0, address, address,
+            accessoryDecoderType.MM2, null);
+    }
+    /**
+     * A link tile pointing at the nth page of the layout.
+     *
+     * A link records where it goes as a raw address counting from zero over every page, which is the
+     * one field {@link #add} leaves at zero - and zero is a real page, so a link added by that helper
+     * points at the first one whether or not anybody meant it to.
+     *
+     * @param destination the destination page's index in the layout
+     */
+    private void linkTo(LayoutDiagram page, int x, int y, int destination) throws IOException
+    {
+        page.addComponent(componentType.LINK, x, y, 0, 0, 0, destination,
             accessoryDecoderType.MM2, null);
     }
 

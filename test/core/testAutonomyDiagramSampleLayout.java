@@ -635,6 +635,15 @@ public class testAutonomyDiagramSampleLayout
     /**
      * A real diagram should not be refused.  A blocking problem here is a genuine finding - either the
      * layout has an unmapped switch, or the port map is misreading something.
+     *
+     * IT CAUGHT ONE. OB-150 made a reachable unpaired link an error, and this went red on the two
+     * arrows on Main pointing at "3 - Top Parking" - the page the @BeforeClass above deliberately
+     * excludes. An arrow to an excluded page cannot be paired, because there is no tile on the far
+     * side to pair it to, so that error had no remedy but to switch each arrow off by hand. MT-223
+     * step 6 asked Adam to go and look for exactly this; the suite found it first.
+     *
+     * Left asserting that NOTHING blocks, rather than excusing the two, because the fixture has no
+     * hole in it and a test that lists what it tolerates stops being able to tell.
      */
     @Test
     public void testTheDiagramIsNotRefused()
@@ -1978,8 +1987,8 @@ public class testAutonomyDiagramSampleLayout
 
         // TST-B20: pairPortals/disablePortal mutate the @BeforeClass-built `graph`, shared by every
         // test in this class - and TileGraph has no public way to undo either, so without this,
-        // TestNG's arbitrary method order could run testTheDiagramIsNotRefused (:616) or sharesATile
-        // (:918) against a graph this test has already re-paired and half-disabled.  Both fields are
+        // TestNG's arbitrary method order could run testTheDiagramIsNotRefused or sharesATile
+        // against a graph this test has already re-paired and half-disabled.  Both fields are
         // private and final, so they are snapshotted and restored by reflection - mutated in place,
         // never reassigned.
         java.lang.reflect.Field portalsField = TileGraph.class.getDeclaredField("portals");

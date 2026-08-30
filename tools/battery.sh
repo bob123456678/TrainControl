@@ -127,6 +127,17 @@ RUN_ID="battery-$$"
 
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 
+# A BOUNDED HEAP, because an unbounded one asks for a quarter of the machine per class.
+#
+# A default-heap JVM reserves a fraction of physical RAM up front. With NetBeans open and Adam running
+# his own tests, three classes in battery34 could not get it, died before TestNG loaded, and were
+# reported as DID NOT RUN - the same wording as a class that crashed, so the run looked like it had
+# three faults in it and had none. All three pass in 512m, and the heaviest class here peaks nowhere
+# near that.
+#
+# Overridable, because the number is a guess about this machine rather than a property of the tests.
+JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
+
 # Adam's own railway, hashed before and after the whole run.
 #
 # A test class can watch its OWN writes - testTheGoldenLayoutHoldsTogether does - but not
@@ -209,7 +220,16 @@ do
     then
         # A class that produced no summary did not run.  Reported as a failure on purpose: a runner
         # that reads only "Failures:" calls a class that never started clean.
-        fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN"
+        # SAY WHICH KIND, because the two need opposite responses.  A JVM that could not reserve
+        # its heap is the machine being busy, and the answer is to run it again; anything else is the
+        # class, and the answer is to go and read it.  They read identically before this, which cost a
+        # round of hunting for a fault in three classes that were fine.
+        if echo "$out" | grep -q "Could not reserve enough space for object heap"
+        then
+            fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN - no heap (machine busy, rerun)"
+        else
+            fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN"
+        fi
 
     elif ! echo "$summary" | grep -q "Failures: 0"
     then

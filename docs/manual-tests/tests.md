@@ -11437,19 +11437,41 @@ not a preference - the railway cannot be modelled in that state.
 
 **Unpaired links** were already reported, as warnings, and the comment beside them argued against
 blocking: an imported Central Station diagram carries page-jump arrows nobody has paired, and refusing
-to run until each is dealt with would be unusable. That case is a link with NOTHING joined to it, and
-it stays a warning. A link with track running INTO it is different - trains reach it and stop - and
-that one now blocks.
+to run until each is dealt with would be unusable.
+
+**There turned out to be three kinds, not two, and the suite found the third before you could.** My
+first cut split them by whether track runs into the link, and `testTheDiagramIsNotRefused` - the test
+that reduces a real diagram and insists it still runs - went red. What refused it were the two arrows
+on Main pointing at "3 - Top Parking", a page deliberately excluded from autonomy.
+
+An arrow to an excluded page **cannot be paired**: there is no tile on the far side to pair it to,
+because that page is not in the graph at all. So an error there names a fault whose only remedy is to
+switch each arrow off by hand - and excluding the page was already the deliberate act saying autonomy
+does not go there. Worth noting that your own `setup.json` disables exactly those two squares, so you
+met this and worked around it manually; the rule is meant to catch a hole you did not know about, not
+to bill you for one you already decided on.
+
+So, in full:
+
+| The link | Reported as |
+|---|---|
+| Nothing joined to it | Warning |
+| Track runs into it, destination page is **excluded** | Warning |
+| Track runs into it, destination page is **in autonomy** | **Error** |
+| Disabled, or its partner is | Not reported |
 
 1. **Switch "3 - Top Parking" back on.** You should get an error naming the page, and the setup should
    refuse to run.
 2. **Switch it off again** - the error goes.
-3. **Draw a link, join track to it, and leave it unpaired.** An error, and no start.
+3. **Draw a link on a page in autonomy, join track to it, point it at another page in autonomy, and
+   leave it unpaired.** An error, and no start.
 4. **Draw a link with nothing joined to it.** A warning only, and the setup still runs - this is the
    case the old comment was protecting and I have deliberately kept it.
-5. **Disable a link** that is unpaired. Neither should be reported.
-6. **The case worth trying hardest**: a diagram imported from the Central Station with several unpaired
-   arrows on it. If that now refuses to run where it used to, the line I drew between the two kinds is
-   in the wrong place and I want to know.
+5. **Draw a link with track running into it that points at an EXCLUDED page.** A warning, and the setup
+   still runs. This is the third kind, and it is the one that was wrong for a while.
+6. **Disable a link** that is unpaired. Neither should be reported.
+7. **The case still worth trying hardest**: a diagram imported from the Central Station with several
+   unpaired arrows on it. That is what this whole distinction exists to keep runnable, and one real
+   diagram agreeing is not the same as yours agreeing.
 
 ---
