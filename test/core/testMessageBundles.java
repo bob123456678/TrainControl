@@ -699,6 +699,27 @@ public class testMessageBundles
 
         assertTrue(offenders.isEmpty(), "the length warnings do not name their subject: " + offenders);
 
+        // A FINDING THAT CARRIES A TILE MUST PUT ITS SENTENCE IN {1} (MT-223).
+        //
+        // Both panels build a finding's text as `tile == null ? getSubject() : describeTile(tile)` and
+        // pass that as {0}, with the finding's own subject as {1}. So {0} silently changes meaning the
+        // day somebody gives an existing finding a tile - which is what happened here, when the
+        // duplicate-sensor error gained a square to jump to and its sentence would have been swallowed
+        // by the tile description.
+        //
+        // Checked for the one finding that names its whole subject in a sentence. There is no way to
+        // ask a bundle which findings carry tiles, so this pins the one that changed rather than
+        // pretending to a general rule.
+        for (File bundle : bundles())
+        {
+            String duplicate = valuesOf(bundle).getProperty("autosetup.ui.checkDuplicateSensorPage");
+
+            assertTrue(duplicate != null && duplicate.contains("{1}") && !duplicate.contains("{0}"),
+                bundle.getName() + " must render the duplicate-sensor sentence from {1}: it carries a "
+                + "tile now, so {0} is the square's description and would swallow the sentence that "
+                + "names the sensor and both pages - " + duplicate);
+        }
+
         // and something has to supply the {1} they now ask for
         for (String source : new String[] {"src/org/traincontrol/gui/AutonomyViewerPanel.java",
             "src/org/traincontrol/gui/AutonomyEditorPanel.java"})

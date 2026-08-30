@@ -4547,9 +4547,11 @@ public class AutonomySession
      *
      * @return the offending page names, in the order the layout lists them
      */
-    private java.util.List<String> repeatedSensorPages()
+    private Map<TileKey, String> repeatedSensorPages()
     {
-        java.util.List<String> repeats = new ArrayList<>();
+        // KEYED BY THE SQUARE, so the finding can take the user to it (MT-223).  This was a list of
+        // sentences and nothing else, which was enough while the message only named a page.
+        Map<TileKey, String> repeats = new LinkedHashMap<>();
 
         if (pages == null) return repeats;
 
@@ -4578,8 +4580,12 @@ public class AutonomySession
                 {
                     // One per repeated sensor: three repeats on one page are three things to fix, and
                     // rolled into one line, fixing two of them changes nothing about the message.
-                    repeats.add(I18n.f("autosetup.ui.duplicateSensorSubject",
-                        sensor, page.getName(), seen.get(sensor)));
+                    // The square on the REPEATING page - the copy the user is being asked to do
+                    // something about.  The one that had the address first is innocent, and is named
+                    // in the message rather than jumped to.
+                    repeats.put(new TileKey(page.getName(), component.getX(), component.getY()),
+                        I18n.f("autosetup.ui.duplicateSensorSubject",
+                            sensor, page.getName(), seen.get(sensor)));
 
                     // AND THE PAGE STOPS COUNTING, which is what excludeRepeatedSensorPages does and
                     // what this claimed to do (LE2-B8).  There a repeating page is shut and

@@ -37,16 +37,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | needs test | OB-067, FR-013 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
-| [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
-| [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | needs test | OB-098, OB-100, OB-101, OB-104 |
-| [MT-182](#mt-182) | 2026-08-25 | The signal window opens beside the diagram, not on it | needs test | OB-107 |
 | [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
-| [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
-| [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-220](#mt-220) | 2026-08-29 | The autonomy notices above the diagram | needs test | OB-149, OB-151, MT-219 |
 | [MT-223](#mt-223) | 2026-08-29 | Two configurations that should refuse to run | needs test | OB-150 |
-| [MT-226](#mt-226) | 2026-08-30 | The routing-logic menu says what the railway is doing | needs test | LE-B3, LE-B4, LE-B5 |
 
 Everything else - 194 of 223 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -8410,7 +8403,7 @@ window.
 
 ### MT-172 - 2026-08-24 - The autonomy editor's grid, its hover outline, and the routes in a backup
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-091, FR-021
 **Written:** 2026-08-24
 
@@ -8497,6 +8490,10 @@ autonomy.json in the root is the LEGACY autonomy configuration: hand-authored, a
 The autorun folder is a layout folder of the Central Station's, not ours - it appears under test_layout/config/autorun and inside tc_backup, and nothing in src/ refers to it by that name at all. So yes, it is carried along as part of a copied layout, exactly as you guessed; it is not something the application creates.
 
 One thing worth your eye rather than mine: the root autonomy.json carries a modified time of 28 Aug 20:58. On the reading above it should only be written when no diagram configuration is active, so if you have been on the diagram throughout, that timestamp is worth a second look - it would mean the gate is not holding. I have not been able to attribute it, and I would rather say so than guess.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9045,7 +9042,7 @@ when a track diagram has no autonomy, and we import from a legacy file, there is
 
 ### MT-179 - 2026-08-25 - Nothing that needs a Central Station is offered without one
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-098, OB-100, OB-101, OB-104
 **Written:** 2026-08-25
 
@@ -9160,6 +9157,10 @@ rest not yet tested
 **Claude, 2026-08-29.**
 
 The two items you found still ungreyed - Switch to Central Station Layout, and Download Central Station Layout Files - were reworked on 2026-08-29 under OB-126 and OB-128, after this run. guardLayoutMenu now leaves both out of the re-enable pass rather than switching them back on, and openCS3App got a predicate of its own. So this result predates the change and the two items want looking at again; items 3 onward were never reached and still want a first look.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9302,7 +9303,7 @@ something unrelated redrew the diagram.
 
 ### MT-182 - 2026-08-25 - The signal window opens beside the diagram, not on it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-107
 **Written:** 2026-08-25
 
@@ -9341,6 +9342,10 @@ Still opens smack in the middle.
 **Claude, 2026-08-29.**
 
 Moved back to needs test. It was sitting at fixed unvalidated, which claims a fix is in place awaiting a check - you have now checked it twice, on 25 and 26 August, and it opens in the middle both times. A fix that has been disproved is not an unvalidated fix, and leaving it in that state kept it out of the ledger of outstanding work.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit 697417f9, build\classes, compiled 30 Aug 04:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9574,7 +9579,7 @@ test that closed that hole.
 
 ### MT-187 - 2026-08-25 - Return Home, after FR-001 became one rule
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-085, OB-086
 **Written:** 2026-08-25
 
@@ -10111,7 +10116,7 @@ over the square, and a station cannot hold itself back.
 
 ### MT-196 - 2026-08-26 - A locomotive where a train is running
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-027
 **Written:** 2026-08-26
 
@@ -11320,7 +11325,7 @@ The gap was the strip itself: with a setup that exists and is not loaded, every 
 
 ### MT-220 - 2026-08-29 - The autonomy notices above the diagram
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-149, OB-151, MT-219
 **Written:** 2026-08-29
 
@@ -11552,6 +11557,28 @@ clicking on the sensor notice still does not highlight the sensor on the current
 
 *Run against commit 697417f9.*
 
+**Claude, 2026-08-30.** Fixed: the finding now carries the square, so clicking it goes there.
+
+It was built with a null tile, and the note beside it explained why - "the fault is that two squares
+somewhere carry one address, and naming one of them would send the reader to an innocent-looking
+sensor". That was true while the message said only "this page repeats something". **It stopped being
+true when I made it name a specific s88**, and I did not notice: the finding was about one square, the
+check already knew which, and it was throwing it away. A finding that names a square and cannot take
+you to it is the worst of both.
+
+It carries the copy on the REPEATING page - the one you are being asked to do something about - rather
+than the page that had the address first, which is innocent and is named in the text instead.
+
+One thing that came with it and is worth knowing, because it nearly shipped broken: a finding's message
+renders `{0}` as its subject while it has no tile, and as the SQUARE'S DESCRIPTION once it has one. So
+giving this finding a tile would have replaced the sentence naming the sensor and both pages with
+"3 - Top Parking 5,16". The sentence moved to `{1}`, and there is now a test that says so.
+
+1. **Switch "3 - Top Parking" on** and click the duplicate-sensor error. It should take you to the
+   repeating sensor on that page and highlight it.
+2. **Read the message while you are there** - it should still name the s88 and both pages, not just
+   the square.
+
 ---
 
 <a id="mt-224"></a>
@@ -11676,7 +11703,7 @@ right thing, and the difference is what these steps are.
 
 ### MT-226 - 2026-08-30 - The routing-logic menu says what the railway is doing
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** LE-B3, LE-B4, LE-B5
 **Written:** 2026-08-30
 

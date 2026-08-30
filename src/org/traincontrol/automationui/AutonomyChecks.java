@@ -341,7 +341,7 @@ public class AutonomyChecks
             coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes, signalsGone,
             stationsWithoutSignal, facingsImpossible, barred,
             Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
-            Collections.<String>emptyList());
+            Collections.<TileKey, String>emptyMap());
     }
 
     /**
@@ -359,7 +359,7 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        java.util.List<String> repeatedSensorPages)
+        Map<TileKey, String> repeatedSensorPages)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -776,15 +776,21 @@ public class AutonomyChecks
      *        what is included
      * @return one error per page
      */
-    private static List<Finding> checkRepeatedSensorPages(java.util.List<String> pages)
+    private static List<Finding> checkRepeatedSensorPages(Map<TileKey, String> repeats)
     {
         List<Finding> findings = new ArrayList<>();
 
-        if (pages == null) return findings;
+        if (repeats == null) return findings;
 
-        for (String page : pages)
+        for (Map.Entry<TileKey, String> repeat : repeats.entrySet())
         {
-            findings.add(new Finding(Severity.ERROR, DUPLICATE_SENSOR_PAGE, page, null));
+            // WITH ITS SQUARE (MT-223).  This passed null, and the note beside it explained that the
+            // fault was about a page rather than any one square - which was true while the message
+            // said only "this page repeats something". Once it named a specific s88, the finding was
+            // about one square, the caller knew which, and a finding that names a square and cannot
+            // take you to it is the worst of both.
+            findings.add(new Finding(Severity.ERROR, DUPLICATE_SENSOR_PAGE,
+                repeat.getValue(), repeat.getKey()));
         }
 
         return findings;
