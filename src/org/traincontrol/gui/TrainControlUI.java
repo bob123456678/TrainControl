@@ -556,7 +556,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
     
     // Cache timetable state to minimize repaining
-    private int lastTimetableState = 0;
+    private String lastTimetableState = "";
     
     // Help ensure that duplicate accessory commands are not captured
     private String lastCapturedAccessoryCommand;
@@ -3899,6 +3899,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 updateVisiblePoints();
                 repaintAutoLocListLite();
+
+                // AND THE TIMETABLE (MT-149).
+                //
+                // Every row names a locomotive, and this list did not have it - so a rename repaired
+                // the placements, the homes, the exclusions and the saved timetable, and left the
+                // table on screen naming the old one.  Adam: "the timetable is not updated."
+                repaintTimetable();
             });
         }
         catch (Exception e)
@@ -23832,6 +23839,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.timetable.setRowSorter(sorter);
     }
 
+    /**
+     * What the timetable table would SHOW, as one string (MT-149).
+     *
+     * The redraw is skipped when this has not changed, and it has to be built from the text rather
+     * than from the objects: a locomotive hashes by identity, so renaming one changes every row and no
+     * hash. Everything the table draws is in here - the order, the locomotive, the two stations and
+     * whether the entry has run - and nothing else is, so a repaint is asked for exactly when one is
+     * needed.
+     *
+     * @param timeTable the snapshot about to be drawn
+     * @return a key that changes when the drawing would
+     */
+    private String timetableSignature(List<TimetablePath> timeTable)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (TimetablePath path : timeTable)
+        {
+            out.append(path.getLoc() == null ? "" : path.getLoc().getName()).append('\u0001')
+                .append(stationLabel(path.getStart())).append('\u0001')
+                .append(stationLabel(path.getEnd())).append('\u0001')
+                .append(path.isExecuted()).append('\u0001')
+                .append(path.getExecutionTime()).append('\u0001')
+                .append(path.getSecondsToNext()).append('\u0002');
+        }
+
+        return out.toString();
+    }
+
     private void repaintTimetable()
     {
         // The snapshot must not be taken on the EDT.
@@ -23871,10 +23907,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Update the data
             this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
             
-            // Do nothing if the timetable hasn't been updated
-            if (timeTable.hashCode() == lastTimetableState) return;
-            
-            lastTimetableState = timeTable.hashCode();
+            // Do nothing if what the table SHOWS has not changed (MT-149).
+            //
+            // This used to compare `timeTable.hashCode()`, and a locomotive hashes by IDENTITY -
+            // deliberately, so that renaming one cannot move it out of the consists and run lists that
+            // hold it.  TimetablePath's hash is built from that, so a rename changes the name in every
+            // row and changes no hash at all.  Measured: the same -1733089858 before and after, with
+            // the entry correctly reading the new name underneath.
+            //
+            // So the redraw was discarded and the table went on showing a locomotive that no longer
+            // exists under that name, until something else happened to the timetable.  Adam: "the
+            // timetable is not updated".
+            //
+            // Keyed on the text of the rows instead, which is the only thing that can answer "does
+            // this need redrawing".  It costs one string per repaint of a list that is tens of entries
+            // long and is built anyway.
+            String showing = timetableSignature(timeTable);
+
+            if (showing.equals(lastTimetableState)) return;
+
+            lastTimetableState = showing;
             
             DefaultTableModel tableModel = (DefaultTableModel) this.timetable.getModel();
             tableModel.setRowCount(0);

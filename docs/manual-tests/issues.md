@@ -224,6 +224,30 @@ making without a reproduction, and the reproduction is the expensive part.
 Recorded rather than dropped: the next person to read `LayoutRightclickAutonomyMenu` and notice the two
 surfaces disagree should find this rather than re-open it.
 
+### OB-165 - 2026-08-31 - Return Home stays dark after a train is driven off its claimed home
+
+**Kind:** bug
+**Raised from:** MT-165
+**Filed:** 2026-08-31
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Adam, closing MT-165: "This part works, but what doesn't work is the snapshotting - if I
+semi-autonomously move a train away from the station where I opened traincontrol, the return home
+button doesn't light up."
+
+**Upstream of what MT-165 tests.**  That entry is about the planner staging a blocker out of the way,
+and he says it works.  This is about the home CLAIM: `Layout.claimHome` gives a hand-placed locomotive
+a positional home where it is put, so opening TrainControl with a train at a station should make that
+station its home - and driving it away should light the button, because it then has somewhere to go
+and is not there.
+
+It stays dark, so `triageReturnToHome()` is still answering ALREADY_HOME or NO_HOMES after the move.
+Two shapes fit and they need telling apart: the claim never happened, or the claim FOLLOWED the train.
+The second would be the more interesting - a positional home that moves with the locomotive is a home
+that can never be left.
+
+Nothing is changed until that is reproduced.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

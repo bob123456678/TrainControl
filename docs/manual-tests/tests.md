@@ -19,19 +19,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
-| [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
-| [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
-| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | Adam's request to capture a confirmed-good baseline |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
-| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | needs test | OB-069 |
-| [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | needs test | OB-067, FR-013 |
+| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
-| [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
 
-Everything else - 224 of 242 - is **fixed validated** and needs nothing from you unless the
+Everything else - 231 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -998,7 +991,7 @@ are ones the railway can actually make.
 
 ### MT-084 - 2026-08-18 - Two trains, shared junction
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
 **Written:** 2026-08-18
 
@@ -1012,6 +1005,10 @@ are ones the railway can actually make.
 **Adam, 2026-08-30 (triage).** Works.
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -1559,7 +1556,7 @@ Rest works.
 
 ### MT-011 - 2026-08-20 - A Central Station route is read-only
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** hands-on testing  
 **Written:** 2026-08-20
 
@@ -1575,6 +1572,10 @@ We tested this synthetically earlier.  I can retest if you changed anything.
 Works, but below the last command, there is a long greyed out line where the + icon would normally be.  make this be white.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-012"></a>
@@ -6313,7 +6314,7 @@ to build. The new test asserts on the checks.
 
 ### MT-136 - 2026-08-23 - Two more of one shape, from the history review
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046  
 **Written:** 2026-08-23
 
@@ -6393,6 +6394,10 @@ BUT In the track diagram viewer: There is a condition where "place {locname}" is
 Update: I don't understand the steps to reproduce.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -6583,7 +6588,7 @@ Control+X drove its protecting signals on the spot" - and it stays fixed.
 <a id="mt-140"></a>
 ### MT-140 - 2026-08-23 - Bless the baseline once you are happy with the railway
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** Adam's request to capture a confirmed-good baseline
 
 **Claude, 2026-08-23.** This is the entry that keeps your own request from being forgotten: "Once we are
@@ -6634,6 +6639,10 @@ not.
 You now have the materials- use the current page 1.
 
 *Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7249,7 +7258,7 @@ to anything working in page names - and it is exactly the state in which they mu
 
 ### MT-149 - 2026-08-24 - The timetable survives renaming a locomotive
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-069
 **Written:** 2026-08-24
 
@@ -7365,6 +7374,51 @@ Was not unable to test this directly because "capture locomotive commands" is ca
 still an issue after testing- nothing gets captured.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Does not work.
+
+Fails.  Critical: On Rename, loc vanishes from the station / autonomy setup, and the timetable is not updated.  Loc panels show ??? status.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-31.** One of the three is fixed and proven; the other two I have not reproduced, and
+I would rather say that than guess.
+
+**The timetable is fixed, and the data was never the problem.** A probe renamed a locomotive with a
+timetable entry naming it and printed this:
+
+    timetable hash before: -1733089858   name: PR before
+    timetable hash after:  -1733089858   name: PR after
+
+The entry FOLLOWED the rename - a locomotive is renamed in place and the entry holds the object - and
+the placement survived, and `getLocomotiveLocation` still found it. What did not change is the number
+`repaintTimetable` keys its redraw on. `MarklinLocomotive` hashes by IDENTITY, deliberately, because
+that is what stops a rename moving a locomotive out of the consists and run lists holding it - and
+`TimetablePath.hashCode` is built from it. So every row's TEXT changed and no hash did, the repaint
+returned at its first line, and the table went on naming a locomotive that no longer exists.
+
+Two things were wrong and both are fixed: the guard is keyed on the text of the rows now, and the
+rename repair asks for a timetable repaint at all, which it never did.
+
+**What I have NOT reproduced** is the locomotive vanishing from the station, or the panels reading
+"?????". The probe says the model is right on both counts straight after a rename - the placement is
+where it was, and the object is the same one - so either it happens on a path the probe does not take,
+or it is a redraw on a surface the repair already refreshes.
+
+**One question, and it settles which.** Does the locomotive come back if you switch pages, or reopen
+the autonomy editor, or restart TrainControl? If it comes back, everything left is drawing. If it is
+still gone after a restart, the setup on disk was not repaired - which is a different fault with a
+different fix, and one the tests would have caught, so I would want to know that before looking
+anywhere else.
+
+Stays **fixed unvalidated** rather than validated: one symptom of three.
+
+1. **Rename a locomotive that appears in a captured timetable.** The table should show the new name at
+   once.
+2. **Then the two I could not reproduce** - watch whether it leaves the station label and whether the
+   panel reads "?????", and note whether either comes back on a page switch or a restart.
+
+*Run against v3_0_0_rc3 or later.*
 
 ---
 
@@ -7909,7 +7963,7 @@ exactly what the disposition is for (RA-C4).
 
 ### MT-161 - 2026-08-24 - A page may be called "2" without stealing page 2's settings
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-067, FR-013
 **Written:** 2026-08-24
 
@@ -7964,6 +8018,10 @@ Two things the fix's own tests found:
 When I renamed "5 - Test" to 5, the main page (1 - Main, id 5) became excluded from autonomy and lost all its train placement.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -8217,6 +8275,25 @@ the FR-001 assertion is the one that fires, rather than a move-count check stand
 test this in a test case
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Does not work.
+
+This part works, but what doesn't work is the snapshotting- if I semi-autonomously move a train away from the station where I opened traincontrol, the return home button doesn't light up.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-31.** Understood, and that is a different claim from this entry's subject.
+
+What MT-165 is about - staging a blocker out of the way rather than refusing - you say works. What you
+have found is upstream of it: the home CLAIM. `Layout.claimHome` gives a hand-placed locomotive a
+positional home where it is put, so opening TrainControl with a train at a station makes that station
+its home; move it away semi-autonomously and Return Home should light up, because it now has somewhere
+to go and is not there.
+
+It does not, which means the button's own check - `triageReturnToHome()` - is still answering
+ALREADY_HOME or NO_HOMES after the move. Either the claim never happened, or it followed the train.
+
+Filed on its own rather than folded in here, so this entry can close on what it actually tested.
 
 ---
 
@@ -10730,7 +10807,7 @@ order and date order in this stretch is not mistaken for a second, undocumented 
 
 ### MT-201 - 2026-08-26 - Closing TrainControl with the track editor open, and Discard
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** LR-1 (2026-08-26 last-reviewer pass)
 **Written:** 2026-08-26
 
@@ -10768,6 +10845,10 @@ the whole time.
 
 The exit path now does what the editor's own X has always done. Nothing in the test suite touched that
 method at all, which is why a review found it and not a test.
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -12691,7 +12772,7 @@ BottomMainCTerm is not an active station in the 3.0.0 layout.  It should only be
 
 ### MT-239 - 2026-08-30 - Editing your own routes does not talk to the Central Station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-155
 **Written:** 2026-08-30
 
@@ -12748,6 +12829,10 @@ station needs to hear about.
 **Adam, 2026-08-30 (triage).** Works.
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
