@@ -23,6 +23,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
+| [MT-243](#mt-243) | 2026-08-31 | Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone | needs test | RGN-A1, IPR-A1 |
+| [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
 
 Everything else - 231 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -12995,5 +12997,114 @@ The name survives everywhere the locomotive is not.
 **Adam, 2026-08-30 (triage).** Works.
 
 *Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-243"></a>
+
+### MT-243 - 2026-08-31 - Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone
+
+**Disposition:** needs test
+**From:** RGN-A1, IPR-A1
+**Written:** 2026-08-31
+
+**Back up first.** File > Backup TrainControl Data, and keep the zip. This is about the import that
+reads your old `autonomy.json`, and the point of the test is what it writes.
+
+**What to do.** You need a layout whose autonomy came from 2.7.4c - `cs2_sample_layout` has one at
+`config/autonomy_legacy/autonomy.json`, which is your own.
+
+1. Import it from the autonomy menu, into a fresh configuration.
+2. **Open the autonomy settings.** Pace, default speed, how many trains may run, the arrival and
+   departure function switches, the pre-arrival slowing - they should all match what the old file
+   said, not the defaults. Ten settings come across.
+3. **Look at a station that had a length limit.** Right-click it: its maximum train length should be
+   the number your old file gave it, and the square's own track length should be untouched.
+4. **Then the one that matters most: look at your routes.** Open the Routes tab and check that every
+   route that was enabled is still enabled. Nothing about importing a graph should switch a route
+   off.
+5. **Run the setup**, and check the routes again - the disabling used to happen on load rather than
+   on import, so it has to be checked after autonomy has actually parsed the configuration.
+6. **Import the same file a second time**, having changed one setting by hand in between. Your change
+   must survive: this fills gaps, it does not overwrite.
+
+**What will NOT come across, on purpose:** your timetable and your route activations. Both are still
+in `autonomy.json`, untouched. Nothing tells you that in the app, which is the open question below.
+
+#### Comments
+
+**Claude, 2026-08-31.** Two reviewers found this independently, from opposite directions.
+
+`importLegacy` read the `points` array and nothing else, so an upgrading user kept their station names
+and lost every rule about how their railway runs - ten settings on your own file. And the one thing it
+did read besides names, `maxTrainLength`, it wrote into the wrong place: that is a STATION's capacity,
+and it went into the SQUARE's track length, which is what the shortest-track and longest-track routing
+rules are computed from. So stations lost their limits and six squares gained lengths nobody measured.
+
+**What I nearly shipped instead was worse**, and I would rather you knew. The first fix copied every
+key that was not points or edges. Two of those - `activateRoutes` and `activateRouteIDs` - do not stay
+inside the configuration: `parseAuto` ends in `applyAutonomyRouteActivations`, which walks your live
+Central Station route database and disables every route whose id is not listed. Your legacy file says
+`activateRoutes: true` with an EMPTY list. So importing it would have switched off every route you
+have, and done it again on every diagram edit. A validator pass found it before it went anywhere near
+you. Step 4 is that case.
+
+The timetable is left behind for a measured reason rather than an aesthetic one: its 36 legs name 25
+points, three of which carry no s88 at all and nine more of which sit on sensors shared by several old
+points, where the name that lands on a square is whichever came first. The loader throws on the first
+edge it cannot resolve and drops that leg. Two of the thirty-six could survive - and the next capture
+would write the remains back over your settings for good. Leaving it in the file loses less.
+
+*Run against a build after commit 875edb92.*
+
+---
+
+<a id="mt-244"></a>
+
+### MT-244 - 2026-08-31 - The Auto tab on a layout that has only an autonomy.json
+
+**Disposition:** needs test
+**From:** RGN-A2
+**Written:** 2026-08-31
+
+**This one is a question for you as much as a test.** Nothing has been changed; I want your ruling
+before I change anything.
+
+**What to do.** You need a local layout folder with an old `autonomy.json` beside it and NO
+`config/autonomy/setup.json` - that is, a 2.7.4c user who has just installed 3.0.0 and not imported
+anything yet.
+
+1. Start TrainControl with auto-load on.
+2. **Look at the Auto tab.** I expect it to be greyed.
+3. **Check the log.** I expect it to say the autonomy layout loaded and is valid.
+
+If both are true, that user's autonomy is loaded and live, and the tab holding the run list, the
+timetable, the settings and Return Home is greyed - and the old JSON window has been removed too,
+because the layout can hold a diagram setup.
+
+#### Comments
+
+**Claude, 2026-08-31.** Read end to end and confirmed, but not changed, because which half is wrong is
+your call.
+
+`getAutonomySession()` returns a session for ANY local layout folder - it needs a path and a folder
+that exists, nothing more. Startup then takes the legacy branch, because no diagram configuration is
+active, and parses `autonomy.json` into a live layout. `refreshAutonomyTabState` computes
+`loaded = getAutonomySession() == null || activeDiagramConfiguration != null`, and for this user both
+halves are false, so the tab is disabled. The comment above that line says "on the diagram path the
+question is whether a configuration is RUNNING" - which is the right question for the diagram path,
+and is being asked on both.
+
+**Two ways to settle it, and they are different products:**
+
+- **The tab should open.** A legacy layout is loaded and running; the operator should be able to reach
+  it. That means asking the question differently for the JSON path.
+- **The tab should stay shut until they import.** Then startup should NOT parse and activate the
+  legacy file first - because as it stands trains can be running with no interface to reach them,
+  which is OB-104 turned around.
+
+Either is defensible. What is not defensible is today, where the two halves disagree.
+
+*Run against a build after commit 875edb92.*
 
 ---

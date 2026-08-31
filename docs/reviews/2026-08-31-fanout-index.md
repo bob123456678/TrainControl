@@ -82,6 +82,27 @@ every size, with its control assertion after the assertion it controlled.
 made with a test seen failing first, and two of them still shipped defects worse than the bug. The
 separate adversarial pass is what caught them, not the tests.
 
+### And a second validation pass, which found four more
+
+The scanner was ported character for character and run against an independent Java lexer over all 258
+files: zero divergences, so it stands. What did not:
+
+- **`inASetupMethod` looked back a fixed distance** from the enclosing method's header, which reaches
+  over the previous method's body and finds ITS annotation - so a short `@BeforeClass` above a
+  window-building test exempted the whole class. Bounded at the previous closing brace now.
+- **And the test written for that caught the fix itself being broken.** The bound was generated as
+  `"\n    }"` - a literal backslash and an n - so it never matched, the region fell back to the whole
+  prefix, and every class with any `@Before` anywhere was exempt. Worse than what it replaced, green
+  under the battery, and found only because the helper finally had a test.
+- **One of my own assertions could not fail:** `assertFalse(globals.has("activateRouteIDs"))`, the
+  more important half of the exclusion that stops an import disabling every route, was written against
+  a fixture that never set that key.
+- The window count stood at a floor of 14 against a real 17, and two comments still counted settings
+  the code no longer carries.
+
+Both helpers now have tests of their own. They decide whether the suite may open the operator's
+railway, and until this round each had one call site and no assertion.
+
 ---
 
 ## Confirmed, not yet fixed
