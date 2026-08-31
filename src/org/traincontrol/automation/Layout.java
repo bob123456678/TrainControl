@@ -3114,7 +3114,7 @@ public class Layout
 
                     if (alreadyGivenUp != null && alreadyGivenUp.contains(e))
                     {
-                        // ALREADY RELEASED ONCE, WHEN THE TAIL PASSED IT (RC-A9).
+                        // ALREADY RELEASED, WHOLE, WHEN THE TAIL PASSED IT (RC-A9, OB-164).
                         //
                         // With atomicRoutes off this path gives each edge up twice: early, the moment
                         // tailHasProvablyPassed says the train is clear of it, and again here.  While
@@ -3122,17 +3122,16 @@ public class Layout
                         // Now that it counts, the second release would take away a claim somebody else
                         // made in between:
                         //
-                        //   this path releases the edge early, keeping its lock edges held on purpose;
+                        //   this path releases the edge early;
                         //   another path locks an edge that NAMES this one, so it is protected again;
                         //   this path finishes, reaches the edge here, and frees it under that train.
                         //
-                        // What the early release deliberately did NOT do is give up the lock edges -
-                        // they are held until the path completes, which is now.  So that half, and
-                        // only that half, is what is left to do.
-                        for (Edge lockEdge : e.getLockEdges())
-                        {
-                            lockEdge.setLockedEdgeUnoccupied();
-                        }
+                        // NOTHING IS LEFT TO DO.  This used to release the lock edges here, because
+                        // the early release kept them - and that is what OB-164 was: the edges came
+                        // free as the train passed and the throats did not, so a second train could
+                        // not cross anywhere the first had been until the whole run ended.  The early
+                        // release gives up the lock edges now, so doing it again here would take away
+                        // a claim this path no longer holds.
                     }
                     else
                     {
@@ -3145,10 +3144,9 @@ public class Layout
 
                     // Another locomotive has taken the end point, so we must not touch the edge's own
                     // flag - it may be that locomotive's lock now.  Its LOCK edges still have to be
-                    // released: executePath's early unlock uses setLockedEdgeUnoccupied, which
-                    // deliberately leaves lock edges held until the path completes, so skipping them
-                    // here left them held for the rest of the session, permanently blocking every path
-                    // that crosses them.
+                    // released, UNLESS the tail already gave this edge up, in which case they went
+                    // with it (OB-164) and releasing them here would take away a claim this path no
+                    // longer holds.
                     //
                     // Safe for a crossing declared symmetrically - each of the two edges naming the
                     // other as a lock edge, written symmetrically - because the crossing
@@ -3161,12 +3159,19 @@ public class Layout
                     // direction, and the sample layout that ships carries 104 asymmetric relations out
                     // of 118.  And isPathClear DOES inspect lock edges, through Edge.isLockHeld.
                     //
-                    // Occupancy is still a flag rather than a count, so the caution about a hand-edited
-                    // autonomy.json in which two edges name a third they never traverse stands on that
-                    // ground alone.
-                    for (Edge lockEdge : e.getLockEdges())
+                    // Occupancy COUNTS now (RC-A9) - this said it was still a flag, which stopped
+                    // being true in the same round that wrote it.  The caution about a hand-edited
+                    // autonomy.json in which two edges name a third they never traverse stands for a
+                    // better reason: a count only balances if every claim is given back exactly once,
+                    // which is what the given-up test above is for.
+                    Set<Edge> givenUp = this.clearedEdges.get(loc);
+
+                    if (givenUp == null || !givenUp.contains(e))
                     {
-                        lockEdge.setLockedEdgeUnoccupied();
+                        for (Edge lockEdge : e.getLockEdges())
+                        {
+                            lockEdge.setLockedEdgeUnoccupied();
+                        }
                     }
 
                     if (this.control.isDebug())
@@ -5255,7 +5260,24 @@ public class Layout
 
                             synchronized (this.activeLocomotives)
                             {
-                                path.get(waiting[0]).setLockedEdgeUnoccupied();
+                                // EVERYTHING THIS EDGE TOOK, including its lock edges (OB-164).
+                                //
+                                // Adam: "in non atomic mode, locks aren't getting released ... no
+                                // movement is allowed at all."  This used to call
+                                // setLockedEdgeUnoccupied, which gives up the edge and keeps every
+                                // throat it had locked until the whole path finished - so the edges
+                                // came free and the crossings did not, and on a railway where routes
+                                // cross, every throat the train had been through refused every route
+                                // over it for the rest of the run.  Non-atomic mode gave back the
+                                // half nobody was waiting on.
+                                //
+                                // The proof is the one this release already stands on:
+                                // tailHasProvablyPassed.  If the train is clear of the edge it is
+                                // clear of the throat that edge needed, and there is nothing left for
+                                // the lock to protect.  setUnoccupied passes exactly one release to
+                                // each lock edge, matching the one setOccupied took - which is why
+                                // unlockPath must not do it again below.
+                                path.get(waiting[0]).setUnoccupied();
                                 path.get(waiting[0]).getStart().setLocomotive(null);
                                 // the far end is not cleared: that unlocks the next edge early
                             }

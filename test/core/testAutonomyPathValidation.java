@@ -161,6 +161,157 @@ public class testAutonomyPathValidation
         return tp;
     }
 
+    /**
+     * With atomic routes off, the track a train has passed is given back - lock edges and all.
+     *
+     * Adam, on MT-087: "WORKS FINE in atomic mode.  In non atomic mode, locks aren't getting released.
+     * Example: EN57-203 is started from BottomSecondary to TopMainR2Inter.  After it passes Tunnel,
+     * EN57-947 should be able to go from TopMainR2 to BottomSecondary, but no movement is allowed at
+     * all."
+     *
+     * **Non-atomic mode exists to give track back as the train clears it.** executePath does give the
+     * EDGE back the moment `tailHasProvablyPassed` says the train is clear of it - and it deliberately
+     * kept every LOCK EDGE that edge had taken, until the whole path finished. So the edges came free
+     * and the shared throats did not, and on a railway where routes cross, a throat held is a route
+     * refused. Every square the train had been through went on blocking everything that crossed it for
+     * the rest of the run, which is "no movement is allowed at all".
+     *
+     * The proof is the same one the edge itself is released on. If the train is clear of the edge, it
+     * is clear of the throat that edge needed; there is nothing left for the lock to protect.
+     *
+     * Written as a run rather than as a sequence of calls: the early release happens inside
+     * executePath's progress loop and there is no other door to it.
+     *
+     * MUTATION this catches: putting `setLockedEdgeUnoccupied()` back at the early release leaves the
+     * crossing held while the train is still going, and the assertion fails.
+     */
+    @Test
+    public void testNonAtomicGivesBackTheLocksOfTrackThePassedTrainHasCleared() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+
+        layout.setAtomicRoutes(false);
+        layout.setSimulate(true);
+        layout.setMinDelay(0);
+        layout.setMaxDelay(0);
+
+        MarklinFeedback first = model.newFeedback(91, null);
+        MarklinFeedback second = model.newFeedback(92, null);
+        MarklinFeedback third = model.newFeedback(94, null);
+        MarklinFeedback fourth = model.newFeedback(95, null);
+        MarklinFeedback beyond = model.newFeedback(93, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{first, second, third, fourth, beyond})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        // A destination needs a sensor; the ORIGIN is where the train starts and needs none,
+        // so it is the one point here that is not a station.
+        //
+        // FOUR edges, not two.  A two-edge run in simulation is over in a second, and unlockPath
+        // releases everything at the end - so the first version of this test watched a finished run
+        // and could not tell "given back early" from "given back at the end", which is the whole
+        // question.
+        layout.createPoint("NA_A", false, null);
+        layout.createPoint("NA_B", true, first.getName());
+        layout.createPoint("NA_C", true, second.getName());
+        layout.createPoint("NA_D", true, third.getName());
+        layout.createPoint("NA_E", true, fourth.getName());
+
+        // The crossing this run's FIRST edge needs, and nothing else about the run touches.
+        layout.createPoint("NA_X", false, null);
+        layout.createPoint("NA_Y", true, beyond.getName());
+
+        Edge crossing = layout.createEdge("NA_X", "NA_Y");
+
+        Edge ab = layout.createEdge("NA_A", "NA_B");
+        Edge bc = layout.createEdge("NA_B", "NA_C");
+        Edge cd = layout.createEdge("NA_C", "NA_D");
+        Edge de = layout.createEdge("NA_D", "NA_E");
+
+        ab.addLockEdge(crossing);
+
+        MarklinLocomotive loc = dummyLoc();
+
+        loc.setPreferredSpeed(35);
+        loc.setTrainLength(0);
+
+        layout.getPoint("NA_A").setLocomotive(loc);
+
+        List<Edge> path = Arrays.asList(ab, bc, cd, de);
+
+        assertFalse(crossing.isLockHeld(null), "precondition: the crossing is free before the run");
+
+        final Layout running = layout;
+        final MarklinLocomotive driver = loc;
+
+        final Thread run = new Thread(() -> running.executePath(path, driver, 35, null));
+
+        run.setDaemon(true);
+        run.start();
+
+        try
+        {
+            // The crossing has to be TAKEN first, or "it came free" says nothing.
+            assertTrue(waitFor(() -> crossing.isLockHeld(null), 10000),
+                "precondition: the run never locked the crossing, so there is nothing to release");
+
+            // ...and given back once the train is past the edge that needed it, WHILE THE RUN IS
+            // STILL GOING.  That is the whole of non-atomic mode, and the only thing that separates
+            // it from atomic: everything comes free at the end either way.
+            final boolean[] stillRunning = {false};
+
+            assertTrue(waitFor(() ->
+            {
+                if (crossing.isLockHeld(null)) return false;
+
+                stillRunning[0] = run.isAlive();
+
+                return true;
+            }, 30000),
+                "the crossing was never released at all");
+
+            assertTrue(stillRunning[0],
+                "the crossing this train had already passed came free only when the whole run "
+                + "finished.  Non-atomic mode gives the edge back the moment the tail is clear of it "
+                + "and used to keep its lock edges to the end, so every throat the train had been "
+                + "through blocked every route that crossed it for the rest of the run - which is "
+                + "Adam's \"no movement is allowed at all\"");
+        }
+        finally
+        {
+            running.stopLocomotives();
+
+            run.join(10000);
+        }
+    }
+
+    /**
+     * Polls a condition until it holds or the deadline passes.
+     *
+     * @param what the question
+     * @param timeoutMs how long to give it
+     * @return whether it ever held
+     */
+    private static boolean waitFor(java.util.concurrent.Callable<Boolean> what, long timeoutMs)
+        throws Exception
+    {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            if (Boolean.TRUE.equals(what.call())) return true;
+
+            Thread.sleep(25);
+        }
+
+        return false;
+    }
+
     private MarklinLocomotive dummyLoc()
     {
         return new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "PV Loc " + (++locCounter));

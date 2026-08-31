@@ -20,15 +20,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
-| [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
-| [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
-| [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
-| [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
-| [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
-| [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
-| [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | 2026-08-18 manual test plan, Tier 6 - real hardware, optional |
+| [MT-087](#mt-087) | 2026-08-18 | Long run | fixed unvalidated | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | Adam's request to capture a confirmed-good baseline |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
@@ -39,7 +33,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
 
-Everything else - 216 of 242 - is **fixed validated** and needs nothing from you unless the
+Everything else - 222 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -129,6 +123,7 @@ Works, but overlap with the labels makes it suboptimal.  station icon may fix th
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-068"></a>
@@ -153,6 +148,7 @@ Looks right in the track diagram.  But not greyed out in the editor.  Also, move
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-069"></a>
@@ -203,6 +199,7 @@ still deciding, one step earlier. The block reads from the square now when there
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-070"></a>
@@ -366,6 +363,7 @@ data loss or a drawing bug, because they share no code at all.
 
 `where-are-the-trains.py` exists for exactly that, and is the first thing to reach for next time
 something has "gone".
+
 ---
 
 <a id="mt-073"></a>
@@ -567,6 +565,7 @@ slipping in beside a fix. Say the word and I will file it as a feature request t
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-077"></a>
@@ -633,6 +632,7 @@ It asks now - see README.md.
 
 **On the second half:** an entry you have validated stays validated. Where a later change touches it,
 that shows as the reopened marker rather than as a disposition I have taken back.
+
 ---
 
 <a id="mt-078"></a>
@@ -818,7 +818,7 @@ it would pass by asking the question about nothing - which is how the first vers
 
 ### MT-080 - 2026-08-18 - Collect what the new model offers
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
 **Written:** 2026-08-18
 
@@ -845,13 +845,18 @@ Defer- we will do an end to end test later.
 **Claude, 2026-08-22.** Deferred on Adam's word - "we will do an end to end test later". Left at
 **needs test** rather than anything softer: a deferred test is one nobody has run, which is exactly
 what that state means.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-081"></a>
 
 ### MT-081 - 2026-08-18 - Collect what the old model offered
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
 **Written:** 2026-08-18
 
@@ -876,13 +881,18 @@ Likely no longer needed, defer and revisit.
 **Claude, 2026-08-22.** Deferred - "likely no longer needed, defer and revisit". Not retired, because
 "likely" is not "certainly" and retiring it would take it off the ledger where the revisit would have
 to be remembered from.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-082"></a>
 
 ### MT-082 - 2026-08-18 - Compare, and scrutinise the NEW-ONLY entries
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
 **Written:** 2026-08-18
 
@@ -939,6 +949,10 @@ as termini, which only a reversible locomotive may enter.
 
 Left as **needs test** rather than answered: the harness collects the lists, and the judgement this
 entry actually asks for - is a new journey physically possible - is the part it cannot make.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -1007,7 +1021,7 @@ are ones the railway can actually make.
 
 ### MT-085 - 2026-08-18 - Collision refusal
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
 **Written:** 2026-08-18
 
@@ -1018,6 +1032,10 @@ are ones the railway can actually make.
 #### Comments
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -1068,13 +1086,14 @@ the only other caller of the removed code path was the placement item above it, 
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-087"></a>
 
 ### MT-087 - 2026-08-18 - Long run
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
 **Written:** 2026-08-18
 
@@ -1085,13 +1104,52 @@ the only other caller of the removed code path was the placement item above it, 
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-30 (triage).** Does not work.
+
+WORKS FINE in atomic mode.
+
+In non atomic mode, locks aren't getting released.  Example: in the current live setup, EN57-203 is started from BottomSecondary to TopMainR2Inter.  After it passes Tunnel, EN57-947 should be able to go from TopMainR2 to BottomSecondary, but no movement is allowed at all.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Reproduced, and it is the one thing non-atomic mode exists to do.
+
+`executePath` gives the EDGE back the moment `tailHasProvablyPassed` says the train is clear of it -
+and it kept every LOCK EDGE that edge had taken until the whole path finished. So the rails came free
+and the throats did not. On a railway where routes cross, a throat held is a route refused, so every
+square the train had been through went on blocking everything that crossed it for the rest of the run.
+That is "no movement is allowed at all", and it is why atomic mode looks fine: there, nothing is given
+back early anyway.
+
+**The proof is the one the release already stands on.** If the train is clear of the edge, it is clear
+of the throat that edge needed, and there is nothing left for the lock to protect. So the early release
+now gives up what it took - one release to the edge and one to each of its lock edges, matching the one
+the lock took - and the two places in `unlockPath` that used to do that half at the end now skip an
+edge that has already been given up, or they would take away a claim this path no longer holds.
+
+Also corrected while there: a comment in `unlockPath` still said "occupancy is still a flag rather than
+a count". It stopped being a flag in the round that wrote it.
+
+`core.testAutonomyPathValidation.testNonAtomicGivesBackTheLocksOfTrackThePassedTrainHasCleared` is the
+reproduction. **It passed on its first version for the wrong reason** - a two-edge run in simulation is
+over in a second, so "the crossing came free" was true of a run that had already finished, which is
+also true of atomic mode. It runs four edges now and asserts the crossing comes free *while the run's
+own thread is still alive*, which is the only thing that separates the two modes.
+
+1. **Your case, again.** Non-atomic. Start EN57-203 from BottomSecondary to TopMainR2Inter, and once it
+   is past Tunnel, send EN57-947 from TopMainR2 to BottomSecondary. It should go.
+2. **Atomic mode is unchanged** - nothing is given back until the run ends, which is the point of it.
+3. **A long run with several trains**, which is what this entry is really for.
+
+*Run against v3_0_0_rc3 or later.*
+
 ---
 
 <a id="mt-088"></a>
 
 ### MT-088 - 2026-08-18 - Path-integrity failure
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 6 - real hardware, optional  
 **Written:** 2026-08-18
 
@@ -1110,6 +1168,7 @@ PATH INTEGRITY check itself, and this entry is about what the application does w
 in front of a user - the message, and whether the run stops safely. An automated test of the rule does
 not answer the question about the surface. See the entry two above this one for the same distinction
 drawn about address validation.
+
 ---
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
@@ -1119,6 +1178,10 @@ drawn about address validation.
 We have a test case for this already, the long running one.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -1151,6 +1214,7 @@ Make double clicking a locomotive label in the track diagram open the loc placem
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-002"></a>
 
@@ -1214,6 +1278,7 @@ test failed for exactly that reason, on syntax I had invented.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-004"></a>
 
@@ -1375,6 +1440,7 @@ current behavior accepted
 
 **Claude, 2026-08-23.** "Current behavior accepted" - closed on that. Three-ways keep the
 behaviour you saw; nothing further is pending here.
+
 ---
 <a id="mt-006"></a>
 
@@ -1397,6 +1463,7 @@ Editing a route, after sync, teleports the user to the track diagram tab.  Don't
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-007"></a>
 
@@ -1469,6 +1536,7 @@ Rest works.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-011"></a>
 
@@ -1528,6 +1596,7 @@ OK.  Highlight the "move to' group in blue, not light red, for better clarity.  
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-014"></a>
 
@@ -1579,6 +1648,7 @@ put a proposal in front of you.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-015"></a>
 
@@ -1600,6 +1670,7 @@ put a proposal in front of you.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-016"></a>
 
@@ -1654,6 +1725,7 @@ OK.  But the bar at the top of the editor has an odd border- give it a light gra
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-019"></a>
 
@@ -1679,6 +1751,7 @@ Future feature request: make the autonomy editor and track diagram editor be on 
 
 **Claude, 2026-08-23.** Closed on your word - "MT-019: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 <a id="mt-020"></a>
 
@@ -1723,6 +1796,7 @@ Doesn't work- only goes to the default route.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-022"></a>
 
@@ -1853,6 +1927,7 @@ We need unnamed stations (default) to throw an error, not a warning.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-024: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 <a id="mt-025"></a>
 
@@ -1906,6 +1981,7 @@ either a placement not read or a Point renamed underneath it.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-026"></a>
 
@@ -1944,6 +2020,7 @@ pointer was, and the two squares the link joined** - with those I can reproduce 
 
 **Claude, 2026-08-23.** Closed on your word - "MT-026: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 <a id="mt-027"></a>
 
@@ -2028,6 +2105,7 @@ Mutation-checked: making duplicate insert twice fails it on the sentence about c
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-030"></a>
 
@@ -2098,6 +2176,7 @@ that instruction as "showing red", and "cleared" as "showing green".
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-031"></a>
 
@@ -2118,7 +2197,7 @@ OK
 
 ### MT-032 - 2026-08-21 - Two trains, one dispatched onto a long path
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** TR-A22  
 **Written:** 2026-08-21
 
@@ -2129,6 +2208,10 @@ sensor normally. What it must NOT do is run past it. Worth doing in simulation f
 #### Comments
 
 Defer for later once other bugs are fixed.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-033"></a>
@@ -2182,6 +2265,21 @@ the first such click stopped every tile in the application from ever responding 
 
 Defer for later.
 
+**Adam, 2026-08-30 (triage).** Could not run this.
+
+make a simulated test case for this
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 22:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Accepted - a simulated case for this is on the list.
+
+What it needs is a mock station that answers and then stops answering mid-session, which
+`support.CS3TestServer` and `core.testMockCentralStation` already have most of; what nothing does yet
+is drop the connection while autonomy is running and assert what the application does about it. Left
+as **needs test** here because the hands-on question - what the operator sees, and whether Stop and
+the power state agree afterwards - is not the same question as the automated one, the same distinction
+drawn on MT-088.
+
 ---
 <a id="mt-036"></a>
 
@@ -2220,6 +2318,7 @@ raised something on screen, say so and it is a small change.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-037"></a>
 
@@ -2296,6 +2395,7 @@ That is the second time this session a mutation check earned its keep by failing
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-038"></a>
 
@@ -2358,6 +2458,7 @@ can check the claim.
 **One thing worth knowing about that test:** it writes to your REAL `UIState.data`, which is why it is
 on the slow list and out of the fast battery. It takes a byte-for-byte copy first and restores it, and
 that safeguard exists because an earlier version of it destroyed the file for real.
+
 ---
 <a id="mt-039"></a>
 
@@ -2502,6 +2603,7 @@ carries no name and press it: nothing should happen and the log should say why.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-043"></a>
 
@@ -2539,6 +2641,7 @@ must never do: it would assert that a locomotive is on track that is not connect
 
 Left as it is deliberately. If the flicker itself is the annoyance rather than the wording, say so and
 I will look at holding the previous caption for the duration of a drag.
+
 ---
 <a id="mt-044"></a>
 
@@ -2563,6 +2666,7 @@ must not still be carrying the names it had before.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-045"></a>
 
@@ -2614,6 +2718,7 @@ overwritten squares lose. Neither can see the editor's menus, which is why this 
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-046"></a>
 
@@ -2636,6 +2741,7 @@ and in use must be solid and carry its two arrows.  Before this round it was the
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-047"></a>
 
@@ -2698,6 +2804,7 @@ save/discard/cancel question the sidebar asks.
 It was worse than a wording difference. That path asked its own YES/NO, and its "yes" neither saved nor
 discarded - it simply left, and because the setup is shared the edits survived into the window that
 opened next. Recorded at MT-136. Closed here.
+
 ---
 <a id="mt-048"></a>
 
@@ -2720,6 +2827,7 @@ view must open at that station.  With autonomy RUNNING, it must do nothing at al
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 <a id="mt-049"></a>
 
@@ -2743,6 +2851,7 @@ you to the setup editor whatever you used last.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-050"></a>
 
@@ -2766,6 +2875,7 @@ actually on.  Switch modes the same way.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-051"></a>
 
@@ -2806,6 +2916,7 @@ Filed from this test: OB-050 (bug - right click menu when autonomy is invalid). 
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-052"></a>
 
@@ -2828,6 +2939,7 @@ have squeezed the diagram now that there is a sidebar taking width from it.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-053"></a>
 
@@ -2871,6 +2983,7 @@ away, then which way round it faces and which station it belongs to.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-054"></a>
 
@@ -2893,6 +3006,7 @@ Pages..." must appear once.  Its tooltip must wrap instead of running off the sc
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-055"></a>
 
@@ -2915,6 +3029,7 @@ Page" lists every page and opens the one you pick, in whichever editor you used 
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 <a id="mt-056"></a>
 
@@ -2961,6 +3076,7 @@ Filed from this test: OB-049 (bug - page rename effectively deletes autonomy con
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-057"></a>
 
@@ -3012,6 +3128,7 @@ track independently.
 
 Nothing else on this entry is outstanding, so it closes with that pointer rather than waiting for a
 second look at the same pixels.
+
 ---
 <a id="mt-058"></a>
 
@@ -3046,6 +3163,7 @@ Ready for your tick.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 <a id="mt-059"></a>
 
@@ -3071,6 +3189,7 @@ many there are.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-059: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-064"></a>
@@ -3105,6 +3224,7 @@ reading the route without leaving the diagram marked up afterwards.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-064: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-060"></a>
@@ -3165,6 +3285,7 @@ the old file.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-062"></a>
@@ -3250,6 +3371,7 @@ because the sentence you read is not the sentence that is there now.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-089"></a>
@@ -3287,6 +3409,7 @@ four words.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-090"></a>
@@ -3319,6 +3442,7 @@ hands-on check is what covers the delegation.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-091"></a>
@@ -3359,6 +3483,7 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-092"></a>
@@ -3394,6 +3519,7 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-093"></a>
@@ -3504,6 +3630,7 @@ Sharing the object made the difference *invisible, not impossible* - the two vie
 strings in it, and all three causes lived in the string. "It looks right over there" was the question
 that solved it, and I should have asked it first: when one surface is correct and another is not, the
 cheap move is to diff the two paths, not to reason about the one that is broken.
+
 ---
 
 <a id="mt-094"></a>
@@ -3573,6 +3700,7 @@ is the WRONG SHAPE, never because it is unwelcome, and the thing that took it ov
 
 The entry stays, because its tag is cited by two commits and by the receipt table, and deleting it
 would leave those pointing at nothing.
+
 ---
 
 <a id="mt-095"></a>
@@ -3651,6 +3779,7 @@ The window no longer moves on a switch. Only the size changes, and only upwards 
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-096"></a>
@@ -3715,6 +3844,7 @@ still in the preferences and are simply no longer read.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-097"></a>
@@ -3761,6 +3891,7 @@ the right read as sixteen.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-098"></a>
@@ -3817,6 +3948,7 @@ two above it.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-099"></a>
@@ -3872,6 +4004,7 @@ belongs on top.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-100"></a>
@@ -3912,6 +4045,7 @@ the other direction.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-101"></a>
@@ -4004,6 +4138,7 @@ comment above it said what that precondition was.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-102"></a>
@@ -4040,6 +4175,7 @@ ever appears not to stick, that is a defect rather than a missing feature, and w
 
 Validated on your "Works" for the labels themselves; the note attached to it needed an answer rather
 than a change.
+
 ---
 
 <a id="mt-103"></a>
@@ -4077,6 +4213,7 @@ wrong decision again.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-104"></a>
@@ -4182,6 +4319,7 @@ is being added from somewhere else.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-105"></a>
@@ -4214,6 +4352,7 @@ is gone.
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-106"></a>
@@ -4289,6 +4428,7 @@ and it is recorded as GC-A1 rather than fixed in the same breath as the thing it
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-107"></a>
@@ -4324,6 +4464,7 @@ and put back from that copy: it lives in generated code that cannot be edited by
 
 
 **Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
+
 ---
 
 <a id="mt-108"></a>
@@ -4387,6 +4528,7 @@ left.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-109"></a>
@@ -4474,6 +4616,7 @@ changing it.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-110"></a>
@@ -4511,6 +4654,7 @@ is exact.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-110: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-111"></a>
@@ -4566,6 +4710,7 @@ not read as two different rules.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-112"></a>
@@ -4659,6 +4804,7 @@ Filed from this test: FR-010 (feature request - home locomotive searching).  The
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-113"></a>
@@ -4694,6 +4840,7 @@ Same reasoning as the popup guard in `LayoutLabel`, where an empty menu "reads a
 
 **Claude, 2026-08-23.** Closed on your word - "MT-113: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-114"></a>
@@ -4731,6 +4878,7 @@ Filed from this test: OB-038 (bug - locomotive placement on export).  They are i
 
 
 **Claude, 2026-08-23.** Works, and the bug you filed from it - OB-038 - was answered: the export/import round trip was already covered by a test, which is recorded at MT-118.
+
 ---
 
 <a id="mt-115"></a>
@@ -4772,6 +4920,7 @@ always right.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-115: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-116"></a>
@@ -4852,6 +5001,7 @@ Filed from this test: OB-045 (bug - disable autonomy editing while running).  Th
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-117"></a>
@@ -4934,6 +5084,7 @@ at the successor rather than at this.
 
 The rule this broke is in the SOP already - "a bug becomes ... an entry in tests.md with a new MT-###
 tag", singular, one per bug. Nothing needed changing except doing it.
+
 ---
 
 <a id="mt-118"></a>
@@ -5081,6 +5232,7 @@ past it. On a straight nothing should have changed at all.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-120"></a>
@@ -5109,6 +5261,7 @@ tooltips go through it now.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-120: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-121"></a>
@@ -5137,6 +5290,7 @@ Filed from this test: OB-041 (bug - linked links turned off).  They are in `issu
 
 
 **Claude, 2026-08-23.** Works, and the bug you filed from it - OB-041, a paired link switched off leaving its partner on - is fixed and recorded at MT-131.
+
 ---
 
 <a id="mt-122"></a>
@@ -5202,6 +5356,7 @@ Filed from this test: FR-011 (feature request - add to autonomy filtering).  The
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-123"></a>
@@ -5228,6 +5383,7 @@ Wording only.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-123: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-124"></a>
@@ -5428,6 +5584,7 @@ run before this is asked of you again.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-126"></a>
@@ -5473,6 +5630,7 @@ Looks great!
 
 
 **Claude, 2026-08-23.** "Looks great!" - closed.
+
 ---
 
 <a id="mt-127"></a>
@@ -5550,6 +5708,7 @@ found the same flag from the other end.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-128"></a>
@@ -5593,6 +5752,7 @@ Covered by `testDiagramExport.testANewGridRetiresTheOneItReplaces`.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-128: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-129"></a>
@@ -5641,6 +5801,7 @@ against the artwork by eye is a different kind of evidence from a test.
 
 **Claude, 2026-08-23.** Closed on your word - "MT-129: Works." with nothing else attached, so there is
 nothing left to do and nothing left to check.
+
 ---
 
 <a id="mt-130"></a>
@@ -5764,6 +5925,7 @@ Filed from this test: OB-046 (bug - go to the other end quirk).  They are in `is
 
 **Claude, 2026-08-23.** "This works" - closed. The bug you filed from it, OB-046, is fixed
 and recorded at MT-136.
+
 ---
 
 <a id="mt-132"></a>
@@ -5808,6 +5970,7 @@ has `buildTileMenu` handed to the main window rather than copied there.
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-133"></a>
@@ -5844,6 +6007,7 @@ Filed from this test: OB-047 (bug - layout editor openable while autonomy runnin
 
 
 **Claude, 2026-08-23.** Closed on your word - a clean "Works." with nothing held back. Any bug filed from this test is tracked as its own item and does not hold this one open.
+
 ---
 
 <a id="mt-134"></a>
@@ -7645,6 +7809,7 @@ different thing to check. They are carried into [MT-169](#mt-169).
 
 Recorded because the verdict sat in this entry for hours without moving the disposition, which is
 exactly what the disposition is for (RA-C4).
+
 ---
 
 <a id="mt-160"></a>
@@ -7698,6 +7863,7 @@ different thing to check. They are carried into [MT-169](#mt-169).
 
 Recorded because the verdict sat in this entry for hours without moving the disposition, which is
 exactly what the disposition is for (RA-C4).
+
 ---
 
 <a id="mt-161"></a>
@@ -7903,6 +8069,7 @@ different thing to check. They are carried into [MT-169](#mt-169).
 
 Recorded because the verdict sat in this entry for hours without moving the disposition, which is
 exactly what the disposition is for (RA-C4).
+
 ---
 
 <a id="mt-164"></a>

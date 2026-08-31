@@ -229,7 +229,13 @@ public class testTrainTailClearsEdges
             java.nio.charset.StandardCharsets.UTF_8);
 
         int clears = source.indexOf("if (cleared != null) cleared.add(path.get(waiting[0]));");
-        int unlocks = source.indexOf("path.get(waiting[0]).setLockedEdgeUnoccupied();");
+        // setUnoccupied, not setLockedEdgeUnoccupied (OB-164).
+        //
+        // The early release used to give up the edge and KEEP the throats it had locked until
+        // the whole path finished, which is the bug Adam reported: in non-atomic mode the
+        // edges came free and the crossings did not.  It gives up what it took now.  What this
+        // test is about - one rule, asked before either the clear or the unlock - is unchanged.
+        int unlocks = source.indexOf("path.get(waiting[0]).setUnoccupied();");
         int asks = source.indexOf("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],");
 
         assertTrue(clears >= 0, "the clearing loop no longer reports any edge clear");
