@@ -431,10 +431,18 @@ public final class HomeStaging
             // merely by another train is not impossible - moving that train is exactly what the planner
             // is for."  The state-aware canRest inside firstClearRoute is the one OB-073 ever needed,
             // and it stays: it is what makes the plans the search returns executable.
+            // THE SQUARE, and both questions of the same copy (2026-08-31).
+            //
+            // This asked `canRest(l, home)` and `connected(from, home)` about the one copy that
+            // happens to carry the home. Since the home became the square that is the wrong copy as
+            // often as the right one - which copy carries it is AutonomyBuilder's choice - so a
+            // locomotive that cannot reverse was called unreachable from a platform whose other copy
+            // is a through road it could stand on perfectly well, after the editor had accepted the
+            // home. A terminus turns a train round as it ARRIVES, so it is only the copies that turn
+            // that this locomotive cannot use.
             if (!locationOf(this.start, l).isActive()
                 || !locationOf(this.start, l).isDestination()
-                || !canRest(l, home)
-                || !connected(locationOf(this.start, l), home)) unreachable.add(l);
+                || !canGetHome(l, locationOf(this.start, l), home)) unreachable.add(l);
         }
 
         // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on
@@ -1475,6 +1483,45 @@ public final class HomeStaging
         Locomotive there = state.get(p);
 
         return there != null && !there.equals(loc);
+    }
+
+    /**
+     * Whether this locomotive could get home at all, over any copy of the home square (2026-08-31).
+     *
+     * Deliberately one method rather than two. Resting and reaching are separate questions, and asking
+     * them separately over the copies would accept a home where one copy can be rested at and a
+     * DIFFERENT one can be reached - which is no home at all. They are asked of the same copy.
+     *
+     * Blind to occupancy, like `connected`, and for the same reason: a route blocked merely by another
+     * train is not impossible, and moving that train is what the planner is for.
+     *
+     * @param loc the locomotive
+     * @param from where it is standing
+     * @param home its home, or any copy of the home square
+     * @return true when some copy of that square would take it and can be reached
+     */
+    private boolean canGetHome(Locomotive loc, Point from, Point home)
+    {
+        if (home == null) return false;
+
+        if (home.getBlock() == null || home.getLayout() == null)
+        {
+            return canRest(loc, home) && connected(from, home);
+        }
+
+        boolean sawACopy = false;
+
+        for (Point copy : home.getLayout().getPoints())
+        {
+            if (!home.getBlock().equals(copy.getBlock())) continue;
+
+            sawACopy = true;
+
+            if (canRest(loc, copy) && connected(from, copy)) return true;
+        }
+
+        // A block naming no copies cannot be answered by looking at them.
+        return sawACopy ? false : (canRest(loc, home) && connected(from, home));
     }
 
     /**

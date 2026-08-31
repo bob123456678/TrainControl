@@ -1215,6 +1215,25 @@ public class Layout
             }
         }
 
+        // AND ONE HOME PER PLATFORM, ACROSS ITS COPIES (2026-08-31).
+        //
+        // The other direction used to be enforced by the field itself - a Point holds one homeLoc, so
+        // naming a second locomotive at the same Point displaced the first. Letting homes onto squares
+        // drawn as several Points opened a gap under that: two copies are two fields, so one
+        // locomotive at each left both homed on one piece of track. Nothing can satisfy that, and
+        // Return Home answers IMPOSSIBLE naming both for the rest of the session - which is exactly
+        // what DAY-A1 was at the positional door.
+        //
+        // Displaced rather than refused, which is what naming the same Point twice has always done:
+        // the operator is saying this train lives here now.
+        if (loc != null)
+        {
+            for (Point other : this.points.values())
+            {
+                if (other != p && other.isSamePlaceAs(p)) other.setHomeLoc(null);
+            }
+        }
+
         p.setHomeLoc(loc);
 
         this.rebuildHomeStations();

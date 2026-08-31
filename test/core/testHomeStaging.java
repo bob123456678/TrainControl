@@ -3254,6 +3254,143 @@ public class testHomeStaging
     }
 
     /**
+     * A turning berth does not stop the platform beside it being home (Adam, 2026-08-31).
+     *
+     * His instruction: "make sure terminus work in the home logic, since the reversal happens on
+     * arrival."
+     *
+     * A terminus is a place a train has to turn round, and it turns round as it ARRIVES - so whether
+     * a locomotive may end there is a question about that locomotive, and `canRest` refuses a terminus
+     * to one that cannot reverse. Correct, and it stays.
+     *
+     * What was wrong is which square it was asked about. Since the home became the square, a platform
+     * drawn as a turning berth and a through road is a home for anything: a locomotive that cannot
+     * reverse arrives on the through road and never turns. `whyNotAHome` learned that, so the editor
+     * offers it - and the planner's reachability scan did not, so Return Home answered IMPOSSIBLE for
+     * a home the application had just accepted.
+     *
+     * **Both halves have to be asked of the same copy.** Resting and reaching are separate questions,
+     * and a copy you can rest at but cannot reach, plus a different copy you can reach but cannot rest
+     * at, would pass two separate scans between them while being no home at all.
+     *
+     * MUTATION: asking `canRest(l, home)` about the stored copy fails the first assertion; asking
+     * resting and connectedness over copies independently rather than per copy fails the second.
+     */
+    @Test
+    public void testATurningBerthDoesNotBlockTheThroughRoadBesideIt() throws Exception
+    {
+        Layout layout = load(twoStationCopiesAndASiding());
+
+        Point berth = layout.getPoint("HS P2");
+        Point through = layout.getPoint("HS P1");
+
+        assertEquals(berth.getBlock(), through.getBlock(),
+            "the fixture did not take: these must be two copies of one platform");
+
+        final boolean wasReversible = loc(LOC_A).isReversible();
+
+        try
+        {
+            loc(LOC_A).setReversible(false);
+
+            // The home is on the copy a train has to back out of; the train cannot back out.
+            berth.setTerminus(true);
+
+            layout.setHomeLocomotive("HS P2", LOC_A);
+
+            // And it is standing somewhere else.
+            assertTrue(layout.moveLocomotive(LOC_A, "HS Q", false),
+                "could not place the locomotive away from its home");
+
+            assertNull(HomeStaging.whyNotAHome(loc(LOC_A), berth),
+                "precondition: the editor must accept this home, or the planner agreeing with it "
+                + "proves nothing");
+
+            // plan(), not triage(): triage is the cheap pre-check - already home, no homes, nothing
+            // placed - and the reachability scan that decides IMPOSSIBLE lives in plan().
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "Return Home called a home impossible that the application had just accepted. The "
+                + "home is the platform, and the locomotive can stand on its through road - it only "
+                + "cannot use the turning berth, which is one copy of the same square");
+
+            // AND THE CONTROL: when every copy must be backed out of, it really is impossible.
+            through.setTerminus(true);
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+                "a platform every copy of which must be reversed out of was accepted for a "
+                + "locomotive that cannot reverse, so the rule has stopped refusing anything");
+        }
+        finally
+        {
+            through.setTerminus(false);
+            berth.setTerminus(false);
+            loc(LOC_A).setReversible(wasReversible);
+            layout.setHomeLocomotive("HS P2", null);
+            layout.moveLocomotive(null, "HS Q", false);
+        }
+    }
+
+    /**
+     * One platform holds one home, whichever of its copies is named (2026-08-31).
+     *
+     * `setHomeLocomotive` has always enforced one station per LOCOMOTIVE - assigning it somewhere new
+     * gives up wherever it was before. The other direction was enforced by the field itself: a Point
+     * holds one `homeLoc`, so naming a second locomotive at the same Point displaced the first.
+     *
+     * Allowing homes onto split squares opened a gap under that. Two copies of one platform are two
+     * Points with two fields, so assigning one locomotive to each left both homed on one piece of
+     * track - the state DAY-A1 fixed at the positional door, arrived at through the assignment door
+     * instead. Nothing can satisfy it, and Return Home says IMPOSSIBLE naming both for the rest of the
+     * session.
+     *
+     * Displacing rather than refusing, which is what naming the same Point twice already does: the
+     * operator is saying this train lives here now.
+     *
+     * MUTATION: sweeping only the exact Point rather than the square leaves both homed.
+     */
+    @Test
+    public void testOnePlatformHoldsOneHomeAcrossItsCopies() throws Exception
+    {
+        Layout layout = load(twoStationCopiesAndASiding());
+
+        Point p1 = layout.getPoint("HS P1");
+        Point p2 = layout.getPoint("HS P2");
+
+        assertEquals(p1.getBlock(), p2.getBlock(), "the fixture did not take: one square, two copies");
+
+        try
+        {
+            layout.setHomeLocomotive("HS P1", LOC_A);
+
+            assertEquals(p1.getHomeLoc(), loc(LOC_A), "precondition: the first assignment did not take");
+
+            // A second locomotive named at the OTHER copy of the same platform.
+            layout.setHomeLocomotive("HS P2", LOC_B);
+
+            assertEquals(p2.getHomeLoc(), loc(LOC_B), "the second assignment did not take");
+
+            assertNull(p1.getHomeLoc(),
+                "two locomotives are homed on two copies of one platform - which is one piece of "
+                + "track, so no arrangement puts both of them home, and Return Home answers "
+                + "IMPOSSIBLE naming both from now on");
+
+            int here = 0;
+
+            for (Point at : layout.getHomeStations().values())
+            {
+                if (at.isSamePlaceAs(p1)) here++;
+            }
+
+            assertEquals(here, 1, "the platform is recorded as the home of more than one locomotive");
+        }
+        finally
+        {
+            layout.setHomeLocomotive("HS P1", null);
+            layout.setHomeLocomotive("HS P2", null);
+        }
+    }
+
+    /**
      * One platform drawn as two Points, and a siding to send a train to.
      *
      * Both copies are stations and both carry the same sensor, which is what a split platform IS on
