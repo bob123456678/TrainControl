@@ -418,6 +418,11 @@ Tab icons provided by Freepik.
             - Fixed bug where a saved timetable lost all of its entries if any one of them could not be read, such as after the locomotive it named had been renamed or deleted.  Only the entry that cannot be read is dropped now.
             - Fixed bug where the list of places a train could be sent to, on the track diagram's right-click menu, stopped about four short.
             - Fixed bug where opening an autonomy setup and saving it without changing anything rewrote the file.  The list of locomotives excluded from a station came out in a different order every time, so the file looked edited on every start.
+            - Fixed bug where "return home" refused the entire run, naming two trains that were already standing at home, when their two home stations share a track sensor.
+            - Fixed bug where "return home" planned a journey for a train parked somewhere that is not a station, then retried it every couple of seconds until it gave up and abandoned the whole run.
+            - Fixed bug where "return home" planned a move onto a piece of track sharing the sensor the train was already standing on, which the railway then refused.
+            - Fixed bug where a single locomotive with no speed set ended the whole "return home" run instead of losing only its own leg.
+            - "Return home" now tells you which locomotive to place back on the diagram when a route that failed part way through has left the train claimed in two places, instead of reporting that no plan could be found.
             - Pressing Start twice quickly no longer starts twice.
         - Track Diagrams
             - Fixed bug where Shift Down and Shift Right recorded an undo step even when there was no square under the pointer, which cleared the redo history and made the editor ask about saving an edit that had never happened.
@@ -431,8 +436,8 @@ Tab icons provided by Freepik.
             - Fixed bug where searching the network for a Central Station could lose one it had just found, because a single slow reply from the station's web server was enough to discard it.
             - Pressing Stop while TrainControl is not connected now says so in the log instead of doing nothing silently.
         - Interface
-            - Fixed bug where the export windows for the autonomy setup, routes and locomotives, and the bulk route enable and disable prompt, built their dialogs on a background thread, so they could open behind the main window or stop responding.
             - Four more confirmations that delete or overwrite something no longer open with Yes already selected.
+            - The Timetable tab now shows its real column headings before anything has been captured, instead of the placeholder names.
     - Code
         - Updated JSON library to json-20260814.jar and FlatLaf to 3.7.2, and dropped the GraphStream libraries that the old autonomy graph needed
 

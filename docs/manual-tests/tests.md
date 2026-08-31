@@ -38,12 +38,15 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-234](#mt-234) | 2026-08-30 | A train passing through a station says which way it is going | fixed unvalidated | OB-158 |
-| [MT-235](#mt-235) | 2026-08-30 | A route button that would conduct track it was not drawn to conduct | fixed unvalidated | OB-160 |
 | [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
-| [MT-233](#mt-233) | 2026-08-30 | Start with nothing that can start leaves the railway alone | fixed unvalidated | RC-B5 |
+| [MT-236](#mt-236) | 2026-08-30 | Nothing is left highlighted below the diagram | fixed unvalidated | OB-161 |
+| [MT-237](#mt-237) | 2026-08-30 | The timetable is named before there is a timetable | fixed unvalidated | asked for directly - Adam, 2026-08-30 |
+| [MT-238](#mt-238) | 2026-08-30 | Return Home with two trains already parked on one sensor | fixed unvalidated | SG-A1 |
+| [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
+| [MT-240](#mt-240) | 2026-08-30 | Two kinds of random in the routing rules | fixed unvalidated | OB-156 |
+| [MT-241](#mt-241) | 2026-08-30 | The routing rules explain themselves | fixed unvalidated | OB-163 |
 
-Everything else - 206 of 233 - is **fixed validated** and needs nothing from you unless the
+Everything else - 209 of 241 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -11940,6 +11943,41 @@ drop their record - otherwise the next refresh would trust a key that no longer 
    The outlines must survive: this is the case a careless version of this fix breaks.
 4. **Drag a caption onto a tile and off again**, then re-select - the outline must come back.
 
+**Adam, 2026-08-30 (triage).** Does not work.
+
+the flicker is gone, but when dragging the selected tiles to the bottom of the diagram, a phantom row gets permanently highlighted in blue.  the rest seems to work OK.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 18:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30 (third round).** The phantom row is the grid's padding, and nothing could ever
+have taken the outline off it.
+
+The grid is built one row taller and one column wider than the diagram - blank labels that hold the
+GridBagLayout together, and the reason the grey grid used to draw an extra row at the bottom (OB-055).
+`getValueAt` hands them out like any other square, so a group dragged onto the LAST row had its landing
+outline - the pale blue one - painted straight onto the padding underneath. And the routine that takes
+outlines off deliberately leaves spacers alone, being the grid's own furniture rather than squares. So
+it went on and never came off.
+
+It is refused at the one door every outline goes through, asked of what the label IS - which is how the
+clearing side already asks it. The same fault was reachable in red, by dragging a selection box onto
+that row, and that goes too.
+
+**Also fixed while there:** a move that is refused for not fitting on the page now repaints. It emptied
+the landing set, showed its dialog and returned without redrawing, so the outlines it was asking about
+stayed on screen behind the dialog until something else moved.
+
+Filed as OB-161.
+
+1. **Drag a selected group onto the bottom row** and let go. Nothing should be left highlighted below
+   the diagram, whether the move was accepted or refused.
+2. **The same off the right-hand edge** - the padding column is the same trap.
+3. **Drag a group somewhere it does not fit** and dismiss the "would leave the diagram" message. The
+   diagram should be clean, not still showing where the group would have gone.
+4. **The flicker must stay gone** - drag a selection box across a busy page as before.
+
+*Run against v3_0_0_rc3 or later.*
+
 ---
 
 <a id="mt-229"></a>
@@ -12108,7 +12146,7 @@ window you are watching went behind the one you were clicking.
 
 ### MT-233 - 2026-08-30 - Start with nothing that can start leaves the railway alone
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-B5
 **Written:** 2026-08-30
 
@@ -12184,13 +12222,17 @@ Two tests: a placed locomotive gets the default, and one that already has a spee
 3. **Set a locomotive's speed to something of your own**, place it, and check that placing it did not
    overwrite your choice.
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 18:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-234"></a>
 
 ### MT-234 - 2026-08-30 - A train passing through a station says which way it is going
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-158
 **Written:** 2026-08-30
 
@@ -12235,7 +12277,7 @@ drawn in, and you said it is fine.
 
 ### MT-235 - 2026-08-30 - A route button that would conduct track it was not drawn to conduct
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-160
 **Written:** 2026-08-30
 
@@ -12266,5 +12308,166 @@ mine before this shipped.
 
 *Run against commit fb3722f5 or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 18:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+<a id="mt-236"></a>
+
+### MT-236 - 2026-08-30 - Nothing is left highlighted below the diagram
+
+**Disposition:** fixed unvalidated
+**From:** OB-161
+**Written:** 2026-08-30
+
+The grid keeps a blank row along the bottom and a blank column down the right, to hold its layout
+together. They are not squares, and nothing that takes outlines off ever touches them - so an outline
+put on one stayed there for the rest of the session.
+
+A group dragged onto the last row put its landing outline there; a selection box released on it put the
+picked outline there. Both are refused now, at the one place every outline goes through.
+
+1. **Drag a selected group onto the bottom row.** Nothing below the diagram should stay coloured.
+2. **The same off the right-hand edge.**
+3. **Drag a selection box down past the last row** and release. Same.
+4. **Ordinary selection and moving must be unaffected** - the squares you pick still outline, and a
+   group still moves where you drop it.
+
+*Run against v3_0_0_rc3 or later.*
+
 ---
 
+<a id="mt-237"></a>
+
+### MT-237 - 2026-08-30 - The timetable is named before there is a timetable
+
+**Disposition:** fixed unvalidated
+**From:** asked for directly - Adam, 2026-08-30
+**Written:** 2026-08-30
+
+Adam: "the timetable entry has default table heading when blank.  make sure these are always set."
+
+The table is built by the form designer, which starts every table off with four columns called "Title
+1" through "Title 4" and four blank rows. The real headings were only installed when the timetable was
+redrawn, and that cannot happen before an autonomy configuration exists - so a fresh installation showed
+the placeholder for exactly as long as it took to set autonomy up.
+
+They are set when the window is built now, which needs nothing behind them.
+
+1. **Open the Timetable tab on a fresh start**, before doing anything with autonomy. The columns should
+   read Index, Locomotive, Start, Destination, Time - and there should be no rows at all.
+2. **Capture something and look again** - the headings are unchanged and the rows fill in as before.
+3. **In another language**, if you want to check the translations came through.
+
+*Run against v3_0_0_rc3 or later.*
+
+---
+
+<a id="mt-238"></a>
+
+### MT-238 - 2026-08-30 - Return Home with two trains already parked on one sensor
+
+**Disposition:** fixed unvalidated
+**From:** SG-A1
+**Written:** 2026-08-30
+
+**This is the one from the release-candidate review most likely to have bitten you.** On your railway
+`BottomMainC` and `BottomMainCTerm` share feedback 4 - a platform and its terminus stub - and if both
+are homes with their own trains standing on them, Return Home refused the WHOLE run and named those two.
+
+It proved that two homes on one detection section cannot both be occupied, which is true of an ARRIVAL -
+and an arrival is the one thing that does not happen when the train is already there. The scan twelve
+lines below it in the same method carries exactly that exemption; this one did not.
+
+1. **Park two trains on their own homes where the two homes share a sensor**, and leave a third train
+   away from its home. Press Return Home. It should plan the third train's journey rather than refuse.
+2. **Now move ONE of the pair away** and press Return Home again. If its home is genuinely unreachable
+   while the other train is parked on the shared section, refusing is right - what matters is that it
+   says so about a train that actually has somewhere to go.
+3. **An ordinary Return Home** with no shared-sensor homes must be unchanged.
+
+*Run against v3_0_0_rc3 or later.*
+
+---
+<a id="mt-239"></a>
+
+### MT-239 - 2026-08-30 - Editing your own routes does not talk to the Central Station
+
+**Disposition:** fixed unvalidated
+**From:** OB-155
+**Written:** 2026-08-30
+
+Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >= ID 1000."
+
+Deleting a route, and renumbering one, synced the whole database back from the Central Station
+afterwards - behind a modal spinner, and at twice the connect timeout when the station is off. For a
+route numbered 1000 or above there is nothing to fetch: those are allocated here and the station has
+never heard of them.
+
+Both doors now ask first, and the renumber asks about BOTH numbers - moving a route out of the local
+range is a change the station does need to hear about.
+
+1. **Delete a route numbered 1000 or above.** It should go immediately, with no spinner and no pause.
+2. **Do the same with the Central Station switched off.** Same - this is where the old behaviour cost
+   the most.
+3. **Delete a route numbered below 1000.** The sync must still happen: that one the station knows.
+4. **Renumber a route from 1000-something to a low number, and back.** Both directions should sync,
+   because one end of the change is a number the station keeps.
+
+*Run against v3_0_0_rc3 or later.*
+
+---
+
+<a id="mt-240"></a>
+
+### MT-240 - 2026-08-30 - Two kinds of random in the routing rules
+
+**Disposition:** fixed unvalidated
+**From:** OB-156
+**Written:** 2026-08-30
+
+Adam: "there should also be a 'by station priority' option that simply uses the station priority and
+randomly chooses from the highest available", and then: "let's have one completely random, and one that
+respects priority."
+
+There are two now. **At Random, Respecting Priority** is what "At Random" always actually did - the
+candidate list is shuffled and then sorted by priority with a stable sort, so it picks at random from
+the highest band that has anything free. It was only ever named wrongly. **Completely at Random**
+ignores priority altogether, which is the one that did not exist.
+
+1. **Give two stations different priorities** and run with **At Random, Respecting Priority** for a
+   while. Trains should keep choosing the higher one while it is free.
+2. **Switch to Completely at Random** and run again. Now both should come up, priority or not.
+3. **Check the rule survives a restart** - it is stored with the autonomy configuration.
+
+*Run against v3_0_0_rc3 or later.*
+
+---
+<a id="mt-241"></a>
+
+### MT-241 - 2026-08-30 - The routing rules explain themselves
+
+**Disposition:** fixed unvalidated
+**From:** OB-163
+**Written:** 2026-08-30
+
+Every routing rule has an explanation written for it and translated into all eight languages, and until
+now nothing read a single one of them: the dropdown was built from the rule NAMES and carried only the
+general sentence about what the control is for. Seventy-two written sentences, on the one control where
+ten similarly-worded options have to be told apart.
+
+That is also how "Completely at Random" - added yesterday - came to be the only rule with no
+explanation written at all. It has one now, and "At Random, Respecting Priority" has been corrected: it
+still described itself as it did when it was simply called "At Random".
+
+1. **Hover the routing rule dropdown** in the autonomy settings. It should say what the control is
+   for, and then what the rule currently chosen actually does.
+2. **Change the rule and hover again.** The second paragraph should have changed with it.
+3. **Try to change it while trains are running.** The dropdown goes back to the rule in force - and the
+   tooltip must go back with it, not keep describing the rule that was refused.
+4. **In another language**, if you want to check the two new sentences read properly.
+
+*Run against v3_0_0_rc3 or later.*
+
+---

@@ -136,6 +136,61 @@ with no rails on it; and track running into a button from three sides, where the
 the third arm is dropped in silence.  Four sides is a fixed crossing and is left alone, which is his
 "static crossing under the hood".
 
+### OB-161 - 2026-08-30 - a phantom row stays highlighted below the diagram
+
+**Kind:** bug
+**Raised from:** MT-228
+**Filed:** 2026-08-30
+
+Adam: "the flicker is gone, but when dragging the selected tiles to the bottom of the diagram, a
+phantom row gets permanently highlighted in blue.  the rest seems to work OK."
+
+The grid is built one row taller and one column wider than the diagram, and that extra row and column
+are blank labels holding the GridBagLayout together (OB-055).  Every outline goes on through one
+method, which was happy to put one on them - and the routine that takes outlines off deliberately
+leaves them alone, being the grid's own furniture rather than squares.  So a group dragged onto the
+last row painted its landing outline onto the padding underneath, and nothing ever removed it.
+
+Reachable in red as well, by releasing a selection box on that row.  Refused now at the one door, asked
+of what the label IS, which is how the clearing side already asks it.
+
+### OB-162 - 2026-08-30 - the timetable shows the form designer's headings when it is empty
+
+**Kind:** bug
+**Raised from:** asked for directly - Adam, 2026-08-30
+**Filed:** 2026-08-30
+
+Adam: "also, the timetable entry has default table heading when blank.  make sure these are always
+set."
+
+The form designer starts every table off with four columns called "Title 1" through "Title 4" and four
+blank rows.  The real headings were installed only when the timetable was redrawn, and that cannot
+happen before there is an autonomy configuration to redraw it from - so on a fresh installation the
+Timetable tab showed the placeholder for exactly as long as it took to set autonomy up.
+
+They are set when the window is built now.  Separately, because redrawing the timetable begins by
+asking the running graph for a snapshot and at that point there is no graph to ask.
+
+### OB-163 - 2026-08-30 - the routing rules explain themselves to nobody
+
+**Kind:** bug
+**Raised from:** found while writing MT-240 for OB-156
+**Filed:** 2026-08-30
+
+Every routing rule has a written explanation - `autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS`
+and its eight siblings, translated into all eight languages.  Nothing reads them.  The dropdown is
+built from the NAMES only, and its tooltip is the general one about what the control does; the
+per-rule text has no caller anywhere in `src/`.
+
+That is seventy-two written and translated sentences the operator cannot see, on the one control where
+they are choosing between ten similarly-worded options.  It also hid the fact that "Completely at
+Random", added yesterday for OB-156, is the only rule with no explanation written at all - a gap that
+would have been obvious the moment the text was on screen.
+
+The tooltip for "At Random, Respecting Priority" is stale as well: it says "whatever free route is
+found first", which was true when the rule was called "At Random" and is only half the story now that
+its name promises priority.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -150,6 +205,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-30 | OB-163 | bug | the routing rules explain themselves to nobody | - | [MT-241](tests.md#mt-241) |
+| 2026-08-30 | OB-158 | bug | ... on traversing trains in station labels | - | [MT-234](tests.md#mt-234) |
+| 2026-08-30 | OB-156 | bug | a routing rule that picks at random from the highest priority | - | [MT-240](tests.md#mt-240) |
+| 2026-08-30 | OB-155 | bug | synchronizing with cs2 after deleting routes | - | [MT-239](tests.md#mt-239) |
+| 2026-08-30 | OB-161 | bug | a phantom row stays highlighted below the diagram | - | [MT-236](tests.md#mt-236) |
+| 2026-08-30 | OB-162 | bug | the timetable shows placeholder headings when it is empty | - | [MT-237](tests.md#mt-237) |
 | 2026-08-30 | OB-160 | bug | route buttons conducting track they were not drawn to conduct | - | [MT-235](tests.md#mt-235) |
 | 2026-08-30 | OB-157 | bug | selection drag repaints every tile on the diagram | - | [MT-228](tests.md#mt-228) |
 | 2026-08-29 | OB-154 | bug | checkNoMaxTrainLength does not specify the station name | - | [MT-224](tests.md#mt-224) |

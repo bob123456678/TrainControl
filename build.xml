@@ -116,6 +116,10 @@
         </macrodef>
 
         <test-one-class class="testAccessory"/>
+        <test-one-class class="testStagingSkipsALegWithNoSpeed"/>
+        <test-one-class class="testStagingOutcomeMessages"/>
+        <test-one-class class="testTimetableColumnHeadings"/>
+        <test-one-class class="testRoutingRuleTooltips"/>
         <test-one-class class="testDiagramLooksRight"/>
         <test-one-class class="testSidebarIcons"/>
         <test-one-class class="testTheWaitMarkIsAnHourglass"/>

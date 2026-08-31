@@ -235,6 +235,17 @@ public final class HomeStaging
         /** No plan was found within the search limit.  May still be possible. */
         NO_PLAN_FOUND,
 
+        /**
+         * A locomotive is held on more than one point, so where it is standing cannot be said at all
+         * - see getBlocked.
+         *
+         * A locked path reserves every point along it for one locomotive at once, and a path that
+         * failed part-way through unlocking leaves those reservations behind.  Nothing in the model
+         * distinguishes a reservation from a train, so the planner has several equally good answers to
+         * "where is it", and departing from the wrong one drives a real train from a place it is not.
+         */
+        POSITION_AMBIGUOUS,
+
         /** Something is already moving - not a conclusion about the layout, just the wrong moment. */
         LOCOMOTIVES_RUNNING
     }
@@ -329,6 +340,45 @@ public final class HomeStaging
 
         if (trivial != null) return new Plan(trivial, empty(), noLocs());
 
+        // A locomotive in two places at once, which nothing below this line can reason about (SG-A3).
+        //
+        // A locked path reserves every point along it for the one locomotive at once - that is how a
+        // junction behind the train is held against a second train reaching it another way - and a path
+        // that failed part-way through unlocking leaves those reservations standing.  Nothing in the
+        // model tells a reservation from a train: reserve() and setLocomotive() write the same field,
+        // and the only difference between them is whether the other copies are swept.
+        //
+        // What went wrong before this was in the counting.  `misplaced` counted map ENTRIES, so one
+        // train counted twice, and `apply` moved it by removing the first entry it found, leaving the
+        // other standing for ever - so `misplaced == 0` could not be reached and the answer was
+        // NO_PLAN_FOUND with no moves, for a train with a clear run to an empty home.
+        //
+        // **Counting it properly would be the wrong fix.**  It produces a plan, and the plan departs
+        // from whichever of the points locationOf yields first - so a real train is driven from a
+        // place it is not standing.  The doctrine written all through this class is that NO_PLAN_FOUND
+        // claims less than it could and claims nothing false; a guessed origin claims something that
+        // may be false, at the highest price this project has.
+        //
+        // So it is reported instead, with the locomotive's name, and the operator's remedy is the
+        // ordinary one: place the train on the square it is actually on, which sweeps the rest.
+        List<Locomotive> ambiguous = new ArrayList<>();
+
+        for (Locomotive l : this.start.values())
+        {
+            if (ambiguous.contains(l)) continue;
+
+            int held = 0;
+
+            for (Locomotive at : this.start.values())
+            {
+                if (at.equals(l)) held++;
+            }
+
+            if (held > 1) ambiguous.add(l);
+        }
+
+        if (!ambiguous.isEmpty()) return new Plan(Outcome.POSITION_AMBIGUOUS, empty(), ambiguous);
+
         // A locomotive with no route to its home at all cannot be helped by moving anything else, and
         // it is the only impossibility this class can prove.  Locomotives already standing on their
         // home are skipped: asking for a route from a point back to itself is a different question,
@@ -379,6 +429,7 @@ public final class HomeStaging
             // is for."  The state-aware canRest inside firstClearRoute is the one OB-073 ever needed,
             // and it stays: it is what makes the plans the search returns executable.
             if (!locationOf(this.start, l).isActive()
+                || !locationOf(this.start, l).isDestination()
                 || !canRest(l, home)
                 || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
@@ -397,11 +448,29 @@ public final class HomeStaging
             {
                 if (a.getKey().equals(b.getKey()) || !this.start.containsValue(b.getKey())) continue;
 
-                if (sharesSection(a.getValue(), b.getValue()))
-                {
-                    if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
-                    if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
-                }
+                if (!sharesSection(a.getValue(), b.getValue())) continue;
+
+                // Both already parked: nothing arrives, so nothing is checked (SG-A1).
+                //
+                // The same exemption the cycle scan below carries, and for the same reason.  What is
+                // proved here is that the SECOND arrival onto a shared detection section is refused -
+                // and neither of these trains arrives, because both are standing on their own homes
+                // already.  The arrangement is finished for this pair before the run begins.
+                //
+                // The cost of leaving it out is not a worse plan but no plan: IMPOSSIBLE refuses the
+                // WHOLE staging run, so a third locomotive that only needed driving to the next
+                // platform never moves, and the two names the operator is handed are the two trains
+                // that are already where they belong.  On Adam's railway BottomMainC and
+                // BottomMainCTerm share feedback 4 - a platform and its terminus stub - so this is
+                // what an ordinary evening looks like, not a hand-edited configuration.
+                //
+                // Only one of the two has to be away for the proof to hold again, which is the case
+                // testTwoActivePointsSharingASensorAreNeverBothOccupied holds.
+                if (a.getValue().equals(locationOf(this.start, a.getKey()))
+                    && b.getValue().equals(locationOf(this.start, b.getKey()))) continue;
+
+                if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
+                if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
             }
         }
 
@@ -830,11 +899,23 @@ public final class HomeStaging
         if (from == null || to == null || from.equals(to)) return null;
 
         // The origin is exempt from every other test here - that is what stops the moving train's own
-        // sensor blocking its own departure - but not from this one.  isPathClear applies its
+        // sensor blocking its own departure - but not from these two.  isPathClear applies its
         // inactive-point rule to every edge start including the first, and staging executes with
         // autonomy running, so a locomotive standing on a deactivated point would be planned home and
         // then refused at its first edge.
         if (!from.isActive()) return null;
+
+        // And the rule in the very next `if` after that one (SG-A2).
+        //
+        // "Starting point is not a station - do not pick it in fully autonomous mode", and staging is
+        // fully autonomous operation: executeTimetable sets `running`, which is exactly why the
+        // reversing-point exclusion had to be moved out of isPathClear and into selection.
+        //
+        // Missing this cost more than a refused plan.  The run STARTED, the first leg was refused, and
+        // the retry loop asked again every two seconds until it abandoned the run saying "the track it
+        // needs never became free" - which is not what was wrong.  The track was clear; the train was
+        // parked somewhere no automatic path may begin, which is where a hand-placed train sits.
+        if (!from.isDestination()) return null;
         if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();
@@ -1032,7 +1113,22 @@ public final class HomeStaging
 
                 Locomotive there = state.get(sibling);
 
-                if (there != null && !there.equals(loc)) return false;
+                // The MOVER is not exempt either (SG-A4).
+                //
+                // It reads as though it must be - a train cannot be blocked by its own sensor - but
+                // the point it is standing on is not what is being asked about.  isPathClear never
+                // looks at the point a path STARTS from; what it looks at is the end of every edge,
+                // against the live feedback, and it exempts nobody.  While the train is still standing
+                // on this section the feedback really is set, so a leg into another point reporting
+                // that sensor was planned and then refused at execution - and the run retried it every
+                // two seconds until it was abandoned.
+                //
+                // Hardware-conditional, which is why nothing caught it: on pulsed feedback the sensor
+                // clears behind the train and the runtime's check never fires.  On latching occupancy
+                // detection it fires every time.
+                //
+                // Departing is unaffected: `from` is never passed to this method.
+                if (there != null) return false;
             }
         }
 

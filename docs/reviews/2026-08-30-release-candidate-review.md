@@ -407,6 +407,12 @@ unlocking would be worse.
 All in `HomeStaging.java`; the planner is a large enough surface that I did not want to change it
 between a release candidate and your manual testing.
 
+**All five are now fixed** - 2026-08-30, after Adam's manual testing, in
+[2026-08-30-staging-planner-round.md](2026-08-30-staging-planner-round.md), where they are `SG-A1`
+through `SG-A5` in the order below. One of them, the third, was fixed a different way than described
+here: counting the duplicate properly produces a plan that departs from a guessed point, so it is
+reported rather than planned for.
+
 1. **Two homes on one sensor are proved IMPOSSIBLE even when both trains are already standing on
 them** (`:392-406`). The exemption its own sibling scan carries twelve lines below (`:467-469`) is
 missing here. On your graph `BottomMainC` / `BottomMainCTerm` share feedback 4, so with both trains home

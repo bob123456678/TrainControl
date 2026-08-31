@@ -55,7 +55,19 @@ public class testLayoutTimetable
      */
     private MarklinLocomotive dummyLoc()
     {
-        return new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "TT Loc " + (++locCounter));
+        MarklinLocomotive loc = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
+            "TT Loc " + (++locCounter));
+
+        // WITH A SPEED, which was never what these tests are about (SG-A5).
+        //
+        // A fresh locomotive has none, and the dispatch loop now SKIPS an entry whose locomotive has
+        // a speed outside 1 to 100 rather than retrying it - so the two give-up tests below ended
+        // instantly, by the new rule, without ever reaching the bounds they were written to check.
+        // The reason those entries can never execute is that the layout is invalidated, and that is
+        // the mechanism they must keep exercising.
+        loc.setPreferredSpeed(35);
+
+        return loc;
     }
 
     /**

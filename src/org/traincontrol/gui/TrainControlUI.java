@@ -579,8 +579,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public TrainControlUI()
     {
-        System.setProperty("org.graphstream.ui", "swing");
-
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
 
@@ -594,6 +592,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.SizeList.setModel(new javax.swing.DefaultComboBoxModel<String>() {{
             layoutSizes.keySet().forEach(this::addElement);
         }});
+
+        // The timetable's headings, before there is a timetable to head.
+        prepareTimetableColumns();
                 
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
@@ -3421,10 +3422,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int configTab = locCommandPanels.indexOfComponent(this.autonomyPanel);
 
         if (configTab >= 0) locCommandPanels.remove(configTab);
-
-        // The graph window is gone, so this reopens nothing.  Hidden rather than taken out of the
-        // form, which is generated - say the word and it comes out properly.
-        this.reopenGraphButton.setVisible(false);
 
         // the JSON-era controls; everything they did has a home on the panel now
         this.validateButton.setVisible(false);
@@ -8063,6 +8060,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private boolean restoringRoutingLogic = false;
 
     /**
+     * Puts what the chosen routing rule DOES onto the control that chooses it (OB-163).
+     *
+     * Every rule has an explanation written for it and translated into all eight languages -
+     * `autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS` and its siblings - and until this method
+     * existed nothing read a single one of them.  The dropdown was built from the names alone and
+     * carried the general sentence about what the control is for, so seventy-two written sentences
+     * were unreachable on the one control where ten similarly-worded options have to be told apart.
+     *
+     * It also hid that "Completely at Random" had no explanation written at all, which was obvious
+     * the moment the text was on screen.
+     *
+     * Called from the three places the selection can change: the build, a person choosing, and
+     * restoreRoutingLogicSelection - which holds a flag that stops the listener running, so it cannot
+     * rely on the second of those.
+     */
+    private void refreshRoutingLogicTooltip()
+    {
+        if (algorithmType == null) return;
+
+        String general = I18n.t("ui.main.tooltip.routingLogic");
+
+        int at = algorithmType.getSelectedIndex();
+
+        if (at < 0 || at >= ROUTING_ORDER.length)
+        {
+            algorithmType.setToolTipText(general);
+
+            return;
+        }
+
+        // HTML so the two paragraphs wrap rather than running off the screen.  Both come from the
+        // bundle and neither carries markup, so nothing here can be broken by a translation.
+        algorithmType.setToolTipText("<html><p width=\"420\">" + general + "<br><br>"
+            + I18n.t("autolayout.ui.tooltip.pathPreference" + ROUTING_ORDER[at].name())
+            + "</p></html>");
+    }
+
+    /**
      * Puts the routing dropdown back to the rule the layout is actually using (RC-B11).
      *
      * Two callers wanting the same thing for different reasons: a refused change has to stop the
@@ -8093,6 +8128,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (ROUTING_ORDER[at] == now)
                 {
                     algorithmType.setSelectedIndex(at);
+
+                    // Inside the flag, which suppresses the listener - so the tooltip has to be asked
+                    // for here as well or a restored selection keeps the refused rule's description
+                    // (OB-163).
+                    refreshRoutingLogicTooltip();
 
                     return;
                 }
@@ -8149,8 +8189,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         algorithmType.setPreferredSize(capped);
         algorithmType.setMaximumSize(capped);
 
-        // The full name still reaches the user, on the control that was too narrow to show it.
-        algorithmType.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
+        // The full name still reaches the user, on the control that was too narrow to show it - and
+        // with it what the chosen rule actually does (OB-163).
+        refreshRoutingLogicTooltip();
 
         algorithmType.addActionListener(event ->
         {
@@ -8198,6 +8239,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         if (this.model.getAutoLayout().getPathPreference() == option) return;
 
                         this.model.getAutoLayout().setPathPreference(option);
+
+                        // And the tooltip follows the choice (OB-163)
+                        refreshRoutingLogicTooltip();
 
                         // Said out loud when it cannot be kept.  A rule that applies now and reverts
                         // on the next start is the shape of "it did not save" that costs an hour to
@@ -9496,7 +9540,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autoLocPanel = new javax.swing.JPanel();
         gracefulStop = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
-        reopenGraphButton = new javax.swing.JButton();
         returnHomeButton = new javax.swing.JButton();
         timetablePanel = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
@@ -11747,16 +11790,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        reopenGraphButton.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        reopenGraphButton.setText(bundle.getString("ui.main.reopenGraph")); // NOI18N
-        reopenGraphButton.setToolTipText(bundle.getString("autolayout.ui.tooltip.reopenGraph")); // NOI18N
-        reopenGraphButton.setFocusable(false);
-        reopenGraphButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                reopenGraphButtonActionPerformed(evt);
-            }
-        });
-
         returnHomeButton.setBackground(new java.awt.Color(255, 204, 204));
         returnHomeButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         returnHomeButton.setText(bundle.getString("ui.main.returnHome")); // NOI18N
@@ -11782,8 +11815,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(returnHomeButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(reopenGraphButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(startAutonomy)))
                 .addContainerGap())
         );
@@ -11791,12 +11822,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(startAutonomy)
-                        .addComponent(gracefulStop)
-                        .addComponent(returnHomeButton))
-                    .addComponent(reopenGraphButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(startAutonomy)
+                    .addComponent(gracefulStop)
+                    .addComponent(returnHomeButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addContainerGap())
@@ -12073,6 +12102,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         jLabel2.setText("Path Selection Logic");
 
         algorithmType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        algorithmType.setFocusable(false);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -20316,7 +20346,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * different ways depending on which one noticed it.
      *
      * @param outcome
-     * @param blocked - may be null; only IMPOSSIBLE has any
+     * @param blocked - may be null; only IMPOSSIBLE and POSITION_AMBIGUOUS carry any
      * @return
      */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
@@ -20340,18 +20370,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     I18n.t("ui.main.gracefulStop"));
 
             case IMPOSSIBLE:
-                List<String> names = new ArrayList<>();
+                return I18n.f("autolayout.ui.errorCannotReachHome", namesOf(blocked));
 
-                for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
-                {
-                    names.add(l.getName());
-                }
-
-                return I18n.f("autolayout.ui.errorCannotReachHome", String.join(", ", names));
+            // Its own sentence, and not the default one (SG-A3).
+            //
+            // Falling through to "no return plan found" would be the wrong thing twice: a plan almost
+            // certainly exists, and the obstacle is not the track but that nobody can say where the
+            // train is.  errorCannotReachHome is wrong for it too - "check the track between them and
+            // where they started" sends the operator to look at track that is fine.
+            case POSITION_AMBIGUOUS:
+                return I18n.f("autolayout.ui.errorLocomotivePositionAmbiguous", namesOf(blocked));
 
             default:
                 return I18n.t("autolayout.ui.errorNoReturnPlanFound");
         }
+    }
+
+    /**
+     * The blocked locomotives as a readable list, for the two outcomes that name any.
+     *
+     * @param blocked the locomotives, or null
+     * @return their names, comma separated
+     */
+    private String namesOf(List<Locomotive> blocked)
+    {
+        List<String> names = new ArrayList<>();
+
+        for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
+        {
+            names.add(l.getName());
+        }
+
+        return String.join(", ", names);
     }
 
     /**
@@ -22240,16 +22290,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_popUpAllMenuItemActionPerformed
 
-    private void reopenGraphButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reopenGraphButtonActionPerformed
-
-        // WITHDRAWN with the graph window itself.  The button is hidden in the constructor - see
-        // hideGraphButton - so nothing reaches this; what follows is what it said when the graph
-        // could not be shown, which is now the only truthful answer it has.
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorConfigurationInvalidMustReload"));
-        }
-    }//GEN-LAST:event_reopenGraphButtonActionPerformed
-
     private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -23743,6 +23783,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return base == null ? point.getName() : base;
     }
 
+    /**
+     * Gives the timetable its columns, whether or not there is anything to put in them.
+     *
+     * Adam: "the timetable entry has default table heading when blank.  make sure these are always
+     * set."  The form designer starts every JTable off with four columns called "Title 1" through
+     * "Title 4" and four blank rows, and these headings used to be installed only from
+     * repaintTimetable - so until an autonomy configuration existed and something had happened to it,
+     * the Timetable tab showed the designer's placeholder.  On a fresh installation that is the whole
+     * time the operator is setting autonomy up, which is when they are most likely to look at it.
+     *
+     * Called from the constructor as well, which is why it is separate: repaintTimetable's first act
+     * is to ask the running Layout for a snapshot, and at construction there is no Layout to ask.
+     * Nothing here needs one.
+     *
+     * Idempotent, on the column count, because both callers may run in either order.
+     */
+    private void prepareTimetableColumns()
+    {
+        if (this.timetable.getColumnCount() == 5) return;
+
+        String col[] = {
+            I18n.t("timetable.ui.columnIndex"),
+            I18n.t("timetable.ui.columnLocomotive"),
+            I18n.t("timetable.ui.columnStart"),
+            I18n.t("timetable.ui.columnDestination"),
+            I18n.t("timetable.ui.columnTime")
+        };
+
+        DefaultTableModel tableModel = new DefaultTableModel(col, 0)
+        {
+            // Disable editing
+            @Override
+            public boolean isCellEditable(int row, int column)
+            {
+                return false;
+            }
+        };
+
+        this.timetable.setModel(tableModel);
+
+        TableRowSorter<TableModel> sorter = new TableRowSorter<>(this.timetable.getModel());
+        sorter.setSortable(0, false);
+        sorter.setSortable(1, false);
+        sorter.setSortable(2, false);
+        sorter.setSortable(3, false);
+        sorter.setSortable(4, false);
+        this.timetable.setRowSorter(sorter);
+    }
+
     private void repaintTimetable()
     {
         // The snapshot must not be taken on the EDT.
@@ -23777,37 +23866,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // Initial setup
-            if (this.timetable.getColumnCount() != 5)
-            {
-                // Aggregate stats
-                String col[] = {
-                    I18n.t("timetable.ui.columnIndex"),
-                    I18n.t("timetable.ui.columnLocomotive"),
-                    I18n.t("timetable.ui.columnStart"),
-                    I18n.t("timetable.ui.columnDestination"),
-                    I18n.t("timetable.ui.columnTime")
-                };
-                DefaultTableModel tableModel = new DefaultTableModel(col, 0)
-                {
-                    // Disable editing
-                    @Override
-                    public boolean isCellEditable(int row, int column)
-                    {  
-                        return false;  
-                    }
-                };
-                
-                this.timetable.setModel(tableModel);
-                TableRowSorter<TableModel> sorter = new TableRowSorter<>(this.timetable.getModel());
-                sorter.setSortable(0, false); 
-                sorter.setSortable(1, false); 
-                sorter.setSortable(2, false); 
-                sorter.setSortable(3, false); 
-                sorter.setSortable(4, false); 
-                this.timetable.setRowSorter(sorter);
-            }
-            
+            prepareTimetableColumns();
+
             // Update the data
             this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
             
@@ -25276,7 +25336,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem quickFindMenuItem;
     private javax.swing.JCheckBoxMenuItem rememberLocationMenuItem;
     private javax.swing.JMenuItem renameLayoutMenuItem;
-    private javax.swing.JButton reopenGraphButton;
     private javax.swing.JButton returnHomeButton;
     private javax.swing.JLabel routeLabel;
     private javax.swing.JScrollPane routeScrollPane;

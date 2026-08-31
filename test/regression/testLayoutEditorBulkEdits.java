@@ -850,4 +850,95 @@ public class testLayoutEditorBulkEdits
     {
         return new TileKey(page, x, y);
     }
+
+    /**
+     * Nothing outlines the grid's padding.
+     *
+     * Adam, on MT-228: "the flicker is gone, but when dragging the selected tiles to the bottom of the
+     * diagram, a phantom row gets permanently highlighted in blue."
+     *
+     * The grid is built one row taller and one column wider than the diagram, and that extra row and
+     * column are blank labels that hold the GridBagLayout together (OB-055).  getValueAt hands them out
+     * like any other square, so a group dragged onto the last row has its landing outline - the blue
+     * one - painted straight onto the padding underneath.  And clearBordersFromChildren deliberately
+     * leaves spacers alone, being the grid's own furniture rather than squares, so nothing ever takes
+     * that outline off again.  Permanent, exactly as reported.
+     *
+     * Both doors are tested, because both are open: the landing set gets there through a drag, and the
+     * picked set gets there through a box released on the padding, which is the same mistake in red.
+     *
+     * MUTATION this catches: the whole of it.  Take the spacer guard out of highlightLabel and both
+     * assertions fail with a border on a label that is not a square.
+     */
+    @Test
+    public void testTheOutlineNeverLandsOnTheGridsPadding() throws Exception
+    {
+        withEditor("tc-landing-padding", (editor, session, page) ->
+        {
+            try
+            {
+                java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+                gridField.setAccessible(true);
+
+                org.traincontrol.gui.LayoutGrid grid =
+                    (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+
+                // The fixture's diagram is 21 x 16, so the padding is row 16.  Asserted rather than
+                // assumed: if the grid ever stops being built one bigger than the diagram, this test
+                // would pass by looking at nothing at all.
+                org.traincontrol.gui.LayoutLabel padding = grid.getValueAt(5, 16);
+
+                assertNotNull(padding, "the grid has no row 16, so this test is looking at nothing");
+
+                assertTrue(padding.isSpacer(),
+                    "row 16 is a real square, so this test is looking at the wrong row");
+
+                assertNull(padding.getBorder(), "the padding started out with a border");
+
+                java.lang.reflect.Field landingField =
+                    LayoutEditor.class.getDeclaredField("landingSelection");
+                landingField.setAccessible(true);
+
+                org.traincontrol.base.TileSelection landing =
+                    (org.traincontrol.base.TileSelection) landingField.get(editor);
+
+                java.lang.reflect.Method refresh =
+                    LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
+                refresh.setAccessible(true);
+
+                // A group on the bottom row, dragged one row further down: the landing runs off the
+                // diagram and onto the padding.
+                editor.getSelection().add(5, 15);
+
+                landing.add(5, 16);
+
+                refresh.invoke(editor);
+
+                assertNull(grid.getValueAt(5, 16).getBorder(),
+                    "the padding row is wearing the blue landing outline, and clearBordersFromChildren "
+                    + "will never take it off again - which is the phantom row Adam reported");
+
+                // And the same square picked outright, which is what a selection box released on the
+                // padding does.
+                landing.clear();
+
+                editor.getSelection().add(5, 16);
+
+                refresh.invoke(editor);
+
+                assertNull(grid.getValueAt(5, 16).getBorder(),
+                    "the padding row is wearing the red selected outline, by the same door");
+
+                // The real square above it still gets its outline, so the guard has not simply turned
+                // the feature off.
+                assertNotNull(grid.getValueAt(5, 15).getBorder(),
+                    "the square that IS picked lost its outline, so the guard is too wide");
+            }
+            catch (ReflectiveOperationException bad)
+            {
+                throw new RuntimeException(bad);
+            }
+        },
+        (session, page) -> { });
+    }
 }

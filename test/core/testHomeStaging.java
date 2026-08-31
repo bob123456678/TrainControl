@@ -2451,6 +2451,71 @@ public class testHomeStaging
     }
 
     /**
+     * A locomotive standing on a point that is not a station is not planned home either (SG-A2).
+     *
+     * The rule the planner was missing sits in isPathClear one `if` after the inactive-point rule it
+     * did learn: "Starting point is not a station - do not pick it in fully autonomous mode".  Staging
+     * executes with autonomy running - executeTimetable sets the flag, which is why the reversing-point
+     * exclusion had to be moved out of isPathClear and into selection - so the rule is in force for
+     * every leg of a Return Home run.
+     *
+     * What it cost is worse than a refused plan.  The run STARTS, the first leg is refused, and the
+     * retry loop tries it again every two seconds until it gives up and abandons the run with
+     * "the track it needs never became free" - which is not what is wrong.  The track is clear; the
+     * train is parked somewhere no automatic path may begin.
+     *
+     * A train gets there by being placed by hand, which is the ordinary way to put one on the layout.
+     *
+     * The control below is the point of the test: the same graph with the same train in the same
+     * place, differing only in whether that place is a station, must plan perfectly well.  Without it
+     * this test would pass for a fixture that was broken in some other way.
+     *
+     * MUTATION this catches: dropping either half - the pre-scan's isDestination test, or
+     * firstClearRoute's - leaves the first assertion failing, since the search then finds the move.
+     */
+    @Test
+    public void testALocomotiveOnANonStationIsNotPlannedHome() throws Exception
+    {
+        Layout layout = load(nonStationOrigin(false));
+
+        assertFalse(layout.getPoint("HS P").isDestination(),
+            "precondition: HS P is not a station, which is the whole case");
+
+        assertTrue(layout.getPoint("HS P").isActive(),
+            "precondition: HS P is in service - the inactive rule is the OTHER half, and if it fired "
+            + "here this test would pass without the rule under test existing at all");
+
+        assign(layout, LOC_A, "HS A");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertFalse(plan.isPossible(),
+            "the runtime refuses a path that starts anywhere but a station, so this would be planned "
+            + "and then retried every two seconds until the run was abandoned: " + plan);
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "a locomotive that cannot depart is proved stuck, not searched for: " + plan);
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)),
+            "and it is named, so the operator knows which train to move by hand: " + plan.getBlocked());
+
+        // The control.  One flag different, and the plan is ordinary.
+        Layout station = load(nonStationOrigin(true));
+
+        assertTrue(station.getPoint("HS P").isDestination(),
+            "the control did not take: HS P has to be a station in this one");
+
+        assign(station, LOC_A, "HS A");
+
+        HomeStaging.Plan ordinary = HomeStaging.snapshot(station).plan();
+
+        assertTrue(ordinary.isPossible(),
+            "the same train, the same square, the same empty home one edge away - and the only "
+            + "difference is whether the square is a station.  If this fails the fixture is wrong "
+            + "and the assertions above prove nothing: " + ordinary);
+    }
+
+    /**
      * The parity audit reports nothing when planner and runtime actually agree.
      *
      * The audit exists to catch the planner drifting from the rules it re-implements, which only works
@@ -2545,6 +2610,65 @@ public class testHomeStaging
         assertTrue(plan.getBlocked().contains(loc(LOC_A)) && plan.getBlocked().contains(loc(LOC_B)),
             "and both locomotives are named, since either assignment could be the wrong one: "
             + plan.getBlocked());
+    }
+
+    /**
+     * Two trains already standing on their own homes are not told the arrangement is impossible.
+     *
+     * The pairwise goal scan proves that two homes on one detection section cannot both be occupied,
+     * and it is right - but it proves it about an ARRIVAL, and an arrival is the one thing that does
+     * not happen when the train is already there.  Its sibling scan twelve lines below carries exactly
+     * this exemption, in exactly these words: "Both already parked: nothing arrives, so nothing is
+     * checked."  This one was written without it.
+     *
+     * The cost is not a worse plan, it is no plan at all.  IMPOSSIBLE refuses the WHOLE staging run,
+     * so a third locomotive that only needed driving from one platform to the next never moves - and
+     * the two names the operator is given are the two trains that are already where they belong.
+     *
+     * On Adam's railway BottomMainC and BottomMainCTerm share feedback 4, which is what a platform and
+     * its terminus stub look like, so this is not a hypothetical shape.
+     *
+     * MUTATION this catches: removing the exemption restores the fault - IMPOSSIBLE, with the two
+     * parked locomotives named and the one that could have moved left standing.
+     */
+    @Test
+    public void testTwoTrainsAlreadyHomeOnOneSensorAreNotRefused() throws Exception
+    {
+        // HS A and HS B are one detection section, and each holds the train whose home it is.  HS C
+        // holds a third, whose home is the empty HS D - so there IS something for the run to do.
+        Layout layout = load(ringWith(new String[]{LOC_A, LOC_B, LOC_C, null},
+                                  new String[]{null, null, null, null},
+                                  new int[]{0, 0, 2, 3}));
+
+        assertEquals(layout.getPoint("HS A").getS88(), layout.getPoint("HS B").getS88(),
+            "precondition: HS A and HS B report one sensor, which is the whole case");
+
+        assertTrue(layout.getPoint("HS A").isActive() && layout.getPoint("HS B").isActive(),
+            "precondition: both are active, or the scan under test never looks at them");
+
+        assign(layout, LOC_A, "HS A");
+        assign(layout, LOC_B, "HS B");
+        assign(layout, LOC_C, "HS D");
+
+        assertEquals(layout.getPoint("HS A").getCurrentLocomotive(), loc(LOC_A),
+            "precondition: the first train is standing on its own home");
+
+        assertEquals(layout.getPoint("HS B").getCurrentLocomotive(), loc(LOC_B),
+            "precondition: the second train is standing on its own home");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "two trains that are already home were proved unable to get there, which refused the "
+            + "whole run - including the third train, which only had to cross to the next platform.  "
+            + "Blocked: " + plan.getBlocked());
+
+        assertFalse(plan.getBlocked().contains(loc(LOC_A)) || plan.getBlocked().contains(loc(LOC_B)),
+            "a train that is already standing on its home was named as unable to reach it: "
+            + plan.getBlocked());
+
+        assertTrue(plan.isPossible(),
+            "the third train has an empty home one edge away and nothing in its way: " + plan);
     }
 
     /**
@@ -2893,6 +3017,24 @@ public class testHomeStaging
      * @param locOnC the same locomotive on HS C instead - the control - or null
      * @return the graph JSON
      */
+    /**
+     * HS A - HS P - HS B in a line, with a locomotive parked on the middle square.
+     *
+     * @param pIsAStation whether the middle square is a station, which is the only variable
+     * @return the graph JSON
+     */
+    private static String nonStationOrigin(boolean pIsAStation)
+    {
+        return json("{'points': ["
+            + square("HS A", 0, null, true, null) + ","
+            + square("HS P", 1, null, pIsAStation, LOC_A) + ","
+            + square("HS B", 2, null, true, null)
+            + "],'edges': ["
+            + edge("HS A", "HS P") + "," + edge("HS P", "HS A") + ","
+            + edge("HS P", "HS B") + "," + edge("HS B", "HS P")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     /**
      * The block fixture, with a HOME assigned to the second copy of the watched square.
      *
@@ -3299,6 +3441,156 @@ public class testHomeStaging
         applyPlan(free, control);
 
         assertEveryoneHome(free);
+    }
+
+
+    /**
+     * A locomotive held on two points is reported, not planned for (SG-A3).
+     *
+     * A locked path reserves every point along it for the one locomotive at once - that is how a
+     * junction behind the train is held against a second train reaching it another way - and a path
+     * that failed part-way through unlocking leaves those reservations standing.  Nothing in the model
+     * tells a reservation from a train: reserve() and setLocomotive() write the same field, and the
+     * only difference between them is whether the other copies are swept.
+     *
+     * So the planner had a locomotive at two places at once, and two things went wrong with it.
+     * `misplaced` counted map ENTRIES, so one train counted twice, and `apply` moved it by removing the
+     * first entry it found - which left the other behind for ever.  `misplaced == 0` was therefore
+     * unreachable, and the answer was NO_PLAN_FOUND with no moves, for a train with a clear run to an
+     * empty home.
+     *
+     * **Counting it properly is the wrong fix.**  It makes the planner produce a plan, and the plan
+     * departs from whichever of the two points the map happens to yield first - so a real train is
+     * driven from a place it is not standing.  This class's own doctrine is that NO_PLAN_FOUND claims
+     * less than it could and claims nothing false; a guessed origin claims something that may be false,
+     * and the cost of being wrong is the worst outcome this project has.
+     *
+     * What the operator is told instead names the locomotive and the remedy - place it on the square it
+     * is actually on, which sweeps the rest - rather than sending them to look at track that is fine.
+     *
+     * MUTATION this catches: removing the check returns NO_PLAN_FOUND, which the first assertion
+     * rejects; naming nothing fails the second.
+     */
+    @Test
+    public void testALocomotiveHeldOnTwoPointsIsReportedRatherThanGuessedAt() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        assign(layout, LOC_A, "HS C");
+
+        // The control first, so a failure below cannot be the fixture being unable to plan at all.
+        assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+            "precondition: with one reservation this is an ordinary two-station move");
+
+        reserveAsAFailedPathWould(layout, "HS B", LOC_A);
+
+        assertEquals(layout.getPoint("HS A").getCurrentLocomotive(), loc(LOC_A),
+            "the fixture did not take: the train has to still be held at HS A as well");
+
+        assertEquals(layout.getPoint("HS B").getCurrentLocomotive(), loc(LOC_A),
+            "the fixture did not take: HS B has to be reserved for the same locomotive");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.POSITION_AMBIGUOUS,
+            "a locomotive standing in two places was planned for anyway, or dismissed as no plan "
+            + "found - neither of which tells the operator what is actually wrong: " + plan);
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)),
+            "and it is named, or the operator has nothing to act on: " + plan.getBlocked());
+
+        assertTrue(plan.getMoves().isEmpty(),
+            "nothing may be planned for a train whose position is not known: " + plan.getMoves());
+    }
+
+    /**
+     * Reserves a point for a locomotive without taking it off anywhere else, as a locked path does.
+     *
+     * reserve() is package-private on purpose - only a locked path may do this - so the test reaches it
+     * the way the failure does rather than by widening the door.
+     *
+     * @param layout the graph
+     * @param pointName the point to reserve
+     * @param locName the locomotive to reserve it for
+     */
+    private static void reserveAsAFailedPathWould(Layout layout, String pointName, String locName)
+        throws Exception
+    {
+        Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod(
+            "reserve", org.traincontrol.base.Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        reserve.invoke(layout.getPoint(pointName), loc(locName));
+    }
+
+    /**
+     * A train may not be planned into the detection section it is standing on (SG-A4).
+     *
+     * canEnter refuses a point whose sensor is held by another locomotive and exempts the MOVER from
+     * its own - "there != null && !there.equals(loc)".  isPathClear grants no such exemption: it reads
+     * the live feedback for the end of every edge and refuses the path if it is set, whoever is
+     * standing on it.  So the planner produced a leg the runtime will not drive.
+     *
+     * The exemption looks obviously right, which is why it survived - a train must not be blocked by
+     * its own sensor.  But it is not being blocked FROM ITS OWN POINT here; isPathClear never checks
+     * the point a path starts from.  It is being blocked from a DIFFERENT point that happens to report
+     * the same sensor, and while the train is still standing on that section the sensor really is set.
+     *
+     * Hardware-conditional, which is why nothing caught it: on pulsed feedback the sensor clears behind
+     * the train and the runtime's check never fires.  On latching occupancy detection it fires every
+     * time.  So the feedback is set here explicitly rather than left to the fixture.
+     *
+     * MUTATION this catches: putting the exemption back makes the planner ready a move the runtime has
+     * just been asked about and refused, which is the first and last assertions together.
+     */
+    @Test
+    public void testATrainIsNotPlannedIntoItsOwnDetectionSection() throws Exception
+    {
+        Layout layout = load(json("{'points': ["
+            + square("HS A", 0, null, true, LOC_A) + ","
+            + square("HS B", 0, null, true, null) + ","
+            + square("HS C", 2, null, true, null)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertEquals(layout.getPoint("HS B").getS88(), layout.getPoint("HS A").getS88(),
+            "precondition: HS A and HS B are one detection section, which is the whole case");
+
+        assign(layout, LOC_A, "HS C");
+
+        String sensor = layout.getPoint("HS A").getS88();
+
+        model.newFeedback(Integer.parseInt(sensor), null);
+
+        assertTrue(model.setFeedbackState(sensor, true),
+            "precondition: the feedback has to exist, or nothing below is testing anything");
+
+        try
+        {
+            assertTrue(layout.isFeedbackOccupied(sensor),
+                "precondition: the section the train is standing on reads occupied, which is what "
+                + "latching occupancy detection does and pulsed feedback does not");
+
+            // What the RUNTIME says, which is the half that does not move.
+            assertTrue(layout.getPossiblePaths(loc(LOC_A), true).isEmpty(),
+                "precondition: the runtime offers this train nowhere to go, because the only way out "
+                + "of HS A ends on a point reporting the sensor HS A is holding");
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "the planner readied a move the runtime has just refused, so the run would start, "
+                + "retry every two seconds and be abandoned: " + plan);
+        }
+        finally
+        {
+            // The model is shared by every test in this class, and a sensor left set is a fault that
+            // would surface somewhere else entirely.
+            model.setFeedbackState(sensor, false);
+        }
     }
 
 }

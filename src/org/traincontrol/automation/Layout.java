@@ -4462,6 +4462,46 @@ public class Layout
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
+                                // A SPEED IS NOT A BUSY TRACK (SG-A5).
+                                //
+                                // executePath refuses a locomotive whose preferred speed is outside 1
+                                // to 100 and returns false, which is indistinguishable here from a
+                                // path it could not lock - so this loop waited, asked again, and after
+                                // three attempts declared the entry stuck: "the track it needs never
+                                // became free", which is not what is wrong.  It then stopped every
+                                // train and ended the run, so one locomotive placed on the diagram by
+                                // hand and never given a speed abandoned every remaining leg of a
+                                // Return Home.
+                                //
+                                // runLocomotives settled this one method over (RC-B5): skip that
+                                // locomotive, say so in the log, and let everything else run.  Same
+                                // answer here, and the same message, so the two read alike.
+                                //
+                                // Breaking out rather than setting `abandoned`: the run did go on to
+                                // the end, and the abandoned dialog says it stopped at an entry.  What
+                                // the operator needs is the line naming the locomotive, which is
+                                // exactly what Start gives them for the same fault.
+                                if (ttp.getLoc().getPreferredSpeed() < 1
+                                    || ttp.getLoc().getPreferredSpeed() > 100)
+                                {
+                                    this.control.logf("autolayout.errorFailedToRunLocomotive",
+                                        ttp.getLoc().getName());
+
+                                    // STAMPED, or the run stops here anyway.
+                                    //
+                                    // The next entry waits on "the previous route has not started
+                                    // yet", which is executionTime == 0 - the same field a dispatched
+                                    // entry gets on its way out of executePath.  Leaving it unstamped
+                                    // turned the abandonment into a wait that nothing ever ends, which
+                                    // is worse than what was being fixed.  The entry HAS had its turn;
+                                    // what it has not had is a train.  The log line above is the whole
+                                    // account of that, exactly as it is when Start skips the same
+                                    // locomotive.
+                                    ttp.setExecutionTime(System.currentTimeMillis());
+
+                                    break;
+                                }
+
                                 attempts++;
 
                                 if (refusingSince == 0) refusingSince = System.currentTimeMillis();
@@ -6311,14 +6351,6 @@ public class Layout
     }
         
     /**
-     * Whether the loaded timetable must run one train at a time.
-     *
-     * True only for a staging plan: it is built on a model in which nothing is moving, so overlapping
-     * its moves can contend for an edge the planner never considered.
-     *
-     * @return
-     */
-    /**
      * Says whether the timetable's entries must run one at a time.
      *
      * Public because setTimetable clears it and only the staging planner sets it, which left no way
@@ -6331,6 +6363,14 @@ public class Layout
         this.timetableSequential = sequential;
     }
 
+    /**
+     * Whether the loaded timetable must run one train at a time.
+     *
+     * True only for a staging plan: it is built on a model in which nothing is moving, so overlapping
+     * its moves can contend for an edge the planner never considered.
+     *
+     * @return
+     */
     public boolean isTimetableSequential()
     {
         return this.timetableSequential;

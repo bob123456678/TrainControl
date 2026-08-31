@@ -1359,9 +1359,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 this.landingSelection.clear();
 
-                if (target != null && source != null)
+                if (target != null && source != null
+                    && !moveSelection(getX(target) - getX(source), getY(target) - getY(source)))
                 {
-                    moveSelection(getX(target) - getX(source), getY(target) - getY(source));
+                    // A refused move repaints too (OB-161).
+                    //
+                    // The landing set was emptied a few lines above, but moveSelection shows its
+                    // "would leave the diagram" dialog and returns without redrawing - so the pale
+                    // outlines it was asking about are still on screen behind the dialog, and stay
+                    // there until something else moves.  A successful move redraws on its way out.
+                    this.refreshSelectionBorders();
                 }
 
                 return;
@@ -3986,6 +3993,19 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
+            // Never the grid's padding (OB-161).
+            //
+            // The grid is one row taller and one column wider than the diagram, and that row and that
+            // column are blank labels holding the GridBagLayout together (OB-055).  getValueAt returns
+            // them for any coordinate one past the edge, so a group dragged onto the last row had its
+            // landing outline painted onto the padding below it - and clearBordersFromChildren skips
+            // spacers, being the grid's own furniture rather than squares, so nothing took it off
+            // again.  Adam: "a phantom row gets permanently highlighted in blue."
+            //
+            // Asked of what the label IS, which is how the clearing side already asks it.  A selection
+            // box released on the padding gets there by the same door, in red.
+            if (label instanceof LayoutLabel && ((LayoutLabel) label).isSpacer()) return;
+
             boolean palette = this.getX((LayoutLabel) label) == -1;
 
             int width = palette ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH;
