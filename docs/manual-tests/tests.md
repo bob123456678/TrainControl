@@ -913,6 +913,34 @@ Defer
 
 **Claude, 2026-08-22.** Deferred on Adam's word. It reads the output of MT-080 and MT-081, so it could
 not run before them in any case.
+**Claude, 2026-08-30.** The comparison has been made, by `docs/tools/parity/`, and here is what it says.
+
+**Step 18b, your known-bad journey: `BottomMainA -> BottomSecondary` IS offered.** Its route runs
+through `TopMainR1` without stopping there. But 2.8.1 offers it too, over its own route, so it is a
+standing gap in both engines rather than something the derivation introduced - which is the opposite of
+what this step expected to find, and worth saying plainly.
+
+**Journeys 3.0.0 offers and 2.8.1 did not**, which is the direction you called dangerous - four, and
+[MT-083](#mt-083) is where they get looked at:
+
+| Train stands at | Now offered |
+|---|---|
+| BottomMainA | BottomInnerOtherside |
+| BottomMainC | BottomInnerOtherside |
+| BottomInner | LowerBack |
+| BottomInner | LowerFront |
+
+**Journeys 2.8.1 offered and 3.0.0 does not** - three, the same three from every station:
+`TopMainR0Park`, `TopR1ParkLong`, `TopR1ParkShort`. They are `isReversing` in 2.8.1 and `isTerminus`
+in 3.0.0, and autonomy stopped choosing reversing stations on its own in 2.8.0 at your request. So
+this is the classification changing rather than capability being lost - the same roads are now reached
+as termini, which only a reversible locomotive may enter.
+
+**Concurrency did not regress**: no pair that could run at once in 2.8.1, and still exists, has stopped.
+
+Left as **needs test** rather than answered: the harness collects the lists, and the judgement this
+entry actually asks for - is a new journey physically possible - is the part it cannot make.
+
 ---
 
 <a id="mt-083"></a>
@@ -929,6 +957,22 @@ not run before them in any case.
 #### Comments
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Claude, 2026-08-30.** The four to pick from, from the parity run - these are the journeys 3.0.0
+offers that 2.8.1 did not:
+
+| Train stands at | Route to run |
+|---|---|
+| BottomMainA | BottomInnerOtherside |
+| BottomMainC | BottomInnerOtherside |
+| BottomInner | LowerBack |
+| BottomInner | LowerFront |
+
+Two of them end at `BottomInnerOtherside` from the two Bottom Main roads, and the other two leave
+`BottomInner` for the Lower roads, so running one of each pair covers both shapes.
+
+What to watch for is in MT-082: a reversal at a square where a train cannot reverse, and a change of
+track mid-square at a double curve.
 
 ---
 

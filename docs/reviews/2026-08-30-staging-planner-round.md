@@ -291,6 +291,55 @@ still behind the captions, and the locomotive is no longer the tile's business.
 **What this pass did not do** is prove the layering on Adam's own diagram. The test builds a tile, a
 caption and a container out of plain components and renders them, which establishes the rule but not
 that his captions sit where I think they do — MT-242 asks him to look.
+
+### B5 - the 2.8.1 parity comparison, read at the level that matters
+
+| | |
+|---|---|
+| **Disposition** | reported; the four new journeys need a person, which is [MT-083](../manual-tests/tests.md#mt-083) |
+| **Raised by** | Adam - "make sure it is properly tested against the 2.8.1 test harness for regression" |
+
+`docs/tools/parity/` had already been run, on 2026-08-29, and its report was sitting unread. Its
+headline - "4 route(s) are missing or reduced in 3.0.0" - counts route VARIANTS, several ways round
+between the same two stations. Counted as JOURNEYS, which is the question Adam's tier-4 plan asks, the
+answer is different and better:
+
+| | |
+|---|---|
+| journeys 2.8.1 offers and 3.0.0 does not | 3, and the same 3 for each of the three trains |
+| journeys 3.0.0 offers and 2.8.1 does not | 4 |
+| concurrency pairs lost | none |
+
+**The three losses are a classification change, not lost capability.** `TopMainR0Park`,
+`TopR1ParkLong` and `TopR1ParkShort` are `isReversing` in 2.8.1 and `isTerminus` in 3.0.0. Autonomy
+stopped choosing reversing stations on its own in 2.8.0, deliberately and at Adam's request - it is in
+that release's changelog - and the harness excludes them on the 2.8.1 side for the same reason. What is
+left is that the same three roads are now reached as termini instead, which only a reversible
+locomotive may enter, and the parity trains are plain DCC ones.
+
+**The four gains are the direction the plan calls dangerous** and are the thing that still needs a
+person:
+
+| Train stands at | Now offered |
+|---|---|
+| BottomMainA | BottomInnerOtherside |
+| BottomMainC | BottomInnerOtherside |
+| BottomInner | LowerBack |
+| BottomInner | LowerFront |
+
+MT-082 asks of exactly these: does the route reverse where a train cannot reverse, or change track
+mid-square at a double curve? That cannot be answered from a route list, which is why MT-083 exists.
+
+**And the journey Adam singled out is offered by BOTH engines.** MT-082's step 18b names
+`BottomMainA -> BottomSecondary` as the known-bad one - "a red signal after the end requires a stop at
+TopMainR1 or TopMainR2, a constraint that lived in the hand-authored edge config commands and that the
+derivation cannot currently express". 3.0.0 offers it, over a route that runs through `TopMainR1`
+without stopping. So does 2.8.1. It is a standing gap in both rather than something the derivation
+introduced, which is worth knowing before anybody goes looking for a regression that is not there.
+
+**What this did not do.** The report is from the 2026-08-29 jar. Nothing since has touched the graph
+builder or `getPossiblePaths` - this round is the staging planner and the diagram's painting - so the
+comparison still stands, but a re-run after the next NetBeans build would confirm rather than assume it.
 ---
 
 ## D - not defects
