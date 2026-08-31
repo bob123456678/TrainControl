@@ -460,9 +460,17 @@ public final class HomeStaging
                 // The cost of leaving it out is not a worse plan but no plan: IMPOSSIBLE refuses the
                 // WHOLE staging run, so a third locomotive that only needed driving to the next
                 // platform never moves, and the two names the operator is handed are the two trains
-                // that are already where they belong.  On Adam's railway BottomMainC and
-                // BottomMainCTerm share feedback 4 - a platform and its terminus stub - so this is
-                // what an ordinary evening looks like, not a hand-edited configuration.
+                // that are already where they belong.
+                //
+                // NOT reachable on Adam's own railway, which is worth saying because the review that
+                // raised this said it was.  It had read the hand-written autonomy.json, where
+                // BottomMainCTerm exists; the 3.0.0 diagram derives a graph in which it does not, and
+                // no two DIFFERENT station squares on it share a sensor - every shared-sensor group is
+                // one square emitted per arrival side.  A home on such a square is refused outright by
+                // whyNotAHome, on his own ruling.
+                //
+                // The shape is ordinary elsewhere: AutonomyBuilder is explicit that a station, its
+                // approach guard and a reversing point can be three Points on one feedback.
                 //
                 // Only one of the two has to be away for the proof to hold again, which is the case
                 // testTwoActivePointsSharingASensorAreNeverBothOccupied holds.
@@ -1524,10 +1532,18 @@ public final class HomeStaging
      *
      * The case for changing it: the railway's own mutual exclusion is `getBlockLocomotive`, and
      * AutonomyBuilder says outright that a station, its approach guard and a reversing point can be
-     * three Points on one feedback - so "one sensor" is not "one piece of track". On Adam's own graph
-     * BottomMainC and BottomMainCTerm share feedback 4 with no block between them, and homing two
-     * locomotives there answers IMPOSSIBLE naming both. That is the same false-proof shape as AU-A1,
-     * twelve lines away, and it was found by the pass that validated the AU-A1 fix.
+     * three Points on one feedback - so "one sensor" is not "one piece of track". Homing two
+     * locomotives on two such squares answers IMPOSSIBLE naming both, which is the same false-proof
+     * shape as AU-A1, twelve lines away, and it was found by the pass that validated the AU-A1 fix.
+     *
+     * **The example this used to give was wrong, and it is worth keeping the correction here.** It
+     * said BottomMainC and BottomMainCTerm share feedback 4 on Adam's own graph. They did on the
+     * hand-written autonomy.json; the 3.0.0 diagram derives its own graph, in which BottomMainCTerm
+     * does not exist - AutonomySession's caption migration names it as one of four labels left behind
+     * by the configuration this feature replaced. Measured on the derived graph: every sensor carrying
+     * two active stations carries one SQUARE, emitted once per arrival side, and a home on a square
+     * that is several Points is refused by whyNotAHome anyway. So the case is real and general, and
+     * his layout is not an instance of it.
      *
      * The case against changing it, which is why it has not been: `canEnter` enforces the sensor rule
      * deliberately and structurally, so the planner genuinely will not produce that arrangement. The

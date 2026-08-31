@@ -418,6 +418,12 @@ them** (`:392-406`). The exemption its own sibling scan carries twelve lines bel
 missing here. On your graph `BottomMainC` / `BottomMainCTerm` share feedback 4, so with both trains home
 and a third away, Return Home refuses the whole run and names the two that need nothing doing.
 **This is the one most likely to bite you in manual testing.**
+
+> **Wrong about the layout, corrected 2026-08-30.** `BottomMainCTerm` is in the hand-written
+> `autonomy.json`, not in the graph the 3.0.0 diagram derives - Adam said so on MT-238. No two
+> different station squares on his railway share a sensor, so this one could not have bitten him. The
+> finding itself stands and is fixed as `SG-A1`; the example was read from the wrong file.
+
 2. **A plan from a non-station origin is refused at execution and abandons the run** (`:837` vs
 `isPathClear` at `Layout.java:2016`). HP-C2 taught `firstClearRoute` the inactive-origin half of that
 rule and not the non-station half beside it.

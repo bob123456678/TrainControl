@@ -698,6 +698,30 @@ class IssuesDoc(object):
         self.pending, self.freeform = self._parse_inbox()
         self.picked = self._parse_picked()
 
+        # PENDING MEANS NOT YET PICKED UP, which is what all three readers of this list say it means
+        # and what none of them was getting.
+        #
+        # Adam: "Note that I don't see anything for the outstanding OB's."  The Inbox is append-only -
+        # an item stays in it for life - so an item with a receipt in "What has been picked up" was
+        # still counted here, and the Bugs tab, `triage.py issues` and the count in `triage.py stats`
+        # all went on reporting nine finished bugs as outstanding.  With everything picked up the
+        # honest answer is none, and a list that can never empty is a list nobody can act on.
+        #
+        # The ENTRIES are untouched: this is about who is called pending, not about what the file
+        # holds.  A receipt is the moment an item stops being the Inbox's business and becomes its
+        # MT entry's, which is exactly what the receipt table's own preamble says.
+        receipted = set()
+
+        for row in self.picked:
+            ref = (row.get("ref") or "").strip()
+
+            if ref:
+                receipted.add(ref)
+
+        self.picked_up_refs = receipted
+
+        self.pending = [it for it in self.pending if it.ref not in receipted]
+
         # Same duplicate-iid hazard TestsDoc.load guards against, on the pending items that feed
         # the Feature requests / Bugs tabs (tree.insert(iid="pending:%s" % ref, ...)).
         seen = set()

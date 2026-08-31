@@ -38,16 +38,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
-| [MT-228](#mt-228) | 2026-08-30 | A cut keeps its setup when the paste is not the very next thing you do | fixed unvalidated | RC-A1 |
-| [MT-236](#mt-236) | 2026-08-30 | Nothing is left highlighted below the diagram | fixed unvalidated | OB-161 |
-| [MT-237](#mt-237) | 2026-08-30 | The timetable is named before there is a timetable | fixed unvalidated | asked for directly - Adam, 2026-08-30 |
-| [MT-238](#mt-238) | 2026-08-30 | Return Home with two trains already parked on one sensor | fixed unvalidated | SG-A1 |
 | [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
-| [MT-240](#mt-240) | 2026-08-30 | Two kinds of random in the routing rules | fixed unvalidated | OB-156 |
-| [MT-241](#mt-241) | 2026-08-30 | The routing rules explain themselves | fixed unvalidated | OB-163 |
-| [MT-242](#mt-242) | 2026-08-30 | The locomotive is drawn over the station name | fixed unvalidated | OB-159 |
 
-Everything else - 209 of 242 - is **fixed validated** and needs nothing from you unless the
+Everything else - 215 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -11854,7 +11847,7 @@ it.
 
 ### MT-228 - 2026-08-30 - A cut keeps its setup when the paste is not the very next thing you do
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RC-A1
 **Written:** 2026-08-30
 
@@ -11978,6 +11971,10 @@ Filed as OB-161.
 4. **The flicker must stay gone** - drag a selection box across a busy page as before.
 
 *Run against v3_0_0_rc3 or later.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -12318,7 +12315,7 @@ mine before this shipped.
 
 ### MT-236 - 2026-08-30 - Nothing is left highlighted below the diagram
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-161
 **Written:** 2026-08-30
 
@@ -12337,13 +12334,17 @@ picked outline there. Both are refused now, at the one place every outline goes 
 
 *Run against v3_0_0_rc3 or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-237"></a>
 
 ### MT-237 - 2026-08-30 - The timetable is named before there is a timetable
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** asked for directly - Adam, 2026-08-30
 **Written:** 2026-08-30
 
@@ -12363,13 +12364,42 @@ They are set when the window is built now, which needs nothing behind them.
 
 *Run against v3_0_0_rc3 or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** You are right, and the premise of this entry was wrong.
+
+The release-candidate review said "on your graph BottomMainC / BottomMainCTerm share feedback 4". It
+had read `autonomy.json` in the project ROOT - the old hand-authored graph - where BottomMainCTerm
+exists. Your 3.0.0 diagram derives a graph in which it does not, and I repeated the claim into these
+steps without checking it against the layout you actually run.
+
+**Checked properly now.** In the derived graph, sixteen sensors carry more than one Point, and every
+group of them that holds two active stations is the SAME square emitted once per arrival side -
+BottomMainC four times, BottomMainB three times, LowerFront twice, BottomInner four times. There is no
+pair of DIFFERENT station squares on one sensor anywhere on it. And there cannot be a home on any of
+those squares in the first place: `whyNotAHome` refuses a square that is more than one graph Point,
+which was your own ruling on 2026-08-25 - "any home with two graph points should be refused".
+
+So the state this test asks you to set up cannot be reached on your railway, and the entry should
+never have been written. **The defect and its fix are real** - the scan proved two homes on one
+detection section impossible without the exemption its sibling scan twelve lines below carries, and a
+layout where a station and, say, its approach guard are two separate squares on one feedback does hit
+it. That is what `core.testHomeStaging.testTwoTrainsAlreadyHomeOnOneSensorAreNotRefused` covers, with
+`testTwoActivePointsSharingASensorAreNeverBothOccupied` as the control that keeps the rule from
+over-claiming.
+
+Superseded rather than left open, under the first half of the rule in README.md: this should never
+have been an entry. Nothing on your layout can run it, and nothing about the fix is unverified.
+
 ---
 
 <a id="mt-238"></a>
 
 ### MT-238 - 2026-08-30 - Return Home with two trains already parked on one sensor
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** SG-A1
 **Written:** 2026-08-30
 
@@ -12389,6 +12419,12 @@ lines below it in the same method carries exactly that exemption; this one did n
 3. **An ordinary Return Home** with no shared-sensor homes must be unchanged.
 
 *Run against v3_0_0_rc3 or later.*
+
+**Adam, 2026-08-30 (triage).** Does not work.
+
+BottomMainCTerm is not an active station in the 3.0.0 layout.  It should only be present in the old files, or possibly on page 4, which is inactive.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-239"></a>
@@ -12418,13 +12454,44 @@ range is a change the station does need to hear about.
 
 *Run against v3_0_0_rc3 or later.*
 
+**Adam, 2026-08-30 (triage).** Does not work.
+
+I don't see any syncs at all, even under 1000, when in debug mode (no station).
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-30.** Nothing to see is the right answer in that mode, and these steps should have
+said so.
+
+`syncWithCS2` re-reads the whole database FROM the Central Station. In debug mode with no station
+there is nothing to read, so the call returns having done nothing visible - which means the run you
+did cannot tell a skipped sync from a performed one, in either direction. That is my fault in the
+steps, not a fault in the change.
+
+**What the change does.** Deleting a route, and renumbering one, used to call `syncWithCS2`
+unconditionally. For a route numbered 1000 or above there is nothing to fetch - those are allocated
+here and the station has never heard of them - so the call could only cost the round trip, which is
+the whole database behind a modal spinner, and twice the connect timeout when the station is off.
+The renumber asks about BOTH numbers, because moving a route out of the local range IS a change the
+station needs to hear about.
+
+**With the Central Station connected**, which is where this is observable:
+
+1. **Delete a route numbered 1000 or above.** It should go at once - no spinner, no pause.
+2. **Delete a route numbered below 1000.** The spinner should appear: that one the station knows about
+   and the sync still has to happen.
+3. **Renumber a route from 1000-something down to a low number, and back.** Both directions should
+   sync, because one end of the change is a number the station keeps.
+
+*Run against v3_0_0_rc3 or later, with the Central Station connected.*
+
 ---
 
 <a id="mt-240"></a>
 
 ### MT-240 - 2026-08-30 - Two kinds of random in the routing rules
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-156
 **Written:** 2026-08-30
 
@@ -12444,12 +12511,16 @@ ignores priority altogether, which is the one that did not exist.
 
 *Run against v3_0_0_rc3 or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-241"></a>
 
 ### MT-241 - 2026-08-30 - The routing rules explain themselves
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-163
 **Written:** 2026-08-30
 
@@ -12471,12 +12542,16 @@ still described itself as it did when it was simply called "At Random".
 
 *Run against v3_0_0_rc3 or later.*
 
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-242"></a>
 
 ### MT-242 - 2026-08-30 - The locomotive is drawn over the station name, not under it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-159
 **Written:** 2026-08-30
 
@@ -12503,5 +12578,9 @@ The name survives everywhere the locomotive is not.
 5. **Export a diagram** while a train is running and check the picture matches the screen.
 
 *Run against v3_0_0_rc3 or later.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

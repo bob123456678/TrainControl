@@ -56,9 +56,20 @@ The cost is not a worse plan but no plan: `IMPOSSIBLE` refuses the WHOLE staging
 locomotive that only needed driving to the next platform never moved, and the two names the operator was
 handed were the two trains already where they belonged.
 
-On Adam's railway `BottomMainC` and `BottomMainCTerm` share feedback 4 - a platform and its terminus
-stub - so this is what an ordinary evening looks like, not a hand-edited configuration. The
-release-candidate review called it "the one most likely to bite you in manual testing".
+**The release-candidate review called this "the one most likely to bite you in manual testing", and
+that was wrong.** It said `BottomMainC` and `BottomMainCTerm` share feedback 4 on Adam's graph, having
+read the hand-written `autonomy.json`; the 3.0.0 diagram derives its own, in which `BottomMainCTerm`
+does not exist. Adam said so on MT-238 and he is right.
+
+Measured against the derived graph afterwards: sixteen sensors carry more than one Point, and every
+group of them holding two active stations is a single SQUARE emitted once per arrival side -
+`BottomMainC` four times, `BottomMainB` three, `LowerFront` twice, `BottomInner` four. No two
+DIFFERENT station squares share a sensor, and a home on a multi-Point square is refused by
+`whyNotAHome` on Adam's own 2026-08-25 ruling.
+
+So the defect is real and general - `AutonomyBuilder` is explicit that a station, its approach guard
+and a reversing point can be three Points on one feedback - and his layout is not an instance of it.
+MT-238 is superseded for that reason, and the code test is what covers this now.
 
 The control that keeps the rule honest is `testTwoActivePointsSharingASensorAreNeverBothOccupied`, which
 has both trains AWAY and must still answer `IMPOSSIBLE`. It does.
