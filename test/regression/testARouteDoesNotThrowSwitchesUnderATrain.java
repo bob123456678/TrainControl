@@ -920,6 +920,119 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * An s88 route with nothing in its way still runs while autonomy is going (A102).
+     *
+     * **The automatic door was exercised exactly once in the whole suite, and always with a
+     * conflict.** `testTheStopInARefusedRouteStillRuns` above fires `execRoute(true)` for a route
+     * whose turnout IS on a locked path, so between them the tests say what that door refuses and
+     * nothing says what it does when there is nothing to refuse.
+     *
+     * The rule is `skipAccessories = auto && conflict != null`. Drop the second half and every
+     * s88-triggered route stops setting anything for as long as autonomy is running - which on this
+     * railway is most of an evening, since sensors are shared and these routes were written for manual
+     * operation. Nothing would fail, because the only test of that door expects its accessory to be
+     * skipped.
+     *
+     * So this is the other side of the same `if`: a route on a DIFFERENT accessory, one no edge
+     * configures, fired automatically while a train is running, must set it.
+     *
+     * MUTATION this catches: `skipAccessories = auto` fails this test and leaves the one above green.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testAnAutomaticRouteWithNoConflictStillSetsItsAccessory() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("MX_A", false, null);
+        layout.createPoint("MX_B", true, S88);
+
+        Edge ab = layout.createEdge("MX_A", "MX_B");
+
+        // The one the PATH configures, so there is a locked accessory on the layout at all - without
+        // it the guard has nothing to find and this passes for a railway with no autonomy on it.
+        MarklinAccessory locked =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        locked.setSwitched(false);
+
+        ab.addConfigCommand(locked.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        // And the one the ROUTE sets, which no edge mentions.
+        final int freeAddress = SWITCH_ADDRESS + 7;
+
+        MarklinAccessory free =
+            model.newSwitch(freeAddress, Accessory.accessoryDecoderType.MM2, false);
+
+        free.setSwitched(false);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("MX_A").setLocomotive(loc);
+
+        model.go();
+
+        final boolean[] freeAfter = {false};
+        final boolean[] lockedAfter = {false};
+
+        layout.setCallback("no conflict probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(freeAddress,
+                Accessory.accessoryDecoderType.MM2, true));
+
+            // FIRED AUTOMATICALLY, the door with nobody at it.
+            new MarklinRoute(model, "MX free", 84907, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).execRoute(true);
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            if (free.isSwitched()) freeAfter[0] = true;
+            if (locked.isSwitched()) lockedAfter[0] = true;
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(freeAfter[0],
+                "an s88-triggered route whose accessory is on no locked path did not set it while "
+                + "autonomy was running.  Every route written for manual operation stops working the "
+                + "moment a train is out, and nothing says so");
+
+            assertFalse(lockedAfter[0],
+                "the accessory the PATH configured was moved, which means the fixture has no locked "
+                + "accessory and the test above passed for a layout with nothing to conflict with");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A one-command route that sets the test's accessory.
      *
      * @param id a route id nothing else uses

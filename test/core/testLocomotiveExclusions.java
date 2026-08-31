@@ -148,6 +148,67 @@ public class testLocomotiveExclusions
             + "reachable station pairs, because he uses station exclusions on through routes");
     }
 
+    /**
+     * Excluding ONE locomotive does not shut the point to the others (A113).
+     *
+     * Every test above asks about a single locomotive, which makes "excluded" and "anybody is
+     * excluded" indistinguishable: replace `getExcludedLocs().contains(loc)` with
+     * `!getExcludedLocs().isEmpty()` at either enforcement point and all three stay green, while one
+     * operator's exclusion quietly shuts a siding to the whole fleet. That is a worse fault than the
+     * one they were written for - it is silent, it grows with the number of exclusions, and on a
+     * railway that uses station exclusions on through routes it removes reachability everywhere at
+     * once.
+     *
+     * Both enforcement points, because they are different code in different methods: passage is
+     * refused by `isPathClear`, and stopping by `pickPath`.
+     *
+     * The two halves place a DIFFERENT locomotive each time, which is the whole point - and placing
+     * the second sweeps the first off the layout, since a locomotive is in one place. The exclusion
+     * lives on the Point and names the Locomotive, so it survives that.
+     *
+     * MUTATION this catches: `!getExcludedLocs().isEmpty()` in place of `contains(loc)`, at either
+     * `isPathClear` or `canEnter`'s station rule, fails the half that guards it.
+     */
+    @Test
+    public void testExcludingOneLocomotiveDoesNotBarTheOthers() throws Exception
+    {
+        Layout layout = twoWaysRound();
+
+        Locomotive first = placed(layout);
+        Locomotive second = other(first);
+
+        // --- passage -------------------------------------------------------------------------
+        layout.getPoint("EX_Middle").setExcludedLocs(new HashSet<>(Arrays.asList(first)));
+
+        assertFalse(usesPoint(layout.getPossiblePaths(first, false), "EX_Middle"),
+            "precondition: the exclusion has to bite the locomotive it names, or the assertion "
+            + "below passes for a rule that is not being enforced at all");
+
+        layout.moveLocomotive(second.getName(), "EX_Start", false);
+
+        assertTrue(usesPoint(layout.getPossiblePaths(second, false), "EX_Middle"),
+            "a locomotive that is NOT excluded was refused passage through the point, so one "
+            + "operator's exclusion has shut it to the whole fleet");
+
+        // --- stopping ------------------------------------------------------------------------
+        Layout station = twoWaysRound();
+
+        Locomotive firstAgain = placed(station);
+        Locomotive secondAgain = other(firstAgain);
+
+        station.getPoint("EX_Far").setExcludedLocs(new HashSet<>(Arrays.asList(firstAgain)));
+
+        assertNull(station.pickPath(firstAgain),
+            "precondition: EX_Far is the only place autonomy may choose, so the named locomotive "
+            + "must be refused - otherwise the assertion below proves nothing");
+
+        station.moveLocomotive(secondAgain.getName(), "EX_Start", false);
+
+        assertNotNull(station.pickPath(secondAgain),
+            "a locomotive that is NOT excluded was refused the only destination on the layout, so "
+            + "excluding one train from a station has taken it out of service for everybody");
+    }
+
     // --- helpers ----------------------------------------------------------------------------------
 
     /**
@@ -234,4 +295,27 @@ public class testLocomotiveExclusions
 
         return false;
     }
+    /**
+     * A second locomotive from the database, which is what A113 needs and nothing here had.
+     *
+     * Borrowed rather than created, like `placed`, so this class goes on owning no addresses - and
+     * asserted to be a different object, because two names that resolve to one locomotive would make
+     * the test above pass while asking one question twice.
+     *
+     * @param notThisOne the locomotive already in use
+     * @return another one
+     */
+    private static Locomotive other(Locomotive notThisOne) throws Exception
+    {
+        for (String name : model.getLocList())
+        {
+            Locomotive candidate = model.getLocByName(name);
+
+            if (candidate != null && !candidate.equals(notThisOne)) return candidate;
+        }
+
+        throw new org.testng.SkipException(
+            "the locomotive database holds only one locomotive, so there is no second one to ask about");
+    }
+
 }

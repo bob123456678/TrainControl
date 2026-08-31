@@ -340,6 +340,78 @@ introduced, which is worth knowing before anybody goes looking for a regression 
 **What this did not do.** The report is from the 2026-08-29 jar. Nothing since has touched the graph
 builder or `getPossiblePaths` - this round is the staging planner and the diagram's painting - so the
 comparison still stands, but a re-run after the next NetBeans build would confirm rather than assume it.
+
+## C - the test gaps
+
+The five the release-candidate review named first. `A101` is above as part of the previous commit; the
+four here are the rest of that list. Each was closed by mutating the code it guards and watching the
+new test go red, and only that.
+
+### C1 - A113: exclusions were only ever asked about one locomotive
+
+| | |
+|---|---|
+| **Disposition** | fixed, `core.testLocomotiveExclusions.testExcludingOneLocomotiveDoesNotBarTheOthers` |
+
+All three exclusion tests used a single locomotive, which makes `getExcludedLocs().contains(loc)` and
+`!getExcludedLocs().isEmpty()` indistinguishable. Under that mutation one operator's exclusion shuts
+the point to the whole fleet - silently, growing with the number of exclusions, and worst on a railway
+that uses station exclusions on through routes, which is Adam's. Both enforcement points are covered,
+because passage is refused by `isPathClear` and stopping by `pickPath`.
+
+### C2 - A102: the automatic route door was only ever exercised with a conflict
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testARouteDoesNotThrowSwitchesUnderATrain.testAnAutomaticRouteWithNoConflictStillSetsItsAccessory` |
+
+Every `execRoute(true)` in the corpus was the one route whose turnout IS on a locked path, so the suite
+said what that door refuses and nothing said what it does when there is nothing to refuse. The rule is
+`skipAccessories = auto && conflict != null`; drop the second half and every s88-triggered route stops
+setting anything for as long as autonomy is running - most of an evening here, since the sensors these
+routes were written for are shared with autonomy.
+
+### C3 - A105: the window's own capture method was never run
+
+| | |
+|---|---|
+| **Disposition** | fixed, `regression.testARunSurvivesADiagramEdit.testTheWindowsCaptureActuallyCapturesAndStopsWhenTrainsMove` |
+
+The RULE was tested and the window's source was read for the call; `captureRunningLayout` itself never
+ran. It is six guard conditions and one call, and each condition is a way for OB-144's fix to be
+silently absent. Both directions are asserted - it captures when stopped, and refuses while trains are
+moving.
+
+**The first version of the second half was asking nothing, and the mutation is what showed it.**
+`whereItIsAfterARebuild` calls `parseAuto`, which REPLACES the `Layout` object - so the second move and
+the running flag were applied to a layout the window no longer held, while the window captured the new
+one that nothing had touched. The assertion passed whatever the guard did. Rewritten to re-read the
+current layout, and only then did removing the guard fail it.
+
+### C4 - A100: not closed, and the fixture is why
+
+| | |
+|---|---|
+| **Disposition** | **open** - the test was written, could not fail, and was withdrawn |
+
+The claim is right: `testNoTwoRoutesCanOccupyTheSameTrackUnlocked` asks `reducer.getLocks()`, the
+relation between REDUCED edges, and the builder's job is to carry that across the split into one named
+edge per arrival side. Truncating its inner loop to the first emitted copy leaves the reduced relation
+perfect and the second and later copies unlocked.
+
+A test was written that states the invariant on the emitted JSON alone - if a lock names one copy of a
+piece of track it must name all of them - and it **failed its own precondition**: on `test/test_layout`
+no piece of track is emitted more than once. 135 edges, 135 distinct base pairs, though 38 of its 56
+points ARE split. So the mutation is unobservable on the fixture and the test could only ever pass.
+
+Measured against a real built configuration for comparison: Adam's own layout has 136 edges over 108
+base pairs, with **22 pieces of track emitted twice or four times**. The invariant is testable there and
+nowhere in the suite.
+
+Closing this properly needs a fixture diagram where one reduced edge emits several named edges - two
+facings at both ends of one piece of track - which is a diagram to draw rather than an assertion to
+write. Withdrawn rather than shipped, because a test that cannot fail is worse than the gap it was
+meant to close.
 ---
 
 ## D - not defects
@@ -375,11 +447,19 @@ had ever been run on a layout in the right state - a train on a non-station, or 
 occupied - and it is logged rather than enforced, so nothing fails when it disagrees. Making it a test
 over generated states is the obvious next thing and is not done here.
 
-**The thirteen A-severity test gaps** from the release-candidate suite review are still outstanding.
-`grep -rn getLockEdges test/` still returns nothing.
+**The five named test gaps are done except one.** A101, A102, A105 and A113 are closed above and in
+the commit before this one; A100 is C4, open, with a fixture that cannot exercise it. The other eight
+of the thirteen were never transcribed out of the suite reviewer's report and no longer exist in
+writing - which is its own lesson about leaving a list in an agent's output.
 
-**The 2.8.1 parity regression** Adam asked for - "make sure it is properly tested against the 2.8.1 test
-harness for regression" - is not run in this round.
+**The 2.8.1 parity comparison is done**, as B5, and MT-083 confirmed the four new journeys on the
+railway.
 
-**Nothing was measured against Adam's own configuration** for these five, unlike the route-tile rules
-last round. A1 names two of his squares from the review's reading of his graph; the rest are structural.
+**The languages have never been looked at.** Adam, 2026-08-30: run the app in each of the eight
+languages, screenshot it, and find text that spills or displaces a control. Nothing in this project has
+ever checked that - the bundles are verified for keys, escapes and placeholders, and never for LENGTH.
+German and Polish routinely run half again as long as the English, and the routing dropdown has already
+had to be capped at 230px for exactly that reason. That is the next piece of work.
+
+**A1 was measured against Adam's own configuration, after he said it was wrong** - see the correction
+in its entry. The other four are structural and were not.

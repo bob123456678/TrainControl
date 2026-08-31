@@ -25,7 +25,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
-| [MT-083](#mt-083) | 2026-08-18 | Run a new-only route in simulation | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
@@ -40,7 +39,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
 
-Everything else - 215 of 242 - is **fixed validated** and needs nothing from you unless the
+Everything else - 216 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -947,7 +946,7 @@ entry actually asks for - is a new journey physically possible - is the part it 
 
 ### MT-083 - 2026-08-18 - Run a new-only route in simulation
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
 **Written:** 2026-08-18
 
@@ -974,6 +973,13 @@ Two of them end at `BottomInnerOtherside` from the two Bottom Main roads, and th
 What to watch for is in MT-082: a reversal at a square where a train cannot reverse, and a change of
 track mid-square at a double curve.
 
+**Claude, 2026-08-30.** That closes the parity question.
+
+The four journeys 3.0.0 offers and 2.8.1 did not are the only direction the comparison called
+dangerous, and running one is the only way to answer it. With this and the harness together: no
+journey lost that was not a deliberate 2.8.0 change, no concurrency pair lost, and the new journeys
+are ones the railway can actually make.
+
 ---
 
 <a id="mt-084"></a>
@@ -990,6 +996,10 @@ track mid-square at a double curve.
 #### Comments
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -12528,6 +12538,10 @@ station needs to hear about.
    sync, because one end of the change is a number the station keeps.
 
 *Run against v3_0_0_rc3 or later, with the Central Station connected.*
+
+**Adam, 2026-08-30 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 30 Aug 21:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

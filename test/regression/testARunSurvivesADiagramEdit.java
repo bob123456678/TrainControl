@@ -241,6 +241,206 @@ public class testARunSurvivesADiagramEdit
         return "lost";
     }
 
+    /**
+     * The window's own capture method actually captures - and refuses while trains are moving (A105).
+     *
+     * `runThenEdit` above tests the RULE and `testTheWindowCapturesBeforeItOpensTheEditor` tests that
+     * the window asks for it, by reading the source. Nothing ran `captureRunningLayout` itself. It is
+     * six conditions and a call, and every one of the six is a way for the fix to be silently absent:
+     * the whole body is `if (...) return;` followed by the thing that matters.
+     *
+     * Both directions, because either alone is satisfiable by a broken method. A capture that always
+     * runs would pass the first assertion and lose the "not while running" rule, which exists because
+     * a snapshot of a moving railway is a snapshot of a state no longer true by the time it lands. A
+     * capture that never runs would pass the second.
+     *
+     * Driven through the private method by reflection rather than through the window's menus: the
+     * doors that call it are dialogs and a page change, and this is a claim about the method they all
+     * share.
+     *
+     * MUTATION this catches: deleting the `captureFromLayout` call fails the first assertion; deleting
+     * `|| this.model.getAutoLayout().isRunning()` from the guard fails the second.
+     */
+    @Test
+    public void testTheWindowsCaptureActuallyCapturesAndStopsWhenTrainsMove() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("captureRunningLayout is a method on the window");
+        }
+
+        File folder = aWorkingCopy();
+
+        AutonomySession session = new AutonomySession(folder);
+        session.open(pagesIn(folder));
+
+        String active = session.getStore().getActiveConfiguration();
+
+        assertNotNull(active, "the sample setup has no active configuration");
+
+        model.parseAuto(session.buildConfiguration());
+
+        org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+        assertNotNull(layout, "the configuration did not build");
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(
+            () -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+        try
+        {
+            // THE MODEL TOO, which the guard reads first.
+            //
+            // A bare window has none - setViewListener wires it, and that starts the threads a window
+            // needs to be a window.  The field is what captureRunningLayout actually asks, so it is
+            // what this sets: the claim is about the method's six conditions, not about start-up.
+            set(ui[0], "model", model);
+            set(ui[0], "autonomySession", session);
+            set(ui[0], "activeDiagramConfiguration", active);
+
+            java.lang.reflect.Method capture =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            capture.setAccessible(true);
+
+            // The run: a train ends up somewhere it did not start.
+            org.traincontrol.automation.Point from = occupiedPoint(layout);
+            org.traincontrol.automation.Point to = emptyPoint(layout);
+
+            assertNotNull(from, "no locomotive is placed, so no run can be modelled");
+            assertNotNull(to, "every point is occupied, so there is nowhere for a train to have gone");
+
+            org.traincontrol.base.Locomotive moved = from.getCurrentLocomotive();
+
+            String movedName = moved.getName();
+            String destination = to.getName();
+
+            from.setLocomotive(null);
+            to.setLocomotive(moved);
+
+            assertFalse(layout.isRunning(), "precondition: the layout must be stopped for the capture");
+
+            capture.invoke(ui[0]);
+
+            assertEquals(whereItIsAfterARebuild(session, movedName), destination,
+                "the window's capture did not fold the run into the setup, so the next rebuild puts "
+                + "the train back where it started - which is OB-144, through the method every door "
+                + "that fixes it calls");
+
+            // --- and NOT while the railway is moving ------------------------------------------
+            //
+            // ON THE CURRENT LAYOUT, not the one above.  whereItIsAfterARebuild calls parseAuto, which
+            // REPLACES the Layout object - so a second move made on the old one, and a running flag
+            // set on the old one, are made to something the window no longer holds.  The window then
+            // captures the new layout, which nothing has touched, and the assertion passes whatever
+            // the guard does.  It did: mutating the guard away left this test green until the second
+            // half was rewritten to re-read.
+            org.traincontrol.automation.Layout current = model.getAutoLayout();
+
+            assertNotNull(current, "the rebuild left no layout");
+
+            org.traincontrol.automation.Point at = null;
+
+            for (org.traincontrol.automation.Point point : current.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null
+                    && movedName.equals(point.getCurrentLocomotive().getName()))
+                {
+                    at = point;
+                    break;
+                }
+            }
+
+            assertNotNull(at, "the rebuilt layout has the locomotive nowhere");
+
+            assertEquals(at.getName(), destination,
+                "precondition: the rebuild should have it where the capture put it");
+
+            org.traincontrol.automation.Point moveTo = emptyPoint(current);
+
+            assertNotNull(moveTo, "nowhere left to model a second move");
+
+            String second = moveTo.getName();
+
+            assertNotEquals(second, destination, "the second move has to go somewhere new");
+
+            at.setLocomotive(null);
+            moveTo.setLocomotive(moved);
+
+            setRunning(current, true);
+
+            try
+            {
+                capture.invoke(ui[0]);
+            }
+            finally
+            {
+                setRunning(current, false);
+            }
+
+            assertEquals(whereItIsAfterARebuild(session, movedName), destination,
+                "the capture ran while autonomy was going.  A snapshot of a moving railway is a "
+                + "snapshot of a state that is not true by the time it lands, which is why the guard "
+                + "is there");
+        }
+        finally
+        {
+            if (ui[0] != null) javax.swing.SwingUtilities.invokeLater(() -> ui[0].dispose());
+        }
+    }
+
+    /**
+     * Where the setup says a locomotive is, asked the way the editor's close asks it - by rebuilding
+     * the running layout from what was saved.
+     *
+     * @param session the setup
+     * @param locName the locomotive
+     * @return the point's name, or null if it is on none
+     */
+    private String whereItIsAfterARebuild(AutonomySession session, String locName) throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        org.traincontrol.automation.Layout rebuilt = model.getAutoLayout();
+
+        assertNotNull(rebuilt, "the configuration did not rebuild");
+
+        for (org.traincontrol.automation.Point point : rebuilt.getPoints())
+        {
+            if (point.getCurrentLocomotive() == null) continue;
+
+            if (locName.equals(point.getCurrentLocomotive().getName())) return point.getName();
+        }
+
+        return null;
+    }
+
+    /** Sets a private field on the window, which is how the running application wires these two. */
+    private static void set(Object on, String field, Object value) throws Exception
+    {
+        java.lang.reflect.Field f = on.getClass().getDeclaredField(field);
+
+        f.setAccessible(true);
+        f.set(on, value);
+    }
+
+    /**
+     * Turns the layout's running flag, which has no setter - it is set by the dispatch loop.
+     *
+     * @param layout the layout
+     * @param running what to say
+     */
+    private static void setRunning(org.traincontrol.automation.Layout layout, boolean running)
+        throws Exception
+    {
+        java.lang.reflect.Field f =
+            org.traincontrol.automation.Layout.class.getDeclaredField("running");
+
+        f.setAccessible(true);
+        f.setBoolean(layout, running);
+    }
+
     // --- the running layout ------------------------------------------------------------------
 
     private static org.traincontrol.automation.Point occupiedPoint(
