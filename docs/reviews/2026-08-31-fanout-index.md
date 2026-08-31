@@ -124,6 +124,11 @@ names; this is not a second disposition, it is a pointer.
   populates `clearedEdges`.
 - **`DAY-B1`** - MT-149's `repaintTimetable()` sits past two early returns about the companion setup
   file, so a timetable on a layout with no `config/autonomy/` still does not redraw on a rename.
+- ~~**`DAY-B3`**~~ - **closed 2026-08-31.** The editor accepted a home on a split square and the
+  loader dropped it, so `AutonomyBuilder.homeCopy`'s answer was discarded every time. Adam ruled on
+  what a home is - "the home should just be the logical point, and the direction is wherever the
+  locomotive was facing when it started moving" - and all three refusals went with it. See
+  [MT-245](../manual-tests/tests.md#mt-245).
 - **`RGN-B1`** - `migrateStationLabels` rewrites the user's own `.cs2` page files, one way, with no
   changelog line. Already happened on the real layout.
 - **`RGN-B2`** - `skipAccessories` guards only the accessory branch, so a conflicted s88 route still

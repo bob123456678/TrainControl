@@ -25,6 +25,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-243](#mt-243) | 2026-08-31 | Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone | needs test | RGN-A1, IPR-A1 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
+| [MT-245](#mt-245) | 2026-08-31 | A home on a main-line platform, and it is still there next start | needs test | DAY-B3 |
 
 Everything else - 231 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -8361,6 +8362,14 @@ side of the platform it was already standing on, which can be impossible.
 
 *Run against v3_0_0_rc4 or later.*
 
+**Claude, 2026-08-31 (third round).** The other half went too, on your ruling: "so the home should
+just be the logical point, and the direction is wherever the locomotive was facing when it started
+moving."
+
+So the question I left open above - whether to refuse a split square everywhere instead - is answered
+the other way. The assignment door accepts one now, and so does the loader, which was silently
+dropping homes the editor had accepted. See [MT-245](#mt-245).
+
 ---
 
 <a id="mt-166"></a>
@@ -13106,5 +13115,53 @@ and is being asked on both.
 Either is defensible. What is not defensible is today, where the two halves disagree.
 
 *Run against a build after commit 875edb92.*
+
+---
+
+<a id="mt-245"></a>
+
+### MT-245 - 2026-08-31 - A home on a main-line platform, and it is still there next start
+
+**Disposition:** needs test
+**From:** DAY-B3
+
+**Written:** 2026-08-31
+
+**What to do.** On your own railway, with a configuration you do not mind editing.
+
+1. **Assign a home** to a locomotive on **BottomMainC** - one of the ten squares the setup draws as
+   more than one arrival side. The menu should accept it, as it always did.
+2. **Save, close TrainControl, and open it again.** The home should still be there. Check the log
+   while you are at it: there should be no line about the square being drawn as more than one place.
+3. **Drive the train away** and press Return Home. It should go back to that platform, arriving from
+   whichever side the route takes - the direction is not part of the home.
+4. **Send it home a second time from the other direction**, if your layout lets you, and it should be
+   just as content.
+5. **A platform where every copy is a turning berth** - a train has to back out - should still be
+   refused to a locomotive that is not reversible. That refusal is real and stays.
+
+#### Comments
+
+**Claude, 2026-08-31.** Your ruling, and it settles something that had been answered three different
+ways: "so the home should just be the logical point, and the direction is wherever the locomotive was
+facing when it started moving."
+
+**Step 2 is the one worth doing carefully, because it is what was broken.** The editor accepted a home
+on a split square and the LOADER dropped it, with a log line as the only notice - so a home could be
+set, look right, and be gone at the next start. That was LD-8 carrying your 2026-08-25 ruling to a
+door a person cannot be warned at. And `AutonomyBuilder.homeCopy` exists for no purpose other than
+choosing which copy of such a square should carry the home; the loader threw that answer away every
+time.
+
+All three refusals are gone - the menu, the model's setter, and the loader.
+
+**One thing I extended beyond what you said, and you should know which part is mine.** Whether a train
+can rest at its home is now asked of the SQUARE rather than of one copy. A platform whose two copies
+are a turning berth and a through road is a home for a locomotive that cannot reverse, because it can
+stand on the through road; before, it was refused whenever the copy carrying the home happened to be
+the turning one - which is a choice the builder made, not one you made. Step 5 is the control: where
+EVERY copy must be backed out of, it is still refused.
+
+*Run against a build after commit 7616d2a6.*
 
 ---
