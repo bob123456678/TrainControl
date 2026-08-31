@@ -3096,6 +3096,89 @@ public class testHomeStaging
         return config.replace(plain, assigned);
     }
 
+    /**
+     * Two locomotives cannot both be homed on one platform (MT-165, second round).
+     *
+     * The MT-165 fix let a positional home sit on a square that is drawn as several graph Points,
+     * because ten of Adam's thirty-six station squares are, and no train standing on one had ever been
+     * given a home.  What it did not do is teach the injectivity test the same thing: `claimHome` ends
+     * `if (this.homeStations.containsValue(p)) return;`, which compares POINTS, so the far copy of a
+     * platform looks like a station nobody has spoken for.
+     *
+     * The sequence is ordinary.  A train stands on a platform and takes it as its home.  Autonomy
+     * sends it away.  The operator places another train on the same platform - arriving from the other
+     * direction, which is the other copy - and it takes that as ITS home.  Two locomotives are now
+     * homed on one piece of track.
+     *
+     * **No arrangement satisfies that**, and Return Home says so in the worst available way: two
+     * active Points on one sensor make `sharesSection` true, so the planner answers IMPOSSIBLE naming
+     * both locomotives, for the rest of the session, and on screen they look like two different
+     * stations.
+     *
+     * The state was unreachable before MT-165 - `claimHome` refused a square with a block outright -
+     * so this is a defect the fix introduced rather than one it exposed.
+     *
+     * MUTATION: putting `containsValue(p)` back in place of the block-aware test fails the last
+     * assertion.
+     */
+    @Test
+    public void testASecondLocomotiveDoesNotHomeOnTheOtherCopyOfAPlatform() throws Exception
+    {
+        Layout layout = load(twoStationCopiesAndASiding());
+
+        Point p1 = layout.getPoint("HS P1");
+        Point p2 = layout.getPoint("HS P2");
+
+        assertNotNull(p1.getBlock(), "the fixture did not take: HS P1 must carry a block");
+
+        assertEquals(p1.getBlock(), p2.getBlock(),
+            "the fixture did not take: the two copies must share a block, or this asks nothing");
+
+        // The MT-165 rule working: a train placed on a split platform takes it as its home.
+        assertTrue(layout.moveLocomotive(LOC_A, "HS P1", false),
+            "could not place the first locomotive");
+
+        assertEquals(layout.getHomeStations().get(loc(LOC_A)), p1,
+            "precondition: the first locomotive took no home from the square it was placed on, so "
+            + "this cannot ask anything about the second");
+
+        // It leaves.  By hand here; by autonomy in life.  The platform is empty and still its home.
+        assertTrue(layout.moveLocomotive(LOC_A, "HS Q", false),
+            "could not move the first locomotive away");
+
+        assertEquals(layout.getHomeStations().get(loc(LOC_A)), p1,
+            "precondition: moving a locomotive re-homed it, so the rest of this asks nothing");
+
+        // And another train is put on the OTHER COPY of that platform.
+        assertTrue(layout.moveLocomotive(LOC_B, "HS P2", false),
+            "could not place the second locomotive");
+
+        assertNull(layout.getHomeStations().get(loc(LOC_B)),
+            "a second locomotive was given the far copy of a platform that is already the first "
+            + "one's home.  The copies of a square are one piece of track, so no arrangement puts "
+            + "both trains at home - and Return Home answers IMPOSSIBLE naming both of them from "
+            + "then on, while the diagram shows what look like two different stations");
+    }
+
+    /**
+     * One platform drawn as two Points, and a siding to send a train to.
+     *
+     * Both copies are stations and both carry the same sensor, which is what a split platform IS on
+     * the derived graph - `Point` refuses a destination with no feedback, so the copies cannot be
+     * given the null s88 that `blockOfTwoWatching`'s pair uses.
+     */
+    private static String twoStationCopiesAndASiding()
+    {
+        return json("{'points': ["
+            + square("HS P1", 5, "HSP", true, null) + ","
+            + square("HS P2", 5, "HSP", true, null) + ","
+            + square("HS Q", 6, null, true, null)
+            + "],'edges': ["
+            + edge("HS P1", "HS Q") + "," + edge("HS Q", "HS P1") + ","
+            + edge("HS P2", "HS Q") + "," + edge("HS Q", "HS P2")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     private static String blockOfTwoWatching(String locOnW2, String locOnC)
     {
         return json("{'points': ["

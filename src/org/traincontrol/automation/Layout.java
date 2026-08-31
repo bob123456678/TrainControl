@@ -1076,8 +1076,19 @@ public class Layout
         // Already has a home: keep it.  Moving a locomotive by hand does not re-home it.
         if (this.homeStations.containsKey(l)) return;
 
-        // Station already spoken for: this locomotive is a free agent
-        if (this.homeStations.containsValue(p)) return;
+        // Station already spoken for: this locomotive is a free agent.
+        //
+        // The SQUARE, not the Point (MT-165, second round).  This was `containsValue(p)` until a split
+        // square could hold a positional home, at which point the far copy of a platform stopped
+        // looking spoken for: park a train on a platform, let autonomy send it away, place another
+        // train on the same platform arriving from the other direction, and both are homed on one
+        // piece of track.  Nothing can satisfy that - `sharesSection` sees two active Points on one
+        // sensor and Return Home answers IMPOSSIBLE naming both, for the rest of the session, while
+        // the diagram shows what look like two different stations.
+        for (Point taken : this.homeStations.values())
+        {
+            if (taken.isSamePlaceAs(p)) return;
+        }
 
         this.homeStations.put(l, p);
     }

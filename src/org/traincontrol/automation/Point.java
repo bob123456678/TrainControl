@@ -743,6 +743,32 @@ public class Point
     }
 
     /**
+     * Whether this and another Point are the same piece of track (MT-165).
+     *
+     * One square on the diagram is emitted as several Points, one per arrival side, tied together by
+     * a block.  Almost every rule about a square means the SQUARE - a train standing on any copy is
+     * standing on that platform, and a platform already spoken for is spoken for whichever copy is
+     * named - so comparing Points answers a question nobody asked.
+     *
+     * Here rather than in either caller, because it was in one caller and not the other and that is
+     * exactly what went wrong: `HomeStaging.atHome` learned it when positional homes were allowed onto
+     * split squares, and `Layout.claimHome`'s "this station is already somebody's home" test went on
+     * comparing Points - so a second locomotive could take the far copy of a platform that was already
+     * a home, and no arrangement puts both trains at home.
+     *
+     * @param other the other Point, or null
+     * @return true when a train on one is standing where a train on the other is standing
+     */
+    public boolean isSamePlaceAs(Point other)
+    {
+        if (other == null) return false;
+
+        if (this.equals(other)) return true;
+
+        return this.block != null && this.block.equals(other.getBlock());
+    }
+
+    /**
      * @return the block this Point shares with the other copies of its square, or null
      */
     public String getBlock()

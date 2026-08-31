@@ -196,7 +196,10 @@ public final class HomeStaging
             // false for ever, and every assigned home was quietly treated as positional.  Nothing
             // failed; the strict contract just stopped applying.
             boolean assigned = entry.getKey().equals(entry.getValue().getHomeLoc());
-            boolean standingOnIt = entry.getKey().equals(occupancy.get(entry.getValue()));
+            // The SQUARE, not the Point (MT-165, second round).  Asking `occupancy.get(home)` names
+            // one copy of a platform, so a train standing on the other copy of its own home read as
+            // not standing on it - and this entry is then dropped when the home is a launch pad.
+            boolean standingOnIt = atHome(entry.getValue(), locationOf(occupancy, entry.getKey()));
 
             if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName()))
             {
@@ -836,7 +839,10 @@ public final class HomeStaging
                 // dispatched from its pad is an ordinary free agent wherever it now stands.
                 Point ownHome = this.homes.get(l);
 
-                if (this.launchPads.contains(at.getName()) && (ownHome == null || ownHome.equals(at)))
+                // atHome, for the reason the comparison above it changed: a train resting on the
+                // far copy of its own home square is resting at home, and pinning it to the exact
+                // copy can ask the A* for a move that no arrival side allows.
+                if (this.launchPads.contains(at.getName()) && (ownHome == null || atHome(ownHome, at)))
                 {
                     continue;
                 }
@@ -1572,7 +1578,9 @@ public final class HomeStaging
      * Whether a locomotive standing here is standing at its home (MT-165).
      *
      * A square emitted as several Points is ONE piece of track - that is what a block IS - so a train
-     * on any copy of its home platform is home.  Asking `home.equals(where)` instead was right for as
+     * on any copy of its home platform is home.  The comparison itself is `Point.isSamePlaceAs`, which
+     * is where it belongs: this method had it privately, `Layout.claimHome` did not, and the door that
+     * did not have it let two locomotives be homed on one platform.  Asking `home.equals(where)` instead was right for as
      * long as a home could never be on a split square, which was until claimHome started giving
      * positional homes there: Adam's railway has ten station squares with a block, and no train
      * standing on one of them had ever been given a home at all.
@@ -1588,11 +1596,7 @@ public final class HomeStaging
      */
     private static boolean atHome(Point home, Point where)
     {
-        if (home == null || where == null) return false;
-
-        if (home.equals(where)) return true;
-
-        return home.getBlock() != null && home.getBlock().equals(where.getBlock());
+        return home != null && home.isSamePlaceAs(where);
     }
 
     private static Point locationOf(Map<Point, Locomotive> state, Locomotive l)

@@ -463,30 +463,62 @@ public class testSwitchingToACentralStationLayout
             // preference and is the half that actually loads the pages, so those classes open the
             // operator\u2019s railway too - but 56 of them do, and a rule that fails for 56 pre-existing
             // violations is one somebody deletes rather than obeys.
-            int opens = code.indexOf("new TrainControlUI()");
+            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST (2026-08-31).
+            //
+            // This was `code.indexOf("new TrainControlUI()")` and it asked two questions wrongly.
+            //
+            // It matched only the UNQUALIFIED constructor, and seven of the sixteen classes that
+            // build a window write `new org.traincontrol.gui.TrainControlUI()` - among them one with
+            // five sandbox/window pairs - so the half this file calls a hard rule never saw them.
+            //
+            // And it compared FIRST occurrences, so a class with several test methods was checked
+            // once: add a method that builds a window, forget the sandbox, and the first pair still
+            // reads correctly while the new one opens the operator's own layout.
+            //
+            // That is not a hypothetical route in. It is how his railway was damaged on 2026-08-30,
+            // and this check is what was written afterwards to stop it happening again.
+            //
+            // String literals are blanked as well as comments, because this method's own needles are
+            // string literals in this file and would otherwise count as windows built here.
+            String scan = withoutStrings(code);
 
-            if (opens < 0) continue;
+            java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
+            java.util.List<Integer> sandboxes = indicesOf(scan, SANDBOX_OPENED);
+
+            if (windows.isEmpty()) continue;
 
             checked++;
 
-            int sandbox = code.indexOf("LayoutSandbox.open()");
+            // Both scoping patterns are in use and both are correct: testBusyDialogInteraction and
+            // testRenderingCost open one in @BeforeClass and build windows in several methods;
+            // testLayoutEditorBulkEdits opens one per method. Counting tells those apart from the
+            // case that is wrong - a window nobody guarded - without having to know which method
+            // anything sits in, which lexical scoping gets wrong for a window built in a helper.
+            boolean setUpForTheClass = !sandboxes.isEmpty() && SETUP_METHOD.matcher(scan).find();
 
-            if (sandbox < 0)
+            if (sandboxes.isEmpty())
             {
                 offenders.add(f.getName() + " builds a window and never opens a sandbox");
             }
-            else if (sandbox > opens)
+            else if (sandboxes.get(0) > windows.get(0))
             {
                 offenders.add(f.getName() + " opens its sandbox AFTER the thing that reads the "
                     + "preference, so the redirection comes too late");
             }
+            else if (!setUpForTheClass && sandboxes.size() < windows.size())
+            {
+                offenders.add(f.getName() + " builds " + windows.size() + " windows behind only "
+                    + sandboxes.size() + " sandbox opens, and has no setup method opening one for "
+                    + "the whole class - so at least one window reads the operator's own layout");
+            }
         }
 
         // A scan that matched nothing would pass while proving nothing.
-        assertTrue(checked >= 5,
+        assertTrue(checked >= 14,
             "only " + checked + " test classes were found to build a window, which is fewer than "
             + "there are - the pattern this looks for has gone stale and it is now checking almost "
-            + "nothing");
+            + "nothing. Sixteen classes built one when this floor was set; it stood at 5 while the "
+            + "pattern could see only nine of them, so it never noticed the other seven");
 
         // AND THE MODEL HALF, ratcheted (2026-08-28).
         //
@@ -549,6 +581,74 @@ public class testSwitchingToACentralStationLayout
             "these tests open whatever layout the machine has, which on Adam\u2019s is his real "
             + "railway - they read it, write it back, and can raise a modal dialog that stalls the "
             + "battery: " + offenders);
+    }
+
+    /**
+     * Where a window is built, qualified or not - the hole that hid seven classes from this check.
+     */
+    private static final java.util.regex.Pattern WINDOW_BUILT =
+        java.util.regex.Pattern.compile("new\\s+(?:org\\.traincontrol\\.gui\\.)?TrainControlUI\\s*\\(");
+
+    private static final java.util.regex.Pattern SANDBOX_OPENED =
+        java.util.regex.Pattern.compile("LayoutSandbox\\.open\\s*\\(\\s*\\)");
+
+    private static final java.util.regex.Pattern SETUP_METHOD =
+        java.util.regex.Pattern.compile("@Before(?:Class|Method|Test)");
+
+    /**
+     * Every index at which a pattern matches, in order.
+     */
+    private static java.util.List<Integer> indicesOf(String body, java.util.regex.Pattern p)
+    {
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+
+        java.util.regex.Matcher m = p.matcher(body);
+
+        while (m.find()) out.add(m.start());
+
+        return out;
+    }
+
+    /**
+     * String literals blanked, so that this file's own needles do not count as code.
+     *
+     * Every other character keeps its place, so indices taken from the result can be compared with
+     * each other - which is all this check does with them.
+     */
+    private static String withoutStrings(String body)
+    {
+        StringBuilder out = new StringBuilder(body.length());
+
+        boolean inString = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+
+            if (inString && c == '\\')
+            {
+                out.append(' ');
+
+                if (i + 1 < body.length())
+                {
+                    out.append(' ');
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '\"')
+            {
+                inString = !inString;
+                out.append(c);
+                continue;
+            }
+
+            out.append(inString ? ' ' : c);
+        }
+
+        return out.toString();
     }
 
     /** Entries in {@code from} that are not in {@code excluding}, for a readable failure message. */
