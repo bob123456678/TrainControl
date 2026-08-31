@@ -654,6 +654,45 @@ public class LayoutGrid
     private boolean cacheable = false;
     
     /**
+     * The panel a diagram is built into, which paints the trains last (OB-159).
+     *
+     * Adam: "it is a z order issue.  The stations paint over the locomotives."
+     *
+     * Swing paints children in one order and has no notion of layers, and the two things that want to
+     * be in front - the station caption and the locomotive standing under it - are on different
+     * components.  Whichever is given the front, one of Adam's two reports comes back: captions in
+     * front and the locomotive is painted over (OB-159); the tile in front and the NAME is painted
+     * out, because a tile is opaque (OB-117).
+     *
+     * So the trains are not a component's z-order at all.  The children paint in the order they
+     * always did, and then every tile is asked for its train, which lands over both.
+     *
+     * Public and static so a test can build one out of plain components and look at what comes out -
+     * which is the whole of what this has to get right and needs no railway to establish.
+     *
+     * @return a panel that draws its tiles, then its captions, then its trains
+     */
+    public static JPanel newDiagramContainer()
+    {
+        return new JPanel()
+        {
+            @Override
+            protected void paintChildren(java.awt.Graphics g)
+            {
+                super.paintChildren(g);
+
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof LayoutLabel)
+                    {
+                        ((LayoutLabel) child).paintTrainOverCaptions(g);
+                    }
+                }
+            }
+        };
+    }
+
+    /**
      * This class draws the train layout and ensures that proper event references are set in the model
      * @param layout reference to the layout from the model
      * @param size size of each tile, in pixels
@@ -733,7 +772,7 @@ public class LayoutGrid
         // We need a non scaling panel for small layouts
         // if (width * size < parent.getWidth() || height * size < parent.getHeight() || popup)
         // {
-            container = new JPanel();
+            container = newDiagramContainer();
             container.setBackground(Color.white);
 
             // The live list, so whatever this grid registers later is reachable from the container

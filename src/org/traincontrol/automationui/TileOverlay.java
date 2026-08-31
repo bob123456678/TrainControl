@@ -497,70 +497,113 @@ public class TileOverlay
                     width - 1 - inset * 2, height - 1 - inset * 2);
             }
 
-            if (train)
-            {
-                int[] on = middle(trackCentre, width, height);
-
-                // A locomotive where one is actually running (FR-027), the dot everywhere else.
-                //
-                // Adam: "add little opaque locomotive icon at the s88 where a train is while autonomy
-                // is running (not while stationary)."  The dot said WHERE a train was and nothing more;
-                // on a layout with several paths out at once, which of them are moving and which are
-                // waiting is the thing a glance at the diagram could not answer.
-                java.awt.image.BufferedImage picture =
-                    moving || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
-
-                if (picture != null)
-                {
-                    // Opaque, as asked.  The composite is reset because the outline above leaves a
-                    // partial alpha on the Graphics, and an icon drawn through that is a grey smudge.
-                    g.setComposite(java.awt.AlphaComposite.SrcOver);
-
-                    int side = (int) Math.round(Math.min(width, height) * ICON_SCALE);
-
-                    // Never smaller than the dot it replaces: at the smallest tile size a shape scaled
-                    // by a fraction becomes a few grey pixels, which is less legible than the dot and
-                    // would make this a regression for anybody running a compact diagram.
-                    side = Math.max(side, Math.max(6, Math.min(width, height) / 3));
-
-                    java.awt.geom.AffineTransform wasAt = g.getTransform();
-
-                    try
-                    {
-                        g.translate(on[0], on[1]);
-
-                        turnToTravel(g);
-
-                        g.drawImage(picture, -side / 2, -side / 2, side, side, null);
-                    }
-                    finally
-                    {
-                        // Restored rather than undone step by step: the caller handed over a Graphics
-                        // it goes on using, and a transform left on it moves everything drawn after.
-                        g.setTransform(wasAt);
-                    }
-                }
-                else
-                {
-                    // An outline says which track is claimed; it cannot say which part of it holds the
-                    // train.  The dot is the diagram's equivalent of the graph labelling its node.
-                    int diameter = Math.max(6, Math.min(width, height) / 3);
-
-                    g.setComposite(java.awt.AlphaComposite.getInstance(
-                        java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
-                    g.setColor(Color.BLACK);
-                    g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
-
-                    g.setColor(Color.WHITE);
-                    g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
-                }
-            }
         }
         finally
         {
             g.setColor(oldColor);
             g.setComposite(oldComposite);
             g.setStroke(oldStroke);
+
+            if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
+        }
+    }
+
+    /**
+     * Draws WHERE THE TRAIN IS, on a pass of its own above everything else (OB-159).
+     *
+     * Adam: "it is a z order issue.  The stations paint over the locomotives."
+     *
+     * This used to be the last thing {@link #paint} did, which put it inside the tile - and the
+     * station captions are separate components in front of every tile, so a caption lying over a
+     * platform painted across the locomotive standing on it.  Putting the TILE in front instead is
+     * what OB-117 was filed about from the other side: a tile is opaque, so it does not draw a
+     * locomotive over a name, it paints the name out and leaves its own background.
+     *
+     * Swing has one ordering and no notion of layers, so neither component can be in front of the
+     * other and be right.  What can be arranged is a third pass, which is what this method is for: the
+     * container paints its children in order - tiles, then captions - and then asks every tile for its
+     * train.  Both reports come out true at once.
+     *
+     * Separate from {@link #paint} rather than a flag on it, because the two are drawn at different
+     * times onto different Graphics and nothing else about them is shared.
+     *
+     * @param g the container's graphics, already translated and clipped to this tile
+     * @param width the tile width
+     * @param height the tile height
+     * @param trackCentre the midpoint of the tile's own two track sides, or null if it is not known
+     */
+    public void paintTrain(Graphics2D g, int width, int height, int[] trackCentre)
+    {
+        if (!train) return;
+
+        Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        java.awt.Composite oldComposite = g.getComposite();
+        Color oldColor = g.getColor();
+
+        try
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int[] on = middle(trackCentre, width, height);
+
+            // A locomotive where one is actually running (FR-027), the dot everywhere else.
+            //
+            // Adam: "add little opaque locomotive icon at the s88 where a train is while autonomy
+            // is running (not while stationary)."  The dot said WHERE a train was and nothing more;
+            // on a layout with several paths out at once, which of them are moving and which are
+            // waiting is the thing a glance at the diagram could not answer.
+            java.awt.image.BufferedImage picture =
+                moving || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
+
+            if (picture != null)
+            {
+                // Opaque, as asked.  The composite is reset because the outline above leaves a
+                // partial alpha on the Graphics, and an icon drawn through that is a grey smudge.
+                g.setComposite(java.awt.AlphaComposite.SrcOver);
+
+                int side = (int) Math.round(Math.min(width, height) * ICON_SCALE);
+
+                // Never smaller than the dot it replaces: at the smallest tile size a shape scaled
+                // by a fraction becomes a few grey pixels, which is less legible than the dot and
+                // would make this a regression for anybody running a compact diagram.
+                side = Math.max(side, Math.max(6, Math.min(width, height) / 3));
+
+                java.awt.geom.AffineTransform wasAt = g.getTransform();
+
+                try
+                {
+                    g.translate(on[0], on[1]);
+
+                    turnToTravel(g);
+
+                    g.drawImage(picture, -side / 2, -side / 2, side, side, null);
+                }
+                finally
+                {
+                    // Restored rather than undone step by step: the caller handed over a Graphics
+                    // it goes on using, and a transform left on it moves everything drawn after.
+                    g.setTransform(wasAt);
+                }
+            }
+            else
+            {
+                // An outline says which track is claimed; it cannot say which part of it holds the
+                // train.  The dot is the diagram's equivalent of the graph labelling its node.
+                int diameter = Math.max(6, Math.min(width, height) / 3);
+
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
+                g.setColor(Color.BLACK);
+                g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+
+                g.setColor(Color.WHITE);
+                g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+            }
+        }
+        finally
+        {
+            g.setColor(oldColor);
+            g.setComposite(oldComposite);
 
             if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
         }

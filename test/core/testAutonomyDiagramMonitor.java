@@ -896,8 +896,10 @@ public class testAutonomyDiagramMonitor
 
         java.awt.Graphics2D g = image.createGraphics();
 
-        // The rail's own midpoint, which is what the label knows and the overlay did not
+        // The rail's own midpoint, which is what the label knows and the overlay did not.
+        // Both passes, for the reason given on `painted` (OB-159).
         overlay.paint(g, size, size, new int[] {45, 15});
+        overlay.paintTrain(g, size, size, new int[] {45, 15});
 
         g.dispose();
 
@@ -954,7 +956,9 @@ public class testAutonomyDiagramMonitor
 
         java.awt.Graphics2D g = image.createGraphics();
 
+        // Both passes, for the reason given on `painted` (OB-159).
         overlay.paint(g, size, size, new int[] {45, 15});
+        overlay.paintTrain(g, size, size, new int[] {45, 15});
 
         g.dispose();
 
@@ -1370,7 +1374,12 @@ public class testAutonomyDiagramMonitor
 
         java.awt.Graphics2D g = image.createGraphics();
 
+        // BOTH passes, because the diagram draws both (OB-159).  The train came out of paint()
+        // and into paintTrain() so it could be drawn above the station captions, which are
+        // separate components in front of every tile; rendering only the first pass here is
+        // asking about half a square.
         overlay.paint(g, size, size);
+        overlay.paintTrain(g, size, size, null);
 
         g.dispose();
 

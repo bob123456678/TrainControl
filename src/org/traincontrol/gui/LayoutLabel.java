@@ -1230,6 +1230,47 @@ public final class LayoutLabel extends JLabel
             g2.dispose();
         }
     }
+    /**
+     * Draws this tile's train onto the container, above the captions (OB-159).
+     *
+     * Adam: "it is a z order issue.  The stations paint over the locomotives."
+     *
+     * The train used to be the last thing this tile painted, and a tile is behind every station
+     * caption - deliberately, because it is opaque and OB-117 was about a lifted one painting a name
+     * out.  So the two reports pull opposite ways and neither component can be in front of the other
+     * and be right.
+     *
+     * The answer is not an order at all but a third pass.  The container paints its children - tiles,
+     * then captions - and then asks each tile for this, so the locomotive lands over both and the name
+     * is untouched everywhere the locomotive is not.
+     *
+     * TRANSLATED AND CLIPPED to this tile's own bounds, because the Graphics belongs to the container
+     * and the overlay draws in tile coordinates.  Without the clip an icon on a small tile would spill
+     * onto its neighbours, which is the one way this pass could make the diagram worse.
+     *
+     * @param g the container's graphics
+     */
+    public void paintTrainOverCaptions(java.awt.Graphics g)
+    {
+        TileOverlay overlay = autonomyOverlay;
+
+        if (overlay == null || overlay.isBlank() || !overlay.hasTrain()) return;
+
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
+
+        try
+        {
+            overlay.paintTrain(g2, getWidth(), getHeight(),
+                annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
 
     public void updateImage(boolean highlight)
     {

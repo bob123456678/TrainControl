@@ -45,8 +45,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
 | [MT-240](#mt-240) | 2026-08-30 | Two kinds of random in the routing rules | fixed unvalidated | OB-156 |
 | [MT-241](#mt-241) | 2026-08-30 | The routing rules explain themselves | fixed unvalidated | OB-163 |
+| [MT-242](#mt-242) | 2026-08-30 | The locomotive is drawn over the station name | fixed unvalidated | OB-159 |
 
-Everything else - 209 of 241 - is **fixed validated** and needs nothing from you unless the
+Everything else - 209 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -12467,6 +12468,39 @@ still described itself as it did when it was simply called "At Random".
 3. **Try to change it while trains are running.** The dropdown goes back to the rule in force - and the
    tooltip must go back with it, not keep describing the rule that was refused.
 4. **In another language**, if you want to check the two new sentences read properly.
+
+*Run against v3_0_0_rc3 or later.*
+
+---
+<a id="mt-242"></a>
+
+### MT-242 - 2026-08-30 - The locomotive is drawn over the station name, not under it
+
+**Disposition:** fixed unvalidated
+**From:** OB-159
+**Written:** 2026-08-30
+
+Adam: "the locomotive icon sometimes appears BELOW stations while running" - and, asked which sense of
+below: "it is a z order issue.  The stations paint over the locomotives.  Placement is OK."
+
+**This and OB-117 pull opposite ways and both are right.** A station caption and the tile under it are
+separate components. Give the caption the front and the locomotive standing on that platform is painted
+over, which is what you saw; give the TILE the front and the name is painted out and replaced by the
+tile's own background, which is what OB-117 was about. Swing has one ordering and no layers, so no
+arrangement of the two satisfies both.
+
+So the trains are not an ordering any more. The diagram paints its children exactly as it did - tiles,
+then captions - and then walks them once more asking each tile for its train, which lands above both.
+The name survives everywhere the locomotive is not.
+
+1. **Run a train through a station whose caption sits over the platform.** The locomotive should be
+   whole, on top of the name.
+2. **Watch the name.** It should still be readable either side of the locomotive, and come back intact
+   the moment the train leaves.
+3. **The sensor numbers are unchanged** - a running tile still covers those, which is what you asked
+   for when the lift was added.
+4. **A stationary train** shows the dot rather than the icon; that should be on top as well.
+5. **Export a diagram** while a train is running and check the picture matches the screen.
 
 *Run against v3_0_0_rc3 or later.*
 

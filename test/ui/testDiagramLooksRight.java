@@ -2028,4 +2028,126 @@ public class testDiagramLooksRight
 
         return seen.size();
     }
+
+    /**
+     * The train is drawn over the station caption, and the caption is still there beside it.
+     *
+     * OB-159. Adam: "it is a z order issue.  The stations paint over the locomotives."
+     *
+     * This is the other half of the test above, and the two cannot both be satisfied by an ORDER.
+     * A station caption and the tile under it are separate components; put the caption in front and
+     * the locomotive standing on that platform is painted over, which is what he reported; put the
+     * tile in front and the NAME is painted out, because a tile is opaque, which is OB-117.
+     *
+     * So the trains are no longer a z-order at all. The container paints its children in the order it
+     * always did - tiles, then captions - and then walks them once more asking each for its train, so
+     * the locomotive lands above both and the name survives everywhere the locomotive is not.
+     *
+     * Asserted as a DIFFERENCE rather than against a colour: the same arrangement is rendered with a
+     * train published and without one, and the middle of the square has to change. That is true of
+     * every correct drawing and says nothing about which shade of what the locomotive is.
+     *
+     * MUTATION this catches: drop the paintTrainOverCaptions loop from newDiagramContainer and the
+     * middle of the square is the caption in both renders, so nothing changes and the first assertion
+     * fails. Paint the train inside the tile again instead and it fails the same way, because the
+     * caption is in front of the tile.
+     */
+    @Test
+    public void testTheTrainIsDrawnOverTheStationCaption() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        // A big tile, so there is room to sample the caption somewhere the locomotive does not reach.
+        // The icon is drawn centred at 76% of the square, and the run outline is a line on the very
+        // edge, so a point near the left edge and low down is inside the caption and outside both.
+        final int size = 120;
+
+        org.traincontrol.gui.LayoutLabel tile =
+            new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+
+        caption.setText("Bottom Main C");
+        caption.setOpaque(true);
+        caption.setBackground(org.traincontrol.gui.StationCaption.restingFill());
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size, size);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        tile.setBounds(0, 0, size, size);
+
+        // Where a pill actually sits: below the rail, over the lower part of the square.
+        caption.setBounds(0, size * 2 / 3, size, size / 4);
+
+        grid.add(caption);
+        grid.add(tile);
+
+        // The order the diagram is built in: captions in front of tiles.
+        grid.setComponentZOrder(caption, 0);
+
+        BufferedImage empty = shotOf(grid, size);
+
+        // A train standing on this square, and running - which is the case that gets the icon.
+        tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+            org.traincontrol.automationui.TileOverlay.State.ACTIVE, true, true, null));
+
+        BufferedImage withTrain = shotOf(grid, size);
+
+        javax.imageio.ImageIO.write(empty, "png", new File(OUT, "train-over-caption-empty.png"));
+        javax.imageio.ImageIO.write(withTrain, "png", new File(OUT, "train-over-caption-train.png"));
+
+        assertNotEquals(withTrain.getRGB(size / 2, size / 2), empty.getRGB(size / 2, size / 2),
+            "the middle of the square is unchanged by a train standing on it, so the caption is "
+            + "painted over the locomotive - which is what Adam reported");
+
+        // AND THE CAPTION IS STILL THERE, which is the half OB-117 is about.
+        //
+        // Sampled inside the pill and outside both the icon - which spans 76% of the square, centred -
+        // and the run outline, which is a line on the very edge.  If the train were painting the
+        // whole square this pixel would have changed with it.
+        int atX = size / 12;
+        int atY = size * 3 / 4;
+
+        assertEquals(withTrain.getRGB(atX, atY), empty.getRGB(atX, atY),
+            "the caption changed where the locomotive does not reach, so the train is painting over "
+            + "more than itself - and a locomotive that paints out the name is OB-117 coming back "
+            + "the other way");
+    }
+
+    /**
+     * Lays out a panel and paints it into an image, which is the only way to ask what a drawing does.
+     *
+     * @param panel the panel
+     * @param size its side in pixels
+     * @return the picture
+     */
+    private BufferedImage shotOf(javax.swing.JPanel panel, int size)
+    {
+        panel.setSize(size, size);
+        panel.doLayout();
+
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            panel.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return shot;
+    }
 }

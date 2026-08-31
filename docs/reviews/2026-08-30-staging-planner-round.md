@@ -32,8 +32,9 @@ to catch this class of defect is real, and its blind spot is exactly where the d
 entry: counting the duplicate properly makes the planner produce a plan, and the plan departs from a
 guessed point.
 
-**Also in this round:** SG-B1 and SG-B2 came from Adam's feedback; SG-B3 was found while writing
-the manual test for one of last round's own fixes, which is where it should have been found then.
+**Also in this round:** SG-B1, SG-B2 and SG-B4 came from Adam's feedback; SG-B3 was found while
+writing the manual test for one of last round's own fixes, which is where it should have been
+found then.
 
 ---
 
@@ -252,6 +253,33 @@ first", which was complete when the rule was called "At Random" and is half the 
 Found by asking why the new option had no tooltip. **That question only came up because a manual test
 was being written for it** - which is an argument for writing the test even when the change looks too
 small to need one.
+
+### B4 - the station captions painted over the locomotives
+
+| | |
+|---|---|
+| **Disposition** | fixed, `ui.testDiagramLooksRight.testTheTrainIsDrawnOverTheStationCaption` |
+| **Manual test** | [MT-242](../manual-tests/tests.md#mt-242) |
+| **Raised by** | Adam, OB-159 |
+
+**This one and OB-117 are the same overlap seen from opposite sides, and both are right.** A station
+caption and the tile under it are separate components. Give the caption the front and the locomotive
+standing on that platform is painted over, which is what Adam reported here; give the TILE the front
+and the name is painted out and replaced by the tile's own background, which is what OB-117 reported.
+Swing has one ordering and no notion of layers, so no arrangement of two components satisfies both -
+and the previous fix could only pick a side.
+
+The way out is to stop treating the train as a component's z-order. `TileOverlay.paint` no longer draws
+it; `paintTrain` is a method of its own, and `LayoutGrid`'s container paints its children in the order
+it always did and then walks them once more asking each tile for its train. Three layers, arranged once,
+in the one place that owns all of them.
+
+The OB-117 arrangement is untouched and its test still passes unedited, which is the point: the tile is
+still behind the captions, and the locomotive is no longer the tile's business.
+
+**What this pass did not do** is prove the layering on Adam's own diagram. The test builds a tile, a
+caption and a container out of plain components and renders them, which establishes the rule but not
+that his captions sit where I think they do — MT-242 asks him to look.
 ---
 
 ## D - not defects
