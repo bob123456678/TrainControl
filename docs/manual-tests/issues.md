@@ -191,6 +191,29 @@ The tooltip for "At Random, Respecting Priority" is stale as well: it says "what
 found first", which was true when the rule was called "At Random" and is only half the story now that
 its name promises priority.
 
+### OB-164 - 2026-08-31 - the diagram right-click menu offers no destinations in non-atomic mode
+
+**Kind:** bug
+**Raised from:** MT-087
+**Filed:** 2026-08-31
+**Build:** commit c386be96, build\classes, compiled 31 Aug 00:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Adam, closing MT-087: "Works, with notes.  Works from the autonomy commands panel, but right-clicking
+on the track diagram does not show available options in non-atomic mode."
+
+**Not the same question on the two surfaces.**  `AutoLocomotiveStatus.findPaths` gates on
+`layout.isAutoRunning()`, which is about the whole layout; `LayoutRightclickAutonomyMenu` gates on
+`getActiveLocomotives().containsKey(locomotive)`, which is about that one train.  Both then call
+`getPossiblePaths(loc, true)` and the same distinct-destinations filter.
+
+Neither `getPossiblePaths` nor `isPathClear` branches on `atomicRoutes` anywhere, so the difference has
+to be in state a non-atomic run leaves behind rather than in the question.  Three readings did not
+survive: a stale `activeLocomotives` entry (the removal at completion is unconditional), a point
+cleared behind the train (the last edge's endpoints are deliberately left alone), and the menu picking
+the wrong copy of a split square (`getAutonomyPointForTile` prefers the occupied copy).
+
+Needs a reproduction with two trains before anything is changed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

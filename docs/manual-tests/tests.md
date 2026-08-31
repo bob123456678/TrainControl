@@ -20,9 +20,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
-| [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
 | [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
-| [MT-087](#mt-087) | 2026-08-18 | Long run | fixed unvalidated | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | Adam's request to capture a confirmed-good baseline |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
@@ -33,7 +31,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-201](#mt-201) | 2026-08-26 | Closing TrainControl with the track editor open, and Discard | fixed unvalidated | LR-1 (2026-08-26 last-reviewer pass) |
 | [MT-239](#mt-239) | 2026-08-30 | Editing your own routes does not talk to the Central Station | fixed unvalidated | OB-155 |
 
-Everything else - 222 of 242 - is **fixed validated** and needs nothing from you unless the
+Everything else - 224 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1093,7 +1091,7 @@ the only other caller of the removed code path was the placement item above it, 
 
 ### MT-087 - 2026-08-18 - Long run
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
 **Written:** 2026-08-18
 
@@ -1142,6 +1140,25 @@ own thread is still alive*, which is the only thing that separates the two modes
 3. **A long run with several trains**, which is what this entry is really for.
 
 *Run against v3_0_0_rc3 or later.*
+
+**Adam, 2026-08-31 (triage).** Works, with notes.
+
+Works from the autonomy commands panel, but right-clicking on the track diagram does not show available options in non-atomic mode.
+
+*Run against commit c386be96, build\classes, compiled 31 Aug 00:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-31.** Thank you - and the note is a different defect, so it has an entry of its own
+rather than sitting under one you have just closed. Filed as OB-164.
+
+What I can say about it already: the two surfaces do NOT ask the same question. The commands panel
+gates on `layout.isAutoRunning()`, which is about the whole layout; the diagram's right-click menu
+gates on `getActiveLocomotives().containsKey(locomotive)`, which is about that one train. Both then
+call the same `getPossiblePaths(loc, true)` through the same filter, and neither that method nor
+`isPathClear` branches on `atomicRoutes` anywhere - so the difference is in state a non-atomic run
+leaves behind, not in the question being asked.
+
+I have not found it yet, and I would rather say so than guess: three plausible mechanisms did not
+survive reading. It needs a reproduction with two trains, which is the next thing I will do.
 
 ---
 
@@ -2252,7 +2269,7 @@ OK.
 
 ### MT-035 - 2026-08-21 - The Central Station switched off mid-session
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** hands-on testing  
 **Written:** 2026-08-21
 
@@ -2297,6 +2314,10 @@ Confirmed by mutation: making the wait claim success on timeout fails it.
 
 **Still needs you** for the half no simulation can answer - that the switch is actually thrown, and
 that the message names the tile.
+
+**Adam, 2026-08-31 (triage).** Works.
+
+*Run against commit c386be96, build\classes, compiled 31 Aug 00:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-036"></a>
