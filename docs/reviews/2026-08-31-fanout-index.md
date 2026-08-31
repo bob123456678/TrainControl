@@ -134,6 +134,15 @@ names; this is not a second disposition, it is a pointer.
   **Executed:** all four were run singly under the fingerprint guard and none wrote to
   `cs2_sample_layout`. Latent, not active - but it is the shape that caused the damage.
 - **`TCS-B2`** - `testEveryLanguageFits`' own two safety guards pass on nothing.
+- **An intermittent, found by the round's own batteries.**
+  `core.testTimetableCaptureThroughARealRun.testARealRunCapturesNothingWithCaptureOff` failed one
+  battery in three at the same commit: "no locomotive moved in 480 seconds ... Auto running: false",
+  with all three trains reported free to be given a route, no exception and no stop message in the
+  log. It passes alone, and the two batteries either side of it were green on byte-identical runtime
+  code, so it is load sensitivity rather than a regression - but a test that fails one run in three
+  is not a passing test, and the interesting part is that autonomy was not running rather than that
+  nothing moved. Worth a look before the next release; the class already had its dispatch wait raised
+  once for the same reason (commit 697417f9).
 - **`CDR-B1`** - `LayoutLabel`'s javadoc still says z-order decides train-vs-label visibility.
 - A dozen `MUTATION` claims across the suite name a mutation their test does not catch, or name the
   wrong assertion. The list is in the test-suite document; the two that matter most are the OB-116
