@@ -7420,6 +7420,37 @@ Stays **fixed unvalidated** rather than validated: one symptom of three.
 
 *Run against v3_0_0_rc3 or later.*
 
+**Claude, 2026-08-31 (second round).** Found it, and you were right that it is not cosmetic.
+
+**`sanitizeMultiUnits` evicts the locomotive it is asked about.** It walks every Point and clears any
+holding a locomotive that is not `isSimultaneousMultiUnitCompatible` with the one passed in - and that
+method ends `return !this.hasEquivalentAddress(l)`. A locomotive compared with ITSELF has an equivalent
+address, so it is declared incompatible with itself, and the sweep takes it off the square it is
+standing on.
+
+Both rename doors call that sweep immediately after `renameLoc`. So the rename repairs the setup
+correctly, and then the sweep takes the train off the railway - and renaming back does not bring it
+back because nothing restores a placement: the second rename finds nothing left to evict. The "?????"
+is the same fact from the other end, `getLocomotiveLocation` returning null.
+
+**Why it has been there unnoticed:** it bites on rename and not on placement, because `moveLocomotive`
+calls the same sweep BEFORE putting the locomotive down, so there is nothing of its own to find.
+
+A locomotive cannot conflict with itself, and the sweep skips it now.
+`core.testALocomotiveDoesNotEvictItself` holds both halves - the sweep on its own, and the rename
+followed by the sweep in the order the window does them.
+
+The timetable half from the round before stands: that was the redraw, and this is why the placement
+itself was gone.
+
+1. **Your steps exactly.** Place a locomotive on a station, rename it. It should stay where it is, on
+   the diagram and in the panel.
+2. **Rename it back**, and it should still be there.
+3. **A locomotive that IS in a multi-unit with another** - rename one of them and check the sweep still
+   does its job on the other.
+
+*Run against v3_0_0_rc4 or later.*
+
 ---
 
 <a id="mt-150"></a>
@@ -8294,6 +8325,39 @@ It does not, which means the button's own check - `triageReturnToHome()` - is st
 ALREADY_HOME or NO_HOMES after the move. Either the claim never happened, or it followed the train.
 
 Filed on its own rather than folded in here, so this entry can close on what it actually tested.
+
+**Claude, 2026-08-31 (second round).** You were right that the home followed the train - or rather,
+that it was never claimed at all.
+
+`claimHome` refused any square drawn as more than one graph Point. That was LD-8 carrying your ruling
+of 2026-08-25 - "any home with two graph points should be refused" - from the assignment door to the
+positional one.
+
+**Measured on your own graph: ten of your thirty-six station squares carry a block** - BottomMainA,
+BottomMainB, BottomMainC, BottomInner, TopMainR1, TopMainR2 and Tunnel among them, which are the
+main-line platforms trains actually stand on. A probe confirmed it end to end: a train on a split
+square at startup gets 0 homes and `NO_HOMES`; the same train on a plain square gets its home, and
+moving it away lights the button. So the default you describe has never happened for most of your
+railway, and full autonomy lit it because a train eventually parked on one of the twenty unblocked
+squares.
+
+**I have reversed half of your 2026-08-25 ruling, and I want you to know which half.** The ASSIGNMENT
+door still refuses a split square: a person naming a station gives no way to know which copy they
+meant. The POSITIONAL default does not: the copy is the one under the wheels. If you would rather it
+were refused everywhere, say so and I will put it back - but then Return Home cannot work for a train
+standing on any of those ten squares, and that is the trade.
+
+**The ambiguity does not vanish, it moves**, and the second half of the fix is what holds it: a train
+coming back on the FAR copy of its own platform is now judged home, because the copies of a square are
+one piece of track. Without that the planner would have tried to move it onto one particular arrival
+side of the platform it was already standing on, which can be impossible.
+
+1. **Your case.** Open TrainControl with a train on BottomMainC, drive it away semi-autonomously, and
+   Return Home should light.
+2. **Send it home**, and check it is content wherever it lands on that platform - either arrival side.
+3. **An explicit home still wins**, and assigning one to a split square should still be refused.
+
+*Run against v3_0_0_rc4 or later.*
 
 ---
 

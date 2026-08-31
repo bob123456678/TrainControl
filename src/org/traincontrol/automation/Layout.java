@@ -1050,19 +1050,28 @@ public class Layout
     {
         if (l == null || p == null) return;
 
-        // Adam's rule reaches the DERIVED homes too (LD-8).
+        // A SPLIT SQUARE MAY HOLD A POSITIONAL HOME, and only a positional one (MT-165).
         //
-        // A square drawn as more than one graph Point cannot be a home, because "is the train home?"
-        // would have more than one answer - and nothing about that is less true when the home was
-        // derived from where a train happens to be standing rather than assigned by hand. Refusing it
-        // only at the assignment door left the invalid state as the DEFAULT on any layout where a
-        // train is parked on such a square, which is where the rule matters most: a layout with no
-        // assignments at all is exactly the one that runs on derived homes.
+        // This used to refuse one - LD-8 carried Adam's 2026-08-25 ruling, "any home with two graph
+        // points should be refused", from the assignment door to this one on the argument that "is the
+        // train home?" would have more than one answer either way.
         //
-        // Silent, because nobody asked for this one. An assignment is a request and gets a refusal
-        // with a reason; a derived home is the graph noticing where a train is, and a square that
-        // cannot be a home is simply not noticed.
-        if (p.getBlock() != null) return;
+        // What that cost is the whole feature on most of his railway.  TEN of his thirty-six station
+        // squares carry a block - BottomMainA, BottomMainB, BottomMainC, BottomInner, TopMainR1,
+        // TopMainR2 and Tunnel among them, which are the main-line platforms trains actually stand on
+        // - so a train sitting on one at startup got no home, and Return Home stayed dark whatever the
+        // operator did with it.  Measured: 0 homes claimed and NO_HOMES on a split square, 1 and
+        // ALREADY_HOME on a plain one.  Adam: "unless there is an explicit home, the home should be
+        // where the train started at startup."
+        //
+        // The two doors are not the same question, which is why only one of them changes.  An
+        // ASSIGNMENT is a person naming a station, and there is no way to know which copy they meant -
+        // whyNotAHome still refuses it, and his ruling stands there.  A POSITIONAL home is the graph
+        // noticing where a train IS, and the copy is not in doubt: it is the one under the wheels.
+        //
+        // The ambiguity that is left is the other end - a train returning on the far copy of its own
+        // platform - and HomeStaging.atHome answers it the way every other rule about a split square
+        // does: the copies are one piece of track, so a train on any of them is home.
 
         // Already has a home: keep it.  Moving a locomotive by hand does not re-home it.
         if (this.homeStations.containsKey(l)) return;
@@ -5484,6 +5493,25 @@ public class Layout
         {
             for (Point p : this.getPoints())
             {
+                // NEVER THE LOCOMOTIVE THIS WAS ASKED ABOUT (MT-149).
+                //
+                // isSimultaneousMultiUnitCompatible ends in `return !this.hasEquivalentAddress(l)`, so
+                // a locomotive compared with ITSELF has an equivalent address and is declared
+                // incompatible.  Asked about a train that is standing somewhere, this sweep therefore
+                // took it off the square it was standing on.
+                //
+                // Both rename doors call this straight after renameLoc, which is where Adam met it:
+                // "place loc on station.  Rename it.  It is now gone from the station, and in status
+                // ??? on the layout.  Rename it back, and it doesn't come back."  It does not come
+                // back because nothing restores a placement - the second rename finds nothing left to
+                // evict.
+                //
+                // It bites on rename and not on placement because moveLocomotive calls the same sweep
+                // BEFORE putting the locomotive down, so there is nothing of its own to find.
+                //
+                // A locomotive cannot conflict with itself.
+                if (l.equals(p.getCurrentLocomotive())) continue;
+
                 if (
                     // Is the locomotive present in any active multi-unit?
                     p.getCurrentLocomotive() != null && !p.getCurrentLocomotive().isSimultaneousMultiUnitCompatible(l)

@@ -390,7 +390,7 @@ public final class HomeStaging
         {
             Point home = this.homes.get(l);
 
-            if (home == null || home.equals(locationOf(this.start, l))) continue;
+            if (home == null || atHome(home, locationOf(this.start, l))) continue;
 
             // A home the locomotive could never be parked at - inactive, excluding it, too short for
             // it, or a terminus it cannot reverse out of - is impossible by construction: no move can
@@ -474,8 +474,8 @@ public final class HomeStaging
                 //
                 // Only one of the two has to be away for the proof to hold again, which is the case
                 // testTwoActivePointsSharingASensorAreNeverBothOccupied holds.
-                if (a.getValue().equals(locationOf(this.start, a.getKey()))
-                    && b.getValue().equals(locationOf(this.start, b.getKey()))) continue;
+                if (atHome(a.getValue(), locationOf(this.start, a.getKey()))
+                    && atHome(b.getValue(), locationOf(this.start, b.getKey()))) continue;
 
                 if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
                 if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
@@ -542,8 +542,8 @@ public final class HomeStaging
                 if (!watchesTrack(b.getValue(), a.getValue())) continue;
 
                 // Both already parked: nothing arrives, so nothing is checked.
-                if (a.getValue().equals(locationOf(this.start, a.getKey()))
-                    && b.getValue().equals(locationOf(this.start, b.getKey()))) continue;
+                if (atHome(a.getValue(), locationOf(this.start, a.getKey()))
+                    && atHome(b.getValue(), locationOf(this.start, b.getKey()))) continue;
 
                 // And neither of them already proved unreachable for its own reasons.
                 //
@@ -736,7 +736,7 @@ public final class HomeStaging
             {
                 Point home = this.homes.get(l);
 
-                if (home == null || home.equals(locationOf(state, l))) continue;
+                if (home == null || atHome(home, locationOf(state, l))) continue;
 
                 List<Edge> path = firstClearRoute(state, blockedSensors(state), l,
                     locationOf(state, l), home);
@@ -1568,6 +1568,33 @@ public final class HomeStaging
             && a.getS88() != null && a.getS88().equals(b.getS88());
     }
 
+    /**
+     * Whether a locomotive standing here is standing at its home (MT-165).
+     *
+     * A square emitted as several Points is ONE piece of track - that is what a block IS - so a train
+     * on any copy of its home platform is home.  Asking `home.equals(where)` instead was right for as
+     * long as a home could never be on a split square, which was until claimHome started giving
+     * positional homes there: Adam's railway has ten station squares with a block, and no train
+     * standing on one of them had ever been given a home at all.
+     *
+     * Without this the fix would trade one fault for a worse one: a train returning on the far copy of
+     * its own platform would be judged not home, and the planner would try to move it to the exact
+     * copy - which on a split square means arriving from one particular direction, and may be
+     * impossible.
+     *
+     * @param home the home, or null
+     * @param where the locomotive is now, or null
+     * @return true when those are the same place
+     */
+    private static boolean atHome(Point home, Point where)
+    {
+        if (home == null || where == null) return false;
+
+        if (home.equals(where)) return true;
+
+        return home.getBlock() != null && home.getBlock().equals(where.getBlock());
+    }
+
     private static Point locationOf(Map<Point, Locomotive> state, Locomotive l)
     {
         for (Map.Entry<Point, Locomotive> e : state.entrySet())
@@ -1597,7 +1624,7 @@ public final class HomeStaging
         {
             Point home = this.homes.get(e.getValue());
 
-            if (home != null && !home.equals(e.getKey())) count++;
+            if (home != null && !atHome(home, e.getKey())) count++;
         }
 
         return count;

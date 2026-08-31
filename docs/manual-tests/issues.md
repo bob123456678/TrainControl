@@ -248,6 +248,51 @@ that can never be left.
 
 Nothing is changed until that is reproduced.
 
+### FR-048 - 2026-08-31 - easier locomotive editing
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 01:42  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 01:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+make a locomotive editable by right clicking its name when it's active.  split that from opening the locomotive database.  make a single locomotive parameters window rather than the many separate options right now.  for 3.1.0 release
+
+### FR-049 - 2026-08-31 - locomotive import and export
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 01:42  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 01:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+locomotives can be exported to a csv, but not imported.  add an option to import, i.e. if another TC instance added runtie.  3.1.0 feature
+
+### FR-050 - 2026-08-31 - modernize keyboard tab
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 01:44  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 01:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+more buttons per page.  tabs.  ability to re-fire without cycling.  feature for 3.1.0
+
+### FR-051 - 2026-08-31 - improved log
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 01:48  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 01:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+log timestamps, search, export features.  for 3.1.0
+
+### FR-052 - 2026-08-31 - autonomy editor bulk mark stations
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 02:16  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 01:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy editor, add a button to bulk mark stations.  click button then select all stations, then apply an action that is propagated to all of them.  feature for 3.1.0.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -262,6 +307,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-31 | OB-165 | bug | Return Home stayed dark after a train left its claimed home | - | [MT-165](tests.md#mt-165) |
 | 2026-08-31 | OB-164 | bug | the diagram right-click menu offers no destinations in non-atomic mode - closed as a known limitation | declined | - |
 | 2026-08-30 | OB-159 | bug | locomotive icon over stations while running | - | [MT-242](tests.md#mt-242) |
 | 2026-08-30 | OB-163 | bug | the routing rules explain themselves to nobody | - | [MT-241](tests.md#mt-241) |

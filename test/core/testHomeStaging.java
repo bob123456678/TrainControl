@@ -1948,7 +1948,7 @@ public class testHomeStaging
     }
 
     /**
-     * Adam's home rule reaches the two doors homes actually come from (LD-8).
+     * The home rule at the door it was made about, and not at the other one (LD-8, then MT-165).
      *
      * The assignment door was given the rule and its comment claimed to be "the one door everything
      * comes through". Review walked the other two and it is not:
@@ -1957,18 +1957,24 @@ public class testHomeStaging
      *     installed the forbidden home unchallenged - which is the case the model door was added FOR,
      *     since a file cannot be greyed out.
      *   - the POSITIONAL default in `claimHome` makes a square the home of whatever is standing on
-     *     it, with no check at all. That is the state every layout with no explicit assignments is
-     *     in, including Adam's own - so the state he ruled invalid was the DEFAULT wherever a train
-     *     happened to be parked on a multi-Point square.
+     *     it. LD-8 gave that door the same refusal, on the argument that "is the train home?" would
+     *     have more than one answer either way.
      *
-     * The rule matters most exactly where it was missing. Its purpose is to stop the planner and the
-     * runtime disagreeing about "is the train home?", and a derived home makes them disagree just as
-     * well as an assigned one.
+     * **The second half of that was wrong, and Adam reversed it on 2026-08-31** - "unless there is an
+     * explicit home, the home should be where the train started at startup". The two doors are not the
+     * same question. An ASSIGNMENT is a person naming a station and there is no way to know which copy
+     * they meant; a POSITIONAL home is the graph noticing where a train IS, and the copy is the one
+     * under the wheels.
      *
-     * Both doors are checked here, in the order they can be reached.
+     * What it cost was the feature: ten of his thirty-six station squares carry a block, so no train
+     * standing on a main-line platform had a home and Return Home was dark whatever he did.
+     *
+     * The ambiguity does not vanish, it moves to the far end - a train returning on the other copy -
+     * and the third assertion here is what holds that: the copies of a square are one place.
      *
      * MUTATION: putting back `homeAt.setHomeLoc(home)` unconditionally in `parseAuto` fails the first
-     * half; removing the `p.getBlock() != null` return from `claimHome` fails the second.
+     * half; putting back the `p.getBlock() != null` return in `claimHome` fails the second; making
+     * `atHome` compare Points rather than squares fails the third.
      */
     @Test
     public void testTheHomeRuleReachesTheDoorsHomesActuallyComeFrom() throws Exception
@@ -2001,7 +2007,14 @@ public class testHomeStaging
 
         ordinary.setHomeLocomotive("HS D", null);
 
-        // The positional door: a train standing on such a square must not derive a home from it.
+        // The positional door: a train standing on such a square DOES derive a home from it.
+        //
+        // This asserted the opposite until 2026-08-31, and the reversal is Adam's: "unless there is an
+        // explicit home, the home should be where the train started at startup".  Measured on his own
+        // graph, ten of his thirty-six station squares carry a block - BottomMainA, BottomMainB,
+        // BottomMainC, BottomInner, TopMainR1, TopMainR2 and Tunnel among them - so the rule as it
+        // stood meant no train standing on a main-line platform ever had a home, and Return Home was
+        // dark whatever he did with it.
         Layout derived = load(blockOfTwoWatching(null, null));
 
         Point standing = derived.getPoint("HS W2");
@@ -2012,12 +2025,33 @@ public class testHomeStaging
 
         derived.rebuildHomeStations();
 
-        assertFalse(derived.getHomeStations().containsValue(standing),
-            "a train parked on a square that is two graph points was given it as a home by the "
-            + "positional default. Nobody assigned it, which is exactly why it went unnoticed - and "
-            + "it is the state Adam ruled invalid, arrived at by default rather than by a choice");
+        assertTrue(derived.getHomeStations().containsValue(standing),
+            "a train standing on a split square was given no home, so Return Home has nothing to "
+            + "offer for it - which on Adam's railway is most of the platforms trains stand on");
+
+        // AND THE HALF THAT MAKES IT SAFE: the copies are one place.
+        //
+        // The ambiguity his ruling was about does not go away, it moves - a train coming back on the
+        // far copy of its own platform.  Judged by Point identity it would not be home, and the
+        // planner would try to move it to the exact copy, which on a split square means arriving from
+        // one particular direction and may be impossible.
+        Point otherCopy = derived.getPoint("HS W1");
+
+        assertNotNull(otherCopy.getBlock(), "the fixture did not take: HS W1 must be the other copy");
+
+        assertEquals(otherCopy.getBlock(), standing.getBlock(),
+            "the fixture did not take: the two copies must share a block, or this asks nothing");
 
         standing.setLocomotive(null);
+        otherCopy.setLocomotive(loc(LOC_A));
+
+        assertEquals(HomeStaging.snapshot(derived).triage(), HomeStaging.Outcome.ALREADY_HOME,
+            "a train standing on the other copy of its own home platform was judged not home.  The "
+            + "copies of a square are one piece of track - that is what a block IS - so the planner "
+            + "would have tried to move it onto a particular arrival side of the platform it is "
+            + "already standing on");
+
+        otherCopy.setLocomotive(null);
     }
 
     /**
