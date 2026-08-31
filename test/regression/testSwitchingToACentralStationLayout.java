@@ -415,6 +415,120 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
+     * The scanner that decides what is code does not lose its place (2026-08-31).
+     *
+     * Both cases here are real code from this suite, and each hid a window from the check that keeps
+     * the battery off Adam's own railway:
+     *
+     *   - a CHARACTER LITERAL holding a quote, at testARenameReachesTheTimetableOnScreen.java:96,
+     *     which a scanner that does not know what a character literal is reads as the start of a
+     *     string - blanking the rest of the file, and with it that class's window;
+     *   - a STRING holding a line-comment marker, which the regex that used to strip comments first
+     *     cut in half, leaving every quote after it meaning the opposite of what it says.
+     *
+     * Twenty-three files in this suite have odd quote parity under that old two-step parse.
+     *
+     * MUTATION: reading the two in the other order, or dropping the character-literal mode, fails
+     * one of the first two assertions; blanking nothing fails the third.
+     */
+    @Test
+    public void testTheCodeScannerKeepsItsPlace() throws Exception
+    {
+        String afterAChar = "char c = '\"'; Object w = new org.traincontrol.gui.TrainControlUI();";
+
+        assertTrue(WINDOW_BUILT.matcher(withoutStringsAndComments(afterAChar)).find(),
+            "a window built after a character literal holding a quote is invisible to the check, "
+            + "which is exactly how a class went unguarded before");
+
+        String afterASlashString = "String s = \"file:///tmp\"; Object w = new TrainControlUI();";
+
+        assertTrue(WINDOW_BUILT.matcher(withoutStringsAndComments(afterASlashString)).find(),
+            "a window built after a string containing a line-comment marker is invisible, which is "
+            + "what stripping comments before strings did to twenty-three files here");
+
+        // AND THE OTHER DIRECTION, which matters as much: the check must not INVENT windows out of
+        // text that only mentions one. This file's own needles are string literals in this file.
+        String mentionedOnly = "String needle = \"new TrainControlUI()\";";
+
+        assertFalse(WINDOW_BUILT.matcher(withoutStringsAndComments(mentionedOnly)).find(),
+            "a window named in a string was counted as one built, so the check reports offenders "
+            + "that are not offenders - and this file would report itself");
+
+        String inAComment = "// new org.traincontrol.gui.TrainControlUI() explained here";
+
+        assertFalse(WINDOW_BUILT.matcher(withoutStringsAndComments(inAComment)).find(),
+            "a window named in a comment was counted as one built");
+
+        // An escaped quote must not end its string early.
+        String escaped = "String q = \"\\\"\"; Object w = new TrainControlUI();";
+
+        assertTrue(WINDOW_BUILT.matcher(withoutStringsAndComments(escaped)).find(),
+            "an escaped quote ended its string early, so everything after it is being read as the "
+            + "wrong kind of text");
+
+        // A quote inside a block comment must not open a string.
+        String blockComment = "/* he said \"hi\" */ Object w = new TrainControlUI();";
+
+        assertTrue(WINDOW_BUILT.matcher(withoutStringsAndComments(blockComment)).find(),
+            "a quote inside a block comment left the scanner inside a string");
+    }
+
+    /**
+     * A class is exempt from the count rule only when its own sandbox is in a setup method.
+     *
+     * The exemption switches off the rule that a class needs as many sandbox opens as it builds
+     * windows. It first asked whether the file held any @Before annotation at all - true of seven of
+     * the sixteen windowed classes - and then looked back a fixed distance from the enclosing
+     * method's header, which reaches over the PREVIOUS method's body and finds ITS annotation. Both
+     * let a plain test with three windows and one sandbox through.
+     *
+     * The fixture is that second case, in this codebase's own formatting.
+     *
+     * MUTATION: putting back a fixed-distance lookback fails the first assertion; bounding it so
+     * tightly that a method's own annotations fall outside fails the second.
+     */
+    @Test
+    public void testOnlyASandboxInSetupExemptsAClass() throws Exception
+    {
+        String twoMethods =
+              "    @BeforeClass" + System.lineSeparator()
+            + "    public static void setUpClass() throws Exception" + System.lineSeparator()
+            + "    {" + System.lineSeparator()
+            + "        nothing();" + System.lineSeparator()
+            + "    }" + System.lineSeparator()
+            + System.lineSeparator()
+            + "    @Test" + System.lineSeparator()
+            + "    public void aTest() throws Exception" + System.lineSeparator()
+            + "    {" + System.lineSeparator()
+            + "        LayoutSandbox sandbox = LayoutSandbox.open();" + System.lineSeparator()
+            + "    }" + System.lineSeparator();
+
+        int open = twoMethods.indexOf("LayoutSandbox.open()");
+
+        assertTrue(open > 0, "the fixture did not take");
+
+        assertFalse(inASetupMethod(twoMethods, open),
+            "a sandbox opened in a plain test was read as being in a setup method, because the "
+            + "lookback reached over the method above it and found that method's @BeforeClass - so "
+            + "the class is exempted from the count rule and may build any number of unguarded "
+            + "windows");
+
+        // And the case the exemption is FOR, which must still work.
+        String inSetup =
+              "    @BeforeClass" + System.lineSeparator()
+            + "    public static void setUpClass() throws Exception" + System.lineSeparator()
+            + "    {" + System.lineSeparator()
+            + "        sandbox = LayoutSandbox.open();" + System.lineSeparator()
+            + "    }" + System.lineSeparator();
+
+        int inside = inSetup.indexOf("LayoutSandbox.open()");
+
+        assertTrue(inASetupMethod(inSetup, inside),
+            "a sandbox opened in @BeforeClass was not recognised, so a class that sets one up once "
+            + "for all its methods would be reported as an offender");
+    }
+
+    /**
      * Nothing in the suite opens the operator\u2019s own railway (OB-111).
      *
      * Building a `TrainControlUI`, or calling `MarklinControlStation.init`, reads the layout
@@ -536,11 +650,16 @@ public class testSwitchingToACentralStationLayout
         }
 
         // A scan that matched nothing would pass while proving nothing.
-        assertTrue(checked >= 14,
-            "only " + checked + " test classes were found to build a window, which is fewer than "
-            + "there are - the pattern this looks for has gone stale and it is now checking almost "
-            + "nothing. Sixteen classes built one when this floor was set; it stood at 5 while the "
-            + "pattern could see only nine of them, so it never noticed the other seven");
+        // THE NUMBER, not a floor (2026-08-31, third round).
+        //
+        // A floor three below the real count can absorb three classes silently dropping out of view,
+        // which is the staleness it exists to catch.  The model half of this same test pins NAMES for
+        // that reason.  If this fails because a class was legitimately added or removed, change the
+        // number and say so in the commit - that is the point of it being exact.
+        assertEquals(checked, 17,
+            checked + " test classes were found to build a window, not the 17 there were when this "
+            + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
+            + "thinks; more means a new class builds a window and this line wants updating");
 
         // AND THE MODEL HALF, ratcheted (2026-08-28).
         //
@@ -725,11 +844,26 @@ public class testSwitchingToACentralStationLayout
 
         if (header < 0) return false;
 
-        return SETUP_METHOD.matcher(scan.substring(Math.max(0, header - 300), header)).find();
+        // BOUNDED AT THE PREVIOUS METHOD'S CLOSING BRACE, not at a fixed distance.
+        //
+        // A fixed lookback runs backwards over the previous method's BODY and finds that method's
+        // annotation: a short @BeforeClass above a window-building @Test made the whole class look
+        // set up, and three windows behind one sandbox were waved through.  That is the same hole
+        // this method replaced, one step narrower.
+        //
+        // A method's annotations sit between the end of the method before it and its own header, so
+        // that is the region to read - and nothing outside it can belong to this method.
+        int from = scan.lastIndexOf(CLOSING_BRACE, header);
+
+        if (from < 0) from = 0;
+
+        return SETUP_METHOD.matcher(scan.substring(from, header)).find();
     }
 
     private static final java.util.regex.Pattern METHOD_HEADER =
         java.util.regex.Pattern.compile("\\n    (?:public|private|protected|static|synchronized)");
+
+    private static final String CLOSING_BRACE = "\n    }";
 
     private static final char SLASH = '/';
     private static final char STAR = '*';

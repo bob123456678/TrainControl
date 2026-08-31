@@ -1738,7 +1738,8 @@ public class testAutonomyDiagramSession
      * timetable. `importLegacy` read the points array and nothing else, so an upgrading user kept
      * their station names and lost everything about how their railway RUNS.
      *
-     * On Adam's own legacy file that is thirteen settings and thirty-six timetable legs.
+     * On Adam's own legacy file that is ten settings. The timetable and the two route-activation keys
+     * are deliberately NOT carried - see the assertions below for why each one would do harm.
      *
      * Gap-filled, like the rest of this import: re-running it must not undo a setting somebody
      * changed after the first run.
@@ -1772,6 +1773,11 @@ public class testAutonomyDiagramSession
         legacy.put("defaultLocSpeed", 41);
         legacy.put("maxActiveTrains", 4);
         legacy.put("activateRoutes", true);
+
+        // BOTH keys, because the assertion below about the id list cannot fail without this one.
+        // The fixture set only the flag, so removing the id list from the exclusion left the test
+        // green - the more important half of the most important exclusion, untested.
+        legacy.put("activateRouteIDs", new org.json.JSONArray());
 
         org.json.JSONArray timetable = new org.json.JSONArray();
         timetable.put(new org.json.JSONObject().put("loc", "Some Loc").put("secondsToNext", 90));

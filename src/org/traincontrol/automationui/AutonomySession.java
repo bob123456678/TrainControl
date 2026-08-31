@@ -803,8 +803,9 @@ public class AutonomySession
         // A 2.7.4c autonomy.json is one object: the points and edges, and above them the whole
         // settings panel - pace, default speed, how many trains may run, whether routes are fired -
         // and the timetable.  This method read `points` and nothing else, so an upgrading user kept
-        // their station names and lost every rule about how their railway RUNS.  On Adam's own legacy
-        // file that is thirteen settings and thirty-six timetable legs.
+        // their station names and lost every rule about how their railway RUNS.  Ten settings come
+        // across on Adam's own legacy file; three more keys are deliberately left behind below, and
+        // each says why where it is excluded.
         //
         // The same copy captureFromLayout already makes, asked here: everything that is not the setup
         // itself.  Gap-filled like the rest of this import, so running it twice cannot undo a setting
@@ -834,8 +835,10 @@ public class AutonomySession
                 // parseAuto - which is a diagram edit or a locomotive being placed, not only a load.
                 // An import that brings station names across must not switch the railway's routes off.
                 //
-                // Left for a decision rather than dropped quietly: a user who really did have route
-                // activations wants them, but wants to be asked.
+                // NOT REPORTED YET, and that is a gap worth naming rather than papering over: the
+                // import dialog counts what it matched and what it skipped, and says nothing about
+                // these.  A user who really did have route activations keeps them in autonomy.json,
+                // which is untouched and readable, but nothing tells them to look.
                 if ("activateRoutes".equals(key) || "activateRouteIDs".equals(key)) continue;
 
                 // NOT THE TIMETABLE EITHER, for the reason the edge lengths are left out: it cannot
