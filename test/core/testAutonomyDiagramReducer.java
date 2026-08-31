@@ -15,6 +15,9 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.automationui.AutonomyBuilder;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
@@ -694,6 +697,157 @@ public class testAutonomyDiagramReducer
     }
 
     // --- helpers ----------------------------------------------------------------------------------
+
+    /**
+     * A lock names EVERY copy of the track it locks, not just the first (A100).
+     *
+     * `testAutonomyDiagramSampleLayout.testNoTwoRoutesCanOccupyTheSameTrackUnlocked` asks
+     * `reducer.getLocks()`, which is the relation between REDUCED edges - the railway before the
+     * builder splits each one into a named edge per arrival side. Carrying that relation across the
+     * split is the builder's job, and it does it in an inner loop over every emitted copy of the
+     * locked edge. Nothing looked at the result: truncate that loop to the first copy and the reduced
+     * relation is still perfect, while the second and later copies of a conflicting edge run unlocked.
+     *
+     * **The first version of this test was written against `test/test_layout` and could not fail.**
+     * 135 edges over 135 distinct base pairs there - no piece of track is emitted more than once, even
+     * though 38 of its 56 points are split - so the mutation is invisible on it. That is worth
+     * recording, because the test looked right and was asking nothing.
+     *
+     * What makes one reduced edge emit several pairs is a REVERSIBLE square: `nodesFor` emits a
+     * turning copy per side as well as a plain one, and the pairs are (copies that may leave by the
+     * exit side) x (copies that may be arrived at by the entry side). On Adam's own graph every group
+     * emitted four times carries ", reverse" in its names.
+     *
+     * So: a junction, which is what produces a lock at all - two routes over one tile - with a
+     * reversible sensor on it.
+     *
+     * MUTATION this catches: `break` after the first `otherPair` in either of the builder's lock
+     * loops.
+     */
+    @Test
+    public void testALockNamesEveryCopyOfTheTrackItLocks() throws Exception
+    {
+        // A switch with two routes over it, and the straight-ahead road continuing past a sensor:
+        //
+        //     (2,0) sensor        the far end
+        //     (2,1) sensor        REVERSIBLE, and with track on both sides
+        //     (2,2) switch        toe south, straight north, branch west
+        //     (2,3) sensor        the toe road
+        //     (1,2) sensor        the branch
+        //
+        // Two reduced edges leave (2,3) and cross the switch, so the reduction locks them against each
+        // other - which is what gives this fixture a lock to check at all.
+        LayoutDiagram page = page("main", 6, 6);
+
+        feedbackNS(page, 2, 3, 11);
+        add(page, componentType.SWITCH_LEFT, 2, 2, 0, 7);
+        wire(page, 2, 2, 7, Accessory.accessoryType.SWITCH);
+        feedbackNS(page, 2, 1, 12);
+        feedbackNS(page, 2, 0, 14);
+        feedback(page, 1, 2, 13);
+
+        // The reversible square, and it must NOT be a dead end.
+        //
+        // `nodesFor` does not emit the plain copy of a dead end that can turn - a train arriving there
+        // has nowhere but back, so the turning copy is the whole truth about it, and the square is
+        // emitted once however it is marked.  Two earlier versions of this fixture marked dead ends
+        // and got exactly one copy each, which is why (2,1) has track on both sides.
+        TileKey throughAndTurning = key("main", 2, 1);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        // The lock relation has to exist, or nothing below is being asked.
+        int locked = 0;
+
+        for (Set<ReducedEdge> against : reducer.getLocks().values()) locked += against.size();
+
+        assertTrue(locked > 0,
+            "precondition: this fixture produces no locks at all, so a lock naming one copy could not "
+            + "be told from one naming all of them");
+
+        // REVERSIBLE, which is what emits a second copy per side and the whole reason this fixture
+        // can fail.  Without it every reduced edge is emitted exactly once and the mutation is
+        // invisible - which is what happened to the first version of this test.
+        String built = new AutonomyBuilder(reducer, null)
+            .withReversibleTiles(new HashSet<>(Arrays.asList(throughAndTurning)))
+            .build();
+
+        JSONObject config = new JSONObject(built);
+        JSONArray edges = config.getJSONArray("edges");
+
+        Map<String, Integer> copies = new HashMap<>();
+
+        for (Object o : edges)
+        {
+            JSONObject edge = (JSONObject) o;
+
+            String track = baseOf(edge.getString("start")) + " -> " + baseOf(edge.getString("end"));
+
+            copies.put(track, copies.containsKey(track) ? copies.get(track) + 1 : 1);
+        }
+
+        int split = 0;
+
+        for (Integer n : copies.values()) if (n > 1) split++;
+
+        assertTrue(split > 0,
+            "precondition: no piece of track here is emitted more than once, so this test cannot "
+            + "fail - which is exactly what test/test_layout does and why the first version of it "
+            + "was withdrawn.  Emitted: " + copies);
+
+        List<String> partial = new ArrayList<>();
+
+        int checked = 0;
+
+        for (Object o : edges)
+        {
+            JSONObject edge = (JSONObject) o;
+
+            if (!edge.has("lockedges")) continue;
+
+            Map<String, Integer> named = new HashMap<>();
+
+            for (Object l : edge.getJSONArray("lockedges"))
+            {
+                JSONObject lock = (JSONObject) l;
+
+                String track = baseOf(lock.getString("start")) + " -> " + baseOf(lock.getString("end"));
+
+                named.put(track, named.containsKey(track) ? named.get(track) + 1 : 1);
+            }
+
+            for (Map.Entry<String, Integer> e : named.entrySet())
+            {
+                Integer all = copies.get(e.getKey());
+
+                if (all == null) continue;
+
+                checked++;
+
+                if (e.getValue() < all)
+                {
+                    partial.add(edge.getString("start") + " -> " + edge.getString("end")
+                        + " locks " + e.getValue() + " of " + all + " copies of " + e.getKey());
+                }
+            }
+        }
+
+        assertTrue(checked > 0,
+            "precondition: no emitted edge locks anything, so nothing was compared.  Emitted: "
+            + copies);
+
+        assertTrue(partial.isEmpty(),
+            "a lock names some copies of a piece of track and not others, so a route reaching that "
+            + "track by another arrival side runs over it unlocked: " + partial);
+    }
+
+    /** A named edge's endpoint without its arrival side, which is the piece of track it is on. */
+    private static String baseOf(String pointName)
+    {
+        int at = pointName.indexOf(" (");
+
+        return at < 0 ? pointName : pointName.substring(0, at);
+    }
 
     private LayoutDiagram page(String name, int sx, int sy)
     {

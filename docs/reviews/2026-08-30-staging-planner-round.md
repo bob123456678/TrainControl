@@ -388,11 +388,11 @@ the running flag were applied to a layout the window no longer held, while the w
 one that nothing had touched. The assertion passed whatever the guard did. Rewritten to re-read the
 current layout, and only then did removing the guard fail it.
 
-### C4 - A100: not closed, and the fixture is why
+### C4 - A100: closed, after two fixtures that could not fail
 
 | | |
 |---|---|
-| **Disposition** | **open** - the test was written, could not fail, and was withdrawn |
+| **Disposition** | fixed, `core.testAutonomyDiagramReducer.testALockNamesEveryCopyOfTheTrackItLocks` |
 
 The claim is right: `testNoTwoRoutesCanOccupyTheSameTrackUnlocked` asks `reducer.getLocks()`, the
 relation between REDUCED edges, and the builder's job is to carry that across the split into one named
@@ -408,10 +408,20 @@ Measured against a real built configuration for comparison: Adam's own layout ha
 base pairs, with **22 pieces of track emitted twice or four times**. The invariant is testable there and
 nowhere in the suite.
 
-Closing this properly needs a fixture diagram where one reduced edge emits several named edges - two
-facings at both ends of one piece of track - which is a diagram to draw rather than an assertion to
-write. Withdrawn rather than shipped, because a test that cannot fail is worse than the gap it was
-meant to close.
+**What actually produces the multiplicity is a REVERSIBLE square.** `nodesFor` emits a turning copy per
+side as well as a plain one, and an edge's pairs are (copies that may leave by the exit side) x (copies
+that may be arrived at by the entry side). Adam's graph shows it plainly: every group emitted four times
+has ", reverse" in its names. That is not something `test/test_layout` has anywhere a lock also lands.
+
+**And two more fixtures could not fail before one did.** `nodesFor` does not emit the plain copy of a
+DEAD END that can turn - a train arriving there has nowhere but back, so the turning copy is the whole
+truth about it and the square is emitted once however it is marked. Marking the toe of a switch, and
+then the two stubs beyond it, each gave one copy. The square has to be reversible AND have track on
+both sides.
+
+So the fixture is a switch with two routes over it - which is what produces a lock at all - and the
+straight-ahead road continuing past a reversible sensor. Confirmed by putting a `break` after the first
+emitted pair in the builder's lock loop, which is the mutation the suite review named: red.
 ---
 
 ## D - not defects
@@ -447,10 +457,9 @@ had ever been run on a layout in the right state - a train on a non-station, or 
 occupied - and it is logged rather than enforced, so nothing fails when it disagrees. Making it a test
 over generated states is the obvious next thing and is not done here.
 
-**The five named test gaps are done except one.** A101, A102, A105 and A113 are closed above and in
-the commit before this one; A100 is C4, open, with a fixture that cannot exercise it. The other eight
-of the thirteen were never transcribed out of the suite reviewer's report and no longer exist in
-writing - which is its own lesson about leaving a list in an agent's output.
+**All five named test gaps are closed.** A100, A101, A102, A105 and A113. The other eight of the
+thirteen were never transcribed out of the suite reviewer's report and no longer exist in writing -
+which is its own lesson about leaving a list in an agent's output.
 
 **The 2.8.1 parity comparison is done**, as B5, and MT-083 confirmed the four new journeys on the
 railway.

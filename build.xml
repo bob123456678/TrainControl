@@ -122,6 +122,7 @@
         <test-one-class class="testRoutingRuleTooltips"/>
         <test-one-class class="testLockEdgesSurviveTheFile"/>
         <test-one-class class="testEveryLanguageFits"/>
+        <test-one-class class="testTheStationGoingAwayDoesNotJamSwitching"/>
         <test-one-class class="testDiagramLooksRight"/>
         <test-one-class class="testSidebarIcons"/>
         <test-one-class class="testTheWaitMarkIsAnHourglass"/>

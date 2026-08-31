@@ -2280,6 +2280,24 @@ as **needs test** here because the hands-on question - what the operator sees, a
 the power state agree afterwards - is not the same question as the automated one, the same distinction
 drawn on MT-088.
 
+**Claude, 2026-08-30 (later).** Done - `core.testTheStationGoingAwayDoesNotJamSwitching`.
+
+Three tests, and the third is the one this entry is really about. The wait for the power gives up on
+time and says so; a second wait behaves exactly like the first, so nothing is latched on the way out;
+and **the one switching thread is still there afterwards**. That pool has a single thread shared by
+every tile on every page, and the click handler waits for the power on it - so a wait that never
+returned took every tile in the application with it, silently, until a restart. That is the shape you
+described.
+
+The power is put down by writing the flag rather than by pressing Stop: `stop()` sends a stop and waits
+for the echo to write it, and an echo is exactly what a station that is not there never sends - so on a
+simulated model the flag stays up and every wait would return at once, asking nothing.
+
+Confirmed by mutation: making the wait claim success on timeout fails it.
+
+**Still needs you** for the half no simulation can answer - that the switch is actually thrown, and
+that the message names the tile.
+
 ---
 <a id="mt-036"></a>
 
