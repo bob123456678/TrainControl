@@ -13066,6 +13066,17 @@ would write the remains back over your settings for good. Leaving it in the file
 
 *Run against a build after commit 875edb92.*
 
+**Claude, 2026-08-31 (later).** Two more steps, from your note that "the reversal happens on arrival".
+
+That is what makes the terminus rule right - a train turns as it ARRIVES, so whether it may end there
+is a question about that locomotive - and it is why step 6 exists. `whyNotAHome` had learned to ask
+the whole square; the planner's own reachability scan had not, so the editor accepted a home that
+Return Home then called impossible, for a train that would have arrived on the through road and never
+turned. Both questions are asked of the same copy now.
+
+Step 7 is a gap this morning's change opened rather than one it found. One home per platform used to
+be enforced by the field itself, because a Point holds one home; two copies are two fields.
+
 ---
 
 <a id="mt-244"></a>
@@ -13139,6 +13150,12 @@ Either is defensible. What is not defensible is today, where the two halves disa
    just as content.
 5. **A platform where every copy is a turning berth** - a train has to back out - should still be
    refused to a locomotive that is not reversible. That refusal is real and stays.
+6. **A platform with a turning berth on one side and a through road on the other**, if you have one:
+   a locomotive that cannot reverse should be able to live there, and Return Home should send it to
+   the through road rather than saying it is impossible.
+7. **Assign a second locomotive to the other side of a platform that already has a home.** The first
+   one should give it up - one platform, one home - rather than both being homed on one piece of
+   track, which nothing could ever satisfy.
 
 #### Comments
 
