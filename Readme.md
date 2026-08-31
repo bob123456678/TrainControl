@@ -423,6 +423,7 @@ Tab icons provided by Freepik.
             - Fixed bug where "return home" planned a move onto a piece of track sharing the sensor the train was already standing on, which the railway then refused.
             - Fixed bug where a single locomotive with no speed set ended the whole "return home" run instead of losing only its own leg.
             - "Return home" now tells you which locomotive to place back on the diagram when a route that failed part way through has left the train claimed in two places, instead of reporting that no plan could be found.
+            - Fixed bug where renaming a locomotive took it off the station it was standing on, so it showed as unknown on the track diagram and renaming it back did not put it there again.
             - Pressing Start twice quickly no longer starts twice.
         - Track Diagrams
             - Fixed bug where Shift Down and Shift Right recorded an undo step even when there was no square under the pointer, which cleared the redo history and made the editor ask about saving an edit that had never happened.
