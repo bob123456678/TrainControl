@@ -693,6 +693,20 @@ public class AutonomySession
 
                         Object value = point.get(key);
 
+                        // A ZERO CAPACITY IS NOT A CAPACITY.
+                        //
+                        // This loop is first-present-wins, and a legacy file legitimately puts several
+                        // points on one sensor - a station and its approach guard. Twenty-five of
+                        // Adam's sixty-two points carry an explicit `maxTrainLength: 0`, so whichever
+                        // of the pair the file lists first decides, and a guard's zero would erase the
+                        // station's real limit. Zero is what "no limit" already means, so skipping it
+                        // costs nothing and lets the real value through whatever the file's order.
+                        if ("maxTrainLength".equals(key) && value instanceof Number
+                            && ((Number) value).intValue() <= 0)
+                        {
+                            continue;
+                        }
+
                         // Copied rather than shared: a JSONArray handed straight over would be the same
                         // object the caller's parsed file still holds, and anything that later edited
                         // the exclusions here would edit their file's copy too.
@@ -807,6 +821,35 @@ public class AutonomySession
             for (String key : legacy.keySet())
             {
                 if ("points".equals(key) || "edges".equals(key)) continue;
+
+                // NOT THE ROUTE ACTIVATIONS, and this is the important exclusion.
+                //
+                // These two do not stay inside the configuration. parseAuto ends in
+                // applyAutonomyRouteActivations, which walks the LIVE Central Station route database:
+                // every route whose id is not in activateRouteIDs is disabled, and every route that is
+                // gets enabled and executed - accessories thrown on the real railway.
+                //
+                // Adam's own legacy file carries `activateRoutes: true` with an EMPTY id list, so
+                // carrying these across would disable every route he has, and do it again on every
+                // parseAuto - which is a diagram edit or a locomotive being placed, not only a load.
+                // An import that brings station names across must not switch the railway's routes off.
+                //
+                // Left for a decision rather than dropped quietly: a user who really did have route
+                // activations wants them, but wants to be asked.
+                if ("activateRoutes".equals(key) || "activateRouteIDs".equals(key)) continue;
+
+                // NOT THE TIMETABLE EITHER, for the reason the edge lengths are left out: it cannot
+                // be brought across without translating, and translating it is a decision.
+                //
+                // Measured on his file: the 36 entries name 25 points. Three carry no s88 at all, so
+                // they match no square; nine more sit on sensors shared by two or three legacy points,
+                // where the name that reaches the tile is whichever came first. TimetablePath.fromJSON
+                // throws on the first edge it cannot resolve and drops that entry with a warning, so
+                // what would arrive is a heap of log lines and a nearly empty timetable - which the
+                // next captureFromLayout then writes back over these globals for good.
+                //
+                // Leaving it in autonomy.json, untouched and readable, loses less than that.
+                if ("timetable".equals(key)) continue;
 
                 if (settings.has(key)) continue;
 

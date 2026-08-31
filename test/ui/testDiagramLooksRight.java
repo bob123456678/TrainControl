@@ -2117,16 +2117,27 @@ public class testDiagramLooksRight
         //
         // Three quarters of the way down is inside the pill and inside the icon, which spans 76% of
         // the square about its centre.  It is the only place the question can be asked.
+        // THE CONTROL FIRST, because it is what tells the two failures apart.
+        //
+        // If the icon file cannot be loaded the overlay draws a plain dot instead, which does not
+        // reach the pill - and the overlap assertion below would then fail saying the caption is
+        // painted over the locomotive, which would be a confident wrong diagnosis. Ordered so the
+        // honest message comes out first.
+        assertNotEquals(withTrain.getRGB(size / 2, size / 2), empty.getRGB(size / 2, size / 2),
+            "no train was drawn on the square at all, so nothing below this can mean anything");
+
+        // Then the overlap, which is the question OB-159 is about.
+        //
+        // Two thirds of the way down rather than three quarters: the pill runs from 2/3 to 11/12 of
+        // the square, and the icon's PAINTED extent - not its bounding box, which is what a previous
+        // note here described - ends around 0.765 of the way down. At 3/4 the sample sat about a pixel
+        // inside the art at every size, which is a test one icon redraw away from a mystery.
         int overlapX = size / 2;
-        int overlapY = size * 3 / 4;
+        int overlapY = size * 17 / 24;
 
         assertNotEquals(withTrain.getRGB(overlapX, overlapY), empty.getRGB(overlapX, overlapY),
             "the station caption is painted over the locomotive - which is what Adam reported, and "
             + "what the third painting pass exists to stop");
-
-        // And the middle of the square, which is where the train is whatever else is true.
-        assertNotEquals(withTrain.getRGB(size / 2, size / 2), empty.getRGB(size / 2, size / 2),
-            "no train was drawn at all, so the assertion above proves nothing");
 
         // AND THE CAPTION IS STILL THERE, which is the half OB-117 is about.
         //
@@ -2145,7 +2156,9 @@ public class testDiagramLooksRight
         String gridSource = new String(java.nio.file.Files.readAllBytes(
             new File("src/org/traincontrol/gui/LayoutGrid.java").toPath()), "UTF-8");
 
-        assertTrue(gridSource.contains("container = newDiagramContainer();"),
+        // The FACTORY is what matters, not what the variable is called - this named the local and
+        // would have failed a rename that broke nothing.
+        assertTrue(gridSource.split("newDiagramContainer\\(").length > 2,
             "the diagram is no longer built from newDiagramContainer(), so the third painting pass "
             + "that draws trains over captions is not in the container the application shows - and "
             + "every pixel this test compares came from a container it made itself");

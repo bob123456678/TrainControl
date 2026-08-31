@@ -480,7 +480,13 @@ public class testSwitchingToACentralStationLayout
             //
             // String literals are blanked as well as comments, because this method's own needles are
             // string literals in this file and would otherwise count as windows built here.
-            String scan = withoutStrings(code);
+            // THE RAW SOURCE, not the comment-stripped copy (2026-08-31, second round).
+            //
+            // Stripping comments with a regex first is what broke this: `"file:///" + x` loses its
+            // closing quote to the // rule, and every quote after it in the file then means the
+            // opposite of what it says. Twenty-three files in this suite have odd quote parity that
+            // way. One scanner does both, in the order the compiler does.
+            String scan = withoutStringsAndComments(body);
 
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
             java.util.List<Integer> sandboxes = indicesOf(scan, SANDBOX_OPENED);
@@ -494,7 +500,23 @@ public class testSwitchingToACentralStationLayout
             // testLayoutEditorBulkEdits opens one per method. Counting tells those apart from the
             // case that is wrong - a window nobody guarded - without having to know which method
             // anything sits in, which lexical scoping gets wrong for a window built in a helper.
-            boolean setUpForTheClass = !sandboxes.isEmpty() && SETUP_METHOD.matcher(scan).find();
+            // A SANDBOX INSIDE A SETUP METHOD, not merely a file that has one somewhere.
+            //
+            // This asked `SETUP_METHOD.matcher(scan).find()` over the whole file, which is true of
+            // seven of the sixteen classes that build a window - so for those the count rule was off
+            // altogether, and the case this check was repaired to catch was still uncaught.
+            // testUiStateIsNotLostWhenUnreadable is the demonstration: it has a @BeforeClass for
+            // something else and opens its sandbox outside it, with a comment saying so.
+            boolean setUpForTheClass = false;
+
+            for (int open : sandboxes)
+            {
+                if (inASetupMethod(scan, open))
+                {
+                    setUpForTheClass = true;
+                    break;
+                }
+            }
 
             if (sandboxes.isEmpty())
             {
@@ -610,46 +632,112 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * String literals blanked, so that this file's own needles do not count as code.
+     * String literals, character literals and comments blanked, in one pass over the raw source.
      *
      * Every other character keeps its place, so indices taken from the result can be compared with
-     * each other - which is all this check does with them.
+     * one another - which is all this check does with them.
+     *
+     * Written as one scanner because doing it in two steps is what went wrong. A regex that strips
+     * comments first eats the closing quote of any string containing a line-comment marker, and a
+     * scanner that then looks for quotes has its state inverted from there on. And a character
+     * literal holding a quote - which is real code in this suite, in a replace() call - does the same
+     * thing to a scanner that does not know what a character literal is. A class that builds a window
+     * went unchecked for exactly that reason.
+     *
+     * @param raw the file, as it is on disk
+     * @return the same length of text, with everything that is not code blanked
      */
-    private static String withoutStrings(String body)
+    private static String withoutStringsAndComments(String raw)
     {
-        StringBuilder out = new StringBuilder(body.length());
+        StringBuilder out = new StringBuilder(raw.length());
 
-        boolean inString = false;
+        int mode = 0;   // 0 code, 1 string, 2 char, 3 line comment, 4 block comment
 
-        for (int i = 0; i < body.length(); i++)
+        for (int i = 0; i < raw.length(); i++)
         {
-            char c = body.charAt(i);
+            char c = raw.charAt(i);
 
-            if (inString && c == '\\')
+            char next = i + 1 < raw.length() ? raw.charAt(i + 1) : 0;
+
+            if (mode == 0)
             {
-                out.append(' ');
+                if (c == SLASH && next == SLASH) { mode = 3; out.append("  "); i++; continue; }
 
-                if (i + 1 < body.length())
-                {
-                    out.append(' ');
-                    i++;
-                }
+                if (c == SLASH && next == STAR) { mode = 4; out.append("  "); i++; continue; }
 
-                continue;
-            }
+                if (c == QUOTE) { mode = 1; out.append(c); continue; }
 
-            if (c == '\"')
-            {
-                inString = !inString;
+                if (c == TICK) { mode = 2; out.append(c); continue; }
+
                 out.append(c);
                 continue;
             }
 
-            out.append(inString ? ' ' : c);
+            if (mode == 3)
+            {
+                if (c == NEWLINE) { mode = 0; out.append(c); }
+                else out.append(' ');
+
+                continue;
+            }
+
+            if (mode == 4)
+            {
+                if (c == STAR && next == SLASH) { mode = 0; out.append("  "); i++; }
+                else out.append(c == NEWLINE ? c : ' ');
+
+                continue;
+            }
+
+            // inside a string or a character literal: a backslash hides whatever follows it
+            if (c == BACKSLASH)
+            {
+                out.append(' ');
+
+                if (i + 1 < raw.length()) { out.append(' '); i++; }
+
+                continue;
+            }
+
+            if (mode == 1 && c == QUOTE) { mode = 0; out.append(c); continue; }
+
+            if (mode == 2 && c == TICK) { mode = 0; out.append(c); continue; }
+
+            out.append(c == NEWLINE ? c : ' ');
         }
 
         return out.toString();
     }
+
+    /**
+     * Whether the code at this index sits inside a method carrying a @Before annotation.
+     *
+     * The enclosing method is found by this codebase's own formatting - a method header is a line
+     * beginning with four spaces and a modifier - and the annotations sit immediately above it.
+     */
+    private static boolean inASetupMethod(String scan, int at)
+    {
+        java.util.regex.Matcher m = METHOD_HEADER.matcher(scan);
+
+        int header = -1;
+
+        while (m.find() && m.start() < at) header = m.start();
+
+        if (header < 0) return false;
+
+        return SETUP_METHOD.matcher(scan.substring(Math.max(0, header - 300), header)).find();
+    }
+
+    private static final java.util.regex.Pattern METHOD_HEADER =
+        java.util.regex.Pattern.compile("\\n    (?:public|private|protected|static|synchronized)");
+
+    private static final char SLASH = '/';
+    private static final char STAR = '*';
+    private static final char QUOTE = '\"';
+    private static final char TICK = '\'';
+    private static final char BACKSLASH = '\\';
+    private static final char NEWLINE = '\n';
+
 
     /** Entries in {@code from} that are not in {@code excluding}, for a readable failure message. */
     private static java.util.List<String> diff(java.util.List<String> from, java.util.List<String> excluding)

@@ -1792,14 +1792,28 @@ public class testAutonomyDiagramSession
             "the default locomotive speed did not come across");
         assertEquals(globals.optInt("maxActiveTrains", -1), 4,
             "the limit on how many trains may run did not come across");
-        assertTrue(globals.optBoolean("activateRoutes", false),
-            "whether autonomy fires routes did not come across");
+        // AND THE THREE THAT MUST NOT COME ACROSS.
+        //
+        // activateRoutes and activateRouteIDs do not stay inside the configuration: parseAuto ends in
+        // applyAutonomyRouteActivations, which disables every route in the live Central Station
+        // database whose id is not listed, and fires the ones that are.  Adam's own legacy file says
+        // `activateRoutes: true` with an empty list, so carrying them would switch off every route he
+        // has - on import and again on every diagram edit.
+        assertFalse(globals.has("activateRoutes"),
+            "the import carried the route activation flag, so loading the setup will disable every "
+            + "route in the Central Station that the file does not list - and the file lists none");
 
-        assertNotNull(globals.optJSONArray("timetable"),
-            "the timetable did not come across - on Adam's own file that is thirty-six legs");
+        assertFalse(globals.has("activateRouteIDs"),
+            "the import carried the route id list, which decides which routes are switched off");
 
-        assertEquals(globals.optJSONArray("timetable").length(), 1,
-            "the timetable came across with the wrong number of legs");
+        // The timetable is left in autonomy.json rather than half-migrated.  Its legs name points by
+        // NAME, and a legacy name only reaches the diagram when its sensor lands on exactly one
+        // square; TimetablePath.fromJSON throws on the first edge it cannot resolve and drops that
+        // leg.  Measured on Adam's file, two of thirty-six could survive - and the next capture writes
+        // what is left back over these globals for good.
+        assertFalse(globals.has("timetable"),
+            "the timetable was carried across, where all but a couple of its legs will be dropped one "
+            + "warning at a time and the remains written back permanently by the next capture");
 
         // Neither points nor edges belong up here: they are the setup, not the settings.
         assertFalse(globals.has("points"), "the points were copied into the settings as well");
