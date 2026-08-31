@@ -1670,6 +1670,13 @@ public class testAutonomyDiagramSession
 
         session.open(Arrays.asList(page));
 
+        // A configuration to import INTO, as every other import test has and as the menu path does.
+        // The operational settings - priority, speed multiplier, exclusions, the station's own length
+        // limit - are stored per configuration, so without one they are silently skipped and this
+        // method would have asked nothing about them (IPR-A1).
+        session.getStore().createConfiguration("Legacy", null);
+        session.getStore().setActiveConfiguration("Legacy");
+
         org.json.JSONArray points = new org.json.JSONArray();
 
         // pageOnDisk puts a feedback with raw address 11 at 1,1 - and the raw address is what an
@@ -1698,12 +1705,115 @@ public class testAutonomyDiagramSession
 
         assertTrue(session.getStore().isStation(tile), "the station flag did not come across");
 
-        assertEquals(session.getStore().getTileLength(tile), 240, "the length did not come across");
+        // A STATION'S CAPACITY, NOT A TRACK LENGTH (IPR-A1).
+        //
+        // This asserted `getTileLength(tile) == 240` until 2026-08-31, which is the confusion the
+        // import itself was making: `points[].maxTrainLength` is the longest train the STATION can
+        // hold, and `tileLengths` is how long a piece of TRACK is - the quantity the shortest-track
+        // and longest-track routing rules are computed from.  A legacy file carries both, capacity on
+        // the points and length on the edges, and the import was reading one as the other.
+        //
+        // What it cost: every upgrading user's stations lost their limits, so validateTrainLength
+        // passed a train of any length onto any platform; and the squares that had a capacity gained
+        // a track length nobody measured, which changed which route those rules pick.
+        assertEquals(session.getPointProperty(tile, "maxTrainLength"), 240,
+            "the station's own length limit did not come across, so autonomy will send a train of "
+            + "any length onto it");
+
+        assertEquals(session.getStore().getTileLength(tile), 0,
+            "the station's capacity was written into the square's TRACK LENGTH, which is a different "
+            + "measurement and feeds the shortest-track and longest-track routing rules");
 
         assertEquals(result.matched, 1, "exactly one point should have matched");
 
         assertEquals(result.unmatched, Arrays.asList("NotOnThisDiagram"),
             "a point whose sensor is not on this diagram must be reported, not silently dropped");
+    }
+
+    /**
+     * An imported legacy file brings its settings, not only its points (RGN-A1).
+     *
+     * A 2.7.4c `autonomy.json` is one object: the points and edges, and above them the whole settings
+     * panel - pace, default speed, how many trains may run, whether routes are fired, and the
+     * timetable. `importLegacy` read the points array and nothing else, so an upgrading user kept
+     * their station names and lost everything about how their railway RUNS.
+     *
+     * On Adam's own legacy file that is thirteen settings and thirty-six timetable legs.
+     *
+     * Gap-filled, like the rest of this import: re-running it must not undo a setting somebody
+     * changed after the first run.
+     *
+     * MUTATION: dropping the globals copy from importLegacy fails the first assertion; making it
+     * overwrite rather than gap-fill fails the last.
+     */
+    @Test
+    public void testALegacyImportBringsTheSettingsAboveThePoints() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Settings", null);
+        session.getStore().setActiveConfiguration("Settings");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        org.json.JSONObject named = new org.json.JSONObject();
+        named.put("name", "Hauptbahnhof");
+        named.put("station", true);
+        named.put("s88", 11);
+        points.put(named);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+        legacy.put("edges", new org.json.JSONArray());
+        legacy.put("minDelay", 3);
+        legacy.put("maxDelay", 13);
+        legacy.put("defaultLocSpeed", 41);
+        legacy.put("maxActiveTrains", 4);
+        legacy.put("activateRoutes", true);
+
+        org.json.JSONArray timetable = new org.json.JSONArray();
+        timetable.put(new org.json.JSONObject().put("loc", "Some Loc").put("secondsToNext", 90));
+        legacy.put("timetable", timetable);
+
+        session.importLegacy(legacy);
+
+        org.json.JSONObject globals = session.getStore().getConfiguration("Settings")
+            .optJSONObject("globals");
+
+        assertNotNull(globals,
+            "the imported file's settings did not arrive at all, so an upgrading user keeps their "
+            + "station names and loses every rule about how the railway runs");
+
+        assertEquals(globals.optInt("minDelay", -1), 3, "minDelay did not come across");
+        assertEquals(globals.optInt("maxDelay", -1), 13, "maxDelay did not come across");
+        assertEquals(globals.optInt("defaultLocSpeed", -1), 41,
+            "the default locomotive speed did not come across");
+        assertEquals(globals.optInt("maxActiveTrains", -1), 4,
+            "the limit on how many trains may run did not come across");
+        assertTrue(globals.optBoolean("activateRoutes", false),
+            "whether autonomy fires routes did not come across");
+
+        assertNotNull(globals.optJSONArray("timetable"),
+            "the timetable did not come across - on Adam's own file that is thirty-six legs");
+
+        assertEquals(globals.optJSONArray("timetable").length(), 1,
+            "the timetable came across with the wrong number of legs");
+
+        // Neither points nor edges belong up here: they are the setup, not the settings.
+        assertFalse(globals.has("points"), "the points were copied into the settings as well");
+        assertFalse(globals.has("edges"), "the edges were copied into the settings as well");
+
+        // GAP-FILLED, not overwritten.  Somebody who imported, then changed a setting, then imported
+        // again must keep their change - which is the rule every other part of this import follows.
+        globals.put("minDelay", 9);
+
+        session.importLegacy(legacy);
+
+        assertEquals(session.getStore().getConfiguration("Settings").optJSONObject("globals")
+            .optInt("minDelay", -1), 9,
+            "a second import overwrote a setting that had been changed since the first one");
     }
 
     /**

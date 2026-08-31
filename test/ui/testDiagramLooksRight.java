@@ -2072,7 +2072,13 @@ public class testDiagramLooksRight
 
         caption.setText("Bottom Main C");
         caption.setOpaque(true);
-        caption.setBackground(org.traincontrol.gui.StationCaption.restingFill());
+        // OPAQUE, deliberately (TCS-A2).
+        //
+        // The resting fill has an alpha, so a caption drawn over a train still lets 18% of the train
+        // through - and an exact-RGB comparison would then find the two pictures different and pass
+        // whichever way round they were painted.  A solid pill is the honest question: with the train
+        // in front the pixel changes, with the train behind it cannot.
+        caption.setBackground(new java.awt.Color(0, 0, 115));
 
         javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
 
@@ -2102,9 +2108,25 @@ public class testDiagramLooksRight
         javax.imageio.ImageIO.write(empty, "png", new File(OUT, "train-over-caption-empty.png"));
         javax.imageio.ImageIO.write(withTrain, "png", new File(OUT, "train-over-caption-train.png"));
 
+        // SAMPLED WHERE THE CAPTION AND THE ICON OVERLAP (TCS-A2).
+        //
+        // This used to sample the middle of the square, (60, 60) at this size - which is above the
+        // pill entirely, since the caption sits at (0, 80, 120, 30).  The caption never painted there
+        // under either arrangement, so the pixel was identical whether the train was drawn over the
+        // captions or back inside its tile, and the test passed with OB-159 put back.
+        //
+        // Three quarters of the way down is inside the pill and inside the icon, which spans 76% of
+        // the square about its centre.  It is the only place the question can be asked.
+        int overlapX = size / 2;
+        int overlapY = size * 3 / 4;
+
+        assertNotEquals(withTrain.getRGB(overlapX, overlapY), empty.getRGB(overlapX, overlapY),
+            "the station caption is painted over the locomotive - which is what Adam reported, and "
+            + "what the third painting pass exists to stop");
+
+        // And the middle of the square, which is where the train is whatever else is true.
         assertNotEquals(withTrain.getRGB(size / 2, size / 2), empty.getRGB(size / 2, size / 2),
-            "the middle of the square is unchanged by a train standing on it, so the caption is "
-            + "painted over the locomotive - which is what Adam reported");
+            "no train was drawn at all, so the assertion above proves nothing");
 
         // AND THE CAPTION IS STILL THERE, which is the half OB-117 is about.
         //
@@ -2113,6 +2135,20 @@ public class testDiagramLooksRight
         // whole square this pixel would have changed with it.
         int atX = size / 12;
         int atY = size * 3 / 4;
+
+        // AND THE CALL SITE, which the pixels cannot reach (TCS-A2).
+        //
+        // This method asks `LayoutGrid.newDiagramContainer()` itself, so the container it photographs
+        // is the right one however the application builds its own.  Put a plain JPanel back at the
+        // one place that calls the factory and every pixel above is unchanged - the defect moves to
+        // the call, which is exactly what happened to testDiagramExport.
+        String gridSource = new String(java.nio.file.Files.readAllBytes(
+            new File("src/org/traincontrol/gui/LayoutGrid.java").toPath()), "UTF-8");
+
+        assertTrue(gridSource.contains("container = newDiagramContainer();"),
+            "the diagram is no longer built from newDiagramContainer(), so the third painting pass "
+            + "that draws trains over captions is not in the container the application shows - and "
+            + "every pixel this test compares came from a container it made itself");
 
         assertEquals(withTrain.getRGB(atX, atY), empty.getRGB(atX, atY),
             "the caption changed where the locomotive does not reach, so the train is painting over "

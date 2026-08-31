@@ -427,6 +427,29 @@ public class AutonomySession
     }
 
     /**
+     * The active configuration's run-wide settings object, created if it is not there yet.
+     *
+     * The sibling of `configurationExtras`, which does the same for one square. Both answer null when
+     * no configuration is active, because there is then nowhere for the setting to live.
+     *
+     * @return the globals object, or null when nothing is active
+     */
+    private org.json.JSONObject configurationGlobals()
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return null;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return null;
+
+        if (!configuration.has("globals")) configuration.put("globals", new org.json.JSONObject());
+
+        return configuration.getJSONObject("globals");
+    }
+
+    /**
      * The active configuration's own data for one square, created if this is the first thing on it.
      *
      * A placement is not a decision about the track - it is where a train happens to be standing - so
@@ -491,7 +514,7 @@ public class AutonomySession
      *                     why it is carried as given rather than filtered here.
      */
     private static final List<String> CARRIED_SETTINGS =
-        Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active");
+        Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");
 
     public LegacyImport importLegacy(org.json.JSONObject legacy)
     {
@@ -748,11 +771,64 @@ public class AutonomySession
 
             if (point.optBoolean("station", false)) store.setStation(tile, true);
 
-            int length = point.optInt("maxTrainLength", 0);
-
-            if (length > 0) store.setTileLength(tile, length);
+            // maxTrainLength is CARRIED, not converted (IPR-A1).
+            //
+            // It used to be written here as `store.setTileLength(tile, length)`, which reads a
+            // station's capacity as a track's length.  They are different measurements and a legacy
+            // file holds both - capacity on the points, length on the edges - so every upgrading
+            // user's stations lost their limits while six squares gained lengths nobody measured.
+            //
+            // It goes through CARRIED_SETTINGS with the other operational properties now, which is
+            // where the rest of parseAuto's own keys already go.
 
             result.matched++;
+        }
+
+        // AND THE SETTINGS ABOVE THE POINTS (RGN-A1).
+        //
+        // A 2.7.4c autonomy.json is one object: the points and edges, and above them the whole
+        // settings panel - pace, default speed, how many trains may run, whether routes are fired -
+        // and the timetable.  This method read `points` and nothing else, so an upgrading user kept
+        // their station names and lost every rule about how their railway RUNS.  On Adam's own legacy
+        // file that is thirteen settings and thirty-six timetable legs.
+        //
+        // The same copy captureFromLayout already makes, asked here: everything that is not the setup
+        // itself.  Gap-filled like the rest of this import, so running it twice cannot undo a setting
+        // somebody changed after the first run.
+        //
+        // NOT the edges' lengths.  A legacy file records length per EDGE and the diagram model
+        // records it per SQUARE, and which square a length belongs to when an edge spans several is a
+        // question this cannot answer without guessing.  Thirty of Adam's ninety edges carry one, so
+        // it is worth answering - it is left for a decision rather than migrated wrongly.
+        org.json.JSONObject settings = configurationGlobals();
+
+        if (settings != null)
+        {
+            for (String key : legacy.keySet())
+            {
+                if ("points".equals(key) || "edges".equals(key)) continue;
+
+                if (settings.has(key)) continue;
+
+                Object value = legacy.get(key);
+
+                // Copied rather than shared, for the reason the point extras above are: a JSONArray
+                // handed straight over stays the caller's, and the timetable is an array.
+                if (value instanceof org.json.JSONArray)
+                {
+                    value = new org.json.JSONArray(value.toString());
+                }
+                else if (value instanceof org.json.JSONObject)
+                {
+                    value = new org.json.JSONObject(value.toString());
+                }
+
+                settings.put(key, value);
+
+                result.settings++;
+            }
+
+            dirty = true;
         }
 
         // Derived again, once, now that the authored data has changed.
