@@ -254,6 +254,21 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     Locomotive locomotive = current.getCurrentLocomotive();
 
                     // If we want to view paths, locomotive must not be running
+                    //
+                    // A PER-LOCOMOTIVE gate, where AutoLocomotiveStatus asks isAutoRunning() about the
+                    // whole layout - and the two therefore disagree.  Adam, 2026-08-31: "right-clicking
+                    // on the track diagram does not show available options in non-atomic mode", where
+                    // the commands panel does.
+                    //
+                    // CLOSED AS A KNOWN LIMITATION on his ruling (OB-164): "The user can rely on full
+                    // autonomy or the panels to send trains more clearly."  Both of those work in
+                    // non-atomic mode, so what is lost is one of three ways to the same thing.  Neither
+                    // getPossiblePaths nor isPathClear branches on atomicRoutes anywhere, so whatever
+                    // this is, it is state a non-atomic run leaves behind rather than the question being
+                    // asked - and finding it needs a two-train reproduction nobody has built.
+                    //
+                    // Left here so the next reader who notices the two surfaces disagree finds the
+                    // ruling rather than re-opening it.
                     if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
                     {
                         List<List<Edge>> paths = withoutGoingNowhere(ui,

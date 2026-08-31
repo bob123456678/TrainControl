@@ -212,7 +212,17 @@ survive: a stale `activeLocomotives` entry (the removal at completion is uncondi
 cleared behind the train (the last edge's endpoints are deliberately left alone), and the menu picking
 the wrong copy of a split square (`getAutonomyPointForTile` prefers the occupied copy).
 
-Needs a reproduction with two trains before anything is changed.
+**Closed as a known limitation, on Adam's ruling, 2026-08-31:** "The user can rely on full autonomy or
+the panels to send trains more clearly."
+
+Both of those surfaces work in non-atomic mode - the commands panel offers the destinations and full
+autonomy chooses them - so what is lost is one of three ways to reach the same thing, on the surface
+where it is least clear anyway.  Weighed against changing what the diagram menu asks, which is a gate
+on a per-locomotive question that is right for the case it was written for, that is not a trade worth
+making without a reproduction, and the reproduction is the expensive part.
+
+Recorded rather than dropped: the next person to read `LayoutRightclickAutonomyMenu` and notice the two
+surfaces disagree should find this rather than re-open it.
 
 ## What has been picked up
 
@@ -228,6 +238,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-31 | OB-164 | bug | the diagram right-click menu offers no destinations in non-atomic mode - closed as a known limitation | declined | - |
 | 2026-08-30 | OB-159 | bug | locomotive icon over stations while running | - | [MT-242](tests.md#mt-242) |
 | 2026-08-30 | OB-163 | bug | the routing rules explain themselves to nobody | - | [MT-241](tests.md#mt-241) |
 | 2026-08-30 | OB-158 | bug | ... on traversing trains in station labels | - | [MT-234](tests.md#mt-234) |
