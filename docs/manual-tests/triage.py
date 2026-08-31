@@ -868,6 +868,27 @@ class State(object):
                 loaded = json.load(fh)
 
             if isinstance(loaded, dict):
+                # A SESSION MARK DOES NOT SURVIVE THE SESSION, which is what it has always claimed.
+                #
+                # Adam, three times in one evening: "I don't see 20 in the tracker", "I don't see
+                # anything after 087", and "I just restarted, still can't see the MTs".  The marks were
+                # loaded straight back out of this file on every launch and nothing ever cleared them,
+                # so "I dealt with this in this session" became "I dealt with this, ever" - and the
+                # default filter, "open - not yet answered here", drops every entry carrying one.
+                #
+                # Measured before this was changed: 166 tags marked done, including ALL TWELVE tests
+                # that were open at the time.  The list was empty and correct by its own rules, which
+                # is the worst way for a tool to be wrong - it looked like nothing needed doing.
+                #
+                # The reopened override in _visible() was written for a narrower version of this same
+                # staleness and is not enough on its own: it only lifts a mark on an entry that has
+                # BOTH his verdict and a later reply, so a test he answered and nobody has touched
+                # since stays hidden for ever.  That override stays; this is the other half.
+                #
+                # Everything else in the file is a setting and does survive: a half-typed comment lost
+                # on restart would be its own bug, and so would a window that forgets where it was.
+                loaded.pop("marks", None)
+
                 self.data.update(loaded)
 
         except Exception:
