@@ -1987,10 +1987,17 @@ public class testHomeStaging
         assertNotNull(copy.getBlock(),
             "the fixture did not take: this test needs a square emitted as more than one Point");
 
-        assertNull(copy.getHomeLoc(),
-            "a configuration file installed a home on a square that is two graph points. The "
-            + "assignment door refuses this and a file comes past it, which is the door the rule was "
-            + "added for - a file cannot be greyed out");
+        // KEPT, as of Adam's ruling of 2026-08-31 (see the test below).
+        //
+        // This asserted the opposite - that the loader drops such a home - which was LD-8 carrying his
+        // 2026-08-25 ruling to the one door a person cannot be warned at. Both halves of that ruling
+        // are reversed now: the home is the square, so a square drawn as several Points is an ordinary
+        // home and there is nothing to refuse.
+        assertEquals(copy.getHomeLoc(), loc(LOC_A),
+            "a home named by a configuration file was dropped as it loaded because its square is "
+            + "drawn as more than one graph Point. The home is the SQUARE - a train on any copy of it "
+            + "is home - so there is nothing ambiguous to refuse, and silently dropping it is a "
+            + "Return Home that quietly does something else");
 
         // And the control: an ordinary square in the same file keeps the home it was given, so the
         // load is not simply dropping homes.
@@ -2080,7 +2087,7 @@ public class testHomeStaging
      * test.
      */
     @Test
-    public void testAHomeCannotBeASquareThatIsSeveralPoints() throws Exception
+    public void testAHomeCanBeASquareThatIsSeveralPoints() throws Exception
     {
         Layout layout = load(blockOfTwoWatching(null, null));
 
@@ -2090,21 +2097,25 @@ public class testHomeStaging
             "the fixture did not take: this test needs a square emitted as more than one Point, "
             + "which is exactly what carrying a block means");
 
-        try
-        {
-            layout.setHomeLocomotive("HS W2", LOC_A);
+        // ACCEPTED, as of Adam's ruling of 2026-08-31.
+        //
+        // This test used to require the opposite - `fail(...)` if the assignment went through, and a
+        // refusal naming the square. It is kept and inverted rather than deleted, because it is the
+        // record of a ruling and the reversal is the interesting part of that record.
+        //
+        // His 2026-08-25 ruling was "any home with two graph points should be refused", on the
+        // argument that "is the train home?" would have more than one answer. His 2026-08-31 ruling
+        // settles what a home IS, which is what that argument was really about: "the home should just
+        // be the logical point, and the direction is wherever the locomotive was facing when it
+        // started moving." One square, one answer, however many arrival sides it is drawn as.
+        layout.setHomeLocomotive("HS W2", LOC_A);
 
-            fail("a home was accepted on a square that is two graph points.  Adam ruled that an "
-                + "invalid state: \"is the train home?\" would have more than one answer");
-        }
-        catch (Exception refused)
-        {
-            assertTrue(String.valueOf(refused.getMessage()).contains("HS W2"),
-                "the refusal should name the square, or the operator cannot act on it.  Got: "
-                + refused.getMessage());
-        }
+        assertEquals(copy.getHomeLoc(), loc(LOC_A),
+            "a home on a square drawn as two arrival sides was refused. The home is the square, so "
+            + "there is nothing ambiguous about it - and on Adam's own layout this refusal covered "
+            + "ten of the thirty-six station squares, which are the main-line platforms");
 
-        assertNull(copy.getHomeLoc(), "the refused assignment was made anyway");
+        layout.setHomeLocomotive("HS W2", null);
 
         // And the control: an ordinary single-Point square is still assignable, so the rule is not
         // simply refusing homes.
@@ -3158,6 +3169,88 @@ public class testHomeStaging
             + "one's home.  The copies of a square are one piece of track, so no arrangement puts "
             + "both trains at home - and Return Home answers IMPOSSIBLE naming both of them from "
             + "then on, while the diagram shows what look like two different stations");
+    }
+
+    /**
+     * A home is a SQUARE, and which way the train faces is not part of it (Adam, 2026-08-31).
+     *
+     * His words: "so the home should just be the logical point, and the direction is wherever the
+     * locomotive was facing when it started moving."
+     *
+     * That settles a question this class has been answering three different ways. A square on the
+     * diagram is emitted as one graph Point per arrival side, and LD-8 refused a home on any such
+     * square at three doors - the editor menu, `Layout.setHomeLocomotive`, and the loader - because
+     * "is the train home?" seemed to have more than one answer. It does not: the answer is about the
+     * square, which is what `Point.isSamePlaceAs` has said since MT-165.
+     *
+     * **What the refusal was costing.** Ten of Adam's thirty-six station squares carry a block, and
+     * they are the main-line platforms. `AutonomyBuilder.homeCopy` exists solely to choose which copy
+     * of a split square should carry the home - and the loader then threw that choice away, every
+     * time, because the chosen copy carries a block like all its siblings. The editor accepted the
+     * assignment (`mayRestHere` filters `whyNotAHome` down to the resting reason only), so a home
+     * could be set, look right, and be gone at the next start with only a log line.
+     *
+     * The last assertion is the one that makes "the square" mean something: usability is asked of the
+     * square too. A platform with a turning copy and a plain copy is a perfectly good home for a
+     * locomotive that cannot reverse, because it can stand on the plain one.
+     *
+     * MUTATION: putting back any of the three `getBlock() != null` refusals fails one of the first
+     * three assertions; asking `canRest` about the Point rather than the square fails the last.
+     */
+    @Test
+    public void testAHomeIsTheSquareAndNotOneOfItsDirections() throws Exception
+    {
+        Layout layout = load(twoStationCopiesAndASiding());
+
+        Point p1 = layout.getPoint("HS P1");
+        Point p2 = layout.getPoint("HS P2");
+
+        assertNotNull(p1.getBlock(), "the fixture did not take: HS P1 must carry a block");
+        assertEquals(p1.getBlock(), p2.getBlock(), "the fixture did not take: one square, two copies");
+
+        // 1. The door a person uses.
+        assertNull(HomeStaging.whyNotAHome(loc(LOC_A), p2),
+            "the editor refuses a home on a platform drawn as two arrival sides, which is ten of "
+            + "Adam's thirty-six station squares");
+
+        // 2. The door the model uses.
+        layout.setHomeLocomotive("HS P2", LOC_A);
+
+        assertEquals(p2.getHomeLoc(), loc(LOC_A),
+            "the model refused to record a home on a split square");
+
+        final boolean wasReversible = loc(LOC_A).isReversible();
+
+        try
+        {
+            // 3. And usability is asked of the SQUARE.
+            //
+            // A platform whose two copies are a turning berth and a through road is a good home for a
+            // locomotive that cannot reverse: it stands on the through road. Asking the copy that
+            // happens to carry the home would refuse it.
+            loc(LOC_A).setReversible(false);
+
+            p2.setTerminus(true);
+
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), p2),
+                "a home was refused to a locomotive that cannot reverse because the copy carrying it "
+                + "is a turning berth - while the other copy of the same platform is a through road "
+                + "it can stand on perfectly well");
+
+            // And the control: when EVERY copy is a turning berth, the refusal is real.
+            p1.setTerminus(true);
+
+            assertFalse(HomeStaging.canBeHome(loc(LOC_A), p2),
+                "a platform every copy of which must be reversed out of was offered to a locomotive "
+                + "that cannot reverse, so the square rule has stopped refusing anything");
+        }
+        finally
+        {
+            p1.setTerminus(false);
+            p2.setTerminus(false);
+            loc(LOC_A).setReversible(wasReversible);
+            layout.setHomeLocomotive("HS P2", null);
+        }
     }
 
     /**

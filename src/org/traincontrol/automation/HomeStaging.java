@@ -1233,15 +1233,20 @@ public final class HomeStaging
         // when home is two places. Making the configuration impossible removes the disagreement
         // instead of picking a winner for it.
         //
-        // `getBlock()` is exactly this test and nothing else. AutonomyBuilder sets it on one condition
-        // - `if (nodes.size() > 1) json.put("block", ...)` - so a block is present precisely when a
-        // square was emitted as more than one Point, and absent otherwise.
+        // A SPLIT SQUARE IS AN ORDINARY HOME (Adam, 2026-08-31).
         //
-        // Measured before it was written: on Adam's own layout this refuses ONE square of fifty-seven,
-        // and he has no homes assigned at all, so nothing existing is invalidated.
-        if (at != null && at.getBlock() != null) return "autolayout.errorHomeSquareIsSeveralPoints";
-
-        return canRest(loc, at) ? null : "autolayout.errorHomeCannotRestHere";
+        // This refused one, and so did Layout.setHomeLocomotive and the loader, on the argument that a
+        // square drawn as several graph Points makes "is the train home?" have more than one answer.
+        // His ruling: "the home should just be the logical point, and the direction is wherever the
+        // locomotive was facing when it started moving." One answer, because the home is the SQUARE -
+        // which is what Point.isSamePlaceAs has said since MT-165.
+        //
+        // AND USABILITY IS ASKED OF THE SQUARE TOO, or "the home is the square" means nothing here. A
+        // platform whose copies are a turning berth and a through road is a good home for a locomotive
+        // that cannot reverse: it stands on the through road. Asking only the copy that happens to
+        // carry the home would refuse that - and which copy carries it is a choice AutonomyBuilder
+        // made, not one the operator made.
+        return canRestOnSquare(loc, at) ? null : "autolayout.errorHomeCannotRestHere";
     }
 
     /**
@@ -1470,6 +1475,41 @@ public final class HomeStaging
         Locomotive there = state.get(p);
 
         return there != null && !there.equals(loc);
+    }
+
+    /**
+     * Whether a locomotive could stand anywhere on this square (2026-08-31).
+     *
+     * `canRest` answers about one graph Point, which is the right question when the planner is routing
+     * a train to a particular arrival side. It is the wrong question about a HOME: a home is a square,
+     * so what matters is whether the train can stand on any copy of it.
+     *
+     * An ordinary square - anything with no block, which is most of them - falls straight through to
+     * the plain answer.
+     *
+     * @param loc the locomotive
+     * @param at any copy of the square
+     * @return true when some copy of that square would take it
+     */
+    private static boolean canRestOnSquare(Locomotive loc, Point at)
+    {
+        if (at == null) return false;
+
+        if (at.getBlock() == null || at.getLayout() == null) return canRest(loc, at);
+
+        boolean sawACopy = false;
+
+        for (Point copy : at.getLayout().getPoints())
+        {
+            if (!at.getBlock().equals(copy.getBlock())) continue;
+
+            sawACopy = true;
+
+            if (canRest(loc, copy)) return true;
+        }
+
+        // A block naming no copies cannot be answered by looking at them.
+        return sawACopy ? false : canRest(loc, at);
     }
 
     /**

@@ -816,6 +816,18 @@ public class Point
     private Layout layout;
 
     /**
+     * The layout this Point belongs to, or null when it was built and never added.
+     *
+     * Package-private like the setter below it, and for the same reason: this is for rules inside the
+     * automation model that have to ask about a Point's neighbours - which copies of a square there
+     * are, in particular - and not part of what the rest of the application sees.
+     */
+    Layout getLayout()
+    {
+        return this.layout;
+    }
+
+    /**
      * @param layout the layout taking ownership of this Point
      */
     void setLayout(Layout layout)

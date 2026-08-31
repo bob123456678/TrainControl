@@ -1192,17 +1192,18 @@ public class Layout
         //
         // Only when a home is being SET. Clearing one is always allowed: a layout that has somehow
         // reached the invalid state must be able to get out of it.
-        // ONLY the two-graph-points rule, not everything canBeHome refuses.
+        // NOTHING IS REFUSED HERE ANY MORE (Adam, 2026-08-31).
         //
-        // Adam ruled that one state invalid; "no train can come to rest here" is a different thing -
-        // it is a warning the menu gives, and an assignment Return Home is expected to report rather
-        // than one the model forbids. testAnImpossibleAssignmentIsExactlyWhatReturnHomeWouldRefuse
-        // depends on being able to make it, and it is right to.
-        if (loc != null && p.getBlock() != null)
-        {
-            throw new Exception(I18n.f("autolayout.errorHomeSquareIsSeveralPoints",
-                loc.getName(), p.getName()));
-        }
+        // This threw for a square drawn as more than one graph Point, which was his ruling of
+        // 2026-08-25 read as a rule about the MODEL. He has since settled what a home is: "the home
+        // should just be the logical point, and the direction is wherever the locomotive was facing
+        // when it started moving." A square is one logical point however many arrival sides it has,
+        // so there was never anything ambiguous to refuse.
+        //
+        // "No train can come to rest here" is still not refused either, and never was: it is a warning
+        // the menu gives and something Return Home reports, not a state the model forbids.
+        // testAnImpossibleAssignmentIsExactlyWhatReturnHomeWouldRefuse depends on being able to make
+        // one, and it is right to.
 
         // One station per locomotive: assigning it somewhere new gives up wherever it was assigned
         // before, or two stations would be waiting for the same train and neither could be satisfied.
@@ -7036,22 +7037,17 @@ public class Layout
 
                         Point homeAt = layout.getPoint(point.getString("name"));
 
-                        // The same rule the assignment door enforces, at the door a FILE comes
-                        // through (LD-8).
+                        // TAKEN AS WRITTEN (Adam, 2026-08-31).
                         //
-                        // Said and skipped rather than thrown: a configuration is read line by line
-                        // and one invalid home is not a reason to refuse the whole railway. The
-                        // operator is told, because a home that silently did not load is a Return
-                        // Home that silently does something else.
-                        if (home != null && homeAt.getBlock() != null)
-                        {
-                            control.logf("autolayout.errorHomeSquareIsSeveralPoints",
-                                home.getName(), homeAt.getName());
-                        }
-                        else
-                        {
-                            homeAt.setHomeLoc(home);
-                        }
+                        // This dropped a home whose square is drawn as more than one graph Point,
+                        // with a log line - LD-8 carrying the assignment door's refusal to the one
+                        // door a person cannot be warned at. Both are gone: the home is the square.
+                        //
+                        // It was the most expensive of the three. AutonomyBuilder.homeCopy exists
+                        // only to choose which copy of a split square should carry the home, and this
+                        // threw that answer away every time, because every copy carries a block. So a
+                        // home could be set in the editor, look right, and be gone at the next start.
+                        homeAt.setHomeLoc(home);
                     }
                 }
                 

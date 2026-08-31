@@ -3396,9 +3396,12 @@ public class AutonomyEditorPanel extends JPanel
         // Only the "cannot come to rest" half, which is what this method is named for and what its
         // caller warns about (LD-9).
         //
-        // canBeHome also answers false for a square that is more than one graph Point, and that is a
-        // refusal rather than a warning - the model throws for it. Rolling the two together here made
-        // this method warn about resting for a square whose problem is nothing to do with resting.
+        // There is nothing else left for it to answer. `whyNotAHome` also refused a square drawn as
+        // more than one graph Point until Adam settled what a home is on 2026-08-31 - "the home should
+        // just be the logical point, and the direction is wherever the locomotive was facing when it
+        // started moving" - so the only reason it can give now is the resting one, and this filter is
+        // the identity. It is kept because the filter is the statement: this method warns about
+        // resting and must not start warning about whatever reason is added next.
         return !"autolayout.errorHomeCannotRestHere".equals(
             org.traincontrol.automation.HomeStaging.whyNotAHome(loc, point));
     }

@@ -579,10 +579,12 @@ public class AutonomyBuilder
      *   3. copy zero, so a home is never silently dropped.
      *
      * A turning station copy is emitted as a TERMINUS, and HomeStaging.canRest refuses a terminus to a
-     * locomotive that cannot reverse - so where 2 is the best available, the home works only for
-     * reversible locomotives.  That is a real property of a berth every train must back out of rather
-     * than a defect, and checkHomeOnTurningSquareOnly says so on the findings list instead of leaving
-     * it to be discovered as an IMPOSSIBLE from Return Home.
+     * locomotive that cannot reverse.  That only decides the home when EVERY copy turns: since
+     * 2026-08-31 the home is the square, and HomeStaging asks whether the locomotive can stand on ANY
+     * copy of it - so a platform with a turning berth and a through road is a home for anything.
+     * Where every copy turns it is a real property of a berth every train must back out of rather
+     * than a defect, and AutonomyChecks.checkHomesThatNeedReversing says so on the findings list
+     * instead of leaving it to be discovered as an IMPOSSIBLE from Return Home.
      *
      * @param nodes the copies this square was emitted as
      * @return the index of the copy to carry the home
