@@ -95,10 +95,10 @@ telling agents not to run tests, but never let that be the only thing between th
 | `FV2-C5` | `battery.sh`'s numeric arm matched on the first character, so a malformed count skipped the warning added for it | `f59fa45e` |
 | `FV2-C7` | `isShut()` and `isImpassable()` were the same predicate, with no caller for the first | `f59fa45e` |
 | `FV2-C10` | "Each code fix was mutation-confirmed" covered a shell script that has no test | `f59fa45e` |
-| `SV2-A1` | **The FV2-B2 fix to `firstClearRoute` was a regression that would have driven a train nose-first into a berth it cannot leave** | `_pending_` |
-| `SV2-A2` | The lock lived in a per-session directory, so it could never have seen the other battery; and the probe was blind to the compile window | `_pending_` |
-| `SV2-B1` | The terminus test could not fail - it asked only that the outcome was not IMPOSSIBLE | `_pending_` |
-| `SV2-C6` | "`ps -W` cannot see java.exe" was false and was cited as fact | `_pending_` |
+| `SV2-A1` | **The FV2-B2 fix to `firstClearRoute` was a regression that would have driven a train nose-first into a berth it cannot leave** | `208b3ee1` |
+| `SV2-A2` | The lock lived in a per-session directory, so it could never have seen the other battery; and the probe was blind to the compile window | `208b3ee1` |
+| `SV2-B1` | The terminus test could not fail - it asked only that the outcome was not IMPOSSIBLE | `208b3ee1` |
+| `SV2-C6` | "`ps -W` cannot see java.exe" was false and was cited as fact | `208b3ee1` |
 
 The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
 `IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with
