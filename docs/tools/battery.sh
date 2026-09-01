@@ -81,32 +81,101 @@ LOCK="$S/battery.lock"
 # It also needs no clearing by hand, which is the property the comment above insists on: the check
 # stops being true the moment the other JVMs exit.  Nobody has to delete anything to get past it, so
 # nobody learns to delete things to get past it.
-RUNNING_JVMS=$(powershell.exe -NoProfile -Command \
-    "(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' } | Measure-Object).Count" \
-    2>/dev/null | tr -d '\r\n ')
+#
+# IT LOOKS FOR TestNG, NOT FOR OUR OWN FLAG (SVN-A2, corrected the same day it was written).
+#
+# The first version matched `-Dtraincontrol.anyReceivePort`, which is a flag only this script and
+# one.sh set - so it saw its own family and nothing else, while its comment claimed it caught an IDE
+# run too.  `build.xml` passes no `jvmarg` at all: an `ant test` or a NetBeans run was exactly as
+# invisible as before.  What every one of them does have in common is the runner itself, so that is
+# what is matched, and the old flag is kept as well for anything that sets it without TestNG on the
+# command line.
+#
+# Adam's own running application is deliberately NOT matched.  It is not a test JVM, it does not
+# redirect the preference, and blocking every battery while he has the app open would be the kind of
+# over-strict guard that gets deleted rather than obeyed.
+PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' } | Measure-Object).Count"
+
+RUNNING_JVMS=$(powershell.exe -NoProfile -Command "$PROBE" 2>/dev/null | tr -d '\r\n ')
 
 case "$RUNNING_JVMS" in
-    ''|0|*[!0-9]*) ;;
+    [0-9]*)
+        if [ "$RUNNING_JVMS" -gt 0 ] 2>/dev/null
+        then
+            echo "*** TEST JVMS ARE ALREADY RUNNING ($RUNNING_JVMS of them) ***"
+            echo ""
+            echo "Something else is running tests right now - another battery, a one.sh, an ant run,"
+            echo "or the IDE.  Test JVMs share the Java Preferences store that LayoutSandbox"
+            echo "redirects, and two runs redirecting it at once is how the real railway was damaged"
+            echo "on 2026-08-30."
+            echo ""
+            echo "Wait for it to finish, or stop it, and run this again.  Nothing needs deleting:"
+            echo "this check clears itself when those processes exit."
+            exit 2
+        fi
+        ;;
     *)
-        echo "*** TEST JVMS ARE ALREADY RUNNING ($RUNNING_JVMS of them) ***"
+        # SAID OUT LOUD RATHER THAN SWALLOWED.  The probe failing and the probe answering "none" used
+        # to be the same silence, so a broken check read exactly like a clear one - which is the shape
+        # of every false result this harness has produced.  The run still goes ahead, because a guard
+        # that stops all work when its own probe breaks is worse than the hazard, and the lock below
+        # is still standing; but nobody reads this output believing the check ran.
+        echo "*** WARNING: could not count running test JVMs - this check DID NOT RUN ***"
         echo ""
-        echo "Something else is running tests right now - another battery, a one.sh, or an IDE."
-        echo "Test JVMs share the Java Preferences store that LayoutSandbox redirects, and two runs"
-        echo "redirecting it at once is how the real railway was damaged on 2026-08-30."
+        echo "PowerShell returned: '$RUNNING_JVMS'.  Make sure nothing else is running tests."
         echo ""
-        echo "Wait for it to finish, or stop it, and run this again.  Nothing needs deleting: this"
-        echo "check clears itself when those processes exit."
-        exit 2
         ;;
 esac
 
-if [ -f "$LOCK" ] && kill -0 "$(cat "$LOCK" 2>/dev/null)" 2>/dev/null
+# AND THE LOCK IS WHAT COVERS THE COMPILE.
+#
+# The JVM check above cannot see a battery that has not reached its JVMs yet, and this script compiles
+# the whole tree first - a minute or more in which a second run looks past it and finds nothing.  That
+# is exactly the window the two concurrent batteries of 2026-09-01 overlapped in: both were in javac,
+# so neither could see the other by its processes.  The lock is held from here, before the compile, so
+# it is the only thing that covers that window - which makes its liveness test worth getting right.
+#
+# `kill -0` was the wrong test.  MSYS resolves pids within its own process tree, so a lock written by
+# a shell in another session reads as dead, the guard concludes "stale" and starts a second run.  It
+# has to fail open on every answer that is not a clear yes, which is the dangerous direction.
+#
+# Windows can answer the question that MSYS cannot, so it is asked instead - and the three outcomes are
+# now distinguished rather than collapsed into two: alive refuses, dead proceeds quietly, and an
+# unanswerable probe says so and proceeds, because a battery nobody can run is worse than this hazard
+# and the guard above is still standing.
+STALE=""
+
+if [ -f "$LOCK" ]
 then
-    echo "*** ANOTHER BATTERY IS ALREADY RUNNING (pid $(cat "$LOCK")) ***"
+    HELD=$(cat "$LOCK" 2>/dev/null | tr -d '\r\n ')
+
+    ALIVE=$(powershell.exe -NoProfile -Command \
+        "if (Get-Process -Id $HELD -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
+        2>/dev/null | tr -d '\r\n ')
+
+    case "$ALIVE" in
+        yes)
+            echo "*** ANOTHER BATTERY IS ALREADY RUNNING (pid $HELD) ***"
+            echo ""
+            echo "Two at once compile over each other and report classes that ran perfectly well as"
+            echo "DID NOT RUN.  Wait for it, or stop it, and run this again."
+            exit 2
+            ;;
+        no)
+            STALE="$HELD"
+            ;;
+        *)
+            echo "*** WARNING: could not tell whether the battery holding this lock (pid $HELD) is"
+            echo "    still running - that check DID NOT RUN.  Make sure no other battery is going."
+            echo ""
+            ;;
+    esac
+fi
+
+if [ -n "$STALE" ]
+then
+    echo "(clearing a stale lock from pid $STALE, which is no longer running)"
     echo ""
-    echo "Two at once compile over each other and report classes that ran perfectly well as"
-    echo "DID NOT RUN.  Wait for it, or stop it, and run this again."
-    exit 2
 fi
 
 echo $$ > "$LOCK"
