@@ -293,6 +293,15 @@ log timestamps, search, export features.  for 3.1.0
 
 in the autonomy editor, add a button to bulk mark stations.  click button then select all stations, then apply an action that is propagated to all of them.  feature for 3.1.0.
 
+### OB-166 - 2026-08-31 - signal changes unnecessarily
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 18:36  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to green unnecessarily.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

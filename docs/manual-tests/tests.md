@@ -13127,6 +13127,12 @@ Either is defensible. What is not defensible is today, where the two halves disa
 
 *Run against a build after commit 875edb92.*
 
+**Adam, 2026-08-31 (triage).** Could not run this.
+
+make a test case for this. in my testing, it loaded OK.
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-245"></a>
@@ -13180,5 +13186,13 @@ the turning one - which is a choice the builder made, not one you made. Step 5 i
 EVERY copy must be backed out of, it is still refused.
 
 *Run against a build after commit 7616d2a6.*
+
+**Adam, 2026-08-31 (triage).** Does not work.
+
+mainline stations work, but parking terminuses do not.  consider TunnelLeftPark - EN57-203 cannot even be SENT there, and EN57-947 cannot be homed here.
+
+non-auto stations should still be manually selectable.  and trains should be allowed to back into terminuses if they are not reversible (that's why we have the reversing point at feedback 2013).
+
+*Run against commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
