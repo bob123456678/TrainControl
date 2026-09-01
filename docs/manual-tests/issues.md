@@ -302,6 +302,24 @@ in the autonomy editor, add a button to bulk mark stations.  click button then s
 
 when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to green unnecessarily.
 
+### FR-053 - 2026-08-31 - calculate signals to set to red
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 23:16  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+instead of specifying signals that guard a station, calculate them based on what gets locked and what is ahead of the active path.  feature for 3.1.0.
+
+### OB-167 - 2026-08-31 - station no + must reverse + disabled gets same icon as terminus
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-31 23:20  
+**Build:** commit 302d7a11, build\classes, compiled 31 Aug 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+station no + must reverse + disabled gets same large square icon as inactive terminus.  if nothing can pass, the icon should be a small x.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
