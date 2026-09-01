@@ -57,7 +57,23 @@ public final class LayoutSandbox
      */
     public static LayoutSandbox open() throws IOException
     {
-        File fixture = new File("test/test_layout");
+        return open(new File("test/test_layout"));
+    }
+
+    /**
+     * The same, over a named folder, for a test that needs a particular railway.
+     *
+     * The operator's own layout is the case this exists for: a test that wants to reason about HIS
+     * stations has to read them, and reading them in place is how that folder gets written to. It is
+     * COPIED here, exactly as the fixture is, so the original is only ever read - and the copy is what
+     * the preference points at, so nothing downstream can reach the original even by accident.
+     *
+     * @param fixture the folder to copy; a missing one gives an empty sandbox, as with the fixture
+     * @return the sandbox, to be closed when the class is done with it
+     * @throws IOException if the folder cannot be copied
+     */
+    public static LayoutSandbox open(File fixture) throws IOException
+    {
 
         Path to = Files.createTempDirectory("tc-sandbox-layout");
 
