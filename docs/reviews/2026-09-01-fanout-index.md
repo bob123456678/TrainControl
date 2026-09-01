@@ -28,9 +28,9 @@ waiting on Adam.
 | `SV2` | [Second validation](2026-09-01-second-validation.md) | Opus | 2 A, 2 B, 7 C, 6 D |
 | `TV2` | [Third validation](2026-09-01-third-validation.md) | Opus | 1 A, 3 B, 7 C, 5 D |
 
-**Three validation passes were run, which is the limit Adam set.** ,  and  each found
+**Three validation passes were run, which is the limit Adam set.** `FV2`, `SV2` and `TV2` each found
 defects in the fixes made before them, and every one of those was in my own work rather than in the
-reviewers' - a shipped regression in the concurrency guard, a shipped regression in the planner that
+reviewers' — a shipped regression in the concurrency guard, a shipped regression in the planner that
 would have driven a train nose-first into a berth it could not leave, a test that could not fail, a
 runner that had received none of five corrections, and several false claims in code comments and user
 documentation. All are fixed.
