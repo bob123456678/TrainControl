@@ -71,14 +71,14 @@ telling agents not to run tests, but never let that be the only thing between th
 | `CMT-B4` | Both user documents still said only a reversible locomotive can reach a terminus | `9f1b80c8` |
 | `OB-167` follow-up | A switched-off square drew a cross only when it was not a station — which is nearly never | `e9435bfc` |
 | `RTG-B1` | The five-train test hand-started trains onto inactive destinations, stranding two of them before the run began | `7d8543f3` |
-| `FV2-A1` | **The first `battery.sh` lock correction was a regression** - it asked Windows about an MSYS pid, so every live battery read as stale | `_pending_` |
-| `FV2-B2` | `D24-B1` was half-fixed: the runtime turns a train at a terminus as well as a reversing point, and the terminus limb is the one that reaches Adam's berths | `_pending_` |
+| `FV2-A1` | **The first `battery.sh` lock correction was a regression** - it asked Windows about an MSYS pid, so every live battery read as stale | `f59fa45e` |
+| `FV2-B2` | `D24-B1` was half-fixed: the runtime turns a train at a terminus as well as a reversing point, and the terminus limb is the one that reaches Adam's berths | `f59fa45e` |
 | `FV2-B3` | The `CMT-B4` doc fix invented two rules nothing enforces, including the reverse of the tier doctrine | `c9153aaf` |
 | `FV2-B1`, `FV2-C2` | The deferral said the reversal-room guard was inert on Adam's railway; it is live, on two reversal squares, one of which is a home | `c9153aaf` |
-| `FV2-C1` | The cross's colour clause is unreachable in production, and its comment claimed otherwise | `_pending_` |
-| `FV2-C5` | `battery.sh`'s numeric arm matched on the first character, so a malformed count skipped the warning added for it | `_pending_` |
-| `FV2-C7` | `isShut()` and `isImpassable()` were the same predicate, with no caller for the first | `_pending_` |
-| `FV2-C10` | "Each code fix was mutation-confirmed" covered a shell script that has no test | `_pending_` |
+| `FV2-C1` | The cross's colour clause is unreachable in production, and its comment claimed otherwise | `f59fa45e` |
+| `FV2-C5` | `battery.sh`'s numeric arm matched on the first character, so a malformed count skipped the warning added for it | `f59fa45e` |
+| `FV2-C7` | `isShut()` and `isImpassable()` were the same predicate, with no caller for the first | `f59fa45e` |
+| `FV2-C10` | "Each code fix was mutation-confirmed" covered a shell script that has no test | `f59fa45e` |
 
 The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
 `IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with
