@@ -1613,8 +1613,13 @@ public final class HomeStaging
     }
 
     /**
-     * Whether a locomotive may come to rest on a station - length, exclusions, and the reversibility a
-     * terminus demands.
+     * Whether a locomotive may come to rest on a station - its length, and the station's exclusions.
+     *
+     * NOT reversibility, whatever this line said until 2026-09-01: it went on listing "the
+     * reversibility a terminus demands" after the clause enforcing it had been deleted from the body
+     * directly below, in the same commit, on Adam's ruling.  A summary that survives the rule it
+     * summarises is worse than none - it is what the next reader trusts instead of reading on - and
+     * the very next comment in this method already explains why the rule went.
      */
     private static boolean canRest(Locomotive loc, Point at)
     {
@@ -1679,9 +1684,23 @@ public final class HomeStaging
         Deque<Point> queue = new ArrayDeque<>();
         Deque<Boolean> turned = new ArrayDeque<>();
 
-        seen.add(from.getUniqueId() + "/false");
+        // THE SAME STARTING STATE firstClearRoute USES (D24-B1, 2026-09-01).
+        //
+        // This began at `false` unconditionally while firstClearRoute begins at `from.isReversing()` -
+        // "a train already standing on a reversing point sets off turned".  The two searches answer the
+        // same question about the same railway and disagreed about where the train starts.
+        //
+        // In a heuristic that would not matter.  It matters here because this one is what plan()
+        // consults to call a locomotive UNREACHABLE, and unreachable is the only thing this class
+        // claims to have PROVED: the outcome is IMPOSSIBLE, no moves are offered, and the operator is
+        // sent to look at track that is perfectly fine.  A proof may only use rules the runtime
+        // actually enforces - being stricter than the executor does not make it safe, it makes it
+        // wrong.  So the strictness went, rather than being copied into firstClearRoute.
+        boolean startsTurned = from.isReversing();
+
+        seen.add(from.getUniqueId() + "/" + startsTurned);
         queue.add(from);
-        turned.add(false);
+        turned.add(startsTurned);
 
         while (!queue.isEmpty())
         {

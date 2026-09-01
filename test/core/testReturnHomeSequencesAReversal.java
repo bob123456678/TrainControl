@@ -319,6 +319,73 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
+     * A train STANDING on a reversing point has already turned, and the reachability proof must agree.
+     *
+     * D24-B1.  Two searches in this class ask whether a route turns the train round, and they disagreed
+     * about where the train starts.  `firstClearRoute` sets off with `turned = from.isReversing()` -
+     * "a train already standing on a reversing point sets off turned" - and `connected` set off with
+     * `false`, always.
+     *
+     * That difference would be harmless in a heuristic.  It is not harmless here, because `connected`
+     * is what `plan()` consults to declare a locomotive UNREACHABLE, and unreachable is the one thing
+     * this class claims to have PROVED: the outcome is IMPOSSIBLE, no moves are offered, and the
+     * operator is told to go and look at the track.  A proof may only use rules the runtime actually
+     * enforces.  Being stricter than the executor does not make it safe, it makes it wrong - it refuses
+     * a journey `firstClearRoute` would have routed and blames the railway.
+     *
+     * The shape is the smallest one that separates them: the train is standing on the reversing point
+     * itself, so the turn is behind it before it moves, and nothing further along the way turns
+     * anything.  Start it anywhere else and both searches agree.
+     *
+     * MUTATION: putting `turned.add(false)` back in `connected` fails this - the outcome goes to
+     * IMPOSSIBLE with the locomotive named as blocked.
+     */
+    @Test
+    public void testATrainStandingOnAReversingPointHasAlreadyTurned() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RH pad", true, Integer.toString(FEEDBACK_BASE));
+        layout.createPoint("RH berth", true, Integer.toString(FEEDBACK_BASE + 1));
+
+        // Where it stands turns trains; where it is going demands one, and there is nothing in between.
+        layout.getPoint("RH pad").setReversing(true);
+        layout.getPoint("RH berth").setTerminus(true);
+
+        layout.createEdge("RH pad", "RH berth");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            // It cannot turn itself, so it has to arrive already turned - which it is.
+            loc.setReversible(false);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RH pad", false),
+                "could not place the locomotive");
+
+            layout.setHomeLocomotive("RH berth", loc.getName());
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
+                "the planner PROVED a journey impossible that its own route search would have taken - "
+                + "the train is standing on the reversing point, so it is already turned.  Blocked: "
+                + plan.getBlocked());
+
+            assertTrue(plan.isPossible(),
+                "and it should have a plan: one move, off the pad and into the berth.  Outcome "
+                + plan.getOutcome());
+        }
+        finally
+        {
+            loc.setReversible(was);
+        }
+    }
+
+    /**
      * A start, a reversing point, and a berth beyond it - with one switch that has to be thrown
      * differently for each leg.
      */

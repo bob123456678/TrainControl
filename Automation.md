@@ -116,7 +116,7 @@ A terminus is a station where the track stops. A train arriving must leave the w
 
 Name T as before, and then set `Changing Direction` on it so that a train arriving may turn round.
 
-This tells TrainControl two things. First, a train that arrives here will need to change direction before it can leave — so the locomotive must actually be able to do that. Second, and less obviously: a reversing point is treated as somewhere to **park**, not somewhere to route trains through. Autonomy running on its own will not send trains there and will not drive them through it on the way somewhere else.
+This tells TrainControl two things. First, a train that arrives here will need to change direction before it can leave. Autonomy only sends a locomotive that can reverse on its own; you can still send one that cannot, if the route turns it round on the way so that it arrives already facing out. Second, and less obviously: a reversing point is treated as somewhere to **park**, not somewhere to route trains through. Autonomy running on its own will not send trains there and will not drive them through it on the way somewhere else.
 
 That is deliberate, and it is worth understanding because it surprises people. Reversing points are usually parking tracks and shunting necks, and trains being parked at random in the shunting neck — or stopping and changing direction in the middle of a run — is not operation, it is chaos. So autonomy leaves them alone.
 

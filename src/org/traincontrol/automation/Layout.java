@@ -2334,6 +2334,30 @@ public class Layout
 
             if (ending.isTerminus() || ending.isReversing())
             {
+                // KNOWN UNSOUND, AND WAITING ON A RULING (D24-B2 / SVN-B2 / RTG-B2, 2026-09-01).
+                //
+                // Two things about this sum are wrong, and both were found by the review round that
+                // read it the day it was written.  Neither is fixed here, because both fixes change
+                // what the railway does and that is Adam's to decide - see the deferred item.
+                //
+                //   1. `getLength() > 0` DOES NOT MEAN "MEASURED".  On a diagram-built graph an edge's
+                //      length is GraphReducer.sumLength, which adds `Math.max(0, tileLength)` over the
+                //      tiles it spans - so one measured tile out of five gives a positive length, and
+                //      this loop reads that as a measured segment.  The total then under-counts and
+                //      refuses trains that fit: exactly the failure the paragraph above says was
+                //      removed, one layer further down.
+                //
+                //   2. IT MAY BE THE WRONG SEGMENTS.  This adds the whole path.  Where the train backs
+                //      in after turning round part way along, the track it comes to rest on is only the
+                //      part after the reversal, so a 10 + 1 + 2 path admits an eight-unit train into
+                //      three units of room.  Adam's own words were "sum the track segments leading up
+                //      to it", which is what this does; whether "it" means the reversal or the berth is
+                //      the question that has to go back to him.
+                //
+                // Left as it is on purpose.  It is inert on his railway today (six tiles carry lengths
+                // at all), and a guard that is occasionally over-strict on a measured layout is a
+                // nuisance, while changing what counts as measured would move tail-clearing on live
+                // track.  What is not acceptable is a reader trusting this loop, so it says so here.
                 int room = 0;
 
                 boolean measured = true;
@@ -6072,6 +6096,20 @@ public class Layout
 
     /**
      * Brings every protecting signal into line with where the trains actually are.
+     *
+     * **NOTHING IN THE APPLICATION CALLS THIS, AND NOTHING SHOULD (Adam, OB-166, 2026-09-01).**
+     *
+     * "Signals should only be touched when a route activates."  All three production call sites -
+     * runLocomotives, the timetable, and executePath - were removed on that ruling, and the only
+     * callers left are the tests that exist to prove they stay removed; one of them says outright that
+     * putting any of the three back fails it.  It is kept public because those tests drive it directly,
+     * and because a railway whose signals have drifted is a thing somebody may one day want a button
+     * for - but it is not wired to anything, and wiring it back is the defect Adam saw on his own
+     * layout.
+     *
+     * Everything below this line is the reasoning for the calls that USED to exist, kept because it
+     * explains what the method does and what it would cost to reintroduce.  Read it as history: the
+     * paragraph beginning "Called when a run begins" described three call sites that are gone.
      *
      * Called when a run begins, and forgetting the memo is not enough on its own.  While nothing is
      * running the refresh is silent - trains are placed and taken off by hand then, and driving real

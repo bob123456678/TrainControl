@@ -207,9 +207,22 @@ public class testTrainTailClearsEdges
             + "distance behind - so the rule is tested here and something else decides what actually "
             + "happens on the railway");
 
-        assertTrue(source.contains("loc.getTrainLength()"),
-            "the clearing loop no longer passes the locomotive's length, so the rule compares "
-            + "against nothing and every edge is handed back the moment the head leaves it");
+        // THE WHOLE CALL, not the argument on its own (TCX-A3, 2026-09-01).
+        //
+        // This asked whether `loc.getTrainLength()` appears anywhere in Layout.java at all.  It did,
+        // here, and on 2026-09-01 it started appearing somewhere else as well: the reversal-room rule
+        // added that day reads the same length twice, at what are now lines 2330 and 2352.  From that
+        // moment the assertion could not fail - the clearing loop's argument could be deleted outright
+        // and the other file's two occurrences would keep it green.
+        //
+        // A whole-file `contains` is only a test while the string is unique to the thing it is about,
+        // and nothing warns when it stops being.  Anchored on the call now, the way the assertion above
+        // it already was.
+        assertTrue(source.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],\n"
+            + "                                loc.getTrainLength())"),
+            "the clearing loop no longer passes the locomotive's length to tailHasProvablyPassed, so "
+            + "the rule compares against nothing and every edge is handed back the moment the head "
+            + "leaves it");
     }
 
     /**
