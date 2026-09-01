@@ -273,13 +273,24 @@ public class TileAnnotation
         /**
          * Whether nothing can use this square at all (OB-167).
          *
-         * Switched off AND not a station: nothing stops there because it is not a place, and nothing
-         * goes through because it is off. A switched-off STATION is still a place - somebody turned it
-         * off and can turn it back on - so it keeps the station mark and only loses its colour.
+         * SWITCHED OFF IS ENOUGH.  This also required the square not to be a station, on the reasoning
+         * that a switched-off station is still a place somebody can switch back on - and that made the
+         * cross almost impossible to see, which is what Adam reported: "I still don't reliably see X's
+         * in the nothing can pass mode."
+         *
+         * The editor settles it.  Out of service is the third of three radio buttons - stop here, pass
+         * through, neither - and its handler deliberately LEAVES the station flag as it found it, "so
+         * switching back returns it to what it was rather than to a default nobody chose".  So a
+         * square in that mode is usually still flagged a station, and a rule that excluded stations
+         * excluded nearly every square the mode is used on.
+         *
+         * What the mode means is the whole of what this asks: nothing stops here and nothing passes
+         * through.  Whether it would be a station if it were switched on is a fact about the past and
+         * the future, not about now.
          */
         public boolean isImpassable()
         {
-            return shut && !station;
+            return shut;
         }
 
         public boolean isNamed()

@@ -1042,10 +1042,22 @@ public class testAutonomyDiagramMonitor
             + "should read as an absence beside the shapes that are present, and it covered " + shut
             + " pixels against " + open);
 
-        // And a station that is switched off keeps its station mark.
-        assertEquals(inkOf(badgeAt(true, true, true, size)), inkOf(badgeAt(true, true, false, size)),
-            "a switched-off STATION lost its station mark. It is still a place - somebody turned it "
-            + "off and can turn it back on - and only its colour should say so");
+        // AND A STATION THAT IS SWITCHED OFF IS A CROSS TOO, as of 2026-09-01.
+        //
+        // This asserted the opposite - that a switched-off station kept its station mark - and it made
+        // the cross nearly impossible to meet.  The editor's "out of service" is the third of three
+        // radio buttons and its handler deliberately leaves the station flag alone, so a square in
+        // that mode is usually still flagged a station: a rule that excluded stations excluded almost
+        // every square the mode is used on.  Adam: "I still don't reliably see X's in the nothing can
+        // pass mode."
+        assertNotEquals(inkOf(badgeAt(true, true, true, size)), inkOf(badgeAt(true, true, false, size)),
+            "a station that is switched off draws the same mark as one in use, so the one state where "
+            + "nothing can stop or pass looks exactly like the ordinary one");
+
+        assertEquals(inkOf(badgeAt(true, true, true, size)), inkOf(badgeAt(false, true, true, size)),
+            "a switched-off station and a switched-off passing point draw differently, though nothing "
+            + "can use either - the mark is about the square being out of use, not about what it "
+            + "would be if it were in use");
     }
 
     /**
