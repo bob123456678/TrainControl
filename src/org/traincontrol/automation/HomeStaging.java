@@ -944,9 +944,16 @@ public final class HomeStaging
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
         int expansions = 0;
 
-        // A train already standing on a reversing point sets off turned; anywhere else it does not.
+        // A train already standing somewhere that turns trains sets off turned; anywhere else it does
+        // not.  Terminus as well as reversing point (FV2-B2): `executePath` turns the train on arrival
+        // at either, in one statement, so both leave it facing back the way it came.
+        //
+        // `connected` seeds itself the same way, and it has to: it is the proof of impossibility and
+        // this is the route search, so a journey this one would take must never be one that one calls
+        // impossible.
         queue.add(new Candidate(from, new LinkedList<Edge>(),
-            new HashMap<String, Accessory.accessorySetting>(), from.isReversing()));
+            new HashMap<String, Accessory.accessorySetting>(),
+            from.isReversing() || from.isTerminus()));
 
         while (!queue.isEmpty() && expansions++ < ROUTE_SEARCH_LIMIT)
         {
@@ -1696,7 +1703,20 @@ public final class HomeStaging
         // sent to look at track that is perfectly fine.  A proof may only use rules the runtime
         // actually enforces - being stricter than the executor does not make it safe, it makes it
         // wrong.  So the strictness went, rather than being copied into firstClearRoute.
-        boolean startsTurned = from.isReversing();
+        // A TERMINUS TURNS A TRAIN TOO (FV2-B2, the same day).
+        //
+        // The first version of this said `from.isReversing()` alone, copying firstClearRoute's seed
+        // exactly - and firstClearRoute was already missing the other half.  `executePath` turns the
+        // train on arrival at EITHER: `if (end.isTerminus() || end.isReversing())`, one statement, one
+        // switchDirection.  So "a train already standing on a reversing point sets off turned" is true
+        // of a terminus word for word.
+        //
+        // This is the limb that reaches real track.  On a diagram-derived graph a reversing Point is
+        // not a destination, so plan()'s own !isDestination() clause catches that locomotive before
+        // this search is consulted at all - but a terminus copy IS emitted as a destination, and Adam's
+        // parking berths are termini.  A train parked in a berth, homed at another berth, with nothing
+        // between them that turns anything, is the case that gets here, and it was proved impossible.
+        boolean startsTurned = from.isReversing() || from.isTerminus();
 
         seen.add(from.getUniqueId() + "/" + startsTurned);
         queue.add(from);

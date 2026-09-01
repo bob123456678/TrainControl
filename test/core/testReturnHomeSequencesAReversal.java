@@ -386,6 +386,63 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
+     * ...and so has one standing on a TERMINUS, which is the half that bites on the real railway.
+     *
+     * FV2-B2.  The runtime turns a train on arrival at a terminus or a reversing point, in one
+     * statement - `if (end.isTerminus() || end.isReversing())` in `executePath`.  So "a train already
+     * standing on a reversing point sets off turned" is true of a terminus word for word, and the first
+     * fix for D24-B1 took only the reversing limb.
+     *
+     * **This is the reachable one.**  On a diagram-derived graph a reversing Point is not a destination,
+     * so `plan()`'s own `!isDestination()` clause catches that locomotive before `connected` is asked at
+     * all.  A terminus copy IS emitted as a destination, and Adam's parking berths are termini - so the
+     * case that survives to reach this code is a train parked in a berth, homed at another berth, with
+     * nothing between them that turns anything.
+     *
+     * MUTATION: dropping `|| from.isTerminus()` from `connected` fails this and leaves the reversing
+     * test above green.
+     */
+    @Test
+    public void testATrainStandingOnATerminusHasAlreadyTurnedToo() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RH berth A", true, Integer.toString(FEEDBACK_BASE));
+        layout.createPoint("RH berth B", true, Integer.toString(FEEDBACK_BASE + 1));
+
+        // Two berths, and nothing on the way between them that turns a train.
+        layout.getPoint("RH berth A").setTerminus(true);
+        layout.getPoint("RH berth B").setTerminus(true);
+
+        layout.createEdge("RH berth A", "RH berth B");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            loc.setReversible(false);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RH berth A", false),
+                "could not place the locomotive");
+
+            layout.setHomeLocomotive("RH berth B", loc.getName());
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
+                "a train parked in a terminus berth, homed at another one, was PROVED unable to get "
+                + "there - but it was turned round as it arrived where it stands, exactly as it would "
+                + "be on arrival at the berth it is going to.  Blocked: " + plan.getBlocked());
+        }
+        finally
+        {
+            loc.setReversible(was);
+        }
+    }
+
+    /**
      * A start, a reversing point, and a berth beyond it - with one switch that has to be thrown
      * differently for each leg.
      */

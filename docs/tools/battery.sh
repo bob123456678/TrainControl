@@ -98,9 +98,23 @@ PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object
 
 RUNNING_JVMS=$(powershell.exe -NoProfile -Command "$PROBE" 2>/dev/null | tr -d '\r\n ')
 
+# The arms test the WHOLE answer, not its first character (FV2-C5).  "12abc" matched [0-9]* here, the
+# -gt then failed with its diagnostic going to /dev/null, and the run proceeded without the warning this
+# very case exists for - the malformed half of the thing the warning was added for.
 case "$RUNNING_JVMS" in
-    [0-9]*)
-        if [ "$RUNNING_JVMS" -gt 0 ] 2>/dev/null
+    ''|*[!0-9]*)
+        # SAID OUT LOUD RATHER THAN SWALLOWED.  The probe failing and the probe answering "none" used
+        # to be the same silence, so a broken check read exactly like a clear one - which is the shape
+        # of every false result this harness has produced.  The run still goes ahead, because a guard
+        # that stops all work when its own probe breaks is worse than the hazard, and the lock below
+        # is still standing; but nobody reads this output believing the check ran.
+        echo "*** WARNING: could not count running test JVMs - this check DID NOT RUN ***"
+        echo ""
+        echo "PowerShell returned: '$RUNNING_JVMS'.  Make sure nothing else is running tests."
+        echo ""
+        ;;
+    *)
+        if [ "$RUNNING_JVMS" -gt 0 ]
         then
             echo "*** TEST JVMS ARE ALREADY RUNNING ($RUNNING_JVMS of them) ***"
             echo ""
@@ -113,17 +127,6 @@ case "$RUNNING_JVMS" in
             echo "this check clears itself when those processes exit."
             exit 2
         fi
-        ;;
-    *)
-        # SAID OUT LOUD RATHER THAN SWALLOWED.  The probe failing and the probe answering "none" used
-        # to be the same silence, so a broken check read exactly like a clear one - which is the shape
-        # of every false result this harness has produced.  The run still goes ahead, because a guard
-        # that stops all work when its own probe breaks is worse than the hazard, and the lock below
-        # is still standing; but nobody reads this output believing the check ran.
-        echo "*** WARNING: could not count running test JVMs - this check DID NOT RUN ***"
-        echo ""
-        echo "PowerShell returned: '$RUNNING_JVMS'.  Make sure nothing else is running tests."
-        echo ""
         ;;
 esac
 

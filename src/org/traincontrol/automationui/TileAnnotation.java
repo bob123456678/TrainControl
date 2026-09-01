@@ -263,14 +263,6 @@ public class TileAnnotation
         }
 
         /**
-         * Whether the square is switched off.
-         */
-        public boolean isShut()
-        {
-            return shut;
-        }
-
-        /**
          * Whether nothing can use this square at all (OB-167).
          *
          * SWITCHED OFF IS ENOUGH.  This also required the square not to be a station, on the reasoning
@@ -1520,6 +1512,17 @@ public class TileAnnotation
         // these two constants exist precisely so that somebody who has read one view can read the
         // other; a switched-off square that was blue here and orange there is the disagreement they
         // were declared to prevent.
+        //
+        // BUT IT CHANGES NOTHING TODAY, and the paragraph above overstated it (FV2-C1).  Both places
+        // in src/ that build a Badge compute `parking` as `active == false || !autoDestination` and
+        // `shut` as `active == false` - so `shut` already implies `parking`, and a switched-off square
+        // was ALWAYS orange.  There is no configuration reachable through the editor where this clause
+        // decides the colour.
+        //
+        // It stays because the two flags are independent in the type even where they are not in those
+        // two callers: a Badge built any other way - by a test, or by a third site added later - must
+        // still read as orange when nothing can pass, and the test pins that.  What was actually wrong
+        // with the cross, and what Adam was seeing, is the SHAPE rule below, not this.
         //
         // Colour and shape stay separate questions, as they are everywhere else on this diagram: the
         // colour says whether autonomy uses the square, the mark says what the square does.  Parking

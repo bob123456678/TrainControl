@@ -24,6 +24,7 @@ waiting on Adam.
 | `R28` | [Regression against v2.8.1](2026-09-01-regression-vs-2.8.1-review.md) | Opus | 1 A, 2 B, 5 C, 12 D |
 | `TCX` | [The test suite](2026-09-01-test-suite-review.md) | Opus | 4 A, 13 B, 9 C, 9 D |
 | `CMT` | [Comments and documentation](2026-09-01-comments-and-docs-review.md) | Sonnet | 4 B, 3 C, 4 D |
+| `FV2` | [Validation of the fixes](2026-09-01-fix-validation.md) | Opus | 1 A, 3 B, 10 C, 5 D |
 
 **The round did not run to completion.** The highest-severity findings were validated and either fixed
 or deferred; a large tail of C items is recorded in the individual documents and has not been
@@ -38,11 +39,14 @@ rule 1 forbidding it in bold. Every test JVM and battery shell was killed, all s
 and the live layout was fingerprinted and backed up. No damage was done *during* the fan-out: the
 `cs2_sample_layout/` diff-stat was identical before and after.
 
-Two mechanical facts made it possible, and both are now fixed (`b00ac0c1`, `a33b9ae1`):
+Two mechanical facts made it possible, and both are now fixed (`b00ac0c1`, `a33b9ae1`, corrected again
+in the validation pass - see below):
 
-- `battery.sh`'s lock refused only when `kill -0` **succeeded**, so any pid it could not resolve across
-  MSYS sessions fell through and started a second run. It now asks Windows, which can see across
-  sessions, and keeps alive / dead / unanswerable apart instead of collapsing them into two.
+- `battery.sh`'s lock refused only when `kill -0` **succeeded**, so any pid it could not resolve fell
+  through and started a second run. **The first correction for this was itself a regression** - see
+  `FV2-A1` in the validation pass: it asked Windows about `$$`, which is the MSYS pid, so every LIVE
+  battery read as stale. The lock holds `/proc/$$/winpid` now and accepts either liveness answer, and
+  that was verified against a genuinely running battery rather than a hand-written value.
 - `ps -W` in this Git Bash cannot see `java.exe` at all. It reported zero while two batteries ran.
 
 And the guard written that morning was itself wrong twice, found by this round as `SVN-A2`: it matched
@@ -67,9 +71,20 @@ telling agents not to run tests, but never let that be the only thing between th
 | `CMT-B4` | Both user documents still said only a reversible locomotive can reach a terminus | `9f1b80c8` |
 | `OB-167` follow-up | A switched-off square drew a cross only when it was not a station — which is nearly never | `e9435bfc` |
 | `RTG-B1` | The five-train test hand-started trains onto inactive destinations, stranding two of them before the run began | `7d8543f3` |
+| `FV2-A1` | **The first `battery.sh` lock correction was a regression** - it asked Windows about an MSYS pid, so every live battery read as stale | `_pending_` |
+| `FV2-B2` | `D24-B1` was half-fixed: the runtime turns a train at a terminus as well as a reversing point, and the terminus limb is the one that reaches Adam's berths | `_pending_` |
+| `FV2-B3` | The `CMT-B4` doc fix invented two rules nothing enforces, including the reverse of the tier doctrine | `c9153aaf` |
+| `FV2-B1`, `FV2-C2` | The deferral said the reversal-room guard was inert on Adam's railway; it is live, on two reversal squares, one of which is a home | `c9153aaf` |
+| `FV2-C1` | The cross's colour clause is unreachable in production, and its comment claimed otherwise | `_pending_` |
+| `FV2-C5` | `battery.sh`'s numeric arm matched on the first character, so a malformed count skipped the warning added for it | `_pending_` |
+| `FV2-C7` | `isShut()` and `isImpassable()` were the same predicate, with no caller for the first | `_pending_` |
+| `FV2-C10` | "Each code fix was mutation-confirmed" covered a shell script that has no test | `_pending_` |
 
-Each code fix was seen failing first and mutation-confirmed. `D24-B1`'s test fails with `IMPOSSIBLE`
-before the fix; `TCX-A3`'s fails when the clearing loop's argument is replaced with `0`.
+The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
+`IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with
+`0`. **`SVN-A2` is a shell script and has no test** - its branches were exercised by hand, which is a
+weaker claim, and `FV2-A1` below shows how much weaker: the first attempt was exercised with a value
+the script never writes, and shipped a regression.
 
 ---
 
@@ -228,6 +243,33 @@ log line is about conditions, not commands.
   configuration the builder derived**, and the editor panel offers no export of its own — `grep` finds no
   export action in `AutonomyEditorPanel.java`. Whether that matters depends on whether you ever want the
   derived JSON out of the application; say if you do and it is a small addition.
+
+---
+
+## What the validation pass changed about this document
+
+`FV2` was run over the fixes above rather than over the code, and it found one A and three Bs — every
+one of them in **my own work**, not in the reviewers'. That is the useful part of the round and it is
+recorded rather than smoothed over:
+
+- **`FV2-A1`** — the `battery.sh` lock correction shipped a regression. `echo $$ > "$LOCK"` writes the
+  MSYS pid and the new check asked Windows about it, so a **live** battery read as stale and the script
+  announced "clearing a stale lock" before starting a second run inside the compile window the lock
+  exists to cover. It passed its test because the test wrote a Windows pid into the lock by hand — the
+  branch was verified with a value the script never writes.
+- **`FV2-B2`** — `D24-B1` was listed as fixed when only one of its two limbs was. `executePath` turns a
+  train on arrival at a terminus **or** a reversing point, in one statement; the terminus limb is the
+  one that reaches real track, because parking berths are termini and terminus copies are emitted as
+  destinations.
+- **`FV2-B3`** and **`FV2-B1`/`FV2-C2`** — two claims of mine that were simply false, one in the user
+  documentation and one in this index.
+
+Four withdrawals or partial withdrawals now stand in this round: `TCX-B7` (already compensated),
+`R28-B2` (partly), and `FV2`'s corrections to `FX2-3`'s stated reasoning.
+
+**The lesson worth keeping**, since it is the second time this round: *verify the integration, not the
+branch.* Both the concurrency guard and its correction were "tested" by exercising a code path with a
+value the real caller never produces.
 
 ---
 
