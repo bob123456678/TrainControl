@@ -2,7 +2,7 @@
 
 **Status:** open
 
-**All six deferred items were answered by Adam on 2026-09-01 and are closed or withdrawn - see "Adam s rulings" below.  What remains open is the C-level tail, and one structural question about the parking berths.**
+**All six deferred items were answered by Adam on 2026-09-01 and are closed or withdrawn - see "Adam's rulings" below.  What remains open is the C-level tail, and one structural question about the parking berths.**
 
 **Prefix for citing this index elsewhere:** `FX2`
 
