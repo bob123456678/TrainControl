@@ -3448,6 +3448,95 @@ public class testHomeStaging
     }
 
     /**
+     * A train that cannot reverse must BACK INTO its home, or it has no way there (Adam, 2026-08-31).
+     *
+     * "For homing: I would also like non-reversing trains to have to back in.  I know this is complex,
+     * but we need to manage it."
+     *
+     * The runtime already insists: `Layout.isPathClear` refuses a terminus to a locomotive that cannot
+     * reverse unless the path passes a reversing point, so the train arrives already turned and leaves
+     * forwards. The planner did not know that rule. Its reachability scan asks `connected`, a plain
+     * breadth-first search, so a home reachable only by a route with no reversing point read as
+     * reachable - and the plan it then produced was one the runtime would refuse.
+     *
+     * The two ends of this test are the same railway with one flag moved, which is what makes it about
+     * the rule rather than about the fixture.
+     *
+     * MUTATION: asking `connected` without the reversal requirement passes the first half and fails
+     * the second.
+     */
+    @Test
+    public void testATrainThatCannotReverseHasToBackIntoItsHome() throws Exception
+    {
+        Layout layout = load(straightToATerminus());
+
+        Point berth = layout.getPoint("HS T");
+        Point middle = layout.getPoint("HS M");
+
+        assertTrue(berth.isTerminus(), "the fixture did not take: the home must be a terminus");
+
+        final boolean wasReversible = loc(LOC_A).isReversible();
+
+        try
+        {
+            loc(LOC_A).setReversible(false);
+
+            layout.setHomeLocomotive("HS T", LOC_A);
+
+            assertTrue(layout.moveLocomotive(LOC_A, "HS S", false),
+                "could not place the locomotive away from its home");
+
+            // NOTHING TURNS IT ROUND on the way, so it would have to back out of the berth to leave -
+            // which is what "cannot reverse" forbids.
+            assertFalse(middle.isReversing(), "the fixture did not take: nothing may reverse it yet");
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(),
+                HomeStaging.Outcome.IMPOSSIBLE,
+                "the planner offered to send a train that cannot reverse into a terminus by a route "
+                + "that never turns it round. The runtime refuses exactly that, so the plan could "
+                + "only have failed on its first move");
+
+            // The same railway, with a reversing point on the way: now it can back in.
+            middle.setReversing(true);
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "with a reversing point on the way the train arrives already turned - it backs in and "
+                + "leaves forwards - and the planner still called it impossible");
+        }
+        finally
+        {
+            middle.setReversing(false);
+            loc(LOC_A).setReversible(wasReversible);
+            layout.setHomeLocomotive("HS T", null);
+            layout.moveLocomotive(null, "HS S", false);
+        }
+    }
+
+    /**
+     * A start, a square in the middle that can be made to reverse trains, and a terminus beyond it.
+     */
+    private static String straightToATerminus()
+    {
+        return json("{'points': ["
+            + square("HS S", 7, null, true, null) + ","
+            + square("HS M", 8, null, true, null) + ","
+            + terminus("HS T", 9)
+            + "],'edges': ["
+            + edge("HS S", "HS M") + "," + edge("HS M", "HS S") + ","
+            + edge("HS M", "HS T") + "," + edge("HS T", "HS M")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * A station square a train can only leave by reversing.
+     */
+    private static String terminus(String name, int s88Offset)
+    {
+        return "{'name': '" + name + "', 'station': true, 's88': " + (S88_BASE + s88Offset)
+            + ", 'terminus': true}";
+    }
+
+    /**
      * One platform drawn as two Points, and a siding to send a train to.
      *
      * Both copies are stations and both carry the same sensor, which is what a split platform IS on

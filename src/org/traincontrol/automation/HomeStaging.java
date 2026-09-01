@@ -1486,6 +1486,22 @@ public final class HomeStaging
     }
 
     /**
+     * Whether this locomotive has to be turned round before it may end here.
+     *
+     * The runtime's rule, asked in the planner's own terms: a terminus is a place a train can only
+     * leave by reversing, so one that cannot reverse must arrive already turned - it backs in past a
+     * reversing point and leaves forwards.
+     *
+     * @param loc the locomotive
+     * @param at where it would come to rest
+     * @return true when a reversing point has to lie on the way
+     */
+    private static boolean mustBackIn(Locomotive loc, Point at)
+    {
+        return at != null && at.isTerminus() && loc != null && !loc.isReversible();
+    }
+
+    /**
      * Whether this locomotive could get home at all, over any copy of the home square (2026-08-31).
      *
      * Deliberately one method rather than two. Resting and reaching are separate questions, and asking
@@ -1506,7 +1522,7 @@ public final class HomeStaging
 
         if (home.getBlock() == null || home.getLayout() == null)
         {
-            return canRest(loc, home) && connected(from, home);
+            return canRest(loc, home) && connected(from, home, mustBackIn(loc, home));
         }
 
         boolean sawACopy = false;
@@ -1517,11 +1533,11 @@ public final class HomeStaging
 
             sawACopy = true;
 
-            if (canRest(loc, copy) && connected(from, copy)) return true;
+            if (canRest(loc, copy) && connected(from, copy, mustBackIn(loc, copy))) return true;
         }
 
         // A block naming no copies cannot be answered by looking at them.
-        return sawACopy ? false : (canRest(loc, home) && connected(from, home));
+        return sawACopy ? false : (canRest(loc, home) && connected(from, home, mustBackIn(loc, home)));
     }
 
     /**
@@ -1592,29 +1608,70 @@ public final class HomeStaging
      */
     private boolean connected(Point from, Point to)
     {
+        return connected(from, to, false);
+    }
+
+    /**
+     * As above, but able to insist the way there turns the train round (Adam, 2026-08-31).
+     *
+     * "For homing: I would also like non-reversing trains to have to back in."
+     *
+     * The runtime already insists - `Layout.isPathClear` refuses a terminus to a locomotive that
+     * cannot reverse unless the path passes a reversing point, so it arrives already turned, backs in,
+     * and leaves forwards. This search did not know that rule, so a home reachable only by a route
+     * with no reversing point read as reachable and the planner produced a plan the runtime would
+     * refuse on its first move.
+     *
+     * **A square reached with a reversal behind it and the same square reached without one are two
+     * different states**, and that is the whole of what makes this more than a flag: a route that
+     * turns the train may be longer, so arriving somewhere the short way must not close it off. They
+     * are queued and remembered separately.
+     *
+     * @param from where the train is
+     * @param to where it is going
+     * @param mustReverse whether a reversing point has to lie on the way
+     * @return true when such a route exists, ignoring who is standing where
+     */
+    private boolean connected(Point from, Point to, boolean mustReverse)
+    {
         if (from == null || to == null) return false;
         if (from.equals(to)) return true;
 
-        Set<Point> seen = new HashSet<>();
+        // Keyed by the pair, not by the Point - see the javadoc.
+        Set<String> seen = new HashSet<>();
         Deque<Point> queue = new ArrayDeque<>();
+        Deque<Boolean> turned = new ArrayDeque<>();
 
-        seen.add(from);
+        seen.add(from.getUniqueId() + "/false");
         queue.add(from);
+        turned.add(false);
 
         while (!queue.isEmpty())
         {
             Point at = queue.poll();
+            boolean reversed = turned.poll();
 
             for (Edge e : this.layout.getNeighbors(at))
             {
                 Point next = e.getEnd();
 
-                if (seen.contains(next)) continue;
-                if (next.equals(to)) return true;
+                // The same test reversesAlongTheWay applies, asked one step at a time: a reversing
+                // point at the END of an edge on the route is what turns the train.
+                boolean now = reversed || next.isReversing();
 
-                seen.add(next);
+                // Arriving is checked before the visited set, as it always was - the destination may
+                // be a terminus, which is a place this search will not travel THROUGH.
+                if (next.equals(to) && (!mustReverse || now)) return true;
 
-                if (!next.isTerminus()) queue.add(next);
+                if (seen.contains(next.getUniqueId() + "/" + now)) continue;
+
+                seen.add(next.getUniqueId() + "/" + now);
+
+                if (!next.isTerminus())
+                {
+                    queue.add(next);
+                    turned.add(now);
+                }
             }
         }
 

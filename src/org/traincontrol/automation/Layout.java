@@ -1646,8 +1646,21 @@ public class Layout
         final java.util.concurrent.atomic.AtomicInteger started =
             new java.util.concurrent.atomic.AtomicInteger();
 
-        // The signals are about a railway that has since been arranged by hand
-        refreshAllProtectingSignals();
+        // NO SIGNAL SWEEP HERE ANY MORE (Adam, 2026-08-31: "Signals should only be touched when a
+        // route activates").
+        //
+        // This swept every protecting signal on the layout from current occupancy the moment a run
+        // began, so that a train placed by hand while nothing was running still got its platform
+        // protected.  The cost is that it also RELEASES: an empty protected platform is commanded
+        // green, so a signal a route had left red went green because some unrelated train started
+        // moving.  That is OB-166, and he saw it on his own railway.
+        //
+        // Removed from all three doors that had it, so manual and automatic still behave identically -
+        // which is his earlier rule, quoted in executePath: "The same thing should happen in manual
+        // operation vs auto - the same switches and signals set, and guards applied."
+        //
+        // What this gives up is AU-B7: a train placed by hand at a protected platform keeps whatever
+        // aspect its signal already showed until a route activates over it.
         
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
@@ -4431,8 +4444,7 @@ public class Layout
             this.running = true;
         }
 
-        // See runLocomotives: the signals are about a railway that has since been arranged by hand
-        refreshAllProtectingSignals();
+        // See runLocomotives: no sweep, on Adam's ruling of 2026-08-31.
         
         // Written from an entry's own thread, read here once they have all finished
         final AtomicBoolean abandoned = new AtomicBoolean(false);
@@ -5038,7 +5050,9 @@ public class Layout
         // here, two dispatches starting together could both increment before either read, both see two,
         // and neither sweep - which is the very defect the sweep was added for, restored by the move
         // that fixed a different one.
-        if (firstOnTheRailway && !isAutoRunning()) refreshAllProtectingSignals();
+        // The sweep that stood here is gone (OB-166).  See runLocomotives for the whole reason; the
+        // short of it is that it released as well as protected, so a hand dispatch drove every empty
+        // protected platform green - including signals a route had set.
 
         boolean result;
         

@@ -285,7 +285,75 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A hand dispatch protects the platform of a train that is just standing there (AU-B7).
+     * A dispatch does not touch a signal it has nothing to do with (OB-166).
+     *
+     * Adam: "when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to
+     * green unnecessarily."  And his ruling on it: "Signals should only be touched when a route
+     * activates."
+     *
+     * Measured on his own layout before this was written. Signal 64 protects TopMainR2's two copies
+     * and nothing else; both were empty; and the only route between the two points he named does not
+     * command it. What moved it was the sweep - `refreshAllProtectingSignals` re-commanding every
+     * protecting signal on the layout from current occupancy, the first time anything is dispatched
+     * by hand. An empty platform is commanded GREEN, so a signal he had red went green because a train
+     * elsewhere started moving.
+     *
+     * The platform here is EMPTY and the signal is RED, which is the state a route leaves behind. A
+     * dispatch between two other points is not a route activating over this signal, so nothing may
+     * command it.
+     *
+     * MUTATION: putting any of the three refreshAllProtectingSignals() calls back fails this.
+     */
+    @Test
+    public void testADispatchLeavesAnUnrelatedSignalAlone() throws Exception
+    {
+        for (String feedback : new String[] {"47451", "47452", "47453"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        layout.createPoint("UN A", true, "47451");
+        layout.createPoint("UN B", true, "47452");
+        layout.createPoint("UN P", true, "47453");
+
+        // The protected platform has nothing to do with the dispatch, and nobody is standing on it.
+        layout.getPoint("UN P").setProtectingSignal(far.getName());
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("UN A", "UN B"));
+
+        Locomotive driving = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(driving.getName(), "UN A", false),
+            "precondition - the train to dispatch must be placed");
+
+        // RED, as a route would have left it.
+        far.setState(Accessory.accessorySetting.RED);
+
+        assertTrue(far.isSwitched(), "precondition - the signal must start red");
+
+        assertTrue(layout.executePath(path, driving, 30, null),
+            "the hand dispatch did not complete, so nothing below tests anything");
+
+        assertTrue(far.isSwitched(),
+            "a dispatch between two other points drove a signal from red to green. It protects an "
+            + "empty platform that this route never touches - and a signal is only to be touched when "
+            + "a route activates over it, not because some train somewhere started moving");
+
+        layout.getPoint("UN A").setLocomotive(null);
+        layout.getPoint("UN B").setLocomotive(null);
+    }
+
+    /**
+     * A hand dispatch does NOT touch the signal of a train standing elsewhere (AU-B7, reversed).
      *
      * The test next door covers the DESTINATION of the dispatched train. This one is about a train
      * nobody dispatched, and it is the case the sweep exists for.
@@ -310,7 +378,7 @@ public class testBothProtectingSignalsAreThrown
      * MUTATION: removing the `refreshAllProtectingSignals()` call from `executePath` fails this test.
      */
     @Test
-    public void testAHandDispatchProtectsAPlatformSomebodyIsAlreadyStandingIn() throws Exception
+    public void testAHandDispatchLeavesAStandingTrainsSignalAlone() throws Exception
     {
         // Its OWN addresses (validation pass, C-3).
         //
@@ -370,11 +438,20 @@ public class testBothProtectingSignalsAreThrown
         assertTrue(layout.executePath(path, driving, 30, null),
             "the hand dispatch did not complete, so nothing below tests anything");
 
-        assertTrue(far.isSwitched(),
-            "a train was standing at a protected platform, somebody hand-dispatched a DIFFERENT train, "
-            + "and the platform stayed GREEN for the whole dispatch.  Starting autonomy or executing a "
-            + "timetable sweeps the signals at that moment for exactly this reason; the right-click "
-            + "dispatch became a run and did not inherit the sweep");
+        // NOT PROTECTED, as of Adam's ruling of 2026-08-31: "Signals should only be touched when a
+        // route activates."
+        //
+        // This required the opposite, and AU-B7 is the finding it came from. The sweep that made it
+        // true also RELEASED - it commanded every empty protected platform green - so a hand dispatch
+        // drove signals a route had set, which is OB-166. He ruled the sweep out, and this is what
+        // that costs: a train placed by hand at a protected platform keeps whatever aspect its signal
+        // already showed until a route activates over it.
+        //
+        // Kept and inverted rather than deleted, because the cost is the interesting part of the
+        // record.
+        assertFalse(far.isSwitched(),
+            "a dispatch between two other points commanded the signal of a platform it has nothing "
+            + "to do with - which is the sweep coming back");
 
         layout.getPoint("HD A").setLocomotive(null);
         layout.getPoint("HD B").setLocomotive(null);
