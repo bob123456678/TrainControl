@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**All six deferred items were answered by Adam on 2026-09-01 and are closed or withdrawn - see "Adam s rulings" below.  What remains open is the C-level tail, and one structural question about the parking berths.**
+
 **Prefix for citing this index elsewhere:** `FX2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `828b1ff1` / `b00ac0c1`, by six reviewers running in
@@ -127,7 +129,42 @@ the script never writes, and shipped a regression.
 
 ---
 
-## Deferred — needs Adam
+## Adam's rulings, 2026-09-01
+
+All six were put to him and all six are answered. What follows each heading below is the record of the
+question; this table is what was decided.
+
+| | Ruling | State |
+|---|---|---|
+| `FX2-1` | "Just restore the previously committed version" — then, on being told his own BottomMainB fix was 90 seconds old and in the same files, "you can restore and then patch that tile". Restored; the two tile removals re-applied. He then asked for the four parking berths to be converted to `autoDestination: false` — "reapply, and yes" — which is now done for all four, including the two that had never had it. | **Closed** |
+| `FX2-2` | **"Emergency stop should never conflict or prompt."** `conflictingAccessoryAndReason` now answers "nothing to confirm" for any route carrying a stop, which removes the question at every door at once; the midway check is gated the same way so it cannot reappear seconds later. Conflicting accessories are still skipped and logged, as at the s88 door. | **Closed** (`6f729027`) |
+| `FX2-3` | "OK" — the reversal-room rule is accepted as it stands. The partial-tile-sum unsoundness stays recorded in the comment at the guard rather than being silently carried. | **Closed, accepted as-is** |
+| `FX2-4` | "Fixed, it should now be possible to leave in both directions." Confirmed: nothing is stranded at BottomMainB any more. See below for what is left. | **Closed** |
+| `FX2-5` | "OK — let's add a warning about this." The delete confirmation now counts the routes whose COMMANDS drive the locomotive and says they go with it. | **Closed** (`6f729027`) |
+| `FX2-6` | **Withdrawn, and I was wrong.** Adam: "isn't that available via the advanced Json export in the autonomy menu?" It is. `AutonomyMenu.java:326` carries an ungated **Export…** that writes the loaded configuration, and `:455` an `isDebug()`-gated **Export Raw Graph as JSON (Advanced Users)** whose own message calls it a diagnostic. `R28` and I had both looked only at the old main-window button and at `AutonomyViewerPanel`; neither of us opened `AutonomyMenu`. | **Withdrawn** |
+
+### What is left of `FX2-4`
+
+`testTheParkingBerthsGetTheirTrainsBack` still fails, and the reason has narrowed twice in one evening:
+
+1. **BottomMainB had no way out** — fixed by Adam, on the layout.
+2. **Every parking berth was out of service** — fixed by converting all four to `autoDestination: false`.
+   All three parked trains now hand-start, where before only two did.
+3. **What remains is not a defect proof and not a search budget.** The outcome is now `NO_PLAN_FOUND`
+   with an **empty blocked list** — nothing is claimed unreachable. And it is not the planner running
+   out of room: with `SEARCH_LIMIT` at 40× and `SEARCH_BUDGET_MS` at 20× it still finds no
+   arrangement.
+
+So the obstacle is structural. Three non-reversible locomotives are homed at terminus berths, and each
+must therefore arrive **already turned** — which needs a reversing point on the approach to each berth.
+Whether the track offers one is a question about the railway rather than about this code, and it is the
+next thing to look at.
+
+---
+
+## The questions as they were put
+
+
 
 Each of these is a decision about what the railway should do, not a defect with an obvious fix.
 
@@ -270,7 +307,16 @@ log line is about conditions, not commands.
   tile geometry. In the graph shipped here, 69 edges carry commands naming 15 distinct signals. Whether
   the `protectingSignal` mechanism is meant to replace that is your call; the migration does not convert
   them.
-- `Export Current Configuration`. **`R28-B2` overstates this and is partly withdrawn.** The button is
+- `Export Current Configuration`. **`R28-B2` is WITHDRAWN IN FULL.** Adam, on being asked: *"isn't that
+  available via the advanced Json export in the autonomy menu?"* It is. `AutonomyMenu.java:326` carries
+  an ungated **Export…** that writes out the loaded configuration, and `:455` an `isDebug()`-gated
+  **Export Raw Graph as JSON (Advanced Users)** whose own message calls it a diagnostic — *"what the
+  diagram compiles to, not a file autonomy runs from."* `R28` and I had both looked only at the old
+  main-window `exportJSON` button and at `AutonomyViewerPanel`, and neither of us opened `AutonomyMenu`.
+  The capability was never lost.
+
+  What follows is the partial withdrawal written before he pointed that out, kept because a reviewer
+  being wrong twice about the same thing is the calibration data this folder exists to hold. The button is
   hidden on a diagram-derived layout (`mountAutonomyControls` at `TrainControlUI.java:3430`) but it is
   *not* unreachable in the other configuration: on a JSON-era layout it is made visible at `:3394` and
   enabled at `:19922` once a validation succeeds, and again at `:19066` when autonomy stops. So the

@@ -42,11 +42,16 @@ public class testEveryTestIsInTheBattery
          "probes the network for a real Central Station and cannot pass without one"},
 
         {"testTheParkingBerthsGetTheirTrainsBack",
-         "FAILS on a measured defect, not on itself: BottomMainB (eastbound, reverse) is a "
-         + "destination with ZERO outgoing edges on the operator's derived graph, so a train that "
-         + "reverses there can never leave and Return Home is right to answer IMPOSSIBLE. Adam: "
-         + "\"it should be easily possible to get back\". Put it back in the battery the moment that "
-         + "is fixed - it is the arrangement he asked for and it is meant to pass"},
+         "FAILS on the railway rather than on itself, and the reason has narrowed twice. It was "
+         + "BottomMainB having ZERO outgoing edges, which Adam fixed on 2026-09-01 by opening two "
+         + "tiles both ways; it was then every parking berth being out of service, which he fixed "
+         + "by converting all four to autoDestination=false. Now all three parked trains hand-start "
+         + "and the outcome is NO_PLAN_FOUND with an EMPTY blocked list - nothing is proved "
+         + "unreachable any more, the planner simply finds no arrangement. NOT a search budget: with "
+         + "SEARCH_LIMIT at 40x and SEARCH_BUDGET_MS at 20x it still finds none. So the remaining "
+         + "obstacle is structural - three non-reversible trains homed at terminus berths must each "
+         + "arrive already turned, and that needs a reversing point on the approach to each berth. "
+         + "Whether his track offers one is a question about the railway, not about this code"},
     };
 
     @Test
