@@ -400,7 +400,15 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
 also specify `"terminus" : true`.  For the corresponding locomotive, set `"reversible" : true`, and it will automatically change direction after arrival.
 
-**Full autonomy only chooses a terminus for a reversible locomotive.  You can still send a non-reversible one there yourself, and Return Home will still bring one home to one** - as of 2026-09-01, on Adam's ruling that "in manual operation, non reversing trains must be able to back into a terminus if the graph makes that possible.  Otherwise we'd need a third kind of station."  Such a train has to arrive already turned, so the route to the terminus must pass a reversing point on the way; if the graph offers no such route, the destination is simply not offered.  If any track lengths are set, a train longer than the room leading up to the reversal is refused as well, so that it cannot end up standing across the switch behind the berth.
+**Full autonomy only chooses a terminus for a reversible locomotive**, as of 2026-09-01, on Adam's ruling that "in manual operation, non reversing trains must be able to back into a terminus if the graph makes that possible.  Otherwise we'd need a third kind of station."
+
+The three tiers differ, and it is worth knowing which is which:
+
+* **By hand, from the route menu:** a terminus is offered to any locomotive, and running the route is not refused on reversibility grounds.  If a non-reversible train would have no way out once it is in there, that is your judgement to make, not the application's.
+* **In full autonomy:** a terminus is never chosen for a locomotive that cannot reverse.
+* **Returning home:** a non-reversible locomotive may be homed at a terminus, and the planner insists the way there turns it round first - so it backs in and can leave forwards.  Where no such route exists, homing reports that locomotive as unable to reach its home rather than setting off and failing.
+
+Separately, a train can be refused for being too long to back in: **only when every segment of the approach has a recorded length**, and their total is shorter than the train.  A single unmeasured segment on the way makes the total unknowable and nothing is judged - so setting one length is not enough to arm it.
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
 If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.

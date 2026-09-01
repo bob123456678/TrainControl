@@ -13301,9 +13301,21 @@ in its comment instead.
 
 **Written:** 2026-09-01
 
-**Open the autonomy editor on your own layout and count the notices.** Measured from your configuration,
-only **6 tiles carry a length at all**, all on the Test page, and there are about **23 squares where
-trains turn round** - so expect roughly 20 notices asking for track lengths.
+**First, the thing to check before anything else.** Two of the six tiles that carry a recorded length
+are reversal squares on `1 - Main`, so this guard is already live on your railway:
+
+| Tile | Name | Room | |
+|---|---|---|---|
+| `5:20,13` | `BottomMainB` | 4 | `canReverse` |
+| `5:20,14` | `BottomMainC` | 2 | `canReverse`, and **EN57-947's home** |
+
+**If EN57-947's train length is more than 2, Return Home is being refused into its own home by this
+guard right now.** Check that first: set the locomotive's autonomy train length, press Return Home, and
+see whether it is offered. (An earlier version of this test said the guard was inert because the six
+measured tiles were "all on the Test page". They are not - `setup.json` maps page id 5 to `1 - Main`.)
+
+**Then open the autonomy editor and count the notices.** There are about **23 squares where trains turn
+round** and six measured tiles in total, so expect roughly 20 notices asking for track lengths.
 
 1. **Is that a useful prompt or a wall of noise?** If it is noise, say so and I will scope it - to one
    page, to squares with a home on them, or to nothing until you ask for it.

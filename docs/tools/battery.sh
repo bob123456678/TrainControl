@@ -143,6 +143,28 @@ esac
 # now distinguished rather than collapsed into two: alive refuses, dead proceeds quietly, and an
 # unanswerable probe says so and proceeds, because a battery nobody can run is worse than this hazard
 # and the guard above is still standing.
+# AND THE LOCK MUST HOLD A PID WINDOWS HAS HEARD OF (FV2-A1, corrected within hours).
+#
+# The first version of this asked `Get-Process -Id` about `$$`, which is the MSYS pid - a number
+# Windows does not use.  Measured on this machine: a live shell is msys 42457 / winpid 17552, and
+# `Get-Process -Id 42457` answers "no" while `-Id 17552` answers "yes".  So every LIVE battery read as
+# stale, the script announced "clearing a stale lock" and started a second run inside the compile
+# window the lock exists to cover.  It was strictly worse than the `kill -0` it replaced.
+#
+# It passed its test because the test wrote a Windows pid into the lock by hand and watched the check
+# refuse.  That exercised the branch with a value the script never writes - the check was verified and
+# the integration was not.
+#
+# So the lock holds the winpid now, and liveness is "either test says alive": Get-Process for the
+# Windows number, and kill -0 as well, which does work across MSYS sessions - the earlier claim that
+# it does not was also wrong.  Two tests that can only ever say "still running" cannot combine into a
+# false "stale", which is the only direction that costs anything here.
+LOCK_PID=$(cat /proc/$$/winpid 2>/dev/null | tr -d '\r\n ')
+
+case "$LOCK_PID" in
+    ''|*[!0-9]*) LOCK_PID=$$ ;;
+esac
+
 STALE=""
 
 if [ -f "$LOCK" ]
@@ -152,6 +174,12 @@ then
     ALIVE=$(powershell.exe -NoProfile -Command \
         "if (Get-Process -Id $HELD -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
         2>/dev/null | tr -d '\r\n ')
+
+    # The second opinion, for a lock written before this change or by a shell with no /proc.
+    if [ "$ALIVE" != "yes" ] && kill -0 "$HELD" 2>/dev/null
+    then
+        ALIVE="yes"
+    fi
 
     case "$ALIVE" in
         yes)
@@ -178,7 +206,8 @@ then
     echo ""
 fi
 
-echo $$ > "$LOCK"
+# The winpid, not $$ - see FV2-A1 above.  A lock Windows cannot resolve reads as stale.
+echo "$LOCK_PID" > "$LOCK"
 
 BUILD="$S/build/battery-$$"
 

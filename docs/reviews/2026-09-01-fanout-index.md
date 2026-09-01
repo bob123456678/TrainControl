@@ -151,10 +151,28 @@ Two independent problems, both recorded in a comment at the guard:
    path admits an eight-unit train into three units of room. And a path that reverses mid-way but ends at
    an ordinary station gets no check at all.
 
-Related: on your railway only **6 tiles carry a length**, all on the Test page, so the guard is inert
-today while the new editor notice will fire on roughly 20 squares (`TCX-B2`, `TCX-B3`, `SVN-B1`).
-Following the notice as written does not arm the guard, because the notice asks for the reversing
-square's length and the guard needs the whole run-in.
+**Correction, and it makes this more urgent than first written (`FV2-B1`, `FV2-C2`).** This item and
+`MT-248` originally said the guard was "inert on his railway — six tiles carry lengths, all on the Test
+page". Both halves were wrong, and checking the configuration settles it:
+
+- `setup.json`'s page table maps page id **5 to `1 - Main`**, not to `5 - Test`. All six measured tiles
+  are on your main page.
+- **Two of the six are reversal squares themselves** — the ones the guard governs:
+
+| Tile | Name | Recorded length | Flags |
+|---|---|---|---|
+| `5:20,13` | `BottomMainB` | 4 | `canReverse: true` |
+| `5:20,14` | `BottomMainC` | 2 | `canReverse: true`, `home: EN57-947` |
+
+An edge landing on one of these is fully measured, so `measured` stays true and the guard really does
+run, with room 4 and room 2 respectively. **It is live behaviour on your railway today, not a dormant
+rule** — and `BottomMainC`, with two units of room, is EN57-947's assigned home. If that locomotive's
+train length exceeds 2, Return Home is being refused there by this guard right now. That is worth
+checking before the release, and it is the first thing to look at in `MT-248`.
+
+The rest still holds: the editor notice will fire on roughly 20 squares, and following it does not arm
+the guard, because the notice asks for the reversing square's length while the guard needs the whole
+run-in measured (`TCX-B2`, `TCX-B3`, `SVN-B1`).
 
 ### FX2-4. A destination with no way out (`RTG-A1`)
 
