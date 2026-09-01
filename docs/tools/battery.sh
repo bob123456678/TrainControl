@@ -64,6 +64,42 @@ CP="$(cat "$S/cp.txt")"
 # run, they no longer compile over each other, and the failure is slow rather than wrong.
 LOCK="$S/battery.lock"
 
+# THE LOCK IS A PROXY.  THE TEST JVMS ARE THE HAZARD (2026-09-01).
+#
+# On 2026-09-01 two batteries ran at once anyway, with the lock in place and working as written.  The
+# reason is the liveness test below: it refuses only when `kill -0` SUCCEEDS, so every answer that is
+# not a clear yes - a pid held by a different shell session, a recycled pid, anything MSYS cannot see
+# across process trees - falls through and starts a second run.  A guard that fails open on the
+# dangerous side is not a guard, and this one failed open in exactly the case it exists for.
+#
+# So the pid is no longer the only question.  What is actually dangerous is a second set of test JVMs -
+# they share the Java Preferences store, which is what LayoutSandbox redirects, and two runs redirecting
+# it at once is how the operator's real railway was damaged on 2026-08-30.  That is a thing this script
+# can LOOK FOR rather than infer, and it is true whether the other run came from a battery, from one.sh,
+# from an IDE, or from somebody else's session entirely - none of which the lock can see.
+#
+# It also needs no clearing by hand, which is the property the comment above insists on: the check
+# stops being true the moment the other JVMs exit.  Nobody has to delete anything to get past it, so
+# nobody learns to delete things to get past it.
+RUNNING_JVMS=$(powershell.exe -NoProfile -Command \
+    "(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' } | Measure-Object).Count" \
+    2>/dev/null | tr -d '\r\n ')
+
+case "$RUNNING_JVMS" in
+    ''|0|*[!0-9]*) ;;
+    *)
+        echo "*** TEST JVMS ARE ALREADY RUNNING ($RUNNING_JVMS of them) ***"
+        echo ""
+        echo "Something else is running tests right now - another battery, a one.sh, or an IDE."
+        echo "Test JVMs share the Java Preferences store that LayoutSandbox redirects, and two runs"
+        echo "redirecting it at once is how the real railway was damaged on 2026-08-30."
+        echo ""
+        echo "Wait for it to finish, or stop it, and run this again.  Nothing needs deleting: this"
+        echo "check clears itself when those processes exit."
+        exit 2
+        ;;
+esac
+
 if [ -f "$LOCK" ] && kill -0 "$(cat "$LOCK" 2>/dev/null)" 2>/dev/null
 then
     echo "*** ANOTHER BATTERY IS ALREADY RUNNING (pid $(cat "$LOCK")) ***"
