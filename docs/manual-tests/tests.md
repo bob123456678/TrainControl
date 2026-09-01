@@ -27,9 +27,13 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
 | [MT-245](#mt-245) | 2026-08-31 | A home on a main-line platform, and it is still there next start | needs test | DAY-B3 |
 | [MT-246](#mt-246) | 2026-08-31 | Signals stay put, and a non-reversing train backs into its home | needs test | OB-166 |
+| [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | needs test | FX2-2, SVN-A4 |
+| [MT-248](#mt-248) | 2026-09-01 | The length notice and the guard it is meant to arm | needs test | FX2-3, TCX-B2 |
+| [MT-249](#mt-249) | 2026-09-01 | A parking berth a train cannot get out of | needs test | FX2-4, RTG-A1 |
+| [MT-250](#mt-250) | 2026-09-01 | Homing a train that is already standing on a reversing point | needs test | D24-B1 |
 
-Everything else - 231 of 242 - is **fixed validated** and needs nothing from you unless the
-area changes again.
+Everything else - 231 of 250 - is **fixed validated** and needs nothing from you unless the
+area changes again.  (7 superseded, 3 fixed but not yet validated.)
 
 ---
 
@@ -13257,5 +13261,112 @@ behind it and the same square reached without one are two different states. A tu
 longer, so arriving somewhere the short way must not close off the long one.
 
 *Run against a build after commit fbc19cb9.*
+
+---
+
+
+<a id="mt-247"></a>
+
+### MT-247 - 2026-09-01 - A refused route still cuts the power at the two human doors
+
+**Disposition:** needs test
+**From:** FX2-2, SVN-A4
+
+**Written:** 2026-09-01
+
+**This is a question for you as much as a test.** When you decline the conflict dialog, the code has to
+decide what you meant, and today the answer differs depending on which door the route came through.
+
+1. **Make a route** that does two things: switches an accessory, and carries an emergency stop.
+2. **Get that accessory onto a locked path** - start autonomy and let a train take a route over it, or
+   park a train at a protected platform.
+3. **Fire the route from the route list**, and again by clicking its tile on the track diagram. Each
+   should ask "...would switch X, which is on track a train is running over. Run it anyway?"
+4. **Click Cancel.** Today the whole route is discarded, so **the power stays on**. The same route fired
+   by an s88 trigger skips only the switch and still cuts the power.
+
+**The question: does Cancel mean "don't throw that switch" or "don't run this route at all"?** If the
+first, I will make both doors skip the accessories and run the rest, matching the s88 door and the model
+layer, and reword the dialog to say so. If the second, the s88 door is the odd one out and I will say so
+in its comment instead.
+
+---
+
+<a id="mt-248"></a>
+
+### MT-248 - 2026-09-01 - The length notice and the guard it is meant to arm
+
+**Disposition:** needs test
+**From:** FX2-3, TCX-B2, SVN-B1
+
+**Written:** 2026-09-01
+
+**Open the autonomy editor on your own layout and count the notices.** Measured from your configuration,
+only **6 tiles carry a length at all**, all on the Test page, and there are about **23 squares where
+trains turn round** - so expect roughly 20 notices asking for track lengths.
+
+1. **Is that a useful prompt or a wall of noise?** If it is noise, say so and I will scope it - to one
+   page, to squares with a home on them, or to nothing until you ask for it.
+2. **Set the length on one square the notice names.** The notice should go.
+3. **Now try to back a long train into that berth.** It will not be refused, and that is the defect:
+   the notice asks for the reversing square's length, and the guard needs every segment of the run-in
+   measured before it will judge anything. Following the notice as written does not arm the guard.
+
+**And the question behind it:** when you said *"sum the track segments leading up to it"*, did **it**
+mean the reversal, or the berth the train ends up standing in? The two give different answers as soon as
+the train turns round part way along - a 10 + 1 + 2 approach admits an eight-unit train into three units
+of real room under the first reading. I have not changed the rule; the guard now carries a comment
+saying it is unsound until you rule.
+
+---
+
+<a id="mt-249"></a>
+
+### MT-249 - 2026-09-01 - A parking berth a train cannot get out of
+
+**Disposition:** needs test
+**From:** FX2-4, RTG-A1
+
+**Written:** 2026-09-01
+
+**BottomMainB (eastbound, reverse) is a destination with no outgoing edges**, on your layout as it
+stands. The builder emits a may-turn station's turning copy as a terminus destination, and its edge loop
+can trace no way back against the main line's one-way arrows. Autonomy has no way-out check, so it will
+choose that berth for a reversible train.
+
+1. **Start full autonomy** and let it run until something is sent to BottomMainB. Does the train get
+   stuck there?
+2. **Try the same by hand** from the right-click menu, then try to send it anywhere else.
+3. **Compare with BottomMainC**, whose equivalent copy does have an exit - that is the difference.
+
+**The question: should the builder refuse to emit a turning copy it cannot trace a way out of, or should
+the editor warn about one?** You have already ruled that "it should be easily possible to get back"; this
+is about which layer enforces it. This is also why `testTheParkingBerthsGetTheirTrainsBack` is still
+failing and still excluded from the battery.
+
+---
+
+<a id="mt-250"></a>
+
+### MT-250 - 2026-09-01 - Homing a train that is already standing on a reversing point
+
+**Disposition:** needs test
+**From:** D24-B1
+
+**Written:** 2026-09-01
+
+Return Home used to declare this **impossible** rather than simply doing it. Two searches inside the
+planner disagreed about whether a train standing on a reversing point has already turned; the one that
+said no was the one used to prove impossibility, so it refused journeys the other would have routed and
+blamed the track.
+
+1. **Put a non-reversible locomotive on a reversing point** - a headshunt or a shunting neck.
+2. **Give it a home at a parking terminus** reachable from there.
+3. **Press Return Home.** It should plan and go. Before the fix it reported that the locomotive could not
+   reach its home at all.
+4. **Check the ordinary case still behaves**: the same locomotive standing on a plain platform, homed at
+   a terminus with no reversing point anywhere on the way, should still be reported as impossible.
+
+*Run against a build after commit 9f1b80c8.*
 
 ---
