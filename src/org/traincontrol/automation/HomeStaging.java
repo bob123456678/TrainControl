@@ -1565,11 +1565,22 @@ public final class HomeStaging
      */
     private static boolean canRest(Locomotive loc, Point at)
     {
+        // NOT THE TERMINUS RULE (Adam, 2026-08-31).
+        //
+        // This ended `&& (!at.isTerminus() || loc.isReversible())`, which refused a parking berth as a
+        // home to any train that cannot reverse - and most parking berths are terminuses, so on his
+        // railway it refused most of the places a train is actually parked.  EN57-947 could not be
+        // homed at TunnelLeftPark for this reason and no other.
+        //
+        // Whether the train can GET there is a question about a ROUTE: a path that passes a reversing
+        // point turns it, so it backs in and leaves forwards.  Layout.isPathClear asks that, where
+        // there is a path to ask about.  Asking again here, with none, could only guess - and a guard
+        // that nothing can satisfy is worse than no guard.
+
         return at.isDestination()
             && at.isActive()
             && !at.getExcludedLocs().contains(loc)
-            && at.validateTrainLength(loc)
-            && (!at.isTerminus() || loc.isReversible());
+            && at.validateTrainLength(loc);
     }
 
     /**

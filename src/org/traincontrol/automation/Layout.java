@@ -2264,14 +2264,25 @@ public class Layout
             return false;
         }
 
-        // Only reversible locomotives can go to a terminus.
+        // Only reversible locomotives can go to a terminus - UNLESS THE WAY THERE TURNS THEM ROUND.
         //
-        // Deliberately still the only reversal rule at THIS tier.  A first attempt put the reversing
-        // points here too, which is the wrong height: isPathClear is what every tier passes through,
-        // so it took the manual route menu and the staging planner with it - and a test guarding
-        // exactly that had been written years before, with a javadoc warning against this change.
-        // Full autonomy's own rule lives where full autonomy chooses, in reversesAlongTheWay.
-        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
+        // Adam, 2026-08-31: "trains should be allowed to back into terminuses if they are not
+        // reversible (that's why we have the reversing point at feedback 2013)."  A train that passes
+        // a reversing point arrives at the terminus already turned - it backs in - and leaves
+        // forwards, so it never runs backwards out of anywhere and the objection does not apply.
+        //
+        // Measured on his layout before this changed: TunnelLeftPark is a terminus and the two
+        // locomotives he named are both non-reversible, so this clause alone refused the manual send
+        // AND the home.  Most parking berths on a real railway are terminuses.
+        //
+        // The note that stood here said putting reversing points at this tier was the wrong height,
+        // because isPathClear takes the manual route menu and the staging planner with it.  That is
+        // still what happens and it is now what is wanted: it is the manual menu and the staging
+        // planner he is asking for.  The rule itself is unchanged where there is no reversing point,
+        // which is what testATerminusIsRefusedToATrainThatCannotReverse still pins - its fixture has
+        // none.  Full autonomy's own choosing rule is separate and stays where it is.
+        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible()
+            && !this.reversesAlongTheWay(path))
         {
             logPathError(
                 loc,

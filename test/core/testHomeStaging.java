@@ -1202,12 +1202,19 @@ public class testHomeStaging
             d.setMaxTrainLength(0);
             assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "and no limit means no objection");
 
-            // A terminus it cannot reverse out of
+            // A terminus, which is NOT a reason to refuse a home (Adam, 2026-08-31).
+            //
+            // These two lines asserted the opposite until then: "a non-reversible locomotive cannot
+            // end at a terminus". His ruling - "trains should be allowed to back into terminuses if
+            // they are not reversible (that's why we have the reversing point at feedback 2013)" -
+            // moves that question to the route, where isPathClear can see whether the way there turns
+            // the train round. Most parking berths are terminuses.
             loc(LOC_A).setReversible(false);
             d.setTerminus(true);
-            assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "a non-reversible locomotive cannot end at a terminus");
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d),
+                "a parking berth was refused as a home to a train that cannot reverse");
             loc(LOC_A).setReversible(true);
-            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "but a reversible one can");
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "and a reversible one, as always");
             d.setTerminus(false);
 
             // Switched off
@@ -2222,7 +2229,7 @@ public class testHomeStaging
      * so a planner that offered it would be planning a move the runtime then rejects.
      */
     @Test
-    public void testANonReversibleLocomotiveIsNotParkedAtATerminus() throws Exception
+    public void testANonReversibleLocomotiveMayBeParkedAtATerminus() throws Exception
     {
         Layout layout = load(triangleWithTerminus(LOC_A, LOC_B));
 
@@ -2235,8 +2242,19 @@ public class testHomeStaging
         {
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-            assertFalse(plan.isPossible(),
-                "neither train can rest at the terminus, so the swap cannot be unwound: " + plan);
+            // POSSIBLE, as of Adam's ruling of 2026-08-31.
+            //
+            // This required the opposite - that neither train could rest at the terminus, so the swap
+            // could not be unwound. His ruling: "trains should be allowed to back into terminuses if
+            // they are not reversible (that's why we have the reversing point at feedback 2013)."
+            //
+            // A terminus is no longer a reason a train cannot LIVE somewhere. Whether it can get there
+            // is a question about a route, and Layout.isPathClear asks it - a path that passes a
+            // reversing point turns the train, so it backs in and leaves forwards.
+            assertTrue(plan.isPossible(),
+                "a terminus was treated as somewhere a non-reversible train can never rest, which is "
+                + "the rule Adam reversed: most parking berths are terminuses, and a train backs into "
+                + "one past a reversing point. " + plan);
         }
         finally
         {
@@ -3225,84 +3243,78 @@ public class testHomeStaging
         {
             // 3. And usability is asked of the SQUARE.
             //
-            // A platform whose two copies are a turning berth and a through road is a good home for a
-            // locomotive that cannot reverse: it stands on the through road. Asking the copy that
-            // happens to carry the home would refuse it.
-            loc(LOC_A).setReversible(false);
-
-            p2.setTerminus(true);
+            // A station's exclusion list is a property of one graph Point, so one copy of a platform
+            // can bar a locomotive that the other welcomes. The home is the square, so what matters is
+            // whether it can stand on any copy - asking only the copy that happens to carry the home
+            // would refuse it, and which copy carries it is AutonomyBuilder's choice, not the
+            // operator's.
+            //
+            // Exclusions rather than a turning berth, which is what this used before: a terminus
+            // stopped disqualifying anybody on 2026-08-31, when Adam ruled that a train may back into
+            // one past a reversing point.
+            p2.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
 
             assertTrue(HomeStaging.canBeHome(loc(LOC_A), p2),
-                "a home was refused to a locomotive that cannot reverse because the copy carrying it "
-                + "is a turning berth - while the other copy of the same platform is a through road "
-                + "it can stand on perfectly well");
+                "a home was refused because the copy carrying it bars this locomotive - while the "
+                + "other copy of the same platform welcomes it perfectly well");
 
-            // And the control: when EVERY copy is a turning berth, the refusal is real.
-            p1.setTerminus(true);
+            // And the control: when EVERY copy bars it, the refusal is real.
+            p1.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
 
             assertFalse(HomeStaging.canBeHome(loc(LOC_A), p2),
-                "a platform every copy of which must be reversed out of was offered to a locomotive "
-                + "that cannot reverse, so the square rule has stopped refusing anything");
+                "a platform every copy of which bars this locomotive was offered to it anyway, so "
+                + "the square rule has stopped refusing anything");
         }
         finally
         {
-            p1.setTerminus(false);
-            p2.setTerminus(false);
+            p1.setExcludedLocs(new HashSet<Locomotive>());
+            p2.setExcludedLocs(new HashSet<Locomotive>());
             loc(LOC_A).setReversible(wasReversible);
             layout.setHomeLocomotive("HS P2", null);
         }
     }
 
     /**
-     * A turning berth does not stop the platform beside it being home (Adam, 2026-08-31).
+     * The planner agrees with the door that accepted the home (2026-08-31).
      *
-     * His instruction: "make sure terminus work in the home logic, since the reversal happens on
-     * arrival."
-     *
-     * A terminus is a place a train has to turn round, and it turns round as it ARRIVES - so whether
-     * a locomotive may end there is a question about that locomotive, and `canRest` refuses a terminus
-     * to one that cannot reverse. Correct, and it stays.
-     *
-     * What was wrong is which square it was asked about. Since the home became the square, a platform
-     * drawn as a turning berth and a through road is a home for anything: a locomotive that cannot
-     * reverse arrives on the through road and never turns. `whyNotAHome` learned that, so the editor
-     * offers it - and the planner's reachability scan did not, so Return Home answered IMPOSSIBLE for
-     * a home the application had just accepted.
+     * The home is the square, and `whyNotAHome` asks the square whether a train can stand there. The
+     * planner's own reachability scan did not - it asked `canRest` and `connected` about the one copy
+     * that happens to carry the home, which is AutonomyBuilder's choice and not the operator's. So the
+     * editor accepted a home that Return Home then called IMPOSSIBLE.
      *
      * **Both halves have to be asked of the same copy.** Resting and reaching are separate questions,
      * and a copy you can rest at but cannot reach, plus a different copy you can reach but cannot rest
      * at, would pass two separate scans between them while being no home at all.
      *
+     * The disqualifier here is an exclusion list, which is a property of one graph Point. It used to
+     * be a turning berth; a terminus stopped disqualifying anybody on 2026-08-31, when Adam ruled that
+     * a train that cannot reverse may back into one past a reversing point.
+     *
      * MUTATION: asking `canRest(l, home)` about the stored copy fails the first assertion; asking
      * resting and connectedness over copies independently rather than per copy fails the second.
      */
     @Test
-    public void testATurningBerthDoesNotBlockTheThroughRoadBesideIt() throws Exception
+    public void testThePlannerAgreesWithTheDoorThatAcceptedTheHome() throws Exception
     {
         Layout layout = load(twoStationCopiesAndASiding());
 
-        Point berth = layout.getPoint("HS P2");
-        Point through = layout.getPoint("HS P1");
+        Point barred = layout.getPoint("HS P2");
+        Point open = layout.getPoint("HS P1");
 
-        assertEquals(berth.getBlock(), through.getBlock(),
+        assertEquals(barred.getBlock(), open.getBlock(),
             "the fixture did not take: these must be two copies of one platform");
-
-        final boolean wasReversible = loc(LOC_A).isReversible();
 
         try
         {
-            loc(LOC_A).setReversible(false);
-
-            // The home is on the copy a train has to back out of; the train cannot back out.
-            berth.setTerminus(true);
+            // The home is on the copy that bars this locomotive; the other copy welcomes it.
+            barred.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
 
             layout.setHomeLocomotive("HS P2", LOC_A);
 
-            // And it is standing somewhere else.
             assertTrue(layout.moveLocomotive(LOC_A, "HS Q", false),
                 "could not place the locomotive away from its home");
 
-            assertNull(HomeStaging.whyNotAHome(loc(LOC_A), berth),
+            assertNull(HomeStaging.whyNotAHome(loc(LOC_A), barred),
                 "precondition: the editor must accept this home, or the planner agreeing with it "
                 + "proves nothing");
 
@@ -3310,21 +3322,20 @@ public class testHomeStaging
             // placed - and the reachability scan that decides IMPOSSIBLE lives in plan().
             assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
                 "Return Home called a home impossible that the application had just accepted. The "
-                + "home is the platform, and the locomotive can stand on its through road - it only "
-                + "cannot use the turning berth, which is one copy of the same square");
+                + "home is the platform, and the locomotive is welcome on its other copy");
 
-            // AND THE CONTROL: when every copy must be backed out of, it really is impossible.
-            through.setTerminus(true);
+            // AND THE CONTROL: when every copy bars it, it really is impossible.
+            open.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
 
-            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
-                "a platform every copy of which must be reversed out of was accepted for a "
-                + "locomotive that cannot reverse, so the rule has stopped refusing anything");
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(),
+                HomeStaging.Outcome.IMPOSSIBLE,
+                "a platform every copy of which bars this locomotive was accepted for it, so the "
+                + "rule has stopped refusing anything");
         }
         finally
         {
-            through.setTerminus(false);
-            berth.setTerminus(false);
-            loc(LOC_A).setReversible(wasReversible);
+            open.setExcludedLocs(new HashSet<Locomotive>());
+            barred.setExcludedLocs(new HashSet<Locomotive>());
             layout.setHomeLocomotive("HS P2", null);
             layout.moveLocomotive(null, "HS Q", false);
         }
@@ -3387,6 +3398,52 @@ public class testHomeStaging
         {
             layout.setHomeLocomotive("HS P1", null);
             layout.setHomeLocomotive("HS P2", null);
+        }
+    }
+
+    /**
+     * A terminus can be a home for a train that cannot reverse (Adam, 2026-08-31).
+     *
+     * "trains should be allowed to back into terminuses if they are not reversible (that's why we have
+     * the reversing point at feedback 2013)."
+     *
+     * `canRest` refused a terminus to a non-reversible locomotive, which is why EN57-947 could not be
+     * homed at TunnelLeftPark - measured on his own layout, where that square is a terminus and both
+     * of the locomotives he named are non-reversible. Almost every parking berth on a real railway is
+     * a terminus, so the rule was refusing homes at most of the places a train is parked.
+     *
+     * Whether it can GET there with a reversal is a question about a route, and routes are where it is
+     * now asked - `Layout.isPathClear` allows a terminus when the path passes a reversing point, and
+     * refuses it when it does not. Asking it again here, without a route to look at, could only guess.
+     * This is the "a guard needs a way past" rule: an over-strict check at the door where nothing can
+     * satisfy it is worse than no check.
+     *
+     * MUTATION: putting the terminus clause back in canRest fails this.
+     */
+    @Test
+    public void testATerminusCanBeAHomeForATrainThatCannotReverse() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        Point d = layout.getPoint("HS D");
+
+        final boolean wasReversible = loc(LOC_A).isReversible();
+
+        try
+        {
+            loc(LOC_A).setReversible(false);
+
+            d.setTerminus(true);
+
+            assertNull(HomeStaging.whyNotAHome(loc(LOC_A), d),
+                "a parking berth was refused as a home to a train that cannot reverse. It backs in "
+                + "past a reversing point and leaves forwards - and on Adam's railway that refusal "
+                + "covered most of the places a train is actually parked");
+        }
+        finally
+        {
+            d.setTerminus(false);
+            loc(LOC_A).setReversible(wasReversible);
         }
     }
 

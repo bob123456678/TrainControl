@@ -38,6 +38,7 @@ public class testNonReversibleTrains
         // which is the model refusing to describe a platform with no way of knowing a train is there.
         model.newFeedback(170, null);
         model.newFeedback(171, null);
+        model.newFeedback(172, null);
     }
 
     /**
@@ -147,6 +148,91 @@ public class testNonReversibleTrains
         assertEquals(StationIndex.oneEntryPerLocomotive(both).size(), 2,
             "two different trains on one platform must both be shown - dropping one puts a train on "
             + "the layout that is not on the diagram");
+    }
+
+    /**
+     * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).
+     *
+     * His words, on MT-245: "trains should be allowed to back into terminuses if they are not
+     * reversible (that's why we have the reversing point at feedback 2013)."
+     *
+     * The rule above is about a train that would have to reverse to LEAVE. A train that passes a
+     * reversing point on the way arrives at the terminus already turned - it backs in - and leaves
+     * forwards, so it never runs backwards out of anywhere and the objection does not apply.
+     *
+     * Measured on his own layout before this was changed: TunnelLeftPark is a terminus, and EN57-203
+     * and EN57-947 are both non-reversible, so this one clause was refusing both the manual send and
+     * the home. `isAutoDestination` is asked only by pickPath, never by getPossiblePaths or
+     * isPathClear, so a non-automatic station was always manually selectable - this was the only thing
+     * standing in the way of either.
+     *
+     * The escape is deliberately here and not in canRest: whether a train can be TURNED on the way is
+     * a property of the route, and only a route can answer it.
+     *
+     * MUTATION: dropping the reversesAlongTheWay clause fails this; dropping the whole terminus rule
+     * fails the method above, whose fixture has no reversing point.
+     */
+    @Test
+    public void testATrainThatCannotReverseMayBackIntoATerminus() throws Exception
+    {
+        Layout layout = backingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            loc.setReversible(false);
+
+            assertTrue(layout.getPoint("BACK_mid").isReversing(),
+                "the fixture did not take: the middle point must be a reversing point");
+
+            assertTrue(layout.getPoint("BACK_end").isTerminus(),
+                "the fixture did not take: the far point must be a terminus");
+
+            assertTrue(layout.isPathClear(pathThrough(layout), loc, false),
+                "a train that cannot reverse was refused a terminus it would have BACKED into. The "
+                + "reversing point on the way turns it, so it arrives running backwards and leaves "
+                + "forwards - which is what the reversing point is for");
+        }
+        finally
+        {
+            loc.setReversible(was);
+        }
+    }
+
+    /**
+     * Start, a reversing point, and a terminus beyond it.
+     */
+    private static Layout backingInLayout() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("BACK_start", true, "170");
+        layout.createPoint("BACK_mid", true, "171");
+        layout.createPoint("BACK_end", true, "172");
+
+        layout.getPoint("BACK_mid").setReversing(true);
+        layout.getPoint("BACK_end").setTerminus(true);
+
+        layout.createEdge("BACK_start", "BACK_mid");
+        layout.createEdge("BACK_mid", "BACK_end");
+
+        return layout;
+    }
+
+    /**
+     * The one path such a layout has, through the reversing point.
+     */
+    private static List<Edge> pathThrough(Layout layout)
+    {
+        List<Edge> path = new LinkedList<>();
+
+        path.add(layout.getEdge("BACK_start", "BACK_mid"));
+        path.add(layout.getEdge("BACK_mid", "BACK_end"));
+
+        return path;
     }
 
     /**
