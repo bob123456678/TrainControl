@@ -343,23 +343,6 @@ public class MarklinRoute extends Route
      *
      * @return the accessory's name and the message key for the refusal, or null when it is safe
      */
-    /**
-     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list.
-     *
-     * Adam, 2026-09-01: "emergency stop should never conflict or prompt."
-     *
-     * @return true when any command in this route stops the railway
-     */
-    public boolean hasEmergencyStop()
-    {
-        for (RouteCommand rc : this.route)
-        {
-            if (rc != null && rc.isStop()) return true;
-        }
-
-        return false;
-    }
-
     public String[] conflictingAccessoryAndReason()
     {
         // AN EMERGENCY STOP IS NEVER A QUESTION (Adam, 2026-09-01).
@@ -379,6 +362,23 @@ public class MarklinRoute extends Route
         if (this.hasEmergencyStop()) return null;
 
         return accessoryHeldByAutonomy();
+    }
+
+    /**
+     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list.
+     *
+     * Adam, 2026-09-01: "emergency stop should never conflict or prompt."
+     *
+     * @return true when any command in this route stops the railway
+     */
+    public boolean hasEmergencyStop()
+    {
+        for (RouteCommand rc : this.route)
+        {
+            if (rc != null && rc.isStop()) return true;
+        }
+
+        return false;
     }
     
     /**

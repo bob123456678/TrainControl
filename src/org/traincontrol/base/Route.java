@@ -220,6 +220,26 @@ abstract public class Route
      *
      * @return the commands naming a locomotive, live
      */
+    private java.util.List<RouteCommand> namesLocomotives()
+    {
+        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+
+        for (RouteCommand rc : this.route)
+        {
+            if (namesALocomotive(rc)) out.add(rc);
+        }
+
+        if (this.getConditions() != null)
+        {
+            for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
+            {
+                if (namesALocomotive(rc)) out.add(rc);
+            }
+        }
+
+        return out;
+    }
+
     /**
      * Whether this route's COMMANDS drive the named locomotive, so deleting it would take them away.
      *
@@ -241,26 +261,6 @@ abstract public class Route
         }
 
         return false;
-    }
-
-    private java.util.List<RouteCommand> namesLocomotives()
-    {
-        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
-
-        for (RouteCommand rc : this.route)
-        {
-            if (namesALocomotive(rc)) out.add(rc);
-        }
-
-        if (this.getConditions() != null)
-        {
-            for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
-            {
-                if (namesALocomotive(rc)) out.add(rc);
-            }
-        }
-
-        return out;
     }
 
     private static boolean namesALocomotive(RouteCommand rc)
