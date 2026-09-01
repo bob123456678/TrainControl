@@ -5,7 +5,7 @@
 **Prefix for citing this index elsewhere:** `FX2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `828b1ff1` / `b00ac0c1`, by six reviewers running in
-parallel on 2026-09-01. Fixes and dispositions below were applied after them, up to `9f1b80c8`.
+parallel on 2026-09-01. Fixes and dispositions below were applied after them, up to `2de95ad0`.
 
 This is an index, not a review. The README is explicit that documents recording separate passes must
 not be merged — each holds its own scope, method and blind spots, and that is the calibration data. So
@@ -200,9 +200,16 @@ log line is about conditions, not commands.
   tile geometry. In the graph shipped here, 69 edges carry commands naming 15 distinct signals. Whether
   the `protectingSignal` mechanism is meant to replace that is your call; the migration does not convert
   them.
-- `Export Current Configuration` is unreachable in both configurations — hidden on a local layout, greyed
-  on a Central Station layout — and the only replacement is behind `isDebug()`, which is set solely by
-  launching with two or more command-line arguments.
+- `Export Current Configuration`. **`R28-B2` overstates this and is partly withdrawn.** The button is
+  hidden on a diagram-derived layout (`mountAutonomyControls` at `TrainControlUI.java:3430`) but it is
+  *not* unreachable in the other configuration: on a JSON-era layout it is made visible at `:3394` and
+  enabled at `:19922` once a validation succeeds, and again at `:19066` when autonomy stops. So the
+  capability survives where it belongs.
+
+  What is real is narrower: **a user who has moved to a diagram-derived setup can no longer export the
+  configuration the builder derived**, and the editor panel offers no export of its own — `grep` finds no
+  export action in `AutonomyEditorPanel.java`. Whether that matters depends on whether you ever want the
+  derived JSON out of the application; say if you do and it is a small addition.
 
 ---
 
