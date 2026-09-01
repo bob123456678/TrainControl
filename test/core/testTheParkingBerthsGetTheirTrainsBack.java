@@ -184,14 +184,38 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
             List<List<Edge>> options = layout.getPossiblePaths(parked, true);
 
-            if (options.isEmpty())
+            // SOMEWHERE AUTONOMY WILL MOVE IT ON FROM (RTG-B1, 2026-09-01).
+            //
+            // `getPossiblePaths` is the MANUAL door, and it deliberately offers destinations autonomy
+            // will never choose - inactive squares among them.  Taking `options.get(0)` took whichever
+            // of those came first, and on Adam's configuration that is ParkingTrack6, which is
+            // `active: false`.  So the hand-start that is supposed to set these trains going instead
+            // parked one somewhere autonomy would not touch again, and it was still sitting there when
+            // Return Home was asked for - stranded before the run began, by the fixture rather than by
+            // the railway.
+            //
+            // This is the same tier distinction the whole feature turns on, and the test had fallen the
+            // wrong side of it: a hand-start that models "start it off and let autonomy take over" has
+            // to leave the train where autonomy can take over.
+            List<Edge> chosen = null;
+
+            for (List<Edge> option : options)
             {
-                System.out.println("NOT STARTED " + name(i) + " - it has nowhere to go from "
-                    + BERTHS[i]);
+                if (layout.isChoosableByAutonomy(option.get(option.size() - 1).getEnd()))
+                {
+                    chosen = option;
+                    break;
+                }
+            }
+
+            if (chosen == null)
+            {
+                System.out.println("NOT STARTED " + name(i) + " - nowhere autonomy would take it on "
+                    + "from, out of " + options.size() + " manual option(s) from " + BERTHS[i]);
                 continue;
             }
 
-            if (layout.executePath(options.get(0), parked, parked.getPreferredSpeed(), null)) started++;
+            if (layout.executePath(chosen, parked, parked.getPreferredSpeed(), null)) started++;
         }
 
         System.out.println("HAND-STARTED " + started + " of the " + BERTHS.length + " parked trains");
