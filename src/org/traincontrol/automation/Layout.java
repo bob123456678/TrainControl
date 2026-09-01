@@ -2277,34 +2277,24 @@ public class Layout
             return false;
         }
 
-        // Only reversible locomotives can go to a terminus - UNLESS THE WAY THERE TURNS THEM ROUND.
+        // NO TERMINUS RULE HERE (Adam, 2026-09-01).
         //
-        // Adam, 2026-08-31: "trains should be allowed to back into terminuses if they are not
-        // reversible (that's why we have the reversing point at feedback 2013)."  A train that passes
-        // a reversing point arrives at the terminus already turned - it backs in - and leaves
-        // forwards, so it never runs backwards out of anywhere and the objection does not apply.
+        // "In manual operation, non reversing trains must be able to back into a terminus if the graph
+        // makes that possible.  Otherwise we'd need a third kind of station."
         //
-        // Measured on his layout before this changed: TunnelLeftPark is a terminus and the two
-        // locomotives he named are both non-reversible, so this clause alone refused the manual send
-        // AND the home.  Most parking berths on a real railway are terminuses.
+        // This refused a terminus to a locomotive that cannot reverse, and isPathClear is the tier
+        // EVERY door passes through - so the refusal reached the right-click menu as well as autonomy.
+        // Measured on his own layout: 2-8-4 3505 SP is non-reversible, stands at TopMainR2, and bfs
+        // finds a five-edge route to TopMainR0Park.  The graph makes it possible and this said no.
         //
-        // The note that stood here said putting reversing points at this tier was the wrong height,
-        // because isPathClear takes the manual route menu and the staging planner with it.  That is
-        // still what happens and it is now what is wanted: it is the manual menu and the staging
-        // planner he is asking for.  The rule itself is unchanged where there is no reversing point,
-        // which is what testATerminusIsRefusedToATrainThatCannotReverse still pins - its fixture has
-        // none.  Full autonomy's own choosing rule is separate and stays where it is.
-        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible()
-            && !this.reversesAlongTheWay(path))
-        {
-            logPathError(
-                loc,
-                path,
-                logFailures,
-                I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName())
-            );
-            return false;
-        }
+        // The doctrine is already written a few hundred lines below, about reversing stations:
+        // "Filtering at selection, never refusing at execution."  The terminus clause is on that
+        // footing now - pickPath will not CHOOSE a terminus for a locomotive that cannot get out of
+        // one, and nothing refuses the operator who asks for it.
+        //
+        // Staging does not lose the rule by this: HomeStaging carries its own since 2026-08-31, and it
+        // is stricter - a non-reversible train may only be sent home to a terminus by a route that
+        // turns it round on the way.
 
         // A station held back while another point has a train STANDING on it (FR-001).
         //
@@ -3411,7 +3401,11 @@ public class Layout
         {
             Point end = path.get(path.size() - 1).getEnd();
 
+            // The terminus clause with the rest, because this method's whole job is to mirror
+            // pickPath's - "every clause pickPath applies to its candidates has to be mirrored here",
+            // and the two have fallen out of step once already.
             if (!end.isReversing() && end.isAutoDestination()
+                    && (!end.isTerminus() || loc.isReversible())
                     && !end.getExcludedLocs().contains(loc)
                     && !this.reversesAlongTheWay(path))
             {
@@ -3660,8 +3654,16 @@ public class Layout
                     // getBlockLocomotive, not isOccupied: a destination whose sibling copy holds a
                     // train is not free - it is the same piece of track, and sending a second train
                     // there is a collision.
+                    // AND NOT A TERMINUS IT COULD NOT LEAVE (Adam, 2026-09-01).
+                    //
+                    // Moved here out of isPathClear, on the rule the comment above states: filtering
+                    // at selection, never refusing at execution.  A locomotive that cannot reverse is
+                    // stranded by a terminus, so full autonomy does not choose one for it - and the
+                    // operator asking for that berth by hand is no longer refused, which is what the
+                    // move is for.
                     if (!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination() && end.isActive()
                             && !end.isReversing() && end.isAutoDestination()
+                            && (!end.isTerminus() || loc.isReversible())
                             && !end.getExcludedLocs().contains(loc))
                     {
                         try 
@@ -3916,6 +3918,23 @@ public class Layout
         if (end.isReversing()) return I18n.t("autolayout.why.reversing");
 
         if (!end.isAutoDestination()) return I18n.t("autolayout.why.notAutoDestination");
+
+        // A TERMINUS THIS LOCOMOTIVE COULD NOT LEAVE (Adam, 2026-09-01).
+        //
+        // Here because this method is the one list of standing reasons autonomy never picks a station,
+        // and the clause was added to pickPath's filter in the same breath: two copies of that list
+        // would be two answers to "can autonomy choose this", which is what the javadoc above warns
+        // about and what the window grouping by it would then disagree with.
+        //
+        // Standing, not transient: it is a fact about how the railway is built and about which
+        // locomotive is asking, and it does not change while trains move.
+        //
+        // The message is the one isPathClear used to refuse with, which is now unused there - the same
+        // sentence, moved from the door that refused to the window that explains.
+        if (loc != null && end.isTerminus() && !loc.isReversible())
+        {
+            return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
+        }
 
         if (loc != null && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 

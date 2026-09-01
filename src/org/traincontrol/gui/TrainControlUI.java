@@ -4639,7 +4639,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        return session == null ? null : session.getCaptionTarget(where);
+        if (session == null) return null;
+
+        org.traincontrol.automationui.TileGraph.TileKey caption = session.getCaptionTarget(where);
+
+        // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam, 2026-08-31).
+        //
+        // "hide the label if empty and nothing can pass."  An unnamed station draws a dash - the
+        // placeholder that says "this wants a name" - and on a square that is switched off there is
+        // nothing to name it FOR: nothing may be sent there and nothing may pass through, so the dash
+        // is an invitation to finish something that has been deliberately put out of use.
+        //
+        // Only when BOTH are true.  A named square keeps its name however it is switched, because the
+        // name is how the operator refers to it when switching it back on; and an unnamed square that
+        // is still in use keeps its dash, because that is the prompt working as intended.
+        if (caption != null
+            && Boolean.FALSE.equals(session.getPointProperty(caption, "active")))
+        {
+            String named = session.getStore().getPointName(caption);
+
+            if (named == null || named.trim().isEmpty()) return null;
+        }
+
+        return caption;
     }
 
     /**
@@ -9060,8 +9082,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     }
                                     else
                                     {
-                                        locIcon.setIcon(null);
-                                        locIcon.setVisible(false);
+                                        // A PLACEHOLDER RATHER THAN NOTHING (FR-054).
+                                        //
+                                        // The panel used to go blank for a locomotive with no
+                                        // picture, which reads as an icon that failed to load rather
+                                        // than as one nobody has set.
+                                        locIcon.setIcon(new javax.swing.ImageIcon(
+                                            LocomotivePlaceholder.image(LOC_ICON_WIDTH)));
+
+                                        locIcon.setText("");
+                                        locIcon.setVisible(true);
                                     }
                                 });
 
@@ -22778,6 +22808,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locIcon.addMouseListener(hover);
         cropOverlay.addMouseListener(hover);
+
+        // A HAND, so the picture looks like something you can act on (Adam, 2026-09-01).
+        //
+        // "change the mouse pointer on hover to indicate editability / add a tooltip."  The tooltip was
+        // already there and says what to do - "Right-click to change icon" - but a tooltip is only read
+        // by somebody who already suspects there is something to read.  The pointer is what raises the
+        // suspicion, and it costs nothing to be right about: right-clicking here really does open the
+        // icon chooser, on every locomotive, with or without a picture of its own.
+        //
+        // Set here rather than in the form, because the form's block is regenerated and a line added
+        // inside it does not survive.
+        locIcon.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        cropOverlay.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     /**

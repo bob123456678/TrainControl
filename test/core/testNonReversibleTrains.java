@@ -42,14 +42,14 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A locomotive that cannot reverse is still refused a terminus.
+     * A terminus is offered to a locomotive that cannot reverse, and never chosen for it.
      *
      * The long-standing rule, kept here because the round that changed everything around it is
      * exactly when a rule like this gets lost. A terminus is a place a train can only leave by
      * reversing, so sending one there that cannot is sending it somewhere it cannot leave.
      */
     @Test
-    public void testATerminusIsRefusedToATrainThatCannotReverse() throws Exception
+    public void testATerminusIsOfferedByHandAndNotChosenByAutonomy() throws Exception
     {
         Layout layout = twoPointLayout(false, true);
 
@@ -63,19 +63,56 @@ public class testNonReversibleTrains
         {
             loc.setReversible(false);
 
-            assertFalse(layout.isPathClear(pathAcross(layout), loc, false),
-                "a train that cannot reverse was sent to a terminus, which is a place it cannot "
-                + "leave");
+            // ALLOWED AT EXECUTION, as of Adam's ruling of 2026-09-01.
+            //
+            // "In manual operation, non reversing trains must be able to back into a terminus if the
+            // graph makes that possible.  Otherwise we'd need a third kind of station."
+            //
+            // isPathClear is the tier EVERY door passes through, so refusing here refused the
+            // right-click menu too. Measured on his own layout: 2-8-4 3505 SP is non-reversible,
+            // stands at TopMainR2, and there is a five-edge route to TopMainR0Park - the graph makes
+            // it possible and this said no.
+            //
+            // The rule has not gone; it has moved to where the reversing-station rule already lived,
+            // on the doctrine written beside it: "Filtering at selection, never refusing at
+            // execution." The half of this test that matters is now the one below.
+            assertTrue(layout.isPathClear(pathAcross(layout), loc, false),
+                "a locomotive that cannot reverse was refused a terminus at EXECUTION, which refuses "
+                + "the operator asking for it by hand as well as autonomy");
 
             loc.setReversible(true);
 
             assertTrue(layout.isPathClear(pathAcross(layout), loc, false),
                 "and one that can reverse must still be allowed there - a rule that refused "
                 + "everybody would pass the line above and close the terminus");
+
+            // AND THE HALF THAT KEEPS THE RULE: autonomy will not CHOOSE it.
+            //
+            // Asked through the explainer, which is the one list of standing reasons a station is
+            // never picked - the same list pickPath's filter mirrors, and the one the "no available
+            // paths" window prints.
+            loc.setReversible(false);
+
+            // ON THE GRAPH, because the explainer answers about a locomotive that is somewhere: with
+            // nothing placed there are no paths to enumerate and it reports on nothing at all, which
+            // would make the assertion below pass for the wrong reason.
+            assertTrue(layout.moveLocomotive(loc.getName(), "REV_start", false),
+                "could not place the locomotive, so the explainer has nothing to explain");
+
+            String why = layout.explainDestinations(loc).get("REV_end");
+
+            assertNotNull(why,
+                "the explainer says nothing at all about the terminus, so autonomy has no recorded "
+                + "reason for leaving it alone");
+
+            assertTrue(why.toLowerCase().contains("reversible") || why.toLowerCase().contains("terminus"),
+                "autonomy's reason for not choosing a terminus is not about reversing - it said: "
+                + why);
         }
         finally
         {
             loc.setReversible(was);
+            layout.moveLocomotive(null, "REV_start", true);
         }
     }
 

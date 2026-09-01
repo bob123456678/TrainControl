@@ -60,7 +60,15 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            locIcon.setIcon(null);
+            // A PLACEHOLDER RATHER THAN NOTHING (FR-054).
+            //
+            // Adam: "for locomotives without an icon, add a placeholder rather than nothing." A blank
+            // where a picture goes reads as a list that has failed to load rather than as a
+            // locomotive nobody has given a picture to.
+            locIcon.setIcon(new javax.swing.ImageIcon(
+                org.traincontrol.gui.LocomotivePlaceholder.image(142)));
+
+            locIcon.setText("");
         }
     }
     

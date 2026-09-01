@@ -1618,7 +1618,10 @@ public class TileAnnotation
         // strokes rather than filled, so it reads as an absence beside the marks that are present.
         if (badge.isImpassable())
         {
-            int mark = Math.max(6, Math.min(width, height) / 4);
+            // BIGGER than it first was, on Adam seeing it: a quarter of the tile put it among the
+            // smallest marks on the page, and it is saying something larger than the badges beside it
+            // - not "this square turns trains" but "this square is not in use at all".
+            int mark = Math.max(9, Math.min(width, height) / 2);
 
             int cx = on[0];
             int cy = on[1];

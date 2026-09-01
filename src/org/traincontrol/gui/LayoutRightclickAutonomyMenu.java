@@ -276,6 +276,33 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
 
+                        // EVERYTHING THAT IS POSSIBLE, counted before anything is left out.
+                        //
+                        // What "more options than are shown" means has to include the ones this menu
+                        // decides not to show, not only the ones the cap cuts off - otherwise the
+                        // ellipsis is a statement about the cap rather than about the list.
+                        final int possible = paths.size();
+
+                        // SWITCHED-OFF SQUARES ARE NOT ON THIS MENU (Adam, 2026-09-01).
+                        //
+                        // "make the inactive stations disappear from the track diagram menu - they
+                        // should only be visible in the autonomy tab."  This menu is the quick way to
+                        // send a train somewhere ordinary; a square that has been deliberately taken
+                        // out of use is not that, and listing it here puts the least likely
+                        // destinations among the most likely ones.
+                        //
+                        // Filtered rather than greyed: a greyed item still costs a line and still has
+                        // to be read past.  They remain reachable - the autonomy tab lists everything,
+                        // which is what the ellipsis below is for.
+                        List<List<Edge>> shownPaths = new java.util.ArrayList<>();
+
+                        for (List<Edge> path : paths)
+                        {
+                            if (path.get(path.size() - 1).getEnd().isActive()) shownPaths.add(path);
+                        }
+
+                        paths = shownPaths;
+
                         if (!paths.isEmpty())
                         {
                             addSeparator();
@@ -329,7 +356,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             add(menuItem);
 
-                            if (++shown >= MAX_PATHS && paths.size() > MAX_PATHS)
+                            // The way through, whenever anything at all has been left out.
+                            //
+                            // `possible` counts what could be offered before the switched-off squares
+                            // were dropped and before the cap, so this fires for either reason and for
+                            // both together - which is what Adam asked for: "if there are more
+                            // possible options than what is shown ... always show the ...".
+                            if (++shown >= Math.min(MAX_PATHS, paths.size()) && possible > shown)
                             {
                                 menuItem = new JMenuItem("...");
                                 menuItem.addActionListener(event -> 
