@@ -5957,7 +5957,8 @@ public class AutonomyEditorPanel extends JPanel
             name != null && !name.trim().isEmpty(),
             route == null ? null : route.getA(),
             route == null ? null : route.getB(),
-            turns && !session.isMustTurnAround(tile));
+            turns && !session.isMustTurnAround(tile),
+            Boolean.FALSE.equals(session.getPointProperty(tile, "active")));
     }
 
     /**

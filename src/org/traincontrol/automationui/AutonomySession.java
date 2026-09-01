@@ -4318,7 +4318,8 @@ public class AutonomySession
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
-                isTurnAround(tile) && !isMustTurnAround(tile)),
+                isTurnAround(tile) && !isMustTurnAround(tile),
+                Boolean.FALSE.equals(getPointProperty(tile, "active"))),
             false, false, false, null,
             // RESTRICTED ONLY, which is the whole of what was asked for: "show RESTRICTION arrows".
             // A run that is open both ways is the majority of any layout and is also the default, so

@@ -1006,6 +1006,96 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A square nothing can use is a cross, not a square (OB-167).
+     *
+     * Adam: "station no + must reverse + disabled gets same large square icon as inactive terminus.
+     * if nothing can pass, the icon should be a small x."
+     *
+     * The badge grid answers two questions - does this square turn trains, and is it a station - and
+     * being switched OFF is in neither. It reached only the colour, through the same flag that carries
+     * "autonomy does not choose this one", which is a different fact: a station autonomy will not pick
+     * is still somewhere trains pass through and stop at. So a reversing point that had been turned
+     * off went on drawing the mark for "every train turns here" about a square no train can enter.
+     *
+     * The three assertions are the three claims: the flag changes the drawing, the new mark is lighter
+     * than the one it replaces (a cross is an absence beside a filled shape), and a switched-off
+     * STATION is untouched - somebody turned it off and can turn it back on, so it keeps being a place.
+     *
+     * MUTATION: making isImpassable ignore `shut` fails the first; making it ignore `station` fails
+     * the third.
+     */
+    @Test
+    public void testASquareNothingCanUseIsDrawnAsACross() throws Exception
+    {
+        int size = 40;
+
+        // Not a station, every train turns, and switched off - Adam's case exactly.
+        int shut = inkOf(badgeAt(false, true, true, size));
+        int open = inkOf(badgeAt(false, true, false, size));
+
+        assertNotEquals(shut, open,
+            "switching a reversing point off does not change its badge at all, so a square no train "
+            + "can enter goes on wearing the mark for 'every train turns here'");
+
+        assertTrue(shut < open,
+            "the mark for a square nothing can use is not lighter than the one it replaces - it "
+            + "should read as an absence beside the shapes that are present, and it covered " + shut
+            + " pixels against " + open);
+
+        // And a station that is switched off keeps its station mark.
+        assertEquals(inkOf(badgeAt(true, true, true, size)), inkOf(badgeAt(true, true, false, size)),
+            "a switched-off STATION lost its station mark. It is still a place - somebody turned it "
+            + "off and can turn it back on - and only its colour should say so");
+    }
+
+    /**
+     * One badge, painted on its own, for counting.
+     */
+    private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns, boolean shut,
+        int size) throws Exception
+    {
+        TileAnnotation annotation = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false,
+            new TileAnnotation.Badge(station, station && turns, !station && turns, shut, true,
+                Side.W, Side.E, false, shut),
+            false);
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            annotation.paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /**
+     * How much of the tile the mark actually covers.
+     */
+    private static int inkOf(java.awt.image.BufferedImage image)
+    {
+        int ink = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                if ((image.getRGB(x, y) >>> 24) > 8) ink++;
+            }
+        }
+
+        return ink;
+    }
+
+    /**
      * And a straight is still the middle of the square, which is the case that must not move.
      */
     @Test

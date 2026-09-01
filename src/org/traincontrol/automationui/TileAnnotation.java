@@ -166,6 +166,16 @@ public class TileAnnotation
         private final boolean parking;
         private final boolean named;
 
+        /**
+         * Whether this square is switched OFF, as against merely left out of autonomy's choices.
+         *
+         * Kept apart from `parking` because they are different facts that happened to share a colour.
+         * A square autonomy will not CHOOSE is still one trains pass through and stop at; a square
+         * that is switched off is neither. Nothing about the shape grid says which, so a square
+         * nothing can use gets a mark of its own (OB-167).
+         */
+        private final boolean shut;
+
         // Which route the badge sits on, so it can be drawn where the rails are rather than in the
         // middle of the square.  Null for a tile whose route is unknown, which falls back to centre.
         private final Side a;
@@ -194,6 +204,16 @@ public class TileAnnotation
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b, boolean optional)
         {
+            this(station, terminus, reversing, parking, named, a, b, optional, false);
+        }
+
+        /**
+         * @param shut whether the square is switched off, so that nothing may pass or stop there
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut)
+        {
+            this.shut = shut;
             this.optional = optional;
             this.station = station;
             this.terminus = terminus;
@@ -242,6 +262,26 @@ public class TileAnnotation
             return parking;
         }
 
+        /**
+         * Whether the square is switched off.
+         */
+        public boolean isShut()
+        {
+            return shut;
+        }
+
+        /**
+         * Whether nothing can use this square at all (OB-167).
+         *
+         * Switched off AND not a station: nothing stops there because it is not a place, and nothing
+         * goes through because it is off. A switched-off STATION is still a place - somebody turned it
+         * off and can turn it back on - so it keeps the station mark and only loses its colour.
+         */
+        public boolean isImpassable()
+        {
+            return shut && !station;
+        }
+
         public boolean isNamed()
         {
             return named;
@@ -258,6 +298,7 @@ public class TileAnnotation
             return station == other.station && terminus == other.terminus
                 && optional == other.optional
                 && reversing == other.reversing && parking == other.parking && named == other.named
+                && shut == other.shut
                 && a == other.a && b == other.b;
         }
 
@@ -265,12 +306,14 @@ public class TileAnnotation
         public int hashCode()
         {
             return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
-                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0);
+                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0);
         }
 
         @Override
         public String toString()
         {
+            if (isImpassable()) return "shut" + (named ? "" : " (unnamed)");
+
             return (station ? (parking ? "parking" : "station") : "point")
                 + (terminus ? (optional ? " may turn" : " terminus") : "")
                 + (reversing ? " reversing" : "")
@@ -1560,6 +1603,35 @@ public class TileAnnotation
         // The bordering cases are what makes it worth the trouble.  A station where every train turns
         // and a siding where every train turns are the SAME fact about a railway happening in two
         // places, and they now look like the same fact in two sizes.
+        // A SQUARE NOTHING CAN USE IS A CROSS (OB-167).
+        //
+        // Adam: "station no + must reverse + disabled gets same large square icon as inactive
+        // terminus.  if nothing can pass, the icon should be a small x."
+        //
+        // The grid above answers two questions and neither of them is "is this square switched off",
+        // which only ever reached the colour - so a reversing point that had been turned off drew the
+        // same square as one that was working, in the same orange as a parking station. Its shape was
+        // saying "every train turns here" about a square no train can enter.
+        //
+        // A cross rather than a fourth shape in the grid, because it is not a third answer to "does
+        // this square turn trains": it is the square opting out of the question. Small, and drawn as
+        // strokes rather than filled, so it reads as an absence beside the marks that are present.
+        if (badge.isImpassable())
+        {
+            int mark = Math.max(6, Math.min(width, height) / 4);
+
+            int cx = on[0];
+            int cy = on[1];
+
+            g.setStroke(new BasicStroke(2f));
+            g.setColor(colour);
+
+            g.drawLine(cx - mark / 2, cy - mark / 2, cx + mark / 2, cy + mark / 2);
+            g.drawLine(cx - mark / 2, cy + mark / 2, cx + mark / 2, cy - mark / 2);
+
+            return;
+        }
+
         boolean turns = badge.isTerminus() || badge.isReversing();
         boolean mayTurn = turns && badge.isOptional();
 
