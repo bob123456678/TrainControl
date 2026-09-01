@@ -180,10 +180,16 @@ page". Both halves were wrong, and checking the configuration settles it:
 | `5:20,14` | `BottomMainC` | 2 | `canReverse: true`, `home: EN57-947` |
 
 An edge landing on one of these is fully measured, so `measured` stays true and the guard really does
-run, with room 4 and room 2 respectively. **It is live behaviour on your railway today, not a dormant
-rule** — and `BottomMainC`, with two units of room, is EN57-947's assigned home. If that locomotive's
-train length exceeds 2, Return Home is being refused there by this guard right now. That is worth
-checking before the release, and it is the first thing to look at in `MT-248`.
+run, with room 4 and room 2 respectively. **It is live behaviour on your railway, not a dormant rule.**
+
+**Measured, and it walks back my own alarm.** I wrote that Return Home was probably being refused into
+EN57-947's home at `BottomMainC` right now. It is not: **EN57-947 has no train length set at all**, and
+the guard's first condition is `getTrainLength() != null && > 0`, so that locomotive is exempt. Read from
+the live locomotive database, where 54 locomotives do carry a length and it is not one of them.
+
+The exposure belongs to the others: **42 of those 54 have a train length greater than 2**, and `BottomMainC`
+has two units of room. Any of them routed or homed into that berth is refused today. Whether that is
+right depends on the ruling below, but it is not hypothetical and it is not about EN57-947.
 
 The rest still holds: the editor notice will fire on roughly 20 squares, and following it does not arm
 the guard, because the notice asks for the reversing square's length while the guard needs the whole

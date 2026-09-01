@@ -13309,10 +13309,18 @@ are reversal squares on `1 - Main`, so this guard is already live on your railwa
 | `5:20,13` | `BottomMainB` | 4 | `canReverse` |
 | `5:20,14` | `BottomMainC` | 2 | `canReverse`, and **EN57-947's home** |
 
-**If EN57-947's train length is more than 2, Return Home is being refused into its own home by this
-guard right now.** Check that first: set the locomotive's autonomy train length, press Return Home, and
-see whether it is offered. (An earlier version of this test said the guard was inert because the six
-measured tiles were "all on the Test page". They are not - `setup.json` maps page id 5 to `1 - Main`.)
+**EN57-947 itself is exempt** - measured against the locomotive database, it has no train length set,
+and the guard only applies to a locomotive that has one. So nothing is being refused into its home
+today.
+
+**But 42 of the 54 locomotives that do carry a length are longer than 2**, and `BottomMainC` has two
+units of room. Send one of those into it - by hand, or by giving it that home and pressing Return
+Home - and it should be refused with a message about the train being too long. Is that the behaviour
+you want on this berth, or is two units simply the wrong number for it?
+
+(Two earlier versions of this test were wrong about this: the first said the guard was inert because
+the six measured tiles were "all on the Test page" - `setup.json` maps page id 5 to `1 - Main` - and
+the second said EN57-947 was being refused, which the database disproves.)
 
 **Then open the autonomy editor and count the notices.** There are about **23 squares where trains turn
 round** and six measured tiles in total, so expect roughly 20 notices asking for track lengths.
