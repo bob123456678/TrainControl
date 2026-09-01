@@ -2296,6 +2296,73 @@ public class Layout
         // is stricter - a non-reversible train may only be sent home to a terminus by a route that
         // turns it round on the way.
 
+        // A TRAIN TOO LONG FOR THE TRACK IT WOULD REVERSE INTO (Adam, 2026-09-01).
+        //
+        // "if there is a switch right next to the station and the train is longer than the length of
+        // the station track plus switch track, do we have guards against backing over it?"  There were
+        // none.  validateTrainLength above is the only length rule in this model, and it compares the
+        // train against a MAXIMUM SOMEBODY TYPED on the station rather than against the track that is
+        // there - and it is skipped entirely when that maximum is zero, which is most squares on a
+        // real layout.  So a train reversing into a berth shorter than itself stood across the switch
+        // behind it, and nothing objected.
+        //
+        // WHERE IT APPLIES.  Only where the train will reverse - a terminus is a place it can only
+        // leave by backing out, so what is behind it matters - and only where the track has been
+        // measured, because unmeasured track is unknown, not short.  His own rule: "such paths need to
+        // be disallowed if any track (not station) lengths are set and we reverse over a switch."  A
+        // layout that records no lengths is untouched; one that records some is asked, in the editor,
+        // for the ones that decide this.
+        //
+        // WHAT IT MEASURES.  Every segment leading up to the reversal, added together.  Adam: "Do you
+        // sum the track segments leading up to it?  if they are long enough, then we are good.  if
+        // segments < train length, then we can't reverse over the switch."  The segments the train
+        // comes in over are the track it stands on; if they hold it, nothing hangs over the switch
+        // beyond them.
+        //
+        // This took the last TWO edges at first, reading "the station track plus switch track" as a
+        // count rather than as an example - which is stricter than his rule on any run-in longer than
+        // a berth and its approach.
+        //
+        // AND THE TOTAL HAS TO BE COMPLETE.  An unmeasured segment used to contribute nothing while
+        // the sum went ahead without it, which is "I do not know how long this is" answered as "it is
+        // zero" - and that refuses a train that would have fitted.  A path carrying any unmeasured
+        // segment is not judged at all; it is the case the editor's notice asks him to fix.
+        if (loc != null && loc.getTrainLength() != null && loc.getTrainLength() > 0
+            && !path.isEmpty())
+        {
+            Point ending = path.get(path.size() - 1).getEnd();
+
+            if (ending.isTerminus() || ending.isReversing())
+            {
+                int room = 0;
+
+                boolean measured = true;
+
+                for (Edge segment : path)
+                {
+                    if (segment.getLength() <= 0)
+                    {
+                        measured = false;
+                        break;
+                    }
+
+                    room += segment.getLength();
+                }
+
+                if (measured && loc.getTrainLength() > room)
+                {
+                    logPathError(
+                        loc,
+                        path,
+                        logFailures,
+                        I18n.f("autolayout.errorTrainTooLongToReverse", loc.getName(),
+                            ending.getName(), room)
+                    );
+                    return false;
+                }
+            }
+        }
+
         // A station held back while another point has a train STANDING on it (FR-001).
         //
         // The other half of this setting is built into the configuration as lock edges, which ask

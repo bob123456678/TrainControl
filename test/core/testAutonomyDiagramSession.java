@@ -1837,6 +1837,58 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The editor asks for lengths where trains reverse - but only on a layout that measures track.
+     *
+     * Adam: "Add notices to the autonomy editor to add track lengths between stations and switches
+     * that accept reversal (if any other track length is set anywhere)."
+     *
+     * The guard that stops a train being backed over the switch behind its berth can only refuse what
+     * it can measure, so these are the squares where it is blind: somewhere trains turn round, with
+     * nothing recorded about how much room is there.
+     *
+     * **The second half is the half worth testing.** A railway that records no lengths at all has
+     * decided not to model them, and listing every reversing square on it would be a page of notices
+     * about something nobody is attempting. The same fixture is asked twice, and the only difference
+     * between the two answers is one length recorded somewhere else entirely.
+     *
+     * MUTATION: dropping the measuresAnything test reports the square in both halves; dropping the
+     * isTurnAround test reports squares nothing reverses at.
+     */
+    @Test
+    public void testTheEditorAsksForLengthsWhereTrainsReverse() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Lengths");
+
+        TileKey turns = new TileKey("main", 1, 1);
+
+        session.setStation(turns, true);
+        session.setPointProperty(turns, "canReverse", Boolean.TRUE);
+        session.rebuild();
+
+        assertTrue(session.isTurnAround(turns),
+            "the fixture did not take: this square must be one trains turn round at");
+
+        // NOTHING MEASURED ANYWHERE: the notice stays away.
+        assertFalse(session.reversalsWithoutLength().contains(turns),
+            "a layout that records no track lengths at all was asked to record one here, which is a "
+            + "notice about something nobody on that railway is trying to do");
+
+        // One length, on a different square, and the layout is now one that measures track.
+        session.setTileLength(new TileKey("main", 2, 1), 7);
+
+        assertTrue(session.reversalsWithoutLength().contains(turns),
+            "the layout measures track now, and the square where a train turns round - the one place "
+            + "the length rule cannot do its job without a number - was not asked about");
+
+        // And once it is measured, the notice goes.
+        session.setTileLength(turns, 5);
+
+        assertFalse(session.reversalsWithoutLength().contains(turns),
+            "the square was measured and is still being asked about");
+    }
+
+    /**
      * A square that already has a name keeps it.
      *
      * Same rule as importing a configuration: this fills gaps, it does not overwrite somebody's work

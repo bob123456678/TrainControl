@@ -39,6 +39,7 @@ public class testNonReversibleTrains
         model.newFeedback(170, null);
         model.newFeedback(171, null);
         model.newFeedback(172, null);
+        model.newFeedback(173, null);
     }
 
     /**
@@ -237,6 +238,169 @@ public class testNonReversibleTrains
         {
             loc.setReversible(was);
         }
+    }
+
+    /**
+     * A train too long for the berth is not backed over the switch (Adam, 2026-09-01).
+     *
+     * "if there is a switch right next to the station and the train is longer than the length of the
+     * station track plus switch track, do we have guards against backing over it?"  There were none.
+     * `validateTrainLength` is the only length rule in the model and it compares the train against a
+     * MAXIMUM SOMEBODY TYPED on the station, not against the track that is actually there - and it is
+     * skipped entirely when that maximum is zero, which is most squares on a real layout.
+     *
+     * So a train reversing into a berth shorter than itself stood across the switch behind it, and
+     * nothing objected. This refuses the path instead.
+     *
+     * **Only where the answer is knowable.** The rule reads the lengths that have been recorded, and
+     * unmeasured track is not a short berth - it is an unknown one. A layout that records no lengths
+     * at all is unaffected; a layout that records some gets a notice in the editor asking for the ones
+     * that matter, which is the other half of what he asked for.
+     *
+     * MUTATION: dropping the reversal test refuses nothing; comparing against the whole path rather
+     * than the track at the reversal accepts this, because the run in is long enough overall.
+     */
+    @Test
+    public void testATrainTooLongForTheBerthIsNotBackedOverTheSwitch() throws Exception
+    {
+        Layout layout = backingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+        Integer wasLength = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(false);
+
+            // The berth and its approach, measured; the train longer than both together.
+            layout.getEdge("BACK_mid", "BACK_end").setLength(3);
+            layout.getEdge("BACK_start", "BACK_mid").setLength(2);
+
+            loc.setTrainLength(10);
+
+            assertFalse(layout.isPathClear(pathThrough(layout), loc, false),
+                "a train ten long was sent to reverse into a berth of three with an approach of two, "
+                + "so it would stand across the switch behind it and nothing objected");
+
+            // And the same railway with a train that fits.
+            loc.setTrainLength(4);
+
+            assertTrue(layout.isPathClear(pathThrough(layout), loc, false),
+                "a train that fits in the berth and its approach was refused, so the rule refuses "
+                + "more than it was asked to");
+
+            // AND THE CONTROL: with nothing measured anywhere the rule cannot know, and says nothing.
+            layout.getEdge("BACK_mid", "BACK_end").setLength(0);
+            layout.getEdge("BACK_start", "BACK_mid").setLength(0);
+
+            loc.setTrainLength(10);
+
+            assertTrue(layout.isPathClear(pathThrough(layout), loc, false),
+                "a layout that records no track lengths was refused a path on the strength of lengths "
+                + "it does not have - unmeasured track is unknown, not short");
+        }
+        finally
+        {
+            loc.setReversible(was);
+            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+        }
+    }
+
+    /**
+     * The room is the WHOLE run in, not the last stretch of it (Adam, 2026-09-01).
+     *
+     * "Do you sum the track segments leading up to it?  if they are long enough, then we are good.  if
+     * segments < train length, then we can't reverse over the switch."
+     *
+     * The first version of the guard added the last two edges, reading "the station track plus switch
+     * track" as a count of segments rather than as an example of them - which is stricter than his
+     * rule everywhere the run in is longer than that, and refuses trains that fit.
+     *
+     * Three segments is the shortest fixture that can tell the two apart: 2 + 3 + 4 is nine, the last
+     * two are seven, and a train of eight fits under his rule and not under the first one.
+     *
+     * MUTATION: summing only the last two edges fails the first assertion.
+     */
+    @Test
+    public void testTheRoomIsEverySegmentLeadingUpToTheReversal() throws Exception
+    {
+        Layout layout = longerBackingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+        Integer wasLength = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(false);
+
+            layout.getEdge("LONG_a", "LONG_b").setLength(2);
+            layout.getEdge("LONG_b", "LONG_mid").setLength(3);
+            layout.getEdge("LONG_mid", "LONG_end").setLength(4);
+
+            loc.setTrainLength(8);
+
+            assertTrue(layout.isPathClear(longPath(layout), loc, false),
+                "a train of eight was refused a run in of nine, so the room is being measured over "
+                + "part of the approach rather than all of it");
+
+            // And ten does not fit in nine.
+            loc.setTrainLength(10);
+
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "a train of ten was accepted into a run in of nine, so nothing is being measured");
+
+            // A SEGMENT NOBODY HAS MEASURED makes the total unknowable, and it is not judged.
+            layout.getEdge("LONG_b", "LONG_mid").setLength(0);
+
+            assertTrue(layout.isPathClear(longPath(layout), loc, false),
+                "a path with an unmeasured segment was refused on a total that cannot be worked out - "
+                + "an unknown length is not a zero one, and the editor's notice is what asks for it");
+        }
+        finally
+        {
+            loc.setReversible(was);
+            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+        }
+    }
+
+    /**
+     * Four points, so the run in to the terminus is three segments long.
+     */
+    private static Layout longerBackingInLayout() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("LONG_a", true, "170");
+        layout.createPoint("LONG_b", true, "171");
+        layout.createPoint("LONG_mid", true, "172");
+        layout.createPoint("LONG_end", true, "173");
+
+        layout.getPoint("LONG_mid").setReversing(true);
+        layout.getPoint("LONG_end").setTerminus(true);
+
+        layout.createEdge("LONG_a", "LONG_b");
+        layout.createEdge("LONG_b", "LONG_mid");
+        layout.createEdge("LONG_mid", "LONG_end");
+
+        return layout;
+    }
+
+    /**
+     * The one path such a layout has.
+     */
+    private static List<Edge> longPath(Layout layout)
+    {
+        List<Edge> path = new LinkedList<>();
+
+        path.add(layout.getEdge("LONG_a", "LONG_b"));
+        path.add(layout.getEdge("LONG_b", "LONG_mid"));
+        path.add(layout.getEdge("LONG_mid", "LONG_end"));
+
+        return path;
     }
 
     /**

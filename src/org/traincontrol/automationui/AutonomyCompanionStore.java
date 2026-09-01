@@ -984,6 +984,26 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Whether this layout records any track length at all.
+     *
+     * Asked of what has been RECORDED rather than of the graph's points, because a length belongs to a
+     * square and most squares are not points - a run of plain track between two sensors is exactly the
+     * thing somebody measures, and it carries no point at all. Scanning the points instead answers
+     * "no" for a layout that has measured everything except its sensors (2026-09-01).
+     *
+     * @return true when at least one square has a length
+     */
+    public boolean measuresAnyTrack()
+    {
+        for (Integer length : tileLengths.values())
+        {
+            if (length != null && length > 0) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param tile
      * @return the length assigned to this tile, 0 if none
      */

@@ -1902,6 +1902,47 @@ public class AutonomySession
         "priority", "home", "excludedLocs");
 
     /**
+     * Squares where trains turn round whose track has no recorded length (Adam, 2026-09-01).
+     *
+     * "Add notices to the autonomy editor to add track lengths between stations and switches that
+     * accept reversal (if any other track length is set anywhere)."
+     *
+     * A train reversing into a berth shorter than itself ends up standing across the switch behind it.
+     * `Layout.isPathClear` refuses that now - but it can only refuse what it can measure, and
+     * unmeasured track is unknown rather than short. These are the squares where that guard is blind.
+     *
+     * **The condition is his, and it is what stops this being a nag.** A railway that records no
+     * lengths anywhere has decided not to model them, and every reversing square on it would be
+     * listed for something nobody is trying to do. One that records some has started, and these are
+     * the ones that matter most.
+     *
+     * @return the squares to ask about, empty when the layout measures nothing
+     */
+    public java.util.Set<TileKey> reversalsWithoutLength()
+    {
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        if (store == null || reducer == null) return out;
+
+        // Asked of what has been recorded, not of the graph's points: a length belongs to a SQUARE,
+        // and the plain track between two sensors - the thing somebody actually measures - carries no
+        // point at all. Scanning points answered "this layout measures nothing" for a layout that had
+        // measured everything except its sensors.
+        if (!store.measuresAnyTrack()) return out;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            // Anywhere a train may turn round - compulsory or optional, the room behind it is the
+            // same question.
+            if (!isTurnAround(tile)) continue;
+
+            if (store.getTileLength(tile) <= 0) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
      * The generated configuration, in the format the autonomy model already reads.
      * @return
      */
@@ -3168,7 +3209,9 @@ public class AutonomySession
             // The two halves of the length rule (FR-046).
             placedTrainsWithoutLength(), stationsWithoutMaxLength(),
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
-            repeatedSensorPages());
+            repeatedSensorPages(),
+            // Squares trains reverse at that nobody has measured (Adam, 2026-09-01).
+            reversalsWithoutLength());
     }
 
     /**

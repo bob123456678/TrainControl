@@ -131,6 +131,11 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
+
+    /**
+     * A square trains reverse at, on a layout that measures track, whose own track is not measured.
+     */
+    public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
     public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
 
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
@@ -341,7 +346,7 @@ public class AutonomyChecks
             coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes, signalsGone,
             stationsWithoutSignal, facingsImpossible, barred,
             Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey, String>emptyMap());
+            Collections.<TileKey, String>emptyMap(), Collections.<TileKey>emptySet());
     }
 
     /**
@@ -359,7 +364,7 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, String> repeatedSensorPages)
+        Map<TileKey, String> repeatedSensorPages, Set<TileKey> reversalsWithoutLength)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -397,6 +402,7 @@ public class AutonomyChecks
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
         findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
+        findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
         findings.addAll(checkProtectingSignals(reducer, signalsGone));
 
         findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
@@ -657,6 +663,45 @@ public class AutonomyChecks
             ReducedPoint point = reducer.getPoints().get(tile);
 
             findings.add(new Finding(Severity.WARNING, SIGNAL_GONE,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A square trains reverse at, whose track has no recorded length (Adam, 2026-09-01).
+     *
+     * "Add notices to the autonomy editor to add track lengths between stations and switches that
+     * accept reversal (if any other track length is set anywhere)."
+     *
+     * A train reversing into a berth shorter than itself stands across the switch behind it, and
+     * `isPathClear` refuses that - but only where the track has been measured, because unmeasured
+     * track is unknown rather than short. So the squares this names are exactly the ones where the
+     * guard cannot do its job: somewhere a train turns round, with nothing recorded about how much
+     * room it has.
+     *
+     * **Only on a layout that measures track at all**, which is his condition and a good one: a
+     * railway that records no lengths has decided not to model them, and a notice on every reversing
+     * square would be a list of things that are not wrong.
+     *
+     * A WARNING, not an error. Nothing here is broken - the guard simply cannot protect this square
+     * until somebody says how long it is.
+     *
+     * @param reversalsWithoutLength the squares, decided by the session
+     */
+    private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
+        Set<TileKey> reversalsWithoutLength)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (reversalsWithoutLength == null) return findings;
+
+        for (TileKey tile : reversalsWithoutLength)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, REVERSAL_NEEDS_LENGTH,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 
