@@ -920,6 +920,186 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A route that cuts the power is never held up by the conflict question.
+     *
+     * Adam, 2026-09-01: **"emergency stop should never conflict or prompt."**
+     *
+     * The test above proves the stop survives a refusal at the AUTOMATIC door, where nobody is asked.
+     * At the two human doors it did not survive at all: `TrainControlUI` and `LayoutLabel` both ask
+     * first and `return` on Cancel, so `execRoute` is never reached and a route that cuts power and
+     * sets a trap point does neither.  Which of those two things the operator was declining is not even
+     * a question the dialog asks - it names one accessory.
+     *
+     * So the question is not asked about such a route.  `conflictingAccessoryAndReason` is what every
+     * door consults before acting, and it now answers "nothing to confirm" whenever the route carries a
+     * stop: no dialog, no wait, no answer that can throw the stop away.  The conflicting accessory is
+     * still skipped and still logged, exactly as at the s88 door - declining to throw a switch under a
+     * moving train is right, and it was never the part in dispute.
+     *
+     * The second assertion is the control.  Without the stop the same route on the same conflict must
+     * still raise the question, or this would be a rule that switched the guard off for everybody.
+     */
+    @Test
+    public void testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("XS_A", false, null);
+        layout.createPoint("XS_B", true, S88);
+
+        Edge ab = layout.createEdge("XS_A", "XS_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("XS_A").setLocomotive(loc);
+
+        final String[][] withStop = {null};
+        final String[][] withoutStop = {null};
+        final boolean[] flagged = {false};
+
+        layout.setCallback("stop route probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            List<RouteCommand> both = new ArrayList<>();
+            both.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+                Accessory.accessoryDecoderType.MM2, true));
+            both.add(RouteCommand.RouteCommandStop());
+
+            MarklinRoute carriesStop = new MarklinRoute(model, "XS with stop", 84921, both, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            flagged[0] = carriesStop.hasEmergencyStop();
+
+            withStop[0] = carriesStop.conflictingAccessoryAndReason();
+
+            List<RouteCommand> accessoryOnly = new ArrayList<>();
+            accessoryOnly.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+                Accessory.accessoryDecoderType.MM2, true));
+
+            withoutStop[0] = new MarklinRoute(model, "XS without stop", 84922, accessoryOnly, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)
+                .conflictingAccessoryAndReason();
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(flagged[0],
+                "the route carrying RouteCommandStop is not recognised as carrying an emergency stop, "
+                + "so nothing below can be about emergency stops");
+
+            // THE CONTROL FIRST, so a rule that simply switched the guard off cannot pass unnoticed.
+            assertNotNull(withoutStop[0],
+                "the same accessory on the same locked path raised no question even without a stop in "
+                + "the route - the conflict guard is off altogether, which is not what was asked for");
+
+            assertNull(withStop[0],
+                "a route that cuts the power still raises the conflict question, so the operator is "
+                + "asked before an emergency stop can run - and answering Cancel throws the stop away "
+                + "at both human doors, because they return before execRoute");
+        }
+        finally
+        {
+            model.go();
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
+     * Deleting a locomotive says how many routes drive it, before it takes their commands away.
+     *
+     * Adam, 2026-09-01, on the behaviour itself: "OK - let\u0027s add a warning about this."
+     *
+     * The behaviour is deliberate and stays: a command naming a locomotive that is not in the database
+     * does nothing when the route fires, and leaving it makes the route look complete while it is not.
+     * v2.8.1 kept those commands, so an operator who deletes a locomotive and adds it back under the
+     * same name - which is how a decoder type gets changed - used to find their routes intact and now
+     * does not.  Nobody was told, and the one log line the deletion writes is about CONDITIONS.
+     *
+     * **Commands only, and that is the half worth testing.**  A condition naming the locomotive is
+     * deliberately left in place, so counting it would warn about something the route keeps.  The
+     * second assertion is a route that only mentions the locomotive in a condition: it must not count.
+     */
+    @Test
+    public void testDeletingALocomotiveCountsTheRoutesThatDriveIt() throws Exception
+    {
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        List<RouteCommand> drives = new ArrayList<>();
+        drives.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, true));
+        drives.add(RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), 20));
+
+        MarklinRoute driving = new MarklinRoute(model, "XD drives", 84931, drives, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        assertTrue(driving.commandsDrive(loc.getName()),
+            "a route carrying a speed command for this locomotive does not report that it drives it, "
+            + "so the warning would say nothing while the commands are deleted anyway");
+
+        assertFalse(driving.commandsDrive("A locomotive with no route at all"),
+            "the count answers yes for a locomotive the route never mentions - it is counting routes "
+            + "rather than routes that name this one");
+
+        // A ROUTE THAT ONLY MENTIONS IT IN A CONDITION KEEPS ITS COMMANDS, so it must not be counted.
+        List<RouteCommand> accessoryOnly = new ArrayList<>();
+        accessoryOnly.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, true));
+
+        List<RouteCommand> namedInACondition = new ArrayList<>();
+        namedInACondition.add(RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), 0));
+
+        MarklinRoute conditionOnly = new MarklinRoute(model, "XD condition", 84932, accessoryOnly, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+            org.traincontrol.base.NodeExpression.fromList(namedInACondition));
+
+        assertFalse(conditionOnly.commandsDrive(loc.getName()),
+            "a route that names the locomotive only in a condition was counted, and its commands are "
+            + "not the ones being deleted - the warning would overstate what is lost");
+    }
+
+    /**
+     * And the confirmation dialog actually asks for that count.
+     *
+     * A count nothing consults is a count nobody reads.  Anchored on the call rather than on the key
+     * alone, because the key existing in the bundles says only that somebody wrote a sentence.
+     */
+    @Test
+    public void testTheDeleteDialogNamesTheRoutesThatWillLoseCommands() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(source.contains("r.commandsDrive(value)"),
+            "the delete flow no longer counts the routes that drive this locomotive, so the "
+            + "confirmation cannot say what deleting it will take away");
+
+        assertTrue(source.contains("ui.confirmDeleteFromDatabaseWithRoutes"),
+            "the delete confirmation no longer uses the message that names the route count, so the "
+            + "operator is asked the old question and told nothing about their routes");
+    }
+
+    /**
      * An s88 route with nothing in its way still runs while autonomy is going (A102).
      *
      * **The automatic door was exercised exactly once in the whole suite, and always with a

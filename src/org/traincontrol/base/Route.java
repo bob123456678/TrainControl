@@ -220,6 +220,29 @@ abstract public class Route
      *
      * @return the commands naming a locomotive, live
      */
+    /**
+     * Whether this route's COMMANDS drive the named locomotive, so deleting it would take them away.
+     *
+     * Asked before the deletion rather than after, because `locomotiveDeleted` removes them silently
+     * and there is then nothing left to count.  Commands only: a CONDITION naming the locomotive is
+     * left alone by that method and reported separately, so counting it here would say a route is about
+     * to lose something it keeps.
+     *
+     * @param name the locomotive that may be deleted
+     * @return true when at least one command in this route drives it
+     */
+    public boolean commandsDrive(String name)
+    {
+        if (name == null) return false;
+
+        for (RouteCommand rc : this.route)
+        {
+            if (namesALocomotive(rc) && name.equals(rc.getName())) return true;
+        }
+
+        return false;
+    }
+
     private java.util.List<RouteCommand> namesLocomotives()
     {
         java.util.List<RouteCommand> out = new java.util.ArrayList<>();

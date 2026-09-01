@@ -17313,9 +17313,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
+        // THE ROUTES THAT DRIVE IT, COUNTED BEFORE IT GOES (Adam, 2026-09-01).
+        //
+        // Deleting a locomotive removes every command that drives it from every route - the reasoning
+        // is in Route.locomotiveDeleted and it is sound, since a command naming a locomotive that does
+        // not exist does nothing when the route fires and leaving it makes the route look complete
+        // while it is not.  What was missing is that nobody was told.  v2.8.1 kept those commands, so
+        // an operator who deletes a locomotive and adds it back under the same name - which is how a
+        // decoder type gets changed - used to find their routes intact and now does not.
+        //
+        // Counted here rather than reported afterwards, because by then there is nothing left to count.
+        // Commands only: a CONDITION naming the locomotive is deliberately left in place and is
+        // reported on its own line by the deletion itself, so counting it here would say a route is
+        // about to lose something it keeps.
+        int drivenBy = 0;
+
+        for (String routeName : this.model.getRouteList())
+        {
+            Route r = this.model.getRoute(routeName);
+
+            if (r != null && r.commandsDrive(value)) drivenBy++;
+        }
+
+        String question = drivenBy > 0
+            ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes", value, drivenBy)
+            : I18n.f("ui.confirmDeleteFromDatabase", value);
+
         if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
                 source,
-                I18n.f("ui.confirmDeleteFromDatabase", value),
+                question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,

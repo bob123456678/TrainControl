@@ -343,8 +343,41 @@ public class MarklinRoute extends Route
      *
      * @return the accessory's name and the message key for the refusal, or null when it is safe
      */
+    /**
+     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list.
+     *
+     * Adam, 2026-09-01: "emergency stop should never conflict or prompt."
+     *
+     * @return true when any command in this route stops the railway
+     */
+    public boolean hasEmergencyStop()
+    {
+        for (RouteCommand rc : this.route)
+        {
+            if (rc != null && rc.isStop()) return true;
+        }
+
+        return false;
+    }
+
     public String[] conflictingAccessoryAndReason()
     {
+        // AN EMERGENCY STOP IS NEVER A QUESTION (Adam, 2026-09-01).
+        //
+        // "Emergency stop should never conflict or prompt."
+        //
+        // Every door asks this before it acts, and the two HUMAN doors then `return` on Cancel - so a
+        // route that cuts the power AND sets a trap point did neither, and the dialog that decided it
+        // named one accessory and never mentioned the stop.  Whichever way the operator answered, they
+        // were not answering about the power.
+        //
+        // Answering "nothing to confirm" here takes the question away at every door at once, which is
+        // the property that matters: an emergency stop must not wait on a dialog, and must not be
+        // discarded by one.  The conflicting accessory is still skipped and still logged by the
+        // per-command check below, exactly as at the s88 door - declining to throw a switch under a
+        // moving train was never the part in dispute.
+        if (this.hasEmergencyStop()) return null;
+
         return accessoryHeldByAutonomy();
     }
     
@@ -665,7 +698,13 @@ public class MarklinRoute extends Route
                                     // this route by turning on the override - being asked again at
                                     // every remaining accessory would be unusable, and would let one
                                     // route end up half in each state anyway.
-                                    if (!auto && this.network.getGUI() != null
+                                    // AND NOT MIDWAY EITHER (Adam, 2026-09-01).  The check above takes
+                                    // the question away before the route starts; this one could put it
+                                    // back seconds later, while the power is still on and the operator
+                                    // is watching a train they wanted stopped.  Same rule, both ends:
+                                    // a route that cuts the power skips the accessory and carries on.
+                                    if (!auto && !this.hasEmergencyStop()
+                                        && this.network.getGUI() != null
                                         && this.network.getGUI().confirmRouteConflictMidway(
                                             this, now[0], now[1]))
                                     {
