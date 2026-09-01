@@ -26,6 +26,7 @@ waiting on Adam.
 | `CMT` | [Comments and documentation](2026-09-01-comments-and-docs-review.md) | Sonnet | 4 B, 3 C, 4 D |
 | `FV2` | [Validation of the fixes](2026-09-01-fix-validation.md) | Opus | 1 A, 3 B, 10 C, 5 D |
 | `SV2` | [Second validation](2026-09-01-second-validation.md) | Opus | 2 A, 2 B, 7 C, 6 D |
+| `TV2` | [Third validation](2026-09-01-third-validation.md) | Opus | 1 A, 3 B, 7 C, 5 D |
 
 **The round did not run to completion.** The highest-severity findings were validated and either fixed
 or deferred; a large tail of C items is recorded in the individual documents and has not been
@@ -99,6 +100,9 @@ telling agents not to run tests, but never let that be the only thing between th
 | `SV2-A2` | The lock lived in a per-session directory, so it could never have seen the other battery; and the probe was blind to the compile window | `208b3ee1` |
 | `SV2-B1` | The terminus test could not fail - it asked only that the outcome was not IMPOSSIBLE | `208b3ee1` |
 | `SV2-C6` | "`ps -W` cannot see java.exe" was false and was cited as fact | `208b3ee1` |
+| `TV2-A1` | **`one.sh` had none of the five concurrency corrections** - no lock, the narrow probe, the old numeric arm - because it lived only in a scratch directory where no review could see it | `_pending_` |
+| `TV2-C1` | The javac clause matched `*TrainControl*`, which is on neither runner's compile command line; the "measurement" that confirmed it was matching a different clause | `_pending_` |
+| `TV2-B2`, `TV2-B3` | Two sentences in `AutomationAPI.md` describing behaviour the code does not have | `_pending_` |
 
 The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
 `IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with

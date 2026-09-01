@@ -108,11 +108,18 @@ LOCK="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
 # Adam's own running application is deliberately NOT matched.  It is not a test JVM, it does not
 # redirect the preference, and blocking every battery while he has the app open would be the kind of
 # over-strict guard that gets deleted rather than obeyed.
-# javac too (SV2-A2): a battery spends its first minute or two compiling, and during that
-# window it owns no JVM at all - which is precisely when the two runs of 2026-09-01
-# overlapped, both of them in javac.  Narrowed to this project so that compiling something
-# else does not block a battery.
-PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe' OR Name='javac.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' -or (\$_.Name -eq 'javac.exe' -and \$_.CommandLine -like '*TrainControl*') } | Measure-Object).Count"
+# javac too (SV2-A2): a battery owns no JVM at all while it is compiling, which is precisely
+# where the two runs of 2026-09-01 overlapped - both of them in javac.  Measured on this
+# machine the javac process itself lives only a few seconds, not the "minute or two" an
+# earlier version of this comment claimed; short is not the same as absent, and two runs
+# started together land in it together.
+#
+# MATCHED BY THE ARGFILE, not by the project name (TV2-C1).  The first version of this asked
+# for a javac whose command line contains "TrainControl", and neither runner's compile has
+# that on it when cp.txt holds relative paths - which this session's does.  The measurement
+# that "confirmed" it was matching the testng clause instead.  What IS always present is the
+# argfile: one-files.txt or battery-files.txt.
+PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe' OR Name='javac.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' -or \$_.CommandLine -like '*one-files*' -or \$_.CommandLine -like '*battery-files*' } | Measure-Object).Count"
 
 RUNNING_JVMS=$(powershell.exe -NoProfile -Command "$PROBE" 2>/dev/null | tr -d '\r\n ')
 
