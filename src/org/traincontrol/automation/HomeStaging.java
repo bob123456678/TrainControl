@@ -944,16 +944,30 @@ public final class HomeStaging
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
         int expansions = 0;
 
-        // A train already standing somewhere that turns trains sets off turned; anywhere else it does
-        // not.  Terminus as well as reversing point (FV2-B2): `executePath` turns the train on arrival
-        // at either, in one statement, so both leave it facing back the way it came.
+        // A train already standing on a reversing point sets off turned; anywhere else it does not.
         //
-        // `connected` seeds itself the same way, and it has to: it is the proof of impossibility and
-        // this is the route search, so a journey this one would take must never be one that one calls
-        // impossible.
+        // NOT A TERMINUS, and this was briefly changed to include one (FV2-B2, reverted by SV2-A1).
+        // The argument for adding it was that `executePath` flips direction on arrival at a terminus
+        // and at a reversing point alike, in one statement - which is true, and not what this flag
+        // means.  `turned` is asked at arrival, by `mustBackIn`, and it means "this train will BACK
+        // INTO the terminus it is ending at".
+        //
+        // At a reversing point the arrival flip leaves the train trailing, so it goes on backing:
+        // seeding true is right.  At a TERMINUS the flip is the one that turns a backed-in train round
+        // to face out again - it is spent - so a train leaving a terminus leaves FORWARDS.  Seeding
+        // true there counts the same flip twice and tells the planner a train arrives backing in when
+        // it arrives nose first.
+        //
+        // What that produces is a plan that strands a locomotive: sent nose first into a berth it
+        // cannot reverse out of, on Adam's own rule that "non reversing trains must be able to back
+        // into a terminus".  Nothing downstream would have caught it - isPathClear has had no terminus
+        // rule since his ruling of 2026-09-01, and the timetable simply drives the plan.
+        //
+        // `connected` does seed from either, deliberately.  It is the proof of impossibility, and a
+        // proof may only be looser than the search, never tighter: the invariant is that `connected`
+        // accepts everything `firstClearRoute` would, not that the two agree.
         queue.add(new Candidate(from, new LinkedList<Edge>(),
-            new HashMap<String, Accessory.accessorySetting>(),
-            from.isReversing() || from.isTerminus()));
+            new HashMap<String, Accessory.accessorySetting>(), from.isReversing()));
 
         while (!queue.isEmpty() && expansions++ < ROUTE_SEARCH_LIMIT)
         {

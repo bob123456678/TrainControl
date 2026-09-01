@@ -386,24 +386,32 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * ...and so has one standing on a TERMINUS, which is the half that bites on the real railway.
+     * A train leaving a TERMINUS leaves forwards, so the planner may not claim it can back in.
      *
-     * FV2-B2.  The runtime turns a train on arrival at a terminus or a reversing point, in one
-     * statement - `if (end.isTerminus() || end.isReversing())` in `executePath`.  So "a train already
-     * standing on a reversing point sets off turned" is true of a terminus word for word, and the first
-     * fix for D24-B1 took only the reversing limb.
+     * The other half of D24-B1 was that `executePath` flips direction on arrival at a terminus and at a
+     * reversing point alike, in one statement.  True - and it does not mean the two seed this search
+     * the same way, which is what the first fix assumed and what SV2-A1 caught before it shipped.
      *
-     * **This is the reachable one.**  On a diagram-derived graph a reversing Point is not a destination,
-     * so `plan()`'s own `!isDestination()` clause catches that locomotive before `connected` is asked at
-     * all.  A terminus copy IS emitted as a destination, and Adam's parking berths are termini - so the
-     * case that survives to reach this code is a train parked in a berth, homed at another berth, with
-     * nothing between them that turns anything.
+     * `turned` is asked at arrival by `mustBackIn`, and it means "this train will BACK INTO the berth
+     * it is ending at".  At a reversing point the arrival flip leaves the train trailing, so it goes on
+     * backing.  At a terminus that flip is the one that turns a backed-in train round to face OUT
+     * again; it is spent.  A train leaving a berth leaves forwards, and would arrive nose first at the
+     * next one - stuck in a berth it cannot reverse out of, which is the whole of what Adam asked for
+     * when he said non-reversing trains must back in.
      *
-     * MUTATION: dropping `|| from.isTerminus()` from `connected` fails this and leaves the reversing
-     * test above green.
+     * **So the right answer here is that no plan is found, and the point of the test is WHICH refusal.**
+     * `NO_PLAN_FOUND` says "I did not find a way" and is allowed to be wrong.  `IMPOSSIBLE` says "there
+     * is no way", and this class only ever offers that as a proof - the operator is told to go and look
+     * at the track.  `connected` is what makes that claim, and it seeds from a terminus as well as a
+     * reversing point precisely so it cannot over-claim: a proof may be looser than the search it
+     * guards, never tighter.
+     *
+     * MUTATION: dropping `|| from.isTerminus()` from `connected` turns the outcome into IMPOSSIBLE and
+     * fails the first assertion.  Restoring it in `firstClearRoute` as well fails the second, because
+     * the planner then offers a plan that drives a train nose first into a berth it cannot leave.
      */
     @Test
-    public void testATrainStandingOnATerminusHasAlreadyTurnedToo() throws Exception
+    public void testALeavingTerminusDoesNotCountAsHavingBackedIn() throws Exception
     {
         Layout layout = new Layout(model);
 
@@ -431,10 +439,18 @@ public class testReturnHomeSequencesAReversal
 
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
+            // NOT PROVED IMPOSSIBLE.  There is a route on the graph; what there is not is a route that
+            // turns the train, and that is a fact about this locomotive rather than about the railway.
             assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
-                "a train parked in a terminus berth, homed at another one, was PROVED unable to get "
-                + "there - but it was turned round as it arrived where it stands, exactly as it would "
-                + "be on arrival at the berth it is going to.  Blocked: " + plan.getBlocked());
+                "the planner PROVED there is no way from one berth to the other, which is a claim about "
+                + "the track - and the track is fine.  Blocked: " + plan.getBlocked());
+
+            // AND NO PLAN EITHER, which is the half the first version of this test left out and could
+            // not have caught: it asked only that the outcome was not IMPOSSIBLE, and NO_PLAN_FOUND
+            // satisfies that whichever way firstClearRoute is seeded.
+            assertFalse(plan.isPossible(),
+                "the planner offered a plan that drives a non-reversible train out of one berth and "
+                + "nose first into another it cannot reverse out of: " + plan.getMoves());
         }
         finally
         {

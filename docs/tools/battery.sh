@@ -62,7 +62,21 @@ CP="$(cat "$S/cp.txt")"
 # The lock is the fix - the second battery now refuses to start and says which process is already
 # going. The per-run directory is the belt: if two ever do overlap despite it, a stale lock or a killed
 # run, they no longer compile over each other, and the failure is slow rather than wrong.
-LOCK="$S/battery.lock"
+# USER-WIDE, NOT PER-SESSION (SV2-A2).
+#
+# This was "$S/battery.lock", and $S is TC_SCRATCH - a directory per agent session.  So two sessions
+# took two different lock files, neither ever looked at the other, and the lock could not have
+# prevented a single one of the overlaps it was written for.  Every liveness fix applied to it on
+# 2026-09-01 was work on the wrong mechanism.
+#
+# The crash dumps in the repository root are the evidence: battery-40080 ran out of
+# .../0362837d-.../scratchpad/tc and battery-32945 out of .../51b92044-.../scratchpad, and they died
+# seconds apart inside the same window.  Four different session ids appear across those files.
+#
+# TEMP is the same directory for every session of the same user, which is the scope the hazard has -
+# the Java Preferences store these runs fight over is per user, not per session.  TC_LOCK overrides it
+# for anyone who needs to.
+LOCK="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
 
 # THE LOCK IS A PROXY.  THE TEST JVMS ARE THE HAZARD (2026-09-01).
 #
@@ -94,7 +108,11 @@ LOCK="$S/battery.lock"
 # Adam's own running application is deliberately NOT matched.  It is not a test JVM, it does not
 # redirect the preference, and blocking every battery while he has the app open would be the kind of
 # over-strict guard that gets deleted rather than obeyed.
-PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' } | Measure-Object).Count"
+# javac too (SV2-A2): a battery spends its first minute or two compiling, and during that
+# window it owns no JVM at all - which is precisely when the two runs of 2026-09-01
+# overlapped, both of them in javac.  Narrowed to this project so that compiling something
+# else does not block a battery.
+PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe' OR Name='javac.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' -or (\$_.Name -eq 'javac.exe' -and \$_.CommandLine -like '*TrainControl*') } | Measure-Object).Count"
 
 RUNNING_JVMS=$(powershell.exe -NoProfile -Command "$PROBE" 2>/dev/null | tr -d '\r\n ')
 

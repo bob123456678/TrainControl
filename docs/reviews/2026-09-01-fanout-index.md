@@ -25,6 +25,7 @@ waiting on Adam.
 | `TCX` | [The test suite](2026-09-01-test-suite-review.md) | Opus | 4 A, 13 B, 9 C, 9 D |
 | `CMT` | [Comments and documentation](2026-09-01-comments-and-docs-review.md) | Sonnet | 4 B, 3 C, 4 D |
 | `FV2` | [Validation of the fixes](2026-09-01-fix-validation.md) | Opus | 1 A, 3 B, 10 C, 5 D |
+| `SV2` | [Second validation](2026-09-01-second-validation.md) | Opus | 2 A, 2 B, 7 C, 6 D |
 
 **The round did not run to completion.** The highest-severity findings were validated and either fixed
 or deferred; a large tail of C items is recorded in the individual documents and has not been
@@ -39,15 +40,30 @@ rule 1 forbidding it in bold. Every test JVM and battery shell was killed, all s
 and the live layout was fingerprinted and backed up. No damage was done *during* the fan-out: the
 `cs2_sample_layout/` diff-stat was identical before and after.
 
-Two mechanical facts made it possible, and both are now fixed (`b00ac0c1`, `a33b9ae1`, corrected again
-in the validation pass - see below):
+**And the first three explanations of it were all wrong.** This section said, in turn, that the lock
+failed open on `kill -0`, then that the correction for that asked Windows about an MSYS pid, then that
+`ps -W` cannot see `java.exe`. The first two were real defects in the guard and are fixed. Neither was
+the cause, and the third was simply false:
 
-- `battery.sh`'s lock refused only when `kill -0` **succeeded**, so any pid it could not resolve fell
-  through and started a second run. **The first correction for this was itself a regression** - see
-  `FV2-A1` in the validation pass: it asked Windows about `$$`, which is the MSYS pid, so every LIVE
-  battery read as stale. The lock holds `/proc/$$/winpid` now and accepts either liveness answer, and
-  that was verified against a genuinely running battery rather than a hand-written value.
-- `ps -W` in this Git Bash cannot see `java.exe` at all. It reported zero while two batteries ran.
+- **The cause (`SV2-A2`).** `LOCK="$S/battery.lock"` and `$S` is `TC_SCRATCH`, **a directory per agent
+  session**. Two sessions took two different lock files and neither ever looked at the other, so no
+  version of the liveness test could have stopped a single one of these overlaps. The repository's own
+  crash dumps say so: `battery-40080` ran out of `.../0362837d-.../scratchpad/tc` and `battery-32945`
+  out of `.../51b92044-.../scratchpad`, dying seconds apart, and four distinct session ids appear
+  across those files. The lock now lives under `TEMP`, which is one directory for the whole user —
+  which is the scope the hazard has, since the Java Preferences store these runs fight over is per
+  user.
+- **The compile window (`SV2-A2` again).** A battery spends its first minute or two in `javac` and owns
+  no JVM at all, and the process probe looked only for `java.exe`. Both overlapping runs were in
+  `javac`. The probe now matches `javac.exe` for this project too — measured at 1 during a real compile.
+- **Retracted: `ps -W` sees java perfectly well.** With a test JVM running, `ps -W | grep -ci java`
+  returns 2. The zero I reported was my own grep or my timing, not a limitation of the tool, and it was
+  cited here and in a memory as though it were a fact about the environment.
+
+The two real guard defects are fixed as well (`b00ac0c1`, `a33b9ae1`, `c9153aaf`): the lock's liveness
+test asked `kill -0`, which fails open, and its replacement asked Windows about `$$`, which is the MSYS
+pid, so every LIVE battery read as stale (`FV2-A1`). The lock holds `/proc/$$/winpid` now and accepts
+either answer.
 
 And the guard written that morning was itself wrong twice, found by this round as `SVN-A2`: it matched
 only a flag this project's own runners set, so an `ant` or NetBeans run was invisible; and a probe that
@@ -79,6 +95,10 @@ telling agents not to run tests, but never let that be the only thing between th
 | `FV2-C5` | `battery.sh`'s numeric arm matched on the first character, so a malformed count skipped the warning added for it | `f59fa45e` |
 | `FV2-C7` | `isShut()` and `isImpassable()` were the same predicate, with no caller for the first | `f59fa45e` |
 | `FV2-C10` | "Each code fix was mutation-confirmed" covered a shell script that has no test | `f59fa45e` |
+| `SV2-A1` | **The FV2-B2 fix to `firstClearRoute` was a regression that would have driven a train nose-first into a berth it cannot leave** | `_pending_` |
+| `SV2-A2` | The lock lived in a per-session directory, so it could never have seen the other battery; and the probe was blind to the compile window | `_pending_` |
+| `SV2-B1` | The terminus test could not fail - it asked only that the outcome was not IMPOSSIBLE | `_pending_` |
+| `SV2-C6` | "`ps -W` cannot see java.exe" was false and was cited as fact | `_pending_` |
 
 The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
 `IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with
