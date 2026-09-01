@@ -316,6 +316,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-31 | OB-166 | bug | a hand dispatch swept every protecting signal, so an empty platform was commanded green | - | [MT-246](tests.md#mt-246) |
 | 2026-08-31 | OB-165 | bug | Return Home stayed dark after a train left its claimed home | - | [MT-165](tests.md#mt-165) |
 | 2026-08-31 | OB-164 | bug | the diagram right-click menu offers no destinations in non-atomic mode - closed as a known limitation | declined | - |
 | 2026-08-30 | OB-159 | bug | locomotive icon over stations while running | - | [MT-242](tests.md#mt-242) |

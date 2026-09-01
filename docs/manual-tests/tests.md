@@ -26,6 +26,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-243](#mt-243) | 2026-08-31 | Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone | needs test | RGN-A1, IPR-A1 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
 | [MT-245](#mt-245) | 2026-08-31 | A home on a main-line platform, and it is still there next start | needs test | DAY-B3 |
+| [MT-246](#mt-246) | 2026-08-31 | Signals stay put, and a non-reversing train backs into its home | needs test | OB-166 |
 
 Everything else - 231 of 242 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -13194,5 +13195,67 @@ mainline stations work, but parking terminuses do not.  consider TunnelLeftPark 
 non-auto stations should still be manually selectable.  and trains should be allowed to back into terminuses if they are not reversible (that's why we have the reversing point at feedback 2013).
 
 *Run against commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-246"></a>
+
+### MT-246 - 2026-08-31 - Signals stay put, and a non-reversing train backs into its home
+
+**Disposition:** needs test
+**From:** OB-166
+
+**Written:** 2026-08-31
+
+**Two rulings in one test, because the second one is the reason the first is safe.**
+
+**The signals.**
+
+1. **Set signal 64 red by hand**, with nothing standing at TopMainR2 and nothing running.
+2. **Send a train from BottomInnerOtherside to BottomInner.** Signal 64 must still be red afterwards.
+   That is the whole of OB-166.
+3. **Start full autonomy** with a train standing somewhere protected. No signal should move until a
+   route actually activates over it.
+4. **Then watch a route activate over a protected platform** - a train arriving should still turn its
+   signal red, and leaving should turn it green. That half must still work.
+
+**What this deliberately gives up**, and the thing to look out for: a train you place BY HAND at a
+protected platform while nothing is running now keeps whatever aspect its signal already showed. It is
+no longer protected the moment a run starts. If that turns out to matter more than the unnecessary
+commands did, say so and I will put the sweep back for occupied platforms only.
+
+**The homing.**
+
+5. **Take a locomotive that is not reversible** and give it a home at a parking terminus -
+   TunnelLeftPark, or whichever you tried on MT-245.
+6. **Drive it away and press Return Home.** It should go, and it should arrive having been turned
+   round on the way, at the reversing point - backing in, not nose-first.
+7. **A terminus with no reversing point on the way to it** should now be reported as impossible for
+   that locomotive, rather than offered and then failing on the first move.
+
+#### Comments
+
+**Claude, 2026-08-31.** Measured before either was changed, against a copy of your layout rather than
+the folder itself.
+
+**OB-166.** Signal 64 protects TopMainR2's two copies and nothing else; both were empty; and the only
+route from BottomInnerOtherside to BottomInner does not command it. What moved it was
+`refreshAllProtectingSignals` - a sweep that re-commands EVERY protecting signal on the layout from
+current occupancy, fired the first time anything is dispatched by hand. It protects and it also
+releases, so an empty protected platform gets commanded green.
+
+On your ruling - "Signals should only be touched when a route activates" - the sweep is gone from all
+three doors that had it, so manual and automatic still behave the same way, which is your earlier rule.
+
+**The homing.** The runtime already insisted a non-reversible train may only reach a terminus by a
+route that turns it. The PLANNER did not know that rule: its reachability check was a plain search, so
+a home reachable only by a route with no reversing point read as reachable, and Return Home would hand
+you a plan the runtime refuses on its first move. The search carries the requirement now.
+
+The part that made it more than a flag, in case it matters later: a square reached with a reversal
+behind it and the same square reached without one are two different states. A turning route may be
+longer, so arriving somewhere the short way must not close off the long one.
+
+*Run against a build after commit fbc19cb9.*
 
 ---
