@@ -48,9 +48,21 @@ public class testReturnHomeSequencesAReversal
 
     private static String swtch;
 
+    /**
+     * The layout preference, pointed at a throwaway copy before anything is constructed.
+     *
+     * Not optional, and not a formality: the window opens whatever the saved preference names, which on
+     * Adam's machine is his real railway.  The first version of this class went without it and
+     * testSwitchingToACentralStationLayout caught it - "there are now 57 test classes that build a model
+     * without pointing the layout preference at a sandbox first, up from 56".
+     */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
 
         for (int i = 0; i < 3; i++)
@@ -61,6 +73,12 @@ public class testReturnHomeSequencesAReversal
         MarklinAccessory acc = model.newSwitch(SWITCH_ADDRESS, MM2, false);
 
         swtch = acc.getName();
+    }
+
+    @org.testng.annotations.AfterClass
+    public static void tearDownClass()
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**

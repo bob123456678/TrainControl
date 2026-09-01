@@ -94,7 +94,15 @@ public class LocomotivePlaceholder
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            g.setStroke(new BasicStroke(Math.max(1f, h / 24f)));
+            // A THIRTY-SECOND OF THE HEIGHT, not a twenty-fourth (Adam, 2026-09-01: "make the edges of
+            // the placeholder locomotive icon slightly thinner").  This is a placeholder standing where
+            // a photograph goes, so its lines should be quieter than the picture that replaces it - a
+            // heavy outline reads as a drawing somebody meant, rather than as an empty frame.
+            //
+            // Still scaled by the height rather than fixed, so the shape holds together at the small
+            // sizes the locomotive panel draws it at, and still floored at one pixel: below that the
+            // line disappears in places and the body looks torn.
+            g.setStroke(new BasicStroke(Math.max(1f, h / 32f)));
 
             // PADDING ALL ROUND, so nothing is cut off at the edges.
             //

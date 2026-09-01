@@ -1509,7 +1509,23 @@ public class TileAnnotation
 
     private void paintBadge(Graphics2D g, int width, int height)
     {
-        Color colour = badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
+        // ORANGE WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE, which is one question and now has one
+        // colour (Adam, 2026-09-01: "should they always be orange...?").
+        //
+        // A cross took whichever colour the square would have had if it were working, so the same
+        // switched-off square drew blue or orange depending on a setting that means nothing while it is
+        // switched off - a difference the reader can see and cannot use.
+        //
+        // Orange rather than blue because the graph window already paints an inactive point orange, and
+        // these two constants exist precisely so that somebody who has read one view can read the
+        // other; a switched-off square that was blue here and orange there is the disagreement they
+        // were declared to prevent.
+        //
+        // Colour and shape stay separate questions, as they are everywhere else on this diagram: the
+        // colour says whether autonomy uses the square, the mark says what the square does.  Parking
+        // and out-of-service are both "autonomy leaves this alone", so they share the colour; only one
+        // of them is a place a train can stand, and the cross is what says so.
+        Color colour = badge.isParking() || badge.isImpassable() ? POINT_INACTIVE : POINT_ACTIVE;
 
         // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
         // 17px there, the same proportion here.
@@ -1637,7 +1653,20 @@ public class TileAnnotation
             int cx = on[0];
             int cy = on[1];
 
-            g.setStroke(new BasicStroke(2f));
+            // THE WEIGHT THE OLD REVERSING-POINT CROSS HAD (Adam, 2026-09-01: "make the X a little
+            // thicker, close to what we had in the old reversing points").
+            //
+            // That one was `Math.max(1.5f, size / 7f)` with round ends, so its thickness grew with the
+            // mark.  A flat 2f did not: the cross was as heavy on a large tile as on a small one, which
+            // at the sizes the diagram is actually drawn at made it look drawn in pencil beside badges
+            // stroked at 2f over a third of the width.
+            //
+            // A seventh of the mark, floored at the 2f it used to be so that nothing gets thinner than
+            // it already was, and round caps and joins because a cross meeting at a sharp mitre grows a
+            // spike at the crossing that reads as a fifth arm.
+            g.setStroke(new BasicStroke(Math.max(2f, mark / 7f),
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
             g.setColor(colour);
 
             g.drawLine(cx - mark / 2, cy - mark / 2, cx + mark / 2, cy + mark / 2);

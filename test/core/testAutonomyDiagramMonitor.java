@@ -1061,6 +1061,139 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A square nothing can pass is drawn in the colour that means "autonomy leaves this alone".
+     *
+     * Adam: "should they always be orange with the 'full autonomy' option just greyed out?"
+     *
+     * The cross used to take whichever colour the square would have had if it were working, so the
+     * same switched-off square came out blue or orange depending on a setting that means nothing while
+     * it is switched off - a difference the reader can see and cannot use.  Orange, because the graph
+     * window paints an inactive point orange and the two colour constants are declared to keep the
+     * views agreeing.
+     *
+     * The badge is NOT a parking berth in the first case, which is what makes this a test: parking was
+     * already the orange one, and a fixture that set both would pass on the old rule as well.
+     *
+     * MUTATION: dropping isImpassable from the colour makes the first assertion fail.
+     */
+    @Test
+    public void testASwitchedOffSquareTakesTheColourAutonomySkips() throws Exception
+    {
+        final int size = 40;
+
+        java.awt.Color shut = markColour(plainBadge(false, true), size);
+        java.awt.Color parking = markColour(plainBadge(true, false), size);
+        java.awt.Color working = markColour(plainBadge(false, false), size);
+
+        assertEquals(shut, parking,
+            "a switched-off square is drawn in a different colour from a parking berth, though the "
+            + "colour on this diagram answers one question - will autonomy send a train here - and "
+            + "both of them answer it no");
+
+        assertNotEquals(shut, working,
+            "a switched-off square is drawn in the same colour as one in use, so the only thing "
+            + "telling them apart is the mark, and colour is saying nothing");
+    }
+
+    /**
+     * The cross gets heavier as the tile gets bigger, the way the old reversing-point cross did.
+     *
+     * Adam: "make the X a little thicker, close to what we had in the old reversing points."  That one
+     * was stroked at a seventh of its own size, so it kept its weight relative to everything around it.
+     * The cross here was stroked at a flat 2f, which is the whole of the difference: its arms grow with
+     * the tile and its thickness did not, so it thinned out visibly at the sizes the diagram is drawn
+     * at while the badges beside it stayed solid.
+     *
+     * MEASURED BY HOW THE MARK GROWS, not by a pixel width, because the width is an implementation
+     * detail and the property Adam asked for is the proportion.  Both arms and thickness scale with the
+     * tile, so the ink goes up with the SQUARE of the size; with a fixed stroke only the arms scale and
+     * it goes up in step with it.  Doubling the tile therefore roughly quadruples the ink under the
+     * rule and roughly doubles it without, and three times over is comfortably between the two.
+     *
+     * MUTATION: putting back the flat 2f gives a ratio near two and fails.
+     */
+    @Test
+    public void testTheCrossKeepsItsWeightAsTheTileGrows() throws Exception
+    {
+        int small = inkOf(badgeAt(true, true, true, 40));
+        int large = inkOf(badgeAt(true, true, true, 80));
+
+        assertTrue(small > 0, "the cross drew nothing at all at the smaller size");
+
+        assertTrue(large > small * 3,
+            "doubling the tile did not thicken the cross with it - its arms grew and its stroke did "
+            + "not, so it thins out as the diagram gets bigger.  Ink " + small + " then " + large);
+    }
+
+    /**
+     * An ordinary station badge, where the only things that vary are the two that decide its colour.
+     */
+    private static TileAnnotation.Badge plainBadge(boolean parking, boolean shut)
+    {
+        return new TileAnnotation.Badge(true, false, false, parking, true, Side.W, Side.E, false, shut);
+    }
+
+    /**
+     * The colour the mark is actually drawn in - the commonest solid pixel that is not the white a
+     * badge is lined and hollowed with, which says nothing about which colour was chosen.
+     */
+    private static java.awt.Color markColour(TileAnnotation.Badge b, int size) throws Exception
+    {
+        TileAnnotation annotation = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false);
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            annotation.paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int argb = image.getRGB(x, y);
+
+                // Solid pixels only: the antialiased fringe of a stroke is every shade between the
+                // colour and nothing, and counting it would make the answer depend on the shape.
+                if ((argb >>> 24) < 200) continue;
+
+                int rgb = argb & 0xFFFFFF;
+
+                if (rgb == 0xFFFFFF) continue;
+
+                counts.put(rgb, counts.containsKey(rgb) ? counts.get(rgb) + 1 : 1);
+            }
+        }
+
+        int best = -1;
+        int most = 0;
+
+        for (java.util.Map.Entry<Integer, Integer> e : counts.entrySet())
+        {
+            if (e.getValue() > most)
+            {
+                most = e.getValue();
+                best = e.getKey();
+            }
+        }
+
+        assertTrue(best >= 0, "the badge drew no solid colour at all, so there is nothing to compare");
+
+        return new java.awt.Color(best);
+    }
+
+    /**
      * One badge, painted on its own, for counting.
      */
     private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns, boolean shut,
