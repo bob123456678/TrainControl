@@ -941,11 +941,12 @@ public final class HomeStaging
         if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();
-        Map<Point, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
+        Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
         int expansions = 0;
 
+        // A train already standing on a reversing point sets off turned; anywhere else it does not.
         queue.add(new Candidate(from, new LinkedList<Edge>(),
-            new HashMap<String, Accessory.accessorySetting>()));
+            new HashMap<String, Accessory.accessorySetting>(), from.isReversing()));
 
         while (!queue.isEmpty() && expansions++ < ROUTE_SEARCH_LIMIT)
         {
@@ -954,6 +955,10 @@ public final class HomeStaging
             for (Edge e : this.layout.getNeighbors(current.at))
             {
                 Point next = e.getEnd();
+
+                // Whether the train has been turned round by the time it stands here.  Part of the
+                // STATE, not of the square - see Candidate.turned.
+                boolean turned = current.turned || next.isReversing();
 
                 if (!canEnter(next, loc, blocked, state)) continue;
 
@@ -983,18 +988,39 @@ public final class HomeStaging
                 // Two edges asking one accessory for opposite settings
                 if (commands == null) continue;
 
-                if (alreadyReached(seen, next, commands)) continue;
+                // KEYED BY THE SITUATION, not by the square.
+                //
+                // The same point reached with a reversal behind it and without one are two states, and
+                // collapsing them means the first arrival - usually the short way, which does not turn
+                // the train - closes off the only route that could have backed it in.
+                String key = next.getUniqueId() + (turned ? "/turned" : "/straight");
 
-                if (!seen.containsKey(next)) seen.put(next, new ArrayList<>());
-                seen.get(next).add(commands);
+                if (alreadyReached(seen, key, commands)) continue;
+
+                if (!seen.containsKey(key)) seen.put(key, new ArrayList<>());
+                seen.get(key).add(commands);
 
                 List<Edge> route = new LinkedList<>(current.route);
                 route.add(e);
 
-                if (next.equals(to)) return route;
+                // TURNED ROUND ON THE WAY, when the destination demands it (Adam, 2026-08-31).
+                //
+                // "For homing: I would also like non-reversing trains to have to back in."  A
+                // terminus is a place a train can only leave by reversing, so one that cannot reverse
+                // has to arrive already turned - and this is the method that decides what it actually
+                // does, so this is where the rule has to bite.  Refusing here rather than accepting
+                // and letting the runtime refuse is the difference between a plan that works and one
+                // that fails on its first move.
+                if (next.equals(to))
+                {
+                    if (!mustBackIn(loc, to) || turned) return route;
+
+                    // Not this way round.  Keep looking: another route may turn it.
+                    continue;
+                }
 
                 // A terminus may be arrived at but not driven through, so it is never expanded
-                if (!next.isTerminus()) queue.add(new Candidate(next, route, commands));
+                if (!next.isTerminus()) queue.add(new Candidate(next, route, commands, turned));
             }
         }
 
@@ -1021,11 +1047,22 @@ public final class HomeStaging
         private final List<Edge> route;
         private final Map<String, Accessory.accessorySetting> commands;
 
-        private Candidate(Point at, List<Edge> route, Map<String, Accessory.accessorySetting> commands)
+        /**
+         * Whether a reversing point has been passed on the way here.
+         *
+         * Part of the STATE, not a property of the square: the same point reached with a reversal
+         * behind it and without one are two different situations, and only one of them may end at a
+         * terminus with a locomotive that cannot reverse.
+         */
+        private final boolean turned;
+
+        private Candidate(Point at, List<Edge> route, Map<String, Accessory.accessorySetting> commands,
+            boolean turned)
         {
             this.at = at;
             this.route = route;
             this.commands = commands;
+            this.turned = turned;
         }
     }
 
@@ -1065,8 +1102,8 @@ public final class HomeStaging
      * committed to nothing that this one has not also committed to - then anything reachable from here
      * was reachable from there.
      */
-    private static boolean alreadyReached(Map<Point, List<Map<String, Accessory.accessorySetting>>> seen,
-        Point p, Map<String, Accessory.accessorySetting> commands)
+    private static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
+        String p, Map<String, Accessory.accessorySetting> commands)
     {
         if (!seen.containsKey(p)) return false;
 

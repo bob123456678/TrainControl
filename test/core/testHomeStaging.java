@@ -2240,6 +2240,14 @@ public class testHomeStaging
 
         try
         {
+            // SOMETHING HAS TO TURN THEM ROUND, or the ruling cannot be exercised here.
+            //
+            // Adam's second ruling of the day - "non-reversing trains have to back in" - means a
+            // terminus is reachable for these two only if a reversing point lies on the way. Without
+            // one this fixture asks whether the planner refuses an impossible thing, which is a
+            // different question.
+            layout.getPoint("HS B").setReversing(true);
+
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
             // POSSIBLE, as of Adam's ruling of 2026-08-31.

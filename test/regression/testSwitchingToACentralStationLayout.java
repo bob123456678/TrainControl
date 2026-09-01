@@ -674,14 +674,29 @@ public class testSwitchingToACentralStationLayout
         {
             if (f.getName().equals("LayoutSandbox.java")) continue;
 
-            String code = stripComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8));
+            String raw = new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            // ONE SCAN FOR BOTH INDICES.
+            //
+            // These are compared with each other, so they have to come from the same string - a first
+            // attempt took `builds` from the comment-stripped copy and the sandbox from the scanned
+            // one, which are different lengths, and the comparison became meaningless: 56 loose files
+            // became 77 with nothing having changed in the suite.
+            String code = withoutStringsAndComments(raw);
 
             int builds = earliest(code, "MarklinControlStation.init(", "= init(null");
 
             if (builds < 0) continue;
 
-            int sandbox = code.indexOf("LayoutSandbox.open()");
+            // The same needle the window half uses, so an overload with arguments counts (2026-08-31).
+            //
+            // This was the literal "LayoutSandbox.open()", empty parentheses and all, so the first
+            // class to call LayoutSandbox.open(folder) read as a class with no sandbox and pushed this
+            // ratchet one over its pin. The two halves must agree about what a sandbox looks like.
+            java.util.List<Integer> opens = indicesOf(code, SANDBOX_OPENED);
+
+            int sandbox = opens.isEmpty() ? -1 : opens.get(0);
 
             if (sandbox < 0 || sandbox > builds)
             {
@@ -730,8 +745,17 @@ public class testSwitchingToACentralStationLayout
     private static final java.util.regex.Pattern WINDOW_BUILT =
         java.util.regex.Pattern.compile("new\\s+(?:org\\.traincontrol\\.gui\\.)?TrainControlUI\\s*\\(");
 
+    /**
+     * Where a sandbox is opened - with or WITHOUT arguments.
+     *
+     * This required empty parentheses until 2026-08-31, when LayoutSandbox gained an overload that
+     * takes the folder to copy, so that a test can reason about the operator's own stations from a
+     * copy of them. The first class to use it read as a class with no sandbox at all, which is the
+     * failure mode this whole check exists to prevent - reported by the model ratchet, one file over
+     * its pinned count.
+     */
     private static final java.util.regex.Pattern SANDBOX_OPENED =
-        java.util.regex.Pattern.compile("LayoutSandbox\\.open\\s*\\(\\s*\\)");
+        java.util.regex.Pattern.compile("LayoutSandbox\\.open\\s*\\(");
 
     private static final java.util.regex.Pattern SETUP_METHOD =
         java.util.regex.Pattern.compile("@Before(?:Class|Method|Test)");

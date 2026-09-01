@@ -11,6 +11,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
@@ -168,7 +169,38 @@ public class testTheParkingBerthsGetTheirTrainsBack
         assertEquals(berths, BERTHS.length,
             "the parking berths are not terminuses on this setup, so nothing here has to back in");
 
-        // Run for a while, then let the trains finish the paths they are on.
+        // THE PARKED ONES ARE STARTED BY HAND, once.
+        //
+        // Adam: "the parked trains need to be manually started the first time."  A berth is not an
+        // automatic destination and a train sitting in one is not something full autonomy will choose
+        // to move, so without this the three of them simply stand there for the whole run and the
+        // arrangement this test is about never happens.  A hand dispatch is exactly what the diagram's
+        // right-click menu does: one path, executed.
+        int started = 0;
+
+        for (int i = 0; i < BERTHS.length; i++)
+        {
+            Locomotive parked = model.getLocByName(name(i));
+
+            List<List<Edge>> options = layout.getPossiblePaths(parked, true);
+
+            if (options.isEmpty())
+            {
+                System.out.println("NOT STARTED " + name(i) + " - it has nowhere to go from "
+                    + BERTHS[i]);
+                continue;
+            }
+
+            if (layout.executePath(options.get(0), parked, parked.getPreferredSpeed(), null)) started++;
+        }
+
+        System.out.println("HAND-STARTED " + started + " of the " + BERTHS.length + " parked trains");
+
+        assertTrue(started > 0,
+            "not one of the parked trains could be started by hand, so the railway never moved and "
+            + "everything below would pass by standing still");
+
+        // Then autonomy takes over for a while, and the trains finish the paths they are on.
         layout.runLocomotives();
 
         Thread.sleep(RUN_SECONDS * 1000L);
@@ -231,10 +263,39 @@ public class testTheParkingBerthsGetTheirTrainsBack
      */
     private static void place() throws Exception
     {
+        // HIS OWN TRAINS COME OFF FIRST.
+        //
+        // The copy is his railway, so it arrives with his locomotives standing on it and their homes
+        // recorded - EN57-947, EN57-203 and the rest. Return Home has to get EVERYBODY home, so
+        // leaving them there means planning for eight trains when this test is about five, and that
+        // is what NO_PLAN_FOUND was: a fixture that asked a far harder question than the one written
+        // at the top of this class.
+        //
+        // Purged rather than merely lifted, so they leave the run list too.
+        int lifted = 0;
+
+        for (Point p : new ArrayList<>(layout.getPoints()))
+        {
+            if (p.getCurrentLocomotive() == null) continue;
+
+            layout.moveLocomotive(null, p.getName(), true);
+
+            lifted++;
+        }
+
+        System.out.println("LIFTED " + lifted + " of his own trains off the copy");
+
         String[] where = new String[]
         {
             BERTHS[0], BERTHS[1], BERTHS[2], "BottomMainA", "BottomMainC"
         };
+
+        // The facing each one is to be placed on, where the square has copies. BottomMainA is
+        // eastbound, which is Adam's own answer; BottomMainC is the westbound one he asked for.
+        // BottomMainC is null here on purpose: no westbound copy of it is a station, so the placement
+        // door cannot be asked for one. It goes on a destination copy first, to join the run list and
+        // get its speed, and is then put on the westbound copy directly below.
+        String[] facing = new String[] {null, null, null, "east", null};
 
         for (int i = 0; i < where.length; i++)
         {
@@ -250,7 +311,7 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
             loc.setPreferredSpeed(35);
 
-            Point target = pointFor(where[i], null);
+            Point target = pointFor(where[i], facing[i]);
 
             assertNotNull(target, "no point named " + where[i] + " on his setup");
 
