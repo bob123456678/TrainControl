@@ -66,6 +66,7 @@ telling agents not to run tests, but never let that be the only thing between th
 | `CMT-B3` | `AutomationAPI.md` instructed the reader to use a deleted graph window and a deleted menu item | `9f1b80c8` |
 | `CMT-B4` | Both user documents still said only a reversible locomotive can reach a terminus | `9f1b80c8` |
 | `OB-167` follow-up | A switched-off square drew a cross only when it was not a station — which is nearly never | `e9435bfc` |
+| `RTG-B1` | The five-train test hand-started trains onto inactive destinations, stranding two of them before the run began | `7d8543f3` |
 
 Each code fix was seen failing first and mutation-confirmed. `D24-B1`'s test fails with `IMPOSSIBLE`
 before the fix; `TCX-A3`'s fails when the clearing loop's argument is replaced with `0`.
@@ -166,9 +167,20 @@ your layout is a destination with zero exits; `pickPath` has no way-out clause a
 train there. The editor's checks are structurally blind to it. You have already ruled on the outcome —
 "it should be easily possible to get back" — but not on the mechanism.
 
-This is why `testTheParkingBerthsGetTheirTrainsBack` still fails, together with `RTG-B1`: the test
-hand-dispatches to `ParkingTrack6`, which is `active:false` in your configuration, and that door
-deliberately offers inactive destinations. Fixing backing-in alone will not turn it green.
+This is why `testTheParkingBerthsGetTheirTrainsBack` still fails. `RTG-B1`, the second half of that
+diagnosis, **has been fixed** (`7d8543f3`): the test hand-started its parked trains onto whatever the
+manual door offered first, and that door deliberately offers destinations autonomy will never choose —
+on your configuration the first is `ParkingTrack6`, which is `active:false`. It now walks the options
+for one `isChoosableByAutonomy` end.
+
+That fix is what makes this item's severity legible. **The blocked list drops from three locomotives to
+one, and the survivor is `BottomMainB (eastbound, reverse)`** — so two of the three failures were the
+fixture's own doing and were hiding the one that is real. The test stays excluded until the graph defect
+above is settled.
+
+One thing it surfaced, worth its own look: `TunnelCenterPark` offers **ten** manual routes and not one of
+them ends anywhere autonomy would choose, so that train is no longer started at all rather than being
+started into a siding.
 
 ### FX2-5. Deleting a locomotive strips it from every route (`R28-A1`)
 
