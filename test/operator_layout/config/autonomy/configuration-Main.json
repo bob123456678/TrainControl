@@ -62,7 +62,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:7,7": {
       "loc": {"name": "EN57-203"},
@@ -75,7 +75,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:9,6": {
       "parking": true,
@@ -105,7 +105,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:6,4": {
       "maxTrainLength": 0,
@@ -154,7 +154,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:12,7": {},
     "2 - Bottom:17,10": {},
@@ -170,7 +170,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:9,12": {},
     "3 - Top Parking:5,9": {},
@@ -190,13 +190,13 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "2 - Bottom:13,5": {
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "1 - Main:13,11": {
       "loc": {"name": "2-8-4 3505 SP"},
@@ -209,7 +209,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "2 - Bottom:19,0": {
       "maxTrainLength": 0,
@@ -228,7 +228,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "3 - Top Parking:19,15": {},
     "3 - Top Parking:11,10": {},
@@ -240,7 +240,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "active": false
+      "autoDestination": false
     },
     "2 - Bottom:7,12": {},
     "2 - Bottom:4,6": {},
