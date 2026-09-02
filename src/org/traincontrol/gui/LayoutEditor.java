@@ -1112,6 +1112,24 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (label != null && label.getComponent() != null)
         {
+            // PLACING IS NOT DRAGGING (OB-169).
+            //
+            // Adam: "clicking a tile in 'new components' followed by a square on the diagram no longer
+            // places that tile."  The square he was clicking already had track on it, and pressing on
+            // track is how a tile is picked up to be moved - so this arms a MOVE and takes the drag
+            // source with it, throwing away the palette tile the user had just chosen.  endDrag then
+            // sees press and release on one square, calls it a click rather than a drag, clears the
+            // clipboard, and by the time receiveClickEvent runs there is no tool left to execute.
+            //
+            // On an EMPTY square the same gesture always worked, because a press there picks nothing
+            // up and the palette selection survives to the click.  That is why this went unnoticed.
+            //
+            // So while a palette tile is held, a press on the diagram starts nothing: no pick-up, no
+            // ghost, no drag source.  The click that follows places, and the tool stays armed for the
+            // next square - "it should place it and stay in place mode until escape is pressed or
+            // another action taken".
+            if (placingFromPalette() && (getX(label) != -1 || getY(label) != -1)) return;
+
             // Remembered so that a press and release on one square can be told from a drag.
             this.dragSource = label;
 
@@ -2384,6 +2402,21 @@ public class LayoutEditor extends PositionAwareJFrame
         // tile stayed where it was.
         this.groupClipboard = null;
         this.clearBordersFromChildren(this.newComponents);
+    }
+
+    /**
+     * Whether a tile picked out of the palette is waiting to be placed.
+     *
+     * The clipboard says where it came from: initCopy records the label's square, and the palette's
+     * labels are the ones that report -1,-1 because they are not on the grid at all.  A COPY armed
+     * from a diagram tile - Ctrl+C on a square - is deliberately not this: pressing on track after
+     * copying a tile should still pick that track up, which is what it has always done.
+     *
+     * @return true when the next click on a square should place rather than drag
+     */
+    private boolean placingFromPalette()
+    {
+        return this.toolFlag == tool.COPY && this.lastX == -1 && this.lastY == -1;
     }
     
     /**

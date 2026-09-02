@@ -7018,7 +7018,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
                 
         restoreLayoutTitles();
+
+        takeTheKeyboard();
     }
+
+    /**
+     * Puts the keyboard where the operator expects it once the window is up (OB-168).
+     *
+     * Adam: **"ensure the UI is focused once the window is rendered so that keystrokes are registered
+     * on the main traincontrol window (locomotive letters, etc.)"**
+     *
+     * **Not the frame.**  It is set non-focusable when the form is built, so `requestFocus()` on it
+     * does nothing whatsoever - which is why `display()` looked as though it had never needed this.
+     * The letter keys are read by KeyListeners on the tabbed pane and on the locomotive panel, and one
+     * of those has to be holding the focus before a keystroke reaches either of them.  The tabbed pane
+     * is the one that can take it: a JPanel is not focusable unless somebody says so, and nobody does.
+     *
+     * Posted rather than called, because focus asked for during the same event that made the window
+     * visible is asked for before the window manager has finished putting it on the screen, and on
+     * Windows that request is simply dropped.  The editor's own showOpenEditor() does the same pair -
+     * toFront then focus - for the same reason.
+     */
+    private void takeTheKeyboard()
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            toFront();
+
+            if (KeyboardTab != null) KeyboardTab.requestFocusInWindow();
+        });
+    }
+
+
     
     /**
      * Shows or hides the menu bar depending on the user's preference

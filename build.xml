@@ -226,6 +226,7 @@
         <test-one-class class="testMaxActiveTrains"/>
         <test-one-class class="testMockCentralStation"/>
         <test-one-class class="testNoSelfRecursiveWrappers"/>
+        <test-one-class class="testThePaletteStillPlacesTiles"/>
         <test-one-class class="testEditorSurfaceRules"/>
         <test-one-class class="testSwitchingToACentralStationLayout"/>
         <test-one-class class="testErrorsStopTheSetupRunning"/>
