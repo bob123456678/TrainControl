@@ -3558,6 +3558,11 @@ public class AutonomySession
     /**
      * Whether anything must be dealt with before this setup will run.
      *
+     * NOT the question the LOAD door asks, and that is deliberate (SVN-B10).  Loading a configuration
+     * is how somebody gets at its errors in order to fix them, so refusing to load an errored setup
+     * would be a guard with no way past it.  `AutonomyViewerPanel.load` asks hasBlockingProblems()
+     * instead - can this be built at all - which is the right question for opening something.
+     *
      * Wider than hasBlockingProblems(): that one asks whether the graph can be BUILT, this one whether
      * the setup can be RUN, and the second is the question every affordance that offers to run it has
      * to ask. See errorCount().

@@ -6086,6 +6086,49 @@ public class Layout
     }
 
     /**
+     * Whether this accessory is a signal protecting a square a locomotive is standing on (SVN-B16).
+     *
+     * **The half of the route guard that `getActiveAccs` cannot see.** That walks the config commands
+     * of active edges, and a protecting signal is usually not one of them - it is driven separately, by
+     * occupancy. So a platform with a train at it can have its signal turned green by something that
+     * is not on any path, and nothing re-asserts it until the next occupancy change: a green aspect
+     * inviting a hand-driven train into an occupied platform, for as long as the train stays there.
+     *
+     * **Here rather than in the route**, because it was in the route and the diagram's own accessory
+     * tile never got it: clicking a protecting signal green by hand went unwarned while a route doing
+     * the same thing was refused. One rule, asked by both.
+     *
+     * BY RESOLVING the names rather than comparing the strings. A configuration says "Signal 12" or
+     * "Switch 12" and the accessory database is keyed by one of those; `getAccessoryByName` exists to
+     * fall back across that difference, and every other consumer of these lists goes through it.
+     *
+     * @param accessory the accessory about to be commanded, or null
+     * @return true when something is standing at a platform this signal protects
+     */
+    synchronized public boolean protectsAnOccupiedSquare(Accessory accessory)
+    {
+        if (accessory == null || this.control == null) return false;
+
+        for (Point point : this.getPoints())
+        {
+            if (point.getCurrentLocomotive() == null) continue;
+
+            for (String name : point.getProtectingSignals())
+            {
+                if (name == null) continue;
+
+                if (name.equals(accessory.getName())) return true;
+
+                Accessory named = this.control.getAccessoryByName(name);
+
+                if (named != null && named.equals(accessory)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The aspect each protecting signal was last commanded to show.
      *
      * Keyed by the accessory, because that is the thing being commanded.  One signal, one aspect,

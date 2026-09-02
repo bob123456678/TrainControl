@@ -385,8 +385,28 @@ public final class LayoutLabel extends JLabel
                                     {
                                         Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
                                         
+                                        // AND THE PROTECTING-SIGNAL HALF (SVN-B16).
+                                        //
+                                        // `getActiveAccs` walks the config commands of active edges,
+                                        // and a platform's protecting signal is usually not one of
+                                        // them - it is driven by occupancy instead.  So a route
+                                        // setting that signal green was refused and clicking the same
+                                        // signal green by hand, on this window, was not: the same
+                                        // green aspect inviting a hand-driven train into a platform
+                                        // somebody is standing at.
+                                        //
+                                        // Asked of the layout, which is where the rule lives now, so
+                                        // this and MarklinRoute.heldReason cannot drift apart.
+                                        boolean protecting =
+                                            tcUI.getModel().getAutoLayout().protectsAnOccupiedSquare(
+                                                c.getAccessory())
+                                            || (c.getAccessory2() != null
+                                                && tcUI.getModel().getAutoLayout()
+                                                    .protectsAnOccupiedSquare(c.getAccessory2()));
+
                                         if (activeAccs.contains(c.getAccessory()) || 
-                                                (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2())))
+                                                (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2()))
+                                                || protecting)
                                         {
                                             Object[] options = {
                                                 I18n.t("ui.ok"),
@@ -395,7 +415,9 @@ public final class LayoutLabel extends JLabel
 
                                             int choice = JOptionPane.showOptionDialog(
                                                 tcUI,
-                                                I18n.t("layout.ui.confirmAccessoryActiveRoute"),
+                                                protecting
+                                                    ? I18n.t("layout.ui.confirmAccessoryProtecting")
+                                                    : I18n.t("layout.ui.confirmAccessoryActiveRoute"),
                                                 I18n.t("layout.ui.dialogPleaseConfirm"),
                                                 JOptionPane.YES_NO_CANCEL_OPTION,
                                                 JOptionPane.QUESTION_MESSAGE,

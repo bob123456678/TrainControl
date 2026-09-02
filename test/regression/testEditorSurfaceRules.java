@@ -560,6 +560,93 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Every door that runs a route asks whether it is already running (SVN-B7).
+     *
+     * `executeRoute`'s own comment has always said *"Every door that runs a route comes through
+     * here."*  Every door did; the guard was not in it.  It sat on the play button alone - so clicking
+     * the same route's row and confirming, or right-clicking it and choosing Execute, started a second
+     * run of a route that was already running: two threads throwing the same accessories, each
+     * unlocking what the other had locked.
+     *
+     * The button greys while its route runs and that is the AFFORDANCE; the check inside executeRoute
+     * is the GUARD, and OB-057 and OB-090 are both this shape - the two must ask one question.  Which
+     * is also why the play-button branch must NOT ask it again: a second copy per door is exactly how
+     * the other two came to be missing.
+     *
+     * MUTATION: moving the check back out of `executeRoute` and into the play-button branch fails
+     * both halves of this.
+     */
+    @Test
+    public void testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String funnel = withoutComments(bodyOf(ui, "public void executeRoute(String route)"));
+
+        assertTrue(funnel.contains("routesExecuting.contains(route)"),
+            "executeRoute does not ask whether the route is already running, and it is the method "
+            + "every door comes through - so the row click and the right-click menu can start a "
+            + "second run of a route that is already going.  Body: " + funnel);
+
+        assertTrue(funnel.indexOf("routesExecuting.contains(route)") < funnel.indexOf("routeStarted("),
+            "executeRoute asks whether the route is running only after marking it as started, which "
+            + "answers its own question");
+
+        // AND THE DOOR DOES NOT ASK IT AGAIN.
+        //
+        // Counting every mention would be wrong: the cell painter and the hover both read the same
+        // set to decide what to DRAW, and drawing is the affordance rather than the guard.  What must
+        // not come back is a door deciding for itself whether to call executeRoute, because that is
+        // the arrangement under which two of the three doors were missing the question entirely.
+        String door = withoutComments(bodyOf(ui,
+            "private void RouteListMouseClicked(java.awt.event.MouseEvent evt)"));
+
+        assertFalse(door.contains("routesExecuting"),
+            "the route row's own click handler asks whether the route is already running instead of "
+            + "leaving it to executeRoute.  One door asking for itself is how the other two came to "
+            + "be missing it.  Body: " + door);
+    }
+
+    /**
+     * Switching an accessory by hand asks both halves of the question a route asks (SVN-B16).
+     *
+     * `MarklinRoute.heldReason` refuses two things: an accessory on a locked path, and a signal
+     * protecting a platform somebody is standing at.  The diagram's own accessory tile asked only the
+     * first - so a route setting a platform's signal green was refused, and clicking the same signal
+     * green on the same window was not.  The second is the one `getActiveAccs` cannot see, because a
+     * protecting signal is driven by occupancy rather than by an active path.
+     *
+     * The rule lives on `Layout` now so both can ask it.  This pins that both do.
+     *
+     * MUTATION: deleting either call to `protectsAnOccupiedSquare` fails this.
+     */
+    @Test
+    public void testSwitchingAnAccessoryByHandAsksAboutProtectingSignals() throws Exception
+    {
+        String label = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutLabel.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(label.contains("protectsAnOccupiedSquare"),
+            "the diagram's accessory tile does not ask whether the accessory is protecting a platform "
+            + "with a train at it, so clicking a signal green by hand goes unwarned while a route "
+            + "doing the same thing is refused");
+
+        String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(route.contains("protectsAnOccupiedSquare"),
+            "the route no longer asks the shared rule, so the two doors are working from different "
+            + "definitions of the same question again");
+
+        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(layout.contains("public boolean protectsAnOccupiedSquare(Accessory accessory)"),
+            "the rule both doors delegate to is not on Layout, so one of them is carrying a copy");
+    }
+
+    /**
      * Turning the grid off moves nothing, and hovering moves nothing either.
      *
      * FR-006: "make the gray grid an option you can toggle in the visible elements.  on by default, but

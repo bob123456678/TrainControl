@@ -5170,12 +5170,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Asked of the session rather than counted here, so that the strip deciding what to OFFER and
         // this deciding what to ALLOW cannot drift apart.  They had (OB-090).
+        //
+        // THROUGH hasErrors(), which is the method written to BE this question and which had no
+        // callers at all (SVN-B10).  Its javadoc calls itself "the question every affordance that
+        // offers to run it has to ask", and every affordance was asking one half of it or the other -
+        // so the sentence described an intention rather than the code, and the next door added would
+        // have had two half-questions to choose between.
+        //
+        // The count below is only for the message.  It can legitimately be zero while this refuses:
+        // a graph that cannot be BUILT is a blocking problem, and the disjunction covers it whether or
+        // not the checks also managed to turn it into a finding.
+        if (!getAutonomySession().hasErrors()) return false;
+
         int errors = getAutonomySession().errorCount();
 
-        if (errors == 0) return false;
-
-        JOptionPane.showMessageDialog(this,
-            I18n.f("autolayout.ui.errorCannotStartWithErrors", errors));
+        JOptionPane.showMessageDialog(this, errors > 0
+            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
+            : I18n.t("autosetup.ui.errorCannotBuildDetailOne"));
 
         return true;
     }
@@ -16089,6 +16100,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void executeRoute(String route)
     {
+        // NOT TWICE AT ONCE (SVN-B7).
+        //
+        // The comment below has always said every door comes through here, and every door does - but
+        // the guard was not in here.  It was on the play button alone, so clicking the same route's
+        // row and confirming, or right-clicking it and choosing Execute, started a second run of a
+        // route that was already running: two threads throwing the same accessories, each unlocking
+        // what the other had locked.
+        //
+        // The button greys while its route runs and that is the affordance; this is the guard, and
+        // they have to ask one question (OB-057, OB-090).  Logged rather than silent, because unlike
+        // the greyed button these two doors say nothing on their own - the operator confirmed a dialog
+        // and is owed a reason why nothing happened.
+        if (route != null && routesExecuting.contains(route))
+        {
+            this.model.log(I18n.f("route.ui.infoAlreadyRunning", route));
+
+            return;
+        }
+
         // Marked before the thread starts, so the spinner is up by the time the pointer leaves the
         // button (FR-043).  Every door that runs a route comes through here, including the right-click
         // menu's own Execute - which is what Adam asked for: "executing the route from there should
@@ -19282,12 +19312,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // The button greys while its route runs, and a greyed button that still fires when pressed
             // is a lie - it would also start the same route twice, which is the thing the greying is
-            // there to say cannot happen. Silently, because the button already says why: this is the
-            // guard and the affordance asking one question, which is the OB-057 and OB-090 shape.
-            if (!routesExecuting.contains(route.getName()))
-            {
-                executeRoute(route.getName());
-            }
+            // there to say cannot happen.
+            //
+            // ASKED IN executeRoute NOW (SVN-B7), not here.  This was the only door that asked, and
+            // the two that do not - the row click with its confirmation, and the right-click menu -
+            // reach the same method.  One guard on the funnel is the OB-057 and OB-090 shape; two
+            // copies of it, one per door, is how the other two came to be missing.
+            executeRoute(route.getName());
 
             return;
         }
