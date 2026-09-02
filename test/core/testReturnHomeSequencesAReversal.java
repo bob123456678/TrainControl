@@ -65,7 +65,7 @@ public class testReturnHomeSequencesAReversal
 
         model = init(null, true, false, false, false);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 5; i++)
         {
             model.newFeedback(FEEDBACK_BASE + i, null);
         }
@@ -521,6 +521,112 @@ public class testReturnHomeSequencesAReversal
         finally
         {
             loc.setReversible(was);
+        }
+    }
+
+    /**
+     * Two trains whose only way home is the same single square, one at a time.
+     *
+     * Adam's railway in miniature, and the shape no fixture in this suite had.  Every staging test is
+     * built on `ringWith`, a four-point ring where every station is one hop from every other - so no
+     * test has ever had a home that takes TWO moves to reach, and the multi-move plans they do assert
+     * are "step aside so another can pass", driven by occupancy rather than by distance.  On a ring the
+     * planner's heuristic cannot be wrong about staging, because there is no staging.
+     *
+     * Here there is.  Neither berth can be reached in one path - the switch would have to be thrown two
+     * ways on one route - so each train must stop at the ramp first, and only one train fits on it.  The
+     * plan is a queue: in to the ramp, out to a berth, and again for the second train.
+     *
+     * **What this catches.** `misplaced` counts trains that are not home and gives no credit for
+     * getting closer, so a move to the ramp costs one and buys nothing the search can see; it ranks
+     * exactly level with shuffling a train somewhere useless.  With two trains and a shared bottleneck
+     * that is enough to lose the plan among the permutations.
+     *
+     * MUTATION: scoring on `misplaced(next)` instead of the staging estimate fails this - the outcome
+     * is NO_PLAN_FOUND.
+     */
+    @Test
+    public void testTwoTrainsQueueThroughOneStagingSquare() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("Q ramp", true, Integer.toString(FEEDBACK_BASE));
+        layout.createPoint("Q berth 1", true, Integer.toString(FEEDBACK_BASE + 1));
+        layout.createPoint("Q berth 2", true, Integer.toString(FEEDBACK_BASE + 2));
+        layout.createPoint("Q yard 1", true, Integer.toString(FEEDBACK_BASE + 3));
+        layout.createPoint("Q yard 2", true, Integer.toString(FEEDBACK_BASE + 4));
+
+        layout.getPoint("Q berth 1").setTerminus(true);
+        layout.getPoint("Q berth 2").setTerminus(true);
+        layout.getPoint("Q ramp").setReversing(true);
+
+        // Both trains start out in the yard and must come in through the ramp.
+        Edge in1 = layout.createEdge("Q yard 1", "Q ramp");
+        Edge in2 = layout.createEdge("Q yard 2", "Q ramp");
+
+        Edge out1 = layout.createEdge("Q ramp", "Q berth 1");
+        Edge out2 = layout.createEdge("Q ramp", "Q berth 2");
+
+        // THE SWITCH THAT MAKES IT TWO MOVES: one way in, the other way out, so no single path can do
+        // both and the ramp has to be a stop rather than somewhere to pass through.
+        in1.addConfigCommand(swtch, accessorySetting.STRAIGHT);
+        in2.addConfigCommand(swtch, accessorySetting.STRAIGHT);
+        out1.addConfigCommand(swtch, accessorySetting.TURN);
+        out2.addConfigCommand(swtch, accessorySetting.TURN);
+
+        Locomotive one = model.getLocByName(model.getLocList().get(0));
+        Locomotive two = model.getLocByName(model.getLocList().get(1));
+
+        boolean wasOne = one.isReversible();
+        boolean wasTwo = two.isReversible();
+
+        try
+        {
+            one.setReversible(true);
+            two.setReversible(true);
+
+            assertTrue(layout.moveLocomotive(one.getName(), "Q yard 1", false), "could not place one");
+            assertTrue(layout.moveLocomotive(two.getName(), "Q yard 2", false), "could not place two");
+
+            layout.setHomeLocomotive("Q berth 1", one.getName());
+            layout.setHomeLocomotive("Q berth 2", two.getName());
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertTrue(plan.isPossible(),
+                "neither train can reach its berth in one path, so each has to stop at the ramp on the "
+                + "way - and only one of them fits on it at a time.  That is a queue, not an "
+                + "impossibility.  Outcome " + plan.getOutcome() + ", blocked " + plan.getBlocked());
+
+            // Four moves: in to the ramp and out to a berth, twice over.
+            assertEquals(plan.getMoves().size(), 4,
+                "the plan is not the queue: each train goes to the ramp and then to its berth, which "
+                + "is two moves each: " + plan.getMoves());
+
+            // AND THE RAMP IS NEVER OCCUPIED TWICE, which is what makes it a queue rather than two
+            // independent journeys that happen to be listed one after the other.
+            String rampHolder = null;
+
+            for (HomeStaging.Move move : plan.getMoves())
+            {
+                if ("Q ramp".equals(move.getEnd().getName()))
+                {
+                    assertNull(rampHolder,
+                        "a second train was sent to the ramp while " + rampHolder + " was still on it: "
+                        + plan.getMoves());
+
+                    rampHolder = move.getLocomotive().getName();
+                }
+                else if (move.getLocomotive().getName().equals(rampHolder))
+                {
+                    rampHolder = null;
+                }
+            }
+        }
+        finally
+        {
+            one.setReversible(wasOne);
+            two.setReversible(wasTwo);
         }
     }
 
