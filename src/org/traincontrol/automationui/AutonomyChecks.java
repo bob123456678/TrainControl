@@ -696,6 +696,24 @@ public class AutonomyChecks
      *
      * @param reversalsWithoutLength the squares, decided by the session
      */
+    private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
+        Set<TileKey> reversalsWithoutLength)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (reversalsWithoutLength == null) return findings;
+
+        for (TileKey tile : reversalsWithoutLength)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, REVERSAL_NEEDS_LENGTH,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
     /**
      * A square that emits an arrival copy nothing can leave, or nothing can reach.
      *
@@ -734,23 +752,6 @@ public class AutonomyChecks
         return findings;
     }
 
-    private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
-        Set<TileKey> reversalsWithoutLength)
-    {
-        List<Finding> findings = new ArrayList<>();
-
-        if (reversalsWithoutLength == null) return findings;
-
-        for (TileKey tile : reversalsWithoutLength)
-        {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
-            findings.add(new Finding(Severity.WARNING, REVERSAL_NEEDS_LENGTH,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
-        }
-
-        return findings;
-    }
 
     /**
      * A home on a square every train must turn round at.

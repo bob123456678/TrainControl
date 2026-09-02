@@ -186,34 +186,21 @@ public class testTrainsComeHomeToTheirPlatforms
         // to asking the berth question.
         int plain = 0;
 
+        List<String> notPlain = new ArrayList<>();
+
         for (String platform : PLATFORMS)
         {
             Point p = layout.getPoint(platform);
 
-            if (p == null)
-            {
-                // THE SQUARE, not anything whose name begins with it.  A split platform is emitted as
-                // "Name (facing)", so the copies are the exact name or the name and a bracket - and
-                // `startsWith` alone matched TunnelCenterPark for "Tunnel", which is a parking terminus
-                // and made this floor fail against a platform that is perfectly ordinary.
-                for (Point copy : layout.getPoints())
-                {
-                    boolean sameSquare = copy.getName().equals(platform)
-                        || copy.getName().startsWith(platform + " (");
-
-                    if (sameSquare && copy.isDestination() && copy.isActive())
-                    {
-                        p = copy;
-                        break;
-                    }
-                }
-            }
+            if (p == null) p = ordinaryCopy(platform);
 
             if (p != null && p.isDestination() && p.isActive() && !p.isTerminus()) plain++;
+            else notPlain.add(platform + " -> " + (p == null ? "no copy a train may be sent to"
+                : p.getName() + " terminus=" + p.isTerminus() + " active=" + p.isActive()));
         }
 
-        assertEquals(plain, PLATFORMS.length,
-            "one of these is not an ordinary platform on this setup - a terminus or something switched "
+        assertEquals(plain, PLATFORMS.length, notPlain
+            + " - one of these is not an ordinary platform on this setup - a terminus or something switched "
             + "off among them turns this back into the parking-berth question it was moved away from");
 
         // NO HAND-START.  A berth is not an automatic destination and a train sitting in one will not
@@ -281,7 +268,15 @@ public class testTrainsComeHomeToTheirPlatforms
 
             String where = now == null ? "nowhere" : now.getName();
 
-            if (!e.getValue().equals(where))
+            // THE SAME ARRIVAL, which is what "the way it started" means here.
+            //
+            // A square that can be entered from two directions is emitted as one Point per arrival
+            // side, so the copy IS the facing, and coming back on the other one is coming back the
+            // wrong way round.  A square trains may TURN at emits two copies for the same arrival
+            // though - "LowerFront (eastbound)" and "LowerFront (eastbound, reverse)" - and those two
+            // differ in what the train does next, not in which way it came in.  Demanding the exact
+            // copy failed a train standing on its own platform, having arrived exactly as it set off.
+            if (!arrival(e.getValue()).equals(arrival(where)))
             {
                 wrong.add(e.getKey() + " set off from " + e.getValue() + " and is at " + where);
             }
@@ -292,13 +287,31 @@ public class testTrainsComeHomeToTheirPlatforms
         assertEquals(wrong.toString(), "[]",
             "trains did not come back to where they started, facing the way they started. A square a "
             + "train can enter from two directions is emitted as one Point per arrival side, so the "
-            + "Point is the facing - coming back on the other copy is coming back the wrong way round. "
+            + "Point is the facing - coming back on another arrival is coming back the wrong way "
+            + "round.  The turning copy of an arrival counts as that arrival. "
             + "Ran from " + arrangement);
     }
 
     /**
-     * Five locomotives of its own, placed where Adam asked for them.
+     * A copy's name with the turning twin folded onto the plain one.
+     *
+     * "LowerFront (eastbound, reverse)" and "LowerFront (eastbound)" are one arrival and two things a
+     * train may do next; only the arrival is the facing.  Fold them and a train that came home the way
+     * it left reads as home, while "TopMainR1 (northbound)" and "TopMainR1 (southbound)" stay the two
+     * different answers they are.
+     *
+     * @param point a Point's name, or anything without a bracket, which is returned unchanged
+     * @return the name of the arrival it belongs to
      */
+    private static String arrival(String point)
+    {
+        String turning = ", reverse)";
+
+        if (!point.endsWith(turning)) return point;
+
+        return point.substring(0, point.length() - turning.length()) + ")";
+    }
+
     /**
      * Which train cannot be pathed home, and which half of the question it fails.
      *
@@ -577,8 +590,9 @@ public class testTrainsComeHomeToTheirPlatforms
 
             assertNotNull(loc, "could not create " + name(i));
 
-            // The three in the berths cannot reverse; the one on BottomMainA is an ordinary train; the
-            // one on BottomMainC is a reversing train, which is what Adam asked for.
+            // A MIXTURE, deliberately: the first three cannot reverse and the last two can, so the
+            // planner has to bring home both kinds over the same railway.  Which platform gets which
+            // does not matter and is not asserted - what matters is that neither kind is left out.
             loc.setReversible(i >= 3);
 
             loc.setPreferredSpeed(35);
@@ -590,46 +604,11 @@ public class testTrainsComeHomeToTheirPlatforms
             assertTrue(layout.moveLocomotive(name(i), target.getName(), false),
                 "could not place " + name(i) + " on " + target.getName());
 
-            // THE ONE FACING WEST, which cannot be reached through the placement door.
-            //
-            // Adam asked for "a reversing train facing west on BottomMainC". Both westbound copies of
-            // that platform are NOT destinations, because his own setup bars arrivals from the east
-            // there - so moveLocomotive refuses them, and a train can only be SENT to it facing east.
-            //
-            // Standing there facing west is a real state of his railway even so, and it is the state
-            // he asked about, so the train is put on that copy directly. Whether Return Home can ever
-            // restore it is exactly the question this test exists to answer.
-            if (i == 4)
-            {
-                Point west = facingCopy(where[i], "west");
-
-                assertNotNull(west, "BottomMainC has no westbound copy at all on his setup");
-
-                west.setLocomotive(loc);
-
-                target = west;
-            }
-
             System.out.println("PLACING " + name(i) + " reversible=" + loc.isReversible()
                 + " on " + target.getName() + " (destination=" + target.isDestination() + ")");
 
             STARTED_AT.put(name(i), target.getName());
         }
-    }
-
-    /**
-     * Any copy of a square facing a given way, whether or not trains may be SENT there.
-     */
-    private static Point facingCopy(String station, String facing)
-    {
-        for (Point p : layout.getPoints())
-        {
-            if (!p.getName().startsWith(station + " (")) continue;
-
-            if (p.getName().toLowerCase().contains(facing)) return p;
-        }
-
-        return null;
     }
 
     /**
@@ -663,7 +642,15 @@ public class testTrainsComeHomeToTheirPlatforms
             "no copy of " + station + " is a station on his setup, so nothing can be placed there. "
             + "Copies found: " + all);
 
-        if (facing == null) return stations.get(0);
+        if (facing == null)
+        {
+            // THE SAME PREFERENCE THE FLOOR APPLIES.  Asking for "an ordinary platform" and then
+            // standing the train on whichever copy came first put a locomotive on
+            // "LowerFront (eastbound, reverse)" - a terminus - in a test written to keep termini out.
+            Point ordinary = ordinaryCopy(station);
+
+            return ordinary != null ? ordinary : stations.get(0);
+        }
 
         for (Point p : stations)
         {
@@ -677,6 +664,43 @@ public class testTrainsComeHomeToTheirPlatforms
 
         return null;
     }
+
+    /**
+     * The copy of a square a train may be sent to and does not have to reverse at.
+     *
+     * ORDINARY IS PREFERRED, not merely accepted.  One square can emit several destination copies -
+     * LowerFront emits "(eastbound)" and "(eastbound, reverse)" both - and taking the first one found
+     * hands back whichever the builder happened to emit first.  When that was the reversing copy, the
+     * floor refused a platform that is perfectly ordinary and the placement stood a train on a
+     * terminus, in a test whose whole point is that these are ordinary platforms.
+     *
+     * THE SQUARE, not anything whose name begins with it: a split platform is emitted as
+     * "Name (facing)", so a copy is the exact name or the name and a bracket. `startsWith` alone
+     * matched TunnelCenterPark for "Tunnel", which is a parking terminus.
+     *
+     * @param station the square's authored name
+     * @return its ordinary copy; the first copy trains may be sent to if every copy reverses; null if
+     *         no copy of that name accepts a train at all
+     */
+    private static Point ordinaryCopy(String station)
+    {
+        Point reversing = null;
+
+        for (Point copy : layout.getPoints())
+        {
+            boolean sameSquare = copy.getName().equals(station)
+                || copy.getName().startsWith(station + " (");
+
+            if (!sameSquare || !copy.isDestination() || !copy.isActive()) continue;
+
+            if (!copy.isTerminus()) return copy;
+
+            if (reversing == null) reversing = copy;
+        }
+
+        return reversing;
+    }
+
 
     /**
      * Waits for every driving thread to finish, so the arrangement being asserted is a settled one.

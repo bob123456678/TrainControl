@@ -57,24 +57,14 @@ element
  .artikel=-1
 element
  .id=0x10c
- .typ=gerade
- .artikel=-1
-element
- .id=0x10d
- .typ=gerade
- .artikel=-1
-element
- .id=0x10e
- .typ=gerade
- .artikel=-1
-element
- .id=0x10f
- .typ=gerade
- .artikel=-1
+ .typ=tunnel
+ .drehung=3
+ .artikel=0
 element
  .id=0x110
- .typ=gerade
- .artikel=-1
+ .typ=tunnel
+ .drehung=1
+ .artikel=0
 element
  .id=0x111
  .typ=gerade

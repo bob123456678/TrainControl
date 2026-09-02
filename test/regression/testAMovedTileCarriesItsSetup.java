@@ -3,12 +3,15 @@ package regression;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
@@ -32,7 +35,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the save, then re-read everything from disk.
  *
  * Four variants were tried, and all four carry the station, the name and the locomotive correctly, in
- * both directions, with the check count unchanged:
+ * both directions, adding no error to the setup:
  *
  * - to an isolated empty square, which disconnects the station from the run
  * - one square along, onto occupied track, which is the ordinary nudge
@@ -120,6 +123,8 @@ public class testAMovedTileCarriesItsSetup
 
         int errorsBefore = session.errorCount();
 
+        Set<String> reportedBefore = errors(session);
+
         // The running layout, as loading a configuration builds it.
         String active = session.getStore().getActiveConfiguration();
 
@@ -170,8 +175,12 @@ public class testAMovedTileCarriesItsSetup
             "the station is recorded at BOTH squares, so the move copied rather than moved - which is "
             + "how a train ends up recorded in two places and the whole setup is refused");
 
-        assertEquals(after.errorCount(), errorsBefore,
-            "moving a tile added errors to the setup");
+        Set<String> reportedAfter = errors(after);
+
+        Set<String> appeared = new LinkedHashSet<>(reportedAfter);
+        appeared.removeAll(reportedBefore);
+
+        assertTrue(appeared.isEmpty(), "moving a tile added errors to the setup: " + appeared);
 
         // AND BACK AGAIN, which is where Adam reports losing the locomotive.
         List<LayoutDiagram> now = pagesIn(folder);
@@ -213,6 +222,38 @@ public class testAMovedTileCarriesItsSetup
 
         assertEquals(finished.errorCount(), errorsBefore,
             "the round trip left the setup with errors it did not start with");
+    }
+
+    /**
+     * WHICH errors are reported, not how many.
+     *
+     * A count was enough until a check started reporting per COPY rather than per square, and the
+     * isolated half of this test moves a station somewhere no track joins - where it emits no arrival
+     * copies at all, so its copy-level finding has nothing left to attach to and goes away. The count
+     * then falls by one and an assertion written to catch a move DAMAGING the setup fails because the
+     * move made the report shorter.
+     *
+     * The set says what the count was reaching for: no error may APPEAR. A finding that disappears
+     * because the thing it described stopped existing is not a regression, and the round trip below
+     * still demands the count come back exactly, which is where a genuinely lost finding would show.
+     */
+    private static Set<String> errors(AutonomySession session)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getSeverity() == AutonomyChecks.Severity.ERROR)
+            {
+                // NOT the square. That is the one thing this test changes on purpose, so a finding
+                // keyed by it is new after every move and the check can never pass. The subject is the
+                // station's name, which travels with the tile - so the same complaint about the same
+                // station reads as the same finding wherever it has been dragged to.
+                out.add(finding.getMessageKey() + " | " + finding.getSubject());
+            }
+        }
+
+        return out;
     }
 
     /** The editor's own gesture: clear the source, move the component, add it at the destination. */
