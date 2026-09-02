@@ -266,7 +266,7 @@
              pressed.  It was excused from the battery on the grounds that a permanently red run
              costs more than the test earns; that was the wrong trade.  It comes out when Return
              Home stages this arrangement, not before. -->
-        <test-one-class class="testTheParkingBerthsGetTheirTrainsBack"/>
+        <test-one-class class="testTrainsComeHomeToTheirPlatforms"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>

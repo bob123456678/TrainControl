@@ -21,37 +21,33 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Five trains on the operator's own stations go out, come back, and face the way they set off.
+ * Five trains go out from ordinary platforms, come back, and face the way they set off.
  *
- * Adam asked for exactly this arrangement: "place a non reversing train on TunnelLeftPark,
- * TunnelRightPark, and TunnelCenterPark.  Place a normal train at BottomMainA and a reversing train
- * facing west on BottomMainC.  Then run for a while, send home and ensure they are where they started,
- * facing the same direction as when they started."
+ * Adam asked first for an arrangement on the parking berths, and then, having watched what that made
+ * the planner do, for this one instead: **"we should have trains on regular stations that need to go
+ * home, not parked trains that need to go park somewhere else."**
  *
- * **Why the arrangement is the point.** The three Tunnel berths are parking terminuses - a train can
- * only leave one by reversing - and the trains standing in them cannot reverse, so each of them can
- * only get home by BACKING IN past a reversing point. That is the rule of 2026-08-31, and this is it
- * on the real railway rather than on a three-point fixture. BottomMainA and BottomMainC are main-line
- * platforms drawn as more than one graph Point, so they are the case where "the home is the square"
- * and "facing the same direction" are two different claims.
+ * The berth version asked a question nobody wanted answered.  On his railway a train in ParkingTrack6
+ * homed at TunnelLeftPark has to climb from one page to the other, run past BottomMainA, reverse, and
+ * only then park - three hops of shunting, and a hard planning problem that says nothing about whether
+ * Return Home works.  Measured while deciding to move: from ParkingTrack6 the right-click menu offers
+ * twenty-five clear paths to thirteen destinations and TunnelLeftPark is not one of them.  So the
+ * failure there was pathing rather than anything switched off, and it was the wrong thing to be
+ * testing.
+ *
+ * These five stand on plain through platforms - no parking flag, no compulsory reversal, nothing out of
+ * service - which is where trains on this railway actually are.  Each is homed where it starts, the
+ * railway runs itself for a while, and then everybody is sent home.
  *
  * **Facing is the Point, not the square.** A square that trains can enter from two directions is
  * emitted as one Point per arrival side, and which copy a train stands on IS which way it is facing -
  * the model has no separate direction. So "facing the same direction as when they started" is asserted
  * as the same Point, and on a split platform that is strictly stronger than being home.
  *
- * **THIS TEST FAILS TODAY, and that is what it is for.** Return Home answers NO_PLAN_FOUND for this
- * arrangement on his railway. Three causes were eliminated by experiment before it was written up:
- *
- *   - it is NOT the backing-in rule added on 2026-08-31 - disabling `mustBackIn` gives the same
- *     answer;
- *   - it is NOT the search budget - raising SEARCH_BUDGET_MS from 15s to 90s gives the same answer;
- *   - it is NOT the fifth train standing on a copy trains cannot be SENT to - putting all five on
- *     destination copies gives the same answer.
- *
- * So it is structural, and it wants somebody who knows what the plan ought to be. Until then this
- * class is deliberately NOT registered in build.xml: a permanently red battery would cost more than
- * this test earns, and the finding is written up in the tracker instead of being shouted every run.
+ * **It is registered in build.xml and it is expected to be RED until Return Home stages this.**  Adam,
+ * on being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  Nothing moves
+ * when Return Home is pressed for this arrangement; a test for something that does not work belongs in
+ * the battery being red rather than in an exclusion table being quiet.
  *
  * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
  * diagram frozen in the test").**
@@ -72,7 +68,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * @author Adam
  */
-public class testTheParkingBerthsGetTheirTrainsBack
+public class testTrainsComeHomeToTheirPlatforms
 {
     private static MarklinControlStation model;
 
@@ -91,7 +87,25 @@ public class testTheParkingBerthsGetTheirTrainsBack
     /** Where each train was put, which is also which way it was facing. */
     private static final Map<String, String> STARTED_AT = new LinkedHashMap<>();
 
-    private static final String[] BERTHS = {"TunnelLeftPark", "TunnelRightPark", "TunnelCenterPark"};
+    /**
+     * Ordinary through platforms, which is where trains actually stand (Adam, 2026-09-01).
+     *
+     * "We should have trains on regular stations that need to go home, not parked trains that need to
+     * go park somewhere else."
+     *
+     * The arrangement used to put three of the five in parking berths.  That made every journey home a
+     * berth-to-berth shunt - on his railway ParkingTrack6 to TunnelLeftPark is up from one page to
+     * another, past BottomMainA, reverse, and only then park - which is a hard and unrepresentative
+     * question to ask of a planner, and not the one this test is for.
+     *
+     * These five are plain platforms: no `parking`, no `mustReverse`, nothing switched off.  A train
+     * standing on one is somewhere autonomy will move on its own, and its way home is an ordinary
+     * journey rather than a shunt.
+     */
+    private static final String[] PLATFORMS =
+    {
+        "BottomMainA", "TopMainR1", "TopMainR2", "Tunnel", "LowerFront"
+    };
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -168,76 +182,46 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
         assertEquals(STARTED_AT.size(), 5, "not every train was placed, so this proves nothing");
 
-        // A floor on the fixture: the berths must really be terminuses, or the backing-in rule this
-        // arrangement was chosen for is not being exercised at all.
-        int berths = 0;
+        // A FLOOR ON THE FIXTURE: these have to be ordinary platforms, or the test is quietly back
+        // to asking the berth question.
+        int plain = 0;
 
-        for (String berth : BERTHS)
+        for (String platform : PLATFORMS)
         {
-            Point p = layout.getPoint(berth);
+            Point p = layout.getPoint(platform);
 
-            if (p != null && p.isTerminus()) berths++;
-        }
-
-        assertEquals(berths, BERTHS.length,
-            "the parking berths are not terminuses on this setup, so nothing here has to back in");
-
-        // THE PARKED ONES ARE STARTED BY HAND, once.
-        //
-        // Adam: "the parked trains need to be manually started the first time."  A berth is not an
-        // automatic destination and a train sitting in one is not something full autonomy will choose
-        // to move, so without this the three of them simply stand there for the whole run and the
-        // arrangement this test is about never happens.  A hand dispatch is exactly what the diagram's
-        // right-click menu does: one path, executed.
-        int started = 0;
-
-        for (int i = 0; i < BERTHS.length; i++)
-        {
-            Locomotive parked = model.getLocByName(name(i));
-
-            List<List<Edge>> options = layout.getPossiblePaths(parked, true);
-
-            // SOMEWHERE AUTONOMY WILL MOVE IT ON FROM (RTG-B1, 2026-09-01).
-            //
-            // `getPossiblePaths` is the MANUAL door, and it deliberately offers destinations autonomy
-            // will never choose - inactive squares among them.  Taking `options.get(0)` took whichever
-            // of those came first, and on Adam's configuration that is ParkingTrack6, which is
-            // `active: false`.  So the hand-start that is supposed to set these trains going instead
-            // parked one somewhere autonomy would not touch again, and it was still sitting there when
-            // Return Home was asked for - stranded before the run began, by the fixture rather than by
-            // the railway.
-            //
-            // This is the same tier distinction the whole feature turns on, and the test had fallen the
-            // wrong side of it: a hand-start that models "start it off and let autonomy take over" has
-            // to leave the train where autonomy can take over.
-            List<Edge> chosen = null;
-
-            for (List<Edge> option : options)
+            if (p == null)
             {
-                if (layout.isChoosableByAutonomy(option.get(option.size() - 1).getEnd()))
+                // THE SQUARE, not anything whose name begins with it.  A split platform is emitted as
+                // "Name (facing)", so the copies are the exact name or the name and a bracket - and
+                // `startsWith` alone matched TunnelCenterPark for "Tunnel", which is a parking terminus
+                // and made this floor fail against a platform that is perfectly ordinary.
+                for (Point copy : layout.getPoints())
                 {
-                    chosen = option;
-                    break;
+                    boolean sameSquare = copy.getName().equals(platform)
+                        || copy.getName().startsWith(platform + " (");
+
+                    if (sameSquare && copy.isDestination() && copy.isActive())
+                    {
+                        p = copy;
+                        break;
+                    }
                 }
             }
 
-            if (chosen == null)
-            {
-                System.out.println("NOT STARTED " + name(i) + " - nowhere autonomy would take it on "
-                    + "from, out of " + options.size() + " manual option(s) from " + BERTHS[i]);
-                continue;
-            }
-
-            if (layout.executePath(chosen, parked, parked.getPreferredSpeed(), null)) started++;
+            if (p != null && p.isDestination() && p.isActive() && !p.isTerminus()) plain++;
         }
 
-        System.out.println("HAND-STARTED " + started + " of the " + BERTHS.length + " parked trains");
+        assertEquals(plain, PLATFORMS.length,
+            "one of these is not an ordinary platform on this setup - a terminus or something switched "
+            + "off among them turns this back into the parking-berth question it was moved away from");
 
-        assertTrue(started > 0,
-            "not one of the parked trains could be started by hand, so the railway never moved and "
-            + "everything below would pass by standing still");
+        // NO HAND-START.  A berth is not an automatic destination and a train sitting in one will not
+        // be moved by autonomy, so the old arrangement had to be set going by hand.  A train on a
+        // platform is somewhere autonomy picks up on its own, and starting it by hand would be the test
+        // arranging the run rather than watching it.
 
-        // Then autonomy takes over for a while, and the trains finish the paths they are on.
+        // Autonomy runs the railway for a while.
         layout.runLocomotives();
 
         Thread.sleep(RUN_SECONDS * 1000L);
@@ -262,8 +246,9 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
-                + ", blocked " + plan.getBlocked() + "). The three berths are terminuses and their "
-                + "trains cannot reverse, so each of them has to back in past a reversing point");
+                + ", blocked " + plan.getBlocked() + "). Five trains that set off from ordinary "
+                + "platforms have to be able to get back to them; the per-train reachability printed "
+                + "above says which one cannot and whether it is the graph or the plan that is short");
 
             layout.loadReturnToHomeTimetable();
 
@@ -522,15 +507,19 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
         String[] where = new String[]
         {
-            BERTHS[0], BERTHS[1], BERTHS[2], "BottomMainA", "BottomMainC"
+            PLATFORMS[0], PLATFORMS[1], PLATFORMS[2], PLATFORMS[3], PLATFORMS[4]
         };
 
-        // The facing each one is to be placed on, where the square has copies. BottomMainA is
-        // eastbound, which is Adam's own answer; BottomMainC is the westbound one he asked for.
-        // BottomMainC is null here on purpose: no westbound copy of it is a station, so the placement
-        // door cannot be asked for one. It goes on a destination copy first, to join the run list and
-        // get its speed, and is then put on the westbound copy directly below.
-        String[] facing = new String[] {null, null, null, "east", null};
+        // NO FACING IS ASKED FOR, since the arrangement moved onto ordinary platforms.
+        //
+        // It used to name "east" for BottomMainA, because Adam had said which way that train stood.
+        // Carried over to a different set of platforms it became a demand the railway cannot meet -
+        // Tunnel has no eastbound copy that is a station at all, and the placement door said so.
+        //
+        // Nothing is lost by leaving it open.  What this test asserts is that every train comes back to
+        // the SAME Point it left, and which copy that is gets recorded at placement time; the copy the
+        // train happens to be given is the copy it has to return to either way.
+        String[] facing = new String[] {null, null, null, null, null};
 
         for (int i = 0; i < where.length; i++)
         {
