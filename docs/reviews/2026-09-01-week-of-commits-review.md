@@ -443,6 +443,8 @@ new warnings and zero new protection.
 
 ### SVN-B2 — a partially measured edge reports a positive but short length, so acting on the notice makes the guard refuse trains that fit
 
+**CLOSED by `FX2-3`.** One of the four findings that ruling names - with `D24-B2`, `RTG-B2` and `TCX-A1`. Adam: "OK", the reversal-room rule is accepted as it stands, and the partial-tile-sum unsoundness stays recorded in the comment at the guard rather than being silently carried. It is still true that `GraphReducer.sumLength` adds `max(0, tileLength)` over the tiles an edge spans, so one measured tile out of ten reports that tile's length and the guard reads it as a complete measurement; the comment at `Layout.java:2337` says so.
+
 `Layout.java:2343` tests `segment.getLength() <= 0`, and treats anything above zero as measured. But
 `GraphReducer.java:1052-1061` builds that number by skipping unmeasured tiles rather than by refusing:
 
@@ -490,6 +492,8 @@ on a real route.
 it came in over, or only the last N segments it will physically stand on?
 
 ### SVN-B4 — the new rule is in `isPathClear` and nowhere in the staging planner
+
+**FIXED 2026-09-02 (`975f157d`).** Same finding as `TCX-A2`, reached by a different pass. The rule is pure - it reads the path, the destination's flags and the locomotive, and no live feedback - so it lifted to `Layout.measuredRoomToReverseInto` and both sides ask it. Into `firstClearRoute`, which is the search; deliberately not into `connected`, which is the impossibility proof and has to stay looser than the search.
 
 `HomeStaging`'s only length rule is `at.validateTrainLength(loc)` (`HomeStaging.java:1636`) — the typed
 maximum. There is no edge-length sum anywhere in the file. Staging legs execute through the timetable →

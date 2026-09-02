@@ -327,7 +327,7 @@ Two specific defects a test would catch:
 
 ### TCX-B2 — The editor notice asks for a different measurement from the one the guard needs
 
-**CLOSED by `FX2-3`.** Accepted as-is; the notice's narrower question is the recorded consequence.
+**STILL DEFERRED - needs Adam (corrected 2026-09-02).** This was marked closed by `FX2-3` earlier today and that overstated his ruling. `FX2-3` put the RULE's soundness to him and he answered "OK"; the question this finding asks - should the notice name only the square trains turn round at, or every square on the run-in to it - was never put. The README is explicit that a finding is closed when it is fixed, withdrawn or explicitly declined, and never because a later document covers the same area. `D24-C7` is the same question and is also open.
 
 **Status: DEFERRED — needs Adam.**
 
