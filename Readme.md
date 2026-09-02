@@ -339,8 +339,8 @@ To restore, close TrainControl, unpack the archive beside the JAR file, and star
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json (json-20260814.jar) (from v1.6.0)
-* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.7.2.jar) (from v2.3.0)
+* org.json (json-20260814.jar)
+* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.7.2.jar)
 * jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
@@ -378,13 +378,12 @@ Tab icons provided by Freepik.
             - The track diagram's Autonomy Setup menu opens the full editor on the page and square you right-clicked, and every item on it names the square it is about.
             - The autonomy menu's "Autonomy needs a layout on this computer" is now something you can press: it downloads one.
             - Which function autonomy fires on departure and on arrival is ticked on the function itself, from the locomotive's right-click menu, and a train's length is set from a dropdown in the same place.
-            - A link switched off in autonomy is greyed out on the track diagram, not only while editing.
-            - The autonomy editor labels a station with its name rather than with whichever train happens to be parked there, and a switch beside the other view controls puts the trains back.
+            - In autonomy mode, a link switched off in autonomy is greyed out on the track diagram, not only while editing.
         - Routes
             - A route will no longer throw a switch on track a train is running over, nor turn a signal green at a platform a train is standing at.  From the Routes tab and from a route tile on the diagram you are asked whether to go ahead anyway, once per route; a route fired by a sensor stops instead, because there is nobody there to ask.  Each command is checked again immediately before it is sent, so a train dispatched while a route is part way through is not missed.  Routes that touch nothing a train is using run exactly as before, and nothing changes at all when autonomy is stopped.
             - A new route editor built from dropdowns rather than typed commands.  Each command is a row - what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards - so a route can be built and read without knowing the command syntax, and rows are added, duplicated, deleted and reordered from marks in the rows themselves.
             - Conditions are written as an indented list instead of with brackets.  Each line is either a condition or the word joining it to the line before, and both can be indented, so "sensor 1 occupied, and either sensor 2 or sensor 3" is written by indenting the two sensors under the word that joins them.  A word that disagrees with the others at its level is shown in red until it is indented or changed.
-            - Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead - so "run this route when these points are already set the way I have just set them" can be built by setting them.  The older text editor is still there, and routes that came from the Central Station open read-only in both.
+            - Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead - so "run this route when these points are already set the way I have just set them" can be built by setting them.  Routes that came from the Central Station open read-only.
             - Every route tile on the track diagram now has a play button that runs the route straight away, while a click elsewhere on the tile still asks first and a right-click still opens the menu.
             - Find Route on the Routes menu takes a name or part of one: an exact name runs outright, and a fragment matching several offers the choice.
             - Deleting or saving a route created in TrainControl no longer forces a full sync with the Central Station.
