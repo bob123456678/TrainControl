@@ -651,6 +651,242 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The editor warns about an arrival a train could never leave, and one nothing could reach.
+     *
+     * Adam, 2026-09-02: **"we need a warning for instances like the previous version of this."**  He
+     * had just built a parking spur whose reverse copy came out with two ways in and none out -
+     * somewhere autonomy may send a train that no train can ever depart from.  BottomMainB had the
+     * same shape earlier the same day, and it cost an evening: Return Home was chased for a fault that
+     * was in the diagram all along.
+     *
+     * **Every other check in that file asks about the SQUARE, and that is exactly why none of them
+     * caught it.**  A square is emitted as one Point per side a train can arrive by, and the copies do
+     * not share their edges - so a square can be perfectly reachable while one of its arrivals is a
+     * trap.  A rule about copies cannot be enforced by looking at squares.
+     *
+     * So the fixture is a square with TWO arrivals, healthy from one side and stuck from the other.
+     * Barring the far section of the run leaves the middle station's eastward arrival with nothing to
+     * go on to, while its westward arrival is untouched - which is what keeps the square healthy and
+     * the square-level checks quiet.
+     *
+     * **Which of TOWARD_A and TOWARD_B points which way is the tile's business, not this test's**, so
+     * both are applied and the assertion is that exactly one of them traps the arrival.  True
+     * whichever way round they are, and false if nothing is watching.
+     *
+     * NOT COVERED HERE: the no-way-IN half of the same check.  It could not be provoked, and the
+     * reason is worth writing down rather than rediscovering.  A copy is emitted per side a train can
+     * ARRIVE by, so barring the approach does not leave a copy nothing can reach - it leaves no copy
+     * at all, and there is nothing to report.  Before these checks were narrowed to healthy squares it
+     * fired ten times on Adam's railway, and every one of those was a square nothing could reach from
+     * any side - which `checkStationUnreachable` already warns about.  It is kept for symmetry with
+     * its twin and because a split square could in principle have one unreachable arrival, but no
+     * fixture here demonstrates it and it fires on no railway we have.
+     *
+     * MUTATION: asking `reducer.getPoints()` - the squares - rather than the built graph finds
+     * neither, because the square is on a run that is perfectly connected.
+     */
+    @Test
+    public void testTheEditorWarnsAboutACopyWithNoWayOutOrIn() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Copies", null);
+        session.getStore().setActiveConfiguration("Copies");
+
+        TileKey near = new TileKey("main", 1, 1);
+        TileKey middle = new TileKey("main", 4, 1);
+        TileKey stub = new TileKey("main", 7, 1);
+
+        session.setStation(near, true);
+        session.setPointName(near, "NearEnd");
+
+        session.setStation(middle, true);
+        session.setPointName(middle, "Middle");
+
+        session.setStation(stub, true);
+        session.setPointName(stub, "FarEnd");
+
+        // Both ends may turn, which is what a railway does with a stub and what makes this a control:
+        // an unmarked dead end traps the train that arrives at it, so without this the fixture reports
+        // two trapped arrivals before anything has been done to it.
+        session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
+        session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, true);
+
+        session.rebuild();
+
+        assertTrue(session.destinationCopiesWithNoWayOut().isEmpty(),
+            "an ordinary two-way run reports a station a train cannot leave: "
+            + session.destinationCopiesWithNoWayOut());
+
+        assertTrue(session.destinationCopiesWithNoWayIn().isEmpty(),
+            "an ordinary two-way run reports a station nothing can reach: "
+            + session.destinationCopiesWithNoWayIn());
+
+        // ONE WAY ALONG THE FAR SECTION ONLY, so the middle station keeps its healthy arrival.
+        Set<TileKey> far = new LinkedHashSet<>();
+
+        for (int x = 5; x <= 7; x++)
+        {
+            far.add(new TileKey("main", x, 1));
+        }
+
+        session.setDirection(far, Direction.TOWARD_A);
+        session.rebuild();
+
+        String outA = String.valueOf(session.destinationCopiesWithNoWayOut());
+        String inA = String.valueOf(session.destinationCopiesWithNoWayIn());
+
+        session.setDirection(far, Direction.TOWARD_B);
+        session.rebuild();
+
+        String outB = String.valueOf(session.destinationCopiesWithNoWayOut());
+        String inB = String.valueOf(session.destinationCopiesWithNoWayIn());
+
+        assertTrue(outA.contains("Middle") || outB.contains("Middle"),
+            "barring the far section one way leaves the middle station an arrival with no track out "
+            + "of it, and nothing said so.  A train sent there can never leave, and autonomy may send "
+            + "one.  Out: " + outA + " then " + outB);
+
+        // AND THE FAR END IS NOT REPORTED, which is the restriction that keeps these useful.
+        //
+        // Its only arrival is stuck once the section is barred, and a square whose every arrival is
+        // stuck is a stuck SQUARE - which checkStationUnreachable and checkStationReachesNothing
+        // already warn about.  Before this was narrowed, the three copy checks named twenty-two things
+        // on Adam's railway and twenty-one of them were squares the editor already complained about.
+        assertFalse(inA.contains("FarEnd") || inB.contains("FarEnd"),
+            "a square whose every arrival is stuck was reported per-copy as well, which is the same "
+            + "complaint the square-level checks already make.  In: " + inA + " then " + inB);
+
+        assertTrue(outA.contains("Middle") != outB.contains("Middle"),
+            "the same arrival was reported as trapped whichever way the far section was barred, so "
+            + "the check is not reading the direction at all.  Out: " + outA + " then " + outB);
+
+        assertFalse(subjectsOf(org.traincontrol.automationui.AutonomyChecks.COPY_NO_WAY_OUT).isEmpty(),
+            "the session knows about the trapped arrival but the editor never reports it");
+    }
+
+    /**
+     * And the one that has a way out, and still gets the train nowhere.
+     *
+     * Adam, 2026-09-02: **"yes, extend the check to catch that shape too."**  BottomInner on his own
+     * railway was a station a train could arrive at, and depart from, and never get anywhere from: one
+     * way in, one way out, and the way out led only to track that came back.  It has an edge each way,
+     * so the two checks above both pass it - which is exactly why he asked.
+     *
+     * **The square is healthy and one of its arrivals is not, and that is the whole point.**  Swept
+     * over his frozen diagram, an unrestricted version of this named ten squares, and
+     * `checkStationReachesNothing` already warned about nine of them - the same complaint twice.
+     * Where every arrival is stuck the SQUARE is stuck and the square-level check has it; the only
+     * thing no square-level check can see is a good square with one bad way in.
+     *
+     * The fixture is that, and it needs no one-way restriction at all: a run with a station at each
+     * end and a plain sensor beyond, where the sensor is a dead end nothing may turn at.  Arriving at
+     * the middle station from the west you can only carry on into that dead end; arriving from the
+     * east you carry on to a real station.  One square, one trap, one good arrival.
+     *
+     * **The control is the same railway with the dead end marked "trains may turn here"**, which is
+     * what a real railway does with a stub, and then nothing is reported at all.
+     *
+     * MUTATION: counting any Point the train can get to, rather than only a STATION, makes this pass
+     * with the railway unchanged - the middle station reaches the dead-end sensor perfectly well, and
+     * a train sent there still cannot get anywhere it is allowed to stop.
+     *
+     * NOT COVERED HERE: the walk also refuses to count a station standing on the SAME square, which is
+     * what stops a trapped arrival calling its own turning twin an escape.  Reaching your own twin
+     * needs a LOOP - track that comes back to the square from the other side - and this fixture is a
+     * straight run, so that rule is defensive rather than demonstrated.
+     */
+    @Test
+    public void testTheEditorWarnsAboutACopyThatReachesNoOtherStation() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Reaches", null);
+        session.getStore().setActiveConfiguration("Reaches");
+
+        TileKey near = new TileKey("main", 1, 1);
+        TileKey middle = new TileKey("main", 4, 1);
+        TileKey stub = new TileKey("main", 7, 1);
+
+        session.setStation(near, true);
+        session.setPointName(near, "NearEnd");
+
+        session.setStation(middle, true);
+        session.setPointName(middle, "Middle");
+
+        // THE STUB IS DELIBERATELY NOT A STATION.  It is where the middle station's eastward arrival
+        // can only carry on to, and it is the control for reporting on STATIONS rather than on Points:
+        // the train gets there perfectly well and still has nowhere it may stop.
+        session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
+        session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, true);
+
+        session.rebuild();
+
+        assertTrue(session.destinationCopiesReachingNoStation().isEmpty(),
+            "with the stub marked as somewhere trains may turn, every arrival gets somewhere - and "
+            + "this reported one that does not: " + session.destinationCopiesReachingNoStation());
+
+        // NOW TAKE THE TURN AWAY, which is the whole change.
+        session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, false);
+
+        session.rebuild();
+
+        java.util.Map<TileKey, String> stranded = session.destinationCopiesReachingNoStation();
+
+        assertFalse(stranded.isEmpty(),
+            "a station whose eastward arrival can only carry on into a dead end nothing may turn at "
+            + "reaches no other station, and nothing said so.  This is the shape Adam asked for: a "
+            + "way in, a way out, and nowhere to go.  Copies: " + stranded
+            + "  no way out: " + session.destinationCopiesWithNoWayOut());
+
+        assertTrue(String.valueOf(stranded).contains("Middle"),
+            "the station that reaches nothing is Middle, and this named something else: " + stranded);
+
+        // AND NOT THE STUB, which is not a station and is nobody's destination.
+        assertFalse(String.valueOf(stranded).contains("7,1"),
+            "plain track was reported as a station that reaches nothing: " + stranded);
+
+        // AND THE SQUARE-LEVEL CHECK IS SILENT, which is the reason this one exists.  If it fired
+        // here, this check would be a second way of saying something the editor already says.
+        assertFalse(subjectsOf(
+            org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING).contains("Middle"),
+            "the square-level check already reports Middle, so a copy-level check adds nothing here "
+            + "and the fixture is not the shape it was meant to be");
+
+        assertFalse(subjectsOf(
+            org.traincontrol.automationui.AutonomyChecks.COPY_REACHES_NOTHING).isEmpty(),
+            "the session knows the arrival gets nowhere but the editor never reports it");
+    }
+
+    /**
+     * A straight run of track with a sensor at each end and one in the middle.
+     *
+     * Three sensors rather than two, because the shape that needs catching is a station with track on
+     * both sides of it whose onward track goes nowhere - which needs somewhere for the onward track to
+     * end.
+     */
+    private LayoutDiagram deadEndRun() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
      * Two sensors with two plain tiles between them.
      */
     private LayoutDiagram runOfTrack() throws IOException

@@ -1996,25 +1996,9 @@ public class AutonomySession
 
         if (reducer == null) return out;
 
-        org.json.JSONObject built;
+        org.json.JSONObject built = builtForInspection();
 
-        try
-        {
-            // FOR INSPECTION, which is what this is.  buildConfiguration() answers for a
-            // configuration that has been initialised and saved; asked on a session that has not, it
-            // came back with the stations and no edges at all - and on a test machine it reached the
-            // DEFAULT layout to find them, which on Adam's is his real railway.  The suite wrote to
-            // that folder once before one.sh's fingerprint caught it.
-            built = new org.json.JSONObject(buildConfigurationForInspection());
-        }
-        catch (RuntimeException malformed)
-        {
-            // A setup that will not build has louder problems than this, and every one of them is
-            // already reported.  Saying nothing here is better than saying something wrong.
-            return out;
-        }
-
-        if (!built.has("points") || !built.has("edges")) return out;
+        if (built == null || !built.has("points") || !built.has("edges")) return out;
 
         java.util.Set<String> stations = new java.util.HashSet<>();
 
@@ -2049,18 +2033,219 @@ public class AutonomySession
         // builder itself uses, so the two cannot disagree about what a Point is called.
         java.util.Map<String, TileKey> byName = builder(null).tilesByName();
 
+        java.util.Set<String> good = wantNoWayOut ? hasOut : hasIn;
+
         for (String copy : stations)
         {
-            boolean bad = wantNoWayOut ? !hasOut.contains(copy) : !hasIn.contains(copy);
-
-            if (!bad) continue;
+            if (good.contains(copy)) continue;
 
             TileKey tile = byName.get(copy);
 
-            if (tile != null && !out.containsKey(tile)) out.put(tile, copy);
+            if (tile == null || out.containsKey(tile)) continue;
+
+            // ONLY WHERE THE SQUARE ITSELF IS HEALTHY.
+            //
+            // Where EVERY copy of a square is stuck the square is stuck, and the square-level checks
+            // already say so - `checkStationUnreachable` and `checkStationReachesNothing` between them
+            // named nine of the ten squares this reported on Adam's own railway.  Saying it again in
+            // different words is noise, and saying it as an ERROR is worse than noise: an error
+            // refuses to start autonomy at all.
+            //
+            // What no square-level check can see is a HEALTHY square with one trapped arrival, which
+            // is the whole reason these exist.
+            if (!hasAHealthySibling(copy, tile, good, stations, byName)) continue;
+
+            out.put(tile, copy);
         }
 
         return out;
+    }
+
+    /**
+     * The built graph as JSON, or null when the setup will not build.
+     *
+     * FOR INSPECTION, which is what the copy checks are.  buildConfiguration() answers for a
+     * configuration that has been initialised and saved; asked on a session that has not, it came back
+     * with the stations and no edges at all - and on a test machine it reached the DEFAULT layout to
+     * find them, which on Adam's is his real railway.  The suite wrote to that folder once before
+     * one.sh's fingerprint caught it.
+     *
+     * A setup that will not build has louder problems than a trapped arrival, and every one of them is
+     * already reported.  Saying nothing is better than saying something wrong.
+     *
+     * @return the configuration the graph window would draw, or null
+     */
+    private org.json.JSONObject builtForInspection()
+    {
+        try
+        {
+            return new org.json.JSONObject(buildConfigurationForInspection());
+        }
+        catch (RuntimeException malformed)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Station copies a train can leave, and from which it can never reach another station.
+     *
+     * Adam, 2026-09-02: **"yes, extend the check to catch that shape too."**  BottomInner on his own
+     * railway was a station a train could arrive at and depart from and still never get anywhere: one
+     * way in, one way out, and the way out led only to track that came back.  Both of the checks above
+     * pass it, because it has an edge in each direction; it is a dead end with a siding on it.
+     *
+     * **Another station, not another Point.**  Track a train may pass but not stop at is not somewhere
+     * it can be sent, so a station whose only way on is plain track is as stuck as one with no way on
+     * at all.  That much the test demonstrates.
+     *
+     * **And a different SQUARE.**  Where track loops back, an arrival can reach its own turning twin,
+     * and the twin is the same platform - counting that as having got somewhere would report nothing
+     * on the very shape this exists for.  Defensive rather than demonstrated: it takes a loop to
+     * exercise, and the fixture is a straight run.
+     *
+     * Copies with no way out at all are left to the check above.  They reach nothing either, by
+     * definition, and reporting both would put two messages on one square saying the same thing in
+     * different words.
+     *
+     * @return the squares, mapped to the offending copy, empty when the setup will not build
+     */
+    public java.util.Map<TileKey, String> destinationCopiesReachingNoStation()
+    {
+        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+
+        if (reducer == null) return out;
+
+        org.json.JSONObject built = builtForInspection();
+
+        if (built == null || !built.has("points") || !built.has("edges")) return out;
+
+        java.util.Set<String> stations = new java.util.HashSet<>();
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject p = points.getJSONObject(i);
+
+            if (p.optBoolean("station", false)) stations.add(p.getString("name"));
+        }
+
+        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject e = edges.getJSONObject(i);
+
+            String start = e.getString("start");
+
+            if (!onward.containsKey(start)) onward.put(start, new java.util.ArrayList<String>());
+
+            onward.get(start).add(e.getString("end"));
+        }
+
+        java.util.Map<String, TileKey> byName = builder(null).tilesByName();
+
+        for (String copy : stations)
+        {
+            // Somewhere to go at all, or this is the other check's business.
+            if (!onward.containsKey(copy)) continue;
+
+            TileKey here = byName.get(copy);
+
+            if (here == null) continue;
+
+            if (reachesAStationElsewhere(copy, here, onward, stations, byName)) continue;
+
+            if (out.containsKey(here)) continue;
+
+            // Only where a sibling copy of the same square DOES get somewhere; see badCopies for why.
+            boolean healthySquare = false;
+
+            for (String sibling : stations)
+            {
+                if (sibling.equals(copy) || !here.equals(byName.get(sibling))) continue;
+
+                if (onward.containsKey(sibling)
+                    && reachesAStationElsewhere(sibling, here, onward, stations, byName))
+                {
+                    healthySquare = true;
+                    break;
+                }
+            }
+
+            if (!healthySquare) continue;
+
+            out.put(here, copy);
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether a walk from one copy ever arrives at a station standing on a different square.
+     *
+     * @param from the copy to start at
+     * @param fromTile its square, which the answer has to get away from
+     * @param onward the built graph's edges, by the copy they leave
+     * @param stations the copies that are stations
+     * @param byName which square each copy stands on
+     * @return true as soon as one is found, so a long railway costs no more than a short one
+     */
+    private boolean reachesAStationElsewhere(String from, TileKey fromTile,
+        java.util.Map<String, java.util.List<String>> onward, java.util.Set<String> stations,
+        java.util.Map<String, TileKey> byName)
+    {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        java.util.Deque<String> queue = new java.util.ArrayDeque<>();
+
+        seen.add(from);
+        queue.add(from);
+
+        while (!queue.isEmpty())
+        {
+            java.util.List<String> next = onward.get(queue.poll());
+
+            if (next == null) continue;
+
+            for (String there : next)
+            {
+                if (!seen.add(there)) continue;
+
+                TileKey tile = byName.get(there);
+
+                if (stations.contains(there) && tile != null && !tile.equals(fromTile)) return true;
+
+                queue.add(there);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether some OTHER copy of the same square is not stuck the way this one is.
+     *
+     * @param copy the copy being judged
+     * @param tile its square
+     * @param good the copies that are not stuck - the ones with a way out, or with a way in
+     * @param stations every copy that is a station
+     * @param byName which square each copy stands on
+     * @return true when the square has a healthy arrival besides this one
+     */
+    private boolean hasAHealthySibling(String copy, TileKey tile, java.util.Set<String> good,
+        java.util.Set<String> stations, java.util.Map<String, TileKey> byName)
+    {
+        for (String sibling : stations)
+        {
+            if (sibling.equals(copy)) continue;
+
+            if (tile.equals(byName.get(sibling)) && good.contains(sibling)) return true;
+        }
+
+        return false;
     }
 
 
@@ -3336,7 +3521,8 @@ public class AutonomySession
             reversalsWithoutLength(),
             // Copies a train could be sent to and never leave, and copies nothing can reach at all
             // (Adam, 2026-09-02).  Per COPY, which is what every other check here cannot see.
-            destinationCopiesWithNoWayOut(), destinationCopiesWithNoWayIn());
+            destinationCopiesWithNoWayOut(), destinationCopiesWithNoWayIn(),
+            destinationCopiesReachingNoStation());
     }
 
     /**

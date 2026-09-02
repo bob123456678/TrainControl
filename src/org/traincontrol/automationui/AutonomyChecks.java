@@ -135,9 +135,24 @@ public class AutonomyChecks
     /**
      * A square trains reverse at, on a layout that measures track, whose own track is not measured.
      */
+    public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
+
+    /**
+     * The three ways one ARRIVAL at a station can be a trap while the square looks perfectly healthy.
+     *
+     * A square is emitted as one Point per side a train can arrive by, and the copies do not share
+     * their edges.  Every other check here asks about the square, so a square can pass all of them
+     * with one of its arrivals leading nowhere.
+     *
+     * They are ordered by how badly the train is stuck: no track out at all, no track in at all, and
+     * track out that reaches no other station - which is the same dead end with a siding on it.
+     *
+     * All three fire only where the SQUARE is healthy.  Where every copy is stuck the square is stuck,
+     * and the square-level checks say so already.
+     */
     public static final String COPY_NO_WAY_OUT = "autosetup.ui.checkCopyNoWayOut";
     public static final String COPY_NO_WAY_IN = "autosetup.ui.checkCopyNoWayIn";
-    public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
+    public static final String COPY_REACHES_NOTHING = "autosetup.ui.checkCopyReachesNothing";
     public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
 
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
@@ -349,7 +364,8 @@ public class AutonomyChecks
             stationsWithoutSignal, facingsImpossible, barred,
             Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
             Collections.<TileKey, String>emptyMap(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey, String>emptyMap(), Collections.<TileKey, String>emptyMap());
+            Collections.<TileKey, String>emptyMap(), Collections.<TileKey, String>emptyMap(),
+            Collections.<TileKey, String>emptyMap());
     }
 
     /**
@@ -368,7 +384,8 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
         Map<TileKey, String> repeatedSensorPages, Set<TileKey> reversalsWithoutLength,
-        Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn)
+        Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
+        Map<TileKey, String> copiesReachingNoStation)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -409,6 +426,7 @@ public class AutonomyChecks
         findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
         findings.addAll(checkBadCopies(copiesWithNoWayOut, COPY_NO_WAY_OUT));
         findings.addAll(checkBadCopies(copiesWithNoWayIn, COPY_NO_WAY_IN));
+        findings.addAll(checkBadCopies(copiesReachingNoStation, COPY_REACHES_NOTHING));
         findings.addAll(checkProtectingSignals(reducer, signalsGone));
 
         findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
@@ -742,7 +760,15 @@ public class AutonomyChecks
 
         if (copies == null) return findings;
 
-        Severity severity = COPY_NO_WAY_OUT.equals(key) ? Severity.ERROR : Severity.WARNING;
+        // A WARNING, all three, and the reason is what an error DOES: errorCount() > 0 refuses to
+        // start autonomy at all.  Adam asked for "a warning for instances like the previous version of
+        // this", and a trapped arrival on a square he has been running for months would have stopped
+        // his railway starting the first time he opened this version.
+        //
+        // Nothing downstream refuses the trip either, so the train really can be sent there - but
+        // that is the tier doctrine working as intended: filter at selection, never refuse at
+        // execution, and tell the operator what the diagram says.
+        Severity severity = Severity.WARNING;
 
         for (Map.Entry<TileKey, String> entry : copies.entrySet())
         {
