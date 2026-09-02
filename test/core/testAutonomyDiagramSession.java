@@ -887,6 +887,142 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A plain square marked out of service draws its cross while trains are running, not only while
+     * the setup is being edited (SVN-B6, D24-C9).
+     *
+     * The running diagram badges a square only when it is worth badging, and the list of what that
+     * means is written six lines above the expression: *"this is a station, trains turn round here,
+     * autonomy is not using it."*  The third had no term in it.  So a plain sensor switched off got no
+     * badge at all and drew nothing, while the editor - which badges every Point in the graph - drew
+     * its cross.  The one drawing that says "nothing may pass here" appeared while setting the railway
+     * up and vanished while running it, which is the half the operator is looking at when a train does
+     * not arrive.
+     *
+     * MUTATION: dropping the `|| shut` term from `worthABadge` fails this and nothing else.
+     */
+    @Test
+    public void testAShutPlainSquareDrawsItsCrossOnTheRunningDiagram() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Shut", null);
+        session.getStore().setActiveConfiguration("Shut");
+
+        // The MIDDLE sensor, which is neither a station nor anywhere trains turn round - so the only
+        // thing that could earn it a badge is being switched off.
+        TileKey plain = new TileKey("main", 4, 1);
+
+        session.rebuild();
+
+        org.traincontrol.automationui.TileAnnotation open = session.staticAnnotationFor(plain);
+
+        assertTrue(open == null || open.getBadge() == null,
+            "control: an ordinary plain sensor already carries a badge on the running diagram, so "
+            + "this fixture cannot show what switching one off adds.  Got: " + open);
+
+        session.setPointProperty(plain, "active", Boolean.FALSE);
+
+        session.rebuild();
+
+        org.traincontrol.automationui.TileAnnotation shut = session.staticAnnotationFor(plain);
+
+        assertNotNull(shut, "a square switched off is described as nothing at all on the running "
+            + "diagram, so it draws exactly like one in use");
+
+        assertNotNull(shut.getBadge(),
+            "a square switched off earns no badge on the running diagram, so the cross the editor "
+            + "draws for it disappears the moment autonomy starts");
+
+        assertTrue(shut.getBadge().isImpassable(),
+            "the badge for a square nothing may use does not say so, so it draws as an ordinary "
+            + "point rather than as a cross");
+    }
+
+    /**
+     * And the running graph is told, so trains do not simply drive through it (D24-B5).
+     *
+     * The editor offers **Out of service** on every square, station or not, and its handler writes
+     * `active` and touches nothing else - no direction, no arrow.  The builder used to drop that
+     * property for anything that is not a station, on the reasoning that "the arrows say that through
+     * the derivation".  They do not: nothing sets an arrow when the square is switched off.
+     *
+     * So the cross was a promise the runtime never kept.  `Layout.isPathClear` refuses a path whose
+     * intermediate point is inactive, which is exactly what the cross means, and it can only do that
+     * if the flag reaches the graph.
+     *
+     * MUTATION: putting back `if ("active".equals(key) && !point.isStation()) continue;` fails this.
+     */
+    @Test
+    public void testAShutPlainSquareReachesTheRunningGraph() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("ShutBuild", null);
+        session.getStore().setActiveConfiguration("ShutBuild");
+
+        TileKey plain = new TileKey("main", 4, 1);
+
+        session.rebuild();
+
+        assertFalse(inactivePointNames(session).contains(session.pointNameForTile(plain)),
+            "control: the square is already inactive in the built graph before anything switched it "
+            + "off, so this fixture cannot show the flag arriving");
+
+        session.setPointProperty(plain, "active", Boolean.FALSE);
+
+        session.rebuild();
+
+        String name = session.pointNameForTile(plain);
+
+        assertNotNull(name, "the square stopped being a Point when it was switched off");
+
+        // EVERY COPY OF IT, not just one.  A square with track on both sides is emitted once per
+        // arrival side, and a train barred from one side and admitted from the other is a square that
+        // is half switched off - which is not a state the menu can express or the cross can mean.
+        java.util.List<String> copies = session.pointNamesFor(name);
+
+        assertFalse(copies.isEmpty(), "the square emitted no Points at all");
+
+        for (String copy : copies)
+        {
+            assertTrue(inactivePointNames(session).contains(copy),
+                "a plain square switched off is built as an ACTIVE point (" + copy + "), so the "
+                + "runtime never learns about it and trains carry on running through the square the "
+                + "editor draws a cross on.  Inactive points in the build: "
+                + inactivePointNames(session));
+        }
+    }
+
+    /**
+     * The names of the points the built configuration marks inactive.
+     *
+     * @param session the setup to build
+     * @return the names, empty when nothing is switched off
+     */
+    private java.util.List<String> inactivePointNames(AutonomySession session) throws Exception
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        org.json.JSONObject built =
+            new org.json.JSONObject(session.buildConfigurationForInspection());
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject p = points.getJSONObject(i);
+
+            if (p.has("active") && !p.optBoolean("active", true)) out.add(p.getString("name"));
+        }
+
+        return out;
+    }
+
+    /**
      * Two sensors with two plain tiles between them.
      */
     private LayoutDiagram runOfTrack() throws IOException
@@ -3657,12 +3793,21 @@ public class testAutonomyDiagramSession
     @Test
     public void testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        // A SQUARE THAT GENUINELY BECOMES TWO POINTS (TCX-B9).
+        //
+        // This used to run on `pageOnDisk()`, whose sensors are at the two ENDS of a straight run. A
+        // square with one arrival side emits one Node, so `copies` held one member, the nested loop
+        // below only ever evaluated `sameSquare(x, x)`, and that short-circuits on identity - the half
+        // of this test named in its own title could not fail whatever the station index did.
+        //
+        // The middle sensor here has track on both sides, so trains can arrive at it either way and it
+        // is emitted twice.
+        LayoutDiagram page = pageWithATwoEndedStation();
 
         session.open(Arrays.asList(page));
 
-        TileKey first = new TileKey("main", 1, 1);
-        TileKey second = new TileKey("main", 4, 1);
+        TileKey first = new TileKey("main", 3, 1);
+        TileKey second = new TileKey("main", 1, 1);
 
         session.getStore().setStation(first, true);
         session.setPointName(first, "BottomMainB");
@@ -3674,7 +3819,10 @@ public class testAutonomyDiagramSession
 
         java.util.List<String> copies = session.pointNamesFor(session.pointNameForTile(first));
 
-        assertFalse(copies.isEmpty(), "precondition: the station has at least one Point");
+        assertTrue(copies.size() >= 2,
+            "precondition: this needs a square that became SEVERAL Points, and it got " + copies.size()
+            + " - " + copies + ".  With one copy the loop below compares a name with itself, which "
+            + "sameSquare answers by identity, and the test proves nothing");
 
         // Every copy of one square is that square
         for (String one : copies)

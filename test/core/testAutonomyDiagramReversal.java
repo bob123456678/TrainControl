@@ -349,13 +349,22 @@ public class testAutonomyDiagramReversal
     /**
      * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none
      * of this has to come out byte for byte as it did before.
+     *
+     * **The pair, not the half** (TCX-B5).  This used to assert only that an empty mark set builds what
+     * an unconfigured builder builds - and `reversible` is already an empty set from its field
+     * initialiser, so the two builders were in provably identical state and the assertion could not
+     * fail for the reason it named.  Marking a real tile is what shows the comparison is live: if the
+     * builder ignored the set entirely, the first assertion below would fail and the second would go
+     * on passing exactly as it did.
      */
     @Test
     public void testAnUnmarkedLayoutIsUntouched() throws IOException
     {
         LayoutDiagram page = junction();
 
-        GraphReducer reducer = reduce(page, stations(key("main", 5, 2)));
+        TileKey station = key("main", 5, 2);
+
+        GraphReducer reducer = reduce(page, stations(station));
 
         String withoutFeature = new AutonomyBuilder(reducer, null)
             .withPointExtras(map(extras())).build();
@@ -364,7 +373,18 @@ public class testAutonomyDiagramReversal
             .withPointExtras(map(extras()))
             .withReversibleTiles(Collections.<TileKey>emptySet()).build();
 
-        assertEquals(withEmptyMark, withoutFeature);
+        String withTheStationMarked = new AutonomyBuilder(reducer, null)
+            .withPointExtras(map(extras()))
+            .withReversibleTiles(Collections.singleton(station)).build();
+
+        assertNotEquals(withTheStationMarked, withoutFeature,
+            "control: marking a square as somewhere trains may turn round produced exactly the same "
+            + "configuration as marking nothing, so the assertion below - that marking NOTHING "
+            + "changes nothing - is satisfied by a builder that ignores the set altogether");
+
+        assertEquals(withEmptyMark, withoutFeature,
+            "a configuration that marks no square came out different from one built without the "
+            + "feature at all, so opting out of the split is not free");
     }
 
     /**

@@ -933,12 +933,22 @@ public class AutonomyBuilder
 
                         if (DERIVED.contains(key)) continue;
 
-                        // Active is a station's switch now.  On anything else it said exactly one
-                        // thing - no path may pass through here - and the arrows say that through the
-                        // derivation, so a value stored on a plain sensor is not carried out.  Nothing
-                        // in the autonomy model changes; it simply stops being emitted where the menu
-                        // no longer offers it.
-                        if ("active".equals(key) && !point.isStation()) continue;
+                        // ACTIVE IS CARRIED ON EVERY SQUARE, NOT ONLY ON A STATION (D24-B5).
+                        //
+                        // It used to be dropped here for anything that is not a station, on the
+                        // reasoning that "the arrows say that through the derivation, so a value
+                        // stored on a plain sensor is not carried out", and that the menu no longer
+                        // offered it there.
+                        //
+                        // Both halves were wrong.  The three-way usage menu offers **Out of service**
+                        // on every square there is - `setUsage(target, isStation, false)` - and it
+                        // writes `active` and nothing else: it does not touch a single direction.  So
+                        // marking a plain sensor out of service drew a cross in the editor, was
+                        // dropped here, and trains carried on running through it.
+                        //
+                        // `Layout.isPathClear` refuses a path whose intermediate point is inactive,
+                        // which is exactly what the cross promises, and it can only do that if the
+                        // flag reaches the graph.
 
                         json.put(key, extras.get(key));
                     }

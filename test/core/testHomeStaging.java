@@ -799,6 +799,15 @@ public class testHomeStaging
     /**
      * Nothing is loaded when there is nothing to do, so a stale plan cannot be left sitting in the
      * timetable waiting to be executed by accident.
+     *
+     * MUTATION: deleting `if (!plan.isPossible()) return plan;` from `loadReturnToHomeTimetable`.
+     *
+     * **The empty timetable does not catch it, and used to be all this asserted** (TCX-B8). An
+     * ALREADY_HOME plan is built with no moves at all, so the staging loop puts nothing in the
+     * timetable and the one this test emptied a line earlier is still empty either way. What the
+     * guard decides is the SEQUENTIAL flag: past it, a return-home load says "one train at a time"
+     * about a plan with no trains in it, and every ordinary timetable loaded afterwards runs one train
+     * at a time until something else resets it.
      */
     @Test
     public void testNothingIsLoadedWhenAlreadyHome()
@@ -806,10 +815,19 @@ public class testHomeStaging
         Layout layout = load(ring(LOC_A, LOC_B, null));
         layout.setTimetable(new java.util.LinkedList<>());
 
+        assertFalse(layout.isTimetableSequential(),
+            "precondition: setTimetable is supposed to restore the overlapping behaviour, so the "
+            + "assertion below would prove nothing if the flag were already false for another reason");
+
         HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
 
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.ALREADY_HOME);
         assertTrue(layout.getTimetable().isEmpty(), "an untouched layout loads no moves");
+
+        assertFalse(layout.isTimetableSequential(),
+            "a layout that was already home came back with the timetable set to run one train at a "
+            + "time.  Nothing was staged, so there is nothing to run one at a time - and the flag "
+            + "stays on for whatever ordinary timetable is loaded next");
     }
 
     // ---------------------------------------------------------------------------------------------

@@ -1058,6 +1058,18 @@ public class testAutonomyDiagramMonitor
             "a switched-off station and a switched-off passing point draw differently, though nothing "
             + "can use either - the mark is about the square being out of use, not about what it "
             + "would be if it were in use");
+
+        // AND PARKING IS NOT SHUT (TCX-B6).
+        //
+        // The helper above used to pass `shut` as the Badge's `parking` too, so every fixture in this
+        // class had them equal and nothing here could tell the two apart: `isImpassable()` returning
+        // `parking` would have passed every assertion above.  They share a colour and mean opposite
+        // things - a parking berth is somewhere autonomy leaves alone and the operator uses freely;
+        // a shut square is one nothing may enter at all.
+        assertNotEquals(inkOf(badgeAt(false, true, true, false, size)),
+            inkOf(badgeAt(false, true, false, true, size)),
+            "a parking berth and a square nothing may use draw the same mark, so the drawing cannot "
+            + "be reading the flag it claims to read");
     }
 
     /**
@@ -1195,13 +1207,38 @@ public class testAutonomyDiagramMonitor
 
     /**
      * One badge, painted on its own, for counting.
+     *
+     * @param station whether the square is somewhere trains stop
+     * @param turns whether trains turn round here
+     * @param shut whether nothing may use the square at all
+     * @param size the tile's edge, in pixels
+     * @return the painted badge
      */
     private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns, boolean shut,
         int size) throws Exception
     {
+        return badgeAt(station, turns, false, shut, size);
+    }
+
+    /**
+     * The same, with parking said separately from shut (TCX-B6).
+     *
+     * They used to be the same argument: `shut` was passed as the Badge's `parking` AND as its `shut`,
+     * so every fixture this built had them equal - and the two tests that vary only `shut` would have
+     * passed just as well against `isImpassable() { return parking; }`.  The one thing they could not
+     * do was tell the two apart, which is what they exist to do.
+     *
+     * They share a colour (`TileAnnotation:1531`), which is why separating them changes no ink here:
+     * parking was true only where shut already was.
+     *
+     * @param parking whether autonomy leaves the square alone
+     */
+    private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns,
+        boolean parking, boolean shut, int size) throws Exception
+    {
         TileAnnotation annotation = new TileAnnotation(
             Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false,
-            new TileAnnotation.Badge(station, station && turns, !station && turns, shut, true,
+            new TileAnnotation.Badge(station, station && turns, !station && turns, parking, true,
                 Side.W, Side.E, false, shut),
             false);
 

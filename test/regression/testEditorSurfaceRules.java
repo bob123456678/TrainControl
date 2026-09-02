@@ -2133,16 +2133,44 @@ public class testEditorSurfaceRules
                 + "fixed for once on the other branch");
         }
 
-        // The helper the track branch leans on really does make that promise.
+        // The helper the track branch leans on really does make that promise - in three places
+        // (SVN-A3).
+        //
+        // It used to be one `finally`, here, and it covered the wrong three statements.
+        // `layoutEditingComplete` lowers the button, reads a field and starts a thread; the dozen
+        // statements the guarantee is about are in `layoutRefreshComplete`, on the far side of that
+        // thread. So the continuation ran AT ONCE - the editor's `arriveAt` was queued on the EDT
+        // before the refresh was queued at all - and the refresh, arriving last, re-enabled the Edit
+        // Layout button with the editor still open.
+        //
+        // Three links now, and the chain is only as good as the weakest: the worker posts the EDT half
+        // whatever the refresh does, the EDT half runs the continuation from a finally, and the helper
+        // still covers a throw that happens before there is a worker at all.
         String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
 
         String helper = withoutComments(bodyOf(ui, "public void layoutEditingCompleteThen(Runnable after)"));
 
-        assertTrue(helper.contains("finally"),
-            "layoutEditingCompleteThen no longer runs its continuation from a finally, so the track "
-            + "branch of leaveFor lost the guarantee it delegates - and the check above accepts that "
-            + "branch on the strength of calling this method");
+        assertTrue(helper.contains("catch") && helper.contains("once.run()"),
+            "layoutEditingCompleteThen no longer runs its continuation when the refresh cannot even "
+            + "be started, so the track branch of leaveFor lost that limb of the guarantee it "
+            + "delegates - and the check above accepts that branch on the strength of calling this "
+            + "method.  Body: " + helper);
+
+        String async = withoutComments(bodyOf(ui, "public void layoutEditingComplete(Runnable after)"));
+
+        assertTrue(async.contains("finally") && async.indexOf("finally") < async.indexOf("invokeLater"),
+            "the refresh worker no longer posts its EDT half from a finally, so a layout that will "
+            + "not parse leaves the editor's switch latch raised for the life of the window - which "
+            + "is the fault this whole rule exists for.  Body: " + async);
+
+        String edt = withoutComments(bodyOf(ui, "private void layoutRefreshComplete(Runnable after)"));
+
+        assertTrue(edt.contains("finally") && edt.contains("after.run()"),
+            "layoutRefreshComplete no longer runs the continuation from a finally.  That is where the "
+            + "dozen statements are, and running it anywhere earlier puts the editor's arriveAt on "
+            + "the EDT before the refresh - which re-enables Edit Layout with the editor open.  "
+            + "Body: " + edt);
     }
 
     /**

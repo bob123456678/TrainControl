@@ -4065,6 +4065,47 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Every square the active configuration records a home locomotive on.
+     *
+     * For the one gesture that is about all of them at once (R28-C1).  Adam, 2026-09-02, on finding
+     * the 2.8.1 menu item gone: **"that option should be added back in to the autonomy editor, with a
+     * confirmation."**  Clearing them one square at a time is one right-click each, and on his graph
+     * that is up to sixty-two.
+     *
+     * @return the squares, in the configuration's own order, empty when nothing is homed anywhere
+     */
+    public java.util.List<TileKey> tilesWithAHome()
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(key);
+
+            if (point == null) continue;
+
+            String home = point.optString("home", "");
+
+            if (home.trim().isEmpty()) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
+
+            if (tile != null) out.add(tile);
+        }
+
+        return out;
+    }
+
+
     public void setPointProperty(TileKey tile, String key, Object value)
     {
         String active = store.getActiveConfiguration();
@@ -4650,7 +4691,15 @@ public class AutonomySession
         //
         // A non-station where trains turn round keeps its mark, because "trains reverse here" is a fact
         // about behaviour that nothing on the tile shows.
-        boolean worthABadge = store.isStation(tile) || isTurnAround(tile);
+        //
+        // AND THE THIRD ITEM ON THAT LIST HAD NO TERM IN THIS EXPRESSION (SVN-B6, D24-C9).  A square
+        // switched off that is neither a station nor a turn-around drew nothing at all here, while the
+        // editor - which badges every Point in the graph - drew its cross.  So the one drawing that
+        // says "nothing may pass here" appeared while setting the railway up and vanished while
+        // running it, which is the half the operator is looking at when a train does not arrive.
+        boolean shut = Boolean.FALSE.equals(getPointProperty(tile, "active"));
+
+        boolean worthABadge = store.isStation(tile) || isTurnAround(tile) || shut;
 
         // The marks worked out above, alongside whatever badge this Point earns.
         //
@@ -4668,12 +4717,12 @@ public class AutonomySession
                 store.isStation(tile),
                 store.isStation(tile) && isTurnAround(tile),
                 !store.isStation(tile) && isTurnAround(tile),
-                Boolean.FALSE.equals(getPointProperty(tile, "active")) || !isAutoDestination(tile),
+                shut || !isAutoDestination(tile),
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile),
-                Boolean.FALSE.equals(getPointProperty(tile, "active"))),
+                shut),
             false, false, false, null,
             // RESTRICTED ONLY, which is the whole of what was asked for: "show RESTRICTION arrows".
             // A run that is open both ways is the majority of any layout and is also the default, so

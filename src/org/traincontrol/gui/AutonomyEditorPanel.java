@@ -249,6 +249,8 @@ public class AutonomyEditorPanel extends JPanel
 
     // Offered only while something is still unnamed, which is the only time it does anything
     private JButton nameAll;
+
+    private JButton clearHomes;
     private javax.swing.JCheckBox excludePage;
 
     // Portal pairing takes two clicks, and the first is remembered here
@@ -464,6 +466,21 @@ public class AutonomyEditorPanel extends JPanel
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
+        // CLEARING EVERY HOME AT ONCE, which 2.8.1 had and this release lost (R28-C1).
+        //
+        // Adam, 2026-09-02: **"that option should be added back in to the autonomy editor, with a
+        // confirmation."**  It was a right-click item on the old graph window; the window went and the
+        // item went with it, along with `HomeLocomotiveMenu.addClearAllItem`.  Both bundle keys
+        // survived in all eight languages with nothing referring to them.
+        //
+        // Here rather than on a square's own menu, beside Name Everything, because it is the same kind
+        // of thing: an action about the whole setup rather than about the tile under the pointer.
+        // Clearing them one at a time is one right-click per square, and on his graph that is
+        // sixty-two of them.
+        clearHomes = new JButton(I18n.t("autolayout.ui.menuClearAllHomeLocomotives"));
+        clearHomes.addActionListener(e -> clearAllHomes());
+        button(clearHomes);
+
         // Leaving the page out, from the page itself.
         //
         // The setting lives in a submenu of the menu bar, which is the right home for "which pages does
@@ -485,6 +502,7 @@ public class AutonomyEditorPanel extends JPanel
         fillWidth(testButton, nameAll);
         fillWidth(whyButton, nameAll);
         fillWidth(oneWayButton, nameAll);
+        fillWidth(clearHomes, nameAll);
 
         panel.add(row(testButton));
         panel.add(row(whyButton));
@@ -494,6 +512,7 @@ public class AutonomyEditorPanel extends JPanel
         // warned - an unmounted Swing component is simply a live object with no parent.
         panel.add(row(oneWayButton));
         panel.add(row(nameAll));
+        panel.add(row(clearHomes));
         panel.add(row(excludePage));
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
@@ -6408,6 +6427,53 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         selection.clear();
+
+        refresh();
+    }
+
+    /**
+     * Takes the home locomotive off every square that has one (R28-C1).
+     *
+     * Adam, 2026-09-02: **"that option should be added back in to the autonomy editor, with a
+     * confirmation."**
+     *
+     * Through `session.setHome(tile, null)` rather than by writing the property, because that is the
+     * door the per-square menu uses and the one that keeps the one-home-one-square sweep honest.  A
+     * null home has nothing to sweep, so the two are the same act here - but a second way of clearing
+     * a home is exactly how the two doors would come to disagree later.
+     *
+     * The confirmation is the 2.8.1 wording, which is still in all eight bundles and which says the
+     * thing that matters: with no homes recorded, Return Home sends each locomotive back to wherever
+     * it was standing when autonomy loaded.  Nothing is written to disk here - like every other
+     * decision in this window it waits for Save, so a mistaken press is undone by Cancel.
+     */
+    private void clearAllHomes()
+    {
+        java.util.List<TileKey> homed = session.tilesWithAHome();
+
+        // Nothing to do, said in the hint line rather than in a dialog: a dialog for "there was
+        // nothing to clear" is a second press to dismiss an answer nobody needed.
+        if (homed.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoHomesToClear"));
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"),
+            I18n.t("autolayout.ui.menuClearAllHomeLocomotives"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        for (TileKey tile : homed)
+        {
+            session.setHome(tile, null);
+        }
+
+        say(hint, I18n.f("autosetup.ui.infoHomesCleared", homed.size()));
 
         refresh();
     }

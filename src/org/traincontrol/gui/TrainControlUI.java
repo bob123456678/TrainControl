@@ -19360,20 +19360,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
         {
-            this.model.refreshLayouts();
-
-            javax.swing.SwingUtilities.invokeLater(() ->
+            // POSTED WHATEVER HAPPENS (SVN-A3).
+            //
+            // `after` is how an editor finishes a page switch, and it runs at the END of the refresh
+            // now rather than before it - so a throw in refreshLayouts would mean the EDT half never
+            // runs, and with it the continuation.  The editor would then be left with its switch latch
+            // raised, refusing every further page and mode change in silence for the life of the
+            // window, which is the fault that guarantee exists to prevent.
+            //
+            // A finally rather than a catch: there is nothing useful to do with the failure here, and
+            // swallowing it would hide a layout that will not parse.  The window still has to be put
+            // back together either way, and the EDT half below is what does that.
+            try
             {
-                layoutRefreshComplete(after);
-
-                // Only if it is still there and still usable - a tab that has been greyed in the
-                // meantime is one the user cannot be left sitting on
-                if (wasOn >= 0 && wasOn < this.KeyboardTab.getTabCount()
-                    && this.KeyboardTab.isEnabledAt(wasOn))
+                this.model.refreshLayouts();
+            }
+            finally
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    this.KeyboardTab.setSelectedIndex(wasOn);
-                }
-            });
+                    layoutRefreshComplete(after);
+
+                    // Only if it is still there and still usable - a tab that has been greyed in the
+                    // meantime is one the user cannot be left sitting on
+                    if (wasOn >= 0 && wasOn < this.KeyboardTab.getTabCount()
+                        && this.KeyboardTab.isEnabledAt(wasOn))
+                    {
+                        this.KeyboardTab.setSelectedIndex(wasOn);
+                    }
+                });
+            }
         }).start();
     }
 
@@ -19381,6 +19397,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The EDT half of layoutEditingComplete.
      */
     private void layoutRefreshComplete(Runnable after)
+    {
+        try
+        {
+            layoutRefreshCompleteInternal();
+        }
+        finally
+        {
+            // THE GUARANTEE, HERE (SVN-A3).
+            //
+            // `layoutEditingCompleteThen` used to hold this in a finally of its own, around a call
+            // that is asynchronous - so it covered `setEditLayoutEnabled(false)`, one field read and
+            // `Thread.start()`, and not one of the dozen statements its javadoc named.  Worse, it ran
+            // the continuation at once: the editor's `arriveAt` was queued on the EDT before this
+            // method was queued at all, so the refresh became the LAST writer and its
+            // `setEditLayoutEnabled(true)` lit the Edit Layout button with the editor still open.
+            if (after != null) after.run();
+        }
+    }
+
+    /**
+     * The dozen statements, with nothing to say about the continuation.
+     */
+    private void layoutRefreshCompleteInternal()
     {
         // Store previously selected page
         int oldIndex = this.LayoutList.getSelectedIndex();
@@ -19427,33 +19466,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         windowAlwaysOnTopMenuItemActionPerformed(null);
         
         // Revert preference for graph UI
-
-        if (after != null) after.run();
     }
 
     /**
      * The same, with the caller's continuation guaranteed to run.
      *
-     * `after` is what an editor uses to finish a page switch, and above it is the last statement of a
-     * dozen - so anything throwing on the way skipped it, and the editor was left with its switch
-     * latch raised, refusing every further page and mode change in silence for the life of the
-     * window. Found by a threading sweep.
+     * `after` is what an editor uses to finish a page switch, and it is the last statement of a dozen
+     * - so anything throwing on the way skipped it, and the editor was left with its switch latch
+     * raised, refusing every further page and mode change in silence for the life of the window.
+     * Found by a threading sweep.
      *
      * A `finally`, which is what `BusyDialog.run` does with its own continuation and for the same
      * reason: the work can fail, and the thing that puts the window back together afterwards must not
      * fail with it.
      *
+     * **The finally used to be HERE, and here it covered nothing** (SVN-A3).
+     * `layoutEditingComplete` is asynchronous: it lowers the button, reads a field and starts a
+     * thread.  Those three statements were the whole of what the try held, and the dozen the sentence
+     * above describes are in `layoutRefreshComplete`, on the other side of a worker.  So the
+     * continuation ran at once - the editor's `arriveAt` was queued on the EDT before the refresh was
+     * queued at all - and the refresh, arriving last, re-enabled the Edit Layout button with the
+     * editor still open.  The guarantee now lives in `layoutRefreshComplete`, where those statements
+     * are; what is left here is the case where there is no worker to reach it.
+     *
      * @param after what to run when the refresh has finished, failed, or thrown
      */
     public void layoutEditingCompleteThen(Runnable after)
     {
+        // Run ONCE, from whichever of the two paths gets there.
+        //
+        // Normally that is the end of the refresh, which is the ordering the editor needs.  The catch
+        // below is for a throw before the refresh is even started - there are three statements there
+        // and none of them is expected to throw, but if one does there is no worker to reach the
+        // finally that would otherwise lower the latch.
+        final java.util.concurrent.atomic.AtomicBoolean ran =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        Runnable once = () ->
+        {
+            if (after != null && ran.compareAndSet(false, true)) after.run();
+        };
+
         try
         {
-            layoutEditingComplete(null);
+            layoutEditingComplete(once);
         }
-        finally
+        catch (RuntimeException | Error thrownBeforeTheWorkerStarted)
         {
-            if (after != null) after.run();
+            once.run();
+
+            throw thrownBeforeTheWorkerStarted;
         }
     }
     

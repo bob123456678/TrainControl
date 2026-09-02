@@ -207,6 +207,14 @@ public class RightClickFunctionMenu extends MouseAdapter
             // changes what a tick would be about.
             javax.swing.JComponent shown = edit;
 
+            // What Cancel puts back - see the else branch at the bottom of this method.
+            //
+            // Taken before the autonomy block rather than inside it, because the restore is outside
+            // it: with no autonomy loaded the two ticks are never built and these are unchanged, so
+            // putting them back is a no-op rather than a special case.
+            final Integer departureWas = activeLoc.getDepartureFunc();
+            final Integer arrivalWas = activeLoc.getArrivalFunc();
+
             if (tcui.isAutonomyLoaded())
             {
                 final javax.swing.JCheckBox departure = new javax.swing.JCheckBox();
@@ -279,6 +287,21 @@ public class RightClickFunctionMenu extends MouseAdapter
             if (result == JOptionPane.OK_OPTION)
             {
                 edit.doApply();
+            }
+            else
+            {
+                // CANCEL PUTS THE TWO SLOTS BACK (SVN-B14).
+                //
+                // Their tick boxes write straight to the locomotive, because the label beside each one
+                // names whichever function currently holds the slot and it has to follow the tick as
+                // it moves.  Everything else in this dialog waits for OK, so Cancel used to discard
+                // the icon and the trigger and keep the slot move - and which function fires on
+                // departure is a thing somebody opens this dialog to LOOK at.
+                //
+                // Restored rather than deferred, so the preview stays honest and Cancel still means
+                // cancel.  Its sibling door applies at commit time instead (GraphLocAssign:253).
+                activeLoc.setDepartureFunc(departureWas);
+                activeLoc.setArrivalFunc(arrivalWas);
             }
         }
     }

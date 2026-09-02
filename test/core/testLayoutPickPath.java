@@ -463,6 +463,10 @@ public class testLayoutPickPath
      * The tier is the other half of it, and the test below is the half that keeps this one honest: a
      * hand-driven move and the staging planner bringing a train home can still use a headshunt. It is
      * only the unattended case that will not choose one.
+     *
+     * MUTATION: making `pickPath` return null unconditionally passes the refusal and fails the control
+     * above it, which is the whole reason the control is there - the refusal alone is satisfied by any
+     * regression that stops paths being chosen for any reason at all.
      */
     @Test(timeOut = 60000)
     public void testFullAutonomyDoesNotDriveThroughAReversingPoint() throws Exception
@@ -478,8 +482,20 @@ public class testLayoutPickPath
         layout.createEdge("START", "LOOP");
         layout.createEdge("LOOP", "FAR");
 
-        layout.getPoint("LOOP").setReversing(true);
         layout.getPoint("START").setLocomotive(loc);
+
+        // THE CONTROL RUNS FIRST (TCX-B13).
+        //
+        // With the middle point an ordinary passing point, FAR has to be reachable through it - so a
+        // regression that refused every multi-edge path, or one that broke pickPath outright, cannot
+        // pass the assertion below by doing nothing.  This is the standard the sibling test forty
+        // lines up already keeps, and the file's own javadoc states it in those words.
+        assertNotNull(layout.pickPath(loc),
+            "control: with LOOP an ordinary passing point, FAR is reachable through it and full "
+            + "autonomy should choose it.  Nothing about reversing has been set yet, so a refusal "
+            + "here means the refusal below would prove nothing");
+
+        layout.getPoint("LOOP").setReversing(true);
 
         assertTrue(layout.getPoint("LOOP").isReversing() && !layout.getPoint("LOOP").isDestination(),
             "precondition: LOOP must be a reversing point rather than a reversing station");
