@@ -233,44 +233,19 @@ public class testTrainsComeHomeToTheirPlatforms
 
             if (!plan.isPossible()) System.out.println(reachability());
 
-            // WHICH FAULT IS THIS, before blaming the planner for it.
+            // NO BRANCH HERE, and the attempt at one is worth recording (V36-A1).
             //
-            // The run phase leaves the trains wherever autonomy took them, which is the point of the
-            // test - and some arrival copies on his diagram reach no other station AT ALL.  A train
-            // standing on one of those cannot get home by any plan, so NO_PLAN_FOUND is the correct
-            // answer and asserting a plan exists is asserting something about the railway rather than
-            // about the planner.
+            // The battery caught this failing on an arrangement its premise does not cover, and the
+            // first answer was to ask `canReachAnyDestination` about each train and assert that no
+            // plan exists when one of them was trapped.  Three things were wrong with that, and a
+            // validator found all three: the predicate is the FULL-AUTONOMY one - it requires
+            // `isAutoDestination`, which Return Home explicitly ignores, and twenty of his stations
+            // carry it false - the assertion did not follow, because a trapped train and an impossible
+            // plan are independent facts, and the early return skipped the facing check this whole
+            // class exists for.
             //
-            // `canReachAnyDestination` is the model's own question and is what the editor's new
-            // copy check reports on; MT-253 asks Adam about the one it names on his layout today.
-            //
-            // Written as a branch rather than a skip.  A skip here would hide the arrangement, and the
-            // arrangement is the interesting half - it says which square trapped which train.
-            List<String> trapped = new ArrayList<>();
-
-            for (String name : STARTED_AT.keySet())
-            {
-                Point standing = layout.getLocomotiveLocation(model.getLocByName(name));
-
-                if (standing != null && !layout.canReachAnyDestination(standing))
-                {
-                    trapped.add(name + " on " + standing.getName());
-                }
-            }
-
-            if (!trapped.isEmpty())
-            {
-                assertFalse(plan.isPossible(),
-                    "the planner produced a plan for an arrangement that cannot have one: " + trapped
-                    + " is standing where no other station can be reached at all.  If a plan really "
-                    + "exists from there, this test's idea of trapped is wrong");
-
-                System.out.println("TRAPPED BY THE DIAGRAM, not by the planner: " + trapped
-                    + " - see MT-253, and the editor's own warning about arrivals that reach nothing");
-
-                return;
-            }
-
+            // The shape of the mistake is the one worth keeping: a test that absorbs its own failures
+            // reads as green while proving nothing, which is worse than the red it was hiding.
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
                 + ", blocked " + plan.getBlocked() + "). Every train is standing somewhere that CAN "

@@ -195,15 +195,18 @@ public class testHomeStaging
             "precondition: the approach to HS D is not shorter than the train, so nothing refuses it "
             + "and this fixture cannot show anything");
 
-        // Nothing here restates `setReversible(true)` back at itself, which is what the helper this
-        // replaced did - through an indirection, which made it look like a check (V34-C1).  What the
-        // fixture has to be true is that the RAILWAY offers no way to arrive already turned, because
-        // if it did, mustBackIn would be satisfied and the refusal below would not be about room.
-        assertTrue(reversingPointsOn(layout, layout.getPoint("HS D")).isEmpty(),
-            "precondition: the fixture has a reversing point on the APPROACH, so a non-reversible "
-            + "train could arrive at the terminus already turned and mustBackIn would not be the "
-            + "alternative explanation this is ruling out.  Found: "
-            + reversingPointsOn(layout, layout.getPoint("HS D")));
+        // NO PRECONDITION ABOUT mustBackIn AT ALL, and the two attempts at one are worth recording.
+        //
+        // The first restated `setReversible(true)` back at itself (V33-C8).  The second asked the
+        // RAILWAY whether it had a reversing point, on the reasoning that one would let a
+        // non-reversible train arrive already turned - and that is backwards (V36-B2): `mustBackIn` is
+        // `at.isTerminus() && !loc.isReversible()` and never looks at the layout, so having no
+        // reversing point is the state in which mustBackIn IS the alternative explanation.
+        //
+        // What rules out every alternative explanation is the CONTROL at the end of this test.  A
+        // twenty-unit train refused and an eight-unit train accepted cannot both be mustBackIn, which
+        // does not look at length; nor `validateTrainLength`, which is inert at `maxTrainLength` zero.
+        // The pair is the precondition.
 
         assertTrue(layout.getPoint("HS D").isTerminus(),
             "precondition: HS D must be a terminus - the rule only applies where the train reverses");
@@ -276,32 +279,6 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
-    /**
-     * The squares on a layout where a train may turn round.
-     *
-     * A fixture about ROOM has to have none: with one, a non-reversible train can arrive at a terminus
-     * already turned, `mustBackIn` is satisfied, and a refusal proves nothing about length.  Asking
-     * the railway rather than restating what the test just set on the locomotive (V33-C8, V34-C1).
-     *
-     * @param layout the railway
-     * @return the names, empty when nothing turns round anywhere
-     */
-    private static java.util.List<String> reversingPointsOn(Layout layout, Point destination)
-    {
-        java.util.List<String> found = new java.util.ArrayList<>();
-
-        for (Point p : layout.getPoints())
-        {
-            // NOT the destination itself.  It is a terminus - that is the whole fixture - and a train
-            // turns round there on ARRIVAL, which is the move being judged rather than a way of
-            // arriving already turned.
-            if (p.equals(destination)) continue;
-
-            if (p.isReversing() || p.isTerminus()) found.add(p.getName());
-        }
-
-        return found;
-    }
 
     /** Loads a graph and returns it, asserting it parsed - an invalid graph fails every test below
      *  for reasons that have nothing to do with staging. */

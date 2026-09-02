@@ -240,10 +240,19 @@ public class testErrorsStopTheSetupRunning
         // does not: the number it displays comes from setFindings' own arguments, and reading it here
         // as well was a second whole walk of the graph on the event thread (V34-B1).  What must match
         // the guard is what DECIDES.
-        assertTrue(toggle.contains("autonomyHasErrors()"),
+        // THE BODY, not the file (V36-C).
+        //
+        // A whole-file `contains` is satisfied by the method name appearing in a COMMENT, and this
+        // method's comments name it twice.  Its sibling assertion above extracts the body and strips
+        // comments; this one did not, and it is now the strip's only rule.
+        String sync = withoutComments(bodyOf(toggle, "public final void syncRun()"));
+
+        assertFalse(sync.isEmpty(), "syncRun has moved or been renamed");
+
+        assertTrue(sync.contains("autonomyHasErrors()"),
             "the diagram strip decides Start-versus-Fix without asking the guard's own question, so "
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
-            + "named for");
+            + "named for.  Body: " + sync);
 
         assertTrue(menu.contains("autonomyErrorCount()"),
             "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "
