@@ -229,9 +229,23 @@ public class testErrorsStopTheSetupRunning
             "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "
             + "OB-090 was about, blind to an unnamed station or any other check-only error");
 
+        // THE SAME FOR THE OTHER TWO AFFORDANCES, and asked the same way (V31-B1, V32-B1).
+        //
+        // These used to require the literal `autonomyErrorCount()`, and that is how this rule came to
+        // pin the divergence in place a second time: the strip's `fixing` flag is a DECISION - it
+        // decides whether a press opens the editor or clicks Start - and it went on asking the narrow
+        // question while the guard asked the wide one.
+        //
+        // The COUNT is still read by both, and rightly: the strip says how many and colours its band,
+        // the menu puts the number in its tooltip.  What must match the guard is what DECIDES.
+        assertTrue(toggle.contains("autonomyHasErrors()"),
+            "the diagram strip decides Start-versus-Fix without asking the guard's own question, so "
+            + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
+            + "named for");
+
         assertTrue(toggle.contains("autonomyErrorCount()"),
-            "AutonomyOverlayToggle no longer reads autonomyErrorCount() at all - the diagram strip's "
-            + "own OB-090 fix has gone");
+            "AutonomyOverlayToggle no longer reads the error COUNT at all - it needs it to say how "
+            + "many and to colour the band");
 
         assertTrue(menu.contains("autonomyErrorCount()"),
             "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "

@@ -574,7 +574,11 @@ currently disagree, and the editor and the viewer disagree with each other.
 
 ### SVN-B7 — the "route already running" guard is on one door of three
 
-**FIXED 2026-09-02 (`87b6c10a`).** The guard moved onto `executeRoute`, which its own comment already claimed every door came through, and the play button stopped asking separately. Refusals are logged, because unlike a greyed button the other two doors say nothing on their own. Pinned by a surface rule.
+**FIXED 2026-09-02 (`87b6c10a`), AND THE REASONING WAS WRONG (`V31-B2`, corrected the same day).**
+
+The guard moved onto `executeRoute`, which its own comment already claimed every door came through, and the play button stopped asking separately; it is pinned by a surface rule. What the commit message claimed it prevented - "two threads throwing the same accessories, each unlocking what the other had locked" - could not happen and never could: `Route.setExecuting()` is a synchronized re-entrancy guard on the model's own funnel, taken before the route thread does anything, and every door reaches it including the diagram tile that does not come through `executeRoute` at all.
+
+What the change is worth is narrower and is now written at the code: the same gesture was refused at one door and accepted at two, which is the OB-057/OB-090 shape whatever the model does underneath. And the window is 600 ms rather than the route's duration, because `execRoute` returns as soon as it has spawned its thread. Kept, described honestly, rather than withdrawn.
 
 `TrainControlUI.java:19222-19236`:
 

@@ -409,9 +409,19 @@ public final class LayoutLabel extends JLabel
                                         // written at MarklinRoute.heldReason.
                                         //
                                         // Which direction this click is about is decided before it
-                                        // runs: `Accessory.doSwitch()` is `isStraight() ? turn() :
-                                        // straight()`, so a signal that is currently TURNED is the
-                                        // one about to be made straight - green, and harmful.
+                                        // runs, and the test is about the COMMAND rather than about
+                                        // any one method that issues it.
+                                        //
+                                        // A signal or a lamp goes through `Accessory.doSwitch()`,
+                                        // which is `isStraight() ? turn() : straight()`.  A THREE-WAY
+                                        // does not: `execSwitching` drives its two accessories
+                                        // directly, in three cases.  It reaches the same place - in
+                                        // every one of those cases the drive commanded from red to
+                                        // green is exactly the one whose `isStraight()` is false, and
+                                        // the drives re-commanded green were green already - but the
+                                        // method named here is not the method that runs for the
+                                        // second limb, and a reader checking the claim against a
+                                        // three-way would find that (V32-C3).
                                         boolean protecting =
                                             aboutToClearProtection(tcUI, c.getAccessory())
                                             || aboutToClearProtection(tcUI, c.getAccessory2());

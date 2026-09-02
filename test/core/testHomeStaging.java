@@ -188,11 +188,14 @@ public class testHomeStaging
         // that can refuse it, which is what the assertions below are about.
         tooLong.setReversible(true);
 
-        assertEquals(tooLong.getTrainLength(), Integer.valueOf(40),
-            "precondition: the locomotive has no train length, so the rule under test is not armed "
+        // NOT a precondition on the two lines above - those set these values, and asserting them back
+        // proves only that a setter sets (V33-C8).  What is worth checking is the thing the fixture
+        // has to be true for the assertions to mean anything, and neither of these is set here.
+        assertTrue(layout.getEdge("HS A", "HS D").getLength() < tooLong.getTrainLength(),
+            "precondition: the approach to HS D is not shorter than the train, so nothing refuses it "
             + "and this fixture cannot show anything");
 
-        assertTrue(tooLong.isReversible(),
+        assertTrue(mustBackInIsNotTheReason(layout, tooLong),
             "precondition: a non-reversible train is refused a terminus by mustBackIn instead, so "
             + "this would pass whether or not the room rule exists");
 
@@ -242,6 +245,22 @@ public class testHomeStaging
      *
      * @return the configuration
      */
+    /**
+     * Whether the terminus rule would refuse this train anyway, which would make a room test vacuous.
+     *
+     * `mustBackIn` refuses a non-reversible locomotive a terminus it cannot arrive at already turned,
+     * and on a ring with no reversing point that is every terminus.  A test about ROOM has to get past
+     * that first, or it passes whether or not the room rule exists at all.
+     *
+     * @param layout the railway
+     * @param loc the train
+     * @return true when something other than mustBackIn will have to do the refusing
+     */
+    private static boolean mustBackInIsNotTheReason(Layout layout, Locomotive loc)
+    {
+        return loc != null && loc.isReversible();
+    }
+
     private static String shortBerth()
     {
         return json("{'points': ["
@@ -3380,14 +3399,17 @@ public class testHomeStaging
             assertEquals(layout.getEdge("HS A", "HS B").getLength(), 5,
                 "precondition: the long way's first leg - five and five is room for eight");
 
-            // TWENTY TIMES, because `getNeighbors` shuffles.
+            // TWENTY TIMES, and NOT because of the shuffle (V32-C4, V33-C10).
             //
-            // Which of the two ways into HS D the search reaches first is decided by that shuffle, and
-            // only the run that tries the SHORT one first can show the defect: it is the refused
-            // arrival being recorded as seen that then prunes the long one.  A single attempt passes
-            // about half the time, which is the coin-toss guard the README describes - "a regression
-            // test that only sometimes catches the regression is worse than none, because it reads as
-            // protection".
+            // That is what this comment said, and it was wrong: the pre-fix code fails all twenty,
+            // measured, not about half.  The search's queue is FIFO and both ways into HS D leave the
+            // origin, so the direct one is recorded during HS A's own expansion whichever order the
+            // shuffle puts them in - the long way is then pruned as dominated every time.
+            //
+            // The repetition is kept anyway, and the reason is the README's: a guard that catches a
+            // regression only sometimes reads as protection.  If a later change makes the order matter
+            // - a longer approach that leaves from somewhere else, say - twenty attempts still catch
+            // it and one might not.
             int refused = 0;
 
             HomeStaging.Outcome last = null;
@@ -3410,6 +3432,19 @@ public class testHomeStaging
                 + "through HS B is ten, and the rule's own comment says another route may be longer.  "
                 + "It never got to try one: the refused arrival was already recorded as seen, and the "
                 + "longer route was then pruned as dominated before its room was ever measured");
+
+            // AND THE CONTROL, which is what makes the assertion above mean anything (V33-C9).
+            //
+            // "A plan was found" is also what happens with the room rule deleted altogether - the
+            // short way in is then perfectly acceptable and the planner takes it.  So the pair is the
+            // test: a train that fits the LONG approach gets home, and a train that fits NEITHER does
+            // not.  Twenty units is longer than five and longer than ten.
+            loc.setTrainLength(20);
+
+            assertFalse(layout.planReturnToHome().isPossible(),
+                "control: a train too long for either way into the berth was still given a plan, so "
+                + "the room rule is not being applied at all and the assertion above is satisfied by "
+                + "its absence.  Outcome: " + layout.planReturnToHome().getOutcome());
         }
         finally
         {

@@ -341,7 +341,19 @@ public class AutonomyOverlayToggle extends JPanel
         // before its owner, not a running application.
         int errors = ui != null ? ui.autonomyErrorCount() : lastTotalErrors;
 
-        fixing = source != null && source == start && errors > 0;
+        // THE GUARD'S OWN QUESTION, not the count (V31-B1, V32-B1).
+        //
+        // `fixing` decides what pressing this strip DOES - open the editor, or click Start - so it is
+        // not a display.  It asked `errors > 0` while the guard asked `hasErrors()`, which also covers
+        // a graph that will not build at all with nothing having turned that into a finding: the strip
+        // offered Start and every press was refused.  That is the sentence OB-090 is named for, at the
+        // site it is named for.
+        //
+        // The count above is still read, and still right for what it is used for below: the strip says
+        // HOW MANY, and the band's colour follows it.
+        boolean broken = ui != null ? ui.autonomyHasErrors() : lastTotalErrors > 0;
+
+        fixing = source != null && source == start && broken;
 
         // The band's colour follows this, so it is repainted here as well as when the page changes -
         // errors appear and go without anything else about the strip moving.

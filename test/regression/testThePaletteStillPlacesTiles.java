@@ -187,6 +187,16 @@ public class testThePaletteStillPlacesTiles
         }
         finally
         {
+            // THE EDITOR TOO, not only the window that owns it (V33-C11).
+            //
+            // Both siblings this test was written from dispose theirs, and a LayoutEditor left
+            // undisposed keeps a frame, its grid and its listeners alive for the rest of the JVM -
+            // which for a class that builds one per test is a leak the battery pays for.
+            if (editor[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+            }
+
             if (ui[0] != null)
             {
                 javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());

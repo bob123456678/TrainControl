@@ -16106,18 +16106,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void executeRoute(String route)
     {
-        // NOT TWICE AT ONCE (SVN-B7).
+        // THE SAME ANSWER AT ALL THREE DOORS (SVN-B7, corrected by V31-B2).
         //
-        // The comment below has always said every door comes through here, and every door does - but
-        // the guard was not in here.  It was on the play button alone, so clicking the same route's
-        // row and confirming, or right-clicking it and choosing Execute, started a second run of a
-        // route that was already running: two threads throwing the same accessories, each unlocking
-        // what the other had locked.
+        // What this is NOT: protection against two threads throwing one route's accessories at once.
+        // That is what the commit which added this claimed, and it was wrong - `Route.setExecuting()`
+        // is a synchronized re-entrancy guard on the model's own funnel, taken by the route thread
+        // before it does anything, so a second attempt has always returned immediately.  Every door
+        // reaches it, including the diagram's route tile, which does not come through this method at
+        // all.
         //
-        // The button greys while its route runs and that is the affordance; this is the guard, and
-        // they have to ask one question (OB-057, OB-090).  Logged rather than silent, because unlike
-        // the greyed button these two doors say nothing on their own - the operator confirmed a dialog
-        // and is owed a reason why nothing happened.
+        // What it IS: the play button greys itself while `routesExecuting` holds the name, and the
+        // other two doors - the row click with its confirmation, and the right-click menu - did not
+        // ask.  So the same gesture was refused at one door and accepted at two, which is the
+        // OB-057/OB-090 shape whatever the underlying model does about it.
+        //
+        // And the window is short.  `execRoute` returns as soon as it has spawned the route thread, so
+        // the name is cleared 600 ms later whatever the route is still doing - this is a debounce, not
+        // a lock, and it is worth having only because a control that greys itself should not be
+        // startable by another route to the same act.
+        //
+        // Logged rather than silent, because unlike the greyed button these two doors say nothing on
+        // their own - the operator confirmed a dialog and is owed a reason why nothing happened.
         if (route != null && routesExecuting.contains(route))
         {
             this.model.log(I18n.f("route.ui.infoAlreadyRunning", route));

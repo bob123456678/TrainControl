@@ -164,6 +164,13 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 #
 # Nothing is truncated now, and a missing summary is called out rather than left blank - a class that
 # reported nothing is not a class that passed.
+# WHAT WENT WRONG, counted (V33-C4).
+#
+# This always exited 0, so a caller that chained on it - or a person reading only the exit
+# status - could not tell a green run from one where every class failed.  battery.sh has
+# reported this since it was written.
+BAD=0
+
 for T in "$@"
 do
     echo "--- $T"
@@ -171,12 +178,65 @@ do
     "$JAVA" -Dtraincontrol.anyReceivePort=true \
         -cp "$BUILD;$CP" org.testng.TestNG -testclass "$T" -d "$S/oneout" > "$S/one-run.txt" 2>&1
 
-    grep -E "Total tests run|FAILED|java.lang.Assertion|at regression|at core" "$S/one-run.txt"
+    grep -E "Total tests run|Configuration Failures|FAILED|java.lang.Assertion|at regression|at core" \
+        "$S/one-run.txt"
 
     if ! grep -q "Total tests run" "$S/one-run.txt"
     then
         echo "*** $T PRINTED NO SUMMARY - it did not run.  Last lines:"
         tail -5 "$S/one-run.txt" | sed "s/^/    /"
+
+        BAD=$((BAD+1))
+
+        continue
+    fi
+
+    summary=$(grep 'Total tests run' "$S/one-run.txt" | tail -1)
+
+    # A TEARDOWN THAT THREW (V33-A1).
+    #
+    # TestNG's summary is TWO lines and this runner read one of them:
+    #
+    #     Total tests run: 1, Failures: 0, Skips: 0
+    #     Configuration Failures: 1, Skips: 0
+    #
+    # battery.sh was repaired for exactly this on 2026-08-25 and said why: "the teardowns in this
+    # suite are load-bearing: testBothProtectingSignalsAreThrown puts two of Adam's real signals back
+    # to GREEN in its teardown and says why, and testARouteDoesNotThrowSwitchesUnderATrain clears the
+    # auto layout in its own.  A teardown that threw would leave the railway changed and be reported
+    # as a clean run."  That sentence was still true here.
+    config=$(grep 'Configuration Failures' "$S/one-run.txt" | tail -1)
+
+    if [ -n "$config" ] && ! echo "$config" | grep -q "Configuration Failures: 0"
+    then
+        echo "*** $T HAD A CONFIGURATION FAILURE - a @Before or @After threw ***"
+        echo "    $config"
+        echo "    The teardowns in this suite put Adam's signals back and clear the auto layout."
+
+        BAD=$((BAD+1))
+
+        continue
+    fi
+
+    # GREEN IS NOT "no failures" (the other half of the same omission, V33-B1).
+    #
+    # A class whose @BeforeClass throws reports every test SKIPPED and none failed, so "Failures: 0"
+    # is true of a class that tested nothing at all.  Counted apart rather than as a failure, because
+    # a skip can be legitimate - several classes need a display and say so.
+    if echo "$summary" | grep -qE "Total tests run: 0"
+    then
+        echo "*** $T RAN NOTHING - $summary"
+
+        BAD=$((BAD+1))
+    elif ! echo "$summary" | grep -q "Skips: 0"
+    then
+        echo "*** $T SKIPPED TESTS - $summary"
+        echo "    A skipped class is not a green class."
+
+        BAD=$((BAD+1))
+    elif ! echo "$summary" | grep -q "Failures: 0"
+    then
+        BAD=$((BAD+1))
     fi
 done
 
@@ -198,6 +258,14 @@ then
     echo "hunting for a class."
     echo ""
     diff <(echo "$live_before") <(echo "$live_after") | grep '^[<>]' | sed 's/^/  /'
+    exit 1
+fi
+
+if [ "$BAD" -gt 0 ]
+then
+    echo ""
+    echo "*** $BAD of the classes above did not come back clean ***"
+
     exit 1
 fi
 

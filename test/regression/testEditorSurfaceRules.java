@@ -644,6 +644,21 @@ public class testEditorSurfaceRules
             + "signal.  Setting a protecting signal to RED is the protective act, and the route door "
             + "explicitly permits it - a warning here is the over-strictness that door had removed");
 
+        // AND THE HELPER STILL ASKS THE RULE (V32-B2).
+        //
+        // The three assertions above are about the CALLS.  Gutting the helper they call - its last
+        // line to `return false;` - passes every one of them, and SVN-B16 is undone at the tile door
+        // with the test still green.  That is the same shape as TCX-A3, which is what these
+        // assertions replaced.
+        String helper = withoutComments(bodyOf(label,
+            "private static boolean aboutToClearProtection(TrainControlUI tcUI, Accessory accessory)"));
+
+        assertFalse(helper.isEmpty(), "aboutToClearProtection has moved or been renamed");
+
+        assertTrue(helper.contains("protectsAnOccupiedSquare(accessory)"),
+            "the tile's protecting-signal helper no longer asks the shared rule at all, so the two "
+            + "doors are back to different definitions of one question.  Body: " + helper);
+
         String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);
 
