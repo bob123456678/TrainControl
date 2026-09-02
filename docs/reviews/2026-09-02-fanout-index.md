@@ -90,8 +90,10 @@ the previous six hours.
 
 ## Part three: four validation rounds
 
-Adam allowed up to five. Four ran, and each found something in the round before it - which is why the
-fifth was not needed to justify itself but the fourth was.
+Adam allowed up to five. Four ran, and each found something in the round before it.
+
+Round four found no defect in the CODE and three false sentences in what had been written about it -
+which in this project is the design record, and so is a defect. That is the shape a round stops on.
 
 | Prefix | Round | Scope | Findings |
 |---|---|---|---|
@@ -101,6 +103,7 @@ fifth was not needed to justify itself but the fourth was.
 | [`V34`](2026-09-02-fourth-validation.md) | 2 | round 1's fixes | 1 B, 8 C, 9 D |
 | [`V35`](2026-09-02-fifth-validation.md) | 2 | "is anything worse for the operator?" | 3 C, 12 D |
 | [`V36`](2026-09-02-sixth-validation.md) | 3 | round 2's fixes | 1 A, 2 B, 6 C, 9 D |
+| [`V37`](2026-09-02-seventh-validation.md) | 4 | round 3's fixes | 2 B, 3 C |
 
 `V36-A1` is the finding of the day, and it is against my own work rather than against the code.
 
@@ -122,8 +125,14 @@ red it was hiding.** The branch is out.
 `core.testTrainsComeHomeToTheirPlatforms` fails about one run in five - measured, three failures in
 eight observations across the day. It is left in the battery, failing, deliberately.
 
-**It is not caused by anything changed today.** The room rule added this morning cannot fire in that
-test at all: it never sets a train length, and the rule returns null at zero.
+**The room rule added this morning cannot fire in that test at all** - it never sets a train length,
+and the rule returns null at zero. That much was verified twice, independently.
+
+**What was NOT true is the conclusion drawn from it**, and it is withdrawn here (`V37-C3`): "not
+caused by anything changed today" ignores that `56c6080e` re-froze the fixture this test runs on this
+morning - four tiles out of the diagram, a `canReverse` flag dropped, and every locomotive's starting
+square moved. So the flake may be Adam's own diagram edits arriving in the test, which is a different
+thing from a code regression and a different thing again from nothing having changed.
 
 What fails is Return Home itself, on Adam's own diagram, with five trains and three of them left on
 `Inter` squares by the run phase: `NO_PLAN_FOUND` with an empty blocked list - the planner declining to
