@@ -233,6 +233,8 @@ public class testTrainsComeHomeToTheirPlatforms
         String arrangement = describe();
 
         // Then send everybody home.
+        List<String> planned = new ArrayList<>();
+
         HomeStaging.Outcome trivial = layout.triageReturnToHome();
 
         if (trivial != HomeStaging.Outcome.ALREADY_HOME)
@@ -250,10 +252,20 @@ public class testTrainsComeHomeToTheirPlatforms
                 + "platforms have to be able to get back to them; the per-train reachability printed "
                 + "above says which one cannot and whether it is the graph or the plan that is short");
 
+            // KEPT, so that a train which does not arrive can be told apart from one the plan never
+            // undertook to move.  Those are different faults - a plan that is short, and a move that
+            // did not stick - and without the plan in front of you the assertion below cannot say
+            // which it was looking at.
+            for (HomeStaging.Move move : plan.getMoves())
+            {
+                planned.add(move.getLocomotive().getName() + " -> " + move.getEnd().getName());
+            }
+
             layout.loadReturnToHomeTimetable();
 
             assertTrue(layout.executeTimetable(),
-                "the plan was accepted but a move gave up on the way, from " + arrangement);
+                "the plan was accepted but a move gave up on the way, from " + arrangement
+                + "\nplan was: " + planned);
 
             awaitStopped();
         }
@@ -274,6 +286,8 @@ public class testTrainsComeHomeToTheirPlatforms
                 wrong.add(e.getKey() + " set off from " + e.getValue() + " and is at " + where);
             }
         }
+
+        if (!wrong.isEmpty()) System.out.println("PLAN WAS: " + planned);
 
         assertEquals(wrong.toString(), "[]",
             "trains did not come back to where they started, facing the way they started. A square a "
@@ -299,6 +313,19 @@ public class testTrainsComeHomeToTheirPlatforms
     private static String reachability()
     {
         StringBuilder out = new StringBuilder("\nREACHABILITY, per train:\n");
+
+        // THE HOMES THE LAYOUT ACTUALLY HOLDS, which is not the same as the ones the test asked for.
+        // A home can be dropped after it is set - one home per platform, and the square is the unit -
+        // and a locomotive with no home is a free agent the planner may move anywhere and leave there.
+        out.append("  homes the layout holds - the map the planner reads:\n");
+
+        for (Map.Entry<Locomotive, Point> e : layout.getHomeStations().entrySet())
+        {
+            out.append(String.format("    %-16s -> %-34s launchPad=%s%n",
+                e.getKey().getName(), e.getValue().getName(),
+                layout.getIncomingEdges(e.getValue()).isEmpty()));
+        }
+
 
         for (String name : STARTED_AT.keySet())
         {
@@ -504,6 +531,27 @@ public class testTrainsComeHomeToTheirPlatforms
         }
 
         System.out.println("LIFTED " + lifted + " of his own trains off the copy");
+
+        // AND THEIR HOMES, which lifting the trains does not touch.
+        //
+        // This is the defect that made the whole class lie for a day.  His configuration records homes
+        // for his own locomotives - EN57-203 at Tunnel, 75 407 DB at LowerFront, and two more - and
+        // those entries survive the purge above, because a home is an assignment rather than a train.
+        //
+        // A square can be the home of only ONE locomotive: `claimHome` refuses a claim on a square
+        // another home already holds, and refuses it SILENTLY, which is right for the application and
+        // merciless here.  So placing a test train on Tunnel or on LowerFront claimed nothing, and two
+        // of the five went into the run with no home at all.
+        //
+        // A locomotive with no home is a free agent - the planner may move it anywhere and is under no
+        // obligation to bring it back - so the plan really did leave one parked in a siding, and
+        // `misplaced` was right not to count it.  Every "the planner abandoned a train" reading of this
+        // test came from here, and so did its flakiness: which of his homes a test train landed on
+        // depended on where the twenty-second run had left everybody.
+        layout.clearHomeLocomotives();
+
+        System.out.println("CLEARED his home assignments too - "
+            + layout.getHomeStations().size() + " left");
 
         String[] where = new String[]
         {
