@@ -2271,15 +2271,28 @@ public class testHomeStaging
     }
 
     /**
-     * A terminus may be arrived at but never driven through.
+     * A terminus may be arrived at but never driven through - and that is not the same as unreachable.
      *
-     * The planner refuses to expand a terminus during its search; the runtime reaches the same answer
-     * from the other end, by rejecting any path whose intermediate point is a terminus.  Both have to
-     * agree, because this one decides whether the answer is IMPOSSIBLE - a claim the planner is only
-     * entitled to make when no arrangement of the other trains could help.
+     * **INVERTED 2026-09-01, and the old assertion is the finding.** This required IMPOSSIBLE, on the
+     * reasoning that the planner refuses to expand a terminus and the runtime refuses any path whose
+     * intermediate point is one, so the two agree. Both halves are true and the conclusion did not
+     * follow: they agree about a SINGLE PATH, and `plan()` does not build single paths. It ends a move
+     * at any station and starts the next from there, so a terminus that is a station is somewhere a
+     * train stops - and `testALocomotiveStartingOnATerminusIsPlannedHome`, thirty lines below, is the
+     * proof that it can set off again.
+     *
+     * So HS A -> HS B -> HS C is two ordinary moves, and IMPOSSIBLE is a claim about the track that is
+     * not true of this track. The planner may still fail to find the arrangement - it does here, and
+     * NO_PLAN_FOUND says exactly that and nothing more. The distinction is the whole of what this class
+     * is careful about: **"I did not find a way" is allowed to be wrong; "there is no way" is not.**
+     *
+     * Found on Adam's own railway the day he made the ramp a place trains may stop, so they could reach
+     * the parking berths. The answer to the arrangement he had just built went from "no arrangement
+     * found" to IMPOSSIBLE, naming a locomotive - the planner got more confident as the railway got
+     * more capable.
      */
     @Test
-    public void testAHomeReachableOnlyThroughATerminusIsImpossible() throws Exception
+    public void testAHomeReachableOnlyThroughATerminusIsNotProvedImpossible() throws Exception
     {
         // A line, not a ring: HS A - HS B - HS C, with the middle station a terminus
         Layout layout = load(ringWith(new String[]{LOC_A, null, null, null},
@@ -2310,11 +2323,17 @@ public class testHomeStaging
 
         HomeStaging.Plan impossible = HomeStaging.snapshot(blocked).plan();
 
-        assertEquals(impossible.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
-            "a terminus cannot be driven through, so HS C is unreachable: " + impossible);
+        assertNotEquals(impossible.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "the planner PROVED HS C unreachable, and it is not: HS B is a station, so stopping there "
+            + "and setting off again is two ordinary moves.  IMPOSSIBLE is a claim about the track, and "
+            + "it sends the operator to look at track that is fine: " + impossible);
 
-        assertTrue(impossible.getBlocked().contains(loc(LOC_A)),
-            "and the locomotive that cannot get home is named");
+        assertFalse(impossible.isPossible(),
+            "and the control: it should not find an arrangement here either, so this test is about "
+            + "WHICH refusal rather than about the planner suddenly succeeding: " + impossible);
+
+        assertTrue(impossible.getBlocked().isEmpty(),
+            "nobody is named as blocked, because nobody has been shown to be: " + impossible);
     }
 
     /**

@@ -1757,7 +1757,27 @@ public final class HomeStaging
 
                 seen.add(next.getUniqueId() + "/" + now);
 
-                if (!next.isTerminus())
+                // A TERMINUS IS TRAVELLED THROUGH HERE, BY STOPPING AT IT (Adam, 2026-09-01).
+                //
+                // `firstClearRoute` will not expand a terminus, and is right not to: it builds ONE
+                // path, and a train arrives at a terminus without driving on past it.  Copying that
+                // rule into this search was wrong, because this search answers a different question.
+                // It is what `plan()` consults to declare a locomotive UNREACHABLE, and `plan()` ends a
+                // move at any station and starts the next from there - so stopping at a terminus and
+                // setting off again is an ordinary two-move plan, not an impossibility.
+                //
+                // Found on his own railway the day he made the ramp a place trains may stop, so that
+                // they could reach the parking berths: the answer went from "no arrangement found" to
+                // IMPOSSIBLE, naming a locomotive, for the two-move route he had just built.
+                //
+                // Only a terminus a move could actually END at, which is a destination that is in
+                // service.  One that is neither is not a stop, and travelling through it would be this
+                // search inventing a move the planner cannot make - the opposite error, and the one
+                // that costs more: a proof may be looser than the search it guards, never tighter.
+                //
+                // The train leaves such a stop facing OUT, so `now` is carried unchanged rather than
+                // set - the arrival flip at a terminus is spent turning it round to leave (SV2-A1).
+                if (!next.isTerminus() || (next.isDestination() && next.isActive()))
                 {
                     queue.add(next);
                     turned.add(now);

@@ -53,9 +53,22 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * class is deliberately NOT registered in build.xml: a permanently red battery would cost more than
  * this test earns, and the finding is written up in the tracker instead of being shouted every run.
  *
- * **It runs against a COPY of his layout.** `cs2_sample_layout` is his real railway and is not
- * recoverable; `LayoutSandbox.open(folder)` copies it somewhere temporary and points the layout
- * preference at the copy, so the original is only ever read.
+ * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
+ * diagram frozen in the test").**
+ *
+ * `test/operator_layout` is his diagram as it stood when this was written, checked in.  It used to read
+ * `cs2_sample_layout` directly - the live folder - which made the test say something different every
+ * time he moved a train or changed a flag, and made a failure impossible to attribute: the code, the
+ * fixture and the railway all moved between runs.  A test whose fixture changes underneath it is not
+ * measuring the code.
+ *
+ * It is also the last reason this suite had to open that folder at all, which is worth more than the
+ * determinism: `cs2_sample_layout` is his real railway and is not recoverable.
+ *
+ * To refresh it when the railway changes in a way this test should follow, copy the folder over and say
+ * so in the commit - the point is that it moves when somebody decides it should, not on its own.
+ * `LayoutSandbox.open(folder)` still copies whatever it is given somewhere temporary and points the
+ * layout preference at the copy, so even the frozen fixture is only ever read.
  *
  * @author Adam
  */
@@ -83,15 +96,15 @@ public class testTheParkingBerthsGetTheirTrainsBack
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        File live = new File("cs2_sample_layout");
+        File frozen = new File("test/operator_layout");
 
-        if (!live.isDirectory())
+        if (!frozen.isDirectory())
         {
-            throw new SkipException("cs2_sample_layout is not here - this suite runs his own stations");
+            throw new SkipException("test/operator_layout is not here - this suite runs his stations");
         }
 
-        // The COPY, before the model, because init reads the layout preference.
-        sandbox = support.LayoutSandbox.open(live);
+        // The sandbox copy, before the model, because init reads the layout preference.
+        sandbox = support.LayoutSandbox.open(frozen);
 
         // Debug mode, which simulation requires.
         model = init(null, true, false, false, true);

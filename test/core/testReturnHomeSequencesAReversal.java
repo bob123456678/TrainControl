@@ -459,6 +459,72 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
+     * A journey that has to STOP somewhere on the way is not an impossible journey.
+     *
+     * Found on Adam's own railway, 2026-09-01, after he made the ramp a place trains may stop so that
+     * they could get into the parking berths: the planner's answer went from "no arrangement found" to
+     * **IMPOSSIBLE**, naming a locomotive, for a train whose two-move route he had just built.
+     *
+     * `connected` will not travel THROUGH a terminus - `if (!next.isTerminus())` - which is right for a
+     * single path, because a train arrives at one and cannot drive on past it.  But `connected` is not
+     * asked about a single path.  It is what `plan()` consults to declare a locomotive UNREACHABLE, and
+     * `plan()`'s search ends a move at any station and starts the next one from there.  Stopping at a
+     * terminus and setting off again is an ordinary two-move plan.
+     *
+     * So the proof was stricter than the planner it guards, which is the same defect as `D24-B1` in a
+     * different limb, and the invariant `SV2` wrote down: **a proof may be looser than the search, never
+     * tighter.**  IMPOSSIBLE sends the operator to look at track that is fine.
+     *
+     * MUTATION: restoring `if (!next.isTerminus())` in `connected` makes the outcome IMPOSSIBLE again
+     * and fails the first assertion.
+     */
+    @Test
+    public void testAJourneyThatMustStopOnTheWayIsNotImpossible() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RH from", true, Integer.toString(FEEDBACK_BASE));
+        layout.createPoint("RH stop", true, Integer.toString(FEEDBACK_BASE + 1));
+        layout.createPoint("RH end", true, Integer.toString(FEEDBACK_BASE + 2));
+
+        // The only way to the far end is by stopping at a terminus in the middle - which a single path
+        // may not drive through, and a plan of two moves may.
+        layout.getPoint("RH stop").setTerminus(true);
+
+        layout.createEdge("RH from", "RH stop");
+        layout.createEdge("RH stop", "RH end");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            loc.setReversible(true);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RH from", false),
+                "could not place the locomotive");
+
+            layout.setHomeLocomotive("RH end", loc.getName());
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
+                "the planner PROVED this journey impossible because the only way there is to stop at a "
+                + "terminus on the way - which is a two-move plan, not an impossibility, and the search "
+                + "it is guarding can make exactly that plan.  Blocked: " + plan.getBlocked());
+
+            assertTrue(plan.isPossible(),
+                "and there is a plan: out to the stop, then on to the end.  Outcome "
+                + plan.getOutcome());
+        }
+        finally
+        {
+            loc.setReversible(was);
+        }
+    }
+
+    /**
      * A start, a reversing point, and a berth beyond it - with one switch that has to be thrown
      * differently for each leg.
      */
