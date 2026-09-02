@@ -48,6 +48,8 @@ no production caller, while the door a file comes through had its check removed 
 
 ### A1 - `testTheParkingBerthsGetTheirTrainsBack` is excluded because it fails on a real defect
 
+**CLOSED by `FX2-4`.** The test was retargeted onto ordinary platforms as `testTrainsComeHomeToTheirPlatforms` and passes; the berth-to-berth question it used to ask was not a good test, in Adam's words.
+
 `test/regression/testEveryTestIsInTheBattery.java:43-49` adds a second entry to
 `DELIBERATELY_OUT`:
 
@@ -127,6 +129,8 @@ enforce.
 initialisation never differs.
 
 ### B2 - "the total has to be complete" is enforced one layer above where lengths live
+
+**CLOSED by `FX2-3`.** Accepted as-is; the unsoundness stays recorded at the guard.
 
 `Layout.isPathClear`, `Layout.java:2330-2363`:
 
@@ -241,6 +245,8 @@ constraint, so a one-reversal route wins where one exists. Reachability is there
 unproven; severity is set at B for the consequence, not the likelihood.
 
 ### B5 - the cross reads a property the model drops for non-station squares
+
+**FIXED 2026-09-02 (`1cfdf370`).** The builder emits `active` for every square. The reasoning it used to drop it on - "the arrows say that through the derivation" - is false: `setUsage` writes that one property and touches no direction. Covered by `testAShutPlainSquareReachesTheRunningGraph`, mutation-confirmed.
 
 Both badge sites now pass `shut`:
 
@@ -410,6 +416,8 @@ the option MT-246 already offers?
 
 ### C9 - the running diagram's badge test does not include the case its own comment names
 
+**FIXED 2026-09-02 (`1cfdf370`).** Same fix as `SVN-B6`, which is the same finding reached by a different pass.
+
 `AutonomySession.java:4342`:
 
 ```java
@@ -434,6 +442,8 @@ the collision the corner rule exists to prevent, with the two marks that are abo
 in different places.
 
 ### C11 - OB-167 has no receipt
+
+**FIXED 2026-09-02.** OB-167 has its row in issues.md now.
 
 `docs/manual-tests/issues.md:314` files OB-167 in the open section. It was implemented across
 `d155a1b6`, `e9435bfc` and `828b1ff1`, and has tests

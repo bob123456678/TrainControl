@@ -66,6 +66,8 @@ severities are argued rather than asserted where the argument is not obvious.
 
 ### SVN-A1 — `cs2_sample_layout/config/autonomy/` currently holds a damaged configuration, uncommitted
 
+**CLOSED by `FX2-1`.** Same finding, reached by a different pass.
+
 `git status` shows two modified files, both Adam's real railway:
 
 ```
@@ -189,6 +191,8 @@ Two weaker limbs of the same shape are filed separately as `SVN-C10`.
 
 ### SVN-A3 — a track-mode page switch leaves the editor bound to a discarded diagram, and re-enables "Edit Layout" with the editor still open
 
+**FIXED 2026-09-02 (`87b6c10a`).** Confirmed on both limbs by reading the three methods end to end. The guarantee moved to `layoutRefreshComplete`, where the dozen statements it names actually are, and the worker posts the EDT half from a finally so a layout that will not parse cannot leave the latch raised. `testEditorSurfaceRules` pins all three links now instead of the one.
+
 `dd87f6bf` changed the page-switch teardown from passing its continuation *into*
 `layoutEditingComplete` to a wrapper:
 
@@ -282,6 +286,8 @@ principle, but `arriveAt` is queued before a thread that does file I/O for every
 in practice.
 
 ### SVN-A4 — a route refused at a human door loses its emergency stop, which is exactly the defect the fix beside it claims to have removed
+
+**CLOSED by `FX2-2` (`6f729027`).** "Emergency stop should never conflict or prompt."
 
 `6b6e6bd4` moved the conflict decision from a whole-route refusal to a per-command one, and its comment
 at `MarklinRoute.java:598-611` states the reason:
@@ -469,6 +475,8 @@ right-click. Filed at B rather than A because refusing is the safe side of the e
 
 ### SVN-B3 — the guard sums the whole journey rather than the run-in (DEFERRED — needs Adam)
 
+**CLOSED by `FX2-3`.** "OK" - the rule is accepted as it stands, with its unsoundness recorded at the guard.
+
 `Layout.java:2337` iterates `path`, which `isPathClear` receives as the **whole route** from origin to
 destination. On any long route the sum is the length of the entire trip, so the comparison against the
 train's length is vacuous; only one- and two-edge paths can trip it.
@@ -498,6 +506,8 @@ This is the exact sibling `fbc19cb9` swept for the *other* rule ten hours earlie
 insisted … but the PLANNER did not know the rule."* The same sweep was not done for this one.
 
 ### SVN-B5 — `connected` and `firstClearRoute` disagree about a train standing on a reversing point (DEFERRED — needs Adam)
+
+**CLOSED by `D24-B1` / `FV2-B2` / `SV2-A1` (`208b3ee1`).** `connected` seeds turned from reversing OR terminus; `firstClearRoute` from reversing alone, which is what stops a train being driven nose-first into a berth it cannot leave.
 
 `HomeStaging.java:1682-1684`, in `connected`:
 
@@ -534,6 +544,8 @@ having turned, or must it turn again on the way out?
 
 ### SVN-B6 — the running diagram never draws the cross on a shut plain point
 
+**FIXED 2026-09-02 (`1cfdf370`).** `worthABadge` gained the `shut` term - the third item on the list its own comment gives. Covered by `testAShutPlainSquareDrawsItsCrossOnTheRunningDiagram`, mutation-confirmed.
+
 `e9435bfc` widened the cross to *"a square nothing can pass draws a cross whether or not it is a
 station"*. `AutonomySession.java:4342` was not widened with it:
 
@@ -557,6 +569,8 @@ Whether the running diagram *should* show it is Adam's call — but the code and
 currently disagree, and the editor and the viewer disagree with each other.
 
 ### SVN-B7 — the "route already running" guard is on one door of three
+
+**FIXED 2026-09-02 (`87b6c10a`).** The guard moved onto `executeRoute`, which its own comment already claimed every door came through, and the play button stopped asking separately. Refusals are logged, because unlike a greyed button the other two doors say nothing on their own. Pinned by a surface rule.
 
 `TrainControlUI.java:19222-19236`:
 
@@ -645,6 +659,8 @@ The javadoc at `:1493` calls the page snapshot *"the one that reaches DISK"* —
 
 ### SVN-B10 — the load door asks a narrower question than the start door, and the method written to be the one question has no callers
 
+**FIXED 2026-09-02 (`87b6c10a`).** The start door asks `hasErrors()` now. The LOAD door is deliberately left narrower and that is written down at the method: loading a configuration is how somebody gets at its errors in order to fix them, so refusing would be a guard with no way past.
+
 `AutonomySession.hasErrors()` (`:3256-3258`) is documented as *"the question every affordance that offers
 to run it has to ask"*:
 
@@ -720,6 +736,8 @@ Adam's own railway is a local layout with a saved session, so this is probably t
 
 ### SVN-B13 — `rebuildHomeStations` dedups by locomotive; the square rule is only at the other door
 
+**FIXED 2026-09-02 (`8d1c17ca`).** The assignment loop asks the square rule as well as the locomotive rule, and drops the loser with a warning of its own. Covered by `testTwoHomesOnOneSquareDoNotBothSurviveTheLoader`, mutation-confirmed.
+
 `09777d4c` added the square sweep at the assignment door only (`Layout.java:1227-1235`):
 
 ```java
@@ -745,6 +763,8 @@ Reachable from a hand-edited or imported configuration only: `AutonomyBuilder.ho
 (`AutonomyBuilder.java:924`) emits one home per square, and `AutonomySession.setHome` sweeps per tile.
 
 ### SVN-B14 — the FR-045 autonomy function slots are written before OK is pressed
+
+**FIXED 2026-09-02 (`1cfdf370`).** Cancel restores both slots. The tick boxes still write immediately, because the label beside each names whichever function holds the slot and has to follow it - a preview that lies is worse than the leak.
 
 `src/org/traincontrol/gui/RightClickFunctionMenu.java:234-244`, inside `openEditDialog` — an OK/Cancel
 dialog:
@@ -784,6 +804,8 @@ Same family as `SVN-A4`: the accessory half is the only part of a route that des
 human. This is the correct-direction sibling of that finding and should be fixed with it.
 
 ### SVN-B16 — the plain-accessory tile guard never got the protecting-signal half
+
+**FIXED 2026-09-02 (`87b6c10a`).** The rule moved onto `Layout.protectsAnOccupiedSquare` and both doors ask it; `MarklinRoute`'s private copy and its now-unused `isOneOf` are gone. Pinned by a surface rule, and the route half is mutation-confirmed by `testARouteDoesNotThrowSwitchesUnderATrain`.
 
 `6b6e6bd4` gave `MarklinRoute.heldReason` (`:403-449`) a second half — signals protecting a square
 somebody is standing on. The diagram's plain-accessory tile still asks only the locked-path set,

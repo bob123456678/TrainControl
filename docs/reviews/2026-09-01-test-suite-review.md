@@ -97,6 +97,8 @@ TCX-A4 answers neither question. It is what `git status` showed while I was work
 
 ### TCX-A1 — The reversal-room rule is not asked when the train reverses mid-path
 
+**CLOSED by `FX2-3`.** Accepted as-is.
+
 **Status: open.** This is a missing test for a case the guard does not cover. Severity is that of the defect it would
 catch: a train backed over a switch it does not fit behind, which is the hazard Adam raised on 2026-09-01.
 
@@ -158,6 +160,8 @@ selection (`Layout.java:3477`).
 ---
 
 ### TCX-A2 — `HomeStaging` re-implements `isPathClear`'s rules and did not get the new one
+
+**FIXED 2026-09-02 (`975f157d`).** The rule is pure, so it lifted to `Layout.measuredRoomToReverseInto` and both sides ask it - into `firstClearRoute`, which is the search, and deliberately not into `connected`, which is the proof and has to stay looser. The test this finding asked for exists and is mutation-confirmed; it took three attempts to become a test, and the two false passes are recorded in the commit.
 
 **Status: open.** Missing test. Severity: the planner produces a plan the runtime then refuses on its first move — which
 is the exact failure mode the file's own javadoc describes for the previous rule that went missing.
@@ -234,6 +238,8 @@ file is a check on the file, not on the method. Every one of them in this suite 
 ---
 
 ### TCX-A4 — `cs2_sample_layout` is modified in the working tree, and nothing can say by whom
+
+**CLOSED by `FX2-1`.** Same finding, reached by a different pass.
 
 **Status: open — look at this first.** I have not touched it. I am reporting what `git status` showed while I was
 establishing which commit I was reviewing.
@@ -320,6 +326,8 @@ Two specific defects a test would catch:
 ---
 
 ### TCX-B2 — The editor notice asks for a different measurement from the one the guard needs
+
+**CLOSED by `FX2-3`.** Accepted as-is; the notice's narrower question is the recorded consequence.
 
 **Status: DEFERRED — needs Adam.**
 
@@ -441,6 +449,8 @@ station is already available — `test/core/testMockCentralStation.java` and the
 
 ### TCX-B5 — `testAnUnmarkedLayoutIsUntouched` compares a builder against an identically-configured builder
 
+**FIXED 2026-09-02 (`1cfdf370`).** The control was added: marking a real tile must change the configuration, or the assertion that marking nothing changes nothing is satisfied by a builder that ignores the set.
+
 **Status: open.** Verified by reading. The test cannot fail for the reason it states.
 
 `test/core/testAutonomyDiagramReversal.java:349-367`:
@@ -469,6 +479,8 @@ tested, because "before" is not present in the comparison. Testing it needs a pi
 ---
 
 ### TCX-B6 — `badgeAt` confounds `parking` and `shut`
+
+**FIXED 2026-09-02 (`1cfdf370`).** `badgeAt` takes parking and shut separately, and one assertion now tells them apart. They share a colour, so no existing ink count moved.
 
 **Status: open.** Verified by reading. Two tests pass under a wrong rule.
 
@@ -527,6 +539,8 @@ twice when it covers it once. `testSimulatedAutonomyRaisesNoWarning` is at `:171
 
 ### TCX-B8 — `testNothingIsLoadedWhenAlreadyHome` survives the mutation it was written for
 
+**FIXED 2026-09-02 (`1cfdf370`).** The sequential flag is asserted, which is what the guard actually decides; mutation-confirmed by deleting the guard.
+
 **Status: open.** Verified by reading.
 
 `test/core/testHomeStaging.java:799-813`. The javadoc says the point is *"so a stale plan cannot be left sitting in the
@@ -556,6 +570,8 @@ plan *is* possible.
 ---
 
 ### TCX-B9 — `testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot` asserts a floor of one where it needs two
+
+**FIXED 2026-09-02 (`1cfdf370`).** Moved onto a fixture whose station has two arrival copies, with a floor of two so the loop cannot compare a name with itself.
 
 **Status: open.** Verified by reading.
 
@@ -675,6 +691,8 @@ The floors are one line each and the numbers are knowable from the data — the 
 ---
 
 ### TCX-B13 — `testFullAutonomyDoesNotDriveThroughAReversingPoint` has no control
+
+**FIXED 2026-09-02 (`1cfdf370`).** The control runs first, as its own sibling forty lines above already did.
 
 **Status: open.**
 

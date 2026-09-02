@@ -87,6 +87,8 @@ earlier NO_PLAN_FOUND shape of this failure and describe a different arrangement
 
 ### RTG-A1 — Full autonomy can strand a train on a turning destination with no way out
 
+**CLOSED by `FX2-4`.** Adam fixed the layout - "it should now be possible to leave in both directions" - and then converted the four parking berths to `autoDestination: false`. The editor also warns about the shape now (2026-09-02): a station copy that can be left and still reaches no other station.
+
 | | |
 |---|---|
 | **Status** | open — defect confirmed; choice of fix DEFERRED — needs Adam (he has ruled the outcome: "it should be easily possible to get back") |
@@ -132,6 +134,8 @@ defensive backstop either way, a "destination must have an outgoing edge" clause
 `Layout.java:3981-4009`). Which of these Adam wants is his call; the first matches his quoted ruling.
 
 ### RTG-A2 — Uncommitted working-tree edits to the real railway's autonomy configuration
+
+**CLOSED by `FX2-1`.** "Just restore the previously committed version", then "you can restore and then patch that tile". Done.
 
 | | |
 |---|---|
@@ -183,6 +187,8 @@ should keep offering out-of-service berths is settled doctrine (`Layout.java:223
 here; what the operator experience lacks when that door is used is RTG-C1.
 
 ### RTG-B2 — The backing-over-the-switch guard sums the whole path, but a train that reverses mid-path can only stand on the post-reversal suffix
+
+**CLOSED by `FX2-3`.** Accepted as-is.
 
 | | |
 |---|---|

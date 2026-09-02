@@ -54,6 +54,8 @@ are **not** re-filed here. `RGN-A1`'s globals half has since been fixed - see `R
 
 ### A1 - deleting a locomotive now silently deletes every route command that names it
 
+**CLOSED by `FX2-5` (`6f729027`).** The delete confirmation counts the routes whose commands drive the locomotive and says they go with it.
+
 | | |
 |---|---|
 | **Disposition** | open |
@@ -205,6 +207,8 @@ legacy file's, keyed by `start`/`end`.
 
 ### B2 - "Export Current Graph" is unreachable in every configuration, and its replacement needs a command-line debug launch
 
+**WITHDRAWN IN FULL.** Adam: "isn't that available via the advanced Json export in the autonomy menu?" It is - `AutonomyMenu.java:326`.
+
 | | |
 |---|---|
 | **Disposition** | open |
@@ -282,6 +286,8 @@ configuration page); switch to a Central Station layout, look at the tab bar (Au
 ## C - low
 
 ### C1 - "Clear All Home Locomotives" is gone, and its two API methods are dead
+
+**FIXED 2026-09-02 (`1cfdf370`).** Adam asked for it back: "that option should be added back in to the autonomy editor, with a confirmation." It is a button beside Name Everything, using the 2.8.1 confirmation that was still in all eight bundles with nothing referring to it.
 
 | | |
 |---|---|
