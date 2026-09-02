@@ -261,6 +261,12 @@
         <test-one-class class="testNonReversibleTrains"/>
         <test-one-class class="testRenderingCost"/>
         <test-one-class class="testReturnHomeSequencesAReversal"/>
+        <!-- RED ON PURPOSE, Adam 2026-09-01: "ok, so that test should then be red."  Return Home
+             finds no arrangement for his five-train parking berths, so nothing moves when it is
+             pressed.  It was excused from the battery on the grounds that a permanently red run
+             costs more than the test earns; that was the wrong trade.  It comes out when Return
+             Home stages this arrangement, not before. -->
+        <test-one-class class="testTheParkingBerthsGetTheirTrainsBack"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>

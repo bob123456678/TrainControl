@@ -41,17 +41,6 @@ public class testEveryTestIsInTheBattery
         {"testAutoDetect",
          "probes the network for a real Central Station and cannot pass without one"},
 
-        {"testTheParkingBerthsGetTheirTrainsBack",
-         "FAILS on the railway rather than on itself, and the reason has narrowed twice. It was "
-         + "BottomMainB having ZERO outgoing edges, which Adam fixed on 2026-09-01 by opening two "
-         + "tiles both ways; it was then every parking berth being out of service, which he fixed "
-         + "by converting all four to autoDestination=false. Now all three parked trains hand-start "
-         + "and the outcome is NO_PLAN_FOUND with an EMPTY blocked list - nothing is proved "
-         + "unreachable any more, the planner simply finds no arrangement. NOT a search budget: with "
-         + "SEARCH_LIMIT at 40x and SEARCH_BUDGET_MS at 20x it still finds none. So the remaining "
-         + "obstacle is structural - three non-reversible trains homed at terminus berths must each "
-         + "arrive already turned, and that needs a reversing point on the approach to each berth. "
-         + "Whether his track offers one is a question about the railway, not about this code"},
     };
 
     @Test
@@ -118,15 +107,19 @@ public class testEveryTestIsInTheBattery
     @Test
     public void testTheExclusionListIsStillOneEntry()
     {
-        // TWO since 2026-08-31, and this line was changed as a decision rather than to quieten a
-        // failure - which is what the message below asks of whoever changes it next.
+        // BACK TO ONE, on Adam's instruction of 2026-09-01: "ok, so that test should then be red."
         //
-        // The second entry is testTheParkingBerthsGetTheirTrainsBack. It is not excused for being
-        // awkward: it fails on a defect that was measured before it was written up - BottomMainB
-        // (eastbound, reverse) is a destination on the operator's derived graph with ZERO outgoing
-        // edges, so a train that reverses there can never leave. It goes back in the battery when
-        // that is fixed, and the entry says so.
-        assertEquals(DELIBERATELY_OUT.length, 2,
+        // testTheParkingBerthsGetTheirTrainsBack was excused because a permanently red battery costs
+        // more than the test earns.  That was the wrong trade and he said so: Return Home does not
+        // work for this arrangement, nothing moves when it is pressed, and a test for something that
+        // does not work belongs in the battery being red rather than in a table being quiet.  The
+        // outcome improved twice today - IMPOSSIBLE to NO_PLAN_FOUND, and a false claim removed - and
+        // improving is not the same as working.
+        //
+        // The one that is left is testAutoDetect, which needs hardware that is not here.  That is a
+        // different kind of reason from the one just removed: a test nothing on this machine could
+        // ever satisfy, rather than a test whose subject does not work yet.
+        assertEquals(DELIBERATELY_OUT.length, 1,
             "something has been added to the list of tests `ant test` deliberately skips. That may be "
             + "right, but it is a decision worth a second look: the reason must be in the table, and "
             + "this assertion updated on purpose rather than to make a failure go away.");
