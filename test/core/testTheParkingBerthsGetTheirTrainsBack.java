@@ -245,6 +245,8 @@ public class testTheParkingBerthsGetTheirTrainsBack
 
             HomeStaging.Plan plan = layout.planReturnToHome();
 
+            if (!plan.isPossible()) System.out.println(reachability());
+
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
                 + ", blocked " + plan.getBlocked() + "). The three berths are terminuses and their "
@@ -285,6 +287,202 @@ public class testTheParkingBerthsGetTheirTrainsBack
     /**
      * Five locomotives of its own, placed where Adam asked for them.
      */
+    /**
+     * Which train cannot be pathed home, and which half of the question it fails.
+     *
+     * NO_PLAN_FOUND with an empty blocked list is the planner declining to claim anything - honest, and
+     * it tells nobody what is missing.  These are the two questions that decide it: is there ANY route
+     * from where the train stands to its home, and is there one that turns it round on the way, which a
+     * train that cannot reverse needs before it may back into a terminus.
+     *
+     * A train that passes the first and fails the second is not a broken graph.  It is a berth with no
+     * reversing point on its approach.
+     */
+    private static String reachability()
+    {
+        StringBuilder out = new StringBuilder("\nREACHABILITY, per train:\n");
+
+        for (String name : STARTED_AT.keySet())
+        {
+            Locomotive loc = model.getLocByName(name);
+
+            Point at = null;
+
+            for (Point p : layout.getPoints())
+            {
+                if (loc != null && loc.equals(p.getCurrentLocomotive()))
+                {
+                    at = p;
+                    break;
+                }
+            }
+
+            String home = STARTED_AT.get(name);
+
+            out.append(String.format("  %-16s at %-30s home %-20s",
+                name, at == null ? "(nowhere)" : at.getName(), home));
+
+            if (at == null)
+            {
+                out.append("  - not on the railway\n");
+                continue;
+            }
+
+            Point target = layout.getPoint(home);
+
+            boolean anyRoute = false;
+            boolean turningRoute = false;
+
+            // Asked over EVERY copy of the home square: which copy carries the home is the builder's
+            // choice, and a train may be able to reach one and not another.
+            for (Point candidate : layout.getPoints())
+            {
+                if (target == null || !candidate.isSamePlaceAs(target)) continue;
+
+                if (routeExists(at, candidate, false)) anyRoute = true;
+                if (routeExists(at, candidate, true)) turningRoute = true;
+            }
+
+            // AND THE QUESTION THE PLANNER ACTUALLY ASKS: is a path home clear RIGHT NOW, with
+            // everybody standing where they are?  getPossiblePaths is occupancy-aware and command-
+            // aware, so this is the difference between "the railway connects these two squares" and
+            // "this train can set off for home on its next move".
+            int offered = 0;
+            int clear = 0;
+
+            for (List<Edge> path : layout.getPossiblePaths(loc, false))
+            {
+                if (path.isEmpty()) continue;
+
+                Point ends = path.get(path.size() - 1).getEnd();
+
+                if (target == null || !ends.isSamePlaceAs(target)) continue;
+
+                offered++;
+
+                if (layout.isPathClear(path, loc, false)) clear++;
+            }
+
+            out.append(String.format("  anyRoute=%-5s turningRoute=%-5s reversible=%-5s "
+                + "pathsHomeNow=%d clearNow=%d%n",
+                anyRoute, turningRoute, loc != null && loc.isReversible(), offered, clear));
+
+            // IS THERE A TWO-MOVE PLAN?  Adam: "you may need to take the bottommainb/c trains around
+            // to bottommaina before reversing via BottomMainPost."  A train with no path home from
+            // where it stands is not stuck if it can reach somewhere that HAS one - which is a plan of
+            // two moves, and exactly what the search is supposed to find.  If this reports staging
+            // squares and the planner still answers NO_PLAN_FOUND, the routes are there and the search
+            // is not finding them.
+            if (clear == 0)
+            {
+                List<String> staging = new ArrayList<>();
+
+                for (List<Edge> first : layout.getPossiblePaths(loc, false))
+                {
+                    if (first.isEmpty() || !layout.isPathClear(first, loc, false)) continue;
+
+                    Point midway = first.get(first.size() - 1).getEnd();
+
+                    // Would a second leg from there reach home?  Asked on the graph, since the train
+                    // is not standing there yet and getPossiblePaths only answers about where it is.
+                    for (Point candidate : layout.getPoints())
+                    {
+                        if (target == null || !candidate.isSamePlaceAs(target)) continue;
+
+                        if (routeExists(midway, candidate, !loc.isReversible() && candidate.isTerminus()))
+                        {
+                            if (!staging.contains(midway.getName())) staging.add(midway.getName());
+
+                            break;
+                        }
+                    }
+                }
+
+                out.append(String.format("        two-move staging squares: %d%s%n",
+                    staging.size(),
+                    staging.isEmpty() ? "" : "  e.g. " + staging.subList(0, Math.min(4, staging.size()))));
+            }
+
+            // AND WHETHER THE PLANNER MAY END A MOVE THERE AT ALL.
+            //
+            // A route existing is not the same question.  The search only ever moves a locomotive to a
+            // square in its station list, which is every Point that is a DESTINATION and ACTIVE - so a
+            // home sitting on a copy that is neither can be perfectly reachable and still be somewhere
+            // no move can finish.  That is invisible to the two questions above, and it is exactly the
+            // shape that answers NO_PLAN_FOUND with nobody blocked.
+            for (Point candidate : layout.getPoints())
+            {
+                if (target == null || !candidate.isSamePlaceAs(target)) continue;
+
+                out.append(String.format("        copy %-34s dest=%-5s active=%-5s terminus=%-5s reversing=%s%n",
+                    candidate.getName(), candidate.isDestination(), candidate.isActive(),
+                    candidate.isTerminus(), candidate.isReversing()));
+            }
+        }
+
+        out.append("  (a train that cannot reverse needs turningRoute=true to back into a terminus)\n");
+
+        return out.toString();
+    }
+
+    /**
+     * Whether a route exists between two Points, optionally insisting it turns the train round.
+     *
+     * The same shape as HomeStaging.connected, written here because that one is private and this is a
+     * diagnostic: blind to occupancy, and keyed on (point, turned) because a square reached with a
+     * reversal behind it and the same square reached without one are two different states.
+     *
+     * A train standing on a reversing point or a terminus was turned by its own arrival, so the search
+     * starts turned there; and a terminus is never expanded THROUGH, because a train may arrive at one
+     * but not drive on past it.
+     */
+    private static boolean routeExists(Point from, Point to, boolean mustTurn)
+    {
+        if (from == null || to == null) return false;
+
+        java.util.Deque<Point> queue = new java.util.ArrayDeque<>();
+        java.util.Deque<Boolean> turnedQ = new java.util.ArrayDeque<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+
+        boolean start = from.isReversing() || from.isTerminus();
+
+        queue.add(from);
+        turnedQ.add(start);
+        seen.add(from.getUniqueId() + "/" + start);
+
+        while (!queue.isEmpty())
+        {
+            Point at = queue.poll();
+            boolean turned = turnedQ.poll();
+
+            for (Edge e : layout.getNeighbors(at))
+            {
+                Point next = e.getEnd();
+
+                boolean now = turned || next.isReversing();
+
+                if (next.equals(to))
+                {
+                    if (!mustTurn || now) return true;
+
+                    continue;
+                }
+
+                if (next.isTerminus()) continue;
+
+                String key = next.getUniqueId() + "/" + now;
+
+                if (seen.add(key))
+                {
+                    queue.add(next);
+                    turnedQ.add(now);
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static void place() throws Exception
     {
         // HIS OWN TRAINS COME OFF FIRST.
