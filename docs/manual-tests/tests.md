@@ -31,8 +31,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-248](#mt-248) | 2026-09-01 | The length notice and the guard it is meant to arm | needs test | FX2-3, TCX-B2 |
 | [MT-249](#mt-249) | 2026-09-01 | A parking berth a train cannot get out of | needs test | FX2-4, RTG-A1 |
 | [MT-250](#mt-250) | 2026-09-01 | Homing a train that is already standing on a reversing point | needs test | D24-B1 |
+| [MT-251](#mt-251) | 2026-09-02 | The letter keys work the moment the window appears | fixed unvalidated | OB-168 |
+| [MT-252](#mt-252) | 2026-09-02 | Placing tile after tile from the palette, over track that is already there | fixed unvalidated | OB-169 |
+| [MT-253](#mt-253) | 2026-09-02 | What the editor now says about your own diagram | needs test | the copy-check sweep |
 
-Everything else - 231 of 250 - is **fixed validated** and needs nothing from you unless the
+Everything else - 231 of 253 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (7 superseded, 3 fixed but not yet validated.)
 
 ---
@@ -13364,6 +13367,12 @@ the editor warn about one?** You have already ruled that "it should be easily po
 is about which layer enforces it. This is also why `testTheParkingBerthsGetTheirTrainsBack` is still
 failing and still excluded from the battery.
 
+**Adam, 2026-09-02 (triage).** Works.
+
+addressed offline
+
+*Run against commit 409d4ce8.*
+
 ---
 
 <a id="mt-250"></a>
@@ -13390,3 +13399,118 @@ blamed the track.
 *Run against a build after commit 9f1b80c8.*
 
 ---
+
+<a id="mt-251"></a>
+
+### MT-251 - 2026-09-02 - The letter keys work the moment the window appears
+
+**Disposition:** fixed unvalidated
+**From:** OB-168
+
+**Written:** 2026-09-02
+
+You reported this as **"ensure the UI is focused once the window is rendered so that keystrokes are
+registered on the main traincontrol window (locomotive letters, etc.)"**, and it needs your hands
+because nothing here can tell whether a window has the keyboard.
+
+The window never asked for the keyboard at all.  Asking the frame for it would not have worked either -
+it is built non-focusable, so `requestFocus()` on it does nothing whatsoever, which is why this looks
+like something that was never there rather than something that broke.  The letter keys are read by
+listeners on the tabbed pane and on the locomotive panel, and one of those has to be holding the focus.
+
+1. **Start TrainControl and do not touch the mouse.**  Press a letter mapped to a locomotive.  It should
+   respond.  Before this, nothing happened until you clicked the window first.
+2. **Start it with another window already in front** - a browser, the editor, anything.  TrainControl
+   should come to the front and take the keys.
+3. **The same again with "always on top" turned off**, since that setting is applied in the same breath
+   as the focus request and is the likeliest thing to interfere.
+4. **Then click into the layout tab, or the keyboard tab, and back.**  The letters should keep working;
+   this only sets the starting point, and nothing else about focus was touched.
+
+If it comes up focused but a *particular* letter does nothing, that is a different fault - say which.
+
+*Run against a build after commit bec51e31.*
+
+---
+
+<a id="mt-252"></a>
+
+### MT-252 - 2026-09-02 - Placing tile after tile from the palette, over track that is already there
+
+**Disposition:** fixed unvalidated
+**From:** OB-169
+
+**Written:** 2026-09-02
+
+**It only failed over squares that already had track on them**, which is worth knowing before you test
+it: on an empty square the same gesture always worked, and that is why this went unnoticed.  Pressing
+the mouse on track is how a tile is picked up to be dragged, so the press threw away the palette tile
+you had just chosen and armed a move instead; the release then decided a press and a release on one
+square was a click rather than a drag, cleared the clipboard, and left the click with nothing to do.
+
+There is an automated test for it now, driving the three mouse handlers in the order a mouse makes them.
+What that test cannot judge is whether the whole gesture *feels* right, and whether anything else that
+uses the mouse on the diagram was disturbed.
+
+1. **Click a tile in "new components", then click a square that already has track on it.**  The tile
+   should land, replacing what was there.
+2. **Keep clicking squares.**  It should stay in place mode - "until escape is pressed or another action
+   taken" - and each click should place another one, over occupied and empty squares alike.
+3. **Press Escape.**  Place mode should end.
+4. **Then check the gestures that share those handlers**, because this changed what a press on the
+   diagram does while a palette tile is held:
+   - **drag an existing tile** from one square to another, with nothing selected in the palette
+   - **Ctrl+C a tile, then press on other track** - that should still pick the track up, not paste over
+     it, which is deliberate and is the one case left alone
+   - **drag a selection** of several tiles
+   - **double-click a switch or signal** to edit its address
+5. **Undo after each.**  A plain click on a tile, placing nothing, should still not leave an undo entry
+   behind - that is what the code being changed here was originally added for.
+
+*Run against a build after commit bec51e31.*
+
+---
+
+<a id="mt-253"></a>
+
+### MT-253 - 2026-09-02 - What the editor now says about your own diagram
+
+**Disposition:** needs test
+**From:** the copy-check sweep of 2026-09-02
+
+**Written:** 2026-09-02
+
+Two things came out of sweeping the new arrival checks over your frozen diagram, and both are about
+your railway rather than about the code.  **Neither is something I can settle.**
+
+**One: RampDown, arriving southbound, can get nowhere.**  It is the only thing the new warning reports on
+your whole layout.  The square itself is fine - trains arriving the other way carry on normally - but a
+train that arrives at it southbound can leave and still never reach another station.  The model's own
+`canReachAnyDestination` agrees, so this is not the check being clever.
+
+- Is that deliberate?  If it is, the warning is noise on your railway and I should say so in the message
+  or drop the check to a quieter place.
+- If it is not, the fix is in the diagram: open a way on from that side, or bar the arrival.
+
+**Two: the redundant tunnel has left five link errors, and errors stop autonomy starting.**  These are
+not from the new checks - they are the existing link rules, and they are correct:
+
+| Where | What is drawn there | Paired with |
+|---|---|---|
+| `2 - Bottom:10,9` | a link | `1 - Main:15,5`, which is a **signal** |
+| `1 - Main:12,1` | plain straight track | `1 - Main:16,1` |
+| `1 - Main:16,1` | plain straight track | `1 - Main:12,1` |
+| `1 - Main:14,5` | a link | nothing at all |
+
+The pairings themselves are mutual and intact; what has changed is what is drawn at the far ends.  Three
+of the four squares a pairing points at are no longer links, and one real link has no partner.  The two
+squares that ARE still links - `2 - Bottom:10,9` and `1 - Main:14,5` - look like the pair you meant.
+
+1. **Open the editor and re-pair those two**, and clear the stale pairing between the two plain squares.
+2. **Then try to start autonomy.**  It should stop refusing.
+3. **Send a train through the tunnel both ways** - which was the point of adding a second one.
+
+*Run against a build after commit 06516f38.*
+
+---
+

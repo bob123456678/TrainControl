@@ -329,6 +329,24 @@ station no + must reverse + disabled gets same large square icon as inactive ter
 
 for locomotives without an icon, add a placeholder rather than nothing.  the placeholder should be light gray and a simple electric locomotive consisting of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed pantographs, and 4 1/5 height circular wheels in sets of two on each side, spaced evenly apart.
 
+### OB-168 - 2026-09-02 - window not focused when UI starts up
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-02 01:17  
+**Build:** commit 409d4ce8
+
+ensure the UI is focused once the window is rendered so that keystrokes are registered on the main traincontrol window (locomotive letters, etc.).  this feels like a regression.
+
+### OB-169 - 2026-09-02 - layout editor regression
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-02 01:19  
+**Build:** commit 409d4ce8
+
+clicking a tile in "new components" followed by a square on the diagram no longer places that tile.  it should place it and stay in place mode until escape is pressed or another action taken.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -343,6 +361,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-02 | OB-169 | bug | clicking a palette tile then an occupied square no longer placed it | - | [MT-252](tests.md#mt-252) |
+| 2026-09-02 | OB-168 | bug | the window came up without the keyboard, so the locomotive letters did nothing | - | [MT-251](tests.md#mt-251) |
 | 2026-09-01 | FR-054 | feature request | a drawn placeholder locomotive for one with no picture | fixed unvalidated | - |
 | 2026-08-31 | OB-166 | bug | a hand dispatch swept every protecting signal, so an empty platform was commanded green | - | [MT-246](tests.md#mt-246) |
 | 2026-08-31 | OB-165 | bug | Return Home stayed dark after a train left its claimed home | - | [MT-165](tests.md#mt-165) |
