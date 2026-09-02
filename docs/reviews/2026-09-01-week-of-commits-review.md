@@ -491,6 +491,8 @@ on a real route.
 **The question for Adam, in one sentence:** should the room behind a reversing train be the whole route
 it came in over, or only the last N segments it will physically stand on?
 
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
+
 ### SVN-B4 — the new rule is in `isPathClear` and nowhere in the staging planner
 
 **FIXED 2026-09-02 (`975f157d`).** Same finding as `TCX-A2`, reached by a different pass. The rule is pure - it reads the path, the destination's flags and the locomotive, and no live feedback - so it lifted to `Layout.measuredRoomToReverseInto` and both sides ask it. Into `firstClearRoute`, which is the search; deliberately not into `connected`, which is the impossibility proof and has to stay looser than the search.

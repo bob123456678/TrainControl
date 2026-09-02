@@ -656,11 +656,14 @@ public class testSwitchingToACentralStationLayout
         // which is the staleness it exists to catch.  The model half of this same test pins NAMES for
         // that reason.  If this fails because a class was legitimately added or removed, change the
         // number and say so in the commit - that is the point of it being exact.
-        // 18 as of 2026-09-02: testThePaletteStillPlacesTiles builds a window to drive the layout
-        // editor's own mouse handlers (OB-169), and opens its sandbox before the model, as the rule
-        // above requires.
-        assertEquals(checked, 18,
-            checked + " test classes were found to build a window, not the 18 there were when this "
+        // 20 as of 2026-09-02, and the two added that day are both windows on purpose:
+        // testTheWindowTakesTheKeyboard calls display() because OB-170 is about what START-UP does to
+        // the keyboard, and testTheAutonomyEditorKnowsWhichSquare builds a LayoutEditor because
+        // MT-258's shortcut reads a field only the editor's own hover handler sets. Both open their
+        // sandbox before the model, as the rule above requires. (18 was testThePaletteStillPlacesTiles,
+        // added the same day for OB-169.)
+        assertEquals(checked, 20,
+            checked + " test classes were found to build a window, not the 20 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

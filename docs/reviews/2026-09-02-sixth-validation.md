@@ -57,6 +57,8 @@ message claims, and which the fixture cannot fail; the confound `V34-C1` named i
 
 ### V36-A1 — `canReachAnyDestination` is not the question this test needs, and the assertion does not follow
 
+**FIXED 2026-09-02 (`609a57b1`).**  The branch is out, and the reason is recorded where it was.  All three limbs of the finding hold: the predicate is the full-autonomy one and requires `isAutoDestination`, which Return Home ignores; a trapped train and an impossible plan are independent facts, so the assertion did not follow; and the early return skipped the facing check the class exists for.  A test that absorbs its own failures reads as green while proving nothing.
+
 `test/core/testTrainsComeHomeToTheirPlatforms.java:249-272`:
 
 ```java
@@ -177,6 +179,8 @@ reason goes red, which is what the class is for. The screen itself should ask th
 
 ### V36-B1 — a random early return, and nothing measures how often it fires
 
+**FIXED 2026-09-02 (`609a57b1`).**  Removed with the branch above - it was the same early return. The flake it was hiding is measured instead and left red: 1 failure in 5, three in eight observations across the day.
+
 `testTrainsComeHomeToTheirPlatforms.java:271` `return`s out of
 `testEveryoneComesBackFacingTheWayTheySetOff` before lines 298-330 — the block that checks every train
 came back to the same arrival Point, which is what the class is named for and what its 47 lines of
@@ -201,6 +205,8 @@ How often the branch fires cannot be settled by reading, and the commit's own ev
 — see `V36-C4`.
 
 ### V36-B2 — the precondition says the opposite of what it asserts, and the confound is now unguarded
+
+**FIXED 2026-09-02 (`8c4c4aa4`), a round later than it looked.**  `609a57b1` answered it with a precondition pointing at "the CONTROL at the end of this test", and that control is in a different test three thousand lines away on a different fixture - which `V37-B2` caught.  The audit test has a control of its own now: a three-unit train that fits, same test, same fixture.  Mutation-confirmed.
 
 `test/core/testHomeStaging.java:198-206`:
 

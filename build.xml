@@ -233,6 +233,9 @@
         <test-one-class class="testRenameRoundTripThroughTheUIPath"/>
         <test-one-class class="testTimetableCaptureThroughARealRun"/>
         <test-one-class class="testTheWindowAttachesItsRefreshCallback"/>
+        <test-one-class class="testTheWindowTakesTheKeyboard"/>
+        <test-one-class class="testTheMenuShowsWhereALinkGoes"/>
+        <test-one-class class="testTheAutonomyEditorKnowsWhichSquare"/>
         <test-one-class class="testAMovedTileCarriesItsSetup"/>
         <test-one-class class="testBackupArchiveNamesTheLayout"/>
         <test-one-class class="testARunSurvivesAPageRename"/>

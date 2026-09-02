@@ -38,6 +38,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
+| [MT-259](#mt-259) | 2026-09-02 | The keyboard, when the window comes to the front | needs test | OB-170 |
+| [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | needs test | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 
 Everything else - 231 of 258 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 3 fixed but not yet validated.)
@@ -13768,5 +13770,166 @@ brought and said nothing about the four it drops.
 9. **Check it does nothing unexpected in the TRACK editor**, where Control+S is not bound.
 
 *Run against a build after this commit.*
+
+**Adam, 2026-09-02 (triage).** Does not work.
+
+control+s is not firing in the autonomy editor
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 08:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Item 4 fixed (2026-09-02).  It was firing.**  The key reached its branch - Control+G and Control+L
+sit two branches above it and both work - and then asked the wrong question.  It asked
+`getLastHoveredLabel()`, which reads the two variables that say where a PASTE would land, and the
+hover handler deliberately does not set those in autonomy mode.  Its own comment says why, and the
+comment is right: nothing is pasted in that mode, and setting them there would teach the placement
+code a position it has no business acting on.  So the key fired, asked which square, and was told
+none.
+
+Autonomy mode now records the square under the pointer in a field of its own and Control+S asks that,
+leaving the placement variables exactly as untouched as they were.  Three tests, one of them for the
+half that could easily have been broken by the obvious fix - that hovering in the TRACK editor still
+feeds those variables, because drags and pastes read them.
+
+**Items 1 and 3 are still open on this ticket**, since your note was only about item 4.  Steps 1-6
+above have not been reported on either way.
+
+*Item 4 to be run again against a build after this commit.*
+
+---
+
+<a id="mt-259"></a>
+
+### MT-259 - 2026-09-02 - The keyboard, when the window comes to the front
+
+**Disposition:** needs test
+**From:** OB-170
+
+**Written:** 2026-09-02
+
+You reported this twice, and the second time against a build that already carried the first fix:
+**"when I start the app, the main window is not in focus and keystrokes don't go to it.  could it be
+related to the startup loading notice?"**
+
+**Not the loading notice, but you had the right shape.**  `StartupSplash` closes on the event thread
+before the window is told to show itself, so it cannot be an ordering problem - but an always-on-top
+window that held the focus and then vanished leaves the focus wherever Windows decides, which need not
+be here.  That is the same class of thing, and so is an update prompt, or any dialog you dismiss while
+the application is starting.
+
+**What was actually wrong.**  The first fix asked for the keyboard once, at the end of start-up.
+`requestFocusInWindow` does nothing at all while the window is not the focused window, and `toFront()`
+from a process that is starting does not reliably make it one - so on a machine where anything else
+held the focus, the request was made at a moment it could not be granted and then never made again.
+
+Two changes.  The window now asks again every time it GAINS focus, so alt-tabbing to it, or dismissing
+whatever was in front of it, puts the keyboard back.  And the condition on that is about typing rather
+than about focus: it stands aside only for the log pane and the JSON pane, the two places in this
+window you can actually type into.  Deferring to anything focusable was the first version and it is
+too generous by the width of the bug - focus resting on a label or a button consumes no letters, so
+leaving it there is the window having no keyboard while looking polite about it.
+
+There are three automated tests, including one that a keystroke straight after start-up moves the
+active key, which is what you asked for.  What they cannot judge is your machine.
+
+1. **Start TrainControl with something else in front of it** - a browser, NetBeans, anything - and do
+   not touch the mouse.  Press a letter mapped to a locomotive once the window is up.
+2. **Start it from a cold boot**, where the update check and the loading notice are most likely to be
+   in the way.
+3. **Alt-tab away and back**, several times.  The letters should keep working every time.
+4. **Then click into the log pane at the bottom, type something, alt-tab away and come back.**  The
+   caret must still be in the log pane - this is the case the condition exists for, and getting it
+   wrong would be worse than the original fault.
+5. **Click the layout tab, then back to the keyboard tab.**  The letters should be unaffected.
+
+If it comes up focused but a *particular* letter does nothing, that is a different fault - say which.
+
+*Run against a build after this commit.*
+
+---
+
+<a id="mt-260"></a>
+
+### MT-260 - 2026-09-02 - Six rulings the review rounds are holding
+
+**Disposition:** needs test
+**From:** RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8
+
+**Written:** 2026-09-02
+
+You asked what is still open from the B's and C's that needs you.  This is it: six questions, each
+one sitting under a finding that is otherwise understood and could be built either way.  None of them
+is a bug report - each is a choice about how your railway should behave, and I have not guessed at any
+of them.
+
+Answer as briefly as you like; a word each is enough.  Everything else in those documents is mine to
+either do or withdraw, and none of it is waiting on you.
+
+**1. A train that backs into a berth over a switch.**  (`RTG-B2`, and `SVN-B3` is the same question.)
+The guard adds up every segment on the route to a berth and refuses the train when it is longer than
+that total.  For a train that drives straight in that is exactly the rule you gave -
+*"do you sum the track segments leading up to it?  if they are long enough, then we are good"*.  But
+for a train that passes a reversing point and **backs** in, only the track between the reversal and
+the berth is behind it; the segments before the reversal cannot hold any of it.
+
+> When the run-in is long enough overall, may a train longer than berth-plus-switch still come to rest
+> across the switch behind its berth, or should the berth and switch lengths alone bound it?
+
+Today it is the first.  On your railway the guard is inert either way until more lengths are measured,
+which is the next question.
+
+**2. Which squares the length notice asks about, and 20 warnings on first open.**  (`TCX-B2`,
+`D24-C7`, and the comments pass raised it a third time.)  The editor asks you to measure the square a
+train turns round on.  The guard above needs **every** segment on the run-in to that square, and
+returns "unmeasured" if any one of them is missing - so measuring only what the notice asks for leaves
+the guard never firing.  Measured on your live configuration: 22 turnaround squares, 6 tiles with a
+length, of which 2 are turnarounds.  Extending the notice to the run-in raises **20 new warnings** the
+first time you open the editor.
+
+> Should the notice ask for the approach segments too - and is a 20-item list what you want to be met
+> with, given that without them the guard cannot fire?
+
+**3. A signal left red over a platform you emptied by hand.**  (`D24-C8`.)  Your ruling on OB-166 was
+*"signals should only be touched when a route activates"*, and the start-of-run sweep went with it.
+MT-246 records one side of what that gives up - a platform stays **green** after you put a train on it
+by hand.  The other side is the mirror: a platform a route left **red**, which you then empty by hand
+while nothing is running, stays red into the next run.  It corrects itself only after a train has
+arrived there and left again.
+
+> On a railway where a protecting signal is wired to a braking section, a signal stuck red over an
+> empty platform holds a train up.  Acceptable alongside the green one, or should the sweep come back
+> for **occupied** platforms only?
+
+**4. Deleting a locomotive edits your routes without saying so.**  (`R28-A1`.)
+Deleting a locomotive from the database removes every `locspeed` command naming it from every route,
+writes the routes to disk, and says nothing.  2.8.1 did not do this.  The confirmation you see is about
+the locomotive.
+
+> Should the confirmation say how many route commands will go and from which routes, or should the
+> removal be dropped in favour of the 2.8.1 behaviour?
+
+**5. A non-reversible train standing in a parking berth.**  (`SV2-A1`, and `TV2-C7` for the fact that
+this was answered in code without being asked.)  The planner now assumes such a train **backed in**,
+so it has to be turned again on the way to its next terminus.  That is the conservative reading and it
+matches the documentation - but it was applied rather than decided, and it is pinned in three places
+that would move together.
+
+> Is that right, or was it driven in nose-first and already facing out?
+
+**6. `ParkingTrack12`, on the frozen test fixture.**  (`DY3-C8`.)  In
+`test/operator_layout/config/autonomy/configuration-Main.json` that square is the only one in the file
+carrying **both** `autoDestination: false` and `active: false` - a parking berth that is also out of
+service.  Twenty other squares carry the first alone.  The fixture is a copy of your railway as it was
+at `409d4ce8`.
+
+> Deliberate - a berth you have taken out of use - or a stray click that the fixture then froze?
+
+---
+
+**And one still open on [MT-257](#mt-257).**  Item 5, Test Connection: you asked *"why can't it keep
+working without a train, between stations?"* and the answer is a choice between two shapes - two
+clicks to name both ends of the run to test, or one click that answers every question it can about the
+square without needing a second one.  That one is still waiting on you too.
+
+*No build needed to answer these.*
 
 ---

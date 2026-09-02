@@ -141,6 +141,8 @@ defensive backstop either way, a "destination must have an outgoing edge" clause
 |---|---|
 | **Status** | DEFERRED — needs Adam. One-sentence question: are the working-tree changes to `cs2_sample_layout/config/autonomy/*` (placements moved, "75 407 DB" placement and two `excludedLocs` lists removed, `atomicRoutes` false, `pathPreference` RANDOM_ANY_STATION, timetable naming "MT-x233 Test Loc") your own hands-on session, or damage? |
 
+**MOOT 2026-09-02.**  The two settings it turned on are back as they were - `configuration-Main.json` reads `atomicRoutes: true` and `pathPreference: MOST_STATIONS` today - and the only thing that has moved in that folder since is `loc` and `facing` on the squares, which is a railway with trains running on it.  Asked and answered by the file rather than by Adam, which is the better kind of answer.
+
 `git status` shows `cs2_sample_layout/config/autonomy/setup.json` and `configuration-Main.json`
 modified. The briefing's list of expected uncommitted changes does not include them, the folder is
 "not recoverable", and this round's coordinator has just killed concurrently running batteries — so
@@ -223,6 +225,8 @@ Deferred question for Adam, one sentence: when the run-in *is* long enough, is a
 berth-plus-switch still allowed to come to rest across the switch behind its berth (the "sum the
 segments" reading), or should the berth-and-switch lengths alone bound it (the original question's
 reading)?
+
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ---
 

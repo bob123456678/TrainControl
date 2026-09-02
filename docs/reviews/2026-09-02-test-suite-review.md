@@ -80,6 +80,10 @@ Where I stand on the still-open `TCX` findings is a section of its own at the en
 
 ### TS3-A1 — `battery.sh` calls the reaper at a path that has not existed since 2026-08-30
 
+**FIXED 2026-09-02 (`3c014e77`).**  `battery.sh` builds the path from its own directory - `REAPER="$(cd "$(dirname "$0")" && pwd)/reap.ps1"` - so moving the folder moves the reaper with it, and it says so loudly when the file is missing rather than sending the error to `/dev/null`.  The finding is the round's best result: four days of batteries reaped nothing and reported nothing.
+
+*The original finding:*
+
 **Status: open.** Verified by reading and by `git log`. Severity: this is the guard that keeps a run's
 own leftover test JVMs off the machine, and a second set of test JVMs is the mechanism by which the
 operator's railway was damaged on 2026-08-30. The failure is silent by construction.
@@ -421,7 +425,7 @@ unprotected — only the "and the door does not ask it again" half. B.
 
 ### TS3-B5 — `one.sh` does not read the `Configuration Failures` line
 
-**Status: open.** Verified by reading both runners side by side.
+**FIXED 2026-09-02 (`3c014e77`).**  `one.sh` reads `Configuration Failures` and calls a non-zero count out on its own line, with the sentence `battery.sh` carries for the same check: the teardowns in this suite put Adam's signals back and clear the auto layout, so one that threw would leave the railway changed and be reported as a clean run.  The same round gave it the skip and zero-test call-outs (`TV3-B1`) and a non-zero exit (`TV3-C4`).
 
 `docs/tools/one.sh:174` is the whole of its result reading:
 

@@ -399,6 +399,8 @@ being a nag"*; on his own layout it does not.
 square, given that without them the guard never fires - and is a 20-item warning list what he wants
 on first opening the editor after upgrading?
 
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
+
 ### C8 - the signal ruling gives up two things and MT-246 records one
 
 `docs/manual-tests/tests.md`, MT-246, under "What this deliberately gives up", records only the
@@ -413,6 +415,8 @@ again.
 signal stuck red over an empty platform holds a train up. Is that acceptable alongside the
 green-over-occupied case, or should the sweep come back for **occupied** platforms only - which is
 the option MT-246 already offers?
+
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ### C9 - the running diagram's badge test does not include the case its own comment names
 

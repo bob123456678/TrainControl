@@ -917,6 +917,20 @@ public class AutonomyEditorPanel extends JPanel
         // Remembered so every item on this menu can flash what it changed without being told twice.
         menuTarget = target;
 
+        // AND ITS PAIR, when this square is joined to another one on this page (FR-056).
+        //
+        // Adam: "when in the autonomy editor and you right click a tunnel tile, highlight its pair."
+        //
+        // The menu already offers to GO to the partner, which is the right answer when it is on
+        // another page and the wrong one when it is on this one - his own tunnel pair is four squares
+        // apart on 1 - Main, and jumping to it moves the view away from the square he right-clicked to
+        // ask about.  The flash answers "which one is this joined to" and leaves everything where it
+        // is.
+        //
+        // Only on this page, because a highlight on a page nobody is looking at is not a highlight.
+        // Go to the partner is still there for the other case, which is what it was written for.
+        highlightPartnerOf(target);
+
         rememberIfStation(target);
 
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
@@ -1725,6 +1739,38 @@ public class AutonomyEditorPanel extends JPanel
     private void flashMenuTarget()
     {
         if (menuTarget != null && onReveal != null) onReveal.accept(menuTarget);
+    }
+
+    /**
+     * Flashes the square this one is joined to, when that square is on the page being looked at
+     * (FR-056).
+     *
+     * A link or a tunnel is the one kind of square whose meaning is somewhere ELSE, and until now the
+     * only way to see where was to read the coordinates off the "Go to" item or to take the jump. On a
+     * pair that is on one page - which is what a tunnel usually is - the jump is the wrong gesture: it
+     * moves the view away from the square just asked about.
+     *
+     * Silent where there is no partner, where the partner is on another page, and where the square is
+     * not a link at all, because in each of those a flash somewhere would be a lie about what is
+     * joined to what.
+     *
+     * @param tile the square whose menu is opening
+     */
+    private void highlightPartnerOf(TileKey tile)
+    {
+        if (tile == null || onReveal == null || menuOnly) return;
+
+        LayoutDiagramComponent here = componentAt(tile);
+
+        if (here == null) return;
+
+        if (!here.isLink() && here.getType() != LayoutDiagramComponent.componentType.TUNNEL) return;
+
+        TileKey partner = session.getStore().getPortalPartner(tile);
+
+        if (partner == null || !onThisPage(partner)) return;
+
+        onReveal.accept(partner);
     }
 
     // Which square the open right-click menu is acting on

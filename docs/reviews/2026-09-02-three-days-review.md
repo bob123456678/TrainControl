@@ -56,6 +56,15 @@ loss that is not already recorded and dispositioned elsewhere.
 
 ### D3F-B1 - the room check's "keep looking" is defeated by the search's own `seen` bookkeeping
 
+**FIXED 2026-09-02 (`e6791631`).** Three reviewers found this independently - `WK3-B2` and `RT3-B1`
+are the same finding - and `TS3-B7` filed the missing test in the same round.  `firstClearRoute` now
+asks for the room BEFORE it records the arrival in `seen`, so a route that is refused for want of room
+leaves the destination reachable by the longer approach the escape clause promises.  Covered by
+`testALongerApproachIsStillTriedWhenTheShortOneHasNoRoom` (`test/core/testHomeStaging.java:3388`),
+mutation-confirmed by moving the check back below the `seen` write.
+
+*The original finding, kept because it is the clearest statement of what was wrong:*
+
 **Status: open.** Structurally real at HEAD; narrow on the operator's data today, and it widens with
 every track length he records. Introduced by `975f157d` (TCX-A2), 2026-09-02 03:37.
 
@@ -236,6 +245,9 @@ is a menu item offered live whose press explains a refusal, which is the OB-050 
 spent three findings eliminating, plus three comments a reader will now be misled by. C, not B.
 
 ### D3F-C4 - the tile door warns about a protecting signal in both directions; the route door refuses only green
+
+**FIXED 2026-09-02 (`e6791631`).**  Three passes found this - `WK3-B1`, `DY3-B1` and `D3F-C4` are one finding - and the fix is one line at the lifted rule: `aboutToClearProtection` returns false when the accessory `isStraight()`, because a click on a straight signal is about to turn it to danger, which is the protective act and is exactly what the route door does not refuse.  Covered by `testEditorSurfaceRules`, which reads for the precondition at the tile door and for both call sites.
+
 
 **Status: open.**
 

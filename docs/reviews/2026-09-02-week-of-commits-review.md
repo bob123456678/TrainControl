@@ -83,7 +83,7 @@ theirs overlap, that is intentional; where it does not, the earlier half of the 
 
 ### `WK3-A1` — the protecting-signal guard puts the event thread on the Layout monitor, which is the freeze `IAR-B2` removed
 
-**Status: open. Introduced by `87b6c10a` (2026-09-02 03:27), unreviewed.**
+**FIXED 2026-09-02 (`e6791631`).**  Found independently as `DY3-A1`.  `Layout.protectsAnOccupiedSquare` is not `synchronized` any more, and the method now carries the reason: it is called from the event thread four lines below `getActiveAccs`, whose javadoc records that exact call freezing the window, because `configureAndLockPath` holds the monitor across per-command sleeps.  Introduced by `87b6c10a` (2026-09-02 03:27).
 
 `87b6c10a` moved the "is this a signal protecting an occupied platform" rule out of `MarklinRoute` and
 onto `Layout`, so that the route and the diagram's accessory tile could both ask it. The method it
@@ -198,7 +198,7 @@ is the smaller change.
 
 ### `WK3-B1` — the accessory tile asks the protecting-signal rule without the aspect, so it warns when the operator makes a signal RED
 
-**Status: open. Introduced by `87b6c10a`.**
+**FIXED 2026-09-02 (`e6791631`).**  Found independently as `DY3-B1` and `D3F-C4`.  `aboutToClearProtection` returns false when the accessory `isStraight()` - a click on a straight signal is about to turn it to danger, which is the protective act the route door does not refuse.  Covered by `testEditorSurfaceRules`.  Introduced by `87b6c10a`.
 
 `87b6c10a`'s stated purpose was that the two doors ask one question. They still do not, and the half
 that is missing is the one a previous review already removed as over-strict.
@@ -273,7 +273,7 @@ accessories of a three-way need the same treatment.
 
 ### `WK3-B2` — the staging planner's new room check is applied after the state is marked seen, so the escape it relies on is already closed
 
-**Status: open. Introduced by `975f157d` (2026-09-02 03:37), unreviewed.**
+**FIXED 2026-09-02 (`e6791631`).**  Found independently as `D3F-B1` and `RT3-B1`, with `TS3-B7` filing the missing test.  `firstClearRoute` asks for the room before it records the arrival in `seen`, so a route refused for want of room leaves the destination reachable by the longer approach the escape clause promises.  Covered by `testALongerApproachIsStillTriedWhenTheShortOneHasNoRoom`, mutation-confirmed.  Introduced by `975f157d` (2026-09-02 03:37).
 
 `975f157d` lifted the reversal-room rule into `Layout.measuredRoomToReverseInto` and gave it to the
 staging planner, so the planner would stop offering berths the runtime then refuses. The call is a

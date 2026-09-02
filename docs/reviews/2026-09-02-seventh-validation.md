@@ -71,6 +71,8 @@ complete. See `V37-D1` and `V37-D2`.
 
 ### V37-B1 — the branch is out; the sentence written to justify it is still in
 
+**FIXED 2026-09-02 (`8c4c4aa4`).**  The failure message no longer claims a check that was removed with the branch.  It now says which question decides and points at the per-train diagnostic that answers it, instead of naming the planner in the case the commit before it said was the diagram's.
+
 `test/core/testTrainsComeHomeToTheirPlatforms.java:249-253`:
 
 ```java
@@ -119,6 +121,8 @@ that `reachability()` was printed above and says which train and which half. Not
 code entitles it to say which of the two it is.
 
 ### V37-B2 — the precondition was deleted for a control that is not in this test
+
+**FIXED 2026-09-02 (`8c4c4aa4`).**  The audit test has a control of its own now - a three-unit train that fits, in the same test, on the same fixture - rather than pointing at one three thousand lines away.  Mutation-confirmed: deleting the planner's room rule fails two tests where it used to fail one, which is what `V36-B2` was actually asking for.
 
 `test/core/testHomeStaging.java:198-209`, the comment that replaced `V36-B2`'s precondition:
 
@@ -230,6 +234,8 @@ commit claims it does — but the finding should not be read as answered.
 
 ### V37-C2 — the sibling five lines down keeps the shape
 
+**FIXED 2026-09-02 (`8c4c4aa4`).**  The twin of the whole-file grep fixed the round before, five lines below it - the sweep-the-siblings miss made at the site of the fix for it.
+
 `test/regression/testErrorsStopTheSetupRunning.java:257-259`, immediately after the assertion this
 commit rewrote:
 
@@ -253,6 +259,8 @@ parentheses, so it does not satisfy the literal. It is a C for the same reason `
 one line, with the helper already in the class.
 
 ### V37-C3 — the flake's exoneration is wider than what was checked
+
+**WITHDRAWN 2026-09-02 (`8c4c4aa4`), which is what this finding asked for.**  "Not caused by anything changed today" is off the record: `56c6080e` re-froze the fixture that test runs on the same morning - four tiles out of the diagram, a `canReverse` flag dropped, every locomotive's starting square moved - so the flake may be Adam's own diagram edits arriving in the test.  The narrower claim it rests on, that the room rule cannot fire in that test, stands and was verified twice independently.
 
 The commit message states:
 

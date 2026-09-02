@@ -7058,12 +7058,75 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void takeTheKeyboard()
     {
+        // Once now, for the case where the window is already up and active.
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             toFront();
 
-            if (KeyboardTab != null) KeyboardTab.requestFocusInWindow();
+            focusTheKeyboard();
         });
+
+        // AND AGAIN WHENEVER IT GAINS FOCUS WITH NOTHING INSIDE IT FOCUSED (OB-170).
+        //
+        // Asking once was the fix for OB-168 and it was not enough: Adam reported the same symptom
+        // against a build carrying it.  `requestFocusInWindow` returns false and does nothing while
+        // the window is not the FOCUSED window, and `toFront()` on Windows does not reliably make a
+        // starting process's window one - so the request was made at a moment it could not be granted
+        // and then never made again.
+        //
+        // He asked whether the startup splash is involved.  Not through ordering - `StartupSplash`
+        // closes synchronously on the event thread, before `display()` is posted - but it is the same
+        // shape: an always-on-top window that held the focus and then vanished leaves the focus
+        // wherever the window manager likes.  This covers that, an update prompt, any dialog dismissed
+        // during start-up, and alt-tabbing back afterwards.
+        addWindowFocusListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowGainedFocus(java.awt.event.WindowEvent e)
+            {
+                // POSTED, not called - measured, not reasoned.
+                //
+                // AWT's own handling of this event restores the focus to the window's most recent
+                // focus owner, and a request made from inside a listener on the event is made before
+                // that restoration and then undone by it.  The test for this came back holding a
+                // JLabel until the request was moved behind it.
+                //
+                // Which is the sentence above arriving a second time, at the next event along: focus
+                // asked for during the event that grants it is asked for too early.
+                javax.swing.SwingUtilities.invokeLater(() -> focusTheKeyboard());
+            }
+        });
+    }
+
+    /**
+     * Puts the keyboard on the tabbed pane, unless somebody is TYPING somewhere in this window.
+     *
+     * **The condition is what makes this safe to run on every activation.**  Without it, alt-tabbing
+     * away from a half-typed line and back would take the caret out of it every time - which is a
+     * worse fault than the one being fixed, and the reason this is not simply called unconditionally.
+     *
+     * **And the condition is about typing, not about focus.**  The first version of it deferred to
+     * anything in this window that held the focus, and that is too generous by exactly the width of
+     * the bug: focus resting on a label, a button or a scroll pane consumes no letters, so leaving it
+     * there is leaving the window without a keyboard while looking like politeness.  Adam reported
+     * OB-170 against a build whose start-up request had in fact been granted, which is what that looks
+     * like from outside - and the test written for it went red with the fix in, holding a JLabel.
+     *
+     * A text component is the one case where taking the focus destroys something a person has done.
+     * There are two in this window that can hold it - the log area and the JSON pane - and both can be
+     * clicked into and typed in.
+     */
+    private void focusTheKeyboard()
+    {
+        if (KeyboardTab == null) return;
+
+        java.awt.Component owner = java.awt.KeyboardFocusManager
+            .getCurrentKeyboardFocusManager().getFocusOwner();
+
+        if (owner instanceof javax.swing.text.JTextComponent
+            && javax.swing.SwingUtilities.isDescendingFrom(owner, this)) return;
+
+        KeyboardTab.requestFocusInWindow();
     }
 
 

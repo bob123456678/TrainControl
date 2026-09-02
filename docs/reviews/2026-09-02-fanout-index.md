@@ -164,3 +164,14 @@ been deleted (`RG3-B1`). `V35-C3` points out it is one checkout from being lost.
 The C-level tails of the seven fan-out documents and the four validation documents are recorded in
 their own files and have not been validated. They are not claimed to be either real or withdrawn. The
 same is true of 63 C items and 19 B items from the 2026-09-01 round.
+
+**Later on 2026-09-02, after Adam's second round of triage.** He asked what is still open from the B's
+and C's that needs *him*. The answer is six questions and no more: they are collected as
+[MT-260](../manual-tests/tests.md#mt-260), and every finding they came from now points there.
+Everything else in these documents is mine to do or to withdraw.
+
+The receipts for the round's own fixes were written into this index rather than back into each
+document, which is what `V34-C8` and `V36-C6` both say. The A's and every cross-confirmed B now carry
+their disposition where the finding is - `WK3-A1`/`DY3-A1`, `WK3-B1`/`DY3-B1`/`D3F-C4`,
+`WK3-B2`/`D3F-B1`, `TS3-A1`, `TS3-B5`, `RG3-B1`, `RG3-B2`, `RG3-C1`, `RG3-C2`, `RG3-C4`, `V35-C3` -
+and the C-level tails do not. That is the outstanding work, and it is bookkeeping rather than code.

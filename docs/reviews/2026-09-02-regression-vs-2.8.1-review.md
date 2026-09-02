@@ -86,7 +86,9 @@ it - is closed by `FX2-5`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 (`11e06d6d`, committed `76d7bb70`) |
+
+**The changelog line is gone.**  `V35-C3` then caught that the fix existed only in the working tree while a commit message claimed it; Adam asked for it directly - "commit the Readme fix" - and it is committed now.
 | **Confidence** | confirmed by reading; the deletion is in `git diff --diff-filter=D`, the sentence is in the shipped Readme |
 
 The v3.0.0 changelog says, of the new route editor:
@@ -140,7 +142,9 @@ neither of them a class.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
+
+**Adam ruled on it as MT-257 item 3**: "yes, but list them in the log and mention that in the dialog."  `AutonomySession.whatALegacyImportLeaves` counts the four things the import drops - per-edge accessory commands, edge lengths, the timetable, route activations - each with the reason written at the code, the log lists them, and the dialog says the list is there.  On his own file that is 69 connections with commands, 30 with a length, a 36-entry timetable and the route activations.
 | **Confidence** | confirmed by reading, and measured against `test/operator_layout/config/autonomy_legacy/autonomy.json` |
 | **Relation to open findings** | this is the *reporting* half of `RGN-A1` and `R28-B1`; it may be better merged into `RGN-A1` than fixed on its own, and that is Adam's call |
 
@@ -217,7 +221,9 @@ belief about what they now have is wrong, on the one path every upgrading 2.8.1 
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
+
+**Adam ruled on it as MT-257 item 1**: "Yes, I want it back.  Put both Clear Locomotives and Clear All Home Locomotives into a 'bulk tools' category in the autonomy edit right-click menu."  Both are there, under **Bulk Tools** at the foot of that menu, each with its own count, each greying itself when its count is zero, and each confirming first.  The finding's point - that the sibling was restored without it - is exactly what he answered.
 | **Confidence** | confirmed by reading; the count that sets the severity is measured against Adam's configuration |
 
 At 2.8.1 the graph window's background menu had **two** bulk actions, one after the other:
@@ -274,7 +280,11 @@ same menu builder, one was restored and the other was not.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
+
+**Control+S is back, in the autonomy editor, and it works.**  Adam ruled on it directly as MT-257 item 4 - "add the keyboard shortcut back to the autonomy editor, we already have the function in the right click menu there" - so the key is a second door onto `Rename`, which is where the capability moved to.
+
+**It took two goes, and the second is the interesting one.**  The first put the branch back and asked `getLastHoveredLabel()`, which is what 2.8.1 asked; he reported it as "control+s is not firing in the autonomy editor" and it was firing.  The hover handler deliberately does not set those variables in autonomy mode - they are where a paste would land, and nothing is pasted there - so the key found no square and did nothing.  Autonomy mode now records the square in a field of its own.  Three tests, in `testTheAutonomyEditorKnowsWhichSquare`, one of them for the half the obvious fix would have broken.
 | **Confidence** | confirmed by reading; every one of the four sites was opened |
 
 At 2.8.1 there were two doors to the same method:
@@ -409,7 +419,9 @@ submenu can be live at that moment.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | open - waiting on Adam ([MT-257](../manual-tests/tests.md#mt-257) item 5) |
+
+**Put to him, and he asked the better question back**: "why can't it keep working without a train, between stations?"  The answer is a choice of shape - two clicks to name both ends of the run to test, or one click that answers everything it can about the square it is on - and it is his to make rather than mine to guess.  Carried in [MT-260](../manual-tests/tests.md#mt-260)'s tail as the one MT-257 question still outstanding.
 | **Confidence** | confirmed by reading both tools |
 
 At 2.8.1 a point's right-click menu could ask about a *pair of points*, with no train involved:

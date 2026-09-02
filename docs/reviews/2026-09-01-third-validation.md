@@ -485,6 +485,8 @@ predates `f59fa45e`, and it matches `MT-246` and the documentation. But the inde
 and must be turned again on the way to its next berth; is that right, or was it driven in nose-first
 and already facing out?*
 
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
+
 ---
 
 ## D — not defects

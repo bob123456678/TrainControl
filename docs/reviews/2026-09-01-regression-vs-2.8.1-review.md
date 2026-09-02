@@ -132,6 +132,8 @@ path that is one menu item away.
 **DEFERRED - needs Adam:** should the delete confirmation say how many route commands will be removed
 (and from which routes), or should the removal be dropped in favour of the 2.8.1 behaviour?
 
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
+
 **How to confirm.** No execution needed for the code path; to see it, add a locomotive `X`, put
 `locspeed,X,40` in a route, delete `X` from the database, and print `getRoute(...).toCSV()`. Expect the
 line to be gone, with nothing in the log about it.

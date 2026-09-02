@@ -51,7 +51,7 @@ passes in this fan-out, so every source diff in the window was read in full rath
 **`Layout.protectsAnOccupiedSquare` is `synchronized`, and the event thread now waits on the layout
 monitor in the one branch `IAR-B2` was written about.**
 
-**Status:** open. `87b6c10a` (`SVN-B16`).
+**FIXED 2026-09-02 (`e6791631`).**  Found independently as `WK3-A1`.  `Layout.protectsAnOccupiedSquare` is no longer `synchronized`, and the reason is written at the method: it is called from the event thread four lines below `getActiveAccs`, whose own javadoc records that exact call freezing the window - `configureAndLockPath` holds the monitor across per-command sleeps, so a click on a signal could wait behind a whole route being thrown, Stop included.  Raised against `87b6c10a` (`SVN-B16`), which is where the lift happened.
 
 `87b6c10a` lifted the protecting-signal half of `MarklinRoute.heldReason` onto `Layout` so both doors
 could ask it. The lift is right. The modifier is not.
@@ -150,7 +150,7 @@ not a regression against what shipped — it is what shipped.
 **The protecting-signal rule lost its aspect precondition when it was lifted, so the diagram door now
 warns against setting a signal to danger.**
 
-**Status:** open. `87b6c10a` (`SVN-B16`).
+**FIXED 2026-09-02 (`e6791631`).**  Same finding as `WK3-B1` and `D3F-C4`; see the note under `D3F-C4` in the three-days review for the fix and its cover.  Raised against `87b6c10a` (`SVN-B16`), which is where the aspect was dropped in the lift.
 
 The route door asks two things. `src/org/traincontrol/marklin/MarklinRoute.java:460`:
 
@@ -555,6 +555,8 @@ narrow.
 **`ParkingTrack12` in the frozen fixture is a parking berth that is also out of service.**
 
 **Status:** open — needs Adam's ruling, not a code change. Fixture as of `409d4ce8`.
+
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 `test/operator_layout/config/autonomy/configuration-Main.json` holds exactly one `"active": false`:
 

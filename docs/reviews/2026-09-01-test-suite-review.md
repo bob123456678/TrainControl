@@ -331,6 +331,8 @@ Two specific defects a test would catch:
 
 **Status: DEFERRED — needs Adam.**
 
+**Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
+
 **The one-sentence question for him:** should the "add a track length here" notice name only the square trains turn round
 at, or every square on the run-in to it — because recording exactly what it currently asks for does not make the guard
 able to judge anything?

@@ -72,6 +72,20 @@ public class LayoutEditor extends PositionAwareJFrame
     private int lastHoveredX = -1;
     private int lastHoveredY = -1;
     //private LayoutLabel lastHoveredLabel = null;
+
+    /**
+     * The square the pointer is over IN AUTONOMY MODE (MT-258 item 4).
+     *
+     * Separate from `lastHoveredX/Y` on purpose, and `receiveMoveEvent`'s comment is the reason: those
+     * two are where a paste would land, nothing is pasted in autonomy mode, and setting them there
+     * would teach the placement code a position it has no business acting on.
+     *
+     * But something still has to know which square the pointer is over, because Control+S names it -
+     * and asking the placement variables was exactly why that key did nothing at all.  This is the
+     * same label the blue hover outline is drawn on, which is the square the right-click menu acts on,
+     * so the key and the menu cannot disagree about which one is meant.
+     */
+    private LayoutLabel autonomyHover = null;
     
     // Floating ghost for drag and drop
     private JWindow dragWindow; 
@@ -917,6 +931,14 @@ public class LayoutEditor extends PositionAwareJFrame
         if (isAutonomyMode())
         {
             if (label == null || (this.popup != null && this.popup.isVisible())) return;
+
+            // WHICH SQUARE, kept where a shortcut can find it (MT-258 item 4).
+            //
+            // Not in `lastHoveredX/Y`, for the reason the paragraph above gives.  In its own field,
+            // because Control+S has to name the square under the pointer and asking the placement
+            // variables got it -1,-1 and a null label - which is why Adam reported the key as not
+            // firing at all when it was in fact firing and finding nothing.
+            autonomyHover = label;
 
             // And the square's NAME, which is the one thing this window is about that the diagram
             // does not already show (Adam, 2026-08-27).
@@ -6534,7 +6556,12 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // is meant.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
             {
-                LayoutLabel over = getLastHoveredLabel();
+                // `autonomyHover`, NOT `getLastHoveredLabel()` (MT-258 item 4).
+                //
+                // The first version asked the placement variables, which autonomy mode deliberately
+                // never sets - so the key fired, found nothing, and did nothing, in the only mode
+                // where it means anything.
+                LayoutLabel over = autonomyHover;
 
                 if (over != null && autonomyPanel != null)
                 {

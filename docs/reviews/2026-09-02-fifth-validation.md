@@ -100,7 +100,9 @@ clicks are the operator's own risk.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 (`76d7bb70`) |
+
+**The line is committed.**  Adam asked for it directly - "commit the Readme fix" - and `76d7bb70` carries `Readme.md` along with his own changelog editing.  The finding was right that a commit message had claimed work that was only in the working tree, and right that one checkout would have lost it.
 
 `2e83b737`'s message: "CD3-B3 and RG3-B1: two user-facing documents describing software that does not
 exist - AutomationAPI said there is no single action that clears every home assignment, hours after
