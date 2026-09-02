@@ -1098,7 +1098,28 @@ public class AutonomyEditorPanel extends JPanel
 
             // Greyed rather than hidden, so the shape of the choice stays visible: somebody looking for
             // it finds it, sees it is unavailable, and can tell why from the items above.
-            auto.setEnabled(isOpen && isStation);
+            //
+            // NOT GREYED FOR AN OUT-OF-SERVICE SQUARE ANY MORE (Adam, 2026-09-01).
+            //
+            // "Can Be Chosen in Full Autonomy - does not apply to returning home, of course.  these
+            // should be allowed."
+            //
+            // It used to require `isOpen`, and that turned the menu into a trap.  The obvious way to
+            // say "do not let autonomy pick this" is to close the square - and closing it is exactly
+            // what disabled the control that says it properly, so the only reachable way to express the
+            // intention was the flag that ALSO stops trains going there at all.  Fourteen of his
+            // parking berths ended up in that state, and Return Home could not bring a train to any of
+            // them; every one had to be converted by hand afterwards.
+            //
+            // The two settings are about different things and one of them is not about autonomy at
+            // all: `active` is whether the railway may use the square, and this is whether autonomy
+            // chooses it as a destination.  Homing never consults this flag - HomeStaging does not
+            // mention it - which is what makes a parking berth work: somewhere the operator sends
+            // trains and autonomy leaves alone.
+            //
+            // Still greyed on a square that is not a station, because there it means nothing: autonomy
+            // cannot choose somewhere trains do not stop.
+            auto.setEnabled(isStation);
 
             stationMenu.add(auto);
 

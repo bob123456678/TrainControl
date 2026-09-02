@@ -631,6 +631,71 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
+     * A home autonomy will never choose is still a home.
+     *
+     * Adam, 2026-09-01: **"Can Be Chosen in Full Autonomy - does not apply to returning home, of
+     * course.  these should be allowed."**
+     *
+     * It is already true and nothing consulted it - `HomeStaging` does not mention `autoDestination`
+     * anywhere - but "already true and untested" is how a rule gets removed by somebody tidying up.
+     * The whole point of that flag is the parking berth: a square the operator sends trains to and
+     * autonomy leaves alone.  A berth autonomy may not choose but a train may not return to would be
+     * useless, and it is where most of his trains live.
+     *
+     * The sibling above pins the same flag on a square used as a STAGING stop.  This pins it on the
+     * destination itself, which is the case he was talking about.
+     *
+     * MUTATION: adding `&& at.isAutoDestination()` to `canRest` fails this.
+     */
+    @Test
+    public void testAHomeAutonomyWillNeverChooseIsStillAHome() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RH away", true, Integer.toString(FEEDBACK_BASE));
+        layout.createPoint("RH berth", true, Integer.toString(FEEDBACK_BASE + 1));
+
+        layout.createEdge("RH away", "RH berth");
+
+        // The berth: somewhere the operator parks trains, and autonomy never picks.
+        layout.getPoint("RH berth").setAutoDestination(false);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            loc.setReversible(true);
+
+            assertFalse(layout.getPoint("RH berth").isAutoDestination(),
+                "the fixture did not take: this berth has to be one autonomy will not choose, or the "
+                + "test is about nothing");
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "RH away", false),
+                "could not place the locomotive");
+
+            layout.setHomeLocomotive("RH berth", loc.getName());
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertTrue(plan.isPossible(),
+                "a locomotive was refused its own home because autonomy is not allowed to choose that "
+                + "square - which is what a parking berth IS, and where most of his trains live.  "
+                + "Outcome " + plan.getOutcome() + ", blocked " + plan.getBlocked());
+
+            assertEquals(plan.getMoves().size(), 1, "one move, straight there: " + plan.getMoves());
+
+            assertEquals(plan.getMoves().get(0).getEnd().getName(), "RH berth",
+                "the plan does not end at the berth: " + plan.getMoves());
+        }
+        finally
+        {
+            loc.setReversible(was);
+        }
+    }
+
+    /**
      * A start, a reversing point, and a berth beyond it - with one switch that has to be thrown
      * differently for each leg.
      */
