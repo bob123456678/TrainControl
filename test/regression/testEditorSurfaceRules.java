@@ -627,10 +627,22 @@ public class testEditorSurfaceRules
         String label = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/gui/LayoutLabel.java")), java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(label.contains("protectsAnOccupiedSquare"),
-            "the diagram's accessory tile does not ask whether the accessory is protecting a platform "
-            + "with a train at it, so clicking a signal green by hand goes unwarned while a route "
-            + "doing the same thing is refused");
+        // BOTH LIMBS, and the aspect (TS3-B3, WK3-B1).
+        //
+        // This used to grep the whole file for the method name, so deleting either of the two calls -
+        // the accessory and its twin on a three-way - left it passing, which is exactly the vacuous
+        // shape TCX-A3 was fixed for the day before. And the name being present says nothing about
+        // whether the ASPECT is asked with it: without that, clicking a protecting signal to RED, the
+        // protective act, raises a warning the route door deliberately does not.
+        assertTrue(label.contains("aboutToClearProtection(tcUI, c.getAccessory())")
+                && label.contains("aboutToClearProtection(tcUI, c.getAccessory2())"),
+            "the diagram's accessory tile does not ask about BOTH accessories of the tile, so a "
+            + "three-way's second drive can be switched with no warning");
+
+        assertTrue(label.contains("if (accessory.isStraight()) return false;"),
+            "the tile's protecting-signal question does not ask which way the click will throw the "
+            + "signal.  Setting a protecting signal to RED is the protective act, and the route door "
+            + "explicitly permits it - a warning here is the over-strictness that door had removed");
 
         String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);

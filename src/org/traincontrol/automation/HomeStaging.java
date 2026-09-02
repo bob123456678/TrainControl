@@ -1014,15 +1014,41 @@ public final class HomeStaging
                 // The same point reached with a reversal behind it and without one are two states, and
                 // collapsing them means the first arrival - usually the short way, which does not turn
                 // the train - closes off the only route that could have backed it in.
+                List<Edge> route = new LinkedList<>(current.route);
+                route.add(e);
+
+                // ROOM IS ASKED BEFORE THE ARRIVAL IS RECORDED (WK3-B2, D3F-B1, RT3-B1).
+                //
+                // The refusal below is a `continue` rather than a give-up, on the stated ground that
+                // another route to the same berth may be longer and a longer approach is more room.
+                // That was only true if the search still had the longer route to try, and it did not:
+                // this arrival used to be written into `seen` first, and `alreadyReached` is a
+                // DOMINANCE test - a longer way round to the same berth carries the short way's
+                // commands plus more, so the short one dominated it and it was dropped before its
+                // room was ever measured.  Three reviewers found it independently within hours of the
+                // rule landing, and the test below reproduces it twenty times out of twenty.
+                //
+                // An arrival refused for want of room is not a state that has been reached.  Recording
+                // it was what closed the door the refusal depends on.
+                //
+                // What this does NOT fix, and it is worth knowing: a longer route can still be pruned
+                // at a shared square EARLIER in the path, because path length is in neither the key
+                // nor the dominance relation.  In practice a genuinely different approach sets some
+                // switch the other way, so its command map is not dominated and it survives - but a
+                // parallel run of track with identical ironwork would still be lost here.
+                if (next.equals(to))
+                {
+                    Integer room = Layout.measuredRoomToReverseInto(route, loc);
+
+                    if (room != null && loc.getTrainLength() > room) continue;
+                }
+
                 String key = next.getUniqueId() + (turned ? "/turned" : "/straight");
 
                 if (alreadyReached(seen, key, commands)) continue;
 
                 if (!seen.containsKey(key)) seen.put(key, new ArrayList<>());
                 seen.get(key).add(commands);
-
-                List<Edge> route = new LinkedList<>(current.route);
-                route.add(e);
 
                 // TURNED ROUND ON THE WAY, when the destination demands it (Adam, 2026-08-31).
                 //
@@ -1034,20 +1060,8 @@ public final class HomeStaging
                 // that fails on its first move.
                 if (next.equals(to))
                 {
-                    // AND ROOM TO BACK INTO, which is the rule the runtime had and this did not
-                    // (TCX-A2).
-                    //
-                    // A train longer than the measured track it reverses into stands across the switch
-                    // behind it.  `isPathClear` refuses that; this search did not, so Return Home
-                    // produced plans whose first move the railway then refused - which is the exact
-                    // failure the paragraph above is about, in a second rule.
-                    //
-                    // `continue` rather than a refusal: another route to the same berth may be longer,
-                    // and a longer approach is more room.
-                    Integer room = Layout.measuredRoomToReverseInto(route, loc);
-
-                    if (room != null && loc.getTrainLength() > room) continue;
-
+                    // Room was asked above, before this arrival was recorded - see the note there
+                    // for why the order is the whole of it (TCX-A2, WK3-B2).
                     if (!mustBackIn(loc, to) || turned) return route;
 
                     // Not this way round.  Keep looking: another route may turn it.

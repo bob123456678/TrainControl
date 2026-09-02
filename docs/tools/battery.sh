@@ -287,6 +287,24 @@ JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
 # which reads as the test hanging rather than as something else shooting it.
 RUN_ID="battery-$$"
 
+# WHERE THE REAPER IS, resolved once and checked (TS3-A1).
+#
+# Said out loud rather than swallowed: a reaper that is not there is exactly the condition that let
+# four days of runs leave their JVMs behind, and the whole reason it went unnoticed is that the call
+# could not fail visibly.  A run without one is still worth having, so this warns rather than refuses.
+REAPER="$(cd "$(dirname "$0")" && pwd)/reap.ps1"
+
+if [ ! -f "$REAPER" ]
+then
+    echo "*** WARNING: no reaper at $REAPER - leftover test JVMs will NOT be cleaned up ***"
+    echo ""
+    echo "A JVM left behind by one class poisons every class after it, and trips the next run's"
+    echo "start-of-run probe with a message that says the check clears itself.  It will not."
+    echo ""
+
+    REAPER=""
+fi
+
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 
 # A BOUNDED HEAP, because an unbounded one asks for a quarter of the machine per class.
@@ -348,8 +366,19 @@ do
 
     # Only THIS RUN's leftover JVMs - reap.ps1 says why that is narrower than "every test JVM", and
     # narrower again than "every java.exe".
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(pwd)/tools/reap.ps1" \
-        -RunId "$RUN_ID" >/dev/null 2>&1
+    #
+    # FROM THE SCRIPT'S OWN DIRECTORY, not from the working directory (TS3-A1).
+    #
+    # This read "$(pwd)/tools/reap.ps1" from 2026-08-25 until 2026-09-02, and the file has been at
+    # docs/tools/reap.ps1 since fb3722f5 moved the folder on 2026-08-30 - a commit whose message says
+    # "all eleven referring files repointed" and which missed this one, the script's call to its own
+    # sibling.  With the error going to /dev/null, every battery for four days reaped nothing and said
+    # nothing about it.
+    if [ -n "$REAPER" ]
+    then
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
+            -RunId "$RUN_ID" >/dev/null 2>&1
+    fi
 
     # The WHOLE output, not its last few lines (found 2026-08-25).
     #

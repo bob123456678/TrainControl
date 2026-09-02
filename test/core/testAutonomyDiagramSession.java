@@ -968,9 +968,24 @@ public class testAutonomyDiagramSession
 
         session.rebuild();
 
-        assertFalse(inactivePointNames(session).contains(session.pointNameForTile(plain)),
-            "control: the square is already inactive in the built graph before anything switched it "
-            + "off, so this fixture cannot show the flag arriving");
+        // THE CONTROL, ASKED OF THE COPIES (TS3-B1).
+        //
+        // It used to compare `pointNameForTile` - a BASE name - against the names in the built
+        // configuration, which are the emitted COPY names.  This square splits into two copies, so the
+        // builder suffixes both and the base name is never in that list: the control could not fail,
+        // and what it exists to catch is a fixture that ships the square already inactive, which would
+        // make the whole test vacuous.
+        java.util.List<String> beforeAnything =
+            session.pointNamesFor(session.pointNameForTile(plain));
+
+        assertFalse(beforeAnything.isEmpty(), "the square emitted no Points to begin with");
+
+        for (String copy : beforeAnything)
+        {
+            assertFalse(inactivePointNames(session).contains(copy),
+                "control: " + copy + " is already inactive in the built graph before anything switched "
+                + "it off, so this fixture cannot show the flag arriving");
+        }
 
         session.setPointProperty(plain, "active", Boolean.FALSE);
 

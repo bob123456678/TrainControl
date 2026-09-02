@@ -397,12 +397,24 @@ public final class LayoutLabel extends JLabel
                                         //
                                         // Asked of the layout, which is where the rule lives now, so
                                         // this and MarklinRoute.heldReason cannot drift apart.
+                                        // ONLY THE GREEN DIRECTION, as the route door asks it
+                                        // (WK3-B1, DY3-B1, D3F-C4).
+                                        //
+                                        // The aspect matters, and this omitted it.  A protecting
+                                        // signal's only harmful command is the one that turns
+                                        // protection OFF; setting it RED is doing exactly what the
+                                        // protection mechanism itself would do, and refusing that was
+                                        // "pure over-strictness" when the route door did it - found
+                                        // and removed by an earlier review, with the reasoning still
+                                        // written at MarklinRoute.heldReason.
+                                        //
+                                        // Which direction this click is about is decided before it
+                                        // runs: `Accessory.doSwitch()` is `isStraight() ? turn() :
+                                        // straight()`, so a signal that is currently TURNED is the
+                                        // one about to be made straight - green, and harmful.
                                         boolean protecting =
-                                            tcUI.getModel().getAutoLayout().protectsAnOccupiedSquare(
-                                                c.getAccessory())
-                                            || (c.getAccessory2() != null
-                                                && tcUI.getModel().getAutoLayout()
-                                                    .protectsAnOccupiedSquare(c.getAccessory2()));
+                                            aboutToClearProtection(tcUI, c.getAccessory())
+                                            || aboutToClearProtection(tcUI, c.getAccessory2());
 
                                         if (activeAccs.contains(c.getAccessory()) || 
                                                 (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2()))
@@ -1347,5 +1359,29 @@ public final class LayoutLabel extends JLabel
     public LayoutDiagramComponent getComponent()
     {
         return component;
+    }
+
+    /**
+     * Whether clicking this accessory would turn protection OFF at a platform somebody is standing at.
+     *
+     * Both halves, because either alone is the wrong question. `protectsAnOccupiedSquare` asks about
+     * the SQUARE and knows nothing about which way the signal is going; the aspect asks about the
+     * COMMAND and knows nothing about what is standing where. The route door asks them together at
+     * `MarklinRoute.heldReason`, and this door asked only the first.
+     *
+     * @param tcUI the window, for the running layout
+     * @param accessory the accessory the click would toggle, or null
+     * @return true when the click would clear protection at an occupied platform
+     */
+    private static boolean aboutToClearProtection(TrainControlUI tcUI, Accessory accessory)
+    {
+        if (accessory == null || tcUI == null || tcUI.getModel() == null) return false;
+
+        if (!tcUI.getModel().hasAutoLayout() || tcUI.getModel().getAutoLayout() == null) return false;
+
+        // Currently straight means the click is about to TURN it - red, protective, harmless.
+        if (accessory.isStraight()) return false;
+
+        return tcUI.getModel().getAutoLayout().protectsAnOccupiedSquare(accessory);
     }
 }

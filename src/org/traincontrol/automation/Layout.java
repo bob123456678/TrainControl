@@ -6128,10 +6128,26 @@ public class Layout
      * "Switch 12" and the accessory database is keyed by one of those; `getAccessoryByName` exists to
      * fall back across that difference, and every other consumer of these lists goes through it.
      *
+     * **NOT synchronized, deliberately** - the same reason `getActiveAccs` is not, and this was written
+     * with the keyword before two reviewers pointed at the javadoc four lines from its own call site
+     * (`WK3-A1`, `DY3-A1`).
+     *
+     * This is read from the EVENT THREAD, by the layout label's click handler, and only in the branch
+     * that runs while autonomy is going - which is exactly when `configureAndLockPath` holds this
+     * object's monitor across its per-command sleeps, for seconds on a long path.  So taking the
+     * monitor here froze the whole window, Stop included, for the length of the configuration phase:
+     * the freeze `IAR-B2` removed from `getActiveAccs`, reintroduced by a door beside it.  `getEdges`
+     * records the same monitor being taken from the UI once before, and reverted.
+     *
+     * Nothing here needs it.  It reads `points` - already documented as a live unsynchronised view for
+     * exactly this class of reader - and each Point's protecting-signal list, neither of which is
+     * mutated during a run in a way the monitor was protecting.  A list that grows a member while this
+     * walks it answers about the railway a moment ago, which is what every other reader of it gets.
+     *
      * @param accessory the accessory about to be commanded, or null
      * @return true when something is standing at a platform this signal protects
      */
-    synchronized public boolean protectsAnOccupiedSquare(Accessory accessory)
+    public boolean protectsAnOccupiedSquare(Accessory accessory)
     {
         if (accessory == null || this.control == null) return false;
 

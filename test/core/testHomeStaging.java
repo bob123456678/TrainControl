@@ -166,6 +166,18 @@ public class testHomeStaging
 
         Locomotive tooLong = loc(LOC_A);
 
+        // PUT BACK AFTERWARDS (TS3-B2).
+        //
+        // Eighty-four other tests in this class share these locomotives, and this one made LOC_A forty
+        // units long and reversible and left it that way.  The file states the rule three times
+        // already, once as a helper built for it: "restoring a hardcoded true would hand every later
+        // test a locomotive this one had quietly made reversible."
+        Integer lengthWas = tooLong.getTrainLength();
+        boolean reversibleWas = tooLong.isReversible();
+
+        try
+        {
+
         tooLong.setTrainLength(40);
 
         // REVERSIBLE, and that is what makes this fixture discriminate.
@@ -216,6 +228,13 @@ public class testHomeStaging
         assertFalse(layout.planReturnToHome().isPossible(),
             "the planner produced a plan to a berth the runtime will refuse on the first move.  "
             + "Outcome: " + layout.planReturnToHome().getOutcome());
+
+        }
+        finally
+        {
+            tooLong.setTrainLength(lengthWas);
+            tooLong.setReversible(reversibleWas);
+        }
     }
 
     /**
@@ -3306,6 +3325,130 @@ public class testHomeStaging
             + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
             + edge("HS A", "HS W1") + "," + edge("HS W1", "HS A") + ","
             + edge("HS B", "HS W2") + "," + edge("HS W2", "HS B")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * A longer approach really is tried when the short one has no room (WK3-B2, D3F-B1, RT3-B1).
+     *
+     * The room rule refuses with `continue` rather than by giving up, on the stated theory that
+     * **"another route to the same berth may be longer, and a longer approach is more room"**. That is
+     * only true if the search still has the longer route to try - and it did not. The arrival was
+     * recorded in `seen` before the room test ran, and `alreadyReached` is a dominance test rather than
+     * an equality test: a longer route to the same berth over the same ironwork carries the short
+     * route's commands plus more, so the short one dominates it and it is dropped before its room is
+     * ever measured.
+     *
+     * Found by four reviewers independently on 2026-09-02, hours after the rule was added, and the
+     * test that shipped with the rule could not see it: that fixture measures every edge so that no
+     * alternative approach exists at all.
+     *
+     * The fixture here is the smallest thing that has one. HS D is a terminus with two ways in - five
+     * units from HS A, and ten by way of HS B - and the train is eight long. The short way has no room
+     * and the long way does.
+     *
+     * MUTATION: moving the room check back below the `seen` marking fails this, and nothing else.
+     */
+    @Test
+    public void testALongerApproachIsStillTriedWhenTheShortOneHasNoRoom() throws Exception
+    {
+        Layout layout = load(twoWaysToOneBerth());
+
+        Locomotive loc = loc(LOC_A);
+
+        Integer lengthWas = loc.getTrainLength();
+        boolean reversibleWas = loc.isReversible();
+
+        try
+        {
+            loc.setTrainLength(8);
+
+            // Reversible, so mustBackIn does not refuse the terminus for its own reasons and leave
+            // this test passing for something other than room.
+            loc.setReversible(true);
+
+            assertTrue(layout.getPoint("HS D").isTerminus(),
+                "precondition: HS D must be a terminus, or the room rule never applies");
+
+            // The two approaches, and their measurements - a control for the fixture itself.
+            assertEquals(layout.getEdge("HS A", "HS D").getLength(), 5,
+                "precondition: the short way in must be too short for an eight-unit train");
+
+            assertEquals(layout.getEdge("HS B", "HS D").getLength(), 5,
+                "precondition: the long way's last leg");
+
+            assertEquals(layout.getEdge("HS A", "HS B").getLength(), 5,
+                "precondition: the long way's first leg - five and five is room for eight");
+
+            // TWENTY TIMES, because `getNeighbors` shuffles.
+            //
+            // Which of the two ways into HS D the search reaches first is decided by that shuffle, and
+            // only the run that tries the SHORT one first can show the defect: it is the refused
+            // arrival being recorded as seen that then prunes the long one.  A single attempt passes
+            // about half the time, which is the coin-toss guard the README describes - "a regression
+            // test that only sometimes catches the regression is worse than none, because it reads as
+            // protection".
+            int refused = 0;
+
+            HomeStaging.Outcome last = null;
+
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                HomeStaging.Plan plan = layout.planReturnToHome();
+
+                if (!plan.isPossible())
+                {
+                    refused++;
+                    last = plan.getOutcome();
+                }
+            }
+
+            assertEquals(refused, 0,
+                "the planner gave up on a berth it can reach with room to spare, in " + refused
+                + " of 20 attempts (last outcome " + last + ").  The short way in is five units and "
+                + "the train is eight, so that approach is rightly refused - but the way round "
+                + "through HS B is ten, and the rule's own comment says another route may be longer.  "
+                + "It never got to try one: the refused arrival was already recorded as seen, and the "
+                + "longer route was then pruned as dominated before its room was ever measured");
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas);
+            loc.setReversible(reversibleWas);
+        }
+    }
+
+    /**
+     * A terminus with two ways in, one too short for the train and one long enough.
+     *
+     * @return the graph JSON
+     */
+    private static String twoWaysToOneBerth()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            // HS B IS NOT A STATION, and that is what makes this fixture show anything.
+            //
+            // With it a station, the A* simply stages the train there - or at any other platform on
+            // the way - and reaches HS D in two moves whose legs are each long enough.  That workaround
+            // is real and is why this defect is narrow, but it also means a fixture whose long way
+            // round passes through a platform cannot see the pruning at all.  Here the only choice is
+            // between two SINGLE moves: five units direct, or ten by way of a square nobody can stop
+            // at.
+            + square("HS B", 1, null, false, null) + ","
+            + "{'name': 'HS D', 'station': true, 's88': " + (S88_BASE + 3)
+            + ", 'terminus': true, 'home': '" + LOC_A + "'}"
+            + "],'edges': ["
+            + "{'start': 'HS A', 'end': 'HS B', 'length': 5},"
+            + "{'start': 'HS B', 'end': 'HS A', 'length': 5},"
+            // NO THIRD STATION AT ALL.  With one, the A* stages the train there and the leg back out
+            // is long enough on its own, so the choice between the two ways into HS D is never the
+            // thing being decided - which is what a fixture with an HS C proved twice.
+            // THE TWO WAYS IN.  Direct from HS A is five; round by HS B is ten.
+            + "{'start': 'HS A', 'end': 'HS D', 'length': 5},"
+            + "{'start': 'HS D', 'end': 'HS A', 'length': 5},"
+            + "{'start': 'HS B', 'end': 'HS D', 'length': 5},"
+            + "{'start': 'HS D', 'end': 'HS B', 'length': 5}"
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
