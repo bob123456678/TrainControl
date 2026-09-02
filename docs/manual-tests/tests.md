@@ -33,14 +33,14 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-250](#mt-250) | 2026-09-01 | Homing a train that is already standing on a reversing point | needs test | D24-B1 |
 | [MT-251](#mt-251) | 2026-09-02 | The letter keys work the moment the window appears | fixed unvalidated | OB-168 |
 | [MT-252](#mt-252) | 2026-09-02 | Placing tile after tile from the palette, over track that is already there | fixed unvalidated | OB-169 |
-| [MT-253](#mt-253) | 2026-09-02 | What the editor now says about your own diagram | needs test | the copy-check sweep |
-| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | fixed unvalidated | R28-C1 |
+| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
 | [MT-255](#mt-255) | 2026-09-02 | Out of service, on a square that is not a station | fixed unvalidated | D24-B5, SVN-B6 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
+| [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
 
-Everything else - 231 of 257 - is **fixed validated** and needs nothing from you unless the
-area changes again.  (7 superseded, 3 fixed but not yet validated.)
+Everything else - 231 of 258 - is **fixed validated** and needs nothing from you unless the
+area changes again.  (8 superseded, 3 fixed but not yet validated.)
 
 ---
 
@@ -13479,7 +13479,7 @@ uses the mouse on the diagram was disturbed.
 
 ### MT-253 - 2026-09-02 - What the editor now says about your own diagram
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** the copy-check sweep of 2026-09-02
 
 **Written:** 2026-09-02
@@ -13516,13 +13516,43 @@ squares that ARE still links - `2 - Bottom:10,9` and `1 - Main:14,5` - look like
 
 *Run against a build after commit 06516f38.*
 
+**Adam, 2026-09-02 (triage).** Does not work.
+
+I don't see any issue with rampdown, trains exit south just fine.
+
+**WITHDRAWN IN FULL, and he is right on both halves (2026-09-02).**
+
+Re-measured on his own configuration, with the sandbox opened BEFORE the model: the setup reports
+**zero errors**, and all three copy checks - no way out, no way in, reaches no other station - come
+back **empty**. There is nothing wrong with RampDown and nothing wrong with the tunnel.
+
+**What produced the findings was a defective probe, and the defect is worth writing down because it
+is a rule this project already has.** `probeSweepCopies` called `MarklinControlStation.init()` and
+*then* `LayoutSandbox.open()`. That is the wrong order - OB-111, and `testLayoutEditorBulkEdits` says
+so at its own setup: *"Before the model, not just before the window (OB-111) - constructing a
+TrainControlUI reads the layout-path preference, and without the sandbox it is Adam's own railway."*
+So the model parsed one layout, the session was built over another, and every page-id-keyed thing in
+the setup - which is what the portals are - resolved against the wrong pages. The tunnel pair came out
+as "a link paired to a signal"; the arrival checks came out with squares that do not exist as
+described.
+
+Corrected readings, for the record: `1 - Main:12,1` and `1 - Main:16,1` are both TUNNEL and are
+mutually paired; `1 - Main:15,5` and `2 - Bottom:10,9` are both LINK and are mutually paired. That is
+the redundant tunnel he added, working.
+
+**The lesson is the one already in the file and not a new one:** a probe is a test, and the ordering
+rules that apply to tests apply to it. This one skipped the rule and then produced two confident
+findings about his railway, which cost him the time to check them.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 08:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-254"></a>
 
 ### MT-254 - 2026-09-02 - Clearing every home locomotive at once
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** R28-C1
 
 **Written:** 2026-09-02
@@ -13544,6 +13574,17 @@ to it.
 5. **Then do it again and Save**, and reopen.  They should stay gone.
 
 *Run against a build after commit 2e83b737.*
+
+**Adam, 2026-09-02 (triage).** Works, with notes.
+
+works, but move to right-click menu as noted in other comment
+
+**Re-opened as `needs test` (2026-09-02).** The button works and is staying in behaviour; where it
+LIVES is changing, so the steps above are about a control that will have moved by the time they are
+run. It goes into a **Bulk tools** submenu on the autonomy editor's right-click menu, beside Clear
+Locomotives - see MT-257 item 1, which is where he asked for both.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 08:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -13647,6 +13688,85 @@ anywhere.  Nothing in the editor does that now.
 
 *Run against a build after commit 2e83b737.*
 
+**Adam, 2026-09-02 (triage).** Does not work.
+
+1. Yes, I want it back.  Put both Clear Locomotives and Clear All Home Locomotives into a "bulk tools" category in the autonomy edit right-click menu.
+2. good
+3. yes, but list them in the log and mention that in the dialog.
+4. add the keyboard shortcut back to the autonomy editor, we already have the function in the right click menu there
+5. why can't it keep working without a train,  between stations?
+
+**Taken as five rulings (2026-09-02).**
+
+| | Ruling | What was done |
+|---|---|---|
+| 1 | Clear Locomotives comes back, and both bulk actions move to a **Bulk tools** category on the autonomy editor's right-click menu | done - see MT-258 |
+| 2 | The legacy import's new blocking behaviour is accepted as it stands | closed, no work |
+| 3 | List what the import dropped in the log, and say in the dialog that it is there | done - see MT-258 |
+| 4 | The station-label keyboard shortcut comes back to the autonomy editor, the menu item already being there | done - see MT-258 |
+| 5 | **A question, answered below rather than acted on** | open - needs his word |
+
+**On 5 - "why can't it keep working without a train, between stations?"**
+
+It can, and nothing about the diagnostic needs a train. What was lost with the graph window is the
+DOOR, not the capability: the old Test Connection took two points and asked whether a path existed
+between them, and `Layout.bfs` still answers exactly that with nothing standing anywhere.
+
+What the editor has instead is **Test a path**, which starts from the square you clicked - so it needs
+somewhere to start from rather than a train, and it answers about one end at a time.
+
+So the question is what shape you want it back in, and that is the part I have not guessed at:
+
+- **two clicks** - pick a square, pick another, get the answer for that pair; or
+- **one click, all answers** - pick a square and list every station reachable from it, which is nearer
+  what Test a path already does and needs no second gesture.
+
+Say which and it is a small addition.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 02:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
+<a id="mt-258"></a>
 
+### MT-258 - 2026-09-02 - Bulk tools, the import's log, and Control+S
+
+**Disposition:** needs test
+**From:** MT-257 items 1, 3 and 4
+
+**Written:** 2026-09-02
+
+Three of your five rulings, built.  Item 2 needed no work and item 5 is a question waiting on you.
+
+**1. Bulk Tools.**  Both actions are on the autonomy editor's right-click menu now, under a **Bulk
+Tools** heading at the foot of it, and the button has left the tool column - one place for both rather
+than one each in two surfaces.
+
+1. **Right-click any square** in the autonomy editor.  Bulk Tools is under Set Length, after a rule.
+2. **Clear All Locomotives** takes every train off the setup and keeps the home assignments.  Each item
+   carries its own count and greys itself when that count is zero, so a setup with homes and no
+   placements shows one live and one grey.
+3. **Both confirm first**, and neither writes to disk - Cancel on the editor puts everything back.
+4. **Check the counts are right** before you press: they should match what the diagram shows.
+
+**3. The import says what it left.**  Importing a 2.8.1 `autonomy.json` counted the six things it
+brought and said nothing about the four it drops.
+
+5. **Import your own `autonomy_legacy/autonomy.json`** into a spare configuration.  The summary should
+   end with a line saying how many things were deliberately not imported.
+6. **Open the log.**  It should name each one with a count and a reason - on your file that is 69
+   connections with accessory commands, 30 with a length, a 36-entry timetable, and the route
+   activations.
+
+**4. Control+S.**  It names the square under the pointer, in the autonomy editor - the same thing
+`Rename` on the right-click menu does.
+
+7. **Hover a square in the autonomy editor and press Control+S.**  The naming prompt should open on
+   that square.
+8. **Press it over an empty square**, and over a page you have excluded, and check it does something
+   sensible rather than nothing at all.
+9. **Check it does nothing unexpected in the TRACK editor**, where Control+S is not bound.
+
+*Run against a build after this commit.*
+
+---

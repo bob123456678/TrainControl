@@ -1072,6 +1072,9 @@ public class AutonomyViewerPanel extends JPanel
         refresh();
     }
 
+    /** A blank line between two paragraphs of a dialog, as a constant so no script has to escape it. */
+    private static final String NEWLINES = System.lineSeparator() + System.lineSeparator();
+
     /**
      * Reads an old autonomy.json onto the squares carrying the same sensors - names, stations,
      * lengths, and the locomotives that were standing on them.
@@ -1169,9 +1172,32 @@ public class AutonomyViewerPanel extends JPanel
                     String.join(", ", result.duplicateLocomotives));
             }
 
+            // AND WHAT IT DID NOT BRING (MT-257 item 3).
+            //
+            // Adam: "yes, but list them in the log and mention that in the dialog."  Four things are
+            // dropped on purpose - per-edge accessory commands, edge lengths, the timetable, route
+            // activations - each for a reason written at `AutonomySession.importLegacy`, and until now
+            // this dialog counted the six it brought and said nothing at all about these.  The code's
+            // own comment called that "a gap worth naming rather than papering over".
+            //
+            // The list goes to the log because it is a list and this is a dialog; the dialog says it
+            // is there, which is the half that was missing.
+            java.util.List<String> left = session().whatALegacyImportLeaves(file);
+
+            if (!left.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.t("autosetup.ui.leftBehindHeading"));
+
+                for (String line : left)
+                {
+                    ui.getModel().log("  " + line);
+                }
+            }
+
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
-                result.skipped, result.unmatched.size()) + unmatched);
+                result.skipped, result.unmatched.size()) + unmatched
+                + (left.isEmpty() ? "" : NEWLINES + I18n.f("autosetup.ui.leftBehind", left.size())));
 
             // The active one, which after the block above is the one just created when there was
             // none - so the import is loaded rather than left sitting on disk.

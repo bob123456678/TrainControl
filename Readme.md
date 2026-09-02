@@ -239,7 +239,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+L (show text labels)
     * Control+D (show address labels)
     * Control+I (increase diagram by 1 row and 1 column)
-    * Control+S (place autonomy station label)
+    * Control+S (name the hovered square, in the autonomy editor)
     * Delete (delete hovered tile)
     * Escape (clear clipboard & reset tool)
     * Left mouse click (cut hovered tile / paste new tile)

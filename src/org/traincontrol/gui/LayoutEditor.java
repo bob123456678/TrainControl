@@ -6518,6 +6518,33 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return;
             }
 
+            // Control+S names the square under the pointer (MT-257 item 4).
+            //
+            // Adam: "add the keyboard shortcut back to the autonomy editor, we already have the
+            // function in the right click menu there."  It was the graph window's Place Autonomy
+            // Station Label and went with the window; the ACTION survived as `Rename` on the autonomy
+            // editor's own right-click menu, so this is a second door onto something already here.
+            //
+            // Above the guard below, with the four keys that are already above it, and by that guard's
+            // own rule: "Every shortcut below places, cuts, rotates or retextures a tile."  Naming a
+            // square does none of the four.
+            //
+            // It needs a square, and takes the one the pointer is over - the same square the
+            // right-click menu would open on, so the key and the menu cannot disagree about which one
+            // is meant.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
+            {
+                LayoutLabel over = getLastHoveredLabel();
+
+                if (over != null && autonomyPanel != null)
+                {
+                    autonomyPanel.promptNameFor(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), getX(over), getY(over)));
+                }
+
+                return;
+            }
+
             // Plus and minus walk through the pages, in BOTH editors (FR-036).
             //
             // Above the guard below, and for the reason its own sentence gives: moving to another page

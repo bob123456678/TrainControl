@@ -249,8 +249,6 @@ public class AutonomyEditorPanel extends JPanel
 
     // Offered only while something is still unnamed, which is the only time it does anything
     private JButton nameAll;
-
-    private JButton clearHomes;
     private javax.swing.JCheckBox excludePage;
 
     // Portal pairing takes two clicks, and the first is remembered here
@@ -466,21 +464,6 @@ public class AutonomyEditorPanel extends JPanel
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
-        // CLEARING EVERY HOME AT ONCE, which 2.8.1 had and this release lost (R28-C1).
-        //
-        // Adam, 2026-09-02: **"that option should be added back in to the autonomy editor, with a
-        // confirmation."**  It was a right-click item on the old graph window; the window went and the
-        // item went with it, along with `HomeLocomotiveMenu.addClearAllItem`.  Both bundle keys
-        // survived in all eight languages with nothing referring to them.
-        //
-        // Here rather than on a square's own menu, beside Name Everything, because it is the same kind
-        // of thing: an action about the whole setup rather than about the tile under the pointer.
-        // Clearing them one at a time is one right-click per square, and on his graph that is
-        // sixty-two of them.
-        clearHomes = new JButton(I18n.t("autolayout.ui.menuClearAllHomeLocomotives"));
-        clearHomes.addActionListener(e -> clearAllHomes());
-        clearHomes.setToolTipText(wrapped(I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")));
-        button(clearHomes);
 
         // Leaving the page out, from the page itself.
         //
@@ -503,7 +486,6 @@ public class AutonomyEditorPanel extends JPanel
         fillWidth(testButton, nameAll);
         fillWidth(whyButton, nameAll);
         fillWidth(oneWayButton, nameAll);
-        fillWidth(clearHomes, nameAll);
 
         panel.add(row(testButton));
         panel.add(row(whyButton));
@@ -513,7 +495,6 @@ public class AutonomyEditorPanel extends JPanel
         // warned - an unmounted Swing component is simply a live object with no parent.
         panel.add(row(oneWayButton));
         panel.add(row(nameAll));
-        panel.add(row(clearHomes));
         panel.add(row(excludePage));
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
@@ -1553,6 +1534,50 @@ public class AutonomyEditorPanel extends JPanel
         // nothing else to tune. The name is the part that was worth keeping: "Length..." did not say
         // length of what.
         menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
+
+        // BULK TOOLS: the things that are about the whole setup rather than this square (MT-257).
+        //
+        // Adam: "Put both Clear Locomotives and Clear All Home Locomotives into a 'bulk tools'
+        // category in the autonomy edit right-click menu."
+        //
+        // Everything else on this menu names one square and acts on it, so these two need a heading
+        // that says they do not - a bare "Clear All Home Locomotives" between Set Length and Rename
+        // reads as being about the square under the pointer, which is the one thing it is not.
+        //
+        // Clear All Home Locomotives was a button in the tool column and is not any more.  One place
+        // for both, rather than one each in two different surfaces.
+        menu.addSeparator();
+
+        javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
+
+        bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
+
+        int placed = session == null ? 0 : session.tilesWithALocomotive().size();
+        int homed = session == null ? 0 : session.tilesWithAHome().size();
+
+        // Each greys itself on its own count, which is the guard's own question - the two actions are
+        // independent and a setup can easily have one and not the other.
+        javax.swing.JMenuItem clearLocs = item(
+            I18n.f("autolayout.ui.menuClearLocomotives", placed), () -> clearAllPlacements());
+
+        clearLocs.setEnabled(placed > 0);
+        clearLocs.setToolTipText(wrapped(placed > 0
+            ? I18n.t("autolayout.ui.confirmClearLocomotives")
+            : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
+
+        bulk.add(clearLocs);
+
+        javax.swing.JMenuItem clearHomesItem = item(
+            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed), () -> clearAllHomes());
+
+        clearHomesItem.setEnabled(homed > 0);
+        clearHomesItem.setToolTipText(wrapped(homed > 0
+            ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
+            : I18n.t("autosetup.ui.infoNoHomesToClear")));
+
+        bulk.add(clearHomesItem);
+
+        menu.add(bulk);
 
 
         // A station name can go on almost any square, not only on a text square.  The label is drawn
@@ -3933,6 +3958,21 @@ public class AutonomyEditorPanel extends JPanel
         return names;
     }
 
+    /**
+     * Names a square, from somewhere other than its own right-click menu (MT-257 item 4).
+     *
+     * The editor's Control+S needs this: `promptName` is private and the key handler lives in
+     * `LayoutEditor`, which owns this panel rather than being inside it.  One line rather than making
+     * the prompt itself public, so the panel keeps deciding what naming means and this only decides
+     * who may ask.
+     *
+     * @param tile the square to name, ignored when null
+     */
+    public void promptNameFor(TileKey tile)
+    {
+        if (tile != null) promptName(tile);
+    }
+
     private void promptName(TileKey tile)
     {
 
@@ -6223,21 +6263,6 @@ public class AutonomyEditorPanel extends JPanel
                 ? null : wrapped(I18n.t("autosetup.ui.hintNothingToName")));
         }
 
-        // The same for Clear All Home Locomotives (DY3-C6).
-        //
-        // It was always live, so on a setup with no homes the operator pressed it and was told there
-        // was nothing to clear - which is the answer the button should have given before the press.
-        // Greyed rather than hidden, for the reason written above.
-        if (clearHomes != null)
-        {
-            int homed = session == null ? 0 : session.tilesWithAHome().size();
-
-            clearHomes.setEnabled(homed > 0 && !ignored);
-
-            clearHomes.setToolTipText(wrapped(homed > 0
-                ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
-                : I18n.t("autosetup.ui.infoNoHomesToClear")));
-        }
 
         if (errors > 0)
         {
@@ -6483,7 +6508,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (JOptionPane.showOptionDialog(owner(),
             I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"),
-            I18n.t("autolayout.ui.menuClearAllHomeLocomotives"),
+            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
         {
@@ -6498,6 +6523,51 @@ public class AutonomyEditorPanel extends JPanel
         say(hint, I18n.f("autosetup.ui.infoHomesCleared", homed.size()));
 
         refresh();
+    }
+
+    /**
+     * Takes every locomotive off the setup (MT-257 item 1).
+     *
+     * Adam: **"Yes, I want it back."**  2.8.1 had it on the graph window's own menu, and it went with
+     * the window - `git show master:.../GraphRightClickGeneralMenu.java:111`.
+     *
+     * That version walked the RUNNING layout and called `moveLocomotive(null, ...)`, skipping
+     * reversing points and non-destinations.  This one is the editor's, so it goes through
+     * `placeLocomotive(tile, null)` - the same door the per-square "Remove" item uses, which also
+     * clears the facing the placement left behind.  No skipping: a placement the editor can show is a
+     * placement the editor can clear, and the 2.8.1 filter was about which squares the running model
+     * would accept a MOVE to rather than about which ones may be emptied.
+     *
+     * Nothing is written to disk.  Like every other decision in this window it waits for Save, so a
+     * mistaken press is undone by Cancel.
+     */
+    private void clearAllPlacements()
+    {
+        java.util.List<TileKey> placed = session.tilesWithALocomotive();
+
+        if (placed.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoLocomotivesToClear"));
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.t("autolayout.ui.confirmClearLocomotives"),
+            I18n.f("autolayout.ui.menuClearLocomotives", placed.size()),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        for (TileKey tile : placed)
+        {
+            session.placeLocomotive(tile, null);
+        }
+
+        say(hint, I18n.f("autosetup.ui.infoLocomotivesCleared", placed.size()));
+
+        placementChanged();
     }
 
     /**

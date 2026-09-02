@@ -904,6 +904,64 @@ public class AutonomySession
     }
 
     /**
+     * What a legacy import deliberately leaves behind, counted from the file it read (MT-257).
+     *
+     * Adam, 2026-09-02: **"yes, but list them in the log and mention that in the dialog."**  Until
+     * now the import reported six counts of what it brought and nothing at all about the four things
+     * it drops - and each of those has a reason written at the code that the operator never sees.
+     *
+     * Counted rather than merely named, because "the timetable was not imported" and "the 36 entries
+     * of your timetable were not imported" are different sentences to somebody deciding whether to go
+     * back to the old file.
+     *
+     * @param legacy the parsed autonomy.json
+     * @return one line per thing dropped, empty when the file carried none of them
+     */
+    public java.util.List<String> whatALegacyImportLeaves(org.json.JSONObject legacy)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        if (legacy == null) return out;
+
+        int withCommands = 0;
+        int withLength = 0;
+
+        if (legacy.has("edges"))
+        {
+            org.json.JSONArray edges = legacy.getJSONArray("edges");
+
+            for (int i = 0; i < edges.length(); i++)
+            {
+                org.json.JSONObject e = edges.optJSONObject(i);
+
+                if (e == null) continue;
+
+                if (e.has("commands") && !e.isNull("commands")
+                    && e.getJSONArray("commands").length() > 0) withCommands++;
+
+                if (e.optInt("length", 0) > 0) withLength++;
+            }
+        }
+
+        if (withCommands > 0) out.add(I18n.f("autosetup.ui.leftEdgeCommands", withCommands));
+
+        if (withLength > 0) out.add(I18n.f("autosetup.ui.leftEdgeLengths", withLength));
+
+        if (legacy.has("timetable") && !legacy.isNull("timetable"))
+        {
+            out.add(I18n.f("autosetup.ui.leftTimetable",
+                legacy.getJSONArray("timetable").length()));
+        }
+
+        if (legacy.has("activateRoutes") || legacy.has("activateRouteIDs"))
+        {
+            out.add(I18n.t("autosetup.ui.leftRouteActivations"));
+        }
+
+        return out;
+    }
+
+    /**
      * Brings in an exported file and derives again, so the diagram shows what arrived.
      *
      * The store's own importBundle knows nothing about the derivation - it holds authored data and
@@ -4112,6 +4170,43 @@ public class AutonomySession
             String home = point.optString("home", "");
 
             if (home.trim().isEmpty()) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
+
+            if (tile != null) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * Every square the active configuration records a locomotive standing on.
+     *
+     * The placement twin of `tilesWithAHome`, for the bulk action Adam asked to have back (MT-257).
+     *
+     * @return the squares, in the configuration's own order, empty when nothing is placed anywhere
+     */
+    public java.util.List<TileKey> tilesWithALocomotive()
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(key);
+
+            if (point == null) continue;
+
+            org.json.JSONObject loc = point.optJSONObject("loc");
+
+            if (loc == null || loc.optString("name", "").trim().isEmpty()) continue;
 
             TileKey tile = AutonomyCompanionStore.parseTileKey(key);
 

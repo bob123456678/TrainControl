@@ -347,6 +347,17 @@ ensure the UI is focused once the window is rendered so that keystrokes are regi
 
 clicking a tile in "new components" followed by a square on the diagram no longer places that tile.  it should place it and stay in place mode until escape is pressed or another action taken.
 
+### FR-055 - 2026-09-02 - search function for points in autonomy editor
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-02 08:12  
+**Build:** commit 409d4ce8, build\classes, compiled 02 Sep 08:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+search a point name, the right page is opened and the tile highlighted.
+
+when other page points are clicked from warnings, also highlight it after the editor window switch
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
