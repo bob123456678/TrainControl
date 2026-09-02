@@ -254,6 +254,15 @@ public class testErrorsStopTheSetupRunning
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
             + "named for.  Body: " + sync);
 
+        // The body here too (V37-C2).  Fixing one whole-file grep and leaving its twin five lines
+        // below is the sweep-the-siblings miss this project files more often than any other, and it
+        // happened at the site of the fix for it.
+        String item = withoutComments(bodyOf(menu, "private static javax.swing.JMenuItem startItem("));
+
+        assertTrue(item.isEmpty() || item.contains("autonomyErrorCount()"),
+            "the right-click Start item no longer reads autonomyErrorCount() - it needs the number "
+            + "for its tooltip, which is the only thing that says WHY the item is grey");
+
         assertTrue(menu.contains("autonomyErrorCount()"),
             "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "
             + "Start item's own OB-090 fix has gone");

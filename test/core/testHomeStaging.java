@@ -203,10 +203,14 @@ public class testHomeStaging
         // `at.isTerminus() && !loc.isReversible()` and never looks at the layout, so having no
         // reversing point is the state in which mustBackIn IS the alternative explanation.
         //
-        // What rules out every alternative explanation is the CONTROL at the end of this test.  A
-        // twenty-unit train refused and an eight-unit train accepted cannot both be mustBackIn, which
-        // does not look at length; nor `validateTrainLength`, which is inert at `maxTrainLength` zero.
-        // The pair is the precondition.
+        // What rules out every alternative explanation is the CONTROL below - in THIS test, which is
+        // where the last attempt at this went wrong (V37-B2).  It pointed at a 20-against-8 pair that
+        // lives three thousand lines away in a different test on a different fixture, so this one was
+        // left with nothing but `setReversible(true)` guarding the confound.
+        //
+        // A train that FITS is the control, and it has to be here: with the room rule deleted, a
+        // 40-unit train is refused by the runtime's own copy and by mustBackIn, both audit loops find
+        // nothing, and the assertion below is green over the defect it names.
 
         assertTrue(layout.getPoint("HS D").isTerminus(),
             "precondition: HS D must be a terminus - the rule only applies where the train reverses");
@@ -240,6 +244,24 @@ public class testHomeStaging
         assertFalse(layout.planReturnToHome().isPossible(),
             "the planner produced a plan to a berth the runtime will refuse on the first move.  "
             + "Outcome: " + layout.planReturnToHome().getOutcome());
+
+        // THE CONTROL: a train that fits gets there (V37-B2).
+        //
+        // Without this the test passes with the room rule deleted altogether - a 40-unit train is
+        // refused by mustBackIn if the locomotive is not reversible, and by the runtime's own copy of
+        // the rule if it is, so the audit is silent either way and the assertions above are satisfied
+        // by the rule's absence.  A three-unit train fits the five-unit approach, and nothing else in
+        // the model looks at length: `validateTrainLength` is inert with `maxTrainLength` at zero.
+        tooLong.setTrainLength(3);
+
+        assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "control: with a train that fits, the planner and the runtime still disagree - so the "
+            + "disagreement above is not about room and this test is measuring something else");
+
+        assertTrue(layout.planReturnToHome().isPossible(),
+            "control: a three-unit train cannot reach a berth reached over five measured units, so "
+            + "something other than room is refusing it and the assertions above prove nothing about "
+            + "the room rule.  Outcome: " + layout.planReturnToHome().getOutcome());
 
         }
         finally

@@ -248,9 +248,11 @@ public class testTrainsComeHomeToTheirPlatforms
             // reads as green while proving nothing, which is worse than the red it was hiding.
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
-                + ", blocked " + plan.getBlocked() + "). Every train is standing somewhere that CAN "
-                + "reach another station - checked above - so this is the planner being short rather "
-                + "than the railway; the per-train reachability printed above says which one");
+                + ", blocked " + plan.getBlocked() + ").  Five trains that set off from ordinary "
+                + "platforms have to be able to get back to them.  WHICH fault this is - a planner "
+                + "that is short, or a railway that cannot do it from where the run left them - is "
+                + "not decided here: the per-train reachability printed above is what says, and it "
+                + "gives each train's home and whether any route reaches it");
 
             // KEPT, so that a train which does not arrive can be told apart from one the plan never
             // undertook to move.  Those are different faults - a plan that is short, and a move that
