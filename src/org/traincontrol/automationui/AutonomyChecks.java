@@ -135,6 +135,8 @@ public class AutonomyChecks
     /**
      * A square trains reverse at, on a layout that measures track, whose own track is not measured.
      */
+    public static final String COPY_NO_WAY_OUT = "autosetup.ui.checkCopyNoWayOut";
+    public static final String COPY_NO_WAY_IN = "autosetup.ui.checkCopyNoWayIn";
     public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
     public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
 
@@ -346,7 +348,8 @@ public class AutonomyChecks
             coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes, signalsGone,
             stationsWithoutSignal, facingsImpossible, barred,
             Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey, String>emptyMap(), Collections.<TileKey>emptySet());
+            Collections.<TileKey, String>emptyMap(), Collections.<TileKey>emptySet(),
+            Collections.<TileKey, String>emptyMap(), Collections.<TileKey, String>emptyMap());
     }
 
     /**
@@ -364,7 +367,8 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, String> repeatedSensorPages, Set<TileKey> reversalsWithoutLength)
+        Map<TileKey, String> repeatedSensorPages, Set<TileKey> reversalsWithoutLength,
+        Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -403,6 +407,8 @@ public class AutonomyChecks
         findings.addAll(checkClosedRuns(graph, reducer));
         findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
         findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
+        findings.addAll(checkBadCopies(copiesWithNoWayOut, COPY_NO_WAY_OUT));
+        findings.addAll(checkBadCopies(copiesWithNoWayIn, COPY_NO_WAY_IN));
         findings.addAll(checkProtectingSignals(reducer, signalsGone));
 
         findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
@@ -690,6 +696,44 @@ public class AutonomyChecks
      *
      * @param reversalsWithoutLength the squares, decided by the session
      */
+    /**
+     * A square that emits an arrival copy nothing can leave, or nothing can reach.
+     *
+     * Adam, 2026-09-02: "we need a warning for instances like the previous version of this."  He had
+     * just built a parking spur whose reverse copy came out with two ways in and none out - somewhere
+     * autonomy may send a train that no train can ever depart from.  BottomMainB had the same shape
+     * earlier that day and cost an evening: Return Home was chased for a fault that was in the diagram.
+     *
+     * **Every other check here asks about the SQUARE, and that is why none of them catch it.**  A
+     * square is emitted as one Point per side a train can arrive by, and the copies do not share their
+     * edges.  LowerFront is perfectly reachable and its westbound copy has no way in at all; the square
+     * passes every reachability test in this file while the copy is a trap.  A rule about copies cannot
+     * be enforced by looking at squares.
+     *
+     * An ERROR rather than a warning for the no-way-out case: a train sent there is stuck, and nothing
+     * downstream refuses the trip.  The no-way-in case is a WARNING - it costs nothing until somebody
+     * leaves a train there, and then Return Home will not move it, because the staging planner never
+     * moves a locomotive off a square it could not put it back on.
+     *
+     * @param copies the squares, mapped to the offending copy, decided by the session
+     * @param key which of the two messages to report
+     */
+    private static List<Finding> checkBadCopies(Map<TileKey, String> copies, String key)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (copies == null) return findings;
+
+        Severity severity = COPY_NO_WAY_OUT.equals(key) ? Severity.ERROR : Severity.WARNING;
+
+        for (Map.Entry<TileKey, String> entry : copies.entrySet())
+        {
+            findings.add(new Finding(severity, key, entry.getValue(), entry.getKey()));
+        }
+
+        return findings;
+    }
+
     private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
         Set<TileKey> reversalsWithoutLength)
     {

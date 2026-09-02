@@ -125,7 +125,10 @@
       "MZ 1425 DSB"
     ]},
     "2 - Bottom:16,13": {},
-    "2 - Bottom:3,7": {"canReverse": true},
+    "2 - Bottom:3,7": {
+      "maxTrainLength": 0,
+      "autoDestination": false
+    },
     "2 - Bottom:7,1": {
       "mustReverse": true,
       "maxTrainLength": 0,
@@ -160,9 +163,8 @@
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 0,
-      "facing": "E"
+      "canReverse": true
     },
     "2 - Bottom:8,14": {},
     "2 - Bottom:17,12": {},
@@ -212,6 +214,7 @@
       "autoDestination": false
     },
     "2 - Bottom:19,0": {
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 0,
       "facing": "W"
     },
@@ -237,9 +240,9 @@
     "3 - Top Parking:19,11": {},
     "3 - Top Parking:5,16": {},
     "2 - Bottom:8,7": {
-      "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
+      "active": false,
       "autoDestination": false
     },
     "2 - Bottom:7,12": {},

@@ -1918,6 +1918,127 @@ public class AutonomySession
      *
      * @return the squares to ask about, empty when the layout measures nothing
      */
+    /**
+     * Squares that emit an arrival copy a train can be sent to and then never leave (Adam, 2026-09-02).
+     *
+     * "We need a warning for instances like the previous version of this."  He had just built
+     * LowerParkingReverse and one of its copies came out with two ways in and none out - a destination
+     * autonomy may choose, from which no train can ever depart.  BottomMainB had the same shape earlier
+     * the same day, and cost an evening of chasing Return Home for a fault that was in the diagram.
+     *
+     * **The existing checks cannot see this, and it is worth saying why.**  They ask about the SQUARE -
+     * `STATION_REACHES_NOTHING`, `ARRIVAL_TRAPPED` and the rest all work in TileKeys - and a square is
+     * emitted as one Point per side a train can arrive by.  LowerFront is reachable, so the square
+     * passes; its westbound copy has no way in at all.  A rule about copies cannot be enforced by
+     * looking at squares, which is the same lesson the home rules learned separately.
+     *
+     * So this reads the graph as BUILT, where the copies exist, and reports the square that produced a
+     * bad one.
+     *
+     * @return the squares to warn about, mapped to the copy that is at fault
+     */
+    public java.util.Map<TileKey, String> destinationCopiesWithNoWayOut()
+    {
+        return badCopies(true);
+    }
+
+    /**
+     * The same, for a copy nothing can ever reach - no way IN rather than no way out.
+     *
+     * Worth its own warning because the consequence is different and less obvious.  A train cannot be
+     * SENT there, so the square looks harmless; but a train that starts there, or is left there by
+     * hand, is one Return Home will not move - the staging planner deliberately never moves a
+     * locomotive off a square with no way back in, because it could never undo the move.  If such a
+     * copy also sits on a through route, a train parked on it blocks everything behind it and Return
+     * Home can only answer that it found no arrangement.  That is exactly what LowerFront (westbound)
+     * did.
+     *
+     * @return the squares to warn about, mapped to the copy that is at fault
+     */
+    public java.util.Map<TileKey, String> destinationCopiesWithNoWayIn()
+    {
+        return badCopies(false);
+    }
+
+    /**
+     * Reads the built configuration and finds destination copies with no way out, or none in.
+     *
+     * @param wantNoWayOut true for copies nothing can leave, false for copies nothing can reach
+     * @return the squares, mapped to the offending copy's name
+     */
+    private java.util.Map<TileKey, String> badCopies(boolean wantNoWayOut)
+    {
+        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+
+        if (reducer == null) return out;
+
+        org.json.JSONObject built;
+
+        try
+        {
+            // FOR INSPECTION, which is what this is.  buildConfiguration() answers for a
+            // configuration that has been initialised and saved; asked on a session that has not, it
+            // came back with the stations and no edges at all - and on a test machine it reached the
+            // DEFAULT layout to find them, which on Adam's is his real railway.  The suite wrote to
+            // that folder once before one.sh's fingerprint caught it.
+            built = new org.json.JSONObject(buildConfigurationForInspection());
+        }
+        catch (RuntimeException malformed)
+        {
+            // A setup that will not build has louder problems than this, and every one of them is
+            // already reported.  Saying nothing here is better than saying something wrong.
+            return out;
+        }
+
+        if (!built.has("points") || !built.has("edges")) return out;
+
+        java.util.Set<String> stations = new java.util.HashSet<>();
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject p = points.getJSONObject(i);
+
+            if (p.optBoolean("station", false)) stations.add(p.getString("name"));
+        }
+
+        java.util.Set<String> hasOut = new java.util.HashSet<>();
+        java.util.Set<String> hasIn = new java.util.HashSet<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject e = edges.getJSONObject(i);
+
+            hasOut.add(e.getString("start"));
+            hasIn.add(e.getString("end"));
+        }
+
+        // THE BUILDER'S OWN MAPPING, not one taken apart by hand.
+        //
+        // The first version of this split the copy's name at " (" and looked the remainder up among the
+        // AUTHORED names - which works only for a square somebody has named.  On an unnamed square the
+        // emitted name is the tile's own, there is no authored name to match, and the check silently
+        // found nothing: it reported clean on a fixture built to be broken.  `tilesByName` is what the
+        // builder itself uses, so the two cannot disagree about what a Point is called.
+        java.util.Map<String, TileKey> byName = builder(null).tilesByName();
+
+        for (String copy : stations)
+        {
+            boolean bad = wantNoWayOut ? !hasOut.contains(copy) : !hasIn.contains(copy);
+
+            if (!bad) continue;
+
+            TileKey tile = byName.get(copy);
+
+            if (tile != null && !out.containsKey(tile)) out.put(tile, copy);
+        }
+
+        return out;
+    }
+
     public java.util.Set<TileKey> reversalsWithoutLength()
     {
         java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
@@ -3211,7 +3332,10 @@ public class AutonomySession
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
             repeatedSensorPages(),
             // Squares trains reverse at that nobody has measured (Adam, 2026-09-01).
-            reversalsWithoutLength());
+            reversalsWithoutLength(),
+            // Copies a train could be sent to and never leave, and copies nothing can reach at all
+            // (Adam, 2026-09-02).  Per COPY, which is what every other check here cannot see.
+            destinationCopiesWithNoWayOut(), destinationCopiesWithNoWayIn());
     }
 
     /**
