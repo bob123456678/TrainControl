@@ -34,8 +34,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-251](#mt-251) | 2026-09-02 | The letter keys work the moment the window appears | fixed unvalidated | OB-168 |
 | [MT-252](#mt-252) | 2026-09-02 | Placing tile after tile from the palette, over track that is already there | fixed unvalidated | OB-169 |
 | [MT-253](#mt-253) | 2026-09-02 | What the editor now says about your own diagram | needs test | the copy-check sweep |
+| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | fixed unvalidated | R28-C1 |
+| [MT-255](#mt-255) | 2026-09-02 | Out of service, on a square that is not a station | fixed unvalidated | D24-B5, SVN-B6 |
+| [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
+| [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
 
-Everything else - 231 of 253 - is **fixed validated** and needs nothing from you unless the
+Everything else - 231 of 257 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (7 superseded, 3 fixed but not yet validated.)
 
 ---
@@ -13513,4 +13517,136 @@ squares that ARE still links - `2 - Bottom:10,9` and `1 - Main:14,5` - look like
 *Run against a build after commit 06516f38.*
 
 ---
+
+<a id="mt-254"></a>
+
+### MT-254 - 2026-09-02 - Clearing every home locomotive at once
+
+**Disposition:** fixed unvalidated
+**From:** R28-C1
+
+**Written:** 2026-09-02
+
+You asked for it back: **"that option should be added back in to the autonomy editor, with a
+confirmation."**  It is a button in the editor's tool column, under Name Everything, using the same
+confirmation wording 2.8.1 had - which was still sitting in all eight languages with nothing referring
+to it.
+
+1. **Open the autonomy editor on a page and look at the column.**  With homes set anywhere in the
+   configuration the button is live; with none it is greyed and its tooltip says why.  That greying is
+   the affordance and the button's own check is the guard, and both are meant to be there.
+2. **Press it.**  The confirmation should say what clearing does - Return Home will send each
+   locomotive back to wherever it was standing when autonomy loaded - and offer No by default.
+3. **Say yes.**  Every home goes, on every page, not just the one you are looking at.  The hint line
+   says how many.
+4. **Press Cancel on the editor.**  The homes should all come back: nothing is written to disk until
+   you Save, like every other decision in that window.
+5. **Then do it again and Save**, and reopen.  They should stay gone.
+
+*Run against a build after commit 2e83b737.*
+
+---
+
+<a id="mt-255"></a>
+
+### MT-255 - 2026-09-02 - Out of service, on a square that is not a station
+
+**Disposition:** fixed unvalidated
+**From:** D24-B5, SVN-B6
+
+**Written:** 2026-09-02
+
+**Marking a plain square out of service used to do nothing at all**, in two places at once, while the
+editor drew a cross for it.  The builder dropped the setting for anything that is not a station, so the
+running graph never learned about it; and the running diagram had no term for "switched off" in the
+rule that decides which squares get a badge, so the cross appeared while you were setting the railway
+up and vanished the moment you started it.
+
+Both are fixed, and the second half is the one that changes what trains do.
+
+1. **Pick a plain sensor** - not a station, not somewhere trains turn round - on a run you can watch.
+2. **Mark it Out of service** in the editor.  It should draw a cross.
+3. **Save, load the configuration and start autonomy.**  The cross should still be there on the running
+   diagram.  Before this it was not.
+4. **Watch what routes get chosen.**  Nothing should be routed through that square any more, by full
+   autonomy OR by a hand dispatch - `isPathClear` refuses a path through an inactive point whichever
+   tier asked.
+5. **Switch it back on** and check trains use it again.
+
+**On your own layout this changes nothing today**, measured: you have exactly one square out of
+service and it is a station, which always worked.  It is a 2.8.1 upgrade that meets the new behaviour -
+see MT-257.
+
+*Run against a build after commit 1cfdf370.*
+
+---
+
+<a id="mt-256"></a>
+
+### MT-256 - 2026-09-02 - Switching a signal by hand while a train stands at its platform
+
+**Disposition:** fixed unvalidated
+**From:** SVN-B16, WK3-B1
+
+**Written:** 2026-09-02
+
+A route that would turn a platform's protecting signal green with a train standing there is refused and
+says so.  Clicking the same signal green **by hand, on the diagram**, was not - the rule lived inside
+the route and the diagram's own tile never got it.
+
+It is on `Layout` now and both doors ask it.  What needs your hands is that it asks about the right
+direction: turning protection ON is doing what the protection would do anyway, and an earlier review
+removed exactly that over-strictness from the route door.
+
+1. **With autonomy running**, stand a train at a platform that has a protecting signal paired to it.
+2. **Click that signal to RED.**  Nothing should ask you anything - that is the protective direction.
+3. **Click it to GREEN.**  You should be asked whether to switch it anyway, and Cancel should leave it
+   alone.
+4. **Do the same with a three-way turnout** if you have one paired, and with the train moved away - no
+   question should be asked in either case with the platform empty.
+5. **And check a route** that sets the same signal green is still refused as before.
+
+*Run against a build after commit e6791631.*
+
+---
+
+<a id="mt-257"></a>
+
+### MT-257 - 2026-09-02 - Five things the review round wants you to rule on
+
+**Disposition:** needs test
+**From:** RG3, DY3
+
+**Written:** 2026-09-02
+
+None of these is a defect with an obvious fix; each is a decision about what the railway should do, and
+they are collected here rather than guessed at.
+
+**1. "Clear Locomotives" is still gone.**  Its sibling "Clear All Home Locomotives" came back today
+(MT-254) and this one did not.  It unplaced every locomotive at once.  You have four placements rather
+than sixty-two, so doing it by hand is four right-clicks - do you want it back as well?
+
+**2. A 2.8.1 autonomy.json now blocks paths it did not block yesterday.**  The builder carries
+`active: false` on plain squares now, and your own frozen legacy file has twenty-four such points of
+which six are not stations.  On import, each becomes a square no path may pass through - manual routes
+included.  This is arguably a RESTORATION: at 2.8.1 the raw file went straight into the model and those
+points blocked paths then too.  Worth knowing before somebody upgrades.
+
+**3. The legacy import says what it brought and not what it left.**  It shows six counts of what
+arrived and never names the four things it drops: per-edge accessory commands, edge lengths, the
+timetable, and route activations.  Measured on your own file: 69 of 90 edges carry commands naming 15
+signals, 30 edges carry a length, 36 timetable entries.  Should the dialog list them?
+
+**4. "Place Autonomy Station Label" has no door.**  The menu item is gone, Ctrl+S is gone from the key
+handler, and the method kept to explain where it went has no callers - while `Readme.md` still
+documents the key.  Removed on purpose, or lost with the graph window?
+
+**5. "Test Connection" has no successor that works without a train on the square.**  The old
+point-to-point path diagnostic answered "can a train get from here to there" with nothing standing
+anywhere.  Nothing in the editor does that now.
+
+*Run against a build after commit 2e83b737.*
+
+---
+
 

@@ -361,6 +361,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-02 | R28-C1 | feature request | "Clear All Home Locomotives" restored to the autonomy editor, with a confirmation | - | [MT-254](tests.md#mt-254) |
 | 2026-09-02 | OB-167 | bug | station no + must reverse + disabled gets the same icon as a terminus | fixed unvalidated | - |
 | 2026-09-02 | OB-169 | bug | clicking a palette tile then an occupied square no longer placed it | - | [MT-252](tests.md#mt-252) |
 | 2026-09-02 | OB-168 | bug | the window came up without the keyboard, so the locomotive letters did nothing | - | [MT-251](tests.md#mt-251) |
