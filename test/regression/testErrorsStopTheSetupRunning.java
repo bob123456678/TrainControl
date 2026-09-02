@@ -236,16 +236,14 @@ public class testErrorsStopTheSetupRunning
         // decides whether a press opens the editor or clicks Start - and it went on asking the narrow
         // question while the guard asked the wide one.
         //
-        // The COUNT is still read by both, and rightly: the strip says how many and colours its band,
-        // the menu puts the number in its tooltip.  What must match the guard is what DECIDES.
+        // The MENU still reads the count, and rightly - it puts the number in its tooltip.  The strip
+        // does not: the number it displays comes from setFindings' own arguments, and reading it here
+        // as well was a second whole walk of the graph on the event thread (V34-B1).  What must match
+        // the guard is what DECIDES.
         assertTrue(toggle.contains("autonomyHasErrors()"),
             "the diagram strip decides Start-versus-Fix without asking the guard's own question, so "
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
             + "named for");
-
-        assertTrue(toggle.contains("autonomyErrorCount()"),
-            "AutonomyOverlayToggle no longer reads the error COUNT at all - it needs it to say how "
-            + "many and to colour the band");
 
         assertTrue(menu.contains("autonomyErrorCount()"),
             "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "
