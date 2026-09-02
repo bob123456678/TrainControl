@@ -1136,6 +1136,38 @@ public class Layout
                 continue;
             }
 
+            // AND THE SQUARE RULE, which was only on the other door (SVN-B13).
+            //
+            // The loop above asks whether this LOCOMOTIVE already has a home.  `claimHome`, thirty
+            // lines up, asks the other question - whether this SQUARE is already somebody's home -
+            // and says why: two locomotives homed on two copies of one platform is a state nothing
+            // can satisfy.  `sharesSection` sees two active Points on one sensor and Return Home
+            // answers IMPOSSIBLE naming both, for the rest of the session, while the diagram shows
+            // what look like two different stations.
+            //
+            // Assignments walk straight past that.  `parseAuto` writes a home onto the Point itself,
+            // so a file - or a setup written before the editor swept - carrying two different
+            // locomotives on two copies of one square reached `homeStations` with both intact.  That
+            // is the DAY-A1 state, arriving through the one door a person cannot be warned at.
+            //
+            // Dropped with the same warning as the case above, and for the same reason: keeping the
+            // loser re-warns on every load and is written back out on every save.
+            Point sameSquare = null;
+
+            for (Point taken : this.homeStations.values())
+            {
+                if (taken.isSamePlaceAs(p)) sameSquare = taken;
+            }
+
+            if (sameSquare != null)
+            {
+                this.control.logf("autolayout.warnHomeSquareAssignedTwice",
+                    p.getName(), sameSquare.getName(), l.getName());
+
+                p.setHomeLoc(null);
+                continue;
+            }
+
             this.homeStations.put(l, p);
         }
 

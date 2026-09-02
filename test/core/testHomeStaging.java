@@ -3227,6 +3227,89 @@ public class testHomeStaging
     }
 
     /**
+     * Two locomotives cannot be homed on two copies of one square, whichever door they arrive by
+     * (SVN-B13).
+     *
+     * `claimHome` refuses a square another home already occupies, and says why: two locomotives homed
+     * on one platform is a state nothing can satisfy - `sharesSection` sees two active Points on one
+     * sensor and Return Home answers IMPOSSIBLE naming both, for the rest of the session, while the
+     * diagram shows what look like two different stations.
+     *
+     * **The ASSIGNMENT loop above it asked only about the locomotive.**  One locomotive, one station -
+     * and nothing about squares.  `parseAuto` writes a home straight onto the Point, so a file, or a
+     * setup written before the editor learned to sweep, walked both assignments through intact.  That
+     * is the DAY-A1 state arriving through the one door a person cannot be warned at.
+     *
+     * The fixture is the smallest thing with that shape: one square emitted as two copies sharing a
+     * block, with a different locomotive named as the home of each.
+     *
+     * MUTATION: removing the square test from the assignment loop leaves both homes standing and fails
+     * the first assertion below.
+     */
+    @Test
+    public void testTwoHomesOnOneSquareDoNotBothSurviveTheLoader() throws Exception
+    {
+        Layout layout = load(twoHomesOnOneSquare());
+
+        // The fixture really is one square in two copies, or there is nothing to refuse.
+        assertTrue(layout.getPoint("HS W1").isSamePlaceAs(layout.getPoint("HS W2")),
+            "precondition: the two copies do not share a block, so they are two different places and "
+            + "homing a locomotive on each of them is perfectly legal");
+
+        int homedThere = 0;
+
+        for (Locomotive l : new Locomotive[] {loc(LOC_A), loc(LOC_B)})
+        {
+            Point home = layout.getHomeStation(l);
+
+            if (home != null && home.isSamePlaceAs(layout.getPoint("HS W1"))) homedThere++;
+        }
+
+        assertEquals(homedThere, 1,
+            "both locomotives came out of the loader homed on the same piece of track, which is a "
+            + "state nothing can satisfy: Return Home reports IMPOSSIBLE naming both for the rest of "
+            + "the session, and the diagram shows what look like two different stations.  claimHome "
+            + "refuses exactly this; the assignment loop did not ask");
+
+        // And the loser really was let go rather than merely hidden from the map.
+        int stillNamed = 0;
+
+        for (String name : new String[] {"HS W1", "HS W2"})
+        {
+            if (layout.getPoint(name).getHomeLoc() != null) stillNamed++;
+        }
+
+        assertEquals(stillNamed, 1,
+            "the losing assignment is still written on its Point, so it will be saved back out and "
+            + "warn again on every load - which is the reason the sibling rule drops rather than "
+            + "ignores");
+    }
+
+    /**
+     * One square emitted as two copies, with a different locomotive homed on each.
+     *
+     * @return the graph JSON
+     */
+    private static String twoHomesOnOneSquare()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, LOC_B) + ","
+            // ONE SENSOR AND ONE BLOCK, which is what makes them two copies of one platform rather
+            // than two platforms.  Both are stations, because the state being refused is two homes on
+            // one place a train may stop.
+            + "{'name': 'HS W1', 'station': true, 's88': " + (S88_BASE + 2)
+            + ", 'block': 'W', 'home': '" + LOC_A + "'},"
+            + "{'name': 'HS W2', 'station': true, 's88': " + (S88_BASE + 2)
+            + ", 'block': 'W', 'home': '" + LOC_B + "'}"
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS A", "HS W1") + "," + edge("HS W1", "HS A") + ","
+            + edge("HS B", "HS W2") + "," + edge("HS W2", "HS B")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * HS A - HS B - HS C in a line, plus a watched square emitted as TWO copies in one block, off on a
      * siding of its own so nothing can leave it.
      *
