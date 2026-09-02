@@ -2358,22 +2358,16 @@ public class Layout
                 // at all), and a guard that is occasionally over-strict on a measured layout is a
                 // nuisance, while changing what counts as measured would move tail-clearing on live
                 // track.  What is not acceptable is a reader trusting this loop, so it says so here.
-                int room = 0;
+                // IN measuredRoomToReverseInto NOW, so the staging planner can ask the same
+                // question (TCX-A2).  It had this rule and the planner did not, and the planner is
+                // what decides where Return Home sends a train - so it offered berths this then
+                // refused on the first move.  The counting is unchanged, including both of the
+                // unsoundnesses above.
+                Integer measuredRoom = measuredRoomToReverseInto(path, loc);
 
-                boolean measured = true;
+                int room = measuredRoom == null ? 0 : measuredRoom;
 
-                for (Edge segment : path)
-                {
-                    if (segment.getLength() <= 0)
-                    {
-                        measured = false;
-                        break;
-                    }
-
-                    room += segment.getLength();
-                }
-
-                if (measured && loc.getTrainLength() > room)
+                if (measuredRoom != null && loc.getTrainLength() > room)
                 {
                     logPathError(
                         loc,
@@ -6126,6 +6120,49 @@ public class Layout
         }
 
         return false;
+    }
+
+    /**
+     * The measured room a train has behind it if it reverses at the end of this path (TCX-A2).
+     *
+     * **Pure**, which is what lets the staging planner ask it.  Every other rule in `isPathClear`
+     * reads live feedback, so `HomeStaging` has to re-implement them for hypothetical futures - and
+     * every time one was mis-copied the result was a plan the runtime then refused.  This one reads
+     * only the path, the destination's own flags and the locomotive, so there is nothing to copy.
+     *
+     * Null rather than a number in the three cases where the question does not arise: the train has no
+     * recorded length, the path does not end somewhere it would reverse, or some segment of the path
+     * is unmeasured.  **Unmeasured is unknown, not zero** - answering "I do not know how long this is"
+     * with "it is nothing" refuses trains that fit, which is the failure the guard's own comment says
+     * was removed once already.
+     *
+     * The two known unsoundnesses in what it counts are recorded at the call site in `isPathClear` and
+     * are Adam's to settle; they are about WHICH segments, not about who may ask.
+     *
+     * @param path the route, in order
+     * @param loc the train
+     * @return the total measured length behind the reversal, or null when the question does not arise
+     */
+    public static Integer measuredRoomToReverseInto(List<Edge> path, Locomotive loc)
+    {
+        if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
+
+        if (path == null || path.isEmpty()) return null;
+
+        Point ending = path.get(path.size() - 1).getEnd();
+
+        if (!ending.isTerminus() && !ending.isReversing()) return null;
+
+        int room = 0;
+
+        for (Edge segment : path)
+        {
+            if (segment.getLength() <= 0) return null;
+
+            room += segment.getLength();
+        }
+
+        return room;
     }
 
     /**

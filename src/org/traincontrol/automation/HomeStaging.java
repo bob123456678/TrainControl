@@ -1034,6 +1034,20 @@ public final class HomeStaging
                 // that fails on its first move.
                 if (next.equals(to))
                 {
+                    // AND ROOM TO BACK INTO, which is the rule the runtime had and this did not
+                    // (TCX-A2).
+                    //
+                    // A train longer than the measured track it reverses into stands across the switch
+                    // behind it.  `isPathClear` refuses that; this search did not, so Return Home
+                    // produced plans whose first move the railway then refused - which is the exact
+                    // failure the paragraph above is about, in a second rule.
+                    //
+                    // `continue` rather than a refusal: another route to the same berth may be longer,
+                    // and a longer approach is more room.
+                    Integer room = Layout.measuredRoomToReverseInto(route, loc);
+
+                    if (room != null && loc.getTrainLength() > room) continue;
+
                     if (!mustBackIn(loc, to) || turned) return route;
 
                     // Not this way round.  Keep looking: another route may turn it.

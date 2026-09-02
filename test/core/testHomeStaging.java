@@ -136,6 +136,118 @@ public class testHomeStaging
         return config.replace(plain, assigned);
     }
 
+    /**
+     * The audit speaks when the runtime refuses a berth for want of room and the planner does not
+     * (TCX-A2).
+     *
+     * `isPathClear` gained a rule this round: a train longer than the measured track it would reverse
+     * into is refused, because it would stand across the switch behind it.  `HomeStaging` carries its
+     * own copy of the runtime's rules - it must, because it answers for hypothetical futures rather
+     * than for live feedback - and it did not get this one.  `getLength()` does not appear in that
+     * file at all.
+     *
+     * **The weaker assertion on purpose.**  This does not say the planner should carry the rule; which
+     * layer enforces it is a decision about the railway.  It says the two must not silently disagree,
+     * which is what `auditAgainstRuntime` exists to notice and what every mis-copy before this one
+     * looked like.
+     *
+     * The fixture is the smallest thing with that shape: a ring whose HS D is a terminus, reached over
+     * an edge measured at 5, with a train 40 long homed there.  The runtime refuses that arrival; the
+     * planner offers it.
+     *
+     * MUTATION: taking the length off the edge, or the train length off the locomotive, makes the
+     * runtime stop refusing and the audit fall back to zero - which is why both are asserted as
+     * preconditions rather than assumed.
+     */
+    @Test
+    public void testTheAuditSeesTheReversalRoomRuleTheStagingPlannerDoesNotHave() throws Exception
+    {
+        Layout layout = load(shortBerth());
+
+        Locomotive tooLong = loc(LOC_A);
+
+        tooLong.setTrainLength(40);
+
+        // REVERSIBLE, and that is what makes this fixture discriminate.
+        //
+        // A non-reversible train must arrive at a terminus already turned - `mustBackIn` - and there
+        // is no reversing point anywhere on this ring, so the planner refuses HS D for that reason
+        // whatever it knows about length.  With that rule out of the way, room is the only thing left
+        // that can refuse it, which is what the assertions below are about.
+        tooLong.setReversible(true);
+
+        assertEquals(tooLong.getTrainLength(), Integer.valueOf(40),
+            "precondition: the locomotive has no train length, so the rule under test is not armed "
+            + "and this fixture cannot show anything");
+
+        assertTrue(tooLong.isReversible(),
+            "precondition: a non-reversible train is refused a terminus by mustBackIn instead, so "
+            + "this would pass whether or not the room rule exists");
+
+        assertTrue(layout.getPoint("HS D").isTerminus(),
+            "precondition: HS D must be a terminus - the rule only applies where the train reverses");
+
+        assertTrue(layout.getEdge("HS A", "HS D") != null
+                && layout.getEdge("HS A", "HS D").getLength() > 0
+                && layout.getEdge("HS A", "HS D").getLength() < 40,
+            "precondition: the approach to HS D must be MEASURED and shorter than the train, or the "
+            + "guard declines to judge it at all.  Got: "
+            + (layout.getEdge("HS A", "HS D") == null
+                ? "no edge" : layout.getEdge("HS A", "HS D").getLength()));
+
+        // THE RUNTIME REFUSES IT, which is the half that exists.
+        assertFalse(layout.isPathClear(layout.bfs(layout.getPoint("HS A"),
+            layout.getPoint("HS D"), null), tooLong),
+            "control: the runtime does not refuse a train too long for the berth it would reverse "
+            + "into, so there is no divergence for the audit to find and this test proves nothing");
+
+        // AND THE PLANNER REFUSES IT TOO, so the two agree and the audit is silent.
+        //
+        // It did not, when this was written: the runtime refused the berth and the planner offered
+        // it, so Return Home produced a plan whose first move the railway then refused.  The rule is
+        // asked in one place now and both sides ask it.
+        assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "the runtime refuses this berth for want of room to reverse and the staging planner "
+            + "still offers it.  The planner re-implements isPathClear's rules by hand, and this is "
+            + "the rule it did not get - so Return Home can produce a plan whose first move the "
+            + "railway then refuses");
+
+        // And it shows up as the planner having nowhere to send the train, rather than as a plan.
+        assertFalse(layout.planReturnToHome().isPossible(),
+            "the planner produced a plan to a berth the runtime will refuse on the first move.  "
+            + "Outcome: " + layout.planReturnToHome().getOutcome());
+    }
+
+    /**
+     * The ring, with HS D a terminus reached over a short measured edge.
+     *
+     * @return the configuration
+     */
+    private static String shortBerth()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + station("HS C", 2, null) + ","
+            + "{'name': 'HS D', 'station': true, 's88': " + (S88_BASE + 3)
+            + ", 'terminus': true, 'home': '" + LOC_A + "'}"
+            + "],'edges': ["
+            // EVERY EDGE MEASURED, and that is the point of the fixture.
+            //
+            // With any segment unmeasured the rule declines to judge - "I do not know how long this
+            // is" is not "it is nothing" - and the planner simply routed the long way round instead:
+            // HS A to HS B, then HS B back through HS A to HS D, whose middle leg had no length.  The
+            // runtime accepts that path for the same reason, so the two agreed and the test proved
+            // nothing.  Measured throughout, every route to HS D is too short for the train.
+            + "{'start': 'HS A', 'end': 'HS B', 'length': 5},"
+            + "{'start': 'HS B', 'end': 'HS A', 'length': 5},"
+            + "{'start': 'HS B', 'end': 'HS C', 'length': 5},"
+            + "{'start': 'HS C', 'end': 'HS B', 'length': 5},"
+            + "{'start': 'HS A', 'end': 'HS D', 'length': 5},"
+            + "{'start': 'HS D', 'end': 'HS A', 'length': 5}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     /** Loads a graph and returns it, asserting it parsed - an invalid graph fails every test below
      *  for reasons that have nothing to do with staging. */
     private static Layout load(String config)
