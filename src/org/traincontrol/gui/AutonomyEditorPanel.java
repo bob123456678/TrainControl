@@ -479,6 +479,7 @@ public class AutonomyEditorPanel extends JPanel
         // sixty-two of them.
         clearHomes = new JButton(I18n.t("autolayout.ui.menuClearAllHomeLocomotives"));
         clearHomes.addActionListener(e -> clearAllHomes());
+        clearHomes.setToolTipText(wrapped(I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")));
         button(clearHomes);
 
         // Leaving the page out, from the page itself.
@@ -6222,6 +6223,22 @@ public class AutonomyEditorPanel extends JPanel
                 ? null : wrapped(I18n.t("autosetup.ui.hintNothingToName")));
         }
 
+        // The same for Clear All Home Locomotives (DY3-C6).
+        //
+        // It was always live, so on a setup with no homes the operator pressed it and was told there
+        // was nothing to clear - which is the answer the button should have given before the press.
+        // Greyed rather than hidden, for the reason written above.
+        if (clearHomes != null)
+        {
+            int homed = session == null ? 0 : session.tilesWithAHome().size();
+
+            clearHomes.setEnabled(homed > 0 && !ignored);
+
+            clearHomes.setToolTipText(wrapped(homed > 0
+                ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
+                : I18n.t("autosetup.ui.infoNoHomesToClear")));
+        }
+
         if (errors > 0)
         {
             banner.setText(I18n.f("autosetup.ui.labelBlockingCount", errors));
@@ -6453,6 +6470,11 @@ public class AutonomyEditorPanel extends JPanel
 
         // Nothing to do, said in the hint line rather than in a dialog: a dialog for "there was
         // nothing to clear" is a second press to dismiss an answer nobody needed.
+        //
+        // Kept even though the button greys itself on the same question (DY3-C6), because the greying
+        // is the AFFORDANCE and this is the GUARD, and OB-057 and OB-090 are both what happens when
+        // one of the two is missing.  The button's state is refreshed when the panel is, and a home
+        // can go away between one refresh and the next.
         if (homed.isEmpty())
         {
             say(hint, I18n.t("autosetup.ui.infoNoHomesToClear"));

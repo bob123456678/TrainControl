@@ -191,7 +191,7 @@ Two weaker limbs of the same shape are filed separately as `SVN-C10`.
 
 ### SVN-A3 — a track-mode page switch leaves the editor bound to a discarded diagram, and re-enables "Edit Layout" with the editor still open
 
-**FIXED 2026-09-02 (`87b6c10a`).** Confirmed on both limbs by reading the three methods end to end. The guarantee moved to `layoutRefreshComplete`, where the dozen statements it names actually are, and the worker posts the EDT half from a finally so a layout that will not parse cannot leave the latch raised. `testEditorSurfaceRules` pins all three links now instead of the one.
+**FIXED 2026-09-02 (`1cfdf370`).** Confirmed on both limbs by reading the three methods end to end. The guarantee moved to `layoutRefreshComplete`, where the dozen statements it names actually are, and the worker posts the EDT half from a finally so a layout that will not parse cannot leave the latch raised. `testEditorSurfaceRules` pins all three links now instead of the one.
 
 `dd87f6bf` changed the page-switch teardown from passing its continuation *into*
 `layoutEditingComplete` to a wrapper:

@@ -510,8 +510,19 @@ public class AutonomySession
      *   priority          how strongly autonomy prefers this destination
      *   speedMultiplier   the pace trains take through it
      *   excludedLocs      the locomotives this station will not accept
-     *   active            a station's own switch.  The build ignores it on anything else, which is
-     *                     why it is carried as given rather than filtered here.
+     *   active            whether the railway may use the square at all.  Carried as given.
+     *
+     * **The build stopped ignoring `active` on a non-station on 2026-09-02** (`D24-B5`), and this line
+     * used to give that as the reason for carrying it unfiltered (`DY3-C2`).  The reason now is the
+     * plainer one: it is the operator's setting and the import is a migration, not an edit.
+     *
+     * What that changes for an imported graph is worth knowing.  Adam's own frozen legacy file carries
+     * twenty-four points with `active: false`, six of them not stations, and each of those is now a
+     * point no path may pass through - manual routes included, because `isPathClear`'s intermediate
+     * rule is not fenced behind `isAutoRunning`.  That is a RESTORATION rather than a regression: at
+     * v2.8.1 the raw `autonomy.json` went straight into `parseAuto` and those points blocked paths
+     * then too.  It is recorded here because the change was argued entirely from the editor's menu and
+     * this is the other door it came through.
      */
     private static final List<String> CARRIED_SETTINGS =
         Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");

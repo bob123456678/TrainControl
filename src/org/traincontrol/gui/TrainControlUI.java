@@ -5184,6 +5184,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int errors = getAutonomySession().errorCount();
 
+        // The count when there is one, and the graph's own message when there is not.
+        //
+        // `errorCannotBuildDetailOne` is the LOAD door's singular form, and it is right here for the
+        // reason that door has a singular at all: this branch is reached when nothing produced a
+        // finding and the graph simply will not build, which is one thing rather than a number of
+        // them (DY3-C7).
         JOptionPane.showMessageDialog(this, errors > 0
             ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
             : I18n.t("autosetup.ui.errorCannotBuildDetailOne"));
@@ -19509,7 +19515,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * A `finally`, which is what `BusyDialog.run` does with its own continuation and for the same
      * reason: the work can fail, and the thing that puts the window back together afterwards must not
-     * fail with it.
+     * fail with it.  **That finally is not in this method** - see the next paragraph, which is the
+     * whole point of the arrangement (CD3-B1: a reader who "simplified" this back to a finally here
+     * would reintroduce SVN-A3).
      *
      * **The finally used to be HERE, and here it covered nothing** (SVN-A3).
      * `layoutEditingComplete` is asynchronous: it lowers the button, reads a field and starts a
@@ -20156,15 +20164,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public boolean canStartAutonomy()
     {
         return this.startAutonomy != null && this.startAutonomy.isEnabled()
-            && autonomyErrorCount() == 0;
+            && !autonomyHasErrors();
+    }
+
+    /**
+     * The guard's own question, for the things that OFFER to start (TS3-B6, WK3-C1, D3F-C3).
+     *
+     * This used to be `autonomyErrorCount() == 0`, and the guard was widened to `hasErrors()` without
+     * it - so for a setup whose GRAPH will not build, with no check having turned that into a finding,
+     * the affordances said yes and the guard said no.  That is the OB-090 shape one door further
+     * along, reintroduced by the commit that fixed it.
+     *
+     * The count stays where it is: the strip and the right-click tooltip need the NUMBER to say what
+     * is wrong.  What must not differ is which question DECIDES.
+     *
+     * @return whether the loaded setup has anything that stops it running
+     */
+    public boolean autonomyHasErrors()
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session != null && session.hasErrors();
     }
 
     /**
      * How many blocking findings the loaded setup has, or zero when there is nothing to ask.
      *
-     * The guard's own number. `refuseAutonomyStartWhileBroken` reads exactly this and refuses when it
-     * is not zero, and it says why: "asked of the session rather than counted here, so that the strip
-     * deciding what to OFFER and this deciding what to ALLOW cannot drift apart."
+     * The number, for saying WHAT is wrong - not the question that decides (TS3-B6).
+     *
+     * `refuseAutonomyStartWhileBroken` read exactly this until the guard was widened to `hasErrors()`,
+     * which also covers a graph that will not build at all.  The two are the same on any setup where a
+     * blocking problem also produced a finding, which is every one we have - but "the same in practice"
+     * is what OB-090 was, twice.  `autonomyHasErrors()` is the question now, and this is the count the
+     * messages print.
      *
      * They had drifted anyway, one door further along. `canStartAutonomy` was the Start BUTTON's
      * enabled state and nothing else, and no writer of that flag consults the checks - the button is

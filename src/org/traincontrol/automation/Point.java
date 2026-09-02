@@ -198,7 +198,7 @@ public class Point
     /**
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
-     * Ignored for non-stations
+     * Asked of every square since 2026-09-02 (D24-B5) - it used to be ignored for a non-station, and `isPathClear` refuses a path THROUGH an inactive point whatever it is, which is what the editor's Out of service means
      * @return 
      */
     public boolean isActive()

@@ -528,7 +528,7 @@ Unless you say otherwise, a locomotive's home is simply the station it occupied 
 
 You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy tab, right-click a station and pick `Set Home Locomotive`, which names that station's current home and opens a chooser.  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.
 
-There is no longer a single action that clears every assignment at once; clear them one station at a time, or call `Layout.clearHomeLocomotives` programmatically.
+**Clear All Home Locomotives**, in the autonomy editor's tool column, clears every assignment at once and asks first.  A single station's assignment is cleared from its own right-click menu, and `Layout.clearHomeLocomotives` does the same thing programmatically.
 
 An assigned station is that locomotive's home whether or not it is standing there, and whether or not it is on the layout at all - an assignment for a locomotive you have not placed is simply ignored until you place it.  Each locomotive belongs at one station only, so assigning it somewhere new releases it from wherever it was assigned before.  Everything you do not assign still falls back to the rule above.
 

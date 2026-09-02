@@ -88,10 +88,9 @@ public class testErrorsStopTheSetupRunning
             + "the clean demonstration it is meant to be");
 
         assertTrue(session.hasErrors(),
-            "the setup has an error and will not admit it - though see "
-            + "testTheAffordancesAskTheGuardsOwnQuestion below: hasErrors() itself has no caller left "
-            + "in src/, so this line proves the METHOD works and not that anything offering to start "
-            + "autonomy actually asks it (OB-090, DD-A6)");
+            "the setup has an error and will not admit it.  hasErrors() is asked by the guard and by "
+            + "canStartAutonomy() now - see testTheAffordancesAskTheGuardsOwnQuestion below, which is "
+            + "what keeps those two together (OB-090, DD-A6, TS3-B6)");
 
         // The heart of it: an error arrived that no blocking problem accounts for.
         assertTrue(session.errorCount() > blockingProblems(session),
@@ -206,10 +205,25 @@ public class testErrorsStopTheSetupRunning
 
         assertFalse(canStart.isEmpty(), "canStartAutonomy() has moved or been renamed");
 
-        assertTrue(canStart.contains("autonomyErrorCount()"),
-            "canStartAutonomy() no longer asks autonomyErrorCount() - the Start button's own enabled "
-            + "state is deliberately left true, per this method's javadoc, so nothing else in it "
-            + "would notice an error the checks found");
+        // THE GUARD'S QUESTION, WHICHEVER ONE THAT IS (TS3-B6).
+        //
+        // This used to require the literal `autonomyErrorCount()`, and that is how it came to ENFORCE
+        // the divergence it exists to catch: the guard was widened to `hasErrors()` and this assertion
+        // said the affordance must go on asking the narrower one.  It reads the guard and requires the
+        // affordance to ask the same thing.
+        String guard = withoutComments(bodyOf(ui, "private boolean refuseAutonomyStartWhileBroken()"));
+
+        assertFalse(guard.isEmpty(), "refuseAutonomyStartWhileBroken() has moved or been renamed");
+
+        assertTrue(guard.contains("hasErrors()"),
+            "the guard no longer asks hasErrors().  If that is deliberate the affordance below has to "
+            + "follow it, and this rule is what makes sure it does.  Guard: " + guard);
+
+        assertTrue(canStart.contains("autonomyHasErrors()"),
+            "canStartAutonomy() does not ask the guard's own question.  The guard refuses on "
+            + "hasErrors(), which also covers a graph that will not build at all, and an affordance "
+            + "asking anything narrower shows a live Start over a setup that refuses every press - "
+            + "which is OB-090, twice already.  canStartAutonomy: " + canStart);
 
         assertFalse(canStart.contains("hasBlockingProblems()"),
             "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "

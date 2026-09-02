@@ -2386,10 +2386,17 @@ public class Layout
                 //      to it", which is what this does; whether "it" means the reversal or the berth is
                 //      the question that has to go back to him.
                 //
-                // Left as it is on purpose.  It is inert on his railway today (six tiles carry lengths
-                // at all), and a guard that is occasionally over-strict on a measured layout is a
-                // nuisance, while changing what counts as measured would move tail-clearing on live
-                // track.  What is not acceptable is a reader trusting this loop, so it says so here.
+                // Left as it is on purpose, and Adam has ruled on it: "OK", the rule is accepted as
+                // it stands (`FX2-3`).
+                //
+                // NOT INERT, which this used to claim (CD3-B2, D3F-C2).  The sentence said "it is
+                // inert on his railway today (six tiles carry lengths at all)", and `FV2-B1`/`FV2-C2`
+                // measured that on 2026-09-01 and found the opposite: two of the six measured tiles
+                // ARE reversal squares on his main page, one of them a home, so the guard is live
+                // there.  The claim was corrected everywhere else that day and survived here, in the
+                // one place a reader meets it.
+                //
+                // What is not acceptable is a reader trusting this loop, so it says so here.
                 // IN measuredRoomToReverseInto NOW, so the staging planner can ask the same
                 // question (TCX-A2).  It had this rule and the planner did not, and the planner is
                 // what decides where Return Home sends a train - so it offered berths this then

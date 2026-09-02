@@ -746,10 +746,11 @@ public class AutonomyChecks
      * passes every reachability test in this file while the copy is a trap.  A rule about copies cannot
      * be enforced by looking at squares.
      *
-     * An ERROR rather than a warning for the no-way-out case: a train sent there is stuck, and nothing
-     * downstream refuses the trip.  The no-way-in case is a WARNING - it costs nothing until somebody
-     * leaves a train there, and then Return Home will not move it, because the staging planner never
-     * moves a locomotive off a square it could not put it back on.
+     * **ALL THREE ARE WARNINGS**, and this paragraph used to argue for an ERROR on the no-way-out
+     * case (D3F-C1).  The body six lines below settled it the other way within the hour, and the
+     * reason is at the severity itself: `errorCount() > 0` refuses to start autonomy at all, so an
+     * error here would have stopped Adam's railway starting over two tunnel berths he has been
+     * running for months.  Restoring what this paragraph used to say would do exactly that.
      *
      * @param copies the squares, mapped to the offending copy, decided by the session
      * @param key which of the two messages to report
