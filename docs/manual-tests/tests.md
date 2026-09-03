@@ -13899,6 +13899,20 @@ The flag now comes back on a timer, four hundred milliseconds later, and the who
 
 *Run against a build after this commit.*
 
+**What to look for in the log, Adam (2026-09-02).**  One line, in English:
+
+> This window could not bring itself to the front - Windows only lets the application you are already
+> using do that.  Click the window once and the keyboard shortcuts will work.
+
+It is written about half a second after start-up, and only when the window has tried twice and is
+still not the active one.
+
+**Its absence is as useful as its presence.**  If it is NOT there and the keyboard still does
+nothing, the window believes it IS active - and then the fault is somewhere else entirely, not in
+coming to the front, and I have been fixing the wrong thing for four rounds.  If it IS there, Windows
+refused us twice and no amount of Java changes that from inside the application; the answer would be a
+launcher change or living with one click.
+
 ---
 
 <a id="mt-260"></a>

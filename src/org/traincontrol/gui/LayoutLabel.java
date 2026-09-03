@@ -119,6 +119,18 @@ public final class LayoutLabel extends JLabel
 
         // and take off anything already put on, since the border is set in the constructor
         this.setBorder(null);
+
+        // AND IT KEEPS ITS ROOM.  Tried and reverted, 2026-09-02.
+        //
+        // Adam reported the axis numbers as "missing for the last row/col", and what has no number is
+        // this cell - a tile's width of empty grid past the last real square, which is the same thing
+        // to look at.  The obvious answer is to stop paying for it in pixels.
+        //
+        // It does not work, and the test that says so is `testACaptionNeverMovesAnythingElse`: with the
+        // spacer at zero, adding one caption moved 351 other things on the diagram by eight pixels.
+        // The dummy column is not merely present for GridBagLayout, it is the SPACE an overflowing text
+        // label is absorbed into - which is exactly what "ensure long labels don't misalign things"
+        // means, read properly.  Taking the room away puts the misalignment back.
     }
 
     /**

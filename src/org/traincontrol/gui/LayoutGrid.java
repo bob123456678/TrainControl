@@ -853,8 +853,19 @@ public class LayoutGrid
         //
         // Read from the preference on every build, which is what makes the toggle a redraw rather than
         // a special case.
-        if (TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
-            SHOW_COORDINATES_DEFAULT))
+        // IN THE EDITORS, NOT IN THE VIEWER (Adam: "they are visible in the track diagram viewer when
+        // they shouldn't be").
+        //
+        // The preference was asked and the window was not, so every grid drew them.  He asked for the
+        // numbers "in both autonomy editor and track diagram editor" and the viewer is neither: it is
+        // where trains are watched, and a ruler there is scenery over the railway.
+        //
+        // `master instanceof LayoutEditor` rather than `inEditor`, which is `layout.getEdit() &&
+        // ...` - autonomy mode deliberately does not set that flag, so `inEditor` is false in the one
+        // editor where coordinates matter most.
+        if (master instanceof LayoutEditor
+            && TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
+                SHOW_COORDINATES_DEFAULT))
         {
             container.setBorder(new AxisRuler(size, offsetX, offsetY, width - 1, height - 1));
         }
@@ -882,6 +893,15 @@ public class LayoutGrid
         java.awt.Insets gutter = container.getBorder() == null
             ? new java.awt.Insets(0, 0, 0, 0) : container.getBorder().getBorderInsets(container);
 
+        // THE SPACER IS PAID FOR, and `width`/`height` already include it.
+        //
+        // Adam asked why the numbers stop one short of the last row and column.  They do not: the ruler
+        // numbers every real square, measured on his own `1 - Main` - 23 columns and 15 rows, all of
+        // them.  What has no number is the dummy column and row GridBagLayout is given so that an
+        // overflowing text label cannot widen its neighbours, and those are not squares.
+        //
+        // Sizing the container without them was tried and reverted the same day; `LayoutLabel.markSpacer`
+        // carries what happened.
         int fullWidth = width * size + gutter.left + gutter.right;
         int fullHeight = height * size + gutter.top + gutter.bottom;
 

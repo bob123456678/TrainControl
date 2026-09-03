@@ -346,11 +346,14 @@ public class testDiagramExport
      * class because building a grid needs the application: a tile draws itself through the window's
      * image cache, and that is what this class already has.
      *
-     * Both directions, because a test of the ON case alone passes for a grid that always carries a
-     * ruler, and the switch is the whole of what was asked for.
+     * Both directions of the switch, because a test of the ON case alone passes for a grid that always
+     * carries a ruler - and BOTH WINDOWS, because Adam's second report was the other half: *"they are
+     * visible in the track diagram viewer when they shouldn't be."*  He asked for the numbers "in both
+     * autonomy editor and track diagram editor", and the viewer is neither.
      *
-     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, or reading a preference key
-     * nothing writes.
+     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, reading a preference key
+     * nothing writes, or dropping the `master instanceof LayoutEditor` term - which is the one that
+     * put a ruler on the running diagram.
      */
     @Test
     public void testTheGridCarriesTheCoordinateRulerWhenTheSettingIsOn() throws Exception
@@ -362,39 +365,65 @@ public class testDiagramExport
         boolean was = TrainControlUI.getPrefs().getBoolean(
             TrainControlUI.SHOW_COORDINATES_PREF, false);
 
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
         try
         {
+            SwingUtilities.invokeAndWait(() ->
+                editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0));
+
             for (final boolean on : new boolean[] { true, false })
             {
                 TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, on);
 
-                final javax.swing.JPanel panel = new javax.swing.JPanel();
-                final org.traincontrol.gui.LayoutGrid[] built =
+                // THE EDITOR, which is one of the two windows that should carry it.
+                final javax.swing.JPanel forEditor = new javax.swing.JPanel();
+                final org.traincontrol.gui.LayoutGrid[] inEditor =
                     new org.traincontrol.gui.LayoutGrid[1];
 
-                SwingUtilities.invokeAndWait(() ->
-                    built[0] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui));
+                SwingUtilities.invokeAndWait(() -> inEditor[0] =
+                    new org.traincontrol.gui.LayoutGrid(page, 30, forEditor, editor[0], true, ui));
 
-                javax.swing.border.Border border = built[0].getContainer().getBorder();
+                javax.swing.border.Border border = inEditor[0].getContainer().getBorder();
 
                 if (on)
                 {
                     assertTrue(border instanceof org.traincontrol.gui.AxisRuler,
-                        "the setting is on and the diagram carries " + border + ", so the numbers are "
-                        + "drawn nowhere - which is what Adam reported: \"I don't see the axis labels "
-                        + "in the editor grid\"");
+                        "the setting is on and the editor's diagram carries " + border + ", so the "
+                        + "numbers are drawn nowhere - which is what Adam reported: \"I don't see the "
+                        + "axis labels in the editor grid\"");
                 }
                 else
                 {
                     assertFalse(border instanceof org.traincontrol.gui.AxisRuler,
-                        "the setting is off and the diagram still carries a ruler, so the toggle only "
-                        + "goes one way");
+                        "the setting is off and the editor's diagram still carries a ruler, so the "
+                        + "toggle only goes one way");
                 }
+
+                // AND THE VIEWER, which should carry it in neither state.
+                final javax.swing.JPanel forViewer = new javax.swing.JPanel();
+                final org.traincontrol.gui.LayoutGrid[] inViewer =
+                    new org.traincontrol.gui.LayoutGrid[1];
+
+                SwingUtilities.invokeAndWait(() -> inViewer[0] =
+                    new org.traincontrol.gui.LayoutGrid(page, 30, forViewer, null, true, ui));
+
+                assertFalse(inViewer[0].getContainer().getBorder()
+                        instanceof org.traincontrol.gui.AxisRuler,
+                    "the running diagram carries the coordinate ruler with the setting " + on + " - "
+                    + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
         }
         finally
         {
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, was);
+
+            if (editor[0] != null)
+            {
+                final org.traincontrol.gui.LayoutEditor open = editor[0];
+
+                SwingUtilities.invokeAndWait(() -> open.dispose());
+            }
         }
     }
 
