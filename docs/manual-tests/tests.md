@@ -13932,4 +13932,67 @@ square without needing a second one.  That one is still waiting on you too.
 
 *No build needed to answer these.*
 
+**Adam, 2026-09-02 (triage).** Answered, all six.
+
+> 1. it depends on the direction.  if the train crosses the fork through the base, then the track
+>    after the switch has to be long enough to accommodate it.  in other words, between the switch and
+>    the station, the length must be >= length of the train.  if the train enters from one of the
+>    branches, then it shouldn't matter.
+> 2. 20 warnings sounds OK
+> 3. OK, because it will be set correctly later
+> 4. what do you mean by deleting- from the stations, or from the database?
+> 5. most likely, but can't assume.  trains can also back out and reverse on their way out.
+> 6. yes, for testing.
+
+**What each one becomes.**
+
+| | Ruling | What follows |
+|---|---|---|
+| 1 | The room is measured **between the switch and the station**, not over the whole route, and only where the path crosses the turnout **through its base** | `Layout.measuredRoomToReverseInto` sums every segment today.  It has to find the last switch the path crosses base-side and sum from there; a path that only ever enters from a branch is unconstrained.  Not yet built - see the note below |
+| 2 | Twenty warnings is acceptable | The notice extends past the reversal square.  **Which** squares it asks for now follows from ruling 1 rather than from "the whole run-in", so the count may not be twenty - it will be whatever the switch-to-station stretches need |
+| 3 | Accepted: a signal left red over a platform emptied by hand is not worth a sweep, "because it will be set correctly later" | `D24-C8` closed.  MT-246's "what this deliberately gives up" gains the second direction, so the record holds both halves rather than one |
+| 4 | A question back | Answered below |
+| 5 | "most likely, but can't assume.  trains can also back out and reverse on their way out" | The planner stops **assuming** either way at a berth and searches both - the train may have backed in, or been driven in and able to back out and reverse later.  That also settles `RTG-C3`, which is the same seed asked of the impossibility proof |
+| 6 | `ParkingTrack12` is deliberate, for testing | `DY3-C8` closed |
+
+**Ruling 4, answered: from the database.**  `R28-A1` is about **Locomotives -> delete** in the
+locomotive database - the menu item that removes the locomotive itself, with its own confirmation.
+Nothing about stations or home assignments.  What it does silently is edit your **routes**: every
+`locspeed` command naming that locomotive is removed from every route that has one, and the routes are
+then written to disk.  2.8.1 left the routes alone and the commands simply referred to a locomotive
+that was gone.
+
+To see it without touching your own data: add a locomotive `X`, put `locspeed,X,40` in a route, delete
+`X` from the database, and look at the route - the line is gone, and nothing in the log mentions it.
+
+So the question stands, narrowed: should the delete confirmation say how many route commands will go
+and from which routes, or should it stop editing routes at all?
+
+**Ruling 1 needs one thing confirmed before it is built, and it is a real ambiguity rather than a
+formality.**
+
+On a simple turnout, *every* route through it touches the toe - that is what makes it the toe, and it
+is how the model derives it (`TilePorts.deriveToe`: "the side every route of this type touches in
+every position").  So "crosses the fork through the base" cannot mean *which ports the path uses*,
+because on a turnout that is always true and the rule would never be narrowed at all.
+
+Which leaves the direction of travel, and there the two cases are:
+
+- **base -> branch.**  The train comes up the common leg and goes out on one fork.  If it does not
+  clear the points, its tail stands on them.
+- **branch -> base.**  The train comes in on a fork and goes out on the common leg.  If it does not
+  clear the points, its tail also stands on them.
+
+Both foul the turnout, which is why I want to check rather than guess: physically the second case
+looks the same as the first to me, so "if the train enters from one of the branches, then it shouldn't
+matter" must be saying something I am not seeing - either about how your layout is arranged, or about
+which movements you care about being blocked.
+
+**The question, in one sentence:** is the distinction the direction of travel over the points
+(base-first versus branch-first), and if so what makes a tail left on the points harmless in the
+second case?
+
+Everything else about the ruling is clear and is what will be built: the measurement is the stretch
+from the turnout to the station, not the whole route.
+
 ---

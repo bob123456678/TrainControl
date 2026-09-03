@@ -556,6 +556,8 @@ narrow.
 
 **Status:** open — needs Adam's ruling, not a code change. Fixture as of `409d4ce8`.
 
+**CLOSED 2026-09-02 - deliberate** ([MT-260](../manual-tests/tests.md#mt-260) ruling 6): *"yes, for testing."*  `ParkingTrack12` carries both flags on purpose.  The fixture is right and the finding is answered rather than fixed.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 `test/operator_layout/config/autonomy/configuration-Main.json` holds exactly one `"active": false`:

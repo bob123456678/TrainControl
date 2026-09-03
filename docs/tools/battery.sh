@@ -470,6 +470,21 @@ done
 
 live_after=$(fingerprint)
 
+# AND AFTER THE LAST CLASS (V33-C1).
+#
+# The reap above runs at the TOP of the loop, so every class is cleaned up before the next one starts
+# and the last one is not cleaned up at all.  A run that ends on a class which left a JVM behind
+# therefore leaves it behind for good - and the next run's start-of-run probe refuses to start, with a
+# message saying the check clears itself.
+#
+# The most likely class to do it is the last one alphabetically rather than a bad one, which is what
+# makes this hard to notice: it is not a symptom of anything being wrong.
+if [ -n "$REAPER" ]
+then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
+        -RunId "$RUN_ID" >/dev/null 2>&1
+fi
+
 echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
 echo -e "$failed"
 

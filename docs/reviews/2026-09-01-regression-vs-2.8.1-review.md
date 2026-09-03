@@ -132,6 +132,8 @@ path that is one menu item away.
 **DEFERRED - needs Adam:** should the delete confirmation say how many route commands will be removed
 (and from which routes), or should the removal be dropped in favour of the 2.8.1 behaviour?
 
+**Still open, narrowed 2026-09-02** ([MT-260](../manual-tests/tests.md#mt-260) ruling 4).  He asked which delete this is about: it is **Locomotives -> delete** in the locomotive database, not anything to do with stations or home assignments.  What the confirmation does not mention is that it edits his ROUTES - every `locspeed` command naming that locomotive goes, from every route that has one, and the routes are written to disk.  The question stands with that cleared up.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 **How to confirm.** No execution needed for the code path; to see it, add a locomotive `X`, put

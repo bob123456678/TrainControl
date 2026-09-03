@@ -485,6 +485,8 @@ predates `f59fa45e`, and it matches `MT-246` and the documentation. But the inde
 and must be turned again on the way to its next berth; is that right, or was it driven in nose-first
 and already facing out?*
 
+**RULED 2026-09-02, not yet built** ([MT-260](../manual-tests/tests.md#mt-260) ruling 5).  Adam: *"most likely, but can't assume.  trains can also back out and reverse on their way out."*  So the answer is neither of the two the question offered: the planner stops assuming at a berth and searches **both** states from one, because a train may have backed in or may back out and reverse later.  That also settles `RTG-C3`, which is the same seed asked of the impossibility proof - and it settles it in the direction that keeps the proof looser than the search, which is the invariant that rule has to hold.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ---

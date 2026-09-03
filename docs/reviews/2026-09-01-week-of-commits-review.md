@@ -491,6 +491,8 @@ on a real route.
 **The question for Adam, in one sentence:** should the room behind a reversing train be the whole route
 it came in over, or only the last N segments it will physically stand on?
 
+**RULED 2026-09-02, not yet built** ([MT-260](../manual-tests/tests.md#mt-260) ruling 1).  Adam: *"it depends on the direction.  if the train crosses the fork through the base, then the track after the switch has to be long enough to accommodate it.  in other words, between the switch and the station, the length must be >= length of the train.  if the train enters from one of the branches, then it shouldn't matter."*  So the measurement is neither the whole route nor the post-reversal suffix: it is the stretch from the last base-side turnout crossing to the destination.  `Layout.measuredRoomToReverseInto` sums every segment today and has to learn which ports the path used.  One thing is being confirmed with him before it is built - see the note at the foot of MT-260.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ### SVN-B4 — the new rule is in `isPathClear` and nowhere in the staging planner

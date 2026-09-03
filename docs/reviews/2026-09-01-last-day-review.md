@@ -399,6 +399,8 @@ being a nag"*; on his own layout it does not.
 square, given that without them the guard never fires - and is a 20-item warning list what he wants
 on first opening the editor after upgrading?
 
+**RULED 2026-09-02, not yet built** ([MT-260](../manual-tests/tests.md#mt-260) ruling 2).  Adam: *"20 warnings sounds OK."*  The notice extends past the reversal square.  **Which** squares it asks for now follows from ruling 1 rather than from "every segment on the run-in", so the twenty is an upper bound rather than the number: it will be whatever the switch-to-station stretches need.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ### C8 - the signal ruling gives up two things and MT-246 records one
@@ -415,6 +417,8 @@ again.
 signal stuck red over an empty platform holds a train up. Is that acceptable alongside the
 green-over-occupied case, or should the sweep come back for **occupied** platforms only - which is
 the option MT-246 already offers?
+
+**CLOSED 2026-09-02 - Adam accepted it** ([MT-260](../manual-tests/tests.md#mt-260) ruling 3): *"OK, because it will be set correctly later."*  A signal left red over a platform emptied by hand is corrected by the next route through it, and that is soon enough.  No sweep comes back.  MT-246's *what this deliberately gives up* is the place that should now record both directions rather than one.
 
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 

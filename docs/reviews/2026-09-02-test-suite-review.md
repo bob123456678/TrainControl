@@ -425,7 +425,7 @@ unprotected — only the "and the door does not ask it again" half. B.
 
 ### TS3-B5 — `one.sh` does not read the `Configuration Failures` line
 
-**FIXED 2026-09-02 (`3c014e77`).**  `one.sh` reads `Configuration Failures` and calls a non-zero count out on its own line, with the sentence `battery.sh` carries for the same check: the teardowns in this suite put Adam's signals back and clear the auto layout, so one that threw would leave the railway changed and be reported as a clean run.  The same round gave it the skip and zero-test call-outs (`TV3-B1`) and a non-zero exit (`TV3-C4`).
+**FIXED 2026-09-02 (`3c014e77`).**  `one.sh` reads `Configuration Failures` and calls a non-zero count out on its own line, with the sentence `battery.sh` carries for the same check: the teardowns in this suite put Adam's signals back and clear the auto layout, so one that threw would leave the railway changed and be reported as a clean run.  The same round gave it the skip and zero-test call-outs (`V33-B1`) and a non-zero exit (`V33-C4`).
 
 `docs/tools/one.sh:174` is the whole of its result reading:
 
@@ -717,6 +717,8 @@ because it is the stated reason the test reads the affordances rather than the g
 which is what that reasoning now leaves uncovered.
 
 ### TS3-C5 — `one.sh` runs the tests after a failed compile, through the pipe its own comment warns about
+
+**FIXED 2026-09-02.**  Same line as `V33-C3`, and both halves of it: `javac`'s own status decides, the output goes to a log rather than through a pipe, and a tree that does not compile stops the run with exit 2.
 
 `docs/tools/one.sh:153-154`:
 

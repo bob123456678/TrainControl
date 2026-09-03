@@ -331,6 +331,8 @@ Two specific defects a test would catch:
 
 **Status: DEFERRED — needs Adam.**
 
+**RULED 2026-09-02, not yet built** ([MT-260](../manual-tests/tests.md#mt-260) ruling 2).  Adam: *"20 warnings sounds OK."*  The notice extends past the reversal square.  **Which** squares it asks for now follows from ruling 1 rather than from "every segment on the run-in", so the twenty is an upper bound rather than the number: it will be whatever the switch-to-station stretches need.
+
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 **The one-sentence question for him:** should the "add a track length here" notice name only the square trains turn round

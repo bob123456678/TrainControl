@@ -139,6 +139,44 @@ echo "$LOCK_PID" > "$LOCK"
 
 BUILD="$S/build/one-$$"
 
+# ------------------------------------------------------------------------------------------------
+# THIS RUN'S OWN NAME, AND THE REAPER THAT USES IT (V33-C2).
+#
+# battery.sh has had both since 2026-08-25 and this runner had neither, which is the gap: a class that
+# hangs, or one whose window never closes, leaves a JVM behind, and the NEXT run's start-of-run probe
+# then refuses to start with a message saying the check clears itself.  It does not.  Somebody has to
+# find the process by hand, and the message tells them not to bother looking.
+#
+# `one-$$` rather than `battery-$$`, and reap.ps1 matches the id WHOLE - so a one.sh run and a battery
+# can never reap each other, which was the bug that made the id whole-matched in the first place.
+RUN_ID="one-$$"
+
+# FROM THE SCRIPT'S OWN DIRECTORY, which is the correction TS3-A1 made to battery.sh: reading it from
+# `pwd` meant that moving the folder silently broke it, for four days, with the error going to
+# /dev/null.  Said out loud here for the same reason - a reaper that is not there is exactly the
+# condition nobody notices.
+REAPER="$(cd "$(dirname "$0")" && pwd)/reap.ps1"
+
+if [ ! -f "$REAPER" ]
+then
+    echo "*** WARNING: no reaper at $REAPER - leftover test JVMs will NOT be cleaned up ***"
+    echo ""
+    echo "A JVM left behind by one class poisons every class after it, and trips the next run's"
+    echo "start-of-run probe with a message that says the check clears itself.  It will not."
+    echo ""
+
+    REAPER=""
+fi
+
+reap()
+{
+    if [ -n "$REAPER" ]
+    then
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
+            -RunId "$RUN_ID" >/dev/null 2>&1
+    fi
+}
+
 trap 'rm -f "$LOCK"; rm -rf "$BUILD"; exit 130' INT TERM
 trap 'rm -f "$LOCK"; rm -rf "$BUILD"' EXIT
 
@@ -150,8 +188,24 @@ rm -rf "$BUILD"; mkdir -p "$BUILD"
 
 find src test -name "*.java" > "$S/one-files.txt"
 
-"${TC_JAVAC:-/c/Program Files/Java/jdk1.8.0_361/bin/javac}" -nowarn -encoding UTF-8 \
-    -d "$BUILD" -cp "$CP" @"$S/one-files.txt" 2>&1 | grep -i "error" | head -8
+# THE COMPILE HAS TO HAVE WORKED (V33-C3, TS3-C5).
+#
+# This was `javac ... 2>&1 | grep -i error | head -8`, which is wrong twice over.  The pipeline's
+# status is `head`'s, so the compile could fail and the tests ran anyway - against the LAST build that
+# worked, which is the most misleading thing a runner can do: it reports on code that is not in the
+# tree.  And it is the same `| grep | head` shape this file's own comment forty lines down warns
+# about, where SIGPIPE reached back and swallowed a whole class.
+#
+# battery.sh has done it this way since it was written; this is that code, not a new idea.
+if ! "${TC_JAVAC:-/c/Program Files/Java/jdk1.8.0_361/bin/javac}" -nowarn -encoding UTF-8 \
+    -d "$BUILD" -cp "$CP" @"$S/one-files.txt" 2>"$S/one-javac.log"
+then
+    echo "*** THE WORKING TREE DOES NOT COMPILE - nothing was run ***"
+    echo ""
+    grep -i "error" "$S/one-javac.log" | head -20
+
+    exit 2
+fi
 
 JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 
@@ -175,7 +229,10 @@ for T in "$@"
 do
     echo "--- $T"
 
-    "$JAVA" -Dtraincontrol.anyReceivePort=true \
+    # Only THIS RUN's leftovers, before the class and again after the last one (V33-C1, V33-C2).
+    reap
+
+    "$JAVA" -Dtraincontrol.anyReceivePort=true -Dtraincontrol.batteryRun="$RUN_ID" \
         -cp "$BUILD;$CP" org.testng.TestNG -testclass "$T" -d "$S/oneout" > "$S/one-run.txt" 2>&1
 
     grep -E "Total tests run|Configuration Failures|FAILED|java.lang.Assertion|at regression|at core" \
