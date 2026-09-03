@@ -7044,6 +7044,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void display()
     {     
+        // THE NOTICE COMES OFF FIRST (OB-170, 2026-09-03).
+        //
+        // The window has been on screen since before the connect, showing a spinner and a line of
+        // words, and this is where the application it was standing in for takes its place.  Nothing
+        // below has to know: by the time it runs, this is an ordinary window being made ready.
+        connectingFinished();
+
         // Remember window location.  Because isResizable is already false, this will not restore the size
         this.loadWindowBounds();
         
@@ -7106,6 +7113,141 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         removeLegacyEditorItem();
 
         takeTheKeyboard();
+    }
+
+    /**
+     * What the window was holding before the connecting notice went over it, or null when it is not
+     * showing one.
+     */
+    private java.awt.Container contentBehindTheNotice;
+
+    /**
+     * Puts this window on screen with a "connecting" notice on it, before there is anything to show
+     * (OB-170, 2026-09-03).
+     *
+     * **This exists because a second window cannot be used for it.**  Start-up used to show a splash -
+     * a small always-on-top window of its own - and showing one spends the process's single chance at
+     * putting a window in the foreground.  The main window then arrived into somebody else's
+     * foreground, and nothing it could do got the keyboard back, because a process that is not in the
+     * foreground is not allowed to put itself there.
+     *
+     * Measured three ways before it was believed: with the splash suppressed the start-up keyboard
+     * works; with it shown and closed before the window it does not; with it shown and closed after the
+     * window it does not.  Adam ran all three.
+     *
+     * So the process shows exactly one window, which is what 2.8.1 does and why 2.8.1's keyboard works.
+     *
+     * **The content pane is swapped rather than covered.**  A glass pane would leave the real
+     * components painting underneath it, and they read a model that does not exist yet - there is no
+     * `ViewListener` until the connect is over.  Swapping means nothing model-dependent is asked to
+     * draw itself before there is a model.
+     *
+     * @param message what is happening, in words
+     */
+    public void showConnecting(String message)
+    {
+        if (contentBehindTheNotice != null) return;
+
+        contentBehindTheNotice = getContentPane();
+
+        setContentPane(StartupSplash.panel(message));
+
+        // AND THE MENUS WITH IT.  Adam: "just gray out the menu bar before it loads, too."  The bar is
+        // part of the window rather than of its content, so swapping the content leaves every menu
+        // sitting there looking ready - and none of them can do anything: they command a model that
+        // does not exist until the connect is over.
+        greyTheMenus();
+
+        // Where it is going to live, so it does not appear in one place and jump to another.
+        loadWindowBounds();
+
+        setVisible(true);
+    }
+
+    /**
+     * Gives the window its own content back, once there is something to show.
+     *
+     * Safe to call when no notice was ever shown - the headless and no-window start-ups never call
+     * `showConnecting`, and `display()` calls this unconditionally.
+     */
+    public void connectingFinished()
+    {
+        if (contentBehindTheNotice == null) return;
+
+        setContentPane(contentBehindTheNotice);
+
+        contentBehindTheNotice = null;
+
+        ungreyTheMenus();
+
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * The menus this window greyed out while it was connecting, so that only those go back.
+     */
+    private final java.util.List<javax.swing.JMenu> menusGreyedByTheNotice = new java.util.ArrayList<>();
+
+    /**
+     * Greys out the menu bar for as long as the connecting notice is up.
+     *
+     * **Each menu, not the bar.**  `JMenuBar.setEnabled(false)` leaves its menus drawn in their
+     * ordinary colour and still opening; the greying an operator recognises is on the JMenu itself.
+     *
+     * **What was already disabled stays disabled.**  Several items are switched off by state - no
+     * layout, no local folder, no update to download - and re-enabling everything afterwards would
+     * turn those on, which is a worse fault than the one being fixed.  Hence the list: only what this
+     * turned off is turned back on.
+     *
+     * Separate from `showConnecting` so it can be tested without putting a window on somebody's
+     * screen, which is a thing this suite is not allowed to do.
+     */
+    private void greyTheMenus()
+    {
+        javax.swing.JMenuBar bar = getJMenuBar();
+
+        if (bar == null) return;
+
+        for (int i = 0; i < bar.getMenuCount(); i++)
+        {
+            javax.swing.JMenu menu = bar.getMenu(i);
+
+            // getMenu returns null for anything in the bar that is not a JMenu - a glue or a strut.
+            if (menu == null || !menu.isEnabled()) continue;
+
+            menu.setEnabled(false);
+
+            menusGreyedByTheNotice.add(menu);
+        }
+    }
+
+    /**
+     * Gives back exactly the menus `greyTheMenus` took, and nothing else.
+     */
+    private void ungreyTheMenus()
+    {
+        for (javax.swing.JMenu menu : menusGreyedByTheNotice)
+        {
+            menu.setEnabled(true);
+        }
+
+        menusGreyedByTheNotice.clear();
+    }
+
+    /**
+     * Takes the window off the screen when the start-up it was reporting has failed.
+     *
+     * The old splash was closed on every path out of `init` for the same reason, and its comment is
+     * still the right one: something left standing over a failure the operator cannot see through is
+     * the "looks hung mid-connect" symptom the notice exists to remove.  A window still saying
+     * "connecting" while an error dialog stands in front of it is that, exactly.
+     */
+    public void connectingFailed()
+    {
+        connectingFinished();
+
+        setVisible(false);
     }
 
     /**

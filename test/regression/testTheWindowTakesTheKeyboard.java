@@ -848,4 +848,126 @@ public class testTheWindowTakesTheKeyboard
         return out.toString();
     }
 
+    /**
+     * The menu bar is greyed out for as long as the connecting notice is up.
+     *
+     * Adam: **"just gray out the menu bar before it loads, too."**  The notice is drawn on the window
+     * itself now rather than in a splash of its own (OB-170), and the menu bar is part of the window
+     * rather than of its content - so swapping the content in left every menu looking ready while none
+     * of them could do anything, because they command a model that does not exist until the connect
+     * is over.
+     *
+     * **And exactly the ones it took, back.**  Several menus are switched off by state; re-enabling
+     * everything afterwards would switch those on, which is a worse fault than the one being fixed.
+     * The second half of this test is that property, and it is the half a naive implementation fails.
+     *
+     * Neither method shows anything, which is why they are separate from `showConnecting` and why
+     * this test can run in a battery: putting a window on the operator's screen is a thing this suite
+     * is not allowed to do.
+     *
+     * MUTATION this catches: `ungreyTheMenus` walking the menu bar instead of its own list.
+     */
+    @Test(timeOut = 300000)
+    public void testTheMenusAreGreyedWhileTheWindowIsConnecting() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the menu bar is on a window");
+        }
+
+        // BEFORE the window, not after it (OB-111): its construction reads the machine-global layout
+        // preference and would otherwise open Adam's real railway.
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+
+        final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
+
+            final org.traincontrol.gui.TrainControlUI ui = made[0];
+
+            javax.swing.JMenuBar bar = ui.getJMenuBar();
+
+            assertNotNull(bar, "the window has no menu bar, so this proves nothing");
+
+            assertTrue(bar.getMenuCount() > 1, "one menu is not a menu bar");
+
+            // One that is already off, so the restore has something it could get wrong.
+            javax.swing.JMenu alreadyOff = bar.getMenu(bar.getMenuCount() - 1);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> alreadyOff.setEnabled(false));
+
+            java.util.List<javax.swing.JMenu> wereOn = new java.util.ArrayList<>();
+
+            for (int i = 0; i < bar.getMenuCount(); i++)
+            {
+                if (bar.getMenu(i) != null && bar.getMenu(i).isEnabled()) wereOn.add(bar.getMenu(i));
+            }
+
+            assertFalse(wereOn.isEmpty(), "every menu was already off, so greying them proves nothing");
+
+            // GREYED.
+            call(ui, "greyTheMenus");
+
+            for (int i = 0; i < bar.getMenuCount(); i++)
+            {
+                javax.swing.JMenu menu = bar.getMenu(i);
+
+                if (menu == null) continue;
+
+                assertFalse(menu.isEnabled(),
+                    "the " + menu.getText() + " menu is still live while the window says it is "
+                    + "connecting, and everything in it commands a model that does not exist yet");
+            }
+
+            // AND BACK, EXACTLY.
+            call(ui, "ungreyTheMenus");
+
+            for (javax.swing.JMenu menu : wereOn)
+            {
+                assertTrue(menu.isEnabled(),
+                    "the " + menu.getText() + " menu never came back after the connect, so the "
+                    + "application starts with a menu bar it cannot use");
+            }
+
+            assertFalse(alreadyOff.isEnabled(),
+                "a menu that was switched off before the notice went up was switched ON by taking it "
+                + "down - so whatever state had disabled it has been overruled by the start-up");
+        }
+        finally
+        {
+            if (made[0] != null)
+            {
+                final org.traincontrol.gui.TrainControlUI window = made[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> window.dispose());
+            }
+
+            sandbox.close();
+        }
+    }
+
+    /**
+     * A private no-argument method of the window, by name, on the event thread.
+     */
+    private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
+    {
+        final java.lang.reflect.Method m =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(name);
+
+        m.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                m.invoke(on);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 }

@@ -3816,18 +3816,42 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // below is built there is nothing at all to look at - so a slow start is indistinguishable
         // from a failed one. Only when a window was actually asked for: every test passes showUI
         // false, and a suite that opens windows on the operator's screen is one he stops running.
-        // OWNED BY THE WINDOW IT IS STANDING IN FOR (OB-170, 2026-09-03).
+        // ON THE WINDOW ITSELF, and this is the end of OB-170 (2026-09-03).
         //
-        // `ui` was built at the third statement of this method and is not shown until the connect is
-        // over - which is exactly the stretch this splash covers - so it exists in time to own one.
+        // This used to be a splash: a second, always-on-top window of its own.  Showing one spends the
+        // process's single chance at putting a window in the foreground, so the main window arrived
+        // into somebody else's foreground - the application we were launched from - and nothing it
+        // could do got the keyboard back.  Measured three ways, all by Adam: suppressed, the start-up
+        // keyboard works; shown and closed before the window, it does not; shown and closed after the
+        // window, it does not.
         //
-        // Why that matters: an unowned window, when it is destroyed, hands the foreground to the next
-        // window in the Z-order, which is the application the operator was using.  A dialog owned by
-        // our frame hands it to the frame.  Adam measured the cost of the unowned version - with the
-        // splash suppressed the start-up keyboard works, and with it shown it does not, whenever it is
-        // taken down.
-        final org.traincontrol.gui.StartupSplash splash = showUI
-            ? org.traincontrol.gui.StartupSplash.show(I18n.t("ui.splashConnecting"), ui) : null;
+        // So the process shows exactly one window.  `ui` is built at the third statement of this
+        // method and can be put on screen now with a spinner and a line of words on it, which is what
+        // the splash was for - and it says more, because it is the real window arriving rather than a
+        // box that appears and vanishes.
+        //
+        // On the event thread, and waited for: what follows is the connect, and a window put together
+        // off the event thread is a race that usually wins.
+        if (showUI && ui != null)
+        {
+            final org.traincontrol.gui.TrainControlUI showing = ui;
+
+            try
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                    showing.showConnecting(I18n.t("ui.splashConnecting")));
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+            catch (java.lang.reflect.InvocationTargetException couldNotShow)
+            {
+                // Nothing here is worth failing a start-up over, which is what the splash's own
+                // builder said: the application works perfectly well without the reassurance, and the
+                // alternative is refusing to start because it could not be drawn.
+            }
+        }
 
         final NetworkProxy proxy;
         final MarklinControlStation model;
@@ -3851,7 +3875,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // caller's catch (TrainControl.main) put up the plain-English error dialog underneath
             // it. A splash left over a failure the operator cannot see through is the exact "looks
             // hung mid-connect" symptom FR-041 was built to remove.
-            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+            if (ui != null) ui.connectingFailed();
 
             throw ex;
         }
@@ -3930,12 +3954,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // happen.
                     latch.countDown();
 
-                    // AND THE SPLASH DOWN, in the same finally and for the same reason (FR-041).
+                    // AND NOTHING HERE TAKES THE NOTICE DOWN.
                     //
-                    // The build runs here rather than where it was started, so this is where it
-                    // finishes - including when it throws. A splash left standing over a working
-                    // application is a worse fault than never having shown one.
-                    org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+                    // FR-041 closed the splash in this finally, because the build runs here rather
+                    // than where it was started and a splash left standing over a working application
+                    // is a worse fault than never having shown one.  The notice is not a splash: it is
+                    // ON the window, so taking it down means hiding the window - and doing that on
+                    // every path hid the window a moment after showing it and showed it again from
+                    // `display()`.  Adam saw exactly that: **"can we avoid having the window close and
+                    // then reopen?"**
+                    //
+                    // FR-041's point still holds and is answered after `await()` below, where the
+                    // build's outcome is known: a FAILED build takes the window with it, and a good
+                    // one keeps it and lets `display()` fill it in.
                 }
             });
 
@@ -3950,14 +3981,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             catch (InterruptedException interrupted)
             {
-                // The splash goes only on the way OUT (OB-170, 2026-09-03).
+                // The notice goes only on the way OUT.
                 //
-                // This was a `finally`, which closed it on the ordinary path too - and closing it
-                // before the window is shown is what left the keyboard dead, because between the two
-                // this process owns no visible window and Windows hands the foreground back to
-                // whatever the operator was using.  WK-B2's point stands and is answered by catching
-                // the interruption rather than by closing on every path.
-                org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+                // WK-B2's point - await() itself can throw, and something left standing over a
+                // failure is worse than never having shown it - is answered by catching the
+                // interruption rather than by taking the notice down on every path.  On the ordinary
+                // path `display()` replaces it with the application.
+                if (theUI != null) theUI.connectingFailed();
 
                 throw interrupted;
             }
@@ -3966,11 +3996,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // through the block above - a start-up that never reaches the window build must not leave
             // a splash on the screen either.
             //
-            // **NOT ON THE SUCCESS PATH ANY MORE, and that is OB-170 (2026-09-03).**  See the close
-            // after `display()` below: this one has to stay for the failures, and the `finally` above
-            // it has to stay for the interrupted case, but a start-up that reaches the window must
-            // leave the splash up until the window is on screen.
-            if (!built.get()) org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+            // NOT ON THE SUCCESS PATH: there, `display()` replaces the notice with the application.
+            if (!built.get() && theUI != null) theUI.connectingFailed();
 
             // And now the caller the countDown's comment promised (FBR-C3).
             //
@@ -3995,24 +4022,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     theUI.display();
-
-                    // AND ONLY NOW DOES THE SPLASH GO (OB-170, and this one is measured).
-                    //
-                    // It used to be closed before this, and Adam's own experiment is what settled what
-                    // that cost: with the splash suppressed entirely the start-up keyboard works, and
-                    // with it shown and closed early it does not.
-                    //
-                    // The reason is the gap.  Between the splash going and the window arriving, this
-                    // process owns no visible window at all - so Windows moves the foreground to
-                    // whatever the operator was using, which is the application that launched us.  The
-                    // window then comes up into somebody else's foreground, and no amount of raising
-                    // gets it back, because a process that is not in the foreground is not allowed to
-                    // put itself there.
-                    //
-                    // Closed here, the splash covers that gap: it is always-on-top, so it sits over the
-                    // new window for the moment between the two - which is what a splash looks like
-                    // anyway - and when it goes, the window underneath it is ours.
-                    org.traincontrol.gui.StartupSplash.closeIfShown(splash);
 
                     model.logf("ui.initialized");
                 });

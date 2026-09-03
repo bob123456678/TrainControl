@@ -1009,35 +1009,51 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The start-up splash is shown only when a window was asked for, and always taken down (FR-041).
+     * Start-up shows the notice on its own window, and never hides that window on the way in.
      *
      * Adam: "while connecting to the CS and before the main UI loads, show a loading popup/overlay
-     * like the cs2 sync one."
+     * like the cs2 sync one" (FR-041), and then **"can we avoid having the window close and then
+     * reopen?"** (2026-09-03) - which is the second half of this test and was a real defect: the call
+     * that takes the notice down sat in the `finally` of the window build, so it ran on the SUCCESS
+     * path too, hid the window a moment after showing it, and `display()` showed it again.
      *
-     * Tested by reading rather than by showing one. A test that put a splash on screen would do it on
-     * every battery, which is precisely the complaint he made today about a modal dialog appearing
-     * while one ran - so the two properties worth pinning are the ones that keep it out of his way:
-     * it is gated on `showUI`, which every test passes as false, and it is closed in a `finally` so a
-     * failed start-up cannot leave one standing over nothing.
+     * Read rather than run, for the reason FR-041's test gave: a test that put a start-up notice on
+     * the screen would do it on every battery, which is the complaint he made about a modal dialog
+     * appearing while one ran.  Every test builds its model with showUI false, and the gate below is
+     * what keeps it that way.
+     *
+     * MUTATION this catches: putting `connectingFailed()` back in the finally after
+     * `latch.countDown()`, which is exactly the defect he reported.
      */
     @Test
-    public void testTheStartupSplashIsGatedAndAlwaysClosed() throws Exception
+    public void testTheStartupNoticeGoesOnTheWindowAndStaysThere() throws Exception
     {
         String init = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/marklin/MarklinControlStation.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        int shown = init.indexOf("StartupSplash.show(");
+        // NO SECOND WINDOW, WHICH IS OB-170 (2026-09-03).
+        //
+        // The notice used to be a splash - a top-level window of its own - and showing one during
+        // start-up spends the single chance a process gets to put a window in the foreground, so the
+        // main window arrived into the foreground of whatever launched us and the keyboard was dead.
+        // Seven passes went at that from the window's end; Adam's own experiment settled it in one
+        // run, by suppressing the splash.
+        assertFalse(init.contains("StartupSplash.show("),
+            "start-up shows a second window again, which is OB-170: it spends the one chance this "
+            + "process gets at the foreground, and the main window then arrives into somebody else's");
+
+        int shown = init.indexOf("showConnecting(");
 
         assertTrue(shown >= 0,
-            "nothing shows a start-up splash, so connecting to a station that does not answer looks "
+            "nothing shows a start-up notice, so connecting to a station that does not answer looks "
             + "like an application that failed to start (FR-041)");
 
         // GATED. Without this every test that builds a model would open a window on his screen.
-        String around = init.substring(Math.max(0, shown - 200), shown);
+        String around = init.substring(Math.max(0, shown - 400), shown);
 
         assertTrue(around.contains("showUI"),
-            "the splash is no longer gated on showUI, so it appears whenever a model is built - "
+            "the notice is no longer gated on showUI, so it appears whenever a model is built - "
             + "including in every test in this suite, on the operator's own screen");
 
         // BEFORE the connection it is reporting.
@@ -1046,44 +1062,33 @@ public class testSwitchingToACentralStationLayout
         assertTrue(connects >= 0, "the connection has moved, so the ordering below means nothing");
 
         assertTrue(shown < connects,
-            "the splash goes up after the connection is attempted, which is the whole of the wait it "
+            "the notice goes up after the connection is attempted, which is the whole of the wait it "
             + "exists to cover");
 
-        // AND ALWAYS TAKEN DOWN.
-        assertTrue(count(init, "StartupSplash.closeIfShown(splash)") >= 2,
-            "the splash is closed on fewer paths than it was - the build runs on the event thread "
-            + "and can throw, and a splash left standing over a working application is worse than "
-            + "never having shown one");
+        // AND TAKEN DOWN WHEN THE START-UP FAILS.  It is on the window now, so taking it down means
+        // taking the window with it - which is right for a failure and wrong for anything else.
+        assertTrue(init.contains("!built.get() && theUI != null) theUI.connectingFailed()"),
+            "a failed window build leaves a window standing that says it is connecting, with the "
+            + "error dialog in front of it - which is the symptom FR-041 exists to remove, wearing "
+            + "the fix's own clothes");
 
-        // THE PROPERTY, not a byte distance.
+        // AND NOT ON THE WAY IN.  This is the defect Adam reported: **"can we avoid having the window
+        // close and then reopen?"**
         //
-        // This used to require the first close to sit within 900 characters of a `finally`, which is a
-        // fact about formatting rather than about behaviour - and it failed on an IMPROVEMENT, when
-        // the splash was additionally closed before rethrowing so the "already running" dialog is no
-        // longer hidden behind it. What has to be true is that it comes down on the normal path and on
-        // the exception path.
-        assertTrue(init.contains("finally") && count(init, "StartupSplash.closeIfShown(splash)") >= 2,
-            "the splash is closed on fewer paths than it was - the window build runs on the event "
-            + "thread and can throw, and a splash left standing over a working application is worse "
-            + "than never having shown one");
+        // The `finally` below runs on every path out of the window build, success included.  Anything
+        // in it that hides the window hides one that is about to be shown again by `display()`.
+        int countDown = init.indexOf("latch.countDown();");
 
-        String betweenShowAndAwait = init.substring(shown, init.indexOf("latch.await()", shown));
+        assertTrue(countDown > 0, "the latch has moved, so the region below means nothing");
 
-        assertTrue(betweenShowAndAwait.contains("closeIfShown")
-                || init.indexOf("closeIfShown", init.indexOf("latch.await()", shown)) >= 0,
-            "nothing takes the splash down anywhere near the window build");
+        String restOfTheFinally = init.substring(countDown, init.indexOf("latch.await()", countDown));
 
-        // AND ON THE SUCCESS PATH IT COMES DOWN AFTER THE WINDOW IS UP (OB-170, 2026-09-03).
-        //
-        // This is the one that matters, and it is a fact about ORDER rather than about paths.  The
-        // splash used to be closed before `display()`, and between the two this process owns no
-        // visible window at all - so Windows moves the foreground to whatever the operator was using,
-        // the window arrives into somebody else's foreground, and the keyboard is dead.  Seven attempts
-        // went at that symptom from the window's end before Adam's own experiment - suppress the splash
-        // and the keyboard works - said where it actually was.
-        //
-        // Closed after `display()`, the splash covers the gap: it is always-on-top, so it sits over the
-        // new window for the moment between the two, and when it goes the window underneath it is ours.
+        assertFalse(restOfTheFinally.contains("connectingFailed()"),
+            "the notice is taken down in the finally of the window build, which runs on the SUCCESS "
+            + "path too - so the window is hidden a moment after it is shown and shown again by "
+            + "display(), which is what the operator sees as the window closing and reopening");
+
+        // AND NOTHING AFTER display() TAKES IT AWAY EITHER.
         int displays = init.indexOf("theUI.display();");
 
         assertTrue(displays > 0, "nothing calls display(), so the ordering below means nothing");
@@ -1091,11 +1096,9 @@ public class testSwitchingToACentralStationLayout
         String afterDisplay = init.substring(displays,
             Math.min(init.length(), init.indexOf("});", displays) + 3));
 
-        assertTrue(afterDisplay.contains("closeIfShown(splash)"),
-            "the splash is not taken down after display() on the success path.  Closed before it, "
-            + "there is a moment when this process has no visible window and Windows gives the "
-            + "foreground back to whatever launched us - which is OB-170, and which took seven passes "
-            + "and one experiment of Adam's to find.  What follows display(): " + afterDisplay);
+        assertFalse(afterDisplay.contains("connectingFailed"),
+            "the window is hidden immediately after being shown.  What follows display(): "
+            + afterDisplay);
 
         // And the words exist to put in it.
         String bundle = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
@@ -1103,6 +1106,6 @@ public class testSwitchingToACentralStationLayout
             java.nio.charset.StandardCharsets.UTF_8);
 
         assertTrue(bundle.contains("\nui.splashConnecting="),
-            "the splash asks for a message key that is not in the bundle, so it would show the key");
+            "the notice asks for a message key that is not in the bundle, so it would show the key");
     }
 }

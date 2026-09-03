@@ -698,66 +698,101 @@ public class testTheWaitMarkIsAnHourglass
         }
     }
     /**
-     * The start-up splash never takes the foreground (OB-170, sixth pass).
+     * The start-up notice is not a window, and that is the whole of OB-170 (2026-09-03).
      *
      * Adam: **"2.8.1 works fine, the keyboard is focused on startup.  no message on 3.0.0."**  That
-     * makes it a regression, and the start-up path has exactly one window in 3.0.0 that 2.8.1 does not
-     * have.
+     * made it a regression, and the start-up path had exactly one window in 3.0.0 that 2.8.1 does not
+     * have: a splash.
      *
      * **Windows gives a process one chance to put a window in the foreground when the user starts it,
-     * and showing a top-level window spends it.**  A splash that is always-on-top, up for the whole of
-     * the connect and then destroyed spends that right and hands the foreground back to whatever was
-     * there before - the application we were launched from.  Which is what he reported four times:
-     * "the previous active application window retains focus".
+     * and showing a top-level window spends it.**  The splash spent it, so the main window arrived
+     * into the foreground of whatever launched us - which is what he reported four times: "the
+     * previous active application window retains focus".
      *
-     * He asked about the splash on the very first report and was told it could not be the cause,
-     * because it closes before the window is shown.  That answered a question about ORDERING, and the
-     * cost is not in the order.
+     * Six passes tried to make the splash cheap enough to keep: non-focusable, no auto-request-focus,
+     * closed early, closed late, owned by the frame.  All six were wrong, and his own experiment is
+     * what settled it - suppress the splash and the keyboard works.  So there is no splash: the notice
+     * goes on the main window, and the process shows one window, as 2.8.1 does.
      *
-     * Two properties, because they are two questions: `isFocusableWindow` is the platform's
-     * no-activate window style, and `getAutoRequestFocus` is whether showing it asks for activation.
-     * A splash wants neither - it cannot be typed into and it cannot be clicked.
+     * Tested as a property of the class rather than by showing anything: what must stay true is that
+     * nothing here can open a window, which is a fact about the source and about what `panel` returns.
      *
-     * MUTATION this catches: removing either line from `StartupSplash.show`.
+     * MUTATION this catches: giving `StartupSplash` a `show()` that opens a JWindow again.
      */
     @Test(timeOut = 60000)
-    public void testTheSplashNeverTakesTheForeground() throws Exception
+    public void testTheStartupNoticeIsNotAWindow() throws Exception
     {
-        // LOUDLY, not quietly.  `StartupSplash.SUPPRESSED` is a diagnostic switch for OB-170 and it
-        // is meant to be turned back off; a test that silently passed while it is on would be one more
-        // thing between here and remembering that.
-        if (org.traincontrol.gui.StartupSplash.SUPPRESSED)
+        // NOTHING IN THE CLASS OPENS ANYTHING.
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/StartupSplash.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        // What a window costs to OPEN, which is the thing that must not come back.  Written as the
+        // code that would do it rather than as the type names, because the class javadoc names the
+        // types on purpose - the history of OB-170 is written there and is worth keeping.
+        for (String opens : new String[]{"new JWindow(", "new JDialog(", "setVisible(true)"})
         {
-            throw new org.testng.SkipException("StartupSplash.SUPPRESSED is on - the splash is switched off while "
-                + "OB-170 is settled, and this test is about the splash.  Turn it back to false.");
+            assertFalse(source.contains(opens),
+                "StartupSplash can open a window again (" + opens + ") - and a second top-level window "
+                + "during start-up is OB-170: it spends the one chance the process gets at the "
+                + "foreground, and the main window then arrives into somebody else's");
         }
 
-        org.traincontrol.gui.StartupSplash splash = org.traincontrol.gui.StartupSplash.show("probe");
+        // AND IT HAS NOWHERE TO KEEP ONE.  The splash held its window in a field; a class with no
+        // state cannot be holding a window between calls.
+        assertEquals(org.traincontrol.gui.StartupSplash.class.getDeclaredFields().length, 0,
+            "StartupSplash has state again, which is what a window it can close later needs");
 
-        assertNotNull(splash, "no splash was built, so this proves nothing about the one that is");
+        // AND WHAT IT HANDS OVER IS SOMETHING A WINDOW CAN WEAR.
+        final javax.swing.JPanel[] built = new javax.swing.JPanel[1];
 
-        try
-        {
-            java.lang.reflect.Field held =
-                org.traincontrol.gui.StartupSplash.class.getDeclaredField("window");
-            held.setAccessible(true);
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            built[0] = org.traincontrol.gui.StartupSplash.panel("probe"));
 
-            javax.swing.JWindow window = (javax.swing.JWindow) held.get(splash);
+        assertNotNull(built[0], "no notice was built");
 
-            assertNotNull(window, "the splash has no window");
+        assertFalse(java.awt.Window.class.isAssignableFrom(
+                org.traincontrol.gui.StartupSplash.class.getMethod("panel", String.class).getReturnType()),
+            "the notice is handed over as a window again");
 
-            assertFalse(window.isFocusableWindow(),
-                "the splash can be focused, so the platform may activate it - and a window that takes "
-                + "the foreground during start-up spends the one chance the main window needs");
-
-            assertFalse(window.isAutoRequestFocus(),
-                "the splash asks for activation when it is shown, which is the same right spent a "
-                + "different way");
-        }
-        finally
-        {
-            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
-        }
+        assertTrue(saysAndSpins(built[0], "probe"),
+            "the notice does not carry both the message and a spinner, so a slow connect shows either "
+            + "a bare spinner - which says only \"wait\" - or words with nothing moving");
     }
 
+    /**
+     * Whether this component tree holds the given text AND a spinner.
+     */
+    private boolean saysAndSpins(java.awt.Container where, String message)
+    {
+        boolean says = false;
+        boolean spins = false;
+
+        java.util.Deque<java.awt.Component> pending = new java.util.ArrayDeque<>();
+        pending.push(where);
+
+        while (!pending.isEmpty())
+        {
+            java.awt.Component c = pending.pop();
+
+            if (c instanceof javax.swing.JLabel && message.equals(((javax.swing.JLabel) c).getText()))
+            {
+                says = true;
+            }
+
+            if (c instanceof org.traincontrol.gui.LoadingSpinner)
+            {
+                spins = true;
+            }
+
+            if (c instanceof java.awt.Container)
+            {
+                for (java.awt.Component child : ((java.awt.Container) c).getComponents())
+                {
+                    pending.push(child);
+                }
+            }
+        }
+
+        return says && spins;
+    }
 }
