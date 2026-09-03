@@ -4840,6 +4840,107 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A signal on an excluded page is still reported gone (REL-B1).
+     *
+     * **The two sides of a pairing are not symmetric, and one filter treated them as if they were.**
+     * `SVN-C6` added an excluded-page filter to `signalsThatAreGone` because a pairing whose STATION is
+     * on a page that is switched off is not in play, and a warning about it is noise. The same filter
+     * was applied to the SIGNAL, and that silenced a warning that was true: `protectingSignalNames`
+     * resolves signals through the graph, which does not carry an excluded page, so a signal on one
+     * really IS dropped from the built configuration - the platform really IS unprotected, and the
+     * check exists to say so.
+     *
+     * MUTATION this catches: putting the signal-side `continue` back.
+     */
+    @Test
+    public void testASignalOnAnExcludedPageIsStillReportedGone() throws Exception
+    {
+        LayoutDiagram elsewhere = new LayoutDiagram("second", 6, 4, null, null);
+
+        // A REAL SIGNAL, because the check asks whether the tile resolves to an accessory - a feedback
+        // tile on another page would report gone with both pages in play and prove nothing.
+        elsewhere.addComponent(componentType.SIGNAL, 1, 1, 0, 0, 31, 0, accessoryDecoderType.MM2, null);
+        elsewhere.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
+
+        // Wired, as parsing a real layout does: without an accessory the signal has no address to
+        // command and reports gone whatever page it is on, which would make the precondition below
+        // pass for the wrong reason.
+        wire(elsewhere, 1, 1, 31);
+
+        elsewhere.setPageId("2");
+
+        session.open(Arrays.asList(pageOnDisk(), elsewhere));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("second", 1, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignal(station, signal);
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.SIGNAL_GONE),
+            "precondition: with both pages in play this pairing resolves, so a warning here would be "
+            + "about something else");
+
+        // The page the SIGNAL is on goes out of service.  The station is still in play.
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.SIGNAL_GONE),
+            "the signal protecting a station in play is on a page that is switched off, so it is not "
+            + "in the built configuration and that platform has no protection - and nothing said so");
+    }
+
+    /**
+     * The station-capacity notice does not need a measured tile (REL-C2).
+     *
+     * `SVN-C3` gated this check on `measuresAnyTrack()`, which is Adam's condition for the REVERSAL
+     * notice - and there the gate and the notice are about the same data, tile lengths. Station
+     * capacity is not that data: `Point.validateTrainLength` compares the station's typed maximum
+     * against the locomotive's own authored length, and no tile length enters into it.
+     *
+     * So the gate was a precondition that lost its subject on the way over, and somebody who authors
+     * train lengths and station maxima but has never measured track got no notices at all - about the
+     * feature they are actively using.
+     *
+     * MUTATION this catches: putting `measuresAnyTrack()` back in place of `modelsAnyLength()`.
+     */
+    @Test
+    public void testTheStationCapacityNoticeDoesNotNeedAMeasuredTile() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Capacity");
+
+        TileKey withMaximum = new TileKey("main", 1, 1);
+        TileKey without = new TileKey("main", 4, 1);
+
+        session.setStation(withMaximum, true);
+        session.setStation(without, true);
+        session.rebuild();
+
+        // NOTHING MEASURED, AND NO MAXIMUM ANYWHERE: this railway does not model lengths.
+        assertTrue(subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH).isEmpty(),
+            "a railway that models no lengths at all was asked for station capacities, which is a "
+            + "notice about something nobody on that railway is trying to do: "
+            + subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH));
+
+        // One station is given a maximum.  No track is measured, and none needs to be.
+        session.setPointProperty(withMaximum, "maxTrainLength", 8);
+        session.rebuild();
+
+        assertTrue(subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH)
+                .contains(session.pointNameForTile(without)),
+            "this railway models lengths - a station carries a maximum - and the station that does "
+            + "not was never asked about.  The gate was asking whether any TRACK is measured, which "
+            + "station capacity does not use: "
+            + subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH));
+
+        assertFalse(subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH)
+                .contains(session.pointNameForTile(withMaximum)),
+            "the station that HAS a maximum is being asked for one");
+    }
+
+    /**
      * One signal is still written as a bare string.
      *
      * The compatibility half of the change: a station with a single signal - most of them - is written

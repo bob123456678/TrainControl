@@ -7713,10 +7713,20 @@ public class Layout
                                     );
                                 }
                             }
-                            else
-                            {
-                                l.setTrainLength(0);   
-                            }
+                            // ABSENT MEANS NOT STATED, and this used to mean "clear it" (REL-A2).
+                            //
+                            // The diagram's own capture writes a placement as {"name": X} and nothing
+                            // else - deliberately, because carrying the rest made loading a
+                            // configuration revert what the locomotive window had changed since.  So
+                            // this branch fired for every placed locomotive on every start-up of
+                            // 3.0.0 and set its train length to zero, in the live Locomotive, which is
+                            // saved at exit.  A length nobody typed again was gone for good, and with
+                            // it the tail-clear guard and the reverse-over-switch guard, both of which
+                            // decline to judge a train of no length.
+                            //
+                            // `speed`, twenty lines down, has always worked this way and MT-233
+                            // settled the reasoning for it: absence says "no value" and cannot be
+                            // misread.  Clearing a length is still possible - write the key as 0.
 
                             if (locInfo.has("reversible"))
                             {
@@ -7739,10 +7749,10 @@ public class Layout
                                     );
                                 }
                             }
-                            else
-                            {
-                                l.setReversible(false);   
-                            }
+                            // ABSENT MEANS NOT STATED (REL-A2), as above.  This one is worse than the
+                            // length: a reversible EMU read back as non-reversible is refused a
+                            // terminus by `mustBackIn` and planned round the long way by `pickPath`,
+                            // so the railway behaves differently and nothing says why.
 
                             // Only throw a warning if this is not a station
                             if (!point.optBoolean("station", false))
@@ -7775,8 +7785,10 @@ public class Layout
                             // Place the locomotive
                             placeOn.setLocomotive(l);
                             
-                            // Reset if none present
-                            l.setDepartureFunc(null);
+                            // NOT RESET (REL-A2).  This cleared the departure function for every
+                            // placed locomotive on the diagram path, where the placement carries only
+                            // a name - so a function somebody set in the locomotive window stopped
+                            // firing after one start-up, with nothing to say it had gone.
 
                             // Set start and end callbacks
                             if (locInfo.has("speed") && locInfo.get("speed") != null)
@@ -7814,8 +7826,7 @@ public class Layout
                             // Fires functions on departure and arrival
                             layout.applyDefaultLocCallbacks(l);
 
-                            // Reset if none present
-                            l.setArrivalFunc(null);
+                            // NOT RESET (REL-A2), for the reason at `departureFunc` above.
 
                             // Set arrival callback
                             if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)

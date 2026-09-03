@@ -105,6 +105,121 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
+    /**
+     * Loading a configuration leaves alone what its placements do not carry (REL-A2).
+     *
+     * **This was data loss on every start-up of 3.0.0, and it took two correct decisions to build.**
+     * `AutonomySession.captureFromLayout` writes a placement as `{"name": X}` and nothing else,
+     * deliberately: carrying the rest made loading a configuration revert what the locomotive window
+     * had changed since. And `parseAuto` treated an ABSENT key as an instruction to clear - train
+     * length to zero, reversible to false, both function slots to null - written into the live
+     * `Locomotive` the model holds, which is saved at exit.
+     *
+     * So the diagram path, which is how this application starts, wiped the length of every placed
+     * locomotive. With it went the tail-clear guard and the reverse-over-switch guard, both of which
+     * decline to judge a train of no length, and a reversible EMU was planned as one that cannot
+     * reverse.
+     *
+     * The fixture is the ordinary one: `station()` emits exactly the name-only placement the editor
+     * writes, which is why every test in this class was standing on the defect without seeing it.
+     *
+     * MUTATION this catches: restoring any of the four `else` clauses in `parseAuto` - `setTrainLength(0)`,
+     * `setReversible(false)`, `setDepartureFunc(null)`, `setArrivalFunc(null)`.
+     */
+    @Test
+    public void testLoadingDoesNotClearWhatThePlacementDoesNotCarry()
+    {
+        MarklinLocomotive standing = loc(LOC_A);
+
+        Integer lengthWas = standing.getTrainLength();
+        boolean reversibleWas = standing.isReversible();
+        Integer arrivalWas = standing.getArrivalFunc();
+        Integer departureWas = standing.getDepartureFunc();
+
+        try
+        {
+            // What the locomotive window would have set.
+            standing.setTrainLength(12);
+            standing.setReversible(true);
+            standing.setArrivalFunc(3);
+            standing.setDepartureFunc(4);
+
+            // And what the diagram writes: a name, and nothing else.
+            Layout layout = load(ring(LOC_A, null, null));
+
+            assertNotNull(layout.getLocomotiveLocation(standing),
+                "precondition: the fixture must actually place this locomotive, or the load never "
+                + "reaches the code under test");
+
+            assertEquals(standing.getTrainLength(), Integer.valueOf(12),
+                "loading a configuration cleared the train length.  The placement carries only a name "
+                + "- which is what the editor writes - and an absent key is not an instruction to "
+                + "forget the number somebody typed.  With it go the tail-clear guard and the "
+                + "reverse-over-switch guard, both of which decline to judge a train of no length");
+
+            assertTrue(standing.isReversible(),
+                "loading a configuration made a reversible locomotive non-reversible, so mustBackIn "
+                + "will refuse it a terminus and pickPath will plan it the long way round");
+
+            assertEquals(standing.getArrivalFunc(), Integer.valueOf(3),
+                "loading a configuration cleared the arrival function, so it stops firing and nothing "
+                + "says it has gone");
+
+            assertEquals(standing.getDepartureFunc(), Integer.valueOf(4),
+                "loading a configuration cleared the departure function");
+        }
+        finally
+        {
+            standing.setTrainLength(lengthWas);
+            standing.setReversible(reversibleWas);
+            standing.setArrivalFunc(arrivalWas);
+            standing.setDepartureFunc(departureWas);
+        }
+    }
+
+    /**
+     * And a placement that DOES carry a value still applies it.
+     *
+     * The other half, and the reason the fix is "absent means not stated" rather than "never write":
+     * a legacy `autonomy.json` carries these keys, and importing one has to keep meaning what it meant.
+     */
+    @Test
+    public void testAPlacementThatCarriesAValueStillSetsIt()
+    {
+        MarklinLocomotive standing = loc(LOC_A);
+
+        Integer lengthWas = standing.getTrainLength();
+        boolean reversibleWas = standing.isReversible();
+
+        try
+        {
+            standing.setTrainLength(12);
+            standing.setReversible(true);
+
+            model.parseAuto(json("{'points': ["
+                + "{'name': 'HS A', 'station': true, 's88': " + (S88_BASE + 1)
+                + ", 'loc': {'name': '" + LOC_A + "', 'trainLength': 5, 'reversible': false}},"
+                + station("HS B", 2, null)
+                + "], 'edges': [" + edge("HS A", "HS B") + "," + edge("HS B", "HS A")
+                + "], 'minDelay': 0, 'maxDelay': 0, 'defaultLocSpeed': 30}"));
+
+            assertTrue(model.getAutoLayout().isValid(),
+                "precondition: the graph must parse - " + Layout.getLastError());
+
+            assertEquals(standing.getTrainLength(), Integer.valueOf(5),
+                "a placement that states a train length no longer applies it, so importing a legacy "
+                + "autonomy.json has stopped meaning what it meant");
+
+            assertFalse(standing.isReversible(),
+                "a placement that states reversibility no longer applies it");
+        }
+        finally
+        {
+            standing.setTrainLength(lengthWas);
+            standing.setReversible(reversibleWas);
+        }
+    }
+
     private static String station(String name, int s88Offset, String loc)
     {
         return "{'name': '" + name + "', 'station': true, 's88': " + (S88_BASE + s88Offset)

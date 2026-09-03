@@ -1462,6 +1462,25 @@ public final class LayoutLabel extends JLabel
 
         if (!tcUI.getModel().hasAutoLayout() || tcUI.getModel().getAutoLayout() == null) return false;
 
+        // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask (REL-A1).
+        //
+        // This asked `hasAutoLayout()` alone, and the dialog that can authorise the click asks
+        // `hasAutoLayout() && isAutonomyRunning()`.  So with a configuration loaded and autonomy idle -
+        // the ordinary state, since the active diagram loads at start-up and places locomotives onto
+        // Points - the two halves disagreed: no dialog could be shown, `warnedAboutProtection` was
+        // always false, and the worker below refused EVERY click that would set a protecting signal
+        // green over a square the model believes occupied.  The log line says "click it again", and
+        // clicking again reached the same answer, for ever.
+        //
+        // Worse in that state than it sounds: with autonomy idle, driving a train away by hand does
+        // not clear `getCurrentLocomotive()`, so the refusal fires for trains that are no longer
+        // there and the one recovery gesture at the diagram does nothing.
+        //
+        // The race this guard exists for - `refreshOneSignal` driving the signal from an occupancy
+        // change between the dialog and the command - only happens while autonomy is processing
+        // occupancy at all.  The route door and the switch keyboard both gate on running, and say so.
+        if (!tcUI.getModel().isAutonomyRunning()) return false;
+
         // A tile TOGGLES, so the click is about to command green exactly when the accessory is not
         // straight now.  The rest of the question - and the reason the aspect is half of it - lives on
         // `Layout.clearsProtection`, which the switch keyboard asks too (V31-C2).

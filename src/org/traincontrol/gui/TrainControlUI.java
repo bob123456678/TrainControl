@@ -7287,6 +7287,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void connectingFailed()
     {
+        // ON THE EVENT THREAD, whoever calls it (REL-C1).
+        //
+        // The three callers are failure paths in `MarklinControlStation.init`, all on the caller's own
+        // thread, and this method swaps the content pane, revalidates, repaints and hides a realized
+        // visible frame.  `StartupSplash.close()`, which these replaced, marshalled itself - "if
+        // isEventDispatchThread run it, else invokeLater" - and the rewrite dropped that.  Swing does
+        // not throw for it; what it gives you is a paint race on a window being torn down, at the
+        // moment an error dialog is about to go up.
+        //
+        // Here rather than at the three call sites, so a fourth cannot forget.
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(() -> connectingFailed());
+
+            return;
+        }
+
         connectingFinished();
 
         setVisible(false);

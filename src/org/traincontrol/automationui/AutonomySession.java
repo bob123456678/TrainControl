@@ -3429,10 +3429,16 @@ public class AutonomySession
             // crosses an excluded page; reachable the moment one does.
             if (store.getExcludedPages().contains(pair.getKey().getPage())) continue;
 
+            // THE SIGNAL SIDE IS NOT FILTERED, and that asymmetry is the point (REL-B1).
+            //
+            // A pairing whose STATION is on an excluded page is not in play, so a warning about it is
+            // noise - that is the filter above.  A signal on an excluded page is a different thing:
+            // `protectingSignalNames` resolves signals through `graph.getTiles()`, which does not
+            // carry an excluded page, so that signal really IS dropped from the built configuration
+            // and the platform really IS unprotected.  Filtering here silenced a warning that was
+            // true, which is the one direction this check must never fail in.
             for (TileKey tile : pair.getValue())
             {
-                if (store.getExcludedPages().contains(tile.getPage())) continue;
-
                 LayoutDiagramComponent signal = graph.getTiles().get(tile);
 
                 if (signal == null || signal.getAccessory() == null)
@@ -5351,22 +5357,70 @@ public class AutonomySession
      * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
      * reason the setting itself moved into the station submenu (FR-046).
      *
-     * **Gated on the railway measuring something, like its sibling** (SVN-C3, 2026-09-03).  Adam set
-     * that condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not
-     * to model lengths"* - and this check, six days older, never got it: every station on a layout
-     * that models no lengths at all was listed, which is thirty of them on his own railway, on the
-     * list this file's javadoc twice says is made useless by ordinary things standing beside real
-     * problems.  A railway that has started measuring gets the notices back.
+     * **Gated on the railway modelling lengths at all** (SVN-C3, corrected by REL-C2).  Adam set that
+     * condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not to
+     * model lengths"* - and this check, six days older, never got it: every station on a layout that
+     * models no lengths was listed, thirty of them on his own railway, on the list this file's javadoc
+     * twice says is made useless by ordinary things standing beside real problems.
      *
-     * @return the squares, empty when the layout measures nothing
+     * **But not on TRACK lengths, which was the first version of this gate.**  `maxTrainLength` is
+     * compared against the locomotive's own authored length - `Point.validateTrainLength` - and no tile
+     * length enters into it, so the feature works perfectly on a railway with nothing measured.
+     * Gating it on `measuresAnyTrack()` took a precondition that was true where it was written and
+     * dropped its subject on the way over: somebody who authors train lengths and station maxima and
+     * has never measured track got no notices at all, about the feature they are actively using.
+     *
+     * So the question is "does this railway model lengths": any track measured, any station with a
+     * maximum, or any locomotive with a train length.
+     *
+     * @return the squares, empty when the layout models no lengths anywhere
      */
+    /**
+     * Whether this railway models lengths at all (REL-C2).
+     *
+     * Three ways to have started: a measured tile, a station with a maximum, or a placed locomotive
+     * with a train length.  Any one of them means somebody is using the length rules, and the notices
+     * about the parts they have not filled in are worth having.  None of them means they are not, and
+     * a notice on every station would be a list of things that are not wrong.
+     *
+     * @return true when anything on this railway carries a length
+     */
+    private boolean modelsAnyLength()
+    {
+        if (store != null && store.measuresAnyTrack()) return true;
+
+        if (reducer != null && store != null)
+        {
+            for (TileKey square : reducer.getPoints().keySet())
+            {
+                Object value = getPointProperty(square, "maxTrainLength");
+
+                if (value instanceof Number && ((Number) value).intValue() > 0) return true;
+            }
+        }
+
+        if (trainLengths != null)
+        {
+            for (String standing : placedLocomotives().values())
+            {
+                if (standing == null || standing.trim().isEmpty()) continue;
+
+                Integer length = trainLengths.apply(standing);
+
+                if (length != null && length > 0) return true;
+            }
+        }
+
+        return false;
+    }
+
     private java.util.Set<TileKey> stationsWithoutMaxLength()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
 
         if (reducer == null || store == null) return out;
 
-        if (!store.measuresAnyTrack()) return out;
+        if (!modelsAnyLength()) return out;
 
         for (TileKey square : reducer.getPoints().keySet())
         {

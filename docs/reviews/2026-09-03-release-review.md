@@ -50,6 +50,18 @@ names.
 | C11 | C | `checkReversalNeedsLengthRun` says "{2} squares on the way in" but the count includes the turnaround square itself | `messages.properties:1538`, `AutonomySession.java:2018` |
 | D10 | D | Pass 2's checks that came back clean: bundle placeholder parity across all eight languages, the OB-166 sweep removal at all three doors, the two staging-busy flags, the C9 name-resolution sweep, the MT-149 self-eviction guard, and five more | below |
 | D11 | D | What pass 2 did not cover | - |
+| A2 | A | The diagram flow silently wipes every placed locomotive's train length, reversibility and function slots on each configuration load: capture strips placements to name-only, the builder emits them verbatim, and `parseAuto` resets what a placement omits - the tail-clear, reversal-room and platform-length guards then run on zeroes the operator did not choose | `AutonomySession.java:3051`, `Layout.java:7718/7744/7779/7818` |
+| D12 | D | Pass 3's checks that came back clean: edge-occupancy count balance, the timetable's sequential ordering, `firstClearRoute`'s turned/straight key on the mustBackIn refusal, the builder's portal/exit-side cases, the UI lock-order discipline, and five more | below |
+| D13 | D | What pass 3 did not cover | - |
+| B3 | B | `AUTO_LOAD_AUTONOMY` defaulted from **false** to **true**, so a 2.8.1 user who never ticked the box now loads a configuration on every start - and the comment that justifies the flip ("nothing here for the default to put at risk") is refuted by A1 and A2 of this document, which are both defects of the loaded-and-idle state | `TrainControlUI.java:923-928` vs `master:704` |
+| B4 | B | `R28-B2` ("Export Current Graph" unreachable) was withdrawn against `AutonomyMenu.java:326`, which is the Export **Configuration** item - a different artefact the finding had already excluded. The derived-graph export is still behind `isDebug()`, which needs a two-argument command line. The finding stands | `AutonomyMenu.java:326, :445`, `TrainControl.java:23` |
+| C12 | C | RG3-C5's correction landed on the Readme and not on its twin: `layout.ui.tooltipGrowDiagram` / `tooltipShrinkDiagram` still say "a row at the top and bottom" and "the same three", in all eight bundles | `messages.properties:1916-1917` |
+| C13 | C | `CommandRow.canBeACondition`'s javadoc says `AUTO_LOCOMOTIVE` is not offered and "the editor cannot yet build the row its documentation illustrates"; the body offers it and the editor builds it. `defaultSettingFor`'s comment for the same kind is contradicted by the same lines | `CommandRow.java:239-273`, `RouteEditorFrame.java:3415-3419` |
+| C14 | C | Two prefix typos in the 2026-09-02 first validation put an open B and an open C on record as settled: `RGN-B2` and `RGN-C1` are written where `R28-B2` and `R28-C1` are meant | `2026-09-02-first-validation.md:576, :579` |
+| C15 | C | Eighteen methods in the autonomy, diagram and route UI have no caller anywhere in `src/` or `test/` - and the scan that found them settles `RG3-D2`'s stated blind spot: none is the only door to a capability | `AutonomyEditorPanel.java:2084`, `TrainControlUI.java:24593`, and sixteen more |
+| C16 | C | DAY-C4's false claim has been copied into `Edge.release`'s own javadoc - which is the authority the `Layout` comment cites - so the finding now has two sites and the newer one endorses the older | `Edge.java:452-458`, `Layout.java:2947-2949` |
+| D14 | D | Pass 4's checks that came back clean: the menu-builder key diff, the keyboard-shortcut diff, the twelve autonomy settings, the eighteen deleted bundle keys, `locomotiveRenamed`'s fold into the base class, `CS2File`'s API, `edgesAreEmpty`, the uncalled-method scan against RG3-D2's stated blind spot, and the triage of the 75 keys new in 3.0.0 that nothing reads | below |
+| D15 | D | What pass 4 did not cover | - |
 
 ---
 
@@ -123,6 +135,15 @@ I read the refusal chain end to end: the worker re-check (`LayoutLabel.java:655-
 line 413, and `askedAboutProtection` is initialised false above it - so in the loaded-idle state the
 flag the worker trusts can never have been set. Two independent readings, same conclusion.
 
+**FIXED 2026-09-03.**  Confirmed by reading before fixing: the dialog is gated
+`hasAutoLayout() && isAutonomyRunning()` and `aboutToClearProtection` asked `hasAutoLayout()` alone, so
+in the loaded-and-idle state - the ordinary one - no dialog could be shown, `warnedAboutProtection` was
+always false, and the worker refused every such click for ever.
+
+`aboutToClearProtection` asks `isAutonomyRunning()` now, which is what the route door and the switch
+keyboard both ask, and the reason is written at the return: the race this guard exists for only happens
+while autonomy is processing occupancy at all.
+
 ### B1
 
 **The signal-side excluded-page filter added to `signalsThatAreGone` (SVN-C6) silences a warning that
@@ -162,6 +183,15 @@ graph, excluded pages already left out" (`TileGraph.java:1029`). So a pairing wh
 excluded page really is absent from the built configuration, and the inner filter at
 `AutonomySession.java:3434` suppresses the one warning that would have said so.
 
+**FIXED 2026-09-03.**  The signal-side filter is gone and the asymmetry is written where it was made: a
+pairing whose STATION is on an excluded page is not in play, and a signal on one really is dropped from
+the build, so the warning was true.
+
+`testASignalOnAnExcludedPageIsStillReportedGone` covers it - a station in play, its signal on a page
+that is then switched off.  Mutation-confirmed, at the second attempt: the first mutation matched three
+identical lines in `protectingSignalNames` and proved nothing, which is worth recording because a
+mutation that lands in the wrong method reads exactly like a test that does not discriminate.
+
 ### C1
 
 **`connectingFailed()` is called off the event thread on every failure path out of `init`.**
@@ -187,6 +217,10 @@ not B. A one-line `invokeLater` wrap at each site restores the old care.
 `connectingFinished()` other than `connectingFailed` itself (`TrainControlUI.java:7290`) - is posted
 with `SwingUtilities.invokeLater` (`MarklinControlStation.java:4021`), so C1's scope is exactly the
 three failure paths and nothing wider.
+
+**FIXED 2026-09-03.**  `connectingFailed()` marshals itself onto the event thread - the way
+`StartupSplash.close()` did before the rewrite - rather than each of the three call sites doing it, so a
+fourth caller cannot forget.
 
 ### C2
 
@@ -218,6 +252,16 @@ that records no track lengths. That is your own condition". The point C2 makes -
 is compared against the locomotive's authored length and works with nothing measured - is not in that
 report, so a ruling made from it would be made without the argument.
 
+**FIXED 2026-09-03**, and the finding's reasoning is the fix's: the gate was a precondition that lost
+its subject on the way over from the sibling notice.
+
+`modelsAnyLength()` asks the question this check is about - any track measured, any station with a
+maximum, or any locomotive with a train length - so somebody who authors train lengths and station
+maxima and has never measured track gets the notices about the feature they are using.
+
+`testTheStationCapacityNoticeDoesNotNeedAMeasuredTile` covers it, mutation-confirmed against putting
+`measuresAnyTrack()` back.
+
 ### C3
 
 **one.sh claims a reap it does not have.**
@@ -241,6 +285,16 @@ in-loop call (`:243`). There is no post-loop call, and the comment above line 24
 after the last one". See also B2 below: this is the second time in the range that one.sh missed a
 correction its sibling got, and `9fec3b71`'s own message ("one.sh had none of the five corrections,
 because nobody could see it") names the pattern.
+
+**Pass 4 - still open after B2's fix, which is worth saying explicitly.** `one.sh` received the whole
+lock protocol on 2026-09-03 (B2 above, verified landed: `lock_holder_state` at `docs/tools/one.sh:132`,
+`take_the_lock` with the `noclobber` create and the `mv` of `$LOCK.mine.$$` at `:177-188`). The reap was
+not part of that edit. `reap` is still defined once (`:259`) and called once, at the top of the class
+loop (`:331`), and the comment above that call still says "and again after the last one (V33-C1,
+V33-C2)". `battery.sh` has the post-loop copy, at `:584-588`, under a comment that spells out the cost -
+"a run that ends on a class which left a JVM behind therefore leaves it behind for good". So the sibling
+pair has now drifted apart, been brought back together on the lock, and drifted apart again on the reap,
+in the same file, within one day. This is the fourth instance of the shape B2 was filed for.
 
 ### C4
 
@@ -682,3 +736,813 @@ broken something that worked before, checked in the final tree:
 - **The test-file diffs were not line-audited** - consulted only where a claim depended on whether a
   rule was pinned (the OB-166 mutation tests, the MT-149 test, `testMessageBundles`' apostrophe
   rule).
+
+---
+
+## Pass 3 - the model, read cold
+
+**Reviewed:** `src/org/traincontrol/` at `7acc9837`, on 2026-09-03, with no commit history read.
+No tests were run.
+
+**Method.** The whole of `automation/` was read line by line (`Layout`, `Point`, `Edge`,
+`HomeStaging`); `automationui/` was read whole for `GraphReducer`, `AutonomyBuilder`, `TileGraph`
+and `AutonomyChecks` and at the load-bearing seams of `AutonomySession` (capture, placement, homes,
+the check wiring) and `AutonomyCompanionStore` (save, rename, delete); `marklin/` at `MarklinRoute`
+whole and `MarklinControlStation` / `MarklinLocomotive` at the message, feedback and stop paths;
+`base/Locomotive` at the wait machinery. The question asked throughout was the cold one - not "what
+did this change break" but "do the pieces still agree about the contract between them" - and the one
+A below is exactly a contract between three pieces that are each correct alone. Every candidate was
+grepped against `docs/reviews/` before filing; the ones that turned out already argued are in D12
+with their prior identifiers.
+
+### A2
+
+**Loading a diagram configuration silently wipes every placed locomotive's train length,
+reversibility and function slots - authored data, lost to defaults, and the guards that depend on
+it stand down without a word.**
+
+Three mechanisms, each individually correct, each individually reviewed, that no longer agree:
+
+1. **Capture strips a placement to its name.** `captureFromLayout`
+   (`AutonomySession.java:3047-3057`) replaces the stored `loc` object with
+   `new JSONObject().put("name", ...)`, and its merge phase (`:3110-3114`) `put`s that over
+   whatever richer object the configuration held. The reasoning is written at the site: "capturing
+   its length, reversibility and functions made loading a configuration silently revert changes made
+   in the locomotive UI since. Those live in LocDB" (`466d864e`, 2026-08-16).
+
+2. **The builder emits the stored placement verbatim.** `AutonomyBuilder.build()` puts
+   `extras.get(LOCOMOTIVE)` onto the placed copy unchanged (`AutonomyBuilder.java:918-921`), so the
+   configuration `parseAuto` receives carries `{"loc": {"name": X}}` and nothing else.
+
+3. **`parseAuto` resets what a placement omits.** For a `loc` block with no `trainLength` key it
+   runs `l.setTrainLength(0)` (`Layout.java:7716-7719`); no `reversible`, `l.setReversible(false)`
+   (`:7742-7745`); and it unconditionally clears both function slots before re-reading them -
+   `l.setDepartureFunc(null)` (`:7779`), `l.setArrivalFunc(null)` (`:7818`) - so absent keys leave
+   them null. These are writes into the LIVE locomotive objects, which `MarklinSimpleComponent`
+   persists (`MarklinSimpleComponent.java:151-154`), so the wipe reaches LocDB on exit and the loss
+   is permanent, not per-session. (`speed` survives, alone of the five: `parseAuto` only applies a
+   stored speed, never resets an absent one - the exact idiom `Point.toJSON`'s MT-233 comment
+   documents, "Absence says the same thing and cannot be misread".)
+
+The strip is the half that lost its precondition. When it landed, its premise - "those live in
+LocDB" - was only half true: LocDB *stores* them, but `parseAuto` *overwrites* them from the
+placement on every load, and nothing was changed there. So the fix for "loading reverts UI edits
+to stale captured values" produced "loading reverts UI edits to *defaults*" - strictly worse, and
+quieter, because a default does not look like a leftover.
+
+**This does happen, not could.** The load path is `parseAuto(session().buildConfiguration())`
+(`AutonomyViewerPanel.java:815`), reached by the startup resume, every configuration switch, and
+every rebuild after a diagram edit. And the operator's own frozen data shows the strip has already
+run: every placement in `test/operator_layout/config/autonomy/configuration-Main.json` is
+name-only - `{"name": "EN57-947"}`, `{"name": "2-8-4 3505 SP"}`, `{"name": "75 407 DB"}`,
+`{"name": "EN57-203"}` - while the legacy `autonomy_legacy/autonomy.json` beside it holds what was
+authored for those same trains: `EN57-203` with `"reversible": true, "arrivalFunc": 2,
+"departureFunc": 15, "trainLength": 2`. The current configuration cannot restore any of it.
+
+**What runs differently on the layout once the wipe has happened:**
+
+- **The tail-clear guard runs on length zero.** `tailHasProvablyPassed(_, behind, 0)` is true the
+  moment the head passes an edge's end (`Layout.java:3934-3937`), so `clearedEdges` fills as if the
+  train had no length - and with atomicRoutes on, being in that set is "the ONLY thing that drops
+  an edge's protection" (`Layout.java:5455-5462`): a route may throw a turnout under the middle of
+  a long train whose length the operator had recorded precisely to prevent that. This is WK-B1's
+  hazard reopened through data rather than code.
+- **The reverse-over-switch guard goes dead.** `measuredRoomToReverseInto` answers null at
+  `getTrainLength() <= 0` (`Layout.java:6257`), so the rule Adam accepted as `FX2-3` - and that
+  FV2-B1 measured live on his main page - never fires.
+- **`validateTrainLength` never refuses.** `0 <= maxTrainLength` always (`Point.java:915`), so the
+  station maxima of FR-046 are un-enforced however carefully both halves were typed.
+- **Reversible trains stop being reversible.** `pickPath` stops offering them termini
+  (`Layout.java:3809`), `barredFromAutonomy` bars every terminus for them (`:4077`), and
+  `HomeStaging.mustBackIn` demands a turning route home (`HomeStaging.java:1611`) - EMUs behave
+  like steam locomotives until somebody re-ticks a box that will be wiped again on the next load.
+- **Departure and arrival functions stop firing** - the audible half of every dispatch.
+
+The failures are restrictive or silent, which is why nothing has been filed that names the cause -
+but the symptoms are on the record: FR-046 ("warning if train length is not set") and FR-047
+("train length easier configuration") are requests from an operator whose lengths keep needing
+setting, and MT-222's validation steps check the two new length doors agree with each other in one
+session, never that a value survives a reload.
+
+The half-fixed state is also internally documented as a contradiction: `getLocomotiveNameAt`'s
+javadoc still states the OLD invariant - "a train's length and functions have to travel with its
+name rather than beside it" (`AutonomySession.java:3892-3897`) - twenty lines below the capture
+that stopped them travelling; and `testALegacyImportPutsTheLocomotivesBack` pins the import half
+carrying `arrivalFunc` across with the failure message "the placement was rebuilt rather than
+carried over, so its settings were lost" (`testAutonomyDiagramSession.java:2448-2449`) - the exact
+loss the first capture then inflicts on the imported data. Nothing pins the round trip.
+
+**Fix directions, both small; which one is Adam's call:**
+
+- *Stop the reset:* `parseAuto` treats an absent `trainLength`/`reversible`/function key as "no
+  opinion" instead of "reset to default", the way it already treats `speed`. One method, and the
+  legacy flow is unaffected in practice - legacy files written by `Point.toJSON` carry `reversible`
+  always and `trainLength` whenever it is nonzero.
+- *Or stop the strip:* the builder injects the live locomotive's current values into the emitted
+  `loc` block at build time (the staleness that motivated `466d864e` cannot occur when the source
+  is the live object at the moment of the build, rather than a capture from an earlier one).
+
+Confidence: high; every link in the chain is a read of the current tree plus the frozen operator
+data, and no compensating mechanism was found after searching for one (no post-load re-application,
+no session-side store of these fields, no test asserting survival). What I would have run: a
+headless fixture - import a legacy placement with length/reversible/functions, load, capture, load
+again, assert the four fields on the locomotive - expecting the second load to zero them.
+
+**Pass 4 - the reach is wider than "every configuration load", because the load is now the default.**
+At 2.8.1, `AUTO_LOAD_AUTONOMY` defaulted to **false** (`git show
+master:src/org/traincontrol/gui/TrainControlUI.java:704`, `prefs.getBoolean(AUTO_LOAD_AUTONOMY,
+false)`); at HEAD it defaults to **true** (`TrainControlUI.java:928`). The preference key is the same
+string at both revisions (`"AutoLoadAutonomy" + Conversion.getFolderHash(10)`,
+`TrainControlUI.java:291` and `master:200`), so a 2.8.1 user who never opened that menu has no stored
+value and gets the new default. `init` then posts `getAutonomyViewerPanel().loadActive()` on every
+start (`TrainControlUI.java:7055-7066`), which reaches `parseAuto` by the path A2 traces. So the wipe
+A2 describes is not something the operator opts into: on the ordinary upgrade it happens on the first
+start after installing, and again on every start after that. Independently confirmed on the frozen
+data: of the 71 points in `test/operator_layout/config/autonomy/configuration-Main.json`, not one
+carries a non-zero `maxTrainLength` (every value is `0` or the key is absent), and all four `loc`
+blocks are name-only - `{"name": "EN57-947"}`, `{"name": "2-8-4 3505 SP"}`, `{"name": "75 407 DB"}`,
+`{"name": "EN57-203"}`. This is the same fact B3 files from the
+regression side; it is recorded here because it changes A2's exposure, not A2's mechanism.
+
+**FIXED 2026-09-03**, and this was the most valuable finding of the four passes.
+
+Confirmed end to end before fixing: `captureFromLayout` writes `{"name": X}`, `parseAuto` treats an
+absent key as an instruction to clear, and `l` is `control.getLocByName(...)` - the live locomotive the
+model holds and saves at exit.  So every start-up of 3.0.0 on the diagram path wiped the train length,
+the reversibility and both function slots of every placed locomotive.
+
+The four `else` clauses are gone.  **Absence means "not stated"**, which is what `speed` in the same
+block has always done and what `MT-233` settled in those words.  Clearing a length is still possible by
+writing the key as 0, and a legacy `autonomy.json`, which carries these keys, still applies them.
+
+Two tests, both in `testHomeStaging`: `testLoadingDoesNotClearWhatThePlacementDoesNotCarry` (the fixture
+is the ordinary `station()` helper, which is why every test in that class was standing on this defect
+without seeing it) and `testAPlacementThatCarriesAValueStillSetsIt`.  Mutation-confirmed by restoring
+`setTrainLength(0)`.
+
+### D12
+
+**Checks that came back clean, and candidates that were already argued.** Each of these is a
+specific way the model could have been internally inconsistent, checked in the final tree:
+
+- **Edge occupancy counting balances (RC-A9).** Every raise has exactly one release across both
+  route modes: atomic releases once in `unlockPath`; non-atomic releases early via
+  `tailHasProvablyPassed` and the given-up set keeps `unlockPath` from releasing twice
+  (`Layout.java:3310-3372`). A lock-edge list carrying the same edge twice - reachable when the
+  FR-001 emission and the shared-tile derivation both name it (`AutonomyBuilder.java:1089-1157`) -
+  stays balanced, because `setOccupied` and `setUnoccupied` walk the same list.
+- **The timetable's sequential ordering has no gap.** `executionTime` is stamped in the same
+  `synchronized (activeLocomotives)` block that registers the locomotive
+  (`Layout.java:5244-5267`), so the dispatcher's two waits - "previous started" then "previous
+  arrived" - cannot read a started-but-unregistered state, and the last entry cannot be dispatched
+  while an earlier one still retries (its `executionTime` stays 0 until it locks a path).
+- **`firstClearRoute`'s mustBackIn refusal cannot re-create the WK3-B2 shape.** The
+  arrival-refused-for-facing `continue` (`HomeStaging.java:1089-1093`) does record the arrival in
+  `seen` - but the key carries `/turned` vs `/straight` (`:1070`), so what it closes off is only
+  routes that would be refused for the same reason. The room refusal, which has no such split, is
+  checked before recording, as WK3-B2 required.
+- **The builder's null-side cases are unreachable where they would bite.** A `ReducedEdge` leaving
+  a Point always has a real exit side - feedback tiles are never portal tiles, and
+  `validatePortals` refuses a pairing whose end is not a link (`TileGraph.java:936-941`) - so
+  `Node.leavesBy`'s refusal of a null exit (`AutonomyBuilder.java:114-126`) cannot silently drop a
+  cross-page route; and `splitSides` already declines to split a square arrived at through a link.
+- **A feedback tile cannot walk one physical run twice.** The three feedback port shapes
+  (`TilePorts.java:253-255`) give each entry side at most one route and no two routes a shared
+  side, so `walkEdges`'s entry-times-exit fan-out cannot emit duplicate identical edges and the
+  parallel-route warning cannot fire spuriously from that direction.
+- **The lock-order discipline at `getEdges` held everywhere I opened.** Every UI-synchronized
+  method reached from the Layout-monitor side only posts to the EDT while holding the UI monitor
+  (`repaintSwitch` at `TrainControlUI.java:8220`, `repaintAutoLocListLite/Full` at
+  `:24895/:24970`), and `updateVisiblePoints` (`:24610`) takes no Layout-synchronized method - so
+  the AB-BA pair the `getEdges` javadoc warns about has no second half today.
+- **The staging-window guard on hand placement is at the UI tier by design.** `moveLocomotive`
+  checks `isRunning()` only, unlike `renamePoint`'s `|| isStagingInProgress()` - but all four call
+  sites into it sit behind `isAutonomyBusy()` (which `stagingFlowActive` feeds), and a placement
+  slipped through would only stale the plan's snapshot, which execution then refuses at
+  "locomotive not at path start" - fails safe.
+- **Candidates re-found and already on file, not refiled:** `blockedSensors(Map state)` ignoring
+  its parameter (RTG-C2, with WK3's note that the body is correct); `Point.validateTrainLength`'s
+  unguarded unbox (TCX-D6, unreachable - all constructors initialise 0 and no caller passes null);
+  and `loadReturnToHomeTimetable`'s comment naming `timetableSequential` where the mechanism is
+  `timetableExecuting` (`Layout.java:6800-6803`) - filed as D9 of `2026-08-21-independent-pass.md`
+  and still uncorrected in the tree, three weeks on, in a project that treats a stale comment as a
+  defect.
+- **Pass 1's D9 splice check, confirmed by a different route.** Reading `GraphReducer.sumLength`,
+  `lengthOf` and `roomAfterTheLastSwitch` (`GraphReducer.java:1077-1126`) against
+  `measuredRoomToReverseInto`'s walk (`Layout.java:6288-6307`): an edge's length includes its end
+  tile and not its start, `roomAtTheEnd` includes the end tile and not the switch, so the splice
+  counts each square exactly once - same conclusion, from the emitting side.
+
+### D13
+
+**What this pass did not cover.**
+
+- **Nothing was executed** (rule 1). The two findings that most want a fixture - A2 above, and the
+  A1/B1 pair from pass 1 - each say what the run would be.
+- **`TrainControlUI` was read only at targeted sites** (the autonomy doors, the lock-order
+  question, the placement keys, the load hook) - perhaps a tenth of its 26,700 lines. The
+  rendering classes (`LayoutGrid`, `StationCaption`, `LayoutLabel` beyond pass 1's A1 sites,
+  `LocIconCropDialog`, `TileOverlay`, `TileAnnotation`) were not read at all.
+- **`AutonomySession` was read at its seams, not whole** - roughly a third of 5,466 lines; the
+  reconcile/migration machinery and the station index were trusted to their own reviews.
+  `AutonomyCompanionStore` likewise: save/rename/delete were read, the eleven collections' held
+  entries and page bookkeeping were not.
+- **`TilePorts`' port tables were consulted, not audited** - the feedback shapes for D12, nothing
+  else. A wrong entry there mis-models a tile everywhere at once and no pass has line-checked it.
+- **`CS2File`, the UDP layer, and `NodeExpression`** were not read. `MarklinAccessory`'s actuation
+  confirmation was taken on trust from `Layout.validatePathActuation`'s javadoc.
+- **The test suite was consulted only as evidence** (the legacy-import pin in A2); it was not
+  reviewed.
+- **`cs2_sample_layout/` was not opened** (rule 3); A2's data claims rest on the frozen
+  `test/operator_layout/` copy.
+
+---
+
+## Pass 4 - regressions against 2.8.1, and what the 30 August to 2 September rounds left
+
+**Reviewed:** branch `autonomy-diagram-r0` at `58ef26c5`, on 2026-09-03, against `master` at 2.8.1
+read with `git show master:<path>`. **No tests were run** - no `ant`, no `javac`, no `java`, no
+TestNG, no `one.sh`, no `battery.sh`, no application. Every command was `git`, `grep`, `sed`, `comm`,
+`wc`, `find`, or a short read-only `python` over JSON. **Nothing under `cs2_sample_layout/` was read
+or written**; the operator's data was read from the frozen copy at `test/operator_layout/`.
+
+**Two halves, and what each did that its predecessors could not.**
+
+*The regression half.* `R28` (2026-09-01) and `RG3` (2026-09-02) both asked the 2.8.1 question and
+both are thorough; `RG3-D2` in particular ran the orphan-key sweep at **both** revisions and
+subtracted, which is the right method and left little behind. So this pass spent its time on the
+three blind spots those two named, plus two they did not:
+
+1. **Keys deleted from the bundle** rather than orphaned - `RG3-C1`'s route in. There are exactly
+   **eighteen** (`comm -23`), and every one belongs to the deleted graph window or is `R28-C4`'s
+   orphan; each was traced to a successor. That is `D14`.
+2. **A key referenced only from a method with no callers** - the blind spot `RG3-D2` states in
+   words and `RG3-C2` was found around. I ran that scan mechanically over every method in `gui/`
+   and `automationui/`, counting call sites and `::` method references across `src/` and `test/`.
+   Eighteen methods came back with no caller (`C15`) - and **not one of them is the only door to a
+   capability**, which settles that blind spot rather than leaving it stated.
+3. **The menu builders, item by item** - `RG3-C1`'s other route in. Diffed at both revisions for
+   `LayoutEditorRightclickMenu`, `LayoutPopupUI`, `RightClickPageMenu`, `LayoutRightclickAutonomyMenu`,
+   `RightClickRouteMenu`, `RightClickTimetableMenu`, `LayoutEditor` and `TrainControlUI` (`.java`
+   and `.form` together). Every difference is already filed. `D14`.
+4. **The preference DEFAULTS, not only the preference keys.** `RG3-D5` swept which preference names
+   round-trip and found five dead constants. It did not compare the second argument to
+   `prefs.getBoolean`. One of them has changed, and it changes what happens on every start: `B3`.
+5. **The keys new in 3.0.0 that nothing reads** - 75 of them, the counterpart to `RG3-C6`'s four.
+   Most are composed at run time and are false positives; four are not, and three of those four turn
+   out to be legitimate (the affordance carries the rule the message would have spoken). The fourth
+   is `C12`.
+
+*The unaddressed half.* Thirty-four documents carry dates from 2026-08-30 to 2026-09-02. The
+September ones are already indexed by `docs/reviews/2026-09-03-c-sweep-report.md`, which settles 96 C
+findings, dismisses 8 with reasons, and puts four questions to Adam - so this pass did not re-do that
+work. **The 30 and 31 August rounds are not in that sweep**, and they hold the largest pool of
+findings that are still open with nothing since: `IPR` (11), `RGN` (9), `DAY` (9) and `RC`'s carried-
+forward section. Every one of those was re-derived from the current tree - the cited file opened at
+HEAD, not the disposition believed - and the result is the consolidated list at the foot of this
+document, which is the first time it exists in one place.
+
+**What the two halves found in each other.** `B4` is a regression finding that only exists because
+the unaddressed-half work read a validation document line by line: `R28-B2` was withdrawn against a
+menu item that is not the one the finding is about, and the miscitation and the withdrawal are the
+same sentence. `C14` is the same sentence's other half.
+
+### B3
+
+**`AUTO_LOAD_AUTONOMY` changed default from false to true, so a 2.8.1 user who never asked for
+autonomy now loads a configuration on every start - and the comment that argues for the flip says
+the loaded-and-idle state carries no risk, which is what `A1` and `A2` of this document are both
+about.**
+
+The key is the same string at both revisions, so an existing installation's stored answer carries
+over and an installation that never answered gets the new default:
+
+```java
+// TrainControlUI.java:291  (and master:200 - identical)
+public static final String AUTO_LOAD_AUTONOMY = "AutoLoadAutonomy" + Conversion.getFolderHash(10);
+```
+
+```java
+// git show master:src/org/traincontrol/gui/TrainControlUI.java:704
+this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
+
+// TrainControlUI.java:928
+this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, true));
+```
+
+A 2.8.1 user who never opened Startup Options has no value stored under that name. At 2.8.1 the box
+read unticked and nothing was loaded; at HEAD it reads ticked, and `init` posts the load
+(`TrainControlUI.java:7055-7066`, `getAutonomyViewerPanel().loadActive()` when there is an active
+configuration, `validateButtonActionPerformed` otherwise).
+
+**The flip is deliberate and its reasoning is written at the site. The last sentence of that
+reasoning is the problem:**
+
+```java
+// TrainControlUI.java:923-927
+// Loading is not running - it builds the graph and draws it, and starting trains is still a
+// separate press - so there is nothing here for the default to put at risk.
+```
+
+Two findings in this document are defects **of the loaded-and-not-running state specifically**:
+
+- **`A1`** - the tile's protecting-signal refusal has no way past it in exactly that state, because
+  the dialog that would clear it is gated on `isAutonomyRunning()` and the worker check is not. `A1`
+  already calls that state "the default start-up state of the operator's own railway"; this is the
+  line that makes it so.
+- **`A2`** - the load is what strips every placed locomotive's train length, reversibility and
+  function slots. Before the flip, a user who left the box alone never reached it.
+
+So the sentence is not merely stale: it is the justification for making both of them universal.
+Neither existed when the default was chosen, which is why this is filed against the default rather
+than against the person who flipped it.
+
+**Severity.** B. It changes what happens on the layout without the operator choosing it, and the
+data loss it delivers is `A2`'s - but the change itself is defensible (Adam's own argument for it,
+about a setup that is present and invisible, is a good one), and the right fix is almost certainly to
+close `A1` and `A2` rather than to put the default back. Filed so that the decision is made knowing
+that the premise it rested on is no longer true.
+
+**How to confirm.** Read-only: the two `getBoolean` lines above, and
+`git log -S "AUTO_LOAD_AUTONOMY, true" -- src/org/traincontrol/gui/TrainControlUI.java`. To see it:
+on a machine that has never run 3.0.0, open Startup Options and look at the tick.
+
+### B4
+
+**`R28-B2` was withdrawn against `AutonomyMenu.java:326`. That line is the Export Configuration
+item - a different artefact, which the finding had already read and excluded by name. The capability it is about - writing
+out the derived graph in the JSON form 2.8.1 reads - is still behind `isDebug()`, and `isDebug()`
+still needs a command line.**
+
+The withdrawal:
+
+```
+docs/reviews/2026-09-01-regression-vs-2.8.1-review.md:56
+    **WITHDRAWN IN FULL.** Adam: "isn't that available via the advanced Json export in the autonomy
+    menu?" It is - `AutonomyMenu.java:326`.
+```
+
+recorded again, under the wrong prefix, in the validation that checked it:
+
+```
+docs/reviews/2026-09-02-first-validation.md:579
+    - `RGN-B2` withdrawn - `AutonomyMenu.java:326` carries the ungated Export item.
+```
+
+`AutonomyMenu.java:326` is:
+
+```java
+JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
+{ ... actions.exportConfiguration(); ... });
+```
+
+and `exportConfiguration` writes `session().getStore().exportBundle(name)` through a `JFileChooser`
+(`AutonomyViewerPanel.java:1222-1248`) - the companion **store's** authored setup, which is the good
+backup `R28-B2` itself pointed at and said was not the thing: *"it exports the companion-store
+configuration, not the built graph - a good backup, and not the thing you can hand-edit or feed back
+to a 2.8.1 installation."* The withdrawal cites the sentence the finding wrote to pre-empt it.
+
+If Adam meant the other item - "Export Raw Graph as JSON (Advanced Users)", which is what "advanced
+Json export" most naturally names - then it exists and he cannot reach it. Both its doors are gated
+the same way:
+
+```java
+// AutonomyMenu.java:445-449
+boolean inspectable = ui.getModel() != null && ui.getModel().isDebug()
+    && !session.getStore().getConfigurationNames().isEmpty()
+    && session.getStore().getActiveConfiguration() != null
+    && session.getReducer() != null
+    && !session.hasBlockingProblems();
+
+// AutonomyViewerPanel.java:443-444, the second copy, same flag
+if (ui.getModel() != null && ui.getModel().isDebug()
+    && session().exists() && !session().hasBlockingProblems())
+```
+
+and `isDebug()` is set once, out of `main`, from the argument count:
+
+```java
+// src/TrainControl.java:23
+boolean debug = (args.length >= 2);
+```
+
+`grep -rn "setDebug" src/` returns nothing. Somebody running the shipped application normally cannot
+turn it on.
+
+**And the 2.8.1 door is still shut in both configurations, exactly as `R28-B2` traced it.** On a
+local layout `mountAutonomyControls` hides the button (`TrainControlUI.java:3483`,
+`this.exportJSON.setVisible(false)`); on a Central Station layout it comes back
+(`TrainControlUI.java:3449`) but lives on the Auto tab, and
+
+```java
+// TrainControlUI.java:3730
+setAutoTabEnabled(valid && loaded && isLocalLayout());
+```
+
+greys that tab and steps off it (`:3733-3741`) when the layout is not local. Both lines are unchanged
+from what `R28` quoted, at a HEAD twenty-plus commits later.
+
+**Severity.** B, the severity `R28` gave it, restored. No train moves wrongly; what is gone is the
+only door to the graph in the format 2.8.1 reads, which is also the only downgrade path.
+
+**What is actually owed here is one sentence from Adam**, and it is a narrower question than the one
+he was asked: *not* "is there an export" - there are two - but "should the raw-graph export be
+reachable without a command-line debug launch". If the answer is no, `R28-B2` closes as DECLINED with
+the reason recorded, which is a different outcome from WITHDRAWN and leaves the right trace.
+
+**How to confirm.** Read-only, above. To see it: start the jar normally, open the Autonomy menu, and
+look for "Export Raw Graph as JSON".
+
+### C12
+
+**`RG3-C5`'s correction landed on the Readme and not on its twin. The two bundle tooltips still carry
+the sentence it corrected, in all eight languages.**
+
+`RG3-C5` was closed on 2026-09-03 - *"the changelog says a column on the right and a row at the
+bottom, which is what the two buttons do"* - and the Readme is right. The strings are not:
+
+```
+messages.properties:1916-1917
+    layout.ui.tooltipGrowDiagram=Add a column on the right and a row at the top and bottom
+    layout.ui.tooltipShrinkDiagram=Take the same three away, if none of them holds track
+```
+
+Two edges, not three, and `LayoutEditor.growEdges` calls `layout.addRowsAndColumns(1, 1)`
+(`LayoutEditor.java:4576`) - the exact discrepancy `RG3-C5` filed. Both keys are present in all eight
+bundles (`grep -c` returns 2 in each of the eight files) and translated: the German reads *"Eine
+Spalte rechts und je eine Zeile oben und unten hinzufuegen"*, which carries the error faithfully.
+
+**Nobody sees them, which is why this is a C and not a repeat of `RG3-C5` at B.** Neither key is
+referenced by any `.java` or `.form` in `src/` or `test/`; the two menu items use `Control+I` and a
+refusal reason instead (`LayoutEditorRightclickMenu.java:446-447`, `:470`). They are among the 75
+keys new in 3.0.0 that nothing reads.
+
+The reason to file it anyway is the one `docs/reviews/README.md` gives for the sweep: the sentence is
+translated eight times, and the next person to wire a tooltip onto those two buttons will wire the
+wrong sentence onto them. The fix is the same four words, in eight files, or deleting the two keys -
+`RG3-C6` deleted four keys in exactly that situation, on the same day, and these two were beside them.
+
+### C13
+
+**`CommandRow.canBeACondition`'s javadoc says the editor does not offer `AUTO_LOCOMOTIVE` and cannot
+build the row its own documentation illustrates. It does, and it can - since `ef33f4a8`, which fixed
+precisely that.**
+
+```java
+// CommandRow.java:262-271 (javadoc)
+* AUTO_LOCOMOTIVE is not offered here even though evaluate handles it, because CommandRow has no
+* controls for a kind that needs a locomotive AND a sensor.  One already in a route is preserved
+* read-only, the way every other unsupported kind is.  Worth knowing: it is the condition
+* ConditionRows' own header uses as its example, so the editor cannot yet build the row its
+* documentation illustrates.
+*/
+public static boolean canBeACondition(Kind kind)
+{
+    return kind == Kind.ACCESSORY || kind == Kind.SIGNAL
+        || kind == Kind.FEEDBACK || kind == Kind.AUTO_LOCOMOTIVE;
+}
+```
+
+The last clause of the body is what the javadoc says is absent. `ef33f4a8` (2026-08-20, *"Close the
+gaps between the two route editors"*) is the commit that added it, and its message says so: *"An
+AUTONOMY CONDITION could be chosen and did nothing ... It starts on the first locomotive now, like
+every other kind starts on something."* The editor honours it:
+
+```java
+// RouteEditorFrame.java:3415-3419
+String starting = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+    ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
+
+String settingFor = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+    ? "1" : CommandRow.defaultSettingFor(became);
+```
+
+**The same two lines refute a second comment, one method away.** `defaultSettingFor`
+(`CommandRow.java:239-241`) still says of `AUTO_LOCOMOTIVE`: *"A sensor number, which has no sensible
+default - the row is refused until one is typed, and refusing is better than offering sensor 1 to
+somebody who did not choose it."* `RouteEditorFrame.java:3419` offers exactly sensor `1`, on the
+condition side, by name. The decision was reversed and the sentence arguing for it was left standing
+in the class the reversal routes around.
+
+**Severity.** C, behaviour-neutral: the capability is present and correct, and both sentences are
+comments. It is worth filing because this is the class a future author reads to find out which kinds
+a condition may hold, and it currently answers that question twice, differently, in the same file -
+which is the `C5`/`C7` shape this document already has two of. This is also the correct disposition
+of `RG3-D9`'s claim that every command kind has a row: it holds, and the file says otherwise.
+
+### C14
+
+**Two prefix typos in the 2026-09-02 first validation record an open `B` and an open `C` as settled.**
+
+```
+docs/reviews/2026-09-02-first-validation.md:576
+    - `RGN-C1` - the button exists beside Name Everything with the 2.8.1 confirmation (D12).
+docs/reviews/2026-09-02-first-validation.md:579
+    - `RGN-B2` withdrawn - `AutonomyMenu.java:326` carries the ungated Export item.
+```
+
+Both mean `R28`. `R28-C1` is "Clear All Home Locomotives is gone" - which is the button beside Name
+Everything, and is fixed. `R28-B2` is "Export Current Graph is unreachable" - which is what the
+`AutonomyMenu` line is about (and is `B4` above). What the two identifiers actually name is different
+work that is still open:
+
+- **`RGN-C1`** - auto-save on exit is forced on and its checkbox hidden, so `autonomy.json` is
+  rewritten for somebody who turned it off. Verified still present:
+  `TrainControlUI.java:916-917` is `this.autosave.setSelected(true); this.autosave.setVisible(false);`
+  and the legacy write is still gated on `this.autosave.isSelected()` at `:2278-2281`.
+- **`RGN-B2`** - an s88-fired route that meets a conflict drops **all** of its accessory commands and
+  runs every non-accessory command anyway. Verified still present: `MarklinRoute.java:631`,
+  `boolean skipAccessories = auto && conflict != null;`, consulted only inside `if (rc.isAccessory())`
+  at `:637-640`, while the `isStop`, `isFunctionsOff`, `isAutonomyLightsOn`, `isLightsOn`,
+  `isLocomotiveSpeed`, `isLocomotiveDirection`, `isFunction` and `isRoute` branches are all ungated,
+  and the chained route inherits `auto` at `:871`. This is a **B about what a route does on the
+  railway**, and it is filed as still open in `2026-08-31-fanout-index.md:134`.
+
+**Why this is more than a typo.** `docs/reviews/README.md` requires a prefix precisely because "see
+B1" is ambiguous across documents, and the failure it was written against was one identifier naming
+three things. This is the failure mode it predicted, one step further on: the identifier is
+unambiguous, and it points at the wrong finding. A reader auditing what is left in `RGN` and reaching
+`2026-09-02-first-validation.md` is told that its B2 was withdrawn.
+
+**Severity.** C. Nothing on the layout changes and no code is wrong; two entries in the record are.
+The fix is four characters, in two lines, plus a note under each of the two `RGN` findings saying
+they were never dispositioned.
+
+### C15
+
+**Eighteen methods in the autonomy, diagram and route user interface have no caller anywhere in `src/`
+or `test/`.**
+
+Found by counting every `name(` occurrence and every `::name` method reference across the whole tree
+for each declared method in `gui/` and `automationui/`. Confirmed by hand for each:
+
+| where | method | note |
+|---|---|---|
+| `AutonomyEditorPanel.java:2084` | `showTextMenu` | the whole show-the-menu wrapper; `buildTextMenu` beneath it is live (`:934`) |
+| `AutonomyEditorPanel.java:5891` | `getTool` | |
+| `AutonomyEditorPanel.java:5919` | `isShowingLengths` | |
+| `TrainControlUI.java:24593` | `greyOutAutonomy` | 2.8.1's only caller was `GraphViewer.formWindowClosing` (`master:GraphViewer.java:631`) - closing the graph window did a graceful stop. There is no graph window to close |
+| `TrainControlUI.java:9343` | `withNewFirst` | |
+| `TrainControlUI.java:25479` | `routeNamed` | |
+| `TrainControlUI.java:1346` | `getNumLocMappings` | |
+| `LayoutEditor.java:864` | `addBoxHighlighted` | 2.8.1's callers were the two paste-row/paste-column menu items (`master:LayoutEditorRightclickMenu.java:65, :86`), removed deliberately per `RG3-D10` |
+| `LayoutEditor.java:2641` | `isSelectMode` | |
+| `LayoutEditor.java:3565` | `editTextWithDropdown` | already `RG3-C2`; not re-filed |
+| `LayoutEditor.java:845` | `receiveKeyEvent` | already uncalled at 2.8.1, and says so in its own comment |
+| `LayoutLabel.java:1256` | `getAutonomyOverlay` | |
+| `TileAnnotation.java:629, :676` | `getMarks`, `getTraces` | |
+| `AutonomyBanner.java:350` | `isSaying` | |
+| `RouteEditorFrame.java:940` | `isSignalAt` | |
+| `StationCaption.java:201` | `isRotated` | |
+| `AutonomySession.java:184` | `restoreCaptionsOnPage` | |
+
+(`LocButtonTransferHandler`'s four, `LocomotiveFunctionAssign.focusFno`, `LocomotiveSelector.getMainLocList`,
+`PositionAwareJFrame.hasRememberedBounds`, `LayoutPopupUI.getPanel`, `CustomActionEvent.getCustomData`,
+`LoadingSpinner.isAnimating` and `GraphLocAssign.getNumLocs` are framework overrides or accessors and
+are not in the table.)
+
+**The result that matters is the negative one, and it belongs in `D14` as much as here:** the scan was
+run to close `RG3-D2`'s stated blind spot - "the sweep cannot see a key referenced only from a method
+with no callers" - and **no capability was found whose only door is one of these**. `showTextMenu` and
+`addBoxHighlighted` look like the shape and are not: the menu `showTextMenu` would show is reached
+from `buildTileMenu` (`AutonomyEditorPanel.java:934`), and `addBoxHighlighted`'s two call sites went
+with the feature `RG3-D10` cleared as a deliberate removal. `editTextWithDropdown` is the one real
+instance and `RG3-C2` already has it.
+
+**Severity.** C, dead code. Worth one commit because each of these is a trap of the kind
+`receiveKeyEvent`'s own comment describes - "a key listener wired to it later would paste tiles in
+autonomy mode without anyone noticing" - and `greyOutAutonomy` is the sharpest: a public method whose
+name says it disables a button and whose body executes a graceful stop of the railway.
+
+### C16
+
+**`DAY-C4`'s stale claim now exists twice, and the newer copy is the authority the older one cites.**
+
+`DAY-C4` (2026-08-31, open) is that `Layout.configureAndLockPath`'s comment stopped being true:
+
+```java
+// Layout.java:2947-2949
+// Counting first can only ever release an edge that was never taken, and setUnoccupied on an
+// edge that is already clear does nothing.
+```
+
+It does not do nothing. `Edge.setUnoccupied` (`Edge.java:503-511`) calls `release()`, which does floor
+at zero for **this** edge (`:461-463`) - and then cascades `setLockedEdgeUnoccupied()` to every entry
+in `lockEdges`, each of which decrements its own count with no knowledge of whether this edge was ever
+taken.
+
+**What is new since `DAY-C4` was filed:** `Edge.release`'s own javadoc now quotes the `Layout`
+sentence and endorses it.
+
+```java
+// Edge.java:452-457
+* The floor is not defensive tidiness, it is a contract something already depends on.
+* configureAndLockPath counts an edge as taken BEFORE it takes it ... and its comment says the
+* reason out loud: "setUnoccupied on an edge that is already clear does nothing".  It still does
+* nothing.
+```
+
+"It still does nothing" is written in the class that implements the cascade, three methods above
+`setUnoccupied`. So a reader who follows the `Layout` comment to its source is told the claim has been
+checked, in the one file that could have refuted it.
+
+**Behaviour, checked rather than assumed.** The over-release the two comments license is reachable
+only if `setOccupied` throws **inside its own `lockEdges` loop** - `occupancy++` is its first
+statement, so an edge counted by `edgesLocked++` and then thrown past has already been incremented,
+and the release of that edge is correct. Only its locked siblings, the ones the throw did not reach,
+are released without having been taken. That needs a `ConcurrentModificationException` on
+`this.lockEdges` mid-loop, which nothing in the tree produces. **So this is a C for the same reason
+`DAY-C4` is: the code is right and both descriptions of it are wrong** - and it is filed separately
+from `DAY-C4` because `DAY-C4` names one site and closing it against that site alone would leave the
+sentence standing in the file it was copied into.
+
+### D14
+
+**Pass 4's checks that came back clean.** Each is a specific way 3.0.0 could have taken something
+away from a 2.8.1 user, checked in the final tree:
+
+- **The eighteen deleted bundle keys.** `comm -23` over the two key sets gives exactly eighteen keys
+  present at 2.8.1 and absent at HEAD: `app.ui.autonomyGraphTitle`, `...TitleLoc`,
+  `autolayout.ui.confirmDeleteEdge`, `confirmDeletePoint`, `confirmDeletePointOccupied`,
+  `errorLoadingGraphUi`, `infoAllLocomotivesPlaced`, `infoNoOtherPointsToConnect`,
+  `infoPointHasNoCoordinateInfo`, `layoutGraph`, `menuAddLocomotiveAtNode`,
+  `menuRemoveLocomotiveFromGraph`, `tooltip.reopenGraph`, `ui.main.graphUIOptions`,
+  `ui.main.reopenGraph`, `ui.main.tooltip.hideInactivePoints`, `ui.main.tooltip.hideReversingStations`
+  and `route.ui.errorUnusableLocName`. Seventeen are the graph window's own furniture, and the
+  eighteenth is `R28-C4`, deleted on purpose on 2026-09-03. Place and remove have per-square
+  successors (`autosetup.ui.menuAddToAutonomy`, `menuRemoveLocomotive`). **This is the door `RG3-C1`
+  came in by, and there is nothing else behind it.**
+- **The menu builders, item by item, at both revisions.** Comparing every bundle key in
+  `LayoutEditorRightclickMenu`, `LayoutPopupUI`, `RightClickPageMenu`, `LayoutRightclickAutonomyMenu`,
+  `RightClickRouteMenu`, `RightClickTimetableMenu`, `LayoutEditor` and `TrainControlUI` (`.java` plus
+  `.form`): the only keys present at 2.8.1 and absent at HEAD are `RG3-C2`'s five station-label keys,
+  `RG3-D10`'s `entireRow`/`entireCol`/`tile`, and the graph window's. **No unfiled menu item was
+  lost.**
+- **The keyboard.** `VK_*` constants in `LayoutEditor` and `TrainControlUI` at both revisions: HEAD's
+  sets are strict supersets. `LayoutEditor` gained `VK_PLUS`, `VK_ADD`, `VK_EQUALS`, `VK_MINUS`,
+  `VK_SUBTRACT` (the page step, FR-036), `VK_G`, `VK_H`, `VK_K`; `TrainControlUI`'s set is unchanged.
+  The `+`/`-` handler sits **above** the `if (isAutonomyMode()) return;` line (`LayoutEditor.java:6686`
+  against `:6704`), so it works in both editors, which is what the changelog claims and what MT-109
+  was filed about.
+- **The twelve autonomy settings all still have a control.** `minDelay`, `maxDelay`,
+  `defaultLocSpeed`, `preArrivalSpeedReduction`, `maxLatency`, `atomicRoutes`, `maxActiveTrains`,
+  `maxLocInactiveSeconds`, `turnOffFunctionsOnArrival`, `turnOnFunctionsOnDeparture`, `simulate` and
+  `pathPreference` are each read into a widget by `loadAutoLayoutSettings`
+  (`TrainControlUI.java:24557-24587`) and each is in the built configuration's `globals` on the
+  operator's own frozen file. **Nothing that was tunable at 2.8.1 has become file-only.**
+- **`MarklinRoute.locomotiveRenamed` was folded, not dropped.** The override is gone from
+  `MarklinRoute` (it is the one method the API diff shows as removed), and the base
+  `Route.locomotiveRenamed` (`Route.java:151-159`) now walks `namesLocomotives()`, which collects
+  from `this.route` **and** from `NodeExpression.toList(getConditions())` (`:223-236`). The 2.8.1
+  override existed only to add the conditions half. Renaming a locomotive still repairs the
+  conditions that name it.
+- **`CS2File`'s API is additive.** Method-signature diff at both revisions: three methods added
+  (`parseLayoutIndex`, `copyAtomically`, `getPagesThatCouldNotBeRead`), none removed. Nothing a 2.8.1
+  file could do is no longer read.
+- **`shrinkEdges` refuses on either edge.** The changelog's *"Shrinking is refused if either of those
+  edges still holds track"* is what `LayoutDiagram.edgesAreEmpty` (`:529-544`) does - it walks the
+  rightmost column and the bottom row and returns false on the first occupied square in either.
+- **The uncalled-method scan closes `RG3-D2`'s blind spot.** See `C15`: eighteen methods, and none is
+  the only door to a capability.
+- **Three of the four meaningful new-in-3.0.0 orphan keys are legitimate.** Of the 75 keys added for
+  3.0.0 that no `.java` or `.form` reads, most are composed at run time (`"route.kind." + kind.name()`,
+  `"autolayout.ui.pathPreference" + pref.name()`, `autosetup.ui.facing`/`side` plus a compass letter).
+  Four read like removed guards and were opened: `autosetup.ui.errorNotAStation` is unnecessary because
+  both placement doors only offer the gesture on a station (`AutonomyEditorPanel.java:1044-1047` builds
+  the item inside `if (isStation)`; `LayoutRightclickAutonomyMenu.placeFacing` (`:830-845`) is reached
+  only from a list of Point copies, which exist only for stations); `autosetup.ui.errorAutonomyRunning`
+  is a duplicate of the live `autolayout.errorCannotEditWhileRunning`
+  (`TrainControlUI.java:4401`); `autosetup.ui.confirmJumpWithUnsavedEdits` asks a question its own text
+  answers ("Nothing is lost - everything you have changed is kept"). The fourth is `C12`.
+- **The lock-edge question, as far as reading goes.** 2.8.1 let the user hand-pick which edges lock
+  with which (`master:GraphEdgeEdit.java:140`, `e.setLockEdges(...)`); 50 of the 90 edges in
+  `test/operator_layout/config/autonomy_legacy/autonomy.json` carry a hand-written list. At HEAD the
+  list is derived - `reducer.getLocks()` plus the FR-001 restriction locks
+  (`AutonomyBuilder.java:1089-1157`) - and the hand-written lists are inside the `"edges"` skip that
+  `R28-B1` and `RG3-B2` are about. **I could not compare the two sets**: the built configuration is
+  not stored at HEAD, so the derived list exists only in a running process, and running one is out of
+  scope. Recorded rather than filed: if a later pass can execute, build the operator's configuration
+  and compare its `lockedges` against the legacy file's, pair by pair. That is the one measurement
+  that would say whether the geometry derivation is a successor to the hand lists or merely a
+  replacement.
+- **`REL-B2`, `C9`, `C10` and `C11`'s fixes were verified as landed**, not taken from their
+  dispositions. `one.sh` now carries `lock_holder_state` (`:132-167`) and `take_the_lock`
+  (`:177-188`) word for word with `battery.sh`'s, including the `noclobber` create and the
+  `$LOCK.mine.$$` move; `checkReversalNeedsLengthRun` reads "{2} squares there and on the way in" in
+  all eight bundles. `C3` is the one from that group that is still open, and the note under it says
+  why that is now worse than when it was filed.
+
+### D15
+
+**What pass 4 did not cover.**
+
+- **Nothing was executed** (rule 1). Every claim above is from reading `git`, the tree, and the frozen
+  fixture. The one measurement this pass most wanted - the derived lock lists against the operator's
+  hand-written ones - is stated in `D14` as the run it would be.
+- **`cs2_sample_layout/` was not opened** (rule 3). Every data claim rests on
+  `test/operator_layout/`.
+- **The autonomy RUNTIME was not compared to 2.8.1.** `RGN`, `R28` and `RG3` all declared this gap and
+  so do I: whether a train picks the same route and holds the same locks as at 2.8.1 needs a jar and a
+  layout. The parity harness under `docs/tools/parity/` records one unresolved loss
+  (`BottomInner -> Tunnel` losing its alternative via `BottomCrossover`/`TunnelPre`,
+  `docs/tools/parity/README.md:93`) and that is still the only measurement anybody has.
+- **`HomeStaging`, the timetable executor and the drawing classes** were not read for 2.8.1 parity.
+  `RG3` named the same three; this pass added nothing there, and `LayoutGrid` / `LayoutLabel` /
+  `StationCaption` / `LocIconCropDialog` remain the largest changed surface no regression pass has
+  read. `IPR-B4` and `IPR-C2`/`C4` live in that last file and are all still open.
+- **The 1 and 2 September documents were read through the C sweep**, not re-derived. The sweep's own
+  "36 still to settle" - mostly `TCX` and `D24` test-quality items - was taken at its word, and the
+  test-suite audit running separately is the right net for it. The list below carries them as a line
+  rather than item by item.
+- **The July and August backlog before 30 August** is out of scope by the briefing and was not
+  touched; the C sweep estimates roughly 190 findings across some twenty-five documents.
+- **Route execution against a real Central Station** - `RGN-B2`, re-verified above as still present,
+  is a claim about what `execRoute` does with a conflict, and only the code was read.
+- **I did not audit the fixes made TODAY beyond the four in `D14`.** `REL-A1`, `A2`, `B1` and `C1`-`C8`
+  were open when this pass ran; if any is fixed after this line is written, this pass did not check it.
+
+---
+
+## Every open or Adam-needed finding in the 30 August to 2 September rounds
+
+The briefing asked for this in one place, because it has never been in one place. Thirty-four
+documents carry dates in that window. Everything below was **re-derived from the tree at HEAD**, not
+taken from its disposition; where a later document has answered one, the answer is named. Identifiers
+are cited, not re-filed.
+
+**Verdict column:** *reproduces* = the cited code was opened at HEAD and the finding's mechanism is
+there; *Adam* = it is a decision, not a defect; *unreadable* = it needs execution or the operator's
+own data.
+
+### 2026-08-30
+
+| Finding | Sev | What is left | Verdict at HEAD |
+|---|---|---|---|
+| `LE-D3` | - | the "didn't save" half of Adam's original report was never reproduced or explained; OneDrive file locking is the standing hypothesis | unreadable |
+| `RC` carried #3 | A-ish | a mid-run failure strands a train on locked track **and** drops that track's route protection in the same statement: the `RuntimeException` catch removes the locomotive from `activeLocomotives`, `locomotiveMilestones` and `clearedEdges` (`Layout.java:5022-5030`) and then `takingPath.remove(loc)` (`:5031`) - and those two maps are exactly what `RC-A10`'s widened `getActiveAccs` (`Layout.java:874-903`) reads. The path is deliberately left locked (`:5019-5021`) and there is no "abandoned but still locked" set anywhere | reproduces; **Adam** |
+| `RC` - two stations may be given the same name, silently | C | `promptName` (`AutonomyEditorPanel.java:4149-4168`) has no uniqueness check and `AutonomyBuilder.uniqueNames()` (`:1294`) disambiguates to `X (2)` without warning. The javadoc that claims "a user who names two Points the same thing is told at authoring time" is at `AutonomyBuilder.java:1173-1178` and is **orphaned** - two javadoc blocks in a row, so Java attaches only the second, and `uniqueNames()` has none | reproduces; **Adam** |
+| `RC` - `@Test(enabled = false)` is invisible to all three layers | C | one live instance, `test/core/testAutonomyDiagramSession.java:3075`, and nothing in `docs/tools/` or `build.xml` scans for the attribute. That disabled test documents a separate open production bug (`TST-B15`) | reproduces |
+| `RC` - eight untranscribed test-suite gaps | - | five were closed as `SG-C1`-`C4` and `A101`; the other eight were never written down and no longer exist in any document | permanent loss |
+| `RC` - `GraphReducer.hasAnyConnection` asks the neighbour's ports, not the sensor's own | C | `GraphReducer.java:850-857` iterates `graph.landing(tile, side)`, and `TileGraph.landing` (`:867-893`) tests only `hasPortOn(neighbourComponent, entrySide)` at `:890` | reproduces |
+| `RC` - `AutonomyBuilder` emits `mustReverse` although `canReverse` is filtered out | C | skip list at `AutonomyBuilder.java:932-933` covers `CAN_REVERSE`/`PARKING`/`FACING`/`AUTO_DESTINATION`; `parseAuto` reads `"reversing"` (`Layout.java:7603-7609`) and never `mustReverse` | reproduces |
+| `RC` - `sanitizeMultiUnits` re-reads the occupant after null-checking it | C | `Layout.java:5741-5749`, four dereferences after the check - **and the log line at `:5748` is still the only hard-coded English string in `automation`, typo included: `"because it confliced with "`** | reproduces |
+| `RC` - should `BALANCED_PRIORITY` consider de-prioritised stations at all | - | the code implements `RC-B2`'s conservative answer (`Layout.java:334-339`) | **Adam** |
+| `RC` - route editor forgets its position and size | C | `RouteEditorFrame.java:243` is a bare `setLocationRelativeTo(parent)`; no `PositionAwareJFrame`, no persisted geometry | reproduces |
+| `RC` - `RouteEditorFrame`'s save-time refusals could lock somebody out of their own route | - | needs Adam's route corpus | unreadable |
+| `SG-B5` | B | the 2.8.1 parity comparison. MT-083 confirmed the four new journeys, so the person-half is done; the parity report's own loss (`docs/tools/parity/README.md:93`) is still open, and nothing has been re-measured since the build it was taken from. Side note: that README's claim that `Layout.pathPreference` is `static` is stale - at HEAD it is a `private volatile` instance field (`Layout.java:223`) | reproduces |
+
+### 2026-08-31
+
+| Finding | Sev | What is left | Verdict at HEAD |
+|---|---|---|---|
+| `IPR-A2` | **A** | a save that prunes only tile properties shows no dialog at all. `AutonomyReport.show()` builds its text from `getForgottenNames()` and `getNamesStillReferenced()` only (`AutonomyReport.java:75, :85`) and the dialog is inside `if (text.length() > 0)` (`:98-102`), while `isClean()` counts a third list (`AutonomyCompanionStore.java:3235-3238`) that `reconcile` fills at ten sites. **`getDroppedTileProperties` (`:3205`) has no reader in `src/` - only four in `test/core/testAutonomyDiagramStore.java`** - and there is no third bundle key | reproduces |
+| `IPR-B1` | B | "Highlight on Diagram" throws on any route holding a locomotive command: `RouteEditorFrame.java:2401` is `if (command != null && command.getAddress() > 0)`, and `RouteCommand.getAddress()` is an unguarded `Integer.parseInt` whose javadoc says it throws (`:331-334`). `hasAddress()` exists (`:321-324`) and is not asked | reproduces |
+| `IPR-B2` | B | a bracket in a non-leading position round-trips with the wrong operator: `ConditionOutline.write` emits a `NodeGroup`'s contents at `depth + 1` (`:384-386`) while `writeChild` independently bumps a cross-operator child (`:422`), and `read` recurses at the deeper depth (`:210-239`) | reproduces |
+| `IPR-B3` | B | two bracketed groups at one indent are flagged red and the save is refused: `problems()` keys `settled` on depth alone across the whole list (`ConditionOutline.java:156-167`) while `read` consumes each run in its own recursion (`:232-238`); `everythingWrong()` then adds `route.ui.frameLogicDisagrees` (`RouteEditorFrame.java:2158`) and `onSave` offers only Fix or Discard (`:2471-2491`). Filed as wanting a ruling more than a patch, and **no ruling is recorded anywhere** | reproduces; **Adam** |
+| `IPR-B4` | B | the crop dialog's OK at full zoom-out allocates an image quadratic in the source: `contentOf` allocates the whole overhanging region (`LocIconCropDialog.java:1387-1388`) and the cheap `getSubimage` branch needs `wholelyInside` (`:1381`); at `zoomFraction = 0` the scale is half the fit (`MIN_ZOOM = 0.5`, `:88`), so `sourceRect()` is about twice the source each way. `sourceRect` is no longer clamped (`:1529-1540`) | reproduces (arithmetic); the OOM itself is unreadable |
+| `IPR-C1` | C | the label migration is a fourth door past "one station, one caption": `migrateStationLabels` writes `store.setCaption(where, station)` directly (`AutonomySession.java:1857`), bypassing the session's clear-the-old-one rule (`:1283-1298`), and `open()` calls it unconditionally (`:139`). **Measured on the frozen copy: `test/operator_layout/config/autonomy/setup.json` holds 34 captions for 33 stations, and `5:6,4` is named twice** | reproduces, with the bad state already in the data |
+| `IPR-C2` | C | a saved crop view restores to a different rectangle after the dialog is resized - `largestWindow` fits width-first (`:682-700`) and `fitScale` takes a plain `min` (`:910-917`), and the two limiting terms can flip independently | reproduces |
+| `IPR-C3` | C | the copy mark is filled white regardless of ink (`RowIcons.java:117-118`), so it vanishes on a selected row; the caller passes the selection foreground (`RouteEditorFrame.java:1623, :1648`) | reproduces |
+| `IPR-C4` | C | the crop clamp's overlap guarantee is expressed in panel pixels (`LocIconCropDialog.java:1141`) while `sourceRect` rounds four quantities independently and no longer clamps | mechanism reproduces; the rounding-to-zero half is unreadable |
+| `IPR-C5` | C | `getScale`'s "safe against recursion" comment (`LocIconCropDialog.java:956-957`) names a reason that is no longer the reason; the re-entry through `startAtCover` -> `clampCenter` -> `getScale` is harmless only because of `viewStarted` (`:976-978`) and `pendingView = null` (`:989`), neither of which it mentions | reproduces |
+| `IPR-A1` | A | **fixed** (`CARRIED_SETTINGS` now carries `maxTrainLength`, `AutonomySession.java:527-528`, with the test inverted). Two residuals are Adam's: the **edge** lengths are still not migrated, deliberately (`:846-853`), and the damage already written is still in his file - six fabricated `tileLengths` in `setup.json` (`5:20,13`, `5:0,11`, `5:20,14`, `5:1,10`, `5:14,3`, `5:5,4`) | **Adam** |
+| `RGN-A2` | **A** | the Auto tab is disabled for every user whose autonomy comes from `autonomy.json`: `boolean loaded = getAutonomySession() == null \|\| this.activeDiagramConfiguration != null;` (`TrainControlUI.java:3711`) and `setAutoTabEnabled(valid && loaded && isLocalLayout())` (`:3730`), with the contradicting comment still at `:3729`. `refreshAutonomyPrompt` needs a non-empty configuration list (`:6075-6077`), so a fresh upgrade gets no banner either. **No test exists.** Adam's own triage on MT-244 asks for one: *"Could not run this. make a test case for this. in my testing, it loaded OK."* | reproduces; **Adam**, and he asked for a test |
+| `RGN-B1` | B | `Point:` captions are deleted out of the user's own `.cs2` files with no notice: `open()` calls `migrateStationLabels()` unconditionally (`AutonomySession.java:139`), the erase is `component.setLabel("")` (`:1905`) followed by `saveChanges(null, false)` (`:1917`), and only failures reach the user (`TrainControlUI.java:2637-2639`). Narrowed since filing (`RG3-D11`), still unannounced - no changelog line in `Readme.md:362-535` | reproduces |
+| `RGN-B2` | B | an s88-fired route that meets a conflict drops **all** its accessory commands and runs everything else - see `C14` above for the code and for why this reads as withdrawn when it is not | reproduces |
+| `RGN-B3` | B | the v2.7.4 changelog section was rewritten so two 3.0.0 changes read as already shipped: `Readme.md:536-544` puts "Added Path Integrity Validation features" under `v2.7.4`, and `git show v2_7_4c:Readme.md` has neither bullet and no `PATH_INTEGRITY_VALIDATION` in `src/` | reproduces |
+| `RGN-C1` | C | auto-save on exit is forced on and its checkbox hidden (`TrainControlUI.java:916-917`), so `autonomy.json` is rewritten for somebody who turned it off (`:2278-2281`); `AUTOSAVE_SETTING_PREF` is still written on exit (`:21604`) and is unreachable. See `C14` - this reads as verified-and-closed when it is not | reproduces |
+| `RGN-C3` | C | a locomotive whose name holds a bracket cannot be used in any route command (`RouteCommand.isNameUsable`, `:596-601`), and only three doors ask - `RouteEditorFrame.java:2227` and the two rename dialogs. Nothing in `marklin/` and nothing in `AddLocomotive` asks, so a bracketed name can arrive from a Central Station sync | reproduces; whether a real locomotive is affected needs **Adam**'s database |
+| `RGN-C4` | C | a `UIState.data` written by 3.0.0 with a non-default page count loses its page names under 2.7.4c. The 2.7.4c side cannot change | reproduces, permanent by construction |
+| `RGN-C2` | C | **effectively answered, and I would close it.** Its only actionable claim was "no changelog line"; there is one, and there was one at the reviewed commit - `Readme.md:509`, added by `062f7efa` on 2026-07-29 | not a defect |
+| `RGN-A1` | A | **largely fixed** (globals carried, `AutonomySession.java:812-889`; what is left behind is now counted and reported by `whatALegacyImportLeaves`, `:906-962`). Open only for the **edge lengths** and the **timetable**, both deliberate with the reason at the code | **Adam** |
+| `DAY-B1` | B | `repaintTimetable()` sits behind two early returns (`TrainControlUI.java:3891`, `:3913`) and neither rename door calls it - `:17088-17089` and `:23079-23080` both do only `updateVisiblePoints(); repaintAutoLocList(false);`. Re-found independently as `SVN-B12`, also open | reproduces |
+| `DAY-C1` | C | `liftAboveLabels` (`LayoutLabel.java:1198`, called at `:1135`) was made unnecessary by `LayoutGrid.paintTrainOverCaptions` (`:710`) and left in doing only its harm - the code states the residual cost itself at `LayoutLabel.java:1289-1293`. `CDR-B1` (open) raises the same area from the comment side and does not answer the behavioural half | reproduces |
+| `DAY-C2` | C | `deleteLoc` did not get the redraws both rename doors have: `TrainControlUI.java:17919-17931` does `locDeleted(l); repaintAutoLocListFull(); refreshUI();` and neither `refreshRouteList()` nor `updateVisiblePoints()`. The rename door's own comment (`:17075-17086`, OB-081) says why the second matters - "Every other door that changes which locomotive stands where already does this" - and deleting a placed locomotive is such a door. **Nothing since; no later document mentions it** | reproduces |
+| `DAY-C3` | C | `RC-A11`'s graceful stop fires from the two manual dispatch doors: `Layout.java:5049-5051` calls `stopLocomotives()` and logs `autolayout.errorRunStoppedByFailure` with no `this.running` test, and `executePath` has two manual callers (`AutoLocomotiveStatus.java:1041`, `LayoutRightclickAutonomyMenu.java:352`). The message says autonomy has stopped itself, when nothing was running | reproduces |
+| `DAY-C4` | C | "setUnoccupied on an edge that is already clear does nothing" (`Layout.java:2947-2949`) stopped being true - and has since been copied into `Edge.release`'s javadoc. See `C16` | reproduces, at two sites |
+| `DAY-C5` | C | `nameEverything` (`AutonomyEditorPanel.java:6591-6646`) ends `selection.clear(); refresh();` with no rebuild, while `promptName` ends with `rebuildRunningLayoutFromSetup()` under a fifteen-line comment explaining why (`:4191-4206`). Same `setPointName` call, same guard, one rebuild | reproduces (filed as out of `DAY`'s range) |
+
+### 1 and 2 September
+
+These are indexed by `docs/reviews/2026-09-03-c-sweep-report.md` and are listed here by reference so
+the count is complete rather than to re-argue them.
+
+| Group | Where | What is left |
+|---|---|---|
+| **Four questions for Adam** | c-sweep report, "What needs Adam" | `V36-C4` (should the editor's "reaches nothing" warning match the runtime's rule); `RG3-C4` / MT-257 item 5 (what shape should "Test Connection" come back in - his own question back); `FV2-C9` / `R28-A1` (should a route-command deletion say what it removed); `DY3-C8` (answered on MT-260, listed only as a pointer) |
+| **Eight deferred past 3.0.0** | c-sweep report, "What was dismissed" | `FV2-C1`/`FV2-C7`/`SVN-C11`, `SVN-C9`, `SVN-C10`, `SVN-C12`, `SVN-C15`, `DY3-C4`, `CMT-C2`, `SVN-C14` (part) - each with the reason recorded |
+| **Two open Bs** | `2026-09-01-week-of-commits-review.md` | `SVN-B11` - the cut flag is consumed by a paste that carried nothing (`LayoutEditor.java:2967` clears it inside `if (moves != null)`, and `cutMoves` never returns null after a cut because `emptyCutOrigins()` returns an empty set, `:2812-2829`), reaching `forgetBuiltOver` at `:2971`; and `SVN-B12`, which is `DAY-B1` |
+| **`TST-B15`** | test-suite round | `AutonomyViewerPanel`'s second `excludeRepeatedSensorPages()` re-excludes a page the operator turned back on; the test that would catch it is the one live `@Test(enabled = false)` |
+| **36 test-quality findings** | mostly `TCX` and `D24` | floors that pin the wrong quantity, assertions a fixture guarantees, mutations a fixture cannot tell apart. Being handled by the test-suite audit; `2026-08-31-fanout-index.md` adds that 95 of 200 `MUTATION` claims are unchecked |
+
+### Still open from the two regression rounds themselves
+
+| Finding | Sev | What is left |
+|---|---|---|
+| `R28-B1` | B | a legacy `autonomy.json`'s per-edge accessory commands are dropped on import and cannot be authored anywhere in 3.0.0 - 69 of Adam's 90 edges, 15 of them naming signals. `grep -rn "addConfigCommand" src/` still returns four hits, none a user interface |
+| `R28-B2` | B | **restored by `B4` above** |
+| `R28-C2` | C | "Copy Outgoing Edge..." is gone with no equivalent; the HEAD connections submenu has nothing that copies one connection's settings onto another |
+| `R28-C3` | C | `SHOW_HOME_LOCOMOTIVES` and `HIDE_REVERSING_EDGES_PREF` survive as dead constants and the home assignment is no longer drawn on the running diagram (settled by `RG3-C6`) |
+| `R28-C5` | C | the graph window's Ctrl+S (s88 address) and Ctrl+H (home locomotive) have mouse-only successors; documented, since the Readme block went with them |
+| `RG3-C3` | C | the legacy track diagram editor's menu item is removed on only one of the two branches (`TrainControlUI.java:3411` sits after `mountAutonomyControls`'s early return) and its handler is `if (true) return;`. Needs one run on Windows with a Central Station layout |
+| `RG3-C4` | C | "Test Connection" - Adam's question, carried in MT-260's tail |
