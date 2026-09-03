@@ -1378,6 +1378,47 @@ public class AutonomyCompanionStore
         {
             repairLocomotiveIn(configuration, from, to);
         }
+
+        repairTheUnfinishedEditNote(from, to);
+    }
+
+    /**
+     * Follows a locomotive's new name into the pre-edit note on disk (SVN-B9).
+     *
+     * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the in-memory snapshot Cancel
+     * restores and both undo stacks - under a comment saying *"Cancel and Ctrl+Z are two ways of
+     * saying the same thing, and only one of them was covered"*. There is a fourth, and it is the one
+     * that survives the event the mechanism exists for: `config/autonomy/setup-before-edit.json`.
+     *
+     * It is written once, when the editor opens, and holds `points.*.loc/home/excludedLocs` and
+     * `globals.timetable`, all by locomotive name. Rename a locomotive with the editor open, let the
+     * process die - the exact event the disk half was built for - and `revertUnfinishedEdit` writes
+     * the pre-rename name back and saves it. A configuration naming a locomotive that is not in the
+     * database is refused by `parseAuto`, which invalidates the whole layout: the rename armed that,
+     * to go off at the next start.
+     *
+     * **Here rather than at the editor**, because this is the funnel every rename and every deletion
+     * already comes through, and the editor is not the only door - the note outlives the window that
+     * wrote it, so a rename made after the process died and before the next start has to reach it
+     * too.
+     *
+     * A note that cannot be read is left exactly as it is. `unfinishedEdit` already refuses one it
+     * cannot trust, so rewriting it would be repairing something that is going to be thrown away.
+     *
+     * @param from the name to look for
+     * @param to the name to put in its place, or null when it was deleted
+     */
+    private void repairTheUnfinishedEditNote(String from, String to)
+    {
+        if (from == null || from.equals(to) || !beforeEditFile().isFile()) return;
+
+        JSONObject note = unfinishedEdit();
+
+        if (note == null) return;
+
+        repairLocomotiveInSetup(note, from, to);
+
+        rememberBeforeEdit(note);
     }
 
     /**

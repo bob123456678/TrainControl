@@ -238,6 +238,54 @@ public class testCancelRestoresPlacements
     }
 
     /**
+     * A locomotive renamed while the note exists is renamed in the note too (SVN-B9).
+     *
+     * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the snapshot Cancel restores and
+     * both undo stacks - under a comment saying *"Cancel and Ctrl+Z are two ways of saying the same
+     * thing, and only one of them was covered"*. There is a fourth, and it is the one that survives
+     * the event the whole mechanism exists for: the note on disk.
+     *
+     * Rename a locomotive with the editor open, then let the process die. `revertUnfinishedEdit`
+     * restores the note **and saves it**, so the pre-rename name goes back to disk - and a
+     * configuration naming a locomotive that is not in the database is refused by `parseAuto`, which
+     * invalidates the whole layout. The rename armed that, to go off at the next start.
+     *
+     * The repair sits on the store's own `repairLocomotive` funnel, which is where every rename and
+     * every deletion already arrives, rather than at the editor: the note outlives the window that
+     * wrote it.
+     *
+     * MUTATION: dropping the `repairTheUnfinishedEditNote` call from `repairLocomotive` fails this.
+     */
+    @Test
+    public void testARenameReachesTheNoteOnDisk() throws IOException
+    {
+        TileKey sensor = furnished();
+
+        assertTrue(session.beginEditSession(), "the note was not written, so nothing below tests it");
+
+        assertEquals(session.getLocomotiveNameAt(sensor), "BR 218",
+            "precondition: the note has to name a locomotive for a rename to reach");
+
+        // The rename, through the door TrainControlUI uses.
+        session.getStore().locomotiveRenamed("BR 218", "BR 218 II");
+        session.getStore().save();
+
+        // The crash: no Save, no Cancel.  A restart is a new session on the same folder.
+        AutonomySession afterTheCrash = new AutonomySession(layout);
+
+        afterTheCrash.open(Arrays.asList(pageOnDisk()));
+
+        assertTrue(afterTheCrash.revertUnfinishedEdit(),
+            "the unfinished edit was not noticed, so this test is not exercising the case");
+
+        assertEquals(afterTheCrash.getLocomotiveNameAt(sensor), "BR 218 II",
+            "the revert put the PRE-RENAME name back on the square, and saved it.  A configuration "
+            + "naming a locomotive that is not in the database is refused by parseAuto, which "
+            + "invalidates the whole layout - so renaming a locomotive with the editor open armed "
+            + "that, to go off whenever the process next died (SVN-B9)");
+    }
+
+    /**
      * An editing session that DID end leaves nothing behind to revert (OB-108).
      *
      * The control for the test above, and the half that decides whether the mechanism is safe: the

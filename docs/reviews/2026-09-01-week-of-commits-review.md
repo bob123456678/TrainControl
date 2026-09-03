@@ -365,22 +365,22 @@ of the three doors.
 | | | |
 |---|---|---|
 | **SVN-B1** | The reversal-length notice and the guard it serves ask different questions | open |
-| **SVN-B2** | A partially measured edge is treated as measured, and under-counts the room | open |
+| **SVN-B2** | A partially measured edge is treated as measured, and under-counts the room | **closed** by `FX2-3` |
 | **SVN-B3** | The reversal-length guard sums the whole journey, not the run-in | **DEFERRED — needs Adam** |
-| **SVN-B4** | The reversal-length rule reached `isPathClear` and not the staging planner | open |
+| **SVN-B4** | The reversal-length rule reached `isPathClear` and not the staging planner | **fixed** 2026-09-02 (`975f157d`) |
 | **SVN-B5** | `connected` and `firstClearRoute` disagree about a train standing on a reversing point | **DEFERRED — needs Adam** |
-| **SVN-B6** | The running diagram draws no cross on a shut *plain* point | open |
-| **SVN-B7** | The "route already running" guard is on one door of three | open |
+| **SVN-B6** | The running diagram draws no cross on a shut *plain* point | **fixed** 2026-09-02 (`1cfdf370`) |
+| **SVN-B7** | The "route already running" guard is on one door of three | **fixed** 2026-09-02 (`87b6c10a`), reasoning corrected by `V31-B2` |
 | **SVN-B8** | Undo cannot re-open a portal whose two halves are on different pages | open |
-| **SVN-B9** | Nothing repairs the on-disk pre-edit note when a locomotive is renamed | open |
-| **SVN-B10** | The load door asks a narrower question than the start door | open |
+| **SVN-B9** | Nothing repairs the on-disk pre-edit note when a locomotive is renamed | **fixed** |
+| **SVN-B10** | The load door asks a narrower question than the start door | **fixed** 2026-09-02 (`87b6c10a`) |
 | **SVN-B11** | A cut consumed by a paste that carried nothing, then a paste back that forgets the setup | **fixed** |
-| **SVN-B12** | The MT-149 timetable repaint sits behind two early returns | open |
-| **SVN-B13** | `rebuildHomeStations` dedups by locomotive, not by square | open |
-| **SVN-B14** | The autonomy function slots are written before OK is pressed | open |
-| **SVN-B15** | The mid-route conflict question parks the rest of the route, stop included, behind a modal | open |
-| **SVN-B16** | The plain-accessory tile guard never got the protecting-signal half its route twin has | open |
-| **SVN-B17** | AU-C12 is still open: the Keyboard tab throws accessories with no guard at all | open |
+| **SVN-B12** | The MT-149 timetable repaint sits behind two early returns | **fixed** as `DAY-B1` (`97137c4b`) |
+| **SVN-B13** | `rebuildHomeStations` dedups by locomotive, not by square | **fixed** 2026-09-02 (`8d1c17ca`) |
+| **SVN-B14** | The autonomy function slots are written before OK is pressed | **fixed** 2026-09-02 (`1cfdf370`) |
+| **SVN-B15** | The mid-route conflict question parks the rest of the route, stop included, behind a modal | half overtaken, half **fixed** 2026-09-02 |
+| **SVN-B16** | The plain-accessory tile guard never got the protecting-signal half its route twin has | **fixed** 2026-09-02 (`87b6c10a`) |
+| **SVN-B17** | AU-C12 is still open: the Keyboard tab throws accessories with no guard at all | **fixed** 2026-09-02, with `V31-C2` and `AU-C12` |
 
 `SVN-B1` through `SVN-B4` are all about the guard added in `17cad1fe`, the newest substantive commit of
 the week. They are separate findings because they fail in different directions and can be fixed
@@ -668,6 +668,29 @@ writing the pre-rename name back to disk. By this codebase's own account (`Layou
 that "is refused by parseAuto, which invalidates the whole layout". The editor being open is exactly
 the condition under which the note exists, so this door is co-extensive with the two that were swept.
 The javadoc at `:1493` calls the page snapshot *"the one that reaches DISK"* — it is not; the note is.
+
+**Disposition: fixed, at the funnel rather than at the editor.**
+
+`AutonomyCompanionStore.repairLocomotive` - which is where `locomotiveRenamed` and `locomotiveDeleted`
+both arrive, and therefore where `TrainControlUI.repairAutonomyLocomotive` arrives - now also runs
+`repairTheUnfinishedEditNote`, which reads the note through `unfinishedEdit()`, applies the existing
+`repairLocomotiveInSetup`, and writes it back through `rememberBeforeEdit`.
+
+**Not at `LayoutEditor.autonomyLocomotiveRenamed`**, where the finding points, and the reason is the
+finding's own observation: the note outlives the window that wrote it. It is written when the editor
+opens and cleared only when the session ends properly, so a rename made after the process died and
+before the next start has to reach it too - and that rename never touches a `LayoutEditor`. Putting
+the sweep beside the other three would have fixed the case the finding traced and left the case the
+note exists for.
+
+A note that cannot be read is left exactly as it is: `unfinishedEdit` already refuses one it cannot
+trust, so rewriting it would be repairing something about to be thrown away.
+
+`testARenameReachesTheNoteOnDisk` covers it end to end - note, rename, crash, revert - and asserts on
+the name that comes back rather than on the file, because what matters is what the revert writes.
+MUTATION: dropping the call from `repairLocomotive` fails it (8 tests, 1 failure).
+`testAutonomyDiagramStore` (65), `testAutonomyDiagramSession` (109),
+`testLocomotiveIdentityPropagates` (12) and `testARenameReachesTheTimetableOnScreen` re-run green.
 
 ### SVN-B10 — the load door asks a narrower question than the start door, and the method written to be the one question has no callers
 
