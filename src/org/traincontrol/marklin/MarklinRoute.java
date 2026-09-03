@@ -711,6 +711,18 @@ public class MarklinRoute extends Route
                                         // Every LATER accessory too, so the route does not go on
                                         // setting some of its ironwork and not the rest as conditions
                                         // change under it.
+                                        //
+                                        // **AND EVERYTHING ELSE IN THE ROUTE STILL RUNS** - speeds,
+                                        // functions, chained routes (RGN-B2).  The two messages above
+                                        // used to disagree about that, one saying "nothing further in
+                                        // the route was switched either" and the other "the rest of
+                                        // the route ran"; both now say what actually happens.
+                                        //
+                                        // Whether an s88-fired route SHOULD go on driving trains over
+                                        // ironwork it did not set is Adam's question, not this
+                                        // comment's - put to him as part of RGN-B2.  What is not in
+                                        // doubt is that he has to be able to tell which of the two
+                                        // happened, and until today he could not.
                                         skipAccessories = true;
 
                                         continue;
