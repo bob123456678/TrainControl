@@ -21,7 +21,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 |---|---|---|---|---|
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
-| [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-243](#mt-243) | 2026-08-31 | Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone | needs test | RGN-A1, IPR-A1 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
@@ -34,12 +33,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
-| [MT-259](#mt-259) | 2026-09-02 | The keyboard, when the window comes to the front | needs test | OB-170 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 | [MT-261](#mt-261) | 2026-09-02 | Four things the C sweep needs you to choose | needs test | R28-C2, R28-C3, R28-C5, V31-C2 |
 
-Everything else - 231 of 258 - is **fixed validated** and needs nothing from you unless the
-area changes again.  (8 superseded, 3 fixed but not yet validated.)
+Everything else - 233 of 258 - is **fixed validated** and needs nothing from you unless the
+area changes again.  (8 superseded, 2 fixed but not yet validated.)
 
 ---
 
@@ -8281,7 +8279,7 @@ and from two commits.
 
 ### MT-165 - 2026-08-24 - Return Home stages a blocker out of the way instead of refusing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-073, FBR-B1, FBR-B2
 **Written:** 2026-08-24
 
@@ -8380,6 +8378,40 @@ moving."
 So the question I left open above - whether to refuse a split square everywhere instead - is answered
 the other way. The assignment door accepts one now, and so does the loader, which was silently
 dropping homes the editor had accepted. See [MT-245](#mt-245).
+
+**Adam, 2026-09-03 (triage).** Could not run this.
+
+Validate this with a test class- I believe this was already done.  COnfirm.
+
+*Run against commit 409d4ce8, build\classes, compiled 03 Sep 01:53 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-03.  Confirmed - it was already done, and here is what does it.**
+
+Run today: `core.testHomeStaging` 86 tests, 0 failures, 0 skips;
+`core.testTrainsComeHomeToTheirPlatforms` 1 test, 0 failures.
+
+**This entry's own subject** - a blocker moved out of the way rather than a refusal - is
+`testAFreeAgentIsMovedOutOfTheWay`, `testTwoLocomotivesOnEachOthersHomesAreUnwound`,
+`testALocomotiveAtHomeStepsAsideAndReturns` and
+`testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan`.  What makes them worth anything is the
+harness rather than the assertions: every plan is *replayed* move by move against the model, and each
+move asserts that its destination is free AND that nothing is holding it back under FR-001 - the same
+question `isPathClear` asks at execution.  That is the failure you reported, so the test fails where
+the railway would.
+
+The impossibility scan is pinned from the other side by
+`testABlockerWithAHomeOfItsOwnIsNotAProofOfImpossibility`, which is the mistake two attempts at this
+fix made: staging can move whatever is standing in the way, so no occupancy proves anything.
+
+**The split-square half** - what you actually found on 2026-08-31, that Return Home never lit for a
+train on one of your ten blocked platform squares - is `testAHomeCanBeASquareThatIsSeveralPoints`,
+`testASecondLocomotiveDoesNotHomeOnTheOtherCopyOfAPlatform`, `testOnePlatformHoldsOneHomeAcrossItsCopies`,
+`testAHomeIsTheSquareAndNotOneOfItsDirections`, `testThePlannerAgreesWithTheDoorThatAcceptedTheHome`
+and `testTwoHomesOnOneSquareDoNotBothSurviveTheLoader`.
+
+**One thing a test class cannot hold**, and it is why [MT-245](#mt-245) stays open: that a home set on
+one of YOUR main-line platforms is still there at the next start of the real application, against your
+own layout files.  The tests use fixtures.  Everything else here is covered.
 
 ---
 
@@ -13822,7 +13854,7 @@ above have not been reported on either way.
 
 ### MT-259 - 2026-09-02 - The keyboard, when the window comes to the front
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-170
 
 **Written:** 2026-09-02
@@ -14071,6 +14103,37 @@ one word, the keyboard works, and a slow connect looks like nothing happening - 
 does and what you have lived with until now.
 
 11. **Start it once more.**  If the keyboard works with the hourglass showing, this is done.
+
+**Adam, 2026-09-03: "it works now"**, of the build with no splash at all - and then, of the finished
+one: **"It works good."**
+
+**So it closes, and the answer was the second of the two I asked you to pick: the notice inside the
+main window.**  There is no splash.  `TrainControlUI.showConnecting` puts the window on screen with the
+spinner and the words drawn *on it*, and `display()` swaps the application back in behind them - so the
+process shows exactly one window, which is what 2.8.1 does and why 2.8.1's keyboard worked all along.
+
+The content pane is swapped rather than covered by a glass pane, because the real controls read a model
+that does not exist until the connect is over.
+
+**Two faults of my own on the way there, both yours to have caught.**
+
+- **"Can we avoid having the window close and then reopen?"**  The call that takes the notice down sat
+  in the `finally` of the window build, so it ran on the success path too: the window was hidden a
+  moment after being shown and shown again by `display()`.  It now runs only where the build failed.
+- **"Just gray out the menu bar before it loads, too."**  The bar is part of the window rather than of
+  its content, so the swap left every menu looking ready while none of them could do anything.  It
+  greys per menu - disabling the bar leaves them drawn normally and still opening - and exactly the
+  menus that were switched off come back on, so items disabled by state stay disabled.
+
+Pinned by `testTheStartupNoticeGoesOnTheWindowAndStaysThere`,
+`testTheMenusAreGreyedWhileTheWindowIsConnecting` and `testTheStartupNoticeIsNotAWindow`, each
+mutation-confirmed.  `StartupSplash` is 263 lines down to 80: it cannot open a window any more, which
+is the only guard that matters here - if a second start-up window ever comes back, so does this bug.
+
+**Eight passes, seven of them wrong, and what actually settled it was your experiment rather than my
+reasoning.**  You asked on day one whether the loading notice was involved and I talked you out of it.
+Worth writing down next to the fix.
+
 
 ---
 
