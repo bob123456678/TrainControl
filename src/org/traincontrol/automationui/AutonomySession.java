@@ -174,45 +174,6 @@ public class AutonomySession
     }
 
     /**
-     * Puts a page's captions back the way a snapshot found them.
-     *
-     * Everything currently on the page goes first, so a caption ADDED since the snapshot is removed
-     * rather than left beside the ones being restored.  Written through the store directly: the
-     * one-station-one-caption rule in setCaption would fight a wholesale restore, and a snapshot
-     * already satisfies it by construction - it is a state this session was in.
-     *
-     * @param page the page name
-     * @param captions what captionsOnPage returned earlier
-     */
-    public void restoreCaptionsOnPage(String page, Map<TileKey, TileKey> captions)
-    {
-        if (page == null) return;
-
-        for (TileKey where : captionsOnPage(page).keySet())
-        {
-            store.setCaption(where, null);
-        }
-
-        if (captions != null)
-        {
-            for (Map.Entry<TileKey, TileKey> caption : captions.entrySet())
-            {
-                // Not onto a square that has since stopped being a station.  Undo restores the state
-                // before an editor gesture, but demotion is a SEPARATE action it does not cover - so
-                // restoring a caption for a square demoted in between would put a station's name back on
-                // a plain point, the very thing forgetCaptionsOfNonStations and the demote-clear exist
-                // to prevent.
-                if (caption.getValue() == null || store.isStation(caption.getValue()))
-                {
-                    store.setCaption(caption.getKey(), caption.getValue());
-                }
-            }
-        }
-
-        touched();
-    }
-
-    /**
      * Drops arrival restrictions naming sides the square no longer has.
      *
      * getBarredArrivals hides them from every reader, so this is only about the file: left in it, a
@@ -1183,7 +1144,6 @@ public class AutonomySession
 
         return ImportFormat.UNKNOWN;
     }
-
 
     /**
      * Which locomotive the active configuration records standing on each square.
@@ -2434,7 +2394,6 @@ public class AutonomySession
         return false;
     }
 
-
     /**
      * The generated configuration, in the format the autonomy model already reads.
      * @return
@@ -3090,8 +3049,6 @@ public class AutonomySession
                 for (String key : POINT_OPERATIONAL_KEYS)
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
-
-
 
                     // A placement records WHICH locomotive stands here and nothing else.  Point.toJSON
                     // also writes its length, reversibility, speed and functions, and parseAuto applies
@@ -4455,7 +4412,6 @@ public class AutonomySession
 
         return out;
     }
-
 
     public void setPointProperty(TileKey tile, String key, Object value)
     {

@@ -571,12 +571,19 @@ and names four findings.
 - last-day `A1` — `testTrainsComeHomeToTheirPlatforms` exists (`test/core/testTrainsComeHomeToTheirPlatforms.java:71`)
   and `DELIBERATELY_OUT` is back to its single `testAutoDetect` entry
   (`test/regression/testEveryTestIsInTheBattery.java:40-44`).
-- `RGN-C1` — the button exists beside Name Everything with the 2.8.1 confirmation (D12).
+- `R28-C1` — the button exists beside Name Everything with the 2.8.1 confirmation (D12).
+  **`R28`, not `RGN` (REL-C14).** The prefix was a typo, and `RGN-C1` is a different, open
+  finding: auto-save on exit is forced on and its checkbox hidden, so `autonomy.json` is
+  rewritten for somebody who turned it off. It was never dispositioned here.
 - `RTG-A1` closed by `FX2-4` — the mechanism question ("builder refuses or editor warns") WAS answered,
   by Adam on 2026-09-02: *"we need a warning for instances like the previous version of this"*, quoted
   at `AutonomyChecks.checkBadCopies` (`:738-747`), which is the per-copy check the disposition claims.
 - last-day `C11` — OB-167 has its receipt row (`docs/manual-tests/issues.md:364`).
-- `RGN-B2` withdrawn — `AutonomyMenu.java:326` carries the ungated Export item.
+- `R28-B2` withdrawn — `AutonomyMenu.java:326` carries the ungated Export item.
+  **`R28`, not `RGN` (REL-C14).** `RGN-B2` is a different finding and is a B about what a route
+  does on the railway - an s88-fired route that meets a conflict sets none of its accessories
+  and runs everything else. Nothing about it was withdrawn here. Its three descriptions were
+  brought into agreement on 2026-09-03; the behaviour is a question for Adam.
 
 ### V31-D16 — things that looked wrong and are not
 

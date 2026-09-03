@@ -2956,8 +2956,21 @@ public class Layout
                 //
                 // The release below covers path.subList(0, edgesLocked), so an edge counted afterwards
                 // is one a throw out of setOccupied or reserve leaves occupied and outside the release -
-                // the single edge the recovery provably could not reach.  Counting first can only ever
-                // release an edge that was never taken, and setUnoccupied on an edge that is already
+                // Counting first can only ever release an edge that was never taken - and releasing one is
+                // NOT free, which this comment used to claim (DAY-C4, REL-C16).
+                //
+                // `Edge.setUnoccupied` calls `release()`, which floors at zero for THIS edge and then cascades
+                // `setLockedEdgeUnoccupied()` to every entry in `lockEdges` - each decrementing its own count
+                // with no knowledge of whether this edge was ever taken.  So the sentence "setUnoccupied on an
+                // edge that is already clear does nothing" is false, and it was quoted and endorsed in
+                // `Edge.release`'s own javadoc, which is where a reader following this comment would land.
+                //
+                // The over-release it licenses is still unreachable, and that is why this is a comment fix
+                // rather than a code one: `setOccupied` increments `occupancy` as its first statement, so an
+                // edge counted by `edgesLocked++` and then thrown past has already been incremented and its
+                // release is correct.  Only its locked siblings would be released untaken, and reaching them
+                // needs a throw INSIDE the lockEdges loop - a ConcurrentModificationException on
+                // `this.lockEdges` mid-iteration, which nothing in the tree produces.
                 // clear does nothing.
                 edgesLocked++;
 

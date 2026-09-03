@@ -452,8 +452,19 @@ public class Edge
      *
      * The floor is not defensive tidiness, it is a contract something already depends on.
      * configureAndLockPath counts an edge as taken BEFORE it takes it, so that an edge a throw leaves
-     * occupied is still inside the range its recovery releases - and its comment says the reason out
-     * loud: "setUnoccupied on an edge that is already clear does nothing".  It still does nothing.
+     * occupied is still inside the range its recovery releases.
+     *
+     * **Its comment used to add "setUnoccupied on an edge that is already clear does nothing", and
+     * this javadoc used to endorse that: "it still does nothing"** (`REL-C16`, `DAY-C4`). It is not
+     * true here. The floor holds for THIS edge, and then `setUnoccupied` cascades
+     * `setLockedEdgeUnoccupied()` to every entry in `lockEdges`, each decrementing its own count with
+     * no knowledge of whether this edge was ever taken. A reader who followed the `Layout` comment to
+     * its source was told the claim had been checked, in the one file that could have refuted it.
+     *
+     * What makes the over-release unreachable is narrower, and is written at the call site rather than
+     * here: `setOccupied` increments as its first statement, so an edge counted and then thrown past
+     * has already been incremented and its release is correct. Only locked siblings a mid-loop throw
+     * never reached could be released untaken.
      *
      * Going negative would be worse than either: an edge released once too often would need two claims
      * before it read as occupied again, so the NEXT train to lock it would find it free.

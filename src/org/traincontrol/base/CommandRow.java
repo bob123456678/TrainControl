@@ -233,8 +233,14 @@ public final class CommandRow
             case LOCOMOTIVE_SPEED: return "0";
             case FUNCTION: return "0:off";
 
-            // A sensor number, which has no sensible default - the row is refused until one is typed,
-            // and refusing is better than offering sensor 1 to somebody who did not choose it
+            // A sensor number, and this method has none to give (REL-C13).
+            //
+            // The argument here used to be that refusing is better than offering sensor 1 to somebody
+            // who did not choose it.  That decision was reversed by `ef33f4a8` and the sentence was
+            // left standing: `RouteEditorFrame:3419` offers exactly sensor 1, by name, on the
+            // condition side.  It does it there rather than here because the two sides want different
+            // answers - a COMMAND row of this kind is still refused until a sensor is typed - so what
+            // is left is a genuinely empty default, not a policy.
             case AUTO_LOCOMOTIVE: return "";
 
             default: return "";
@@ -264,11 +270,16 @@ public final class CommandRow
      * carrying one silently stops firing with no error anywhere - the condition editor offered all
      * seven kinds, which made that a two-click mistake.
      *
-     * AUTO_LOCOMOTIVE is not offered here even though evaluate handles it, because CommandRow has no
-     * controls for a kind that needs a locomotive AND a sensor.  One already in a route is preserved
-     * read-only, the way every other unsupported kind is.  Worth knowing: it is the condition
-     * ConditionRows' own header uses as its example, so the editor cannot yet build the row its
-     * documentation illustrates.
+     * AUTO_LOCOMOTIVE **is** offered, and this paragraph used to say it was not (`REL-C13`).
+     * `ef33f4a8` added it - *"an AUTONOMY CONDITION could be chosen and did nothing ... it starts on
+     * the first locomotive now, like every other kind starts on something"* - and
+     * `RouteEditorFrame:3415-3419` supplies both halves the old sentence said the row could not have:
+     * the first locomotive for the target, and sensor 1 for the setting.  So the editor does build the
+     * row `ConditionRows`' own header uses as its example.
+     *
+     * The other four kinds are still absent, and for the original reason: a condition built from one
+     * is permanently false.  One already in a route is preserved read-only, the way every other
+     * unsupported kind is.
      */
     public static boolean canBeACondition(Kind kind)
     {

@@ -1195,6 +1195,18 @@ identifier keeps its life: `R28-B2` is DECLINED-pending-Adam, not withdrawn, and
 **`RG3-C5`'s correction landed on the Readme and not on its twin. The two bundle tooltips still carry
 the sentence it corrected, in all eight languages.**
 
+**Disposition: corrected rather than deleted, in all eight bundles.**
+
+`growEdges` calls `addRowsAndColumns(1, 1)` and its own javadoc says *"growing at the right and the
+bottom"* - two edges. The English now reads *"Add a column on the right and a row at the bottom"* and
+*"Take the same two away, if neither holds track"*, and the seven translations follow, with the count
+word changed in each (`drei`/`trois`/`tres`/`tre`/`drie`/`tre`/`trzy` to the two-form each language
+wants). Every bundle still parses as ASCII and `testMessageBundles` is green.
+
+Corrected rather than deleted because the finding's own reason is the better one: nothing reads these
+keys today, and the next person to wire a tooltip onto those two buttons would wire the wrong sentence
+onto them.
+
 `RG3-C5` was closed on 2026-09-03 - *"the changelog says a column on the right and a row at the
 bottom, which is what the two buttons do"* - and the Readme is right. The strings are not:
 
@@ -1224,6 +1236,17 @@ wrong sentence onto them. The fix is the same four words, in eight files, or del
 **`CommandRow.canBeACondition`'s javadoc says the editor does not offer `AUTO_LOCOMOTIVE` and cannot
 build the row its own documentation illustrates. It does, and it can - since `ef33f4a8`, which fixed
 precisely that.**
+
+**Disposition: fixed, both sentences.**
+
+`canBeACondition`'s javadoc now says `AUTO_LOCOMOTIVE` **is** offered, names `ef33f4a8` as the commit
+that added it, and points at `RouteEditorFrame:3415-3419` for the two halves the old sentence said the
+row could not have. The four kinds that really are absent keep their reason.
+
+`defaultSettingFor`'s comment no longer argues for a decision that was reversed. What is left there is
+a genuinely empty default rather than a policy, and it says why the two sides differ: a **command** row
+of that kind is still refused until a sensor is typed; the **condition** side is given sensor 1 by
+name, at the editor.
 
 ```java
 // CommandRow.java:262-271 (javadoc)
@@ -1271,6 +1294,14 @@ of `RG3-D9`'s claim that every command kind has a row: it holds, and the file sa
 
 **Two prefix typos in the 2026-09-02 first validation record an open `B` and an open `C` as settled.**
 
+**Disposition: fixed, and each correction carries what the real finding is.**
+
+Both lines in `2026-09-02-first-validation.md` now read `R28`, with a note under each saying which
+`RGN` finding was NOT dispositioned there - `RGN-C1`, auto-save forced on with its checkbox hidden,
+still open; and `RGN-B2`, whose three descriptions were brought into agreement on 2026-09-03 and whose
+behaviour is a question for Adam. A reader auditing `RGN` and landing on that file is no longer told
+its B2 was withdrawn.
+
 ```
 docs/reviews/2026-09-02-first-validation.md:576
     - `RGN-C1` - the button exists beside Name Everything with the 2.8.1 confirmation (D12).
@@ -1309,6 +1340,26 @@ they were never dispositioned.
 
 **Eighteen methods in the autonomy, diagram and route user interface have no caller anywhere in `src/`
 or `test/`.**
+
+**Disposition: the two traps removed; the other sixteen deferred past 3.0.0, with the reason.**
+
+**Removed.** `TrainControlUI.greyOutAutonomy` - a public method whose javadoc says *"disables the start
+autonomy button"* and whose body executes a graceful stop of the running railway. Its 2.8.1 caller was
+`GraphViewer.formWindowClosing` and there is no graph window to close. And
+`AutonomySession.restoreCaptionsOnPage`, whose javadoc says it is what the track diagram editor's undo
+uses; the editor uses `captionSnapshot`/`restoreCaptions` through the store's page snapshots instead,
+and has since that mechanism replaced this one. Both are the shape `receiveKeyEvent`'s own comment
+warns about: a door that does something other than its name, waiting to be wired up.
+
+**Deferred.** The other sixteen are accessors and wrappers whose only cost is tidiness. A sixteen-method
+deletion inside a release candidate buys nothing a reader needs and is a diff nobody can review by eye,
+which is the trade `docs/reviews/README.md` asks to be stated rather than made silently. They are listed
+in the table above and none is a capability's only door - that negative result, which was the point of
+the scan, stands.
+
+Checked before removing: no `.java` in `src/` or `test/` names either method, including reflectively -
+this suite reaches private members by name often enough that the question is a real one. Five classes
+re-run green afterwards and the full battery is 148/148.
 
 Found by counting every `name(` occurrence and every `::name` method reference across the whole tree
 for each declared method in `gui/` and `automationui/`. Confirmed by hand for each:
@@ -1354,6 +1405,22 @@ name says it disables a button and whose body executes a graceful stop of the ra
 ### C16
 
 **`DAY-C4`'s stale claim now exists twice, and the newer copy is the authority the older one cites.**
+
+**Disposition: fixed at both sites, which closes `DAY-C4` with it.**
+
+`Layout.configureAndLockPath`'s comment now says what `release()` does - the floor holds for that edge
+and then `setLockedEdgeUnoccupied()` cascades to every entry in `lockEdges`, each decrementing without
+knowing whether this edge was taken - and says why the over-release is still unreachable, at the call
+site where that argument belongs: `setOccupied` increments first, so only siblings a mid-loop throw
+never reached could be released untaken, and nothing in the tree throws there.
+
+`Edge.release`'s javadoc no longer quotes and endorses the sentence. That was the half that mattered:
+a reader following the `Layout` comment to its source was told the claim had been checked, in the one
+file that could have refuted it.
+
+Comments only - the code is right, which is why this was a C and why `DAY-C4` was one too. Filing them
+separately was correct: closing `DAY-C4` against its own site would have left the sentence standing in
+the file it had been copied into.
 
 `DAY-C4` (2026-08-31, open) is that `Layout.configureAndLockPath`'s comment stopped being true:
 

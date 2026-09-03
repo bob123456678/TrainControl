@@ -3095,7 +3095,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return -1;
     }
 
-
     /**
      * Empties the track diagram panel, for when there is no longer a diagram (OB-128).
      *
@@ -3666,7 +3665,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private String activeDiagramConfiguration;
-
 
     /**
      * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.
@@ -4624,7 +4622,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.setAlwaysOnTop(false);
 
-
                 editor.render();
 
                 if (opening != null) editor.setAutonomyMode(opening);
@@ -5545,7 +5542,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLayoutEditor(page, Boolean.TRUE, null, true);
     }
 
-
     /**
      * The station on a square, for a right-click on the track itself.
      *
@@ -6024,7 +6020,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private AutonomyViewerPanel autonomyViewerPanel;
-
 
     /**
      * The strip above the track diagram, made once and kept.
@@ -7583,7 +7578,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         KeyboardTab.requestFocusInWindow();
     }
 
-
     
     /**
      * Shows or hides the menu bar depending on the user's preference
@@ -8613,7 +8607,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.ImageLoader;
     }
 
-
     /**
      * Re-applies the caption rule to every label the diagram currently holds.
      *
@@ -8634,9 +8627,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
     }
-
-
-
 
     /**
      * Whether the routing dropdown is being put back by us rather than chosen by a person (RC-B11).
@@ -16552,7 +16542,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         REFUSED
     }
 
-
     /**
      * @param known the accessory and the reason key, when the caller has already established them;
      *  null to ask the route itself
@@ -20797,7 +20786,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.KeyboardTab.requestFocus();
 
-
                 this.exportJSON.setEnabled(true);
                 this.gracefulStop.setEnabled(false);
                 
@@ -24666,20 +24654,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }        
     }
     
-    /**
-     * Disables the start autonomy button
-     */
-    public void greyOutAutonomy()
-    {
-        // Execute graceful stop instead
-        if (this.gracefulStop.isEnabled())
-        {
-            gracefulStopActionPerformed(null);
-        }
-        
-        //this.startAutonomy.setEnabled(false);
-        //AltEmergencyStopActionPerformed(null);
-    }
     
     
         
@@ -25229,7 +25203,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final java.util.Map<String, Long> startedRunningAt =
         new java.util.concurrent.ConcurrentHashMap<>();
 
-
     /**
      * The play button: the glyph's size, and the strip of cell that presses it.
      *
@@ -25446,7 +25419,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             strip.y + (strip.height - ROUTE_PLAY_SIZE) / 2,
             ROUTE_PLAY_SIZE, ROUTE_PLAY_SIZE);
     }
-
 
     /**
      * The route Find Route last landed on, drawn highlighted until something else happens (FR-044).
