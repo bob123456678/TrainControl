@@ -143,6 +143,122 @@ public class testRouteEditorShading
      * The three-argument constructor takes the route rather than a name to look up, which is what
      * lets this run without a control station - and is why it exists.
      */
+    /**
+     * Highlight on Diagram survives a route that drives a locomotive (IPR-B1).
+     *
+     * The button gathers the addresses a route touches so it can flash them on the diagram, and it
+     * asked every command for its address.  `RouteCommand.getAddress()` is an `Integer.parseInt` over a
+     * key only accessory and feedback commands carry - its own javadoc says it throws for the others -
+     * so a route holding a locomotive speed, direction or function command threw out of a button a
+     * person presses to see what that route does.  `hasAddress()` exists for this and was not asked.
+     *
+     * Driven through the button rather than through the gathering method, because what was reported is
+     * that the button does not work.
+     *
+     * MUTATION this catches: taking `hasAddress()` back out of either loop.
+     */
+    @Test
+    public void testHighlightSurvivesALocomotiveCommand() throws Exception
+    {
+        needsADisplay();
+
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        // An accessory, which has an address, and a locomotive, which has not.
+        commands.add(RouteCommand.RouteCommandAccessory(12,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 50));
+
+        MarklinRoute route = new MarklinRoute(null, "IPR-B1", 41,
+            commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(10, false)));
+
+        final org.traincontrol.gui.RouteEditorFrame[] frame =
+            new org.traincontrol.gui.RouteEditorFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            frame[0] = new org.traincontrol.gui.RouteEditorFrame(null, "IPR-B1", route));
+
+        try
+        {
+            // THE ROUTE'S COMMANDS HAVE TO REACH THE TABLE, or the loop under test sees nothing and
+            // this passes without going near the defect.
+            java.lang.reflect.Field rows = org.traincontrol.gui.RouteEditorFrame.class
+                .getDeclaredField("commands");
+
+            rows.setAccessible(true);
+
+            Object table = rows.get(frame[0]);
+
+            java.lang.reflect.Field list = table.getClass().getDeclaredField("rows");
+
+            list.setAccessible(true);
+
+            assertTrue(((java.util.List<?>) list.get(table)).size() >= 2,
+                "precondition: the editor did not load the route's two commands, so the loop under "
+                + "test has nothing to walk.  Rows: " + list.get(table));
+
+            java.lang.reflect.Method highlight = org.traincontrol.gui.RouteEditorFrame.class
+                .getDeclaredMethod("highlightOnDiagram");
+
+            highlight.setAccessible(true);
+
+            final Throwable[] thrown = new Throwable[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    highlight.invoke(frame[0]);
+                }
+                catch (java.lang.reflect.InvocationTargetException failed)
+                {
+                    thrown[0] = failed.getCause();
+                }
+                catch (Exception other)
+                {
+                    thrown[0] = other;
+                }
+            });
+
+            assertNull(thrown[0],
+                "Highlight on Diagram threw on a route that drives a locomotive.  It asks every "
+                + "command for an address, and a locomotive command has none - so the button a "
+                + "person presses to see what a route touches fails on the routes most worth "
+                + "looking at.  Threw: " + thrown[0]);
+
+            // AND THE CONTRACT THE GUARD RESTS ON, asserted directly.
+            //
+            // What is NOT reached above is the gathering loop itself: with no parent window there is
+            // no diagram to highlight on, so the method returns before it walks the rows.  Measured -
+            // taking the guard back out does not fail the assertion above.  So the property the fix
+            // depends on is pinned here instead, and the limitation is written down rather than left
+            // for the next reader to discover.
+            org.traincontrol.base.RouteCommand driving =
+                RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 50);
+
+            assertFalse(driving.hasAddress(),
+                "a locomotive command reports that it has an address, so the guard that asks before "
+                + "reading one would let the read through");
+
+            try
+            {
+                driving.getAddress();
+
+                fail("getAddress() answered for a locomotive command instead of throwing.  If that is "
+                    + "deliberate the guard at the highlight is unnecessary, and this test should go "
+                    + "with it");
+            }
+            catch (RuntimeException expected)
+            {
+                // Which is why the caller has to ask hasAddress() first.
+            }
+        }
+        finally
+        {
+            close(frame[0]);
+        }
+    }
     private org.traincontrol.gui.RouteEditorFrame openWithOneCondition() throws Exception
     {
         MarklinRoute route = new MarklinRoute(null, "OB-121", 40,

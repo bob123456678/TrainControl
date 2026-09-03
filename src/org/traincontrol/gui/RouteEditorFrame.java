@@ -2398,14 +2398,27 @@ public class RouteEditorFrame extends JFrame
         {
             org.traincontrol.base.RouteCommand command = entry.toCommand();
 
-            if (command != null && command.getAddress() > 0) commanded.add(command.getAddress());
+            // ASKED WHETHER IT HAS ONE FIRST (IPR-B1).
+            //
+            // `getAddress()` is `Integer.parseInt` over a key other command types do not carry, and
+            // its own javadoc says it throws for them - so a route holding a LOCOMOTIVE command threw
+            // out of Highlight on Diagram, which is a button a person presses to see what a route
+            // touches.  `hasAddress()` exists for exactly this and was not being asked.
+            if (command != null && command.hasAddress() && command.getAddress() > 0)
+            {
+                commanded.add(command.getAddress());
+            }
         }
 
         for (ConditionOutline.Row row : conditions.rows)
         {
             if (row.isJoiner() || row.getCommand() == null) continue;
 
-            if (row.getCommand().getAddress() > 0) checked.add(row.getCommand().getAddress());
+            // The same question on the condition side (IPR-B1): a condition can name a locomotive.
+            if (row.getCommand().hasAddress() && row.getCommand().getAddress() > 0)
+            {
+                checked.add(row.getCommand().getAddress());
+            }
         }
 
         // A square that is BOTH commanded and checked is drawn as commanded.  It is the stronger of the
