@@ -43,16 +43,37 @@ public class testRoutePicking
 {
     private static MarklinControlStation model;
 
-    /** Every rule this class chooses a winner for. */
-    private static final Set<Layout.PathPreference> COVERED_HERE = EnumSet.of(
-        Layout.PathPreference.FEWEST_POINTS,
-        Layout.PathPreference.MOST_POINTS,
-        Layout.PathPreference.FEWEST_STATIONS,
-        Layout.PathPreference.MOST_STATIONS,
-        Layout.PathPreference.SHORTEST_LENGTH,
-        Layout.PathPreference.LONGEST_LENGTH,
-        Layout.PathPreference.RANDOM,
-        Layout.PathPreference.BALANCED_PRIORITY);
+    /**
+     * Every rule this class chooses a winner for, and WHICH method does it (TSX-C8).
+     *
+     * This was a bare set, which is a comment: deleting `testTheSensorRulesAreMirrors` left
+     * `FEWEST_POINTS` and `MOST_POINTS` tested by nothing anywhere in the suite, and
+     * `testEveryRuleIsCoveredSomewhere` went on reporting both as covered because they were still in
+     * the set.  The far half of this index was given a reflective check on 2026-09-01 for exactly that
+     * reason, in words that are every bit as true of the near half: "naming a rule used to be nothing
+     * more than a comment - true today, but nothing would notice if the method were renamed."
+     */
+    private static final java.util.Map<Layout.PathPreference, String> COVERED_HERE_BY;
+
+    static
+    {
+        java.util.Map<Layout.PathPreference, String> here = new java.util.LinkedHashMap<>();
+
+        here.put(Layout.PathPreference.FEWEST_POINTS, "testTheSensorRulesAreMirrors");
+        here.put(Layout.PathPreference.MOST_POINTS, "testTheSensorRulesAreMirrors");
+        here.put(Layout.PathPreference.FEWEST_STATIONS, "testTheStationRulesAreMirrors");
+        here.put(Layout.PathPreference.MOST_STATIONS, "testTheStationRulesAreMirrors");
+        here.put(Layout.PathPreference.SHORTEST_LENGTH, "testTheLengthRulesAreMirrors");
+        here.put(Layout.PathPreference.LONGEST_LENGTH, "testTheLengthRulesAreMirrors");
+        here.put(Layout.PathPreference.RANDOM, "testRandomStillChoosesARealRoute");
+        here.put(Layout.PathPreference.BALANCED_PRIORITY,
+            "testStationPriorityIsWeighedAgainstDistance");
+
+        COVERED_HERE_BY = java.util.Collections.unmodifiableMap(here);
+    }
+
+    private static final Set<Layout.PathPreference> COVERED_HERE =
+        EnumSet.copyOf(COVERED_HERE_BY.keySet());
 
     /**
      * And the ones whose ranking needs a different railway, with where they are tested instead.
@@ -207,6 +228,31 @@ public class testRoutePicking
                 rule + " is a way of choosing routes that nothing tests.  Give it a winner on the "
                 + "fixture in this class, or add it to COVERED_ELSEWHERE saying which railway it "
                 + "needs and where that test is");
+
+            // AND THE SAME FOR THE NEAR HALF (TSX-C8).  A rule named here is covered by a method in
+            // THIS class, and that method has to exist and still be a @Test - otherwise deleting it
+            // leaves the claim standing on nothing, which is what happened to `TST-C4` before.
+            if (COVERED_HERE.contains(rule))
+            {
+                String covering = COVERED_HERE_BY.get(rule);
+
+                assertNotNull(covering, rule + " is claimed as covered here but names no method");
+
+                try
+                {
+                    java.lang.reflect.Method mine =
+                        testRoutePicking.class.getDeclaredMethod(covering);
+
+                    assertNotNull(mine.getAnnotation(Test.class),
+                        covering + "() is claimed to cover " + rule + " and is no longer a @Test - "
+                        + "so this class reports a coverage it does not have");
+                }
+                catch (NoSuchMethodException gone)
+                {
+                    fail(covering + "() is claimed to cover " + rule + " and no longer exists.  "
+                        + "Nothing else in the suite tests that rule");
+                }
+            }
 
             // A name in COVERED_ELSEWHERE is a claim, not proof.  Reflectively confirm the covering
             // test still exists and is still a @Test, so deleting or weakening it away fails THIS

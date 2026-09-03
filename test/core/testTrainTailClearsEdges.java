@@ -218,8 +218,16 @@ public class testTrainTailClearsEdges
         // A whole-file `contains` is only a test while the string is unique to the thing it is about,
         // and nothing warns when it stops being.  Anchored on the call now, the way the assertion above
         // it already was.
-        assertTrue(source.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],\n"
-            + "                                loc.getTrainLength())"),
+        // WHITESPACE-INSENSITIVE, because the file's line endings are git's to choose (TSX-C9).
+        //
+        // This pinned a literal newline and the wrapped line's thirty-two spaces.  The repository is
+        // checked out with `core.autocrlf=true` and nothing under `src/` is pinned in `.gitattributes`,
+        // so a fresh clone gets CRLF here and the `contains` finds nothing - the assertion then passes
+        // on a file it could not read, which is the same shape as the blessed baseline that cried wolf
+        // this morning.  Re-wrapping the call in the editor would do it too.
+        String call = source.replaceAll("\\s+", " ");
+
+        assertTrue(call.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1], loc.getTrainLength())"),
             "the clearing loop no longer passes the locomotive's length to tailHasProvablyPassed, so "
             + "the rule compares against nothing and every edge is handed back the moment the head "
             + "leaves it");

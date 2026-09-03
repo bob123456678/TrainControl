@@ -1106,6 +1106,14 @@ siblings already carry, copied to `:782`.
 
 #### C8 - `COVERED_HERE` is the half of the coverage index that nothing checks
 
+**FIXED 2026-09-03.**  `COVERED_HERE` is a map from rule to the method in this class that covers it, and
+the loop checks that method exists and is still a `@Test` - the treatment the far half was given on
+2026-09-01.  Mutation-confirmed by renaming `testTheSensorRulesAreMirrors` away: the index now fails
+instead of going on claiming the coverage.
+
+The two smaller items recorded under this finding - `TCX-C1`'s single trials, and the block-less
+fixtures - are left where they are, and `TCX-C1` stays open in its own document.
+
 `test/core/testRoutePicking.testEveryRuleIsCoveredSomewhere:202-241` is the guard that keeps the
 path-preference rules honest as the enum grows, and half of it was hardened and half was not.
 
@@ -1140,6 +1148,13 @@ Two smaller things in the same class, recorded here rather than filed:
   reads `(9+1)*1000/18 = 555` and `(0+1)*1000/2 = 500`, which is what integer division gives.
 
 #### C9 - a source scan that pins a newline, on a repository checked out with `core.autocrlf=true`
+
+**FIXED 2026-09-03.**  The anchor collapses whitespace before matching, so it survives a line ending git
+chooses and a re-wrap in the editor.  Mutation-confirmed by dropping the length argument from the
+clearing loop's call - two failures.
+
+The finding's wider point is worth keeping: this is the same shape as the blessed baseline that cried
+wolf this morning, which is two source rules in one day defeated by how a file was written to disk.
 
 `test/core/testTrainTailClearsEdges.java:221-225`, the assertion `TCX-A3` was fixed into:
 
@@ -1187,6 +1202,14 @@ handed back the moment the head leaves it" accuses the code of the exact safety 
 `* text=auto eol=lf` in `.gitattributes`; the local one is to normalise whitespace out of the anchor.
 
 #### C10 - a floor of one sample in four hundred, under a javadoc that promises a tenth
+
+**FIXED 2026-09-03** for the floor: `>= SAMPLES / 10`, which is what this class's own javadoc promises
+and what its sibling already asserted.  One sample in four hundred satisfied "> 0", and a 399-to-1 split
+is precisely the fixed order the message says it is ruling out.
+
+The second half - that `OTHER_PRIORITISED` is a hand-written list nothing checks for completeness - is
+left, recorded: the frozen fixture is a real railway, and an assertion that no point outside A/B/C
+carries a priority would be the check.  Small, and worth doing with the rest of `TCX-C1`.
 
 `TCX-C2`, confirmed at HEAD, with the part `TCX` did not say: the class javadoc states the stronger rule
 and the assertion does not implement it. `test/core/testStationPriorityDistribution.java:41-46`:
