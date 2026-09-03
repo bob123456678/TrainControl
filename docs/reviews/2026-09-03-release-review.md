@@ -1067,6 +1067,21 @@ that the premise it rested on is no longer true.
 `git log -S "AUTO_LOAD_AUTONOMY, true" -- src/org/traincontrol/gui/TrainControlUI.java`. To see it:
 on a machine that has never run 3.0.0, open Startup Options and look at the tick.
 
+**ANSWERED 2026-09-03 - the default stays, and the sentence that argued for it is corrected.**
+
+The flip is deliberate and it is announced: the changelog says "the one you were last using is loaded
+when TrainControl starts" (`Readme.md:366`).  What this finding is right about is the reasoning, and it
+is right in the strongest way available - the two defects it points at, `A1` and `A2`, are both defects
+of the loaded-and-idle state, and this default is what made them universal rather than opt-in.
+
+Both are now fixed.  The comment at the preference records what the state cost, and the lesson the
+sentence should have carried: "loading is not running" is a statement about TRAINS, not about the rest
+of the application - a loaded configuration puts locomotives onto Points, and several rules ask whether
+a Point holds one.
+
+Reverting the default would be a product decision, and it is Adam's; with `A1` and `A2` fixed there is
+nothing left to argue it from.
+
 ### B4
 
 **`R28-B2` was withdrawn against `AutonomyMenu.java:326`. That line is the Export Configuration
@@ -1152,6 +1167,16 @@ the reason recorded, which is a different outcome from WITHDRAWN and leaves the 
 
 **How to confirm.** Read-only, above. To see it: start the jar normally, open the Autonomy menu, and
 look for "Export Raw Graph as JSON".
+
+**OPEN - Adam's, and the finding is right that the record is wrong** (2026-09-03).
+
+Confirmed: the withdrawal was written against the Export **Configuration** item, which `R28-B2` had
+already read and excluded, so the derived-graph export is still behind `isDebug()` at both doors and the
+2.8.1 button is still gone from an ordinary session.  What is owed is one sentence from Adam: is the
+derived graph something a person should be able to export, or is it a debugging artefact?
+
+Carried into the questions list at the foot of `docs/reviews/2026-09-03-c-sweep-report.md`.  The
+identifier keeps its life: `R28-B2` is DECLINED-pending-Adam, not withdrawn, and its own entry says so.
 
 ### C12
 

@@ -923,8 +923,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // looked like it did.
         //
         // Loading is not running - it builds the graph and draws it, and starting trains is still a
-        // separate press - so there is nothing here for the default to put at risk.  A layout with no
-        // setup is unaffected, and anybody who does not want it keeps their unticked box.
+        // separate press.  A layout with no setup is unaffected, and anybody who does not want it keeps
+        // their unticked box.  It is announced in the changelog: "the one you were last using is loaded
+        // when TrainControl starts."
+        //
+        // **"NOTHING FOR THE DEFAULT TO PUT AT RISK" WAS TOO STRONG** (REL-B3), and it is worth
+        // recording what the loaded-and-idle state turned out to cost, because this default is what
+        // made both of them universal rather than opt-in:
+        //
+        //   - the diagram tile refused every protecting-signal click in that state, with a log line
+        //     promising a remedy that could not work (REL-A1);
+        //   - and loading wiped the train length, reversibility and function slots of every placed
+        //     locomotive (REL-A2).
+        //
+        // Both are fixed.  The lesson the sentence should carry is that "loading is not running" is a
+        // statement about trains, not about the rest of the application: a loaded configuration puts
+        // locomotives onto Points, and several rules ask whether a Point holds one.
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, true));
         this.enhancedPathValidationMenuItemCheckbox.setSelected(prefs.getBoolean(ENHANCED_PATH_VALIDATION, true));
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();

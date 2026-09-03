@@ -5352,30 +5352,6 @@ public class AutonomySession
     }
 
     /**
-     * The station squares that will take a train of any length.
-     *
-     * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
-     * reason the setting itself moved into the station submenu (FR-046).
-     *
-     * **Gated on the railway modelling lengths at all** (SVN-C3, corrected by REL-C2).  Adam set that
-     * condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not to
-     * model lengths"* - and this check, six days older, never got it: every station on a layout that
-     * models no lengths was listed, thirty of them on his own railway, on the list this file's javadoc
-     * twice says is made useless by ordinary things standing beside real problems.
-     *
-     * **But not on TRACK lengths, which was the first version of this gate.**  `maxTrainLength` is
-     * compared against the locomotive's own authored length - `Point.validateTrainLength` - and no tile
-     * length enters into it, so the feature works perfectly on a railway with nothing measured.
-     * Gating it on `measuresAnyTrack()` took a precondition that was true where it was written and
-     * dropped its subject on the way over: somebody who authors train lengths and station maxima and
-     * has never measured track got no notices at all, about the feature they are actively using.
-     *
-     * So the question is "does this railway model lengths": any track measured, any station with a
-     * maximum, or any locomotive with a train length.
-     *
-     * @return the squares, empty when the layout models no lengths anywhere
-     */
-    /**
      * Whether this railway models lengths at all (REL-C2).
      *
      * Three ways to have started: a measured tile, a station with a maximum, or a placed locomotive
@@ -5413,6 +5389,31 @@ public class AutonomySession
 
         return false;
     }
+
+    /**
+     * The station squares that will take a train of any length.
+     *
+     * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
+     * reason the setting itself moved into the station submenu (FR-046).
+     *
+     * **Gated on the railway modelling lengths at all** (SVN-C3, corrected by REL-C2).  Adam set that
+     * condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not to
+     * model lengths"* - and this check, six days older, never got it: every station on a layout that
+     * models no lengths was listed, thirty of them on his own railway, on the list this file's javadoc
+     * twice says is made useless by ordinary things standing beside real problems.
+     *
+     * **But not on TRACK lengths, which was the first version of this gate.**  `maxTrainLength` is
+     * compared against the locomotive's own authored length - `Point.validateTrainLength` - and no tile
+     * length enters into it, so the feature works perfectly on a railway with nothing measured.
+     * Gating it on `measuresAnyTrack()` took a precondition that was true where it was written and
+     * dropped its subject on the way over: somebody who authors train lengths and station maxima and
+     * has never measured track got no notices at all, about the feature they are actively using.
+     *
+     * So the question is "does this railway model lengths": any track measured, any station with a
+     * maximum, or any locomotive with a train length.
+     *
+     * @return the squares, empty when the layout models no lengths anywhere
+     */
 
     private java.util.Set<TileKey> stationsWithoutMaxLength()
     {
