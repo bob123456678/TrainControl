@@ -284,7 +284,7 @@ about work already done, is a dialog whose only button is OK.
 
 | | |
 |---|---|
-| **Disposition** | the three descriptions agree now; whether the behaviour is right is **Adam's** |
+| **Disposition** | closed - descriptions fixed; behaviour ruled unchanged by Adam, 2026-09-03 |
 | **Confidence** | confirmed by reading |
 
 The changelog says: *"a route fired by a sensor stops instead, because there is nobody there to ask."*
@@ -344,6 +344,13 @@ a worse failure than the one being fixed, and it is the shape of change that has
 
 **So the question goes in the report**, phrased as the code phrases it: should a route fired by a
 sensor, which cannot set its ironwork, still drive trains over track it did not switch?
+
+**Answered, 2026-09-03: leave it as it is.** The route goes on running its speeds, functions and any
+route it chains to, having set none of its ironwork. His earlier ruling - that a conflicting route
+stays executable *"in case of a transient accessory failure"* - governs, and refusing whole would
+discard the route's emergency stop with everything else.
+
+So the finding closes on the three descriptions agreeing, which they now do. **CLOSED.**
 
 ### B3 - the v2.7.4 changelog section was rewritten, so two 3.0.0 changes read as things the user already has
 
@@ -419,10 +426,8 @@ that v2.7.4 is the one section a 2.7.4c user skips; 2.8.0 is one they read. Fili
 instead would also have been read - but it would have been wrong, and a user on 2.8.1 would be told a
 feature they have had since August is new.
 
-**One question for Adam, in the report:** `v2.8.0` and `v2.8.1` have changelog sections and dates but
-no git tags. If those two never went out, then everything from 2026-07-25 onward is 3.0.0 content and
-three headings want merging - but that is a call about what he released, not something the repository
-can answer.
+**Answered, 2026-09-03: both shipped; they are simply untagged.** So the two bullets moved into
+`v2.8.0` are where they belong, and the three headings stay as three. Nothing further to do here.
 
 Not covered by a test. A rule that says "no bullet under a released version may describe code absent
 from that tag" is writable, but two of the three headings involved have no tag to check against, so it

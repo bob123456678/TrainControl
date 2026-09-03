@@ -5042,9 +5042,9 @@ public class Layout
                 //  - It does not swallow the exception.  executeTimetable catches around executePath and
                 //    responds by stopping the run; returning false instead would feed its retry loop, which
                 //    would spin on a permanent fault rather than halting.
-                //  - It does not unlock the path.  The locomotive may be physically standing on those edges,
-                //    and releasing them would let another train be routed into occupied track.  Leaving them
-                //    locked is degraded but safe, and a graph reload resets them.
+                //  - It does not swallow the path's own locks either, but it no longer LEAVES them - see
+                //    the release below, which is Adam's ruling of 2026-09-03 and replaces the argument
+                //    that used to stand here.
                 synchronized (this.activeLocomotives)
                 {
                     this.activeLocomotives.remove(loc);
@@ -5075,6 +5075,33 @@ public class Layout
                 stopLocomotives();
 
                 this.control.logf("autolayout.errorRunStoppedByFailure", loc.getName());
+
+                // AND THEN THE TRACK GOES BACK (Adam, 2026-09-03).
+                //
+                // "Force a graceful stop, alert the user, then unlock."  Those three, in that order,
+                // and the order is what makes the third one safe.
+                //
+                // This used to keep the path locked, and the argument for it was sound as far as it
+                // went: the locomotive may be physically standing on those edges, so releasing them
+                // could let another train be routed into occupied track.  What it missed is that the
+                // handler above has ALREADY given up the protection - `activeLocomotives`,
+                // `locomotiveMilestones` and `clearedEdges` are exactly what `getActiveAccs` reads to
+                // know which accessories a route must not throw.  So the old behaviour was not "held
+                // and protected"; it was held and unprotected, which is the worst of both, and only a
+                // graph reload ever undid it.
+                //
+                // `stopLocomotives()` above is what closes the gap the old argument was about:
+                // `running` is false, so autonomy dispatches no new path over this track.  A person
+                // still can, from the right-click menu - which is why they are told, and why the
+                // message says to look at where that locomotive is standing before starting again.
+                //
+                // Released the same way a finished path is released, under the same lock and in the
+                // same order (`:5701`), so the failure path and the ordinary path end in one state
+                // rather than two.
+                synchronized (this.activeLocomotives)
+                {
+                    this.unlockPath(path, loc);
+                }
 
                 // And the sensor this locomotive was said to be heading for.  A route condition asking
                 // "has it reached that sensor yet" waits on this entry, and an entry left behind by a

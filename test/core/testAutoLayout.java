@@ -1321,4 +1321,94 @@ public class testAutoLayout
             "a berth is somewhere autonomy will not send a train, so it is not somewhere to go");
     }
 
+
+    /**
+     * A failure part way along a path stops the run, says so, and gives the track back.
+     *
+     * **Adam's ruling, 2026-09-03**, on the last item of the release backlog: *"force a graceful stop,
+     * alert the user, then unlock."*
+     *
+     * The `RuntimeException` handler removes the locomotive from `activeLocomotives`,
+     * `locomotiveMilestones` and `clearedEdges` - and those are exactly the maps `getActiveAccs` reads
+     * to know which accessories a route must not throw. It then deliberately left the path LOCKED, so
+     * the track was held by nobody, with no thread watching it, and **its route protection gone at the
+     * same instant**. Only a graph reload recovered it.
+     *
+     * Leaving it locked was the safe half of a choice whose other half was never made: the protection
+     * went anyway. The ruling closes it the other way - stop everything, tell the operator, and let
+     * the track go, so that what the model believes and what it protects agree again. The stop is
+     * what makes releasing safe: `running` is false, so autonomy dispatches nothing new.
+     *
+     * **The operator is told to look**, because this is the one case where the model frees track a
+     * train may physically be standing on. That sentence is in the message, in all eight languages.
+     *
+     * MUTATION: removing the `unlockPath` call from the handler fails the occupancy assertion; removing
+     * `stopLocomotives()` fails the one below it.
+     */
+    @Test
+    public void testAFailedPathStopsTheRunAndGivesTheTrackBack() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback from = model.newFeedback(140, null);
+        MarklinFeedback to = model.newFeedback(141, null);
+
+        model.setFeedbackState(from.getName(), true);
+        model.setFeedbackState(to.getName(), false);
+
+        layout.createPoint("FAIL_FROM", true, from.getName());
+        layout.createPoint("FAIL_TO", true, to.getName());
+        layout.createEdge("FAIL_FROM", "FAIL_TO");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("FAIL_FROM").setLocomotive(loc);
+
+        java.util.List<Edge> path = new java.util.ArrayList<>();
+
+        path.add(layout.getEdge("FAIL_FROM", "FAIL_TO"));
+
+        assertNotNull(path.get(0), "the fixture produced no edge, so nothing below is exercised");
+
+        // The throw, fifty lines after the path has been locked.
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            throw new RuntimeException("deliberate mid-path failure");
+        });
+
+        layout.runLocomotives();
+
+        try
+        {
+            layout.executePath(path, loc, 20, null);
+
+            fail("executePath swallowed the failure, so the handler under test never ran");
+        }
+        catch (RuntimeException expected)
+        {
+            // The handler does not swallow it - executeTimetable's retry loop depends on that.
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, null);
+        }
+
+        assertFalse(layout.isRunning(),
+            "the run did not stop itself.  A locomotive is somewhere on a path with nothing tracking "
+            + "it and every other train still going, which is the state RC-A11 exists to end");
+
+        for (Edge e : path)
+        {
+            assertFalse(e.isOccupied(loc),
+                "the abandoned path is still locked: " + e.getName() + ".  The handler had already "
+                + "removed this locomotive from activeLocomotives, locomotiveMilestones and "
+                + "clearedEdges - which is what getActiveAccs reads - so the track was held by "
+                + "nobody and protected by nothing at the same time, until a graph reload.  Adam's "
+                + "ruling: stop, alert, then unlock");
+        }
+
+        assertFalse(layout.getActiveLocomotives().containsKey(loc),
+            "the locomotive is still registered as active, so isRunning() stays true for the rest of "
+            + "the session and every guard built on it stands down");
+    }
 }
