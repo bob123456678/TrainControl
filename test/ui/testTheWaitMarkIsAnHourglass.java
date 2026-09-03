@@ -723,6 +723,15 @@ public class testTheWaitMarkIsAnHourglass
     @Test(timeOut = 60000)
     public void testTheSplashNeverTakesTheForeground() throws Exception
     {
+        // LOUDLY, not quietly.  `StartupSplash.SUPPRESSED` is a diagnostic switch for OB-170 and it
+        // is meant to be turned back off; a test that silently passed while it is on would be one more
+        // thing between here and remembering that.
+        if (org.traincontrol.gui.StartupSplash.SUPPRESSED)
+        {
+            throw new org.testng.SkipException("StartupSplash.SUPPRESSED is on - the splash is switched off while "
+                + "OB-170 is settled, and this test is about the splash.  Turn it back to false.");
+        }
+
         org.traincontrol.gui.StartupSplash splash = org.traincontrol.gui.StartupSplash.show("probe");
 
         assertNotNull(splash, "no splash was built, so this proves nothing about the one that is");

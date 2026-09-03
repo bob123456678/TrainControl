@@ -13994,6 +13994,29 @@ which is what this project does for invariants about what the code says.
 8. **The test is the one you have run seven times**: start it from NetBeans, do not touch the mouse,
    press a letter.
 
+**Adam, 2026-09-03: "I don't see any difference.  try temporarily turning off the startup overlap."**
+
+Done - `StartupSplash.SUPPRESSED` is `true`, and `show()` answers null before it builds anything.  This
+is the experiment none of the seven passes ran: each of them changed how the splash or the window
+behaves and then asked you to judge the result, which is the slowest way there is to test a
+hypothesis.
+
+**How to read the answer.**
+
+- **The keyboard works** - the splash is the cause, and what is left is finding a way to reassure you
+  during a slow connect that does not spend the process's one chance at the foreground.  Showing it
+  after the main window is up, or drawing it into that window rather than into one of its own.
+- **The keyboard is still dead** - the splash is innocent, seven passes have been aimed at the wrong
+  thing, and the next step is to bisect the commits between 2.8.1 and here rather than to reason about
+  Windows any further.  I would rather find it that way than guess an eighth time.
+
+**Either way this goes back to false.**  A start-up that shows nothing for the length of a Central
+Station timeout is the complaint FR-041 was written for, and it is a real one.  The suite says so
+too: `testTheSplashNeverTakesTheForeground` skips while the switch is on, and the runner calls a
+skipped class out.
+
+9. **Build, start it from NetBeans, do not touch the mouse, press a letter.**  That is the whole test.
+
 ---
 
 <a id="mt-260"></a>

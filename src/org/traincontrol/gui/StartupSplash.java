@@ -33,6 +33,27 @@ import javax.swing.SwingUtilities;
  */
 public final class StartupSplash
 {
+    /**
+     * **TEMPORARY, 2026-09-03: the splash is switched off while OB-170 is settled.**
+     *
+     * Adam, after seven attempts at the start-up keyboard: *"try temporarily turning off the startup
+     * overlap."*  It is the experiment that settles it either way, and it is the one thing none of the
+     * seven passes did - each of them changed how the splash or the window behaves and then asked him
+     * to judge the result, which is the slowest possible way to test a hypothesis.
+     *
+     * **Read the answer like this.**  If the keyboard works on start-up with this true, the splash is
+     * the cause and what remains is to find a way of reassuring the operator during a slow connect that
+     * does not spend the process's one chance at the foreground - showing it AFTER the main window is
+     * up, or drawing it into that window rather than into one of its own.  If the keyboard is still
+     * dead, the splash is innocent, seven passes have been aimed at the wrong thing, and the next step
+     * is to bisect the commits between 2.8.1 and here rather than to reason about Windows.
+     *
+     * **Set this back to false either way.**  A start-up that shows nothing at all for the length of a
+     * Central Station timeout is the complaint FR-041 was written for, and it is a real one: the
+     * application looks like it failed to start.  This is a diagnostic, not a decision.
+     */
+    public static final boolean SUPPRESSED = true;
+
     private final JWindow window;
 
     private StartupSplash(JWindow window)
@@ -52,6 +73,11 @@ public final class StartupSplash
     public static StartupSplash show(String message)
     {
         if (GraphicsEnvironment.isHeadless()) return null;
+
+        // The switch above, and the whole of what it does.  Nothing else in this class or its callers
+        // needs to know: `closeIfShown` already takes null, because the start-up path has several ways
+        // out and one of them is "no splash was built".
+        if (SUPPRESSED) return null;
 
         final JWindow[] built = new JWindow[1];
 
