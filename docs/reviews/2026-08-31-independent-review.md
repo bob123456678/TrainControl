@@ -297,7 +297,7 @@ watch stderr and watch the diagram stay unhighlighted. Headless: build a
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - one token in `read`, and the finding's own trace is the test |
 | **Confidence** | confirmed by reading (hand-traced both directions); **not reachable on Adam's own data** |
 
 `ConditionOutline.write` emits a `NodeGroup`'s contents at `depth + 1` (`:386`), and `writeChild`
@@ -350,6 +350,54 @@ System.out.println(meaning(ConditionOutline.toExpression(ConditionOutline.of(ori
 ```
 
 Those two printed lines are the whole finding.
+
+**Disposition: fixed. The finding is right about the symptom and about the reachability; it is wrong
+about which side is at fault, and that is what made the fix one token.**
+
+Tracing `Or(3, And(Group([Or(1,2)]), 4))` through `write` gives exactly the rows the finding prints,
+but there is no skipped level in them - every depth is *justified*:
+
+| row | depth | why |
+|---|---|---|
+| `cond(3)` | 0 | the outer OR's left |
+| `join(OR)` | 0 | the outer OR |
+| `cond(1)`, `join(OR)`, `cond(2)` | 2 | the AND is one level in (its word differs from OR); the bracket inside it is one further (its word differs from AND) |
+| `join(AND)` | 1 | the AND |
+| `cond(4)` | 1 | the AND's right |
+
+0, 0, 2, 2, 2, 1, 1. The jump from 0 to 2 is not a level going missing - it is **the depth-1 rows
+coming out after the depth-2 ones**, because the AND's left child is the bracket and a left child is
+written first. `write` and `writeChild` are both correct; what they produce is an outline whose second
+level opens with a run belonging to its third.
+
+`read` is the half that cannot cope, and the reason is in one expression:
+
+```java
+NodeExpression inside = read(rows, at, row.getDepth());   // before
+NodeExpression inside = read(rows, at, depth + 1);        // after
+```
+
+For every outline that steps down one level at a time - which is every outline this editor writes -
+those two are the same number, which is why nothing else moved. They differ only on the shape above:
+reading the run at 2 made `1 or 2` a **sibling of the 3** at depth 0, and then read the depth-1
+remainder as a second sibling, a level holding one item whose AND had nowhere to go. Reading it at
+`depth + 1` puts the run where the writer put it - the first item of the next level down - and the AND
+that follows joins it.
+
+The reading is now `3 or ((1 or 2) and 4)`, which is what went in.
+
+`testABracketAfterTheStartSurvivesBeingShownAsAnOutline` is the finding's own trace, asserted rather
+than printed. **It was written first and failed** (18 tests, 1 failure), and passes on the fix. It
+also asserts `problems(shown).isEmpty()`, because "the editor shows no red" is half of why this was
+dangerous - a flagged outline would at least have stopped the save.
+
+Nine neighbouring classes re-run green: `testAdvancedRoutes`, `testConditionRows`, `testParseCS2Routes`,
+`testRouteRoundTrip`, `testRoutes`, `testRouteEditorRoundTripCases`, `testRouteEditorValidation`,
+`testRouteEditorShading`, `testCommandTableMarks`.
+
+**The reachability in the finding stands and is why this is still B.** Adam has no `NodeGroup` in
+`routes.json`, and no production caller of `fromTextRepresentation` remains, so no new tree of this
+shape can be made - only a stored one met. The fix costs nothing either way.
 
 ### B3 - two bracketed groups at the same indent are flagged red and the save is refused, for an outline the reader parses correctly
 

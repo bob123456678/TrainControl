@@ -417,6 +417,52 @@ public class testConditionOutline
     }
 
     /**
+     * A bracket anywhere but at the start survives being shown as an outline (IPR-B2).
+     *
+     * `3 or ((1 or 2) and 4)`. Every level of it is written at the right depth - 0 for the OR, 1 for
+     * the AND, 2 for the bracketed OR inside it - but the depth-1 rows come out **after** the depth-2
+     * ones, because the AND's left child is the bracket:
+     *
+     *     cond(0,3) join(0,OR) cond(2,1) join(2,OR) cond(2,2) join(1,AND) cond(1,4)
+     *
+     * so the reader met a jump from 0 to 2 with no depth-1 row before it to anchor on. It recursed at
+     * the row's own depth, consumed `1 or 2` as a sibling of `3`, and then read the depth-1 remainder
+     * as a second sibling - a level of one item, whose AND had nowhere to go. **The AND became an
+     * OR**, silently: no level disagreed with itself, so nothing was flagged, the reading under the
+     * table showed the wrong sentence, the Test button evaluated it, and Save wrote it back. The route
+     * then fired on a condition nobody wrote.
+     *
+     * **The population is routes written in 2.x's text editor with a bracket in a non-leading
+     * position**, opened in this editor. The new editor cannot build the shape, `fromTextRepresentation`
+     * has no caller left in `src/`, and Adam's own `routes.json` has no `NodeGroup` at all - so this is
+     * "could happen" rather than "does happen", which is why the finding graded it B.
+     *
+     * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this. The two
+     * are the same number for every outline that steps down one level at a time, which is why this
+     * needed a shape the editor itself cannot produce.
+     */
+    @Test
+    public void testABracketAfterTheStartSurvivesBeingShownAsAnOutline()
+    {
+        NodeExpression original = new NodeOr(sensor(3),
+            new NodeAnd(
+                new org.traincontrol.base.NodeGroup(java.util.Arrays.<NodeExpression>asList(
+                    new NodeOr(sensor(1), sensor(2)))),
+                sensor(4)));
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(original);
+
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "a condition that came from a real route must not open flagged: "
+            + ConditionOutline.problems(shown));
+
+        assertEquals(meaning(ConditionOutline.toExpression(shown)), meaning(original),
+            "the condition means something different after being shown as an outline and read back "
+            + "- and the difference is an AND that became an OR, so the route fires on any of four "
+            + "sensors instead of on 3, or on 4 together with one of 1 and 2 (IPR-B2)");
+    }
+
+    /**
      * The shape of an expression, for comparing two of them.
      */
     /**

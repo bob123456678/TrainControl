@@ -231,8 +231,22 @@ public final class ConditionOutline
             }
             else
             {
-                // A deeper run is one thing at this level, and the whole of it is consumed here
-                NodeExpression inside = read(rows, at, row.getDepth());
+                // A deeper run is one thing at this level, and the whole of it is consumed here.
+                //
+                // AT depth + 1, NOT AT THE ROW’S OWN DEPTH (IPR-B2).  The two are the same number
+                // for every outline that steps down one level at a time, which is every outline this
+                // editor writes.  They differ when a level’s own rows come out AFTER a deeper run -
+                // "3 or ((1 or 2) and 4)" writes the OR at 0, the AND at 1 and the bracket at 2, and
+                // because the bracket is the AND’s LEFT child the reader meets 0 then 2, with no
+                // depth-1 row yet to anchor on.
+                //
+                // Reading that run at 2 made it a sibling of the 3, and the depth-1 remainder a second
+                // sibling - a level holding one item, whose AND had nowhere to go and was dropped.  The
+                // AND became an OR and nothing said so: no level disagreed with itself, so no row was
+                // flagged, and Save wrote the new meaning back.  Reading it at depth + 1 puts the run
+                // where the writer put it, as the first item of the next level down, and the AND that
+                // follows joins it.
+                NodeExpression inside = read(rows, at, depth + 1);
 
                 if (inside != null) items.add(group(inside));
             }
