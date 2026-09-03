@@ -1994,8 +1994,7 @@ public class AutonomySession
     /**
      * The per-point keys a configuration owns: everything operational parseAuto accepts on a point.
      * Structural keys (name, station, s88, coordinates) belong to the reduction and are not here.
-     */
-    /**
+     *
      * Terminus and reversing are deliberately absent: both are DERIVED from the three switches at build
      * time, so the running graph carries the builder's answer rather than the user's.  Capturing one
      * would write "reversing" onto the square somebody marked "trains can turn round here", and the
@@ -2013,7 +2012,22 @@ public class AutonomySession
      *
      * A train reversing into a berth shorter than itself ends up standing across the switch behind it.
      * `Layout.isPathClear` refuses that now - but it can only refuse what it can measure, and
-     * unmeasured track is unknown rather than short. These are the squares where that guard is blind.
+     * unmeasured track is unknown rather than short.
+     *
+     * **These are NOT "the squares where the guard is blind", which is what this used to claim**
+     * (`SVN-B1`). Two things are true instead, and both matter to somebody acting on a notice.
+     *
+     * The guard is blind on a PATH, not on a square: `isPathClear` walks every edge of the route and
+     * gives up the moment one has no length, so an unmeasured stretch anywhere earlier blinds it on
+     * every path through there - and no notice names that stretch, because a notice is anchored to a
+     * square trains turn at. Clearing every notice this raises does not guarantee the guard can judge
+     * any particular journey; it guarantees it can judge the room at the end of one.
+     *
+     * And a square listed here is not necessarily one the guard cannot see. An edge's length is
+     * `sumLength(path) + lengthOf(tile)`, so a reversal square with no number of its own, arrived at
+     * over measured track, still has a positive edge - the guard is not blind there, it is UNDER-
+     * COUNTING by exactly the room the train comes to rest in. That is worth a notice too, and it is
+     * why the square's own length is asked for whether or not its edge already has one.
      *
      * **The condition is his, and it is what stops this being a nag.** A railway that records no
      * lengths anywhere has decided not to model them, and every reversing square on it would be

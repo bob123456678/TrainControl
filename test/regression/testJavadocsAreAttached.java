@@ -45,7 +45,7 @@ public class testJavadocsAreAttached
     // 96 -> 95 on 2026-08-30: LE-C7 re-attached TileSelection.bounds()'s javadoc, which had been
     // orphaned above handle().  Lowered so the improvement cannot be given back - which is what makes
     // this a ratchet rather than a ceiling, and why its per-file list had to lose that entry too.
-    private static final int ALLOWED = 93;
+    private static final int ALLOWED = 92;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -64,7 +64,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyCompanionStore.java (4)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomySession.java (10)",
+            + "automationui" + File.separator + "AutonomySession.java (9)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "GraphReducer.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

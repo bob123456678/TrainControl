@@ -364,7 +364,7 @@ of the three doors.
 
 | | | |
 |---|---|---|
-| **SVN-B1** | The reversal-length notice and the guard it serves ask different questions | open |
+| **SVN-B1** | The reversal-length notice and the guard it serves ask different questions | **closed** - the under-report was Adam's ruling 2; the sentence is corrected |
 | **SVN-B2** | A partially measured edge is treated as measured, and under-counts the room | **closed** by `FX2-3` |
 | **SVN-B3** | The reversal-length guard sums the whole journey, not the run-in | **DEFERRED — needs Adam** |
 | **SVN-B4** | The reversal-length rule reached `isPathClear` and not the staging planner | **fixed** 2026-09-02 (`975f157d`) |
@@ -440,6 +440,33 @@ specially.)
 Meanwhile the guard needs *every* edge of a path measured. With six measured tiles on a layout of
 hundreds, no multi-edge path qualifies. The net result of `17cad1fe` on Adam's own railway today is 21
 new warnings and zero new protection.
+
+**Disposition: the behaviour half was answered by Adam on 2026-09-02 and is in; the documentation half
+was still wrong and is fixed.**
+
+**The under-report - the dangerous direction - is closed by his ruling 2.**
+`reversalsWithoutLength` now adds `reducer.unmeasuredAfterTheLastSwitch(arriving)` for every edge
+arriving at the square, so the notice names the stretch the guard actually measures over rather than
+the reversal square alone. The count in this finding - 21 notices and zero new protection - was the
+argument put to him, and "20 warnings sounds OK" was the answer. `OB-171` then deduped what that
+produced to one entry per reversal square, mapped to how many squares still want a number.
+
+**The over-report is deliberate, and the finding's arithmetic is what shows why.** An edge's length is
+`sumLength(path) + lengthOf(tile)`, so a reversal square with no number of its own, arrived at over
+measured track, does leave the guard sighted - and under-counting by exactly the room the train comes
+to rest in. Not blind, and not right either. Asking for that square's length is worth a notice.
+
+**What was actually left wrong is the sentence this finding leads with.** The javadoc still said
+*"These are the squares where that guard is blind"*, and by then it was wrong twice over: the guard is
+blind on a **path**, not on a square - an unmeasured stretch anywhere earlier blinds it on every route
+through there, and no notice names that, because a notice is anchored to a square trains turn at - and
+a square listed here need not be one the guard cannot see, per the paragraph above. Both are now
+written at the method, along with what clearing every notice does and does not buy.
+
+An orphaned javadoc pair immediately above it - two blocks in a row, so Java attached only the second -
+went with it. `testJavadocsAreAttached` is a ratchet and caught the improvement: 93 to 92 overall, and
+`AutonomySession.java` from 10 to 9 in the per-file breakdown that stops one file's fix hiding another
+file's new orphan.
 
 ### SVN-B2 — a partially measured edge reports a positive but short length, so acting on the notice makes the guard refuse trains that fit
 
