@@ -2364,7 +2364,15 @@ public class Layout
         // layout that records no lengths is untouched; one that records some is asked, in the editor,
         // for the ones that decide this.
         //
-        // WHAT IT MEASURES.  Every segment leading up to the reversal, added together.  Adam: "Do you
+        // WHAT IT MEASURES, AND IT IS NOT WHAT THIS USED TO SAY (REL-C6).
+        //
+        // "Every segment leading up to the reversal, added together" was true when this guard was
+        // extracted and stopped being true within the day, when Adam's second ruling landed
+        // `roomAtTheEnd`: on a builder-emitted configuration the sum stops at the LAST SWITCH and
+        // counts only the stretch after it, which is the room a train actually has to stand in.  The
+        // whole-path sum survives only for a route with no switch on it at all.
+        //
+        // His words for the rule are still the right ones to read it by.  Adam: "Do you
         // sum the track segments leading up to it?  if they are long enough, then we are good.  if
         // segments < train length, then we can't reverse over the switch."  The segments the train
         // comes in over are the track it stands on; if they hold it, nothing hangs over the switch
@@ -2419,7 +2427,11 @@ public class Layout
                 // IN measuredRoomToReverseInto NOW, so the staging planner can ask the same
                 // question (TCX-A2).  It had this rule and the planner did not, and the planner is
                 // what decides where Return Home sends a train - so it offered berths this then
-                // refused on the first move.  The counting is unchanged, including both of the
+                // refused on the first move.  The COUNTING IS NOT UNCHANGED, which this used to claim
+                // (REL-C6): `roomAtTheEnd` stops the sum at the last switch, which is most of what
+                // unsoundness 2 below describes - a 10 + 1 + 2 approach no longer admits an eight-unit
+                // train into three units of room unless the whole run in is switchless.  What remains
+                // is both of the
                 // unsoundnesses above.
                 Integer measuredRoom = measuredRoomToReverseInto(path, loc);
 

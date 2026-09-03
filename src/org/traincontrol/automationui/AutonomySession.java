@@ -3987,6 +3987,38 @@ public class AutonomySession
     }
 
     /**
+     * Takes every locomotive off the setup, re-deriving the station index once (REL-C4).
+     *
+     * The twin of `clearEveryHome`, and it had the same cost for a worse reason: clearing one placement
+     * writes TWO properties - the placement and the facing that described the train standing there - so
+     * the loop that did it square by square cost 2N full builder constructions on the event thread, for
+     * the gesture that exists precisely because doing it one at a time is too many.
+     *
+     * Through the same writer the single-square door uses, so the two cannot come to disagree about
+     * what clearing a placement means; only the re-derive differs.
+     *
+     * @return how many squares were cleared
+     */
+    public int clearEveryPlacement()
+    {
+        java.util.List<TileKey> placed = new java.util.ArrayList<>(placedLocomotives().keySet());
+
+        for (TileKey tile : placed)
+        {
+            writePointProperty(tile, "loc", null);
+
+            // The facing described the train that was standing there, not the square - see
+            // `placeLocomotive`, which is the door this mirrors.
+            writePointProperty(tile, AutonomyBuilder.FACING, null);
+        }
+
+        // ONCE, at the end.  Not skipped: the split names are computed from these properties.
+        deriveStationIndex();
+
+        return placed.size();
+    }
+
+    /**
      * Takes a locomotive off every square except the one it is being put on.
      *
      * Whatever was recorded with it where it is leaving - speed, arrival and departure functions,
@@ -4340,7 +4372,10 @@ public class AutonomySession
      *
      * The placement twin of `tilesWithAHome`, for the bulk action Adam asked to have back (MT-257).
      *
-     * @return the squares, in the configuration's own order, empty when nothing is placed anywhere
+     * @return the squares, in NO PARTICULAR ORDER - the same walk over the same `JSONObject` its twin
+     *         `tilesWithAHome` was corrected about (CD3-C4, REL-C5): a `HashMap`'s iteration is stable
+     *         for a given set of keys and unrelated to the order they were written.  Empty when nothing
+     *         is placed anywhere
      */
     public java.util.List<TileKey> tilesWithALocomotive()
     {

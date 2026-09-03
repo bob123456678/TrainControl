@@ -379,6 +379,61 @@ public class testBarredArrivalIsNotADestination
             + "not drop.  Homes: " + session.tilesWithAHome());
     }
 
+    /**
+     * Every placement goes at once, and the station index is asked once (REL-C4).
+     *
+     * The twin of `testEveryHomeGoesAtOnce`, and it had the same cost for a worse reason: clearing one
+     * placement writes TWO properties - the placement and the facing that described the train standing
+     * there - so the editor's loop cost two full builder constructions per square, for the gesture that
+     * exists precisely because doing it one at a time is too many.
+     *
+     * What is pinned is the behaviour, because the rebuild is not observable from outside: every
+     * placement goes, the count comes back, the FACING goes with it, and the session still works
+     * afterwards - which is what a bulk path that skipped the re-derive would get wrong.
+     *
+     * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryPlacement`,
+     * or clearing the placement and leaving the facing behind.
+     */
+    @Test
+    public void testEveryPlacementGoesAtOnce() throws Exception
+    {
+        session.open(java.util.Arrays.asList(threeSensors()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 2, 1);
+
+        session.placeLocomotive(first, "BR 218");
+        session.placeLocomotive(second, "V 200");
+
+        session.setPointProperty(first, org.traincontrol.automationui.AutonomyBuilder.FACING, "N");
+
+        assertEquals(session.tilesWithALocomotive().size(), 2, "precondition: two squares hold a train");
+
+        assertNotNull(session.getPointProperty(first, org.traincontrol.automationui.AutonomyBuilder.FACING),
+            "precondition: one of them records a facing, which is the second property the clear writes");
+
+        int cleared = session.clearEveryPlacement();
+
+        assertEquals(cleared, 2, "the bulk clear did not report what it cleared");
+
+        assertTrue(session.tilesWithALocomotive().isEmpty(),
+            "a square still holds a locomotive after clearing every one of them: "
+            + session.tilesWithALocomotive());
+
+        assertNull(session.getPointProperty(first, org.traincontrol.automationui.AutonomyBuilder.FACING),
+            "the facing was left behind, so the next locomotive placed there inherits the last one's "
+            + "direction without being asked - which is what the single-square door is careful about");
+
+        // AND THE SESSION IS STILL USABLE, which is what a skipped re-derive would break.
+        session.placeLocomotive(first, "BR 218");
+
+        assertEquals(session.tilesWithALocomotive().size(), 1,
+            "the session stopped accepting placements after a bulk clear: " + session.tilesWithALocomotive());
+    }
+
     private LayoutDiagram threeSensors() throws java.io.IOException
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);

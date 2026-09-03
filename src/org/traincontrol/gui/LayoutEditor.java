@@ -4872,9 +4872,17 @@ public class LayoutEditor extends PositionAwareJFrame
 
         drawGrid();
 
-        // The main window draws the same diagram, and its grid is built from the same preference - so
-        // it is redrawn too rather than left showing the other answer until something else rebuilds it.
-        if (this.parent != null) this.parent.repaintLayout();
+        // NOT THE MAIN WINDOW, AND NOT ANY MORE (REL-C8).
+        //
+        // This said "the main window draws the same diagram, and its grid is built from the same
+        // preference - so it is redrawn too rather than left showing the other answer".  It stopped
+        // being true when Adam reported the numbers turning up where they should not - *"they are
+        // visible in the track diagram viewer when they shouldn't be"* - and the ruler gained
+        // `master instanceof LayoutEditor`.
+        //
+        // The main window never draws them now, so there is no other answer for it to be left showing,
+        // and a full rebuild of its diagram on every Control+K was being bought by a sentence that was
+        // no longer true.
 
         return now;
     }

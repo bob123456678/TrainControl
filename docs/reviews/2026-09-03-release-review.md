@@ -296,6 +296,8 @@ V33-C2)". `battery.sh` has the post-loop copy, at `:584-588`, under a comment th
 pair has now drifted apart, been brought back together on the lock, and drifted apart again on the reap,
 in the same file, within one day. This is the fourth instance of the shape B2 was filed for.
 
+**FIXED 2026-09-03.**  `one.sh` reaps after the last class, which is what its comment had been claiming.  Pass 4's note is the one worth keeping: the sibling pair drifted, was brought back together on the lock, and had drifted again on the reap - in the same file, within a day.
+
 ### C4
 
 **`clearAllPlacements` pays the exact cost `clearEveryHome` was built to avoid, in the twin gesture
@@ -311,6 +313,8 @@ gesture that exists "precisely because clearing them one at a time is too many".
 (MT-257), did not. No wrong result - the derive is idempotent - so C for cost, plus the
 fix-one-site-sweep-the-siblings note.
 
+**FIXED 2026-09-03.**  `AutonomySession.clearEveryPlacement()` writes both properties through the same writer the single-square door uses and re-derives the station index once - 2N full builder constructions become one.  Covered by `testEveryPlacementGoesAtOnce`, which also pins the facing going with the placement, and mutation-confirmed by leaving the facing behind.
+
 ### C5
 
 **`tilesWithALocomotive`'s javadoc makes the claim its twin was corrected for, one method up.**
@@ -321,6 +325,8 @@ points live in a `JSONObject`, which is a `HashMap`, so the order "is stable for
 and unrelated to the order they were written". The same walk over the same map cannot have the order
 one javadoc denies and the other claims. Harmless to today's callers (count and clear), hence C;
 the fix is the sentence the twin already has.
+
+**FIXED 2026-09-03.**  `tilesWithALocomotive`'s `@return` carries its twin's correction.
 
 ### C6
 
@@ -340,6 +346,8 @@ has, in the method a reader meets first, saying the arithmetic is something it n
 same fault (a claim corrected everywhere but here) this very comment block records happening to its
 own "inert" sentence. Comment-only, hence C.
 
+**FIXED 2026-09-03.**  Both sentences.  The guard says the sum stops at the last switch on a builder-emitted configuration and that the whole-path sum survives only for a switchless route, and the paragraph that said the counting was unchanged says which of the two unsoundnesses the ruling removed.
+
 ### C7
 
 **`clearAllHomes`'s javadoc names a mechanism the body does not use.**
@@ -351,6 +359,8 @@ added, argued for by the body's own comment thirty lines down. The two paragraph
 disagree about which door is used; the second is right. Behaviour is unaffected (`setHome(tile,
 null)` and the bulk write differ only in the per-write re-derive, and the elsewhere-sweep is a no-op
 for null) - the first paragraph needed updating when the bulk door landed. C, comment-only.
+
+**FIXED 2026-09-03.**  The javadoc names the door the body uses - `clearEveryHome()` - and says what it does differently from `setHome(tile, null)`, which is the re-derive and nothing else.
 
 ### C8
 
@@ -364,6 +374,8 @@ LayoutEditor` to the ruler block in LayoutGrid, so the main window never draws t
 is no "other answer" for it to be left showing. The `repaintLayout()` is now a full rebuild of the
 main window's diagram per Control+K, bought by a sentence that is no longer true. Cost and comment
 only - C.
+
+**FIXED 2026-09-03.**  The `repaintLayout()` is gone with the sentence that bought it: the main window has not drawn the numbers since the viewer gate landed, so there is no other answer for it to be left showing.  Verified by running the coordinate tests and the editor surface rules.
 
 ### D1
 

@@ -412,6 +412,19 @@ do
     fi
 done
 
+# AND AFTER THE LAST CLASS (V33-C1, REL-C3).
+#
+# The reap in the loop runs at the TOP of it, so every class is cleaned up before the next one starts
+# and the last one is not cleaned up at all.  A run that ends on a class which left a JVM behind leaves
+# it behind for good: `reap.ps1` matches the run id whole, and the id embeds this shell's pid, so no
+# later run reaps it either - the next run's start-of-run probe then refuses, with a message saying the
+# check clears itself.
+#
+# `battery.sh` got this on 2026-09-02 and the comment in the loop has claimed it ever since - "and again
+# after the last one" - which is worse than its absence, because the claim is what a reader checks
+# against.  Fourth drift of this sibling pair, second one repaired in a day.
+reap
+
 live_after=$(fingerprint)
 
 if [ "$live_before" != "$live_after" ]

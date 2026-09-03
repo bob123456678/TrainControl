@@ -6652,8 +6652,11 @@ public class AutonomyEditorPanel extends JPanel
      * Adam, 2026-09-02: **"that option should be added back in to the autonomy editor, with a
      * confirmation."**
      *
-     * Through `session.setHome(tile, null)` rather than by writing the property, because that is the
-     * door the per-square menu uses and the one that keeps the one-home-one-square sweep honest.  A
+     * Through the SESSION rather than by writing the property here, because that is the door the
+     * per-square menu uses - `clearEveryHome()` since `DY3-C5`, which writes through the same property
+     * writer `setHome` does and re-derives the station index once instead of sixty-two times (this
+     * paragraph named `setHome(tile, null)` until `REL-C7`, and the body has called the bulk door since
+     * the day it was built) and the one that keeps the one-home-one-square sweep honest.  A
      * null home has nothing to sweep, so the two are the same act here - but a second way of clearing
      * a home is exactly how the two doors would come to disagree later.
      *
@@ -6736,12 +6739,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        for (TileKey tile : placed)
-        {
-            session.placeLocomotive(tile, null);
-        }
+        // THE SESSION'S BULK DOOR, not one per square (REL-C4).
+        //
+        // Clearing one placement writes two properties - the placement and the facing that described
+        // the train standing there - and each write re-derives the station index, which is a full
+        // builder construction on the event thread.  So this cost 2N of them, for the gesture that
+        // exists precisely because doing it one at a time is too many.  Same writer, one re-derive.
+        int cleared = session.clearEveryPlacement();
 
-        say(hint, I18n.f("autosetup.ui.infoLocomotivesCleared", placed.size()));
+        say(hint, I18n.f("autosetup.ui.infoLocomotivesCleared", cleared));
 
         placementChanged();
     }
