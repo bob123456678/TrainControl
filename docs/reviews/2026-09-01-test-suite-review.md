@@ -327,7 +327,7 @@ Two specific defects a test would catch:
 
 ### TCX-B2 — The editor notice asks for a different measurement from the one the guard needs
 
-**STILL DEFERRED - needs Adam (corrected 2026-09-02).** This was marked closed by `FX2-3` earlier today and that overstated his ruling. `FX2-3` put the RULE's soundness to him and he answered "OK"; the question this finding asks - should the notice name only the square trains turn round at, or every square on the run-in to it - was never put. The README is explicit that a finding is closed when it is fixed, withdrawn or explicitly declined, and never because a later document covers the same area. `D24-C7` is the same question and is also open.
+**STILL DEFERRED - needs Adam (corrected 2026-09-02).** This was marked closed by `FX2-3` earlier today and that overstated his ruling. `FX2-3` put the RULE's soundness to him and he answered "OK"; the question this finding asks - should the notice name only the square trains turn round at, or every square on the run-in to it - was never put. The README is explicit that a finding is closed when it is fixed, withdrawn or explicitly declined, and never because a later document covers the same area. The same question is raised in `D24-B2`'s own prose in the last-day review, which is what the citation `D24-C7` here was reaching for - there is no finding by that name, in that document or anywhere else (`CD3-C7`).  It is put to Adam as [MT-248](../manual-tests/tests.md#mt-248), which is where an answer would come from.
 
 **Status: DEFERRED — needs Adam.**
 

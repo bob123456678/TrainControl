@@ -262,6 +262,8 @@ request.
 
 ### CD3-C1 — `MarklinRoute.heldReason`'s protecting-signal rationale is stranded above code it no longer describes, after `87b6c10a` moved the rule it explains onto `Layout`
 
+**FIXED 2026-09-03.**  The paragraph says where the rule lives now - `Layout.protectsAnOccupiedSquare`, since `87b6c10a` - and that it used to be computed immediately below it, so "this one covers the platforms no active path happens to cross" points at something again.  Kept rather than deleted because it is the REASON the rule exists, which neither door repeats.
+
 **File/lines:** `src/org/traincontrol/marklin/MarklinRoute.java:436-449`.
 
 ```
@@ -302,6 +304,8 @@ but it dangles above code it does not describe, which is the `CMT-C1` shape from
 
 ### CD3-C2 — a test helper's javadoc documents one parameter of five, and no `@return`
 
+**FIXED 2026-09-03.**  All five parameters and the `@return` are documented, like the sibling overload three lines above.
+
 **File/lines:** `test/core/testAutonomyDiagramMonitor.java:1223-1237`.
 
 ```
@@ -336,6 +340,8 @@ its own category.
 
 ### CD3-C3 — the autonomy UI feature ledger still lists "Clear all home locomotives" as `TODO`, built today
 
+**FIXED 2026-09-03.**  The ledger row says built, dates it, and records that it shipped in the editor's Bulk Tools submenu rather than on the right-click menu the row describes.
+
 **File/line:** `docs/plans/autonomy-ui-feature-ledger.md:109`.
 
 ```
@@ -356,6 +362,8 @@ would be told to (re-)build something that shipped today.
 ---
 
 ### CD3-C4 — `AutonomySession.tilesWithAHome()`'s `@return` promises an order the underlying `JSONObject` almost certainly does not keep
+
+**FIXED 2026-09-03.**  The `@return` says "in no particular order", why (`JSONObject` is a `HashMap`), that it is harmless to today's callers, and what a future caller that showed these squares to a person would have to do.
 
 **File/lines:** `src/org/traincontrol/automationui/AutonomySession.java:4074-4081`.
 
@@ -397,6 +405,8 @@ do."
 
 ### CD3-C5 — "`claimHome`, thirty lines up" undercounts the actual distance by roughly two to three times
 
+**FIXED, by a later commit** (verified 2026-09-03).  It reads "further up this file" - no number to be wrong.
+
 **File/lines:** `src/org/traincontrol/automation/Layout.java:1139-1146`.
 
 ```
@@ -417,6 +427,8 @@ fail to find it — the method name is also given — so this is the smallest fi
 ---
 
 ### CD3-C6 — today's newest commit cites `Layout.java:2337` for a comment that is actually 39 lines away, in the very file state the commit was written against
+
+**FIXED 2026-09-03.**  The citation names the comment's heading and gives today's line as a hint rather than as the address, with the reason: a line number in this repository is a moving target.
 
 **File/line:** `docs/reviews/2026-09-01-week-of-commits-review.md:446`, added by commit `54a70c03`
 (2026-09-02, the newest commit on the branch as this review was written).
@@ -450,6 +462,8 @@ tracing the 32-line shift to `8d1c17ca`'s insertion (`git show <rev>:Layout.java
 ---
 
 ### CD3-C7 — the same commit cites `D24-C7` as an open finding; no finding by that name exists anywhere in the document it cites
+
+**FIXED 2026-09-03.**  The citation pointed at nothing, so it is replaced by what it was reaching for - `D24-B2`'s own prose - and by the manual test where an answer would actually come from, MT-248.
 
 **File/line:** `docs/reviews/2026-09-01-test-suite-review.md:330`, added by commit `54a70c03`.
 

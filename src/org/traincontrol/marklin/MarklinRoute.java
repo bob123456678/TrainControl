@@ -444,7 +444,13 @@ public class MarklinRoute extends Route
         // "Usually" rather than "never", which is how this comment first read. `refreshOneSignal` says
         // outright that TilePorts gives a SIGNAL tile a GREEN configuration command, so a path
         // configured across one drives it through getConfigCommands - the same Accessory. The two sets
-        // overlap; this one covers the platforms no active path happens to cross.
+        // overlap; the protecting-signal rule covers the platforms no active path happens to cross.
+        //
+        // WHERE THAT RULE LIVES: `Layout.protectsAnOccupiedSquare`, since `87b6c10a`, which is what the
+        // note at the call site below says.  It used to be computed here, immediately under this
+        // paragraph, and "this one covers the platforms..." pointed at that computation (CD3-C1).
+        // Kept because it is the reason the rule exists, which the two doors that ask it do not repeat.
+
         // By address AND protocol, which is how the route names it and how the station resolves it -
         // a bare address is ambiguous across decoder types on this railway.
         MarklinAccessory accessory =

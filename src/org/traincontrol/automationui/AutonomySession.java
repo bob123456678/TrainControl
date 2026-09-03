@@ -4268,7 +4268,11 @@ public class AutonomySession
      * confirmation."**  Clearing them one square at a time is one right-click each, and on his graph
      * that is up to sixty-two.
      *
-     * @return the squares, in the configuration's own order, empty when nothing is homed anywhere
+     * @return the squares, in NO PARTICULAR ORDER, empty when nothing is homed anywhere.  This said
+     *         "in the configuration's own order" and a `JSONObject` does not keep one - it is a
+     *         `HashMap`, so the order is stable for a given set of keys and unrelated to the order they
+     *         were written (CD3-C4).  Harmless to today's callers, which count and clear; a caller that
+     *         listed these squares to a person would want to sort them first
      */
     public java.util.List<TileKey> tilesWithAHome()
     {

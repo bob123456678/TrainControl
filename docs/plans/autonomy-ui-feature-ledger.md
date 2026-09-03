@@ -106,7 +106,7 @@ Found by review; none has a new home and none has a ruling.
 
 | Old capability | Where it was | Status |
 |---|---|---|
-| Clear all home locomotives | general right-click -> HomeLocomotiveMenu | TODO |
+| Clear all home locomotives | general right-click -> HomeLocomotiveMenu | **Built 2026-09-02**, in the editor's Bulk Tools submenu rather than on the right-click menu (`R28-C1`) |
 | Seven keyboard shortcuts: Ctrl+V place, Del remove, Ctrl+X cut, Ctrl+E/U exclude, Ctrl+H home, Ctrl+S s88 | GraphViewer | TODO - the whole cut/paste move-a-locomotive idiom is gone |
 | Double-click a node to edit its locomotive | GraphViewer | TODO |
 | Hover a point to log its excluded locomotives | GraphViewer | TODO - exclusions are also not drawn on the diagram |

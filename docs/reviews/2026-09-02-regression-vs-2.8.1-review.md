@@ -423,7 +423,7 @@ submenu can be live at that moment.
 
 | | |
 |---|---|
-| **Disposition** | open - waiting on Adam ([MT-257](../manual-tests/tests.md#mt-257) item 5) |
+| **Disposition** | open - Adam's to answer, and the question is his own: MT-257 item 5, carried in MT-260's tail.  Not a code change until he picks the shape |
 
 **Put to him, and he asked the better question back**: "why can't it keep working without a train, between stations?"  The answer is a choice of shape - two clicks to name both ends of the run to test, or one click that answers everything it can about the square it is on - and it is his to make rather than mine to guess.  Carried in [MT-260](../manual-tests/tests.md#mt-260)'s tail as the one MT-257 question still outstanding.
 | **Confidence** | confirmed by reading both tools |
@@ -467,7 +467,7 @@ now reports several classes of unreachability the old tool would only have shown
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-03 - the changelog says a column on the right and a row at the bottom, which is what the two buttons do |
 | **Confidence** | confirmed by reading; the code comment and the Readme's own keyboard section both contradict the changelog |
 
     Readme.md:393
@@ -503,7 +503,7 @@ deliberate and is worth not describing away.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-03 - the four keys are gone from all eight bundles, with `route.ui.errorUnusableLocName` (`R28-C4`) in the same edit.  What was built is one checkbox and `autosetup.ui.btnShowHomeLocomotives`, which Adam renamed to Show Homes |
 | **Confidence** | confirmed by reading; sharpens `R28-C3` rather than replacing it |
 
     src/org/traincontrol/resources/messages.properties:1571-1574

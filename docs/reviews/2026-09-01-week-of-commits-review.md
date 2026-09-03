@@ -443,7 +443,7 @@ new warnings and zero new protection.
 
 ### SVN-B2 — a partially measured edge reports a positive but short length, so acting on the notice makes the guard refuse trains that fit
 
-**CLOSED by `FX2-3`.** One of the four findings that ruling names - with `D24-B2`, `RTG-B2` and `TCX-A1`. Adam: "OK", the reversal-room rule is accepted as it stands, and the partial-tile-sum unsoundness stays recorded in the comment at the guard rather than being silently carried. It is still true that `GraphReducer.sumLength` adds `max(0, tileLength)` over the tiles an edge spans, so one measured tile out of ten reports that tile's length and the guard reads it as a complete measurement; the comment at `Layout.java:2337` says so.
+**CLOSED by `FX2-3`.** One of the four findings that ruling names - with `D24-B2`, `RTG-B2` and `TCX-A1`. Adam: "OK", the reversal-room rule is accepted as it stands, and the partial-tile-sum unsoundness stays recorded in the comment at the guard rather than being silently carried. It is still true that `GraphReducer.sumLength` adds `max(0, tileLength)` over the tiles an edge spans, so one measured tile out of ten reports that tile's length and the guard reads it as a complete measurement; the comment at `Layout.java` under WHAT IT MEASURES - the `sumLength` paragraph, at :2404 today - says so.  (Cited as `:2337` when this was written, which was 39 lines out on the file as it then stood: `CD3-C6`.  A line number in this repository is a moving target; the heading is not.)
 
 `Layout.java:2343` tests `segment.getLength() <= 0`, and treats anything above zero as measured. But
 `GraphReducer.java:1052-1061` builds that number by skipping unmeasured tiles rather than by refusing:

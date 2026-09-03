@@ -338,7 +338,7 @@ one at a time.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED - both constants are gone from the tree (verified 2026-09-03).  The display half is answered too: `autosetup.ui.btnShowHomeLocomotives` - Adam's **Show Homes** - draws the home assignment on the diagram, which is what `SHOW_HOME_LOCOMOTIVES` used to toggle on the graph window |
 | **Confidence** | confirmed by reading |
 
     src/org/traincontrol/gui/TrainControlUI.java:246
@@ -371,7 +371,7 @@ the graph window. These two are the same shape and were not on that list.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-03 - the key is out of all eight bundles, with the four `autosetup.ui.layer*` keys (`RG3-C6`) in the same edit.  `RouteCommand.isNameUsable` and `route.ui.frameNameNotUsable` are untouched, so the rule and the message a person sees are exactly as they were |
 | **Confidence** | confirmed by reading |
 
 Commit `bdfac1cc` ("Settle the unusable-name rule on RouteCommand") added this key to all eight bundles

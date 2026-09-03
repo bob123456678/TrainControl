@@ -1231,7 +1231,12 @@ public class testAutonomyDiagramMonitor
      * They share a colour (`TileAnnotation:1531`), which is why separating them changes no ink here:
      * parking was true only where shut already was.
      *
+     * @param station whether the square is a station
+     * @param turns whether it turns trains round
      * @param parking whether autonomy leaves the square alone
+     * @param shut whether it is out of service
+     * @param size the tile size to draw at
+     * @return the badge, drawn
      */
     private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns,
         boolean parking, boolean shut, int size) throws Exception
