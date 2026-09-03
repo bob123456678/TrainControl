@@ -39,7 +39,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
 | [MT-259](#mt-259) | 2026-09-02 | The keyboard, when the window comes to the front | needs test | OB-170 |
-| [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | needs test | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
+| [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 | [MT-261](#mt-261) | 2026-09-02 | Four things the C sweep needs you to choose | needs test | R28-C2, R28-C3, R28-C5, V31-C2 |
 
 Everything else - 231 of 258 - is **fixed validated** and needs nothing from you unless the
@@ -13872,7 +13872,7 @@ critical - does not work.  the frame is not active and keystrokes do not go to i
 
 ### MT-260 - 2026-09-02 - Six rulings the review rounds are holding
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8
 
 **Written:** 2026-09-02
@@ -13989,38 +13989,26 @@ To see it without touching your own data: add a locomotive `X`, put `locspeed,X,
 So the question stands, narrowed: should the delete confirmation say how many route commands will go
 and from which routes, or should it stop editing routes at all?
 
-**Ruling 1 needs one thing confirmed before it is built, and it is a real ambiguity rather than a
-formality.**
+**All six answered, and three of them built (2026-09-02, `3f829ced`).**
 
-On a simple turnout, *every* route through it touches the toe - that is what makes it the toe, and it
-is how the model derives it (`TilePorts.deriveToe`: "the side every route of this type touches in
-every position").  So "crosses the fork through the base" cannot mean *which ports the path uses*,
-because on a turnout that is always true and the rule would never be narrowed at all.
+Rulings 3 and 6 closed the findings they came from and needed no code.  Ruling 4 was answered with the
+narrowing below and is built - the count was already in the popup, the list is now in the log.  Rulings
+1 and 2 are built, and this is what to look at:
 
-Which leaves the direction of travel, and there the two cases are:
+1. **Open the autonomy editor.**  The length notice now asks about the track behind each turnaround as
+   well as the square itself - specifically the stretch back to the last switch, which is what the
+   guard measures.  You accepted twenty warnings; twenty was the count for the reversal squares alone,
+   so the real number is whatever your switch-to-station stretches need and may be larger.  If it is
+   unreasonable, say so and the ask can be narrowed further.
+2. **Measure one of those stretches end to end** and check the warning goes away for it.
+3. **Then send a long train to that berth.**  It should be refused when it is longer than the track
+   between the switch and the station, even where the run in as a whole is much longer - which is the
+   case that used to be allowed.
+4. **And a short one should still go**, so the rule has not simply become a refusal.
+5. **Delete a locomotive that drives a route** (make a spare one first).  The confirmation says how
+   many routes lose commands; the log now names which.
 
-- **base -> branch.**  The train comes up the common leg and goes out on one fork.  If it does not
-  clear the points, its tail stands on them.
-- **branch -> base.**  The train comes in on a fork and goes out on the common leg.  If it does not
-  clear the points, its tail also stands on them.
-
-Both foul the turnout, which is why I want to check rather than guess: physically the second case
-looks the same as the first to me, so "if the train enters from one of the branches, then it shouldn't
-matter" must be saying something I am not seeing - either about how your layout is arranged, or about
-which movements you care about being blocked.
-
-**The question, in one sentence:** is the distinction the direction of travel over the points
-(base-first versus branch-first), and if so what makes a tail left on the points harmless in the
-second case?
-
-Everything else about the ruling is clear and is what will be built: the measurement is the stretch
-from the turnout to the station, not the whole route.
-
-**Adam, 2026-09-02 (triage).** Works.
-
-confirmed already, be conservative with switches and consider any entry point.
-
-*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+*Run against a build after `3f829ced`.*
 
 ---
 
