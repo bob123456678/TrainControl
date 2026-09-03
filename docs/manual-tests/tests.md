@@ -35,14 +35,121 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 | [MT-261](#mt-261) | 2026-09-02 | Four things the C sweep needs you to choose | needs test | R28-C2, R28-C3, R28-C5, V31-C2 |
+| [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | needs test | OB-171 |
+| [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
+| [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
 
-Everything else - 233 of 258 - is **fixed validated** and needs nothing from you unless the
+Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
 
 ---
 
 ## The tests
 
+
+<a id="mt-262"></a>
+
+### MT-262 - 2026-09-03 - The reversal-length notices, counted on your own railway
+
+**Disposition:** needs test
+**From:** OB-171
+
+**Written:** 2026-09-03
+
+You reported this: **"warnings like 'Trains turn round at 19,14 and its track has no length recorded...'
+fire on many tiles along a line.  Dedupe them, one per segment between a switch and a station."**
+
+**What was happening.** The notice needs the WHOLE stretch behind a reversal measured before the guard
+can judge anything - one unmeasured square in the run in and it returns "unknown" rather than "short".
+So the check reported every unmeasured square in that stretch, each with the same sentence, and a berth
+ten squares from its switch raised ten notices.
+
+**What it does now.** One notice per square trains turn at, and it says how many squares still need a
+length: *"Trains turn round at X, and 7 squares on the way in have no length recorded..."*  It does not
+go until every one of them has a number, which is the property the flood was protecting - a list you can
+empty while the guard still judges nothing is worse than a long list.
+
+**What to do.**
+
+1. **Open the autonomy editor and count the notices** about reversal lengths. Before this there were
+   roughly twenty; there should now be one per square trains turn round at, and no more.
+2. **Read one of them.** The number in it is how many squares that berth's guard still needs measured -
+   the berth itself and the track back to the switch behind it. Is that number plausible for that berth?
+3. **Measure one square the notice names** - not the berth, one on the run in. The notice should stay,
+   with the number one lower.
+4. **Measure the rest of that run in.** The notice should go.
+5. **Is one-per-berth the right grain**, or do you want one per approach where a berth has two? Say so
+   and I will split it; the count is per berth today because two approaches to one square are one thing
+   to measure.
+
+*Run against v3_0_0_rc8 or later.*
+
+---
+
+<a id="mt-263"></a>
+
+### MT-263 - 2026-09-03 - The three refusals, when the graph will not build
+
+**Disposition:** needs test
+**From:** V31-C1, V32-C1, DY3-C7
+
+**Written:** 2026-09-03
+
+**What was wrong.** Autonomy refuses to start on `hasErrors()`, which covers a graph that will not build
+at all - and in that state the error COUNT is zero, because nothing turned it into a finding. Three
+messages chose their wording on the count alone, so two of them fell through to *"wait for the trains to
+stop"*: an instruction to wait for trains that are not running and never will be.
+
+The guard itself got a third arm when it was widened. Its two twins - the scripting API's exception and
+the greyed Start item's tooltip on the diagram's right-click menu - did not, and stood like that for a
+week. A test now holds all three in one rule.
+
+**What to do.** You need a setup that will not BUILD, which is not the same as one with errors: a
+scissors crossing, or two included pages sharing an s88, is the usual way in.
+
+1. **Make the graph unbuildable** - switch on a page that repeats another page's sensors is the easiest.
+2. **Right-click a station on the track diagram and hover the greyed Start item.** The tooltip should say
+   one thing has to be dealt with first and point you at the count along the top of the diagram - NOT
+   "wait for the trains to stop".
+3. **Press Start from the menu.** Same wording.
+4. **Now break it the other way** - an unnamed station, say, which is a finding rather than a build
+   failure. All three should name the count instead.
+5. **And with three blocking problems**, the start door should say three, not "one thing".
+
+*Run against v3_0_0_rc8 or later.*
+
+---
+
+<a id="mt-264"></a>
+
+### MT-264 - 2026-09-03 - The window while it is connecting
+
+**Disposition:** needs test
+**From:** OB-170 follow-ups
+
+**Written:** 2026-09-03
+
+[MT-259](#mt-259) closed on the keyboard working. This is the rest of what that change did, which you
+have seen once and which is worth one deliberate pass.
+
+**What to do.**
+
+1. **Start TrainControl with the Central Station unreachable** - unplug it, or point it at an address
+   that will not answer - so the connect takes its full timeout. The window should appear at once, at
+   the size and place it always opens, with a spinner and "Connecting..." on it. No second window, no
+   box that appears and vanishes.
+2. **The menu bar should be greyed** while that notice is up, and every menu should come back when the
+   application appears. Check a menu that is normally disabled anyway - one that needs a local layout
+   folder, say - is still disabled afterwards.
+3. **Nothing should flash**: the window must not close and reopen between the notice and the
+   application.
+4. **Then let it fail** - leave the station unreachable and let the start-up give up. You should get the
+   error dialog and no window left behind saying "connecting".
+5. **Press a locomotive letter** as soon as the application appears, without touching the mouse.
+
+*Run against v3_0_0_rc8 or later.*
+
+---
 
 <a id="mt-065"></a>
 
