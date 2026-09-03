@@ -3722,7 +3722,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // valid" left the tab open with no configuration behind it.
         //
         // On the diagram path the question is whether a configuration is RUNNING.
-        boolean loaded = getAutonomySession() == null || this.activeDiagramConfiguration != null;
+        // OR THERE IS NO DIAGRAM SETUP TO LOAD, which is what an upgrading user has (RGN-A2).
+        //
+        // Adam asked for a test of this - "make a test case for this.  in my testing, it loaded OK" -
+        // and the test reproduces it: a LOCAL layout with an `autonomy.json` beside it and no diagram
+        // configuration at all greyed the Auto tab, which is the tab that holds the thing that user
+        // has been running for a year.
+        //
+        // The two halves that were here are both right and neither covers him.  A session exists,
+        // because the layout is local; no configuration is active, because there are none to activate.
+        // So `loaded` was false and the tab went out.
+        //
+        // The state this question is really about is "a valid graph with nothing behind it" - a blank
+        // default, or one left over from another layout - and that state has configurations to choose
+        // from.  A setup with NO configurations is the JSON path, and it is loaded by definition:
+        // `valid` above is what says so.
+        boolean loaded = getAutonomySession() == null
+            || this.activeDiagramConfiguration != null
+            || getAutonomySession().getStore().getConfigurationNames().isEmpty();
 
         // AND the layout has to be on this computer (OB-104).
         //

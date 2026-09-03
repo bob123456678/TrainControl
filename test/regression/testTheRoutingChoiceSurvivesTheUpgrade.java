@@ -692,6 +692,22 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
         try
         {
+            // THE LEGACY STATE, which the fixture is not: it ships a diagram configuration called
+            // Main, and asking for a session makes that one active - which is exactly the state this
+            // finding says is safe.  What an upgrading user has is a layout with NO diagram
+            // configuration at all and an autonomy.json beside it.
+            java.io.File diagramSetups = new java.io.File(sandbox.getFolder(), "config/autonomy");
+
+            if (diagramSetups.isDirectory())
+            {
+                for (java.io.File f : diagramSetups.listFiles()) f.delete();
+
+                diagramSetups.delete();
+            }
+
+            assertFalse(diagramSetups.exists(),
+                "the sandbox still has a diagram setup folder, so this is not the legacy state");
+
             model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
             model.stop();
 

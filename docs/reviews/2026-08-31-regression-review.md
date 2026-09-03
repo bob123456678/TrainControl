@@ -118,6 +118,25 @@ print the emitted `length` for the edge pair matching legacy edge
 
 ### A2 - the Auto tab is disabled for everybody whose autonomy comes from `autonomy.json`
 
+**FIXED 2026-09-03, and it reproduces - Adam's own doubt was right to be a doubt, and wrong.**
+
+He asked for a test: *"Could not run this.  make a test case for this.  in my testing, it loaded OK."*
+`testTheAutoTabIsReachableWithALegacyAutonomyJson` is that test, and building the state he described -
+a LOCAL layout with an `autonomy.json` and **no diagram configuration at all** - greys the Auto tab.
+The reason his own run looked fine is that the fixture, and his railway, both carry a diagram
+configuration: asking for a session makes one active, and `loaded` is then true.
+
+`loaded` was `session == null || activeDiagramConfiguration != null`.  Both halves are right and neither
+covers an upgrading user: the session exists because the layout is local, and no configuration is
+active because there are none to activate.
+
+The third arm is the one that says what the question is about - a setup with NO configurations is the
+JSON path, and it is loaded by definition, which is what `valid` above already establishes.  The state
+this gate exists to catch, a valid graph left over from a blank default or another layout, has
+configurations to choose from and is unaffected.
+
+MT-244 can be run against this; the automated half is done.
+
 | | |
 |---|---|
 | **Disposition** | open |
