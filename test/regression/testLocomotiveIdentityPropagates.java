@@ -776,6 +776,8 @@ public class testLocomotiveIdentityPropagates
         // supposed to protect and watching it stay green.
         List<String> silent = new ArrayList<>();
 
+        List<String> quiet = new ArrayList<>();
+
         for (int at : sites)
         {
             // The refresh block that follows, bounded by the next call site or by the catch that
@@ -796,9 +798,22 @@ public class testLocomotiveIdentityPropagates
                 "a refresh block could not be bounded, so this rule would read the rest of the file "
                 + "and pass whatever the code did");
 
-            if (!body.substring(at, end).contains("updateVisiblePoints"))
+            String block = body.substring(at, end);
+
+            if (!block.contains("updateVisiblePoints"))
             {
                 silent.add(body.substring(at, Math.min(at + 160, end)).trim());
+            }
+
+            // AND THE TIMETABLE, which names locomotives too (DAY-B1, SVN-B12).
+            //
+            // MT-149 was that a rename did not reach the timetable on screen, and the fix went to the
+            // GUARD inside repaintTimetable - which was keyed on a hash a rename cannot move.  Neither
+            // rename door was made to CALL it, so the guard was right and nothing asked it.  Exactly
+            // the shape this rule already watches for the station labels, one method along.
+            if (!block.contains("repaintTimetable"))
+            {
+                quiet.add(body.substring(at, Math.min(at + 160, end)).trim());
             }
         }
 
@@ -806,5 +821,10 @@ public class testLocomotiveIdentityPropagates
             "a locomotive rename does not rewrite the station labels, so the track diagram goes on "
             + "showing the old name beside the train until something unrelated repaints it (OB-081): "
             + silent);
+
+        assertEquals(quiet, new ArrayList<String>(),
+            "a locomotive rename does not repaint the timetable, so it goes on naming a locomotive "
+            + "that no longer exists under that name - which is MT-149, whose fix was to the guard "
+            + "inside repaintTimetable and never to the doors that have to call it: " + quiet);
     }
 }

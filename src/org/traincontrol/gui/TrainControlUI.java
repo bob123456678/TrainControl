@@ -17118,6 +17118,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // rewrites it." Renaming changes the same thing and was the door that did not.
                         this.updateVisiblePoints();
                         this.repaintAutoLocList(false);
+
+                        // AND THE TIMETABLE, which names locomotives too (DAY-B1, SVN-B12).
+                        //
+                        // `MT-149` was that a rename did not reach the timetable on screen; the fix
+                        // was to the GUARD inside `repaintTimetable` - it was keyed on a hash a
+                        // rename cannot move - and neither rename door was made to CALL it.  So the
+                        // guard was right and nothing asked it.
+                        this.repaintTimetable();
                     }
                 }
             }
@@ -23109,6 +23117,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     // call sites rather than the first one it finds.
                                     this.updateVisiblePoints();
                                     this.repaintAutoLocList(false);
+
+                                    // And the timetable, as the rename dialog does (DAY-B1).
+                                    this.repaintTimetable();
                                 }
                             }
                         }

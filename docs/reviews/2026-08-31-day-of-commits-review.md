@@ -137,6 +137,17 @@ falling back to the current `containsValue`. Whatever form it takes, the `shares
 
 ### B1 - MT-149's timetable repaint sits behind two early returns the rename doors compensate for, and it was not given to them
 
+**FIXED 2026-09-03** (re-found as `SVN-B12`, and re-derived by pass 4 of the release review).
+
+Both rename doors call `repaintTimetable()` now.  The shape is worth recording: `MT-149` was that a
+rename did not reach the timetable on screen, the fix went to the GUARD inside `repaintTimetable` - it
+was keyed on a hash a rename cannot move - and neither door was made to CALL it.  So the guard was
+right, and nothing asked it.
+
+Pinned by the rule that already watched the same two blocks for the station labels
+(`testLocomotiveIdentityPropagates`), extended to the timetable and mutation-confirmed by taking the
+call out of the second door.
+
 | | |
 |---|---|
 | **Disposition** | open |
