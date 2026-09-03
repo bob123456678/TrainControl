@@ -278,6 +278,58 @@ public class testAutonomyDiagramReducer
 
         assertEquals(again.getInt("roomAtTheEnd"), 9, "the room did not survive the round trip");
     }
+    /**
+     * The editor asks for the squares AFTER the last switch, and not the ones before it (TSX-B5).
+     *
+     * `unmeasuredAfterTheLastSwitch` is the mirror of `roomAfterTheLastSwitch`: that one adds the
+     * lengths up, this one names the squares that have none, so the notice asks for exactly what the
+     * guard needs and no more.  The narrowing is one line - stop at the first switch walking back -
+     * and the only fixture that reached it was a straight run of four tiles, which cannot tell the
+     * rule from the one it replaced.
+     *
+     * Adam is the reason it matters: he asked for the notices to be deduped, not widened, and asking
+     * for the whole run in would put a notice on every square of every approach.
+     *
+     * MUTATION this catches: deleting the switch stop, which makes the answer the whole edge.
+     */
+    @Test
+    public void testTheEditorAsksOnlyForTheSquaresAfterTheLastSwitch() throws Exception
+    {
+        // sensor - track - SWITCH - track - track - sensor, the same shape the room test uses.
+        LayoutDiagram page = page("main", 9, 4);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        add(page, componentType.SWITCH_LEFT, 3, 1, 3, 7);
+        wire(page, 3, 1, 7, Accessory.accessoryType.SWITCH);
+        straight(page, 4, 1);
+        straight(page, 5, 1);
+        feedback(page, 6, 1, 12);
+        feedbackNS(page, 3, 0, 13);
+
+        // NOTHING MEASURED, so every square on the edge is a candidate and the only thing deciding
+        // which are asked for is the switch stop.
+        GraphReducer reducer = reduce(graph(page), authored(new HashMap<>(), null, null));
+
+        List<ReducedEdge> through = edgesBetween(reducer, key("main", 1, 1), key("main", 6, 1));
+
+        assertEquals(through.size(), 1, "the fixture did not produce the one edge this is about");
+
+        List<TileKey> asked = reducer.unmeasuredAfterTheLastSwitch(through.get(0));
+
+        assertTrue(asked.contains(key("main", 4, 1)) && asked.contains(key("main", 5, 1)),
+            "the squares beyond the switch - the ones the guard needs measured - are not being asked "
+            + "for: " + asked);
+
+        assertFalse(asked.contains(key("main", 2, 1)),
+            "a square BEFORE the switch is being asked for.  The guard stops counting at the switch, "
+            + "so asking for the track in front of it puts a notice on somebody's diagram for a "
+            + "number nothing will ever read - which is the flood OB-171 was about, arriving from "
+            + "the other end.  Asked: " + asked);
+
+        assertFalse(asked.contains(key("main", 3, 1)),
+            "the switch tile itself is being asked for, and the guard does not count it either: "
+            + asked);
+    }
     private Side arrivalSideAt(GraphReducer reducer, TileKey from, TileKey to)
     {
         for (ReducedEdge edge : reducer.getEdges())

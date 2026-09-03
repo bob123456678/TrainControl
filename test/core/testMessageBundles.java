@@ -779,7 +779,18 @@ public class testMessageBundles
 
         java.util.List<String> missing = new ArrayList<>();
 
-        for (File source : javaSources(new File("src")))
+        List<File> sources = javaSources(new File("src"));
+
+        // A FLOOR, like the two other scans in this file (TSX-B6).
+        //
+        // `javaSources` answers empty rather than failing when `listFiles()` returns null - run from
+        // anywhere but the project root and this scans nothing, which is indistinguishable from
+        // finding no offenders.  The two older scans here carry this guard with that reason written
+        // out; this one was added afterwards and did not get it.
+        assertFalse(sources.isEmpty(),
+            "precondition: nothing was scanned under src/ - run from the project root");
+
+        for (File source : sources)
         {
             // I18n's own javadoc shows the idiom with example keys.
             if (source.getName().equals("I18n.java")) continue;

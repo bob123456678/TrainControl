@@ -980,6 +980,13 @@ the three sites, on the `grep` above, and on `Edge.java:59`/`:320-323` for what 
 
 #### B5 - `unmeasuredAfterTheLastSwitch` stops at the last switch, and no fixture has a switch
 
+**FIXED 2026-09-03.**  `testTheEditorAsksOnlyForTheSquaresAfterTheLastSwitch` uses the fixture the room
+test uses - a switch in the middle of the run - and asserts both directions: the squares beyond the
+switch are asked for, and the square in front of it and the switch tile are not.
+
+Mutation-confirmed by deleting the switch stop, which makes the answer the whole edge.  That is also the
+flood `OB-171` was about, arriving from the other end: asking for numbers nothing will read.
+
 **Status: open.** Verified by reading. This is `A1`'s sibling: the *other* half of Adam's 2026-09-02
 ruling, tested by a fixture that cannot tell the ruling from what it replaced.
 
@@ -1042,6 +1049,10 @@ enough.
 ---
 
 #### B6 - the message-bundle scan that has no floor is the newest of the three
+
+**FIXED 2026-09-03.**  The newest of the three scans has the floor the two older ones carry, with the
+same reason written out - `javaSources` answers empty rather than failing when run from the wrong
+directory, which is indistinguishable from finding no offenders.
 
 **Status: open.** Verified by reading. This is what is left of `TST-B16`, and the site that is left is
 the one added after the finding.
