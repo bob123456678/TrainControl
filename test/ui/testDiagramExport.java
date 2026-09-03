@@ -289,6 +289,14 @@ public class testDiagramExport
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
                 + onScreen + " - the shortcut would export the wrong page");
 
+            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON (TSX-C4).
+            //
+            // The assertion above has just established that `reportedActive` equals `onScreen`, so
+            // these two lookups return the same page and everything below is a determinism check on
+            // `render` - which is what `TST-B9` said this whole test was before it was rebuilt.  The
+            // check that carries the claim is the equality above; this is kept because a rendering that
+            // is NOT deterministic would make every picture comparison in this class meaningless, and
+            // that is worth one assertion somewhere.
             LayoutDiagram chosenByName = model.getLayout(onScreen);
             LayoutDiagram viaShortcut = model.getLayout((String) reportedActive);
             LayoutDiagram different = model.getLayout(somethingElse);

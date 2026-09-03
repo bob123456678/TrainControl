@@ -121,13 +121,33 @@ public class testEveryLanguageFits
             Locale.setDefault(was);
             I18n.setLocale(was);
 
-            sandbox.close();
-        }
+            // LET WHAT THE WINDOWS POSTED RUN FIRST (TSX-C2).
+            //
+            // The failure this check exists for is work scheduled by a disposed window landing after
+            // the preference has been put back - which by construction happens some milliseconds after
+            // the last dispose.  Fingerprinting before draining the queue samples the folder at the one
+            // moment that cannot have seen it.
+            try
+            {
+                for (int pass = 0; pass < 5; pass++)
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+                }
+            }
+            catch (Exception draining)
+            {
+                // A queue that will not drain is not a reason to skip the check below.
+            }
 
-        // BEFORE anything is reported: did this test touch the railway?
-        assertEquals(fingerprint(LIVE), railwayBefore,
-            "this test wrote to " + LIVE + ", which is the operator's real railway and is not "
-            + "recoverable.  Whatever it found is beside the point until that is understood");
+            sandbox.close();
+
+            // AND IN THE FINALLY, because the run most likely to have written is the one that threw
+            // (TSX-C2).  This stood after the try, so a window constructor that failed took the
+            // railway check with it.
+            assertEquals(fingerprint(LIVE), railwayBefore,
+                "this test wrote to " + LIVE + ", which is the operator's real railway and is not "
+                + "recoverable.  Whatever it found is beside the point until that is understood");
+        }
 
         StringBuilder report = new StringBuilder();
 
@@ -169,6 +189,16 @@ public class testEveryLanguageFits
                 "only " + e.getValue() + " components with text were measured in " + e.getKey()
                 + ", which is not a window - the layout did not happen and nothing was asked");
         }
+
+        // THE TWO PICTURES HAVE TO EXIST FIRST (TSX-C1).
+        //
+        // `sameBytes` answers false when either file is missing, and `shoot` swallows a write failure
+        // by design - so an unwritable OUT, or a JVM with no PNG writer, satisfied the control below
+        // by there being nothing to compare.  That control is the one thing here that proves eight
+        // measurements are of eight languages rather than eight of one.
+        assertTrue(new File(OUT, "window-en.png").isFile() && new File(OUT, "window-de.png").isFile(),
+            "the screenshots this control compares were never written, so it would pass having "
+            + "compared nothing.  Looked in " + OUT);
 
         assertFalse(sameBytes(new File(OUT, "window-en.png"), new File(OUT, "window-de.png")),
             "the English and German windows are byte-identical, so the locale is not reaching the "

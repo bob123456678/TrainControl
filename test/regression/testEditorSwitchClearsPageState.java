@@ -279,9 +279,22 @@ public class testEditorSwitchClearsPageState
 
         String all = new String(java.nio.file.Files.readAllBytes(file.toPath()), "UTF-8");
 
-        int at = all.indexOf(" " + name + "(");
+        // THE DECLARATION, not the first mention (TSX-C3).
+        //
+        // `indexOf(" name(")` takes the first occurrence anywhere in the file, and for `arriveAt` that
+        // is a call site inside a lambda two hundred lines above the declaration.  The brace walk then
+        // started from the enclosing method's `{` and came back with the right body only because there
+        // is no `{` between the two - an accident, and one a single edit in between would take away
+        // without a word.
+        //
+        // A declaration is a name at the start of a line, after its modifiers and return type.
+        java.util.regex.Matcher declared = java.util.regex.Pattern.compile(
+            "(?m)^[ \\t]*(?:public |private |protected |static |final |synchronized )*[\\w<>\\[\\],. ]+\\s"
+            + java.util.regex.Pattern.quote(name) + "\\s*\\(").matcher(all);
 
-        assertTrue(at > 0, "no method called " + name);
+        assertTrue(declared.find(), "no method DECLARED as " + name + " - a call site is not a body");
+
+        int at = declared.start();
 
         int open = all.indexOf('{', at);
 

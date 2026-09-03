@@ -88,6 +88,19 @@ public class testTheDiagramPrintsItsCoordinates
     @Test
     public void testANumberTooWideForItsSquareIsLeftOut()
     {
+        // THE READER FIRST (TSX-C7).
+        //
+        // `digitsIn` recognises numbers by re-rendering each candidate with a font it chooses itself
+        // and sliding the stamp over the painted ink.  If that font ever stops matching the one the
+        // ruler draws with, it recognises NOTHING - and an assertion that nothing was drawn is then
+        // satisfied by a reader that cannot read.  A sibling two methods up would fail loudly, which
+        // is a rescue rather than a guard.
+        String big = paint(AxisRuler.uniform(30, 100, 100, 6, 6));
+
+        assertFalse(digitsIn(big).isEmpty(),
+            "the reader found no numbers on a ruler with thirty pixels a square, where they certainly "
+            + "fit - so it is not reading, and the assertion below would pass whatever was drawn");
+
         // Four pixels a square: nothing fits, so nothing should be drawn.
         String tiny = paint(AxisRuler.uniform(4, 100, 100, 6, 6));
 

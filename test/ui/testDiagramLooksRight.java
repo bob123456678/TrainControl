@@ -74,8 +74,21 @@ public class testDiagramLooksRight
     }
 
     @AfterClass(alwaysRun = true)
-    public static void tearDownClass()
+    public static void tearDownClass() throws Exception
     {
+        // THE WINDOW TOO (TSX-C6).
+        //
+        // This class builds a `TrainControlUI` in its set-up and was the only one of its siblings that
+        // never disposed it - a real top-level window, with its listeners and its grid, alive for the
+        // rest of the JVM.  Bounded by the JVM in a battery, and not bounded at all for anybody
+        // running this class from an IDE.
+        if (ui != null)
+        {
+            final TrainControlUI closing = ui;
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
+        }
+
         if (model != null) model.stop();
 
         if (sandbox != null) sandbox.close();

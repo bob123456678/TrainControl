@@ -424,6 +424,8 @@ to settle.
 
 #### C1 - the "did the locale reach the text" control passes when both screenshots are missing
 
+**FIXED 2026-09-03.**  The two screenshots must exist before the control compares them, so an unwritable output directory fails loudly instead of satisfying the one assertion that proves eight measurements are of eight languages.
+
 `test/ui/testEveryLanguageFits.java:173-175`:
 
 ```java
@@ -453,6 +455,8 @@ components were measured per language, with the reason ("the first version of th
 and reported nothing wrong").
 
 #### C2 - the railway fingerprint is taken at the instant the sandbox closes, and is skipped when a measurement throws
+
+**FIXED 2026-09-03**, both halves: the event queue is drained before the sandbox closes, and the railway fingerprint is compared inside the `finally` - the run most likely to have written is the one that threw.
 
 Same file. The class javadoc, `:40-47`, is unusually direct about why the guard is there:
 
@@ -486,6 +490,8 @@ is not invisible - it is only unattributable, which is `TCX-A4`'s standing compl
 one.
 
 #### C3 - `methodSource` anchors on a call site, and its guard cannot tell the difference
+
+**FIXED 2026-09-03.**  `methodSource` matches a DECLARATION - modifiers, return type, name, open bracket, at the start of a line - rather than the first mention of the name anywhere in the file.  The accident it was relying on (no `{` between `arriveAt`'s first call site and its declaration) is gone.
 
 `test/regression/testEditorSwitchClearsPageState.java:272-299`:
 
@@ -530,6 +536,8 @@ modifiers, as `testLocIconCrop.bodyOf` and `testEditorSurfaceRules.bodyOf` are b
 
 #### C4 - the active-page export test still renders one page against itself
 
+**ANSWERED 2026-09-03 - the comparison stays, and says what it is.**  The finding is right that after the equality assertion the two lookups are the same object; what the tail measures is that `render` is deterministic, which every picture comparison in the class rests on.  The comment says so, so a reader counting assertions is not told there are three checks on the shortcut when there is one.
+
 `test/ui/testDiagramExport.java:237-240` records `TST-B9` - the original body "rendered `page` against
 itself twice - byte-identical arguments, so all it measured was that `DiagramExport.render` is
 deterministic" - and the rebuild is a good one. The rebuilt test's real assertion is at `:288`:
@@ -560,6 +568,8 @@ meant.
 
 #### C5 - `testSidebarIcons` reads commented-out code, and there is some
 
+**FIXED 2026-09-03.**  `testSidebarIcons` strips comments, with the class's own copy of the helper two siblings already carry - the file it reads holds a commented-out `setIconAt`, so the route this check could not see is real.
+
 `test/regression/testEveryWindowWearsTheIcon` strips generated blocks, `testLocMappingPages` and
 `testDiagramLooksRight` strip comments, `testLocIconCrop` does not, and `testSidebarIcons` does not
 either. `test/ui/testSidebarIcons.java:139-140` and `:185-190`:
@@ -588,6 +598,8 @@ This is `TST-C10`'s class with a new site; the fix is the `withoutComments` help
 two files in this package.
 
 #### C6 - `testDiagramLooksRight` never disposes the window it builds
+
+**FIXED 2026-09-03.**  The window built in the set-up is disposed in the teardown, like both its siblings.
 
 `test/ui/testDiagramLooksRight.java:69` builds a `TrainControlUI` in `@BeforeClass` and `:76-82` is the
 whole teardown:
@@ -620,6 +632,8 @@ exits, against `testDiagramExport` as the control. Until then the finding is the
 certain, rather than the leak, which is not.
 
 #### C7 - an empty-list assertion with no floor on the reader that produces it
+
+**FIXED 2026-09-03.**  The reader is proved to read - digits found on a thirty-pixel ruler - before its silence on a four-pixel one is allowed to mean anything.  The rescue two methods up was incidental, which is what made this worth an edit.
 
 `test/ui/testTheDiagramPrintsItsCoordinates.java:89-97`:
 
