@@ -257,8 +257,14 @@ public class testNonReversibleTrains
      * at all is unaffected; a layout that records some gets a notice in the editor asking for the ones
      * that matter, which is the other half of what he asked for.
      *
-     * MUTATION: dropping the reversal test refuses nothing; comparing against the whole path rather
-     * than the track at the reversal accepts this, because the run in is long enough overall.
+     * MUTATION: dropping the reversal test refuses nothing.
+     *
+     * The second mutation this used to name - "comparing against the whole path rather than the track
+     * at the reversal" - was two things wrong (TS3-C3).  This fixture cannot tell them apart: its path
+     * is two edges of 2 and 3 against a train of 10, so 5 and 3 both refuse.  And since Adam's ruling
+     * of 2026-09-01 the whole run in IS the rule - `measuredRoomToReverseInto` sums every segment - so
+     * it described the shipped code rather than a mutation.  What covers that distinction properly is
+     * `testTheRoomIsEverySegmentLeadingUpToTheReversal`, two methods down, on a three-segment fixture.
      */
     @Test
     public void testATrainTooLongForTheBerthIsNotBackedOverTheSwitch() throws Exception
@@ -304,7 +310,7 @@ public class testNonReversibleTrains
         finally
         {
             loc.setReversible(was);
-            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+            loc.setTrainLength(wasLength);
         }
     }
 
@@ -368,7 +374,7 @@ public class testNonReversibleTrains
         finally
         {
             loc.setReversible(was);
-            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+            loc.setTrainLength(wasLength);
         }
     }
 
@@ -457,7 +463,7 @@ public class testNonReversibleTrains
         finally
         {
             loc.setReversible(was);
-            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+            loc.setTrainLength(wasLength);
         }
     }
 

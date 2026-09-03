@@ -147,7 +147,7 @@ not fixed, per the briefing.
 
 ### D3F-C1 - `checkBadCopies` documents the ERROR its own body removed
 
-**Status: open.** One method, javadoc and body in direct contradiction, six lines apart.
+**FIXED.**  The javadoc says all three are warnings, why the body settled it that way within the hour, and what restoring the paragraph's old claim would do - stop Adam's railway starting over berths he has run for months.  Verified 2026-09-03.
 
 `AutonomyChecks.java:749-752` (javadoc, written by `409d4ce8`):
 
@@ -176,7 +176,7 @@ fix is one paragraph of javadoc.
 
 ### D3F-C2 - "It is inert on his railway today" survived being proven false, through a commit that edited the lines beneath it
 
-**Status: open.**
+**FIXED.**  The comment at the guard says NOT INERT, quotes what it used to claim, and names the measurement that disproved it.  Verified 2026-09-03.
 
 `Layout.java:2386-2391`, inside `isPathClear`'s reversal-room guard:
 
@@ -201,7 +201,7 @@ C1: one clause of comment.
 
 ### D3F-C3 - the start gate widened to `hasErrors()`; every offer-side reader still asks `errorCount()`
 
-**Status: open.** The narrow limb of the very shape `87b6c10a` fixed three instances of.
+**FIXED.**  `canStartAutonomy` asks `autonomyHasErrors()`, and so do the other two affordances; the wrapper's own body is pinned to `hasErrors()` as of 2026-09-03, so they cannot agree in words and differ in meaning (`V32-C2`).
 
 The gate, `TrainControlUI.java:5183` (changed by `87b6c10a`):
 
@@ -286,7 +286,7 @@ tab (`SVN-B17`) stays outside this family entirely and is already an open findin
 
 ### D3F-C5 - SVN-A3's disposition cites the wrong commit
 
-**Status: open.** One-line fix in the week-of-commits document.
+**FIXED, already** (verified 2026-09-03).  `SVN-A3`'s disposition names `1cfdf370` - the commit `git log -S layoutRefreshCompleteInternal` returns - so this was corrected between the finding and today.
 
 `docs/reviews/2026-09-01-week-of-commits-review.md:194` (written by `cf048f9b`):
 

@@ -160,7 +160,7 @@ public class testHomeStaging
      * preconditions rather than assumed.
      */
     @Test
-    public void testTheAuditSeesTheReversalRoomRuleTheStagingPlannerDoesNotHave() throws Exception
+    public void testThePlannerAndTheRuntimeAgreeAboutRoomToReverse() throws Exception
     {
         Layout layout = load(shortBerth());
 

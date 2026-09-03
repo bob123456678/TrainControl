@@ -1016,7 +1016,12 @@ public class testAutonomyDiagramSession
         // is half switched off - which is not a state the menu can express or the cross can mean.
         java.util.List<String> copies = session.pointNamesFor(name);
 
-        assertFalse(copies.isEmpty(), "the square emitted no Points at all");
+        // TWO, not one (TS3-C1).  The comment above is about a square that became SEVERAL Points, so a
+        // fixture that emits one satisfies the loop below while testing nothing it is written for -
+        // and this is the sibling of the floor `TCX-B9` put on the same shape 2,800 lines down.
+        assertTrue(copies.size() >= 2,
+            "precondition: this needs a square that became several Points, and it got " + copies.size()
+            + " - " + copies);
 
         for (String copy : copies)
         {

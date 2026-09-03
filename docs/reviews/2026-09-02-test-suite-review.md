@@ -612,6 +612,8 @@ which is what the existing test asserts.
 
 ### TS3-C1 — no floor on `copies`, in the test whose comment says the number is the point
 
+**FIXED 2026-09-03.**  `assertTrue(copies.size() >= 2, ...)`, the floor `TCX-B9` put on the same shape 2,800 lines down.  A fixture that emits one copy now fails instead of testing nothing.
+
 `test/core/testAutonomyDiagramSession.java:983-997`:
 
 ```java
@@ -642,6 +644,8 @@ otherwise. `assertTrue(copies.size() >= 2, ...)` is the one line.
 
 ### TS3-C2 — the audit test's preconditions restate what it just set, and its name says the opposite of what it asserts
 
+**FIXED.**  The two restated preconditions went with `V36-B2`/`V37-B2` - what stands there says there is no precondition about `mustBackIn` at all, and rules the confound out with a control.  The method is renamed `testThePlannerAndTheRuntimeAgreeAboutRoomToReverse` (2026-09-03), which is what it asserts.
+
 `test/core/testHomeStaging.java:179-185`:
 
 ```java
@@ -671,6 +675,8 @@ invariant instead.
 
 ### TS3-C3 — a stated mutation the fixture cannot tell apart, and which now describes the shipped code
 
+**FIXED 2026-09-03.**  The javadoc names the one mutation this fixture can tell apart, and records why the second was two things wrong: 5 and 3 both refuse a train of 10, and the whole run in IS the rule since Adam's 2026-09-01 ruling.  It points at the sibling that covers the distinction on a three-segment fixture.
+
 `test/core/testNonReversibleTrains.java:260-261`:
 
 ```
@@ -693,6 +699,8 @@ was not revisited. Documentation only; the assertions beneath it are sound and t
 distinction properly on a three-segment fixture.
 
 ### TS3-C4 — `testErrorsStopTheSetupRunning` says twice that `hasErrors()` has no callers
+
+**FIXED.**  Both copies are gone - the assertion message says what it proves and what covers the other half, and the javadoc was rewritten under `V32-C2`.  Verified 2026-09-03.
 
 `test/regression/testErrorsStopTheSetupRunning.java:90-94`:
 
@@ -749,6 +757,8 @@ Graded C because it only fires on a tree that is already broken, and the errors 
 visible; the cost is confusion during a broken build rather than a false green.
 
 ### TS3-C6 — a null train length is restored as zero
+
+**FIXED 2026-09-03.**  `loc.setTrainLength(wasLength)` at all three sites: a null length is restored as null, which the model distinguishes from zero.
 
 `test/core/testNonReversibleTrains.java:307` and `:366`:
 
