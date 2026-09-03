@@ -67,13 +67,38 @@ public class AutonomyChecks
         private final String messageKey;
         private final String subject;
         private final TileKey tile;
+        private final int count;
 
         Finding(Severity severity, String messageKey, String subject, TileKey tile)
+        {
+            this(severity, messageKey, subject, tile, 0);
+        }
+
+        /**
+         * The same, with a number the message may put in a sentence (OB-171).
+         *
+         * @param count how many things this finding is about, or zero when it is not about a number
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count)
         {
             this.severity = severity;
             this.messageKey = messageKey;
             this.subject = subject;
             this.tile = tile;
+            this.count = count;
+        }
+
+        /**
+         * How many things this finding is about - the squares still needing a length, today.
+         *
+         * Rendered as `{2}`, after the tile description and the subject, so no existing message
+         * changes and only the ones that need a number ask for it.
+         *
+         * @return the number, or zero when this finding is not about one
+         */
+        public int getCount()
+        {
+            return count;
         }
 
         public Severity getSeverity()
@@ -136,6 +161,11 @@ public class AutonomyChecks
      * A square trains reverse at, on a layout that measures track, whose own track is not measured.
      */
     public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
+
+    /**
+     * The same square, when the track leading to it has to be measured as well (OB-171).
+     */
+    public static final String REVERSAL_NEEDS_LENGTH_RUN = "autosetup.ui.checkReversalNeedsLengthRun";
 
     /**
      * The three ways one ARRIVAL at a station can be a trap while the square looks perfectly healthy.
@@ -247,7 +277,7 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, String> repeatedSensorPages, Set<TileKey> reversalsWithoutLength,
+        Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation)
     {
@@ -579,18 +609,30 @@ public class AutonomyChecks
      * @param reversalsWithoutLength the squares, decided by the session
      */
     private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
-        Set<TileKey> reversalsWithoutLength)
+        Map<TileKey, Integer> reversalsWithoutLength)
     {
         List<Finding> findings = new ArrayList<>();
 
         if (reversalsWithoutLength == null) return findings;
 
-        for (TileKey tile : reversalsWithoutLength)
+        for (Map.Entry<TileKey, Integer> reversal : reversalsWithoutLength.entrySet())
         {
+            TileKey tile = reversal.getKey();
+
             ReducedPoint point = reducer.getPoints().get(tile);
 
-            findings.add(new Finding(Severity.WARNING, REVERSAL_NEEDS_LENGTH,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+            String name = point == null ? String.valueOf(tile) : point.getName();
+
+            // ONE SQUARE, OR A RUN OF THEM (OB-171).
+            //
+            // The count is every square still without a length that this reversal's guard needs - the
+            // square itself and the stretch behind it, back to the switch.  Two messages rather than
+            // one with a number in it, because "1 squares" in a notice somebody meets while setting
+            // their railway up is not worth saving a key over.
+            int missing = reversal.getValue() == null ? 1 : reversal.getValue();
+
+            findings.add(new Finding(Severity.WARNING,
+                missing > 1 ? REVERSAL_NEEDS_LENGTH_RUN : REVERSAL_NEEDS_LENGTH, name, tile, missing));
         }
 
         return findings;

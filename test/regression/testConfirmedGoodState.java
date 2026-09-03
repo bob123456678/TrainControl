@@ -252,7 +252,22 @@ public class testConfirmedGoodState
                 + "-Dbaseline.capture=true once the railway is in a state you have confirmed");
         }
 
-        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        // CARRIAGE RETURNS STRIPPED, because git puts them there (found by the battery, 2026-09-03).
+        //
+        // `describe` and `buildConfiguration` join their lines with LF, and this repository checks out
+        // with `core.autocrlf=true` - so the blessed copy on disk has CRLF, and every comparison failed
+        // at line 1 with two lines that LOOK identical, the difference being an invisible byte.
+        //
+        // A baseline that reports a railway change because of how git wrote a file is worse than no
+        // baseline: it is the boy who cried wolf, in the one test whose whole value is that it speaks
+        // only when something really moved.
+        //
+        // Same answer as `FBR-C8`/`RA-A1` gave for `testEditorSurfaceRules`, and for the same reason -
+        // a source read that behaves differently depending on how git wrote the file is not a guard.
+        // `test/baseline/**` is pinned to LF in `.gitattributes` as well; both, because either alone
+        // leaves a way for this to come back.
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)
+            .replace("\r", "");
     }
 
     private void write(File file, String what) throws Exception

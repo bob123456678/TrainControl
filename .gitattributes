@@ -1,3 +1,9 @@
 # Shell scripts must check out with LF - core.autocrlf=true would otherwise convert them to
 # CRLF, which can break the shebang line and is why launch-triage.sh is pinned here explicitly.
 *.sh text eol=lf
+
+# The blessed baseline is compared byte for byte against text this application builds in memory, which
+# joins its lines with LF.  Checked out as CRLF it failed at line 1 with two lines that look identical
+# (found by the battery, 2026-09-03).  The test strips carriage returns as well; this stops a fresh
+# clone needing it.
+test/baseline/** text eol=lf

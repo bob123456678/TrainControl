@@ -298,6 +298,29 @@ is worse than an untested one, because it looks finished.
 
 ---
 
+## The runners, and the scratch directory they need
+
+`docs/tools/one.sh` runs named classes; `docs/tools/battery.sh` runs the whole suite from `build.xml`.
+Both point at `TC_SCRATCH`, and `battery.sh`'s header says to look here for how it is built, which
+until 2026-09-03 it did not say (`SV2-C7`).
+
+**`TC_SCRATCH` is one directory per session**, under
+`%TEMP%/claude/<project>/<session-id>/scratchpad`, and it holds three things:
+
+- `cp.txt` - the classpath, on one line, as `javac -cp` wants it.
+- the TestNG output directory each runner writes into.
+- `battery.lock` - and this is why the identity of the directory matters (`SV2-A2`): the lock that
+  stops two batteries running at once lives INSIDE `TC_SCRATCH`, so two sessions with different scratch
+  directories each hold their own lock and neither sees the other. That is what let two batteries
+  overlap on 2026-08-30, which damaged the operator's real railway. The JVM probe in `battery.sh` is
+  what covers it now - it counts test JVMs machine-wide rather than trusting the lock.
+
+**Neither runner may be used while the other is running**, and no `.java`, `.properties` or `build.xml`
+may be edited while either is: both recompile the working tree, so an edit mid-run is a run that
+reports on code that never existed.
+
+---
+
 ## Why it is worth the ceremony
 
 The three documents this replaced disagreed about what had been tested. A test written on the 20th,

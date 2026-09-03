@@ -988,18 +988,13 @@ public class Point
             jsonObj.put("reversing", this.isReversing);
         }
 
-        // Which piece of track this Point is part of.
-        //
-        // Written because it is READ: parseAuto takes it back, and without this the export path lost
-        // it silently - a graph exported and re-imported came back with every square split into
-        // independent Points again, so two trains could once more be routed onto one platform.  The
-        // operator would have had no way to tell: the file looks like a faithful copy of the graph.
-        // The signal thrown to red while this platform is claimed.
+        // The signals thrown to red while this platform is claimed.
         //
         // Written as well as read.  parseAuto has always taken this back in, and leaving it out of the
         // export made the configuration JSON quietly lossy: a setup exported and imported came back
         // with every station-signal pairing gone, and nothing said so.  Exactly what happened to the
-        // block field before it, which is the line below.
+        // block field below, whose own comment this one had been tacked onto (CMT-C1).
+        //
         // One is written as a bare string, several as an array.  The single case is what every
         // version before this one wrote and read, and a station guarded by one signal - which is most
         // of them - stays readable to an older TrainControl rather than becoming an array it would
@@ -1013,6 +1008,12 @@ public class Point
             jsonObj.put("protectingSignal", new JSONArray(this.protectingSignals));
         }
 
+        // Which piece of track this Point is part of.
+        //
+        // Written because it is READ: parseAuto takes it back, and without this the export path lost
+        // it silently - a graph exported and re-imported came back with every square split into
+        // independent Points again, so two trains could once more be routed onto one platform.  The
+        // operator would have had no way to tell: the file looks like a faithful copy of the graph.
         if (this.block != null)
         {
             jsonObj.put("block", this.block);

@@ -292,6 +292,8 @@ the edit.)*
 
 ### SV2-C1 — `FV2-A1`'s row points at the wrong commit
 
+**FIXED 2026-09-03.**  The row names `c9153aaf`, which is where the winpid write, the fallback and the second opinion are, and says what `f59fa45e` actually carries.
+
 `docs/reviews/2026-09-01-fanout-index.md:74` says the fix is `f59fa45e`. `git show f59fa45e --
 docs/tools/battery.sh` contains **only** the `FV2-C5` case-arm swap. The winpid write, the fallback and
 the `kill -0` second opinion are all in `c9153aaf`. `d15a7951` is where the reference was filled in, and
@@ -349,6 +351,8 @@ the same edit if the lock also moves to a fixed path.
 
 ### SV2-C4 — the dispositions live in two places and disagree
 
+**FIXED 2026-09-03**, by the sweep this finding asked for: every C in the September rounds now carries its verdict in one place, and the four findings whose table said `open` over prose saying `FIXED` were corrected.
+
 The index's Fixed table lists `FV2-A1`, `FV2-B1`, `FV2-B2`, `FV2-B3`, `FV2-C1`, `FV2-C2`, `FV2-C5`,
 `FV2-C7` and `FV2-C10` as fixed. All nine still read `open` in their own status tables in
 `2026-09-01-fix-validation.md`, which is where the README puts a finding's disposition ("One status, one
@@ -358,6 +362,8 @@ alone sees fourteen open findings, of which nine are done.
 
 ### SV2-C5 — the corrected mutation sentence undercounts again
 
+**FIXED 2026-09-03.**  The sentence names `D24-B1` and `TCX-A3` rather than counting them - the count went stale twice - and says what `FV2-B2` and `FV2-C1` are.
+
 `docs/reviews/2026-09-01-fanout-index.md:83`: *"The two Java fixes were seen failing first and
 mutation-confirmed"*. When `FV2-C10` corrected that sentence there were two; `f59fa45e` then added a
 third Java fix to the same table (`FV2-B2`, `HomeStaging`) and a fourth Java change beside it
@@ -365,6 +371,8 @@ third Java fix to the same table (`FV2-B2`, `HomeStaging`) and a fourth Java cha
 sentence should name the fixes it covers rather than count them.
 
 ### SV2-C6 — the `ps -W` claim is not supported, including by its own paragraph
+
+**REFUTED 2026-09-03, with the measurement this finding said was missing.**  Taken during a live battery: `ps -W` listed the operator's own `java.exe` and the battery's own MSYS-launched test JVM at the same moment.  So `ps -W` sees both, the index's claim was false, and the index now says so and names the measurement.  This finding was right and is closed as CONFIRMED, not withdrawn.
 
 `docs/reviews/2026-09-01-fanout-index.md:50`: *"`ps -W` in this Git Bash cannot see `java.exe` at all.
 It reported zero while two batteries ran."* Measured here, `ps -W` enumerates non-MSYS Windows
@@ -378,6 +386,8 @@ settled**: refuting it properly needs a `ps -W` taken while a test JVM is runnin
 done.
 
 ### SV2-C7 — the pointer to how `TC_SCRATCH` is built goes nowhere
+
+**FIXED 2026-09-03.**  `docs/manual-tests/README.md` has the half-page: what `TC_SCRATCH` holds, that the battery lock lives inside it and why that is load-bearing, and that neither runner may be used while the other is - which is the rule the 2026-08-30 incident cost.
 
 `docs/tools/battery.sh:18-19`: *"`TC_SCRATCH` holds `cp.txt` (the classpath, one line) and receives the
 TestNG output. See `docs/manual-tests/README.md` for how it is built."* `docs/manual-tests/README.md`

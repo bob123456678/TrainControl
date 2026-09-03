@@ -311,6 +311,8 @@ the one in force.
 
 ### TV2-C1 — the clause added to catch this project's compiles cannot catch them
 
+**FIXED.**  `battery.sh` matches the ARGFILE - `one-files.txt` or `battery-files.txt` - rather than the project name, and the comment records why the first version could not have matched: neither runner's compile carries "TrainControl" on its command line when `cp.txt` holds relative paths.  Verified 2026-09-03.
+
 `battery.sh:111-115`:
 
 ```
@@ -363,6 +365,8 @@ name plus `-d`, or simply say in the comment that `*testng*` is what catches our
 
 ### TV2-C2 — the retraction's evidence is the baseline
 
+**FIXED 2026-09-03, and the measurement this finding asked for was taken.**  During a live battery, `ps -W | grep -i java` listed the operator's own `java.exe` AND the battery's own MSYS-launched test JVM together - which discriminates, where a count of 2 against an idle baseline of 2 did not.  The index says that, and names the measurement rather than the number.
+
 `docs/reviews/2026-09-01-fanout-index.md:59-62`:
 
 > **Retracted: `ps -W` sees java perfectly well.** With a test JVM running, `ps -W | grep -ci java`
@@ -395,12 +399,16 @@ number.
 
 ### TV2-C3 — the index header is seven commits stale
 
+**FIXED 2026-09-03.**  The header names no commit at all now: it was seven commits stale when this was filed and sixty-six by today, and what is fixed is what each row says.
+
 `docs/reviews/2026-09-01-fanout-index.md:8`: *"Fixes and dispositions below were applied after them, up
 to `2de95ad0`."* `git rev-list --count 2de95ad0..HEAD` is **7**, and the Fixed table below it
 cites `33f5f61e`, `c9153aaf`, `f59fa45e` and `208b3ee1`, all later. The README's rule is explicit: *"A
 review header that still claims 'no code was changed' after twenty commits is worse than no header."*
 
 ### TV2-C4 — the Fixed table's two remaining wrong rows
+
+**FIXED 2026-09-03.**  Both rows: `FV2-A1` names `c9153aaf` (`SV2-C1`), and `FV2-B2` says it is true of `connected` only, with the `firstClearRoute` half reverted by `SV2-A1`.
 
 - **`:90`** still says `FV2-A1` was fixed in `f59fa45e`. It was not: `git show f59fa45e --
   docs/tools/battery.sh` is only the `FV2-C5` `case`-arm swap; the winpid write, the fallback and the
@@ -419,6 +427,8 @@ a table that now holds four Java changes (`D24-B1`, `TCX-A3`, `FV2-B2`, `SV2-A1`
 one (`FV2-C1`). That is `SV2-C5`.
 
 ### TV2-C5 — the new test does not assert the outcome its javadoc says is the point
+
+**FIXED 2026-09-03.**  One assertion - `assertEquals(outcome, "NO_PLAN_FOUND")` - replaces the pair that between them admitted five of the seven outcomes.  It implies both, states the claim the javadoc makes, and both mutations still fail it.
 
 `test/core/testReturnHomeSequencesAReversal.java:444` and `:451`:
 
@@ -448,6 +458,8 @@ the `connected` mutation, `READY` from the `firstClearRoute` one.
 
 ### TV2-C6 — the proof is still tighter than the search, one layer up
 
+**ANSWERED 2026-09-03 - written at the code, not changed.**  `connected`'s expansion carries the note this finding asked for: an out-of-service or non-destination terminus is not expanded, the search will end a leg at one, and that limb is tighter than the search it speaks for.  Not reachable on a builder-derived graph.  The comment says which direction is safe to widen, which is the whole point of recording it.
+
 `TV2-D1` establishes that `connected` accepts everything `firstClearRoute` would **for one leg**. The
 planner's search is not one leg: `astar` (`:858-881`) plans a sequence, and it may park a locomotive at
 a terminus and drive it out again on a later move. `connected` cannot represent that, because it never
@@ -466,6 +478,8 @@ pre-existing, and worth a comment at `:1760` so the next person to widen `connec
 direction is safe.
 
 ### TV2-C7 — the question SV2 raised for Adam was closed rather than asked
+
+**FIXED.**  The question `SV2` raised is put to Adam in MT-260's tail rather than closed in the review.  Verified 2026-09-03.
 
 `SV2-A1`'s status line reads *"open — the remedy needs Adam's ruling, stated below in one sentence"*,
 and the sentence is:

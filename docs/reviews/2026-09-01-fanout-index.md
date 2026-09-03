@@ -7,7 +7,9 @@
 **Prefix for citing this index elsewhere:** `FX2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `828b1ff1` / `b00ac0c1`, by six reviewers running in
-parallel on 2026-09-01. Fixes and dispositions below were applied after them, up to `2de95ad0`.
+parallel on 2026-09-01. Fixes and dispositions below were applied after them; the header said "up to
+`2de95ad0`" and was seven commits stale when `TV2-C3` caught it and sixty-six when this was written, so
+it names no commit now: **what is fixed is what each row says, and the row is the receipt.**
 
 This is an index, not a review. The README is explicit that documents recording separate passes must
 not be merged — each holds its own scope, method and blind spots, and that is the calibration data. So
@@ -53,7 +55,10 @@ and the live layout was fingerprinted and backed up. No damage was done *during*
 **And the first three explanations of it were all wrong.** This section said, in turn, that the lock
 failed open on `kill -0`, then that the correction for that asked Windows about an MSYS pid, then that
 `ps -W` cannot see `java.exe`. The first two were real defects in the guard and are fixed. Neither was
-the cause, and the third was simply false:
+the cause, and the third was simply false - **measured on 2026-09-03 during a live battery** (`SV2-C6`
+asked for exactly this measurement and did not have it): `ps -W` listed the operator's own
+`C:\Program Files\Java\jdk1.8.0_361in\java.exe` AND the battery's own test JVM, launched from
+MSYS, at the same moment. It sees both:
 
 - **The cause (`SV2-A2`).** `LOCK="$S/battery.lock"` and `$S` is `TC_SCRATCH`, **a directory per agent
   session**. Two sessions took two different lock files and neither ever looked at the other, so no
@@ -97,8 +102,8 @@ telling agents not to run tests, but never let that be the only thing between th
 | `CMT-B4` | Both user documents still said only a reversible locomotive can reach a terminus | `9f1b80c8` |
 | `OB-167` follow-up | A switched-off square drew a cross only when it was not a station — which is nearly never | `e9435bfc` |
 | `RTG-B1` | The five-train test hand-started trains onto inactive destinations, stranding two of them before the run began | `7d8543f3` |
-| `FV2-A1` | **The first `battery.sh` lock correction was a regression** - it asked Windows about an MSYS pid, so every live battery read as stale | `f59fa45e` |
-| `FV2-B2` | `D24-B1` was half-fixed: the runtime turns a train at a terminus as well as a reversing point, and the terminus limb is the one that reaches Adam's berths | `f59fa45e` |
+| `FV2-A1` | **The first `battery.sh` lock correction was a regression** - it asked Windows about an MSYS pid, so every live battery read as stale | `c9153aaf` (the winpid write, the fallback and the second opinion; this row said `f59fa45e`, which carries only `FV2-C5`'s case arms - `SV2-C1`, corrected 2026-09-03) |
+| `FV2-B2` | `D24-B1` was half-fixed: the runtime turns a train at a terminus as well as a reversing point, and the terminus limb is the one that reaches Adam's berths.  **True of `connected` only** - the `firstClearRoute` half was reverted eight rows later by `SV2-A1`, and this row did not say so (`TV2-C4`, corrected 2026-09-03) | `f59fa45e` |
 | `FV2-B3` | The `CMT-B4` doc fix invented two rules nothing enforces, including the reverse of the tier doctrine | `c9153aaf` |
 | `FV2-B1`, `FV2-C2` | The deferral said the reversal-room guard was inert on Adam's railway; it is live, on two reversal squares, one of which is a home | `c9153aaf` |
 | `FV2-C1` | The cross's colour clause is unreachable in production, and its comment claimed otherwise | `f59fa45e` |
@@ -113,9 +118,11 @@ telling agents not to run tests, but never let that be the only thing between th
 | `TV2-C1` | The javac clause matched `*TrainControl*`, which is on neither runner's compile command line; the "measurement" that confirmed it was matching a different clause | `9fec3b71` |
 | `TV2-B2`, `TV2-B3` | Two sentences in `AutomationAPI.md` describing behaviour the code does not have | `9fec3b71` |
 
-The two Java fixes were seen failing first and mutation-confirmed: `D24-B1`'s test fails with
-`IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing loop's argument is replaced with
-`0`. **`SVN-A2` is a shell script and has no test** - its branches were exercised by hand, which is a
+`D24-B1` and `TCX-A3` were seen failing first and mutation-confirmed - named rather than counted,
+because the count went stale twice (`FV2-C10`, then `SV2-C5` when `FV2-B2` was added to the table
+below): `D24-B1`'s test fails with `IMPOSSIBLE` before the fix, and `TCX-A3`'s fails when the clearing
+loop's argument is replaced with `0`.  `FV2-B2` is mutation-confirmed for one of its two halves
+(`SV2-B1`), and `FV2-C1` is a comment. **`SVN-A2` is a shell script and has no test** - its branches were exercised by hand, which is a
 weaker claim, and `FV2-A1` below shows how much weaker: the first attempt was exercised with a value
 the script never writes, and shipped a regression.
 
@@ -125,7 +132,7 @@ the script never writes, and shipped a regression.
 
 | Finding | Why it is not a defect |
 |---|---|
-| `TCX-B7` | `testAutonomySimulationSanity` does assert `getPathValidationFailureCount() == 0` on a `simulate: true` fixture where the guard cannot run — but a prior review found exactly this (`TST-A4`) and added `testPathValidationCanActuallyFireOutsideSimulateMode` 200 lines below in the same file, which arms the mechanism separately and is mutation-documented. The compensation was missed. |
+| `TCX-B7` | `testAutonomySimulationSanity` does assert `getPathValidationFailureCount() == 0` on a `simulate: true` fixture where the guard cannot run — but a prior review found exactly this (`TST-A4`) and added `testPathValidationCanActuallyFireOutsideSimulateMode` 200 lines below in the same file, which arms the mechanism separately and is mutation-documented.  **This withdrawal misstated the finding (`FV2-C4`, corrected 2026-09-03):** `TCX-B7`'s own third paragraph names that armed test and its comment.  What it claimed is that a vacuous assertion was left standing BESIDE the armed one, so the class reads as covering the mechanism twice when it covers it once - which is a C, not a withdrawal.  Recorded rather than quietly amended, because a withdrawal is the most calibration-relevant entry in a review and this one had the reviewer making a mistake he did not make. |
 
 ---
 

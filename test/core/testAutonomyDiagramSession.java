@@ -2278,22 +2278,44 @@ public class testAutonomyDiagramSession
             "the fixture did not take: this square must be one trains turn round at");
 
         // NOTHING MEASURED ANYWHERE: the notice stays away.
-        assertFalse(session.reversalsWithoutLength().contains(turns),
+        assertFalse(session.reversalsWithoutLength().containsKey(turns),
             "a layout that records no track lengths at all was asked to record one here, which is a "
             + "notice about something nobody on that railway is trying to do");
 
         // One length, on a different square, and the layout is now one that measures track.
         session.setTileLength(new TileKey("main", 2, 1), 7);
 
-        assertTrue(session.reversalsWithoutLength().contains(turns),
+        assertTrue(session.reversalsWithoutLength().containsKey(turns),
             "the layout measures track now, and the square where a train turns round - the one place "
             + "the length rule cannot do its job without a number - was not asked about");
 
-        // And once it is measured, the notice goes.
+        // ONE ENTRY, NOT ONE PER SQUARE (OB-171).
+        //
+        // Adam: "warnings ... fire on many tiles along a line.  Dedupe them, one per segment between a
+        // switch and a station."  The map is the reversal square mapped to how many squares its guard
+        // still needs measured, so a run of ten unmeasured squares is one notice saying ten - not ten
+        // notices saying the same sentence.
+        assertEquals(session.reversalsWithoutLength().size(), 1,
+            "one square trains turn at, and the notice is not one entry: "
+            + session.reversalsWithoutLength());
+
+        // AND IT DOES NOT GO UNTIL THE WHOLE STRETCH IS MEASURED, which is the property the dedupe had
+        // to keep: the guard needs every square of the run-in before it can judge anything, so a notice
+        // that cleared when the reversal square alone was measured would be a list somebody can empty
+        // while the guard still judges nothing (D24-C7, TCX-B2).
         session.setTileLength(turns, 5);
 
-        assertFalse(session.reversalsWithoutLength().contains(turns),
-            "the square was measured and is still being asked about");
+        assertTrue(session.reversalsWithoutLength().containsKey(turns),
+            "the notice went when the reversal square was measured, while the track leading into it "
+            + "still has no length - so the guard cannot judge anything and nothing says so");
+
+        // The rest of the run in, and now it goes.
+        session.setTileLength(new TileKey("main", 3, 1), 4);
+        session.setTileLength(new TileKey("main", 4, 1), 4);
+
+        assertFalse(session.reversalsWithoutLength().containsKey(turns),
+            "the whole run in is measured and the square is still being asked about: "
+            + session.reversalsWithoutLength());
     }
 
     /**

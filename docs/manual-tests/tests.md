@@ -13366,9 +13366,14 @@ round** and six measured tiles in total, so expect roughly 20 notices asking for
 1. **Is that a useful prompt or a wall of noise?** If it is noise, say so and I will scope it - to one
    page, to squares with a home on them, or to nothing until you ask for it.
 2. **Set the length on one square the notice names.** The notice should go.
-3. **Now try to back a long train into that berth.** It will not be refused, and that is the defect:
-   the notice asks for the reversing square's length, and the guard needs every segment of the run-in
-   measured before it will judge anything. Following the notice as written does not arm the guard.
+3. **Now try to back a long train into that berth.** What happens depends on the shape of the run-in,
+   and both answers are interesting (`FV2-C3`):
+   - **More than one edge leads in** - it will NOT be refused, and that is the defect: the notice
+     asks for the reversing square's length, and the guard needs every segment of the run-in measured
+     before it will judge anything.  Following the notice as written does not arm the guard.
+   - **One edge leads in** - it very likely WILL be refused, because that single edge's length includes
+     the square you have just measured, so the whole path is measured and the guard runs with the one
+     number you typed.  Say which of the two you saw; it tells me which shape your berths have.
 
 **And the question behind it:** when you said *"sum the track segments leading up to it"*, did **it**
 mean the reversal, or the berth the train ends up standing in? The two give different answers as soon as

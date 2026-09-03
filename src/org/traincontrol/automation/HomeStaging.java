@@ -1827,6 +1827,14 @@ public final class HomeStaging
                 //
                 // The train leaves such a stop facing OUT, so `now` is carried unchanged rather than
                 // set - the arrival flip at a terminus is spent turning it round to leave (SV2-A1).
+                //
+                // WHERE THIS IS STILL TIGHTER THAN THE SEARCH, for whoever widens it next (TV2-C6).
+                // An out-of-service or non-destination terminus is not expanded at all, and the search
+                // WILL end a leg at one and start the next from it - so a graph whose only route home
+                // passes through such a square is proved IMPOSSIBLE although a two-move plan exists.
+                // Not reachable on a builder-derived graph, because the main line runs over the other
+                // copies of a split square; structurally real, and the direction that is safe to widen
+                // is this one, never the other.  A proof may be looser than the search it guards.
                 if (!next.isTerminus() || (next.isDestination() && next.isActive()))
                 {
                     queue.add(next);

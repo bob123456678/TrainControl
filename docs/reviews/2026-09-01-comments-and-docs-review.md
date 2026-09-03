@@ -260,6 +260,8 @@ no confirmation dialog naming reversibility appears.
 
 ### CMT-C1 - `Point.toJSON`: a leftover comment about the `block` field is stranded above the `protectingSignal` write, and has been since 2026-08-18
 
+**FIXED 2026-09-03.**  `Point.toJSON` has one comment per field again: the protecting-signal paragraph stands over the protecting-signal write, and `block`'s own explanation - the one that had been usurped - is back over `block`.
+
 **File/lines:** `src/org/traincontrol/automation/Point.java:991-1019`.
 
 ```
@@ -307,6 +309,8 @@ detects a `/** */` immediately followed by another `/** */`; these are plain `//
 
 ### CMT-C2 - 229 message-bundle keys, identical across all eight languages, are unused in the current source
 
+**RECORDED, and the dangerous direction is now tested** (2026-09-03).  The 229 unused keys are noise and are left: removing them touches eight bundles for no behaviour, on the eve of a release.  What was worth doing is the other direction, which had no test at all - a key renamed in the bundle and not at its call site puts the raw key on screen.  Measured today: nothing in `src/` asks for a key the bundle does not have, apart from the five concatenation prefixes, and `testNothingAsksForAKeyThatIsNotThere` now keeps it that way.
+
 Parsed all eight `.properties` files and cross-referenced every key (1865 in each, identical set - see
 CMT-D1) against a full textual scan of every `.java`/`.form` file in `src/`. After excluding five
 key-prefix families built by string concatenation rather than a literal (`route.kind.` +
@@ -353,6 +357,8 @@ grep confirming the five dynamic-concatenation exclusions are real and complete.
 ---
 
 ### CMT-C3 - `docs/reviews/2026-08-31-comments-and-docs-review.md`'s finding `CDR-B4` is now moot, but is still marked `open`
+
+**FIXED 2026-09-03.**  `CDR-B4` is marked moot in its own document, with the ruling and the two commits that removed the rule it was about.
 
 `CDR-B4` (yesterday's pass, at `e4c94ac9`) reported that `HomeStaging.whyNotAHome` and
 `Layout.setHomeLocomotive` refused to let a split-square station be assigned as a home at all, and that

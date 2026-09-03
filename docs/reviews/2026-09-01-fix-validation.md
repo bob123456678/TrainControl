@@ -290,6 +290,8 @@ Filed at B because that is where `CMT` lettered the same class of defect in the 
 
 ### FV2-C1 — the colour half of `828b1ff1` is unreachable
 
+**RECORDED, no change** (2026-09-03).  Confirmed: both Badge doors compute `parking` as `inactive || !isAutoDestination`, so `shut` implies `parking` and the new disjunct cannot change a production answer.  The clause is kept because it says what it means rather than leaning on `parking` to cover it, and `SVN-C11` carries the same observation about the two names for one field.  Nothing to fix; what was wrong is a commit message, and that is now written here.
+
 `TileAnnotation.java:1528`:
 
 ```java
@@ -328,6 +330,8 @@ lets a switched-off station through.
 
 ### FV2-C2 — the six measured tiles are on the main page, not the Test page
 
+**FIXED.**  `MT-248` carries the correction and names the trap - `setup.json` maps page id 5 to `1 - Main` - so Adam is sent to the page his trains run on.  Verified 2026-09-03.
+
 `docs/reviews/2026-09-01-fanout-index.md:154`:
 
 > on your railway only **6 tiles carry a length**, all on the Test page
@@ -345,6 +349,8 @@ bearing for `FV2-B1`: they are on the page his trains actually run on.
 
 ### FV2-C3 — `MT-248` step 3 tells Adam what he will see, and it may be the opposite
 
+**FIXED 2026-09-03.**  Step 3 gives both outcomes and says which shape produces which: more than one edge in and the guard is not armed, one edge in and it very likely refuses, because that edge's length includes the square just measured.  Which he sees tells me the shape of his berths, so it is asked as a question rather than predicted.
+
 > **Set the length on one square the notice names.** The notice should go.
 > **Now try to back a long train into that berth. It will not be refused, and that is the defect.**
 
@@ -355,6 +361,8 @@ the test's conclusion — "following the notice as written does not arm the guar
 case in front of him.
 
 ### FV2-C4 — the withdrawal of `TCX-B7` misstates the finding
+
+**FIXED 2026-09-03.**  The withdrawal row now says what `TCX-B7` actually claimed - a vacuous assertion left standing beside the armed one - and records that the withdrawal misstated it, rather than being quietly amended.  A withdrawal is the most calibration-relevant entry in a review.
 
 The index:
 
@@ -376,6 +384,8 @@ a mistake he did not make.
 
 ### FV2-C5 — `battery.sh`'s numeric arm is chosen by the first character
 
+**FIXED 2026-09-03** - see the note under `SV2-C2`'s neighbours; the arms are `''|*[!0-9]*)` to warn and `*)` to compare, so a malformed probe answer warns instead of reading as "none running".
+
 `docs/tools/battery.sh:101-103`:
 
 ```sh
@@ -392,6 +402,8 @@ arms should be `''|*[!0-9]*)` warn, `*)` compare.
 
 ### FV2-C6 — `connected(Point, Point)` is dead
 
+**FIXED 2026-09-03.**  The two-argument `connected` is gone, with a note where it stood saying why a convenience overload that defaults `mustReverse` is worth removing: the whole of `SV2-A1` was about which value that argument should take.
+
 `HomeStaging.java:1651-1654`. Its last caller went when `canGetHome` moved to the three-argument form on
 2026-08-31 (the comment at `:436` records the change). Nothing in `src/` or `test/` calls it, by name or
 by reflection. Worth saying because the briefing's question was whether the looser start state is safe
@@ -401,11 +413,15 @@ key space and cannot change the answer.
 
 ### FV2-C7 — `isImpassable()` and `isShut()` are now the same method
 
+**RECORDED, no change** (2026-09-03).  `isImpassable()` and `isShut()` are one field with two javadocs, and `isShut()` has no caller.  Merging them is a change to the class that draws every mark on every tile, which is `SVN-C9`'s neighbourhood and is deferred past 3.0.0 with it.
+
 `TileAnnotation.java:268` and `:291`. `isShut()` has no caller anywhere. Two identical predicates on one
 class is an invitation for a later change to land on one of them; either delete `isShut` or make
 `isImpassable` delegate to it so there is one place to edit.
 
 ### FV2-C8 — only one of the four code-level deferrals says so at the code
+
+**FIXED 2026-09-03** for the three that were missing it: the reasoning for each deferral is now at the code as well as in the review - `FX2-2` at both refusal sites, `FX2-5` at `Route.locomotiveDeleted`, and `FX2-6` beside the line that skips `edges`.  That is the README's rule, and `R28-B1` is what it costs when it is not followed.
 
 `FX2-3` got the treatment the README asks for: *"leave the reasoning where the next person will trip
 over it - in the code, not only in the review"*, at `Layout.java:2337-2360`. The other three did not:
@@ -420,6 +436,8 @@ over it - in the code, not only in the review"*, at `Layout.java:2337-2360`. The
   `R28-B1` came to be found rather than known.
 
 ### FV2-C9 — two deferrals have a half that could not have prejudged Adam's ruling
+
+**OPEN - Adam's, and narrowed** (2026-09-03).  Both halves are still his to rule on, and this finding's point stands: the SILENCE is separable from the behaviour in each case, and a log line is behaviour-neutral whichever way he rules.  Carried in MT-260's tail with the other rulings; `R28-A1`'s wider option ("say how many route commands will be removed") is restored to the question.
 
 The briefing asked whether any deferral had an unambiguous part. Two do, and both are the same part:
 **the silence, not the behaviour.**
@@ -449,6 +467,8 @@ every subsequent battery silently. That is a harness change, not a railway chang
 damage sat unnoticed for two days.
 
 ### FV2-C10 — "mutation-confirmed" is claimed over a fix that has no test
+
+**FIXED.**  The index says the two JAVA fixes were seen failing first and mutation-confirmed, and the shell fix is listed as exercised rather than covered.  Verified 2026-09-03.
 
 The index:
 

@@ -1235,24 +1235,15 @@ public class Layout
                 p.getName()));
         }
 
-        // Refused at the MODEL door, not only in the menu.
-        //
-        // The menu asks canBeHome and greys the item, which stops a click. It does not stop the
-        // scripting API, and this is a state Adam has ruled invalid rather than merely unwise - "any
-        // home with two graph points should be refused".
-        //
-        // This is NOT "the one door everything comes through", which is what the first version of
-        // this comment claimed and review disproved by walking the other two. `parseAuto` calls
-        // `Point.setHomeLoc` directly, so a hand-edited or imported configuration came straight past
-        // here; and the POSITIONAL default in claimHome makes a square the home of whatever is
-        // standing on it, with no check at all - which is the state every layout with no explicit
-        // assignments is in, including Adam's own. Both are handled now, each in its own place,
-        // because neither can use the throw: a load must not refuse the whole layout over one line,
-        // and a derived home is not something a caller asked for.
-        //
-        // Only when a home is being SET. Clearing one is always allowed: a layout that has somehow
-        // reached the invalid state must be able to get out of it.
         // NOTHING IS REFUSED HERE ANY MORE (Adam, 2026-08-31).
+        //
+        // **What stood above this was the argument FOR a refusal**, in the present tense, followed by
+        // this heading saying it is gone - so a reader arriving at the top of the block met a rule
+        // that no longer exists as though it did (D24-C4).  It is summarised in its own past tense in
+        // the paragraph below instead, because the reasoning is still worth having: the refusal was at
+        // the MODEL door rather than only in the menu, and the two doors that walked past it -
+        // `parseAuto` calling `Point.setHomeLoc`, and the positional default in `claimHome` - are why
+        // "the one door everything comes through" was never true of this method.
         //
         // This threw for a square drawn as more than one graph Point, which was his ruling of
         // 2026-08-25 read as a rule about the MODEL. He has since settled what a home is: "the home
@@ -5192,7 +5183,13 @@ public class Layout
             return false;
         }
         
-        // The signals are swept, exactly as the other two doors into a run sweep them (AU-B7).
+        // THE SWEEP THAT STOOD HERE IS GONE (OB-166), and what follows is why it was here (D24-C3).
+        //
+        // Read in the present tense this block argues for something the next paragraph then says was
+        // removed, which is the one thing a design record cannot afford to do.  Kept in the past tense
+        // because the removal only makes sense beside the case for it.
+        //
+        // The signals WERE swept, exactly as the other two doors into a run sweep them (AU-B7).
         //
         // runLocomotives and executeTimetableInternal both do this the moment they set running, for a
         // reason that applies here word for word: while nothing is running the refresh is deliberately

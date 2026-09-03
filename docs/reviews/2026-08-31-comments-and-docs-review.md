@@ -45,7 +45,7 @@ Adam's own words - quoted in code comments and everything attributed to him in `
 | CDR-B1 | B | open |
 | CDR-B2 | B | open |
 | CDR-B3 | B | open |
-| CDR-B4 | B | open |
+| CDR-B4 | B | MOOT 2026-09-03 - the rule it was about was removed the same day (`CMT-C3`) |
 | CDR-C1 | C | open |
 | CDR-C2 | C | open |
 | CDR-D1 | D | closed (not a defect) |
@@ -148,6 +148,13 @@ block matches only line 413's train-length bullet.
 ---
 
 ### CDR-B4 - `Automation.md` / `AutomationAPI.md` don't mention the split-square refusal on Home Locomotive assignment
+
+**MOOT 2026-09-03 (`CMT-C3`).**  The refusal this asked the two guides to document was removed hours
+after this was written, on Adam's ruling - *"the home should just be the logical point, and the
+direction is wherever the locomotive was facing when it started moving"* (`7616d2a6`, `09777d4c`).
+`whyNotAHome` carries no split-square check and the message key it named,
+`autolayout.errorHomeSquareIsSeveralPoints`, is in no bundle.  There is nothing left to document, so
+this closes as moot rather than fixed - the doc gap went with the rule.
 
 **Files:** `Automation.md` "Sending everything home" (lines 198-207); `AutomationAPI.md` "Returning
 locomotives home" (lines 511-535, especially 525).

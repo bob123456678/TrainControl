@@ -730,10 +730,76 @@ public class testMessageBundles
 
             String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
 
-            assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject())"),
+            // The FIRST TWO arguments, and no claim about what follows them (OB-171).
+            //
+            // This asked for the call including its closing bracket, which pinned the argument COUNT
+            // as well as the order - so adding a third, for the message that says how many squares
+            // still need a length, failed a rule that is about {1} being the subject.
+            assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject()"),
                 source + " no longer passes the finding's own subject alongside the tile description, "
                 + "so {1} in the length warning has nothing to fill it and renders as the literal "
                 + "text \"{1}\" (OB-153)");
         }
+    }
+    /**
+     * Nothing asks for a key the bundle does not have.
+     *
+     * `CMT-C2` counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
+     * noise: it costs a reader time and nothing else.  **The direction that costs an OPERATOR
+     * something is the other one**, and it had no test - a key renamed in the bundle and not at its
+     * call site puts the raw key on screen, in the one place a person is being told what went wrong.
+     *
+     * Literal calls only, which is all a textual rule can see.  Five families are built by
+     * concatenation - a route kind, a side, a facing, and two path preferences, each an enum name
+     * appended to a prefix - and they are listed here rather than skipped quietly, so that a sixth
+     * cannot be added without somebody noticing that this test would not see it.
+     *
+     * MUTATION this catches: renaming any key in `messages.properties` without its call site.
+     */
+    @Test
+    public void testNothingAsksForAKeyThatIsNotThere() throws Exception
+    {
+        java.util.Properties english = null;
+
+        for (File bundle : bundles())
+        {
+            if (ENGLISH_BUNDLE.equals(bundle.getName())) english = valuesOf(bundle);
+        }
+
+        assertNotNull(english, "no English bundle among " + bundles());
+
+        assertTrue(english.size() > 1000, "the bundle did not parse: " + english.size() + " keys");
+
+        java.util.List<String> built = Arrays.asList(
+            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
+
+        java.util.regex.Pattern call =
+            java.util.regex.Pattern.compile("I18n\\.[tf]\\(\\s*\"([^\"]+)\"");
+
+        java.util.List<String> missing = new ArrayList<>();
+
+        for (File source : javaSources(new File("src")))
+        {
+            // I18n's own javadoc shows the idiom with example keys.
+            if (source.getName().equals("I18n.java")) continue;
+
+            java.util.regex.Matcher m = call.matcher(new String(
+                java.nio.file.Files.readAllBytes(source.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8));
+
+            while (m.find())
+            {
+                String asked = m.group(1);
+
+                if (english.containsKey(asked) || built.contains(asked)) continue;
+
+                missing.add(asked + " (" + source.getName() + ")");
+            }
+        }
+
+        assertTrue(missing.isEmpty(),
+            "something asks for a message key that is not in the bundle, so it would show the operator "
+            + "the raw key instead of a sentence: " + missing);
     }
 }

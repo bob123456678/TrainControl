@@ -6369,7 +6369,7 @@ public class AutonomyEditorPanel extends JPanel
             //
             // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
             // this list changes, and lets the two that need a name use {1}.
-            String text = describe(finding.getMessageKey(), subject, finding.getSubject());
+            String text = describe(finding.getMessageKey(), subject, finding.getSubject(), finding.getCount());
 
             boolean here = onThisPage(finding.getTile());
 

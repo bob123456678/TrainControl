@@ -1985,11 +1985,19 @@ public class AutonomySession
      * listed for something nobody is trying to do. One that records some has started, and these are
      * the ones that matter most.
      *
-     * @return the squares to ask about, empty when the layout measures nothing
+     * **ONE ENTRY PER REVERSAL SQUARE** (OB-171).  Adam: *"warnings ... fire on many tiles along a
+     * line.  Dedupe them, one per segment between a switch and a station."*  This used to return every
+     * unmeasured square in the stretch behind a reversal, each of which became its own notice carrying
+     * the same sentence.  The completeness is kept - the notice does not go until the whole stretch is
+     * measured, because that is what the guard needs - and what is returned is the square trains turn
+     * at, mapped to how many squares are still missing a length.
+     *
+     * @return the squares to ask about, each mapped to the number of unmeasured squares its guard
+     *         needs, empty when the layout measures nothing
      */
-    public java.util.Set<TileKey> reversalsWithoutLength()
+    public java.util.Map<TileKey, Integer> reversalsWithoutLength()
     {
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        java.util.Map<TileKey, Integer> out = new java.util.LinkedHashMap<>();
 
         if (store == null || reducer == null) return out;
 
@@ -2005,7 +2013,9 @@ public class AutonomySession
             // same question.
             if (!isTurnAround(tile)) continue;
 
-            if (store.getTileLength(tile) <= 0) out.add(tile);
+            java.util.Set<TileKey> missing = new java.util.LinkedHashSet<>();
+
+            if (store.getTileLength(tile) <= 0) missing.add(tile);
 
             // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2, 2026-09-02).
             //
@@ -2022,8 +2032,12 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(tile)) continue;
 
-                out.addAll(reducer.unmeasuredAfterTheLastSwitch(arriving));
+                missing.addAll(reducer.unmeasuredAfterTheLastSwitch(arriving));
             }
+
+            // A SET, so a square reached by two approaches is counted once - the notice says how many
+            // squares need a number, and the same square twice is one square.
+            if (!missing.isEmpty()) out.put(tile, missing.size());
         }
 
         return out;

@@ -3927,8 +3927,9 @@ public class testHomeStaging
             assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(),
                 HomeStaging.Outcome.IMPOSSIBLE,
                 "the planner offered to send a train that cannot reverse into a terminus by a route "
-                + "that never turns it round. The runtime refuses exactly that, so the plan could "
-                + "only have failed on its first move");
+                + "that never turns it round - which is `mustBackIn`, the planner's own rule since "
+                + "Adam's ruling of 2026-09-01 took the terminus clause out of isPathClear.  (This "
+                + "said the RUNTIME refuses it, and the runtime has not since that ruling: D24-C5.)");
 
             // The same railway, with a reversing point on the way: now it can back in.
             middle.setReversing(true);

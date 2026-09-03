@@ -439,18 +439,24 @@ public class testReturnHomeSequencesAReversal
 
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-            // NOT PROVED IMPOSSIBLE.  There is a route on the graph; what there is not is a route that
-            // turns the train, and that is a fact about this locomotive rather than about the railway.
-            assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
-                "the planner PROVED there is no way from one berth to the other, which is a claim about "
-                + "the track - and the track is fine.  Blocked: " + plan.getBlocked());
-
-            // AND NO PLAN EITHER, which is the half the first version of this test left out and could
-            // not have caught: it asked only that the outcome was not IMPOSSIBLE, and NO_PLAN_FOUND
-            // satisfies that whichever way firstClearRoute is seeded.
-            assertFalse(plan.isPossible(),
-                "the planner offered a plan that drives a non-reversible train out of one berth and "
-                + "nose first into another it cannot reverse out of: " + plan.getMoves());
+            // THE OUTCOME ITSELF, which is what this test is about (TV2-C5).
+            //
+            // Two assertions stood here - not IMPOSSIBLE, and not possible - and between them they
+            // admitted five of the seven outcomes.  The javadoc says the point of the test is WHICH
+            // refusal, and that was the one thing neither of them checked: if the home assignment ever
+            // stopped taking, `triage()` would answer NO_HOMES before a line of the code under test
+            // ran, and this would stay green while exercising nothing.
+            //
+            // One assertion implies both: NO_PLAN_FOUND is neither IMPOSSIBLE (a claim about the
+            // track, which is fine) nor READY (a plan that drives the train in nose first).  Both
+            // mutations still fail it - IMPOSSIBLE from the `connected` one, READY from the
+            // `firstClearRoute` one.
+            assertEquals(String.valueOf(plan.getOutcome()), "NO_PLAN_FOUND",
+                "the planner did not answer NO_PLAN_FOUND.  IMPOSSIBLE would be a claim about the "
+                + "track, and the track is fine; READY would be a plan that drives a non-reversible "
+                + "train nose first into a berth it cannot reverse out of; anything else means this "
+                + "test never reached the code it is about.  Blocked: " + plan.getBlocked()
+                + ", moves: " + plan.getMoves());
         }
         finally
         {

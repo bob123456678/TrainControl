@@ -363,19 +363,22 @@ public class testBothProtectingSignalsAreThrown
      * exists to prevent. So a train placed at a protected platform while idle produces NO occupancy
      * change, and nothing will ever command that platform's signal on its own.
      *
-     * `runLocomotives` and `executeTimetableInternal` both sweep every protecting signal the moment
-     * they set `running`, for exactly that reason. `executePath` - the diagram's right-click dispatch -
-     * became a full run in the MT-139 work, counting its thread and engaging every guard, and did not
-     * inherit the sweep. So starting autonomy threw that platform red and hand-dispatching a different
-     * train left it green with a train standing at it.
+     * **THE ASSERTION WAS REVERSED AND THIS PARAGRAPH WAS NOT** (D24-C6, corrected 2026-09-03).
      *
-     * Adam's rule, quoted inside `executePath` itself: "The same thing should happen in manual
-     * operation vs auto - the same switches and signals set, and guards applied." Two of the three
-     * doors did.
+     * What follows described the fault as it stood before `OB-166`: `runLocomotives` and
+     * `executeTimetableInternal` swept every protecting signal the moment they set `running`;
+     * `executePath` - the diagram's right-click dispatch - became a full run in the MT-139 work and did
+     * not inherit the sweep, so starting autonomy threw a platform red and hand-dispatching a different
+     * train left it green with a train standing at it.  Adam's rule was quoted for it: "the same thing
+     * should happen in manual operation vs auto".
      *
-     * Found by a review pass, which built the probe this is written from.
+     * `OB-166` settled it the other way - a hand dispatch leaves a standing train's signal alone, which
+     * is what this method is named for - and the sweep came off all three doors.  The assertion was
+     * changed from `assertTrue` to `assertFalse` and this text was left describing the opposite.
      *
-     * MUTATION: removing the `refreshAllProtectingSignals()` call from `executePath` fails this test.
+     * MUTATION: putting the `refreshAllProtectingSignals()` call back into `executePath` fails this
+     * test, which is the direction that matters now.  (It said "removing", which was backwards:
+     * removing it is what makes this pass.)
      */
     @Test
     public void testAHandDispatchLeavesAStandingTrainsSignalAlone() throws Exception
