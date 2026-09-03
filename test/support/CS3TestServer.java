@@ -12,7 +12,21 @@ import java.net.URI;
 public class CS3TestServer
 {
     private HttpServer server;
-    private int port = 8080;
+    /**
+     * Zero until the first start, then whatever the machine gave us (TSX-C17).
+     *
+     * This was 8080 - a constant, with no setter, no argument and no property, handed straight to the
+     * socket - which is the single most contended port on a developer machine. The suite has already
+     * paid for a fixed port twice on the UDP side and written the argument down both times, in
+     * `battery.sh`: a bind failure comes out of `@BeforeClass` as "Total tests run: 16, Failures: 0,
+     * Skips: 16", which reads as a class nobody wrote tests for.
+     *
+     * **Kept after the first bind, because a restart has to land on the same number.**
+     * `testParseWebServer` stops the server and starts it again to serve a different firmware version,
+     * with a parser built once against the address - so an ephemeral port per start would break it.
+     * Binding zero once and reusing the answer gives both: no collision, and a stable address.
+     */
+    private int port = 0;
 
     private final byte[] loks250Json;
     private final byte[] loks260Json;
@@ -47,6 +61,9 @@ public class CS3TestServer
         boolean is260 = version >= 260;
 
         server = HttpServer.create(new InetSocketAddress(port), 0);
+
+        // The real number, so getPort() can answer and a restart can ask for it again.
+        port = server.getAddress().getPort();
 
         //
         // /app/api/loks
@@ -133,6 +150,14 @@ public class CS3TestServer
         }
     }
 
+    /**
+     * The port this is listening on, which is only meaningful after {@link #startServer(int)}.
+     *
+     * It used to read a constant back, which made it an accessor that implied the number was
+     * answerable when it was not (TSX-C17).
+     *
+     * @return the port, or 0 before the first start
+     */
     public int getPort()
     {
         return port;

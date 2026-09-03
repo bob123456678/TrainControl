@@ -265,8 +265,69 @@ reap()
     fi
 }
 
-trap 'rm -f "$LOCK"; rm -rf "$BUILD"; exit 130' INT TERM
-trap 'rm -f "$LOCK"; rm -rf "$BUILD"' EXIT
+# ------------------------------------------------------------------------------------------------
+# ON THE WAY OUT, WHICHEVER WAY (TSX-C14).
+#
+# Three things the traps did not do, all of which matter most on the path they are for - a run that
+# was stopped rather than waited for.
+#
+# THE LOCK IS RELEASED ONLY IF IT IS STILL OURS.  `rm -f "$LOCK"` never asked.  Since REL-C10 the
+# unknown arm deliberately takes a live-but-unresolvable lock OVER, so two runs holding the "same"
+# lock is a state this is designed for - and the first of them to finish was deleting the second's
+# lock and leaving the machine unlocked with a battery still going.  REL-C9 named this sequence for
+# the `mv` and the trap was not changed with it.
+#
+# THE REAPER RUNS.  A run stopped part way leaves the class it was on going, and reap.ps1 matches the
+# run id whole while that id embeds this shell's pid - so once the shell is gone nothing can ever
+# match it again.  That is the permanence argument battery.sh already writes out for its post-loop
+# reap, arriving at the trap.
+#
+# AND THE LAYOUT IS CHECKED.  one.sh's own header states the rule: "a guard that only runs on the
+# slow path is a guard that is not running."  The run most likely to have written to
+# cs2_sample_layout is the one that was killed because a class hung, and that was the one run neither
+# script looked at.  Only when the run did NOT reach its own report, which does this properly.
+release_the_lock()
+{
+    if [ "$(cat "${LOCK:-}" 2>/dev/null | tr -d '\r\n ')" = "${LOCK_PID:-}" ]
+    then
+        rm -f "$LOCK"
+    fi
+}
+
+REPORTED=""
+
+on_the_way_out()
+{
+    # BEFORE the fingerprint, because a leftover JVM is by definition one that is still running and
+    # deferred work landing after everybody stopped watching is the whole subject of LayoutSandbox.
+    #
+    # Written out rather than calling reap(), and every variable defaulted: this can fire before the
+    # line that sets any of them, and a trap that fails under `set -u` takes the tidy-up with it.
+    if [ -n "${REAPER:-}" ]
+    then
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER"             -RunId "${RUN_ID:-}" >/dev/null 2>&1
+    fi
+
+    if [ -z "$REPORTED" ] && [ -n "${live_before:-}" ]
+    then
+        if [ "$live_before" != "$(fingerprint)" ]
+        then
+            echo ""
+            echo "*** THIS RUN WAS STOPPED, AND ${LIVE:-the layout} CHANGED WHILE IT RAN ***"
+            echo ""
+            echo "That folder is Adam's real railway.  Check it before trusting anything above, and"
+            echo "check whether TrainControl was open - a running railway rewrites it as trains move."
+            echo ""
+        fi
+    fi
+
+    release_the_lock
+
+    rm -rf "${BUILD:-}"
+}
+
+trap 'on_the_way_out; exit 130' INT TERM
+trap 'on_the_way_out' EXIT
 
 # ------------------------------------------------------------------------------------------------
 
@@ -296,6 +357,21 @@ then
 fi
 
 JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
+
+# THE SAME FLAGS battery.sh RUNS WITH, INCLUDING THE HEAP BOUND (TSX-C15).
+#
+# This file already carries battery.sh's DIAGNOSTIC for an unbounded heap - the "DID NOT RUN - no
+# heap (machine busy, rerun)" branch below - and had never been given the bound that stops it
+# happening.  A default-heap JVM reserves a fraction of physical RAM up front, so with NetBeans open
+# and Adam running his own tests three classes of battery34 died before TestNG loaded, reported in
+# the same words as a class that crashed.  All three pass in 512m and the heaviest class peaks
+# nowhere near it.
+#
+# Overridable by the same two variables, because the number is a guess about this machine rather
+# than a property of the tests, and a runner you cannot tune is one people stop using.
+JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
+
+JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
 
 # CAPTURED TO A FILE, NOT PIPED INTO head.
 #
@@ -330,7 +406,7 @@ do
     # Only THIS RUN's leftovers, before the class and again after the last one (V33-C1, V33-C2).
     reap
 
-    "$JAVA" -Dtraincontrol.anyReceivePort=true -Dtraincontrol.batteryRun="$RUN_ID" \
+    "$JAVA" $JAVA_FLAGS -Dtraincontrol.batteryRun="$RUN_ID" \
         -cp "$BUILD;$CP" org.testng.TestNG -testclass "$T" -d "$S/oneout" > "$S/one-run.txt" 2>&1
 
     grep -E "Total tests run|Configuration Failures|FAILED|java.lang.Assertion|at regression|at core" \
@@ -426,6 +502,12 @@ done
 reap
 
 live_after=$(fingerprint)
+
+# THE TRAP'S COPY OF THIS CHECK STANDS DOWN NOW (TSX-C14).
+#
+# What follows reports the comparison properly, with the diff and the question about whether
+# TrainControl was open.  The trap's version exists for the run that never gets here.
+REPORTED=1
 
 if [ "$live_before" != "$live_after" ]
 then

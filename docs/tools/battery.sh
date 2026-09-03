@@ -349,8 +349,69 @@ BUILD="$S/build/battery-$$"
 # that is killed without releasing its lock blocks every later one - a guard that has to be cleared by
 # hand is worse than no guard, because the first thing anybody does is delete the lock and stop
 # believing in it.
-trap 'rm -f "$LOCK"; rm -rf "$BUILD"; exit 130' INT TERM
-trap 'rm -f "$LOCK"; rm -rf "$BUILD"' EXIT
+# ------------------------------------------------------------------------------------------------
+# ON THE WAY OUT, WHICHEVER WAY (TSX-C14).
+#
+# Three things the traps did not do, all of which matter most on the path they are for - a run that
+# was stopped rather than waited for.
+#
+# THE LOCK IS RELEASED ONLY IF IT IS STILL OURS.  `rm -f "$LOCK"` never asked.  Since REL-C10 the
+# unknown arm deliberately takes a live-but-unresolvable lock OVER, so two runs holding the "same"
+# lock is a state this is designed for - and the first of them to finish was deleting the second's
+# lock and leaving the machine unlocked with a battery still going.  REL-C9 named this sequence for
+# the `mv` and the trap was not changed with it.
+#
+# THE REAPER RUNS.  A run stopped part way leaves the class it was on going, and reap.ps1 matches the
+# run id whole while that id embeds this shell's pid - so once the shell is gone nothing can ever
+# match it again.  That is the permanence argument battery.sh already writes out for its post-loop
+# reap, arriving at the trap.
+#
+# AND THE LAYOUT IS CHECKED.  one.sh's own header states the rule: "a guard that only runs on the
+# slow path is a guard that is not running."  The run most likely to have written to
+# cs2_sample_layout is the one that was killed because a class hung, and that was the one run neither
+# script looked at.  Only when the run did NOT reach its own report, which does this properly.
+release_the_lock()
+{
+    if [ "$(cat "${LOCK:-}" 2>/dev/null | tr -d '\r\n ')" = "${LOCK_PID:-}" ]
+    then
+        rm -f "$LOCK"
+    fi
+}
+
+REPORTED=""
+
+on_the_way_out()
+{
+    # BEFORE the fingerprint, because a leftover JVM is by definition one that is still running and
+    # deferred work landing after everybody stopped watching is the whole subject of LayoutSandbox.
+    #
+    # Written out rather than calling reap(), and every variable defaulted: this can fire before the
+    # line that sets any of them, and a trap that fails under `set -u` takes the tidy-up with it.
+    if [ -n "${REAPER:-}" ]
+    then
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER"             -RunId "${RUN_ID:-}" >/dev/null 2>&1
+    fi
+
+    if [ -z "$REPORTED" ] && [ -n "${live_before:-}" ]
+    then
+        if [ "$live_before" != "$(fingerprint)" ]
+        then
+            echo ""
+            echo "*** THIS RUN WAS STOPPED, AND ${LIVE:-the layout} CHANGED WHILE IT RAN ***"
+            echo ""
+            echo "That folder is Adam's real railway.  Check it before trusting anything above, and"
+            echo "check whether TrainControl was open - a running railway rewrites it as trains move."
+            echo ""
+        fi
+    fi
+
+    release_the_lock
+
+    rm -rf "${BUILD:-}"
+}
+
+trap 'on_the_way_out; exit 130' INT TERM
+trap 'on_the_way_out' EXIT
 
 rm -rf "$BUILD"
 mkdir -p "$BUILD"
@@ -583,7 +644,25 @@ do
     fi
 done
 
+# THE REAP FIRST, THEN THE FINGERPRINT (TSX-C14).
+#
+# These were the other way round, and one.sh has always had them this way.  A leftover JVM is by
+# definition one that is still running: taking the hash while it is alive and then killing it makes
+# a write it manages in between invisible, and the run reports the folder untouched.  Deferred work
+# landing after everybody stopped watching is the whole subject of LayoutSandbox's javadoc.
+if [ -n "$REAPER" ]
+then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
+        -RunId "$RUN_ID" >/dev/null 2>&1
+fi
+
 live_after=$(fingerprint)
+
+# THE TRAP'S COPY OF THIS CHECK STANDS DOWN NOW (TSX-C14).
+#
+# What follows reports the comparison properly, with the diff and the question about whether
+# TrainControl was open.  The trap's version exists for the run that never gets here.
+REPORTED=1
 
 # AND AFTER THE LAST CLASS (V33-C1).
 #

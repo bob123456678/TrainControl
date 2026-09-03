@@ -84,7 +84,7 @@ public class testParseWebServer
         // Simulate firmware version
         server.startServer(260);   // or 250
         
-        parser = new CS2File("localhost:8080", null);
+        parser = new CS2File("localhost:" + server.getPort(), null);
         
         List<MarklinLocomotive> db = parser.parseLocomotivesCS3();
         List<MarklinRoute> routes260 = parser.parseRoutesCS3();

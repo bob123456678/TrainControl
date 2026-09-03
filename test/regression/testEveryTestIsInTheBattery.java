@@ -207,7 +207,22 @@ public class testEveryTestIsInTheBattery
 
                         if (line.startsWith("@"))
                         {
-                            annotated = true;
+                            // A TESTNG ONE, NOT ANY ONE (TSX-C19).
+                            //
+                            // The javadoc above argues for being permissive about WHICH TestNG
+                            // annotation - a lifecycle hook named like a test is fine - and this
+                            // accepted anything beginning with @.  `@Override`, `@Deprecated` and
+                            // `@SuppressWarnings("unchecked")` all marked a test-shaped method as
+                            // annotated, and the last of those is exactly what somebody adds above a
+                            // method while working on it.  A method whose @Test had been lost and a
+                            // @SuppressWarnings gained would have passed this guard, which is the
+                            // five-methods-never-run failure it exists for, one step subtler.
+                            //
+                            // Anything further up the list of annotations still counts: a method may
+                            // carry @Override above @Test, and the loop keeps reading until it meets
+                            // something that is not an annotation.
+                            if (isTestNGAnnotation(line)) annotated = true;
+
                             continue;
                         }
 
@@ -294,4 +309,44 @@ public class testEveryTestIsInTheBattery
         }
     }
 
+
+
+    /**
+     * Whether an annotation line is one TestNG acts on.
+     *
+     * By name rather than by import, because this reads source rather than classes. The list is
+     * every annotation in `org.testng.annotations` that can sit on a method; a fully-qualified one
+     * (`@org.testng.annotations.Test`) is matched by the same suffix test.
+     *
+     * @param line the trimmed source line, beginning with `@`
+     * @return true if TestNG would call the method beneath it
+     */
+    private static boolean isTestNGAnnotation(String line)
+    {
+        String name = line.substring(1);
+
+        int bracket = name.indexOf('(');
+
+        if (bracket >= 0) name = name.substring(0, bracket);
+
+        name = name.trim();
+
+        int dot = name.lastIndexOf('.');
+
+        if (dot >= 0) name = name.substring(dot + 1);
+
+        for (String known : TESTNG_METHOD_ANNOTATIONS)
+        {
+            if (known.equals(name)) return true;
+        }
+
+        return false;
+    }
+
+    /** Every `org.testng.annotations` name that can sit on a method. */
+    private static final String[] TESTNG_METHOD_ANNOTATIONS = {
+        "Test", "BeforeSuite", "AfterSuite", "BeforeTest", "AfterTest", "BeforeGroups",
+        "AfterGroups", "BeforeClass", "AfterClass", "BeforeMethod", "AfterMethod",
+        "DataProvider", "Factory", "Listeners", "Parameters",
+    };
 }

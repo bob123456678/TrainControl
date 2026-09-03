@@ -1789,6 +1789,28 @@ throw is not the part that was in doubt. Ten classes re-run green:
 
 #### C14 - the two runners' exit paths: what they do not do, what they do in the wrong order, and what they do that is not theirs
 
+**Disposition: fixed, all three, in both runners.**
+
+The traps are one `on_the_way_out` now, and it does what the finding asks in the order the finding
+argues for.
+
+1. **The reaper runs on the way out**, written out rather than calling `reap()` because `battery.sh`
+   has no such function and every variable it touches is defaulted - this can fire before the line
+   that sets any of them, and a trap that fails under `set -u` takes the rest of the tidy-up with it.
+2. **The layout is checked**, but only when the run did not reach its own report. `REPORTED=1` is set
+   beside `live_after=$(fingerprint)`, so the proper comparison - with its diff and its "was
+   TrainControl open" question - still owns the normal path, and the trap's copy exists for the run
+   that never gets there.
+3. **The lock is released only if it still reads back as ours.** Verified both ways in isolation: a
+   file holding our own pid is released, one holding another is kept.
+
+And `battery.sh` reaps **before** it hashes, which is `one.sh`'s order and the right one for the
+reason the finding gives.
+
+Exercised rather than reasoned about: a clean `one.sh` run releases its lock; a run started over a
+stale foreign lock takes it and releases it; and a run sent `TERM` mid-class leaves **zero** `java.exe`
+with `one-` in its command line, where before the shell's death made that run id unmatchable for good.
+
 Three things about six lines of code, filed together because they are the same six lines.
 
 **One: the kill path drops both guards.** `docs/tools/one.sh:268-269`:
@@ -1846,6 +1868,14 @@ then deletes B's lock behind it"* - and the fix that closed `C9` was for the `mv
 The trap wants the same test the take had: remove the lock only if it still reads back as ours.
 
 #### C15 - `one.sh` was given the message about a bounded heap and not the bound
+
+**Disposition: fixed.**
+
+`one.sh` now builds `JAVA_FLAGS` exactly as `battery.sh` does - `TC_JAVA_FLAGS` defaulting to
+`-Dtraincontrol.anyReceivePort=true`, then `TC_JAVA_HEAP` defaulting to `-Xmx512m` - and passes it to
+the JVM. Both variables are the same names, so anything that tunes one runner tunes both.
+
+The diagnostic it already carried for the failure the bound removes now has the bound behind it.
 
 `docs/tools/one.sh:333-334` is the whole of how it starts a class:
 
@@ -1919,6 +1949,16 @@ without an edit, and nobody would find that out until they needed it.
 script.
 
 #### C17 - the shared fixture server binds a fixed port, and says it has one to ask about
+
+**Disposition: fixed.**
+
+`port` starts at 0, so the first `startServer` asks the machine for a free one, and the answer is kept
+- because `testParseWebServer` stops the server and starts it again to serve a different firmware
+version, against a parser built once from the address. An ephemeral port per start would have broken
+that; binding zero once and reusing the answer gives both a free port and a stable one.
+
+`getPort()` answers truthfully now instead of reading a constant back, and both callers ask it rather
+than hard-coding `localhost:8080`. `testParseWebServer` and `testImportRename` re-run green.
 
 `test/support/CS3TestServer.java:15`:
 
@@ -2043,6 +2083,18 @@ people do.
 
 #### C19 - "carries an annotation" is not "carries a TestNG annotation"
 
+**Disposition: fixed.**
+
+The walk asks `isTestNGAnnotation`, which matches by name against every `org.testng.annotations` name
+that can sit on a method, tolerating arguments and a fully-qualified form. Anything further up the
+stack still counts - `@Override` above `@Test` is fine - because the loop keeps reading until it meets
+something that is not an annotation at all.
+
+MUTATION: a `public void testMutationProbeCarriesNoTestNGAnnotation()` whose only annotation is
+`@SuppressWarnings("unchecked")` - the exact thing somebody adds above a method while working on it -
+fails this now and passed before (4 tests, 1 failure; removed, 4 green). The suite has no such method
+today, which is the other half worth knowing.
+
 `test/regression/testEveryTestIsInTheBattery.testEveryTestShapedMethodCarriesAnAnnotation` is the
 guard for `TST-C2` - five methods that had quietly lost their `@Test` and had never run. Its javadoc
 draws the line precisely (`:152-157`):
@@ -2079,6 +2131,19 @@ javadoc has already written out.
 The same class is otherwise in good order and `D10` says so.
 
 #### C20 - `ant test` has none of the three flags, and is green for a class that skipped everything
+
+**Disposition: one of the three fixed; the other two cannot be reached from `build.xml`, and that is
+now written where somebody would look.**
+
+`build.xml` sets `test-sys-prop.traincontrol.anyReceivePort`, which the TestNG macro's `<propertyset>`
+maps onto a system property of the forked JVM. So `ant test` can share a machine with a running
+TrainControl and with itself - the failure that is nastiest to read, because a bind failure comes out
+of `@BeforeClass` as "Total tests run: 16, Failures: 0, Skips: 16".
+
+`-Xmx` and the skipped-class rule stay out of reach: the macro takes exactly one `jvmarg`, `<customize/>`
+is not usable from here, and `nbproject/build-impl.xml` is NetBeans'. The comment in `build.xml` says
+so at the property, so the next reader does not repeat the search. `docs/tools/battery.sh` remains the
+gate and `test/README.md` already says why.
 
 `TST-B1` confirmed at HEAD, with the mechanism it did not name and two halves it did not have.
 

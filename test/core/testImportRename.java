@@ -86,7 +86,7 @@ public class testImportRename
 
         server.startServer(260);
 
-        set("fileParser", new CS2File("localhost:8080", model));
+        set("fileParser", new CS2File("localhost:" + server.getPort(), model));
         set("isCS3", true);
     }
 

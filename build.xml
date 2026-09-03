@@ -103,6 +103,23 @@
       alternative is a shutdown path on MarklinControlStation that releases the socket, which would
       let the whole suite share one JVM and make this list unnecessary.
     -->
+    <!--
+      THE ONE FLAG `ant test` CAN BE GIVEN FROM HERE (TSX-C20).
+
+      Every class that builds a MarklinControlStation binds UDP 15730 unless told otherwise, so
+      without this `ant test` cannot run while TrainControl is open and no two of its classes can
+      overlap.  The failure is a nasty one to read: a bind failure comes out of @BeforeClass as
+      "Total tests run: 16, Failures: 0, Skips: 16", which looks like a class nobody wrote tests for
+      rather than one that could not start.  Both runners in docs/tools/ have passed this since they
+      were written; this file never had it.
+
+      Through `test-sys-prop.`, which the TestNG macro in nbproject/build-impl.xml maps onto system
+      properties of the forked JVM.  That indirection is the reason it can be done here at all: the
+      macro takes exactly one jvmarg and NetBeans owns that file, so -Xmx and the skipped-class
+      rule - the other two halves of TSX-C20 - still cannot be set from build.xml.  docs/tools/
+      battery.sh remains the gate, and test/README.md says why.
+    -->
+    <property name="test-sys-prop.traincontrol.anyReceivePort" value="true"/>
     <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">
         <!-- The tests live in test/core, test/ui, test/regression and test/support since 2026-08-22 -
              see test/README.md for which folder a new one belongs in.  These entries do not name the
