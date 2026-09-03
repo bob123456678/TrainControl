@@ -487,4 +487,84 @@ public class testLocIconCrop
             "the crop no longer records the view it was taken at, so nothing is ever stored and "
             + "re-editing always opens on the default");
     }
+
+    /**
+     * Pressing OK at full zoom-out does not allocate an image squared in the source (IPR-B4).
+     *
+     * `contentOf` built the whole overhanging rectangle at source resolution and then threw it away:
+     * the output is 296 x 114. At `zoomFraction = 0` - the left end of the slider, and what
+     * `setZoomFraction` clamps to - the scale is half the fit, so the rectangle is about twice the
+     * source each way and its **area is quadratic in the source and independent of the dialog's**
+     * **size**, because the window and the fit scale together. The finding's table: a 4032 x 3024
+     * phone photograph asks for ~134 MB, an 8000 x 6000 one ~528 MB, 12000 x 9000 ~1.2 GB.
+     *
+     * The `OutOfMemoryError` lands in the OK listener on the EDT, so what the user sees is not a
+     * crash: it is OK doing nothing and the dialog staying open.
+     *
+     * **Asserted on the allocation, not on the symptom.** Waiting for an OOM would need a JVM sized to
+     * fail, which is a test that passes on a bigger machine for the wrong reason. `contentOf` is asked
+     * directly, by reflection, what it built - and it must not be bigger than what the caller can use,
+     * which is the icon.
+     *
+     * MUTATION: allocating `region.width x region.height` again fails the size assertion below.
+     */
+    @Test
+    public void testTheCropAtFullZoomOutDoesNotAllocateTheSquareOfTheSource() throws Exception
+    {
+        final int OUT_WIDTH = 296;
+        final int OUT_HEIGHT = 114;
+
+        java.awt.image.BufferedImage source =
+            new java.awt.image.BufferedImage(8000, 6000, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        org.traincontrol.gui.LocIconCropDialog.CropPanel panel =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
+
+        panel.setSize(600, 420);
+        panel.setZoomFraction(0.0);
+
+        java.awt.Rectangle region = panel.sourceRect();
+
+        // PRECONDITION, and it is the finding: at the left end of the slider the frame hangs off the
+        // photograph in both directions, so the cheap getSubimage branch is never the one taken and
+        // the rectangle asked for is bigger than the picture it is cut from.
+        assertTrue(region.width > source.getWidth() && region.height > source.getHeight(),
+            "the rectangle at full zoom-out no longer overhangs the source, so this test is not "
+            + "exercising the branch it is about: " + region);
+
+        java.lang.reflect.Method contentOf = org.traincontrol.gui.LocIconCropDialog.CropPanel.class
+            .getDeclaredMethod("contentOf", java.awt.Rectangle.class);
+
+        contentOf.setAccessible(true);
+
+        java.awt.image.BufferedImage cut =
+            (java.awt.image.BufferedImage) contentOf.invoke(panel, region);
+
+        long asked = (long) cut.getWidth() * cut.getHeight() * 4L;
+        long region_bytes = (long) region.width * region.height * 4L;
+
+        assertTrue(cut.getWidth() <= OUT_WIDTH && cut.getHeight() <= OUT_HEIGHT,
+            "the crop allocated " + cut.getWidth() + " x " + cut.getHeight() + " ("
+            + (asked / (1024 * 1024)) + " MB) to produce a " + OUT_WIDTH + " x " + OUT_HEIGHT
+            + " icon, from a rectangle of " + region.width + " x " + region.height + " ("
+            + (region_bytes / (1024 * 1024)) + " MB).  That area is quadratic in the source and "
+            + "independent of the dialog's size, so a large photograph runs the JVM out of memory "
+            + "inside the OK listener on the EDT - and what the user sees is OK doing nothing "
+            + "(IPR-B4)");
+
+        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centres it: a
+        // bound that squashed the rectangle would put the photograph in the frame stretched.
+        double wanted = (double) region.width / region.height;
+        double got = (double) cut.getWidth() / cut.getHeight();
+
+        assertTrue(Math.abs(wanted - got) / wanted < 0.02,
+            "the bounded crop is a different shape from the rectangle it stands for (" + wanted
+            + " against " + got + "), so the picture would be stretched into the icon");
+
+        // AND THE WHOLE WAY THROUGH still gives the icon that was asked for.
+        java.awt.image.BufferedImage icon = panel.getCroppedImage();
+
+        assertEquals(icon.getWidth(), OUT_WIDTH, "the icon is the wrong width");
+        assertEquals(icon.getHeight(), OUT_HEIGHT, "the icon is the wrong height");
+    }
 }

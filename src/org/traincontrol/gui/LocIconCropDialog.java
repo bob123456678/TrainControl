@@ -1384,18 +1384,52 @@ public class LocIconCropDialog extends JDialog
                     this.source.getSubimage(region.x, region.y, region.width, region.height));
             }
 
-            BufferedImage out = new BufferedImage(region.width, region.height,
-                BufferedImage.TYPE_INT_ARGB);
+            // AT THE SIZE THE CALLER CAN USE, NOT AT THE SOURCE'S (IPR-B4).
+            //
+            // This used to allocate region.width x region.height and then throw all of it away:
+            // getCroppedImage scales whatever comes back down to outWidth x outHeight, which is the
+            // icon.  At zoomFraction = 0 - the left end of the slider, and what setZoomFraction
+            // clamps to - the scale is half the fit, so the rectangle is about twice the source in
+            // each direction and its AREA IS QUADRATIC IN THE SOURCE.  It is also independent of the
+            // dialog's size, because the crop window and the fit scale together, so making the window
+            // smaller does not help.  A 4032 x 3024 photograph out of a phone asked for about 134 MB;
+            // an 8000 x 6000 one, 502 MB.
+            //
+            // The OutOfMemoryError landed in the OK listener, on the event thread, so the symptom was
+            // not a crash: it was OK doing nothing and the dialog staying open.
+            //
+            // The shape is kept exactly - the caller fits this into the icon and centres it, so a
+            // bound that changed the ratio would stretch the photograph.  Nothing is lost by it:
+            // getCroppedImage's own scale-down was already a single bilinear step, and this is that
+            // same step done before the memory is spent rather than after.
+            //
+            // The branch above needs no such bound.  A rectangle wholly inside the source can only be
+            // as large as the source, which is linear in it and is the picture the user opened.
+            double shrink = Math.min(1.0, Math.min((double) this.outWidth / region.width,
+                (double) this.outHeight / region.height));
+
+            int width = Math.max(1, (int) Math.round(region.width * shrink));
+            int height = Math.max(1, (int) Math.round(region.height * shrink));
+
+            BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
             java.awt.Graphics2D g = out.createGraphics();
 
             try
             {
+                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
                 g.setColor(Color.WHITE);
-                g.fillRect(0, 0, region.width, region.height);
+                g.fillRect(0, 0, width, height);
 
                 // Offset so the photograph lands where the frame is standing over it.  Anything that
                 // falls outside is clipped by the image's own bounds and leaves the white showing.
+                //
+                // The offset is in the rectangle's own coordinates, so the scale goes on first and
+                // both it and the picture are shrunk by the same amount.
+                g.scale(shrink, shrink);
+
                 g.drawImage(this.source, -region.x, -region.y, null);
             }
             finally

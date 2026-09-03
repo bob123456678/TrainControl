@@ -440,7 +440,7 @@ the check and the reader disagree and the only question left is which one is rig
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - reproduced at the finding's own numbers, 502 MB for a 296 x 114 icon |
 | **Confidence** | the arithmetic is confirmed by reading; the OutOfMemoryError itself needs execution |
 
 `LocIconCropDialog.CropPanel.contentOf` (`:1387`) allocates the whole overhanging region:
@@ -476,6 +476,39 @@ the dialog stays open", not a visible crash.
 `new CropPanel(new BufferedImage(8000, 6000, TYPE_INT_RGB), 296, 114)`, `setSize(600, 420)`,
 `setZoomFraction(0.0)`, and print `sourceRect()` and `region.width * (long) region.height * 4`. If the
 first line reads roughly `[x=-5253,y=-1766,width=18506,height=7121]` the finding stands.
+
+**Disposition: fixed. The recipe was run and the finding is exact.**
+
+`new CropPanel(new BufferedImage(8000, 6000, TYPE_INT_RGB), 296, 114)`, `setSize(600, 420)`,
+`setZoomFraction(0.0)` gives a region of **18506 x 7120** - the predicted 18506 x 7121 to a pixel -
+and `contentOf` allocated all of it, **502 MB**, to produce a 296 x 114 icon.
+
+The overhang branch now builds the rectangle at the size the caller can use:
+
+```java
+double shrink = Math.min(1.0, Math.min((double) this.outWidth / region.width,
+    (double) this.outHeight / region.height));
+```
+
+with the canvas at `region * shrink` and the same `drawImage` under a `g.scale(shrink, shrink)`, so the
+offset stays in the rectangle's own coordinates. 502 MB becomes 133 kB, and nothing is lost: the
+caller's own scale-down was already one bilinear step, and this is that step done before the memory is
+spent rather than after.
+
+**The wholly-inside branch is left alone deliberately.** A rectangle inside the source can only be as
+large as the source - linear in it, and it is the picture the user opened. It is the *overhang* that
+is quadratic, and only because the frame is allowed off the edge.
+
+`testTheCropAtFullZoomOutDoesNotAllocateTheSquareOfTheSource` asserts on the allocation rather than on
+the symptom: waiting for an `OutOfMemoryError` needs a JVM sized to fail, which is a test that passes
+on a bigger machine for the wrong reason. It calls `contentOf` by reflection and asks what it built. It
+was written first and failed with the message above (6 tests, 1 failure), and it carries three
+assertions, not one - the allocation, the **aspect ratio** (a bound that changed the shape would
+stretch the photograph into the icon), and that `getCroppedImage` still returns 296 x 114 all the way
+through. Its precondition asserts the region really does overhang, so it cannot pass by exercising the
+cheap branch.
+
+`testEveryWindowWearsTheIcon` re-run green.
 
 ---
 
