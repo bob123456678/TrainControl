@@ -158,12 +158,70 @@ public class testARenameReachesTheTimetableOnScreen
                 + "hash did");
 
             assertTrue(after.contains(AFTER), "the new key does not name the new locomotive: " + after);
+
+            // AND THE GUARD ITSELF, not only the function it consults (TSX-B2).
+            //
+            // Everything above drives `timetableSignature`.  The guard is one line in
+            // `repaintTimetable` - `if (showing.equals(lastTimetableState)) return;` - and the
+            // mutation this test names lives THERE, at a site nothing above reached.  That is the
+            // shape this repository has paid for more than any other: the rule is lifted out, tested,
+            // and the call site left uncovered.
+            //
+            // What is driven is the method, and what is read is the state it keeps: a guard keyed on
+            // anything a rename cannot move leaves `lastTimetableState` unchanged, which IS the
+            // redraw being discarded.
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            java.lang.reflect.Method repaint =
+                TrainControlUI.class.getDeclaredMethod("repaintTimetable");
+
+            repaint.setAccessible(true);
+
+            java.lang.reflect.Field state =
+                TrainControlUI.class.getDeclaredField("lastTimetableState");
+
+            state.setAccessible(true);
+
+            // Once, to establish what it believes it is showing.
+            repaint.invoke(ui[0]);
+
+            settle();
+
+            String showing = String.valueOf(state.get(ui[0]));
+
+            assertTrue(showing.contains(AFTER),
+                "repaintTimetable did not record what the table shows, so the guard below it "
+                + "is deciding on something else entirely.  Recorded: " + showing);
+
+            // And a second rename has to move it again, which is the whole of the guard.
+            assertTrue(model.renameLoc(AFTER, BEFORE), "the second rename failed");
+
+            repaint.invoke(ui[0]);
+
+            settle();
+
+            assertNotEquals(String.valueOf(state.get(ui[0])), showing,
+                "the key repaintTimetable skips its redraw on did not move when every row of "
+                + "the table changed its text, so the redraw is discarded and the table goes "
+                + "on naming a locomotive that is not there.  That is what keying it on "
+                + "hashCode did, and it is the mutation this test is named for");
         }
         finally
         {
             final TrainControlUI closing = ui[0];
 
             if (closing != null) javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
+        }
+    }
+
+    /**
+     * Lets what the window POSTED actually run - `repaintTimetable` does its work in an invokeLater.
+     */
+    private static void settle() throws Exception
+    {
+        for (int pass = 0; pass < 5; pass++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
         }
     }
 }

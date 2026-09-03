@@ -193,6 +193,13 @@ fail.
 
 #### B2 - `testARenameReachesTheTimetableOnScreen` survives the mutation its own javadoc names
 
+**FIXED 2026-09-03.**  The test drives `repaintTimetable` itself now and reads the state the guard
+keeps, so the mutation it is named for - keying that guard on `hashCode()` - fails it.  Confirmed by
+making exactly that mutation: 1 test, 1 failure.
+
+The finding's framing is the right one and is worth keeping: the rule was lifted out, tested, and the
+call site left uncovered, which is this repository's most repeated shape.
+
 **Status: open.** Verified by reading. This is the repository's signature shape: the rule is lifted out,
 tested, and the call site left uncovered.
 
