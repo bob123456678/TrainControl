@@ -34,29 +34,23 @@ import javax.swing.SwingUtilities;
 public final class StartupSplash
 {
     /**
-     * **TEMPORARY, 2026-09-03: the splash is switched off while OB-170 is settled.**
+     * A way to take the splash out without deleting it, kept because it earned its keep once.
      *
-     * Adam, after seven attempts at the start-up keyboard: *"try temporarily turning off the startup
-     * overlap."*  It is the experiment that settles it either way, and it is the one thing none of the
-     * seven passes did - each of them changed how the splash or the window behaves and then asked him
-     * to judge the result, which is the slowest possible way to test a hypothesis.
+     * **It answered OB-170.**  Seven passes changed how the splash or the window behaves and asked
+     * Adam to judge the result; six were wrong.  Switching the splash off answered the question in one
+     * run - *"it works now"* - and turned a hypothesis about Windows into a fact about this
+     * application.
      *
-     * **Read the answer like this.**  If the keyboard works on start-up with this true, the splash is
-     * the cause and what remains is to find a way of reassuring the operator during a slow connect that
-     * does not spend the process's one chance at the foreground - showing it AFTER the main window is
-     * up, or drawing it into that window rather than into one of its own.  If the keyboard is still
-     * dead, the splash is innocent, seven passes have been aimed at the wrong thing, and the next step
-     * is to bisect the commits between 2.8.1 and here rather than to reason about Windows.
-     *
-     * **Set this back to false either way.**  A start-up that shows nothing at all for the length of a
-     * Central Station timeout is the complaint FR-041 was written for, and it is a real one: the
-     * application looks like it failed to start.  This is a diagnostic, not a decision.
+     * False, and it should stay false: a start-up that shows nothing at all for the length of a
+     * Central Station timeout is the complaint FR-041 was written for, and the application looks like
+     * it failed to start.  What the splash was actually doing wrong is at `closeIfShown`'s call site in
+     * `MarklinControlStation.init`, and it was a matter of WHEN rather than whether.
      */
-    public static final boolean SUPPRESSED = true;
+    public static final boolean SUPPRESSED = false;
 
-    private final JWindow window;
+    private final java.awt.Window window;
 
-    private StartupSplash(JWindow window)
+    private StartupSplash(java.awt.Window window)
     {
         this.window = window;
     }
@@ -72,6 +66,27 @@ public final class StartupSplash
      */
     public static StartupSplash show(String message)
     {
+        return show(message, null);
+    }
+
+    /**
+     * The same, owned by the window it is standing in for (OB-170, 2026-09-03).
+     *
+     * **Ownership is the whole of this overload.**  An unowned `JWindow` is a top-level window in its
+     * own right, and when it is destroyed the platform hands the foreground to the next window in the
+     * Z-order - which is whatever the operator was using, because our own window is not up yet or has
+     * only just arrived.  A dialog owned by the frame belongs to that frame: its activation is the
+     * owner's, and when it goes there is an owner to fall back to rather than a stranger.
+     *
+     * Adam measured what the unowned version cost: with the splash suppressed entirely the start-up
+     * keyboard works, and with it shown - closed early or closed late - it does not.
+     *
+     * @param message what is happening, in words
+     * @param owner the window this is standing in for, or null when there is none yet
+     * @return a handle to close it with, or null when no splash was shown
+     */
+    public static StartupSplash show(String message, java.awt.Window owner)
+    {
         if (GraphicsEnvironment.isHeadless()) return null;
 
         // The switch above, and the whole of what it does.  Nothing else in this class or its callers
@@ -79,11 +94,26 @@ public final class StartupSplash
         // out and one of them is "no splash was built".
         if (SUPPRESSED) return null;
 
-        final JWindow[] built = new JWindow[1];
+        final java.awt.Window[] built = new java.awt.Window[1];
 
         Runnable make = () ->
         {
-            JWindow w = new JWindow();
+            // OWNED WHERE THERE IS AN OWNER.  A JDialog is the only Swing window that can have one,
+            // and undecorated it looks exactly like the JWindow it replaces.
+            java.awt.Window w;
+
+            if (owner != null)
+            {
+                javax.swing.JDialog dialog = new javax.swing.JDialog(owner);
+
+                dialog.setUndecorated(true);
+
+                w = dialog;
+            }
+            else
+            {
+                w = new JWindow();
+            }
 
             JPanel content = new JPanel(new BorderLayout(0, 8));
 
@@ -101,7 +131,7 @@ public final class StartupSplash
             content.add(spinner, BorderLayout.CENTER);
             content.add(says, BorderLayout.SOUTH);
 
-            w.setContentPane(content);
+            ((javax.swing.RootPaneContainer) w).setContentPane(content);
 
             // AND IT NEVER TAKES THE FOREGROUND (OB-170, sixth pass).
             //

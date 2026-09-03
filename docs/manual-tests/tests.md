@@ -14017,6 +14017,61 @@ skipped class out.
 
 9. **Build, start it from NetBeans, do not touch the mouse, press a letter.**  That is the whole test.
 
+**Adam, 2026-09-03: "it works now."  And then: "let's get the timer back in."**
+
+**So the splash was the cause, and what it did wrong was a matter of WHEN rather than whether.**
+
+It was closed BEFORE the main window was shown.  Between the two, this process owns no visible window
+at all - so Windows moves the foreground to whatever the operator was using, which is the application
+that launched us.  The window then arrives into somebody else's foreground, and nothing it does can
+take it back, because a process that is not in the foreground is not allowed to put itself there.
+That is why every one of the seven attempts failed: all of them were aimed at what the WINDOW does,
+and by the time the window exists the foreground has already gone.
+
+The splash is back, and it comes down after `display()` rather than before it.  It is always-on-top, so
+for the moment between the two it sits over the new window - which is what a splash looks like anyway -
+and when it goes, the window underneath it is ours.
+
+Pinned by `testTheStartupSplashIsGatedAndAlwaysClosed`, which now asserts the ORDER as well as the
+paths, and is mutation-confirmed against closing it early again.
+
+**The two changes from the sixth and seventh passes stay.**  Neither was the cause.  The splash should
+not have been taking activation, and `display()` should not undo the topmost flag it depends on
+microseconds after setting it up - both are true on their own terms and both are cheap.
+
+10. **Start it from NetBeans one more time**, with the splash showing again.  You should see the
+    "Connecting..." notice, and the letters should work the moment it goes.
+
+**Adam, 2026-09-03: "Now it's back to being broken.  with the hourglass (splash) the main window isn't
+active when it loads."**
+
+So closing it later is not enough either.  **Showing it at all is what costs the activation**, whenever
+it is taken down.
+
+One more attempt, and it is the last one of this shape: the splash is now a dialog **owned by the main
+window** rather than a top-level window of its own.  An unowned window, when it is destroyed, hands the
+foreground to the next window in the Z-order - which is the application you launched us from.  A dialog
+owned by our frame hands it to the frame.  The frame exists in time to own one: it is built at the
+third statement of `init` and not shown until the connect is over, which is the stretch the splash
+covers.
+
+**If this one fails too, the splash is not something this application can put on the screen during
+start-up**, and there are two honest answers left.  Neither is small and I would want you to pick:
+
+- **The JVM's own `-splash:`** - a native image the launcher paints before any Java window exists, so
+  there is no window to spend the activation.  It can carry text drawn onto it, but not the live
+  spinner.  It needs a manifest entry and an image, and it changes how the application is launched.
+- **The notice inside the main window** - show the frame early with a "Connecting..." overlay over it
+  and fill it in behind that.  No second window at all, and the reassurance is better than a splash
+  because it is the real window arriving.  It is the bigger change of the two and it touches start-up
+  ordering, which is where several of this month's bugs have been.
+
+And there is a third answer which is not dishonest: **leave it off**.  `StartupSplash.SUPPRESSED` is
+one word, the keyboard works, and a slow connect looks like nothing happening - which is what 2.8.1
+does and what you have lived with until now.
+
+11. **Start it once more.**  If the keyboard works with the hourglass showing, this is done.
+
 ---
 
 <a id="mt-260"></a>

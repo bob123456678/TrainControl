@@ -3816,8 +3816,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // below is built there is nothing at all to look at - so a slow start is indistinguishable
         // from a failed one. Only when a window was actually asked for: every test passes showUI
         // false, and a suite that opens windows on the operator's screen is one he stops running.
+        // OWNED BY THE WINDOW IT IS STANDING IN FOR (OB-170, 2026-09-03).
+        //
+        // `ui` was built at the third statement of this method and is not shown until the connect is
+        // over - which is exactly the stretch this splash covers - so it exists in time to own one.
+        //
+        // Why that matters: an unowned window, when it is destroyed, hands the foreground to the next
+        // window in the Z-order, which is the application the operator was using.  A dialog owned by
+        // our frame hands it to the frame.  Adam measured the cost of the unowned version - with the
+        // splash suppressed the start-up keyboard works, and with it shown it does not, whenever it is
+        // taken down.
         final org.traincontrol.gui.StartupSplash splash = showUI
-            ? org.traincontrol.gui.StartupSplash.show(I18n.t("ui.splashConnecting")) : null;
+            ? org.traincontrol.gui.StartupSplash.show(I18n.t("ui.splashConnecting"), ui) : null;
 
         final NetworkProxy proxy;
         final MarklinControlStation model;
@@ -3938,15 +3948,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 latch.await();
             }
-            finally
+            catch (InterruptedException interrupted)
             {
+                // The splash goes only on the way OUT (OB-170, 2026-09-03).
+                //
+                // This was a `finally`, which closed it on the ordinary path too - and closing it
+                // before the window is shown is what left the keyboard dead, because between the two
+                // this process owns no visible window and Windows hands the foreground back to
+                // whatever the operator was using.  WK-B2's point stands and is answered by catching
+                // the interruption rather than by closing on every path.
                 org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+
+                throw interrupted;
             }
 
             // Twice over, because close() is safe to repeat and the paths out of here are not all
             // through the block above - a start-up that never reaches the window build must not leave
             // a splash on the screen either.
-            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+            //
+            // **NOT ON THE SUCCESS PATH ANY MORE, and that is OB-170 (2026-09-03).**  See the close
+            // after `display()` below: this one has to stay for the failures, and the `finally` above
+            // it has to stay for the interrupted case, but a start-up that reaches the window must
+            // leave the splash up until the window is on screen.
+            if (!built.get()) org.traincontrol.gui.StartupSplash.closeIfShown(splash);
 
             // And now the caller the countDown's comment promised (FBR-C3).
             //
@@ -3971,6 +3995,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     theUI.display();
+
+                    // AND ONLY NOW DOES THE SPLASH GO (OB-170, and this one is measured).
+                    //
+                    // It used to be closed before this, and Adam's own experiment is what settled what
+                    // that cost: with the splash suppressed entirely the start-up keyboard works, and
+                    // with it shown and closed early it does not.
+                    //
+                    // The reason is the gap.  Between the splash going and the window arriving, this
+                    // process owns no visible window at all - so Windows moves the foreground to
+                    // whatever the operator was using, which is the application that launched us.  The
+                    // window then comes up into somebody else's foreground, and no amount of raising
+                    // gets it back, because a process that is not in the foreground is not allowed to
+                    // put itself there.
+                    //
+                    // Closed here, the splash covers that gap: it is always-on-top, so it sits over the
+                    // new window for the moment between the two - which is what a splash looks like
+                    // anyway - and when it goes, the window underneath it is ours.
+                    org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+
                     model.logf("ui.initialized");
                 });
             }

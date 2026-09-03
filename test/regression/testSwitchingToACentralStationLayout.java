@@ -1073,6 +1073,30 @@ public class testSwitchingToACentralStationLayout
                 || init.indexOf("closeIfShown", init.indexOf("latch.await()", shown)) >= 0,
             "nothing takes the splash down anywhere near the window build");
 
+        // AND ON THE SUCCESS PATH IT COMES DOWN AFTER THE WINDOW IS UP (OB-170, 2026-09-03).
+        //
+        // This is the one that matters, and it is a fact about ORDER rather than about paths.  The
+        // splash used to be closed before `display()`, and between the two this process owns no
+        // visible window at all - so Windows moves the foreground to whatever the operator was using,
+        // the window arrives into somebody else's foreground, and the keyboard is dead.  Seven attempts
+        // went at that symptom from the window's end before Adam's own experiment - suppress the splash
+        // and the keyboard works - said where it actually was.
+        //
+        // Closed after `display()`, the splash covers the gap: it is always-on-top, so it sits over the
+        // new window for the moment between the two, and when it goes the window underneath it is ours.
+        int displays = init.indexOf("theUI.display();");
+
+        assertTrue(displays > 0, "nothing calls display(), so the ordering below means nothing");
+
+        String afterDisplay = init.substring(displays,
+            Math.min(init.length(), init.indexOf("});", displays) + 3));
+
+        assertTrue(afterDisplay.contains("closeIfShown(splash)"),
+            "the splash is not taken down after display() on the success path.  Closed before it, "
+            + "there is a moment when this process has no visible window and Windows gives the "
+            + "foreground back to whatever launched us - which is OB-170, and which took seven passes "
+            + "and one experiment of Adam's to find.  What follows display(): " + afterDisplay);
+
         // And the words exist to put in it.
         String bundle = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/resources/messages.properties")),
