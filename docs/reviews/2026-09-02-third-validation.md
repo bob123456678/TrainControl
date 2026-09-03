@@ -205,7 +205,10 @@ the same per-class verdict variable.
 
 ### C5 - the copy-check test's last assertion depends on which way round `TOWARD_A` points
 
-**Status: open.**
+**FIXED 2026-09-03.**  The trapping direction is put back before `subjectsOf` is asked, and it is asked
+rather than assumed - `outA.contains("Middle") ? TOWARD_A : TOWARD_B` - so which of the two traps the
+arrival stays the tile's business, which is this test's whole design.  The javadoc now names the last
+assertion as the exception to "true whichever way round they are".
 
 `test/core/testAutonomyDiagramSession.java:689`. The javadoc states the design:
 
@@ -242,7 +245,11 @@ exception written into it.
 
 ### C6 - the protecting-signal test does not catch one of the two mutations it names
 
-**Status: open.**
+**FIXED 2026-09-03.**  The route door is read as a BODY now - `heldReason`, through `withoutComments` -
+rather than as a whole file whose comments discuss the rule at length.  Mutation-confirmed by replacing
+the call's condition with `false`: the test fails.
+
+The tile door's half was already closed by `V32-B2`'s fix, which asserts the helper's body.
 
 `test/regression/testEditorSurfaceRules.java:625`. Javadoc: *"MUTATION: deleting either call to
 `protectsAnOccupiedSquare` fails this."* There are two such calls:
@@ -267,7 +274,9 @@ grep for that string, which is luck rather than design.
 
 ### C7 - the route-door test's negative half can go vacuous silently
 
-**Status: open.**
+**FIXED 2026-09-03.**  `assertFalse(door.isEmpty(), ...)` guards the negative, so a renamed or
+regenerated `//GEN-FIRST` handler fails the test instead of turning it into a no-op that reads as
+protection.
 
 `test/regression/testEditorSurfaceRules.java:602-608`:
 
@@ -291,7 +300,10 @@ Everything else about the test is sound - see D6.
 
 ### C8 - two preconditions that restate the two lines above them
 
-**Status: open.**
+**FIXED, by `V36-B2` and `V37-B2`** (verified 2026-09-03).  Both restated preconditions are gone: what
+stands there now says there is no precondition about `mustBackIn` at all, records the two wrong attempts
+at one, and rules the confound out with a control - a train that fits reaches the berth.  See `V34-C1`,
+which is the same finding one round later.
 
 `test/core/testHomeStaging.java:181-197`:
 
@@ -323,7 +335,9 @@ Delete the two lines, or replace them with the parse-side facts.
 
 ### C9 - the longer-approach test has no control, and passes with the rule absent
 
-**Status: open.**
+**FIXED, by the round that followed** (verified 2026-09-03).  The control this finding asked for is in
+the test: a twenty-unit train, too long for either way in, must be refused - so "a plan was found" can
+no longer be satisfied by the room rule's absence.  It is cited there as `V33-C9`.
 
 `test/core/testHomeStaging.java:3353`. The whole of what it asserts about behaviour is
 `assertEquals(refused, 0, ...)` at line 3406: over twenty attempts, `planReturnToHome()` must always
@@ -348,7 +362,10 @@ missing is the test's ability to say why it passed.
 
 ### C10 - "twenty times, because `getNeighbors` shuffles" is not why
 
-**Status: open.**
+**FIXED, by the round that followed** (verified 2026-09-03).  The comment says the pre-fix code fails
+all twenty and why - the queue is FIFO and both ways into HS D leave the origin, so the direct one is
+recorded during HS A's own expansion whatever the shuffle did - and says why the repetition is kept
+anyway.  Cited there as `V33-C10`.
 
 `test/core/testHomeStaging.java:3383-3392` says a single attempt would pass about half the time,
 because only the run that reaches the short approach first can show the defect. Traced through
@@ -371,7 +388,9 @@ belt-and-braces against a future scored queue.
 
 ### C11 - the palette test leaves its editor window undisposed
 
-**Status: open.**
+**FIXED, by `V33-C11`'s own commit, and improved 2026-09-03.**  The editor is disposed in the `finally`.
+The sandbox restore that this arrangement put last is now in a `finally` of its own, so nothing the
+disposals throw can skip the preference - see `V34-C7`.
 
 `test/regression/testThePaletteStillPlacesTiles.java:188-198` disposes `ui[0]`, stops the model and
 closes the sandbox. It never disposes `editor[0]`, which is a `LayoutEditor` and therefore a
@@ -395,7 +414,13 @@ leave theirs too, so it is a house habit rather than a deviation.)
 
 ### C12 - "the guard's question, whichever one that is" is not what the test does
 
-**Status: open.**
+**FIXED 2026-09-03** - the comment, which is what was wrong.
+
+The claim "it reads the guard and requires the affordance to ask the same thing" is gone, and what
+replaces it says why no textual rule could do that: the guard asks the SESSION (`hasErrors()`) and the
+affordance asks the WINDOW's wrapper for it (`autonomyHasErrors()`), so the two literals differ by
+design and no comparison can tell that pairing from a divergence.  What the test does is name both
+halves in one place, so widening one and not the other fails here rather than on Adam's railway.
 
 `test/regression/testErrorsStopTheSetupRunning.java:208-227`. The comment says:
 

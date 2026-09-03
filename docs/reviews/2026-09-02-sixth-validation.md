@@ -282,6 +282,10 @@ destination.
 
 ### V36-C1 — the sibling comment was not swept
 
+**FIXED 2026-09-03.**  The sibling sentence now says what is true: the count stays for the right-click
+tooltip, which needs the number, and the strip does not read it - its number comes from `setFindings`'
+own arguments.  `TrainControlUI.autonomyHasErrors()`'s javadoc.
+
 `V34-B1` was raised because a comment said the count was still read where it was not. The count read has
 gone; the *other* comment saying the same thing has not. `src/org/traincontrol/gui/TrainControlUI.java:20187-20188`,
 in `autonomyHasErrors()`'s javadoc:
@@ -296,6 +300,11 @@ for its twins before closing the finding"* — at the shortest possible distance
 `autonomyErrorCount` returns both sites.
 
 ### V36-C2 — the replaced comment was added beside the one it replaces, not instead of it
+
+**FIXED 2026-09-03.**  The `AU-C1` block described the `int errors` statement the commit deleted, and
+ran without a break into the heading that corrects it.  There is one heading now, citing all four
+findings, and the only sentence of the old block that still describes live code - the fallback to
+`lastTotalErrors` when there is no window to ask - has moved down beside the line that does it.
 
 `src/org/traincontrol/gui/AutonomyOverlayToggle.java:332-355`. Two headings now run together with no
 blank line between them:
@@ -322,6 +331,16 @@ reason the sentence was half true.
 
 ### V36-C3 — the surviving assertion is the weak one, and is now alone
 
+**FIXED 2026-09-03**, including the residual this finding said was never pinned.
+
+The assertion reads the body rather than the file, which `8c4c4aa4` did (see `V37-C1` for the reason
+that came with it, which was wrong and has been corrected).  What this finding said remained unpinned -
+*"that the answer reaches `fixing` at all"* - is now a rule: the decision must come after the question,
+and `fixing`'s own expression must read the variable the guard's answer went into.
+
+Mutation-confirmed by `fixing = source != null && source == start && lastTotalErrors > 0;`, which asks
+`autonomyHasErrors()` and throws the answer away.  Every rule that existed before passed it.
+
 `test/regression/testErrorsStopTheSetupRunning.java:243-246` is the only rule left holding the strip to
 the guard's question, and it reads the raw file:
 
@@ -347,6 +366,21 @@ that the answer reaches `fixing` at all — `boolean broken = ui.autonomyHasErro
 
 ### V36-C4 — the two "reaches nothing" checks are different predicates
 
+**OPEN, and worth Adam's ruling rather than a quiet change** (2026-09-03).
+
+The comment half is gone - the sentence quoted here is no longer in
+`testTrainsComeHomeToTheirPlatforms`, which was rewritten around it.  The substance is confirmed and
+stands: `AutonomySession.destinationCopiesReachingNoStation` counts a reached square as somewhere to go
+on `station` alone, while `Layout.canReachAnyDestination` requires `isDestination() && isActive() &&
+isAutoDestination() && !isReversing()`.  The editor's warning is the LOOSER of the two, so it under-reports:
+a copy the runtime considers dead can pass the editor in silence.
+
+**Why it is not simply corrected here.**  Matching the runtime makes the warning fire on more squares,
+and `MT-253` records that it fires on exactly one square of Adam's railway today - RampDown southbound.
+Twenty of his stations carry `autoDestination` false.  Tightening it a week before a release could put a
+warning on a large part of his layout, and whether those are faults or ordinary is his call, not mine.
+Filed for after 3.0.0 rather than fixed in it.
+
 `testTrainsComeHomeToTheirPlatforms.java:244-245`:
 
 > `` `canReachAnyDestination` is the model's own question and is what the editor's new copy check reports
@@ -368,6 +402,14 @@ measure the branch.
 
 ### V36-C5 — the second walk is gone; the first two are not
 
+**FIXED 2026-09-03** (the comment; the door stays open, and now says so).
+
+The saving the commit claims is real.  What read as closed - *"that is `LD-C6`'s cost at the neighbouring
+door"* - now says the door is not closed: the window walks `check()` itself to count findings and hands
+the counts to `setFindings`, which calls back into `syncRun`, so a refresh is two walks rather than
+three.  The comment also names what would close it (caching `check()` on the session) and why the strip
+cannot simply be handed the boolean (`hasErrors()` is wider than `errors > 0`, which is `V31-B1`).
+
 The commit's cost argument is right about what it removed: `autonomyErrorCount()` →
 `AutonomySession.errorCount()` walks `check()` unconditionally (`AutonomySession.java:3557-3567`), while
 `autonomyHasErrors()` → `hasErrors()` short-circuits on `hasBlockingProblems()` first
@@ -384,6 +426,9 @@ refresh. The strip cannot simply be handed the boolean, because `hasErrors()` is
 close it. Worth one clause in the comment rather than a claim.
 
 ### V36-C6 — nothing was dispositioned, for the third commit running
+
+**FIXED 2026-09-03.**  This C-round sweep is the answer: every finding in this document now carries a
+verdict where the reader looks for one, and the same is being done to the rest of the open reviews.
 
 The commit touches four source files and no document. `docs/reviews/2026-09-02-fourth-validation.md:39-41`
 still shows `V34-B1`, `V34-C1` and `V34-C2` as **Open**, and all three are answered here — two of them

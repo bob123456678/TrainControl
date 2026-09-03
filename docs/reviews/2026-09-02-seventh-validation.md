@@ -195,6 +195,15 @@ accepts it and the planner offers it, and restore the length in the `finally` th
 
 ### V37-C1 — the strip's comment claims a comment that does not exist
 
+**FIXED 2026-09-03.**  The reason in the file was false - `autonomyHasErrors()` occurs once in
+`AutonomyOverlayToggle`, in code, and the only comment mention is `hasErrors()`, which the `contains`
+would not have matched.  The comment now says what is true: the body extract is a guard against the next
+comment rather than a fix for a hole that was open, and it is worth having because the class holds both
+helpers and this is the strip's only rule.  The citation is `V36-C3` rather than "V36-C".
+
+The substance this finding said was untouched - that nothing pins the answer REACHING `fixing` - is
+fixed as well, under `V36-C3`.
+
 `test/regression/testErrorsStopTheSetupRunning.java:243-246`:
 
 ```java

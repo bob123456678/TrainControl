@@ -16603,9 +16603,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * - an overridden conflict and a refused one - and a measurement that misses those two is a
      * measurement of the happy path only.
      *
-     * It used to put the button back here as well. It no longer does: see routeStarted, where the
-     * clearing became a fixed second so that what Adam sees answers a question rather than raising
-     * another one.
+     * It DOES put the button back here, on the last line of the finally - the sentence that used to
+     * stand here said the opposite (`V34-C4`).  What it no longer does is clear it directly: the
+     * clearing goes through `routeFinished`, which holds the grey for a minimum time first.
      *
      * @param route the route's name
      * @param work what to run
@@ -16620,8 +16620,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         finally
         {
-            // The route's own ending puts the button back again, through the floor in routeFinished -
-            // so a fast route still shows, and a slow one is not declared finished early.
+            // WHAT THIS MEASURES IS THE DIALOG AND THE SPAWN, not the route (V34-C4).
+            //
+            // `work.run()` ends at `model.execRoute(route)`, which reaches `MarklinRoute.execRoute`
+            // and starts a thread - so this returns milliseconds later whatever the route is still
+            // doing on the railway.  It answers "did the press get through and how long did the
+            // asking take", which is what it was added for; it does not answer "how long did the
+            // route take", and the sentence that used to stand here said it did.
             if (this.model != null && this.model.isDebug())
             {
                 this.model.log("Route " + route + " finished executing in "
@@ -20773,8 +20778,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * the affordances said yes and the guard said no.  That is the OB-090 shape one door further
      * along, reintroduced by the commit that fixed it.
      *
-     * The count stays where it is: the strip and the right-click tooltip need the NUMBER to say what
-     * is wrong.  What must not differ is which question DECIDES.
+     * The count stays for the RIGHT-CLICK TOOLTIP, which needs the NUMBER to say what is wrong.  The
+     * strip no longer reads it: its number comes from `setFindings`' own arguments, and reading it
+     * again was a second whole walk of the graph on the event thread (`V34-B1`).  What must not differ
+     * is which question DECIDES.
      *
      * @return whether the loaded setup has anything that stops it running
      */
@@ -25163,11 +25170,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // before the grey had been on screen long enough to see, so the state was correct, brief, and
         // invisible.
         //
-        // A floor rather than a fixed hold, because the two say different things when a route is slow:
-        // a fixed second would put the button back while the route was still running, which is the
-        // interface saying something untrue at the one moment the operator might press it again. This
-        // way the button is grey exactly while pressing it again would be refused - which is what
-        // routesExecuting means everywhere else it is read.
+        // A floor rather than a fixed hold - though on today's code the two are the same thing, and
+        // the sentence that used to stand here claimed otherwise (`V34-C4`).
+        //
+        // The argument for the floor was that a fixed hold would put the button back while the route
+        // was still running.  It cannot: `execRoute` starts a thread and returns, so `routeFinished`
+        // is reached milliseconds after `routeStarted` and `showFor` is always about the whole minimum.
+        // The floor is what makes the grey VISIBLE, which is the fault Adam reported; it is not what
+        // keeps it honest about a slow route, and nothing here is.
+        //
+        // Worth keeping the shape: if the execution ever becomes synchronous, the floor is already
+        // right and a fixed hold would not be.
         Long since = startedRunningAt.get(route);
 
         long showFor = since == null ? 0

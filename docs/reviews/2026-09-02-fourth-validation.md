@@ -138,6 +138,17 @@ it doubled an uncached graph walk on the EDT that a sibling door was corrected f
 
 ### V34-C1 — the helper is `isReversible()` with a parameter it ignores, so `V33-C8` is not fixed
 
+**FIXED, by `V36-B2` and `V37-B2` rather than here** (verified 2026-09-03).
+
+`mustBackInIsNotTheReason` no longer exists.  What stands in its place says out loud that there is no
+precondition about `mustBackIn` at all, records both attempts at one and why each was wrong - the first
+restated the setter, the second asked the railway for a reversing point, which is backwards - and the
+confound is ruled out by a CONTROL in the same test instead: a train that fits reaches the berth.
+
+The one residue this finding named is still there and is left: the fixture's length assertion duplicates
+the `> 0 && < 40` check twelve lines below it.  Two statements of one precondition is not worth an edit
+to a test this heavily reasoned about.
+
 `test/core/testHomeStaging.java:189-200`:
 
 ```java
@@ -195,6 +206,9 @@ at the layout — which is the one thing the unused `layout` parameter would hav
 
 ### V34-C2 — `shortBerth()` lost its javadoc to the new helper
 
+**FIXED, by the same rounds** (verified 2026-09-03).  `shortBerth()` carries its own javadoc again, and
+the helper whose insertion orphaned it is gone.
+
 `test/core/testHomeStaging.java:243-264`:
 
 ```java
@@ -221,6 +235,23 @@ This is the failure mode recorded in the README under *"Check the shape of what 
 insertion computed from the preceding javadoc, landing between a javadoc and its method.
 
 ### V34-C3 — `one.sh` counts a skip as a failure, and says it does not
+
+**FIXED 2026-09-03.**  `one.sh` now does what its comment claimed:
+
+- **Skips are counted apart**, in their own counter, and exit **2** - battery.sh's number, for
+  battery.sh's reason.  A class that skips because it needs a display no longer makes the runner report
+  a failure.
+- **Failures are asked first**, so a class that both fails and skips is headlined as a failure.
+- **The no-summary branch splits** "no heap (machine busy, rerun)" from a class that has to be read,
+  matching both wordings JDK 8 uses.
+- **The "always exited 0" claim** now says what it means: whatever the tests did.  The live-layout, lock
+  and probe branches have always had statuses of their own.
+
+The javac hunk this finding calls a fifth divergence is not one: `one.sh` captures javac's output to a
+file and greps the file, so there is no pipeline for SIGPIPE to reach back through.
+
+The narrow hole recorded here - `Configuration Failures: 0, Skips: 3` passing the configuration check -
+is left as recorded: config skips accompany test skips, which the branch above now catches.
 
 The classification chain is correct (see `V34-D1`); what it does with the answer is not.
 
@@ -277,6 +308,14 @@ nothing reachable falls through — but the branch is about failures only and th
 
 ### V34-C4 — the 600 ms correction was written once, and its twins in the same file still disagree
 
+**FIXED 2026-09-03.**  All three sites now say the same thing, and it is the true one.
+
+`routeFinished`'s "later of the two" paragraph says that on today's code the floor and a fixed hold are
+the same thing, because `execRoute` starts a thread and returns - and why the floor's shape is still
+worth keeping if execution ever becomes synchronous.  `runAndTimeTheRoute`'s javadoc no longer claims it
+does not put the button back, which it does, on the last line of its `finally`.  And the debug line says
+what it measures: the dialog and the spawn, which is what it was added to settle - not the route.
+
 The new claim is right (`V34-D7`). Two comments 8,000 lines away in the same file say the opposite and
 were not touched.
 
@@ -322,6 +361,11 @@ settle, and the reader who finds 24569 first will restore the sentence that was 
 
 ### V34-C5 — the three-way comment accounts for two of the three kinds of drive
 
+**FIXED 2026-09-03.**  The comment accounts for all four `(accessory, accessory2)` states rather than
+for three branches, and names the third kind of drive: a drive commanded RED cannot clear protection,
+because red is the direction protection itself commands.  The conclusion the finding checked and upheld
+is stated as the conclusion.
+
 `src/org/traincontrol/gui/LayoutLabel.java:415-424`:
 
 > A signal or a lamp goes through `Accessory.doSwitch()`, which is `isStraight() ? turn() :
@@ -351,6 +395,11 @@ has neither a false negative nor a false positive on a three-way, which is what 
 
 ### V34-C6 — the two new affordance assertions are whole-file `contains`
 
+**FIXED 2026-09-03**, by the work under `V36-C3` and `V37-C1`.  The strip's assertion reads the body
+with comments stripped, and the residual this finding named - that nothing pinned the answer REACHING
+`fixing` - is now its own rule, mutation-confirmed against a body that asks the guard's question and
+decides on `lastTotalErrors > 0`.
+
 `test/regression/testErrorsStopTheSetupRunning.java:242-251`. The guard half of this test, immediately
 above, does it properly — `bodyOf(ui, "private boolean refuseAutonomyStartWhileBroken()")` and
 `bodyOf(ui, "public boolean canStartAutonomy()")`, both through `withoutComments`. The two lines added
@@ -373,6 +422,10 @@ A plain revert is still caught, because `autonomyHasErrors()` appears nowhere el
 That is what keeps this a C rather than a B.
 
 ### V34-C7 — the new dispose runs ahead of the preference restore
+
+**FIXED 2026-09-03.**  `sandbox.close()` is in its own `finally` now, so the preference restore cannot
+be skipped by anything the disposals throw.  Nothing throws there today - which is why this was a C -
+but the ordering made the block's most important line depend on its most expensive ones.
 
 `test/regression/testThePaletteStillPlacesTiles.java:188-206`:
 
@@ -411,6 +464,10 @@ and the commit widened it by one, in a `finally` whose most important line is it
 it: put `sandbox.close()` in its own nested `finally`, or first.
 
 ### V34-C8 — the findings answered are still open in their own documents
+
+**FIXED 2026-09-03.**  This C-round sweep is the answer, and it is doing the whole set rather than this
+document: every finding cited here now carries its verdict where the reader is told to look for it, and
+the four places where a disposition table said `open` over prose that said `FIXED` have been corrected.
 
 The commit dispositioned one finding: `SVN-B7` in `docs/reviews/2026-09-01-week-of-commits-review.md`,
 and did it well — the entry now says both what was fixed and that the reasoning behind it was wrong.

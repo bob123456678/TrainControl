@@ -218,12 +218,22 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 #
 # Nothing is truncated now, and a missing summary is called out rather than left blank - a class that
 # reported nothing is not a class that passed.
+
 # WHAT WENT WRONG, counted (V33-C4).
 #
-# This always exited 0, so a caller that chained on it - or a person reading only the exit
-# status - could not tell a green run from one where every class failed.  battery.sh has
-# reported this since it was written.
+# Whatever the tests did, this used to exit 0 - so a caller that chained on it, or a person reading
+# only the exit status, could not tell a green run from one where every class failed.  battery.sh has
+# reported this since it was written.  (The live-layout, lock and probe branches have always had exit
+# statuses of their own; it is the TESTS' verdict that was thrown away.)
 BAD=0
+
+# AND A SKIP IS NOT A FAILURE, but it is not a pass either (V34-C3).
+#
+# Counted apart, as battery.sh does: it exits 1 for failures and 2 for skips, and says why - "a class
+# that tested nothing counts".  This file's own comment claimed to count them apart while adding them
+# to one number and exiting 1 for everything, so a class that skips because it needs a display made the
+# runner report a failure.
+SKIPPED=0
 
 for T in "$@"
 do
@@ -240,8 +250,21 @@ do
 
     if ! grep -q "Total tests run" "$S/one-run.txt"
     then
-        echo "*** $T PRINTED NO SUMMARY - it did not run.  Last lines:"
-        tail -5 "$S/one-run.txt" | sed "s/^/    /"
+        # THE MACHINE, OR THE CLASS (V34-C3, from battery.sh).
+        #
+        # A JVM that could not get its heap is the machine being busy and the answer is to run it
+        # again; anything else is the class, and the answer is to go and read it.  Reading them
+        # identically cost battery.sh a round of hunting for a fault in three classes that were fine.
+        #
+        # Both wordings, because a 64-bit JDK 8 says "Unable to allocate NNN bitmaps ... for the
+        # requested NNNKB heap" as well as "Could not reserve enough space for %I64uKB object heap".
+        if grep -qE "Could not reserve enough space|Unable to allocate.*heap" "$S/one-run.txt"
+        then
+            echo "*** $T DID NOT RUN - no heap (machine busy, rerun)"
+        else
+            echo "*** $T PRINTED NO SUMMARY - it did not run.  Last lines:"
+            tail -5 "$S/one-run.txt" | sed "s/^/    /"
+        fi
 
         BAD=$((BAD+1))
 
@@ -278,22 +301,26 @@ do
     # GREEN IS NOT "no failures" (the other half of the same omission, V33-B1).
     #
     # A class whose @BeforeClass throws reports every test SKIPPED and none failed, so "Failures: 0"
-    # is true of a class that tested nothing at all.  Counted apart rather than as a failure, because
-    # a skip can be legitimate - several classes need a display and say so.
-    if echo "$summary" | grep -qE "Total tests run: 0"
+    # is true of a class that tested nothing at all.
+    #
+    # FAILURES ASKED FIRST, and skips counted apart (V34-C3).  Both corrections are battery.sh's: a
+    # class that fails AND skips was headlined "SKIPPED TESTS", with the failures visible only in the
+    # raw grep above, and a class that skips legitimately - several need a display and say so - was
+    # added to the same number as a failure and exited 1.
+    if ! echo "$summary" | grep -q "Failures: 0"
+    then
+        BAD=$((BAD+1))
+    elif echo "$summary" | grep -qE "Total tests run: 0"
     then
         echo "*** $T RAN NOTHING - $summary"
 
-        BAD=$((BAD+1))
+        SKIPPED=$((SKIPPED+1))
     elif ! echo "$summary" | grep -q "Skips: 0"
     then
         echo "*** $T SKIPPED TESTS - $summary"
         echo "    A skipped class is not a green class."
 
-        BAD=$((BAD+1))
-    elif ! echo "$summary" | grep -q "Failures: 0"
-    then
-        BAD=$((BAD+1))
+        SKIPPED=$((SKIPPED+1))
     fi
 done
 
@@ -324,6 +351,16 @@ then
     echo "*** $BAD of the classes above did not come back clean ***"
 
     exit 1
+fi
+
+# TWO, LIKE battery.sh, and for its reason: a class that tested nothing counts.  It is not a failure,
+# but it is not a pass either, and a caller that chains on this can tell the two apart.
+if [ "$SKIPPED" -gt 0 ]
+then
+    echo ""
+    echo "*** $SKIPPED of the classes above tested nothing - no failures, but not a pass ***"
+
+    exit 2
 fi
 
 exit 0

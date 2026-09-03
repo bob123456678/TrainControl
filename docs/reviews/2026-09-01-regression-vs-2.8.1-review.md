@@ -215,7 +215,7 @@ legacy file's, keyed by `start`/`end`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | WITHDRAWN IN FULL |
 | **Confidence** | confirmed by reading; the composition of three predicates, none of which needs execution to read |
 
 At 2.8.1 the Auto tab's configuration page carried five buttons - Validate, Load Blank Graph, Load
@@ -295,7 +295,7 @@ configuration page); switch to a Central Station layout, look at the tab bar (Au
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 (`1cfdf370`) |
 | **Confidence** | confirmed by reading |
 
     git show master:src/org/traincontrol/gui/HomeLocomotiveMenu.java:150,157

@@ -187,24 +187,40 @@ public class testThePaletteStillPlacesTiles
         }
         finally
         {
-            // THE EDITOR TOO, not only the window that owns it (V33-C11).
+            // THE PREFERENCE COMES BACK WHATEVER ELSE HAPPENS (V34-C7).
             //
-            // Both siblings this test was written from dispose theirs, and a LayoutEditor left
-            // undisposed keeps a frame, its grid and its listeners alive for the rest of the JVM -
-            // which for a class that builds one per test is a leak the battery pays for.
-            if (editor[0] != null)
+            // `sandbox.close()` is the line that puts `LAYOUT_OVERRIDE_PATH_PREF` back, and its own
+            // javadoc says why that is the most important line in this block: a test that leaves a
+            // path behind has changed which layout the application opens the next time Adam starts it,
+            // and the preference is per-user and outlives the JVM.
+            //
+            // It was last, behind three things that can throw - `LayoutEditor.dispose()` is overridden
+            // and does file IO under OneDrive.  Nothing throws there today, which is why this is a C
+            // and not a B, but the ordering made the cheapest line in the block depend on the most
+            // expensive ones.  Its own `finally` now.
+            try
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
-            }
+                // THE EDITOR TOO, not only the window that owns it (V33-C11).
+                //
+                // Both siblings this test was written from dispose theirs, and a LayoutEditor left
+                // undisposed keeps a frame, its grid and its listeners alive for the rest of the JVM -
+                // which for a class that builds one per test is a leak the battery pays for.
+                if (editor[0] != null)
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+                }
 
-            if (ui[0] != null)
+                if (ui[0] != null)
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+                }
+
+                if (model != null) model.stop();
+            }
+            finally
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+                if (sandbox != null) sandbox.close();
             }
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
         }
     }
 

@@ -444,13 +444,19 @@ public final class LayoutLabel extends JLabel
                                         // A signal or a lamp goes through `Accessory.doSwitch()`,
                                         // which is `isStraight() ? turn() : straight()`.  A THREE-WAY
                                         // does not: `execSwitching` drives its two accessories
-                                        // directly, in three cases.  It reaches the same place - in
-                                        // every one of those cases the drive commanded from red to
-                                        // green is exactly the one whose `isStraight()` is false, and
-                                        // the drives re-commanded green were green already - but the
-                                        // method named here is not the method that runs for the
-                                        // second limb, and a reader checking the claim against a
-                                        // three-way would find that (V32-C3).
+                                        // directly, in three cases.  It reaches the same place, and
+                                        // the accounting is over all FOUR states rather than over the
+                                        // three branches (V34-C5): every drive commanded GREEN is
+                                        // either on an accessory whose `isStraight()` is false or was
+                                        // green already, and the drives commanded RED - which happen
+                                        // in two of the three branches - cannot clear protection,
+                                        // because red is the direction protection itself commands.
+                                        //
+                                        // So the tile's test has neither a false negative nor a false
+                                        // positive on a three-way.  What is true is that the method
+                                        // named here is not the method that runs for the second limb,
+                                        // and a reader checking the claim against a three-way would
+                                        // find that (V32-C3).
                                         boolean protecting =
                                             aboutToClearProtection(tcUI, c.getAccessory())
                                             || aboutToClearProtection(tcUI, c.getAccessory2());

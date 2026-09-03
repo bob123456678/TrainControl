@@ -673,6 +673,9 @@ public class testAutonomyDiagramSession
      * both are applied and the assertion is that exactly one of them traps the arrival.  True
      * whichever way round they are, and false if nothing is watching.
      *
+     * The LAST assertion is the exception, and it is why the trapping direction is put back before it:
+     * it asks `check()` about the current state rather than comparing the two answers (V33-C5).
+     *
      * NOT COVERED HERE: the no-way-IN half of the same check.  It could not be provoked, and the
      * reason is worth writing down rather than rediscovering.  A copy is emitted per side a train can
      * ARRIVE by, so barring the approach does not leave a copy nothing can reach - it leaves no copy
@@ -762,6 +765,19 @@ public class testAutonomyDiagramSession
         assertTrue(outA.contains("Middle") != outB.contains("Middle"),
             "the same arrival was reported as trapped whichever way the far section was barred, so "
             + "the check is not reading the direction at all.  Out: " + outA + " then " + outB);
+
+        // THE TRAPPING DIRECTION, PUT BACK FIRST (V33-C5, 2026-09-03).
+        //
+        // `subjectsOf` asks `check()` about the CURRENT state, and the assertions above leave whatever
+        // the last `setDirection` set.  So this used to pass on the accident that the trapping
+        // direction happened to be the one applied second: swapping the two calls above, or writing
+        // `route(Side.W, Side.E)` in `TilePorts` - a rename with no behavioural meaning - made it fail
+        // while accusing the editor of not reporting something that does not exist in that state.
+        //
+        // Which of the two traps the arrival is the tile's business, which is this test's whole
+        // design, so it is asked rather than assumed.
+        session.setDirection(far, outA.contains("Middle") ? Direction.TOWARD_A : Direction.TOWARD_B);
+        session.rebuild();
 
         assertFalse(subjectsOf(org.traincontrol.automationui.AutonomyChecks.COPY_NO_WAY_OUT).isEmpty(),
             "the session knows about the trapped arrival but the editor never reports it");

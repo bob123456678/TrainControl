@@ -205,12 +205,20 @@ public class testErrorsStopTheSetupRunning
 
         assertFalse(canStart.isEmpty(), "canStartAutonomy() has moved or been renamed");
 
-        // THE GUARD'S QUESTION, WHICHEVER ONE THAT IS (TS3-B6).
+        // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR (TS3-B6, corrected by V33-C12).
         //
         // This used to require the literal `autonomyErrorCount()`, and that is how it came to ENFORCE
         // the divergence it exists to catch: the guard was widened to `hasErrors()` and this assertion
-        // said the affordance must go on asking the narrower one.  It reads the guard and requires the
-        // affordance to ask the same thing.
+        // said the affordance must go on asking the narrower one.
+        //
+        // **It does not read the guard and derive the affordance's question from it**, which is what
+        // the sentence here used to claim.  It cannot: the guard asks the SESSION (`hasErrors()`) and
+        // the affordance asks the WINDOW's wrapper for it (`autonomyHasErrors()`), so the two literals
+        // differ by design and no textual comparison can tell that pairing from a divergence.
+        //
+        // What it does is name both halves in one place, so that widening one and not the other fails
+        // here rather than on Adam's railway.  If the guard's question changes, both assertions below
+        // have to change together, and that is the point: they are the pair.
         String guard = withoutComments(bodyOf(ui, "private boolean refuseAutonomyStartWhileBroken()"));
 
         assertFalse(guard.isEmpty(), "refuseAutonomyStartWhileBroken() has moved or been renamed");
@@ -240,11 +248,16 @@ public class testErrorsStopTheSetupRunning
         // does not: the number it displays comes from setFindings' own arguments, and reading it here
         // as well was a second whole walk of the graph on the event thread (V34-B1).  What must match
         // the guard is what DECIDES.
-        // THE BODY, not the file (V36-C).
+        // THE BODY, not the file (V36-C3, corrected by V37-C1).
         //
-        // A whole-file `contains` is satisfied by the method name appearing in a COMMENT, and this
-        // method's comments name it twice.  Its sibling assertion above extracts the body and strips
-        // comments; this one did not, and it is now the strip's only rule.
+        // A whole-file `contains` is satisfied by the method name appearing in a COMMENT.  It is not
+        // satisfied today - `autonomyHasErrors()` occurs once in that file, in code - so this is a
+        // guard against the next comment rather than a fix for a hole that was open.  The version
+        // saying the comments "name it twice" was simply wrong, and it is the reason a reader would
+        // have checked first.
+        //
+        // Worth having anyway: its sibling assertion above extracts the body and strips comments, this
+        // one is now the strip's only rule, and the class already holds both helpers.
         String sync = withoutComments(bodyOf(toggle, "public final void syncRun()"));
 
         assertFalse(sync.isEmpty(), "syncRun has moved or been renamed");
@@ -253,6 +266,26 @@ public class testErrorsStopTheSetupRunning
             "the diagram strip decides Start-versus-Fix without asking the guard's own question, so "
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
             + "named for.  Body: " + sync);
+
+        // AND THE ANSWER HAS TO REACH THE DECISION (V34-C6, V36-C3).
+        //
+        // Asking the question and then deciding on something else is the whole of OB-090, and every
+        // rule above this one is satisfied by a body that asks it and drops the answer:
+        // `boolean broken = ui.autonomyHasErrors(); fixing = source == start && errors > 0;` passes
+        // each of them.  So the assignment itself is read: whatever `fixing` is decided from, the
+        // guard's answer must be part of it.
+        int asked = sync.indexOf("autonomyHasErrors()");
+        int decided = sync.indexOf("fixing =");
+
+        assertTrue(decided > asked,
+            "syncRun no longer decides `fixing` after asking the guard's question - so either the "
+            + "decision has moved or the question is being asked and thrown away.  Body: " + sync);
+
+        String decision = sync.substring(decided, Math.min(sync.length(), decided + 200));
+
+        assertTrue(decision.contains("broken"),
+            "the strip asks the guard's question and then decides on something else, which is OB-090 "
+            + "with the fix's own words still in the file.  The decision reads: " + decision);
 
         // The body here too (V37-C2).  Fixing one whole-file grep and leaving its twin five lines
         // below is the sweep-the-siblings miss this project files more often than any other, and it

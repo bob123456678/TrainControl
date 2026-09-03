@@ -329,17 +329,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Against START only.  Stop wins the line above and must keep winning: an error appearing
         // while trains are running is the moment stopping matters most, and swapping the brake for a
         // button that opens an editor would take it away.
-        // The GUARD'S own number, not this strip's cached copy (AU-C1).
-        //
-        // `lastTotalErrors` is whatever the last setFindings call left behind, so it was a third
-        // opinion about "would Start be refused" - alongside canStartAutonomy and
-        // refuseAutonomyStartWhileBroken, which both ask the session live. Any path that changes the
-        // findings without firing this strip's listener would have left it offering Start where the
-        // guard refuses, which is the OB-057 shape at the surface that was fixed for it.
-        //
-        // Falls back to the cached number only when there is no window to ask - which is a strip built
-        // before its owner, not a running application.
-        // THE GUARD'S OWN QUESTION, and only that (V31-B1, V32-B1, then V34-B1).
+        // THE GUARD'S OWN QUESTION, and only that (AU-C1, V31-B1, V32-B1, then V34-B1).
         //
         // `fixing` decides what pressing this strip DOES - open the editor, or click Start - so it is
         // not a display.  It asked a COUNT while the guard asked `hasErrors()`, which also covers a
@@ -351,7 +341,17 @@ public class AutonomyOverlayToggle extends JPanel
         // this method reads it - the number the strip displays comes from setFindings' own arguments,
         // and the band's colour follows `fixing` and `excluded` - so keeping it was a second whole
         // walk of the graph on the event thread, `check()` being uncached, discarded immediately.
-        // That is `LD-C6`'s cost at the neighbouring door.
+        //
+        // That is `LD-C6`'s cost, at one of the doors it names.  **The door is not closed**: the window
+        // walks `check()` itself to count the findings and hands the counts to `setFindings`, which
+        // calls straight back into here - so a refresh is two walks rather than three (`V36-C5`).  The
+        // strip cannot simply be given the boolean, because `hasErrors()` is wider than `errors > 0`
+        // and that width is `V31-B1`; caching `check()` on the session is what would close it.
+        //
+        // `lastTotalErrors` is what the last `setFindings` left behind, and it is read only when there
+        // is no window to ask - a strip built before its owner, not a running application.  As a
+        // standing answer it would be a third opinion about "would Start be refused", alongside
+        // `canStartAutonomy` and `refuseAutonomyStartWhileBroken`, which both ask the session live.
         boolean broken = ui != null ? ui.autonomyHasErrors() : lastTotalErrors > 0;
 
         fixing = source != null && source == start && broken;

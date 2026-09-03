@@ -58,7 +58,7 @@ continuation with a `finally` at the statements themselves, a `finally` around t
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
 
 `AutonomyEditorPanel.java:6235`:
 
@@ -85,7 +85,7 @@ is disabled.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
 
 `LayoutLabel.java:343-382`: when track power is off, a click on an accessory takes the power-dialog
 branch (`if (!tcUI.getModel().getPowerState())`), and the protecting-signal question added by SVN-B16

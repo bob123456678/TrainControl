@@ -602,6 +602,14 @@ public class testEditorSurfaceRules
         String door = withoutComments(bodyOf(ui,
             "private void RouteListMouseClicked(java.awt.event.MouseEvent evt)"));
 
+        // NOT VACUOUS WHEN THE HANDLER MOVES (V33-C7).
+        //
+        // `bodyOf` answers "" when it cannot find the declaration, and an empty string contains
+        // nothing - so a renamed or REGENERATED handler turns the assertion below into a no-op that
+        // still reads as protection.  This one is a NetBeans `//GEN-FIRST` method, which is exactly
+        // the kind that gets regenerated.  Its positive siblings are self-guarding; a negative is not.
+        assertFalse(door.isEmpty(), "RouteListMouseClicked has moved or been renamed");
+
         assertFalse(door.contains("routesExecuting"),
             "the route row's own click handler asks whether the route is already running instead of "
             + "leaving it to executeRoute.  One door asking for itself is how the other two came to "
@@ -671,9 +679,18 @@ public class testEditorSurfaceRules
         String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(route.contains("protectsAnOccupiedSquare"),
+        // THE BODY, not the file (V33-C6).
+        //
+        // Read whole, this passes on the method name appearing in a comment - and `MarklinRoute`'s
+        // comments discuss this rule at length, which is how the assertion would have survived the
+        // call being deleted.
+        String held = withoutComments(bodyOf(route, "private String[] heldReason(RouteCommand rc)"));
+
+        assertFalse(held.isEmpty(), "MarklinRoute.heldReason has moved or been renamed");
+
+        assertTrue(held.contains("protectsAnOccupiedSquare"),
             "the route no longer asks the shared rule, so the two doors are working from different "
-            + "definitions of the same question again");
+            + "definitions of the same question again.  Body: " + held);
 
         String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/automation/Layout.java")), java.nio.charset.StandardCharsets.UTF_8);
