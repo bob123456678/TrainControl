@@ -2297,6 +2297,49 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * And the station-capacity notice is gated the same way (SVN-C3).
+     *
+     * The two halves of the length rule are `placedTrainsWithoutLength` and `stationsWithoutMaxLength`,
+     * and only the reversal notice ever got Adam's condition: *"if any other track length is set
+     * anywhere"*.  So a railway that models no lengths at all had every one of its stations listed -
+     * thirty of them on his - beside the real problems, on the list this feature's own javadoc twice
+     * says is made useless by exactly that.
+     *
+     * The same fixture, asked twice, with one length recorded somewhere else entirely between them.
+     *
+     * MUTATION this catches: removing the `measuresAnyTrack()` gate reports the station in both halves.
+     */
+    @Test
+    public void testTheStationCapacityNoticeWaitsForALayoutThatMeasures() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Capacity");
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.rebuild();
+
+        assertTrue(session.getStore().isStation(station),
+            "the fixture did not take: this square must be a station");
+
+        // NOTHING MEASURED ANYWHERE: no notice.
+        assertFalse(subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH)
+                .contains(session.pointNameForTile(station)),
+            "a layout that records no lengths at all was asked for a station capacity, which is a "
+            + "notice about something nobody on that railway is trying to do");
+
+        // One length, on a different square, and the layout is one that measures.
+        session.setTileLength(new TileKey("main", 2, 1), 7);
+
+        assertTrue(subjectsOf(org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH)
+                .contains(session.pointNameForTile(station)),
+            "the layout measures track now, and a station with no capacity was not asked about - so "
+            + "the half of the length rule that stops a train being sent somewhere too short for it "
+            + "has nothing to work with and nothing says so");
+    }
+
+    /**
      * A square that already has a name keeps it.
      *
      * Same rule as importing a configuration: this fills gaps, it does not overwrite somebody's work

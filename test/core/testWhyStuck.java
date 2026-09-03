@@ -281,6 +281,74 @@ public class testWhyStuck
     }
 
     /**
+     * The commands panel's dash agrees with the rule it is a copy of (SVN-C4).
+     *
+     * The run list marks a destination " -" to mean *autonomy will not choose this, but you may*.  It
+     * spells the rule out by hand instead of asking `Layout.barredFromAutonomy`, and its own javadoc
+     * says why - every public way in to that rule is `synchronized` on the Layout, and this is asked
+     * three times per repaint on the event thread, which is the freeze `AutoLocomotiveStatus` was
+     * rewritten to remove.
+     *
+     * **A deliberate copy still drifts.**  `280ff08b` moved the terminus rule out of `isPathClear`
+     * into three places and missed this fourth mirror, so a terminus a non-reversible train cannot be
+     * sent to was listed with no dash for a week.  This is what would have caught it: the two answers
+     * are compared on a fixture where they must agree.
+     *
+     * MUTATION this catches: removing any limb of the dash's predicate.
+     */
+    @Test
+    public void testTheDashAgreesWithTheRule() throws Exception
+    {
+        Layout layout = twoStations("WS11");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS11_A", false);
+
+        java.lang.reflect.Method dash =
+            org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod(
+                "notChosenByAutonomy", org.traincontrol.automation.Point.class,
+                org.traincontrol.base.Locomotive.class);
+
+        dash.setAccessible(true);
+
+        boolean was = loc.isReversible();
+
+        try
+        {
+            // A TERMINUS THIS TRAIN CANNOT BACK INTO, which is the limb that was missed.
+            layout.getPoint("WS11_B").setTerminus(true);
+
+            loc.setReversible(false);
+
+            assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS11_B"),
+                "precondition: the model does not bar a terminus for a train that cannot reverse, so "
+                + "this test is not about the rule it says it is");
+
+            assertEquals(dash.invoke(null, layout.getPoint("WS11_B"), loc), " -",
+                "the run list offers a terminus to a train that cannot back into it with no mark, "
+                + "while the model will never send it there - so the dash says autonomy might choose "
+                + "a station autonomy has already ruled out");
+
+            // AND THE OTHER WAY: a train that can reverse is offered it without a dash.
+            loc.setReversible(true);
+
+            assertFalse(layout.destinationsBarredFromAutonomy(loc).contains("WS11_B"),
+                "precondition: the model bars this terminus for a reversible train too, so the "
+                + "assertion below would pass for the wrong reason");
+
+            assertEquals(dash.invoke(null, layout.getPoint("WS11_B"), loc), "",
+                "the run list marks a station autonomy WILL choose as one it will not");
+        }
+        finally
+        {
+            loc.setReversible(was);
+
+            layout.getPoint("WS11_B").setTerminus(false);
+        }
+    }
+
+    /**
      * A station that is merely occupied is NOT barred.
      *
      * The other half of the pair, and the one that stops the fix above from being "call everything

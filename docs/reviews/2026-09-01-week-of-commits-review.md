@@ -885,6 +885,8 @@ it, so the set of doors that *do not* ask is now the minority and easier to miss
 
 ### SVN-C1 — `firstOnTheRailway` is a dead parameter
 
+**FIXED 2026-09-03.**  `firstOnTheRailway` is gone from all four lines - the local, the lambda, the javadoc and the signature.  The `incrementAndGet()` stays, with a comment saying which half was dead and why the count is not.
+
 `fbc19cb9` replaced its only use with a comment:
 
 ```java
@@ -898,6 +900,8 @@ The parameter survives at `Layout.java:4913` (`final boolean firstOnTheRailway =
 it. The `incrementAndGet()` is still needed; the flag derived from it is not.
 
 ### SVN-C2 — `refreshAllProtectingSignals` has no production caller
+
+**ANSWERED 2026-09-03 - documented, not removed.**  The javadoc says there is no production caller, names the two test classes that hold it, and says what a reader would otherwise conclude from `testBothProtectingSignalsAreThrown`'s mutation note.  The second limb is recorded at the method too: this was the only thing that cleared `signalAspects`, so the memo now lives for the session, and it is benign only because the skip test also asks `acc.isRed() == claimed`.  Removing either the memo or the method changes how signals are driven, which is not a release-candidate change.
 
 After `fbc19cb9` removed it from all three doors, `grep -rn "refreshAllProtectingSignals" src` returns
 only the declaration at `Layout.java:6089`. The remaining callers are
@@ -916,6 +920,10 @@ application no longer calls, still pinned by three tests, is the shape that make
 believe the sweep still happens.
 
 ### SVN-C3 — one length check gained the opt-in gate and its twin did not
+
+**FIXED 2026-09-03.**  `stationsWithoutMaxLength()` is gated on `store.measuresAnyTrack()`, which is Adam's own condition for its six-day-younger sibling: *"if any other track length is set anywhere"*.  Thirty warnings leave the list on a railway that models no lengths, and come back the moment one length is recorded.
+
+Covered by `testTheStationCapacityNoticeWaitsForALayoutThatMeasures`, mutation-confirmed against removing the gate.
 
 `reversalsWithoutLength()` is gated at `AutonomySession.java:1931`:
 
@@ -938,6 +946,10 @@ top of `SVN-B1`'s 21 — on the list the file's own javadoc twice says is *"made
 things listed beside real problems"*.
 
 ### SVN-C4 — the commands panel's "autonomy will not choose this" dash was not swept
+
+**FIXED 2026-09-03.**  The dash has the terminus limb: a station a non-reversible train cannot back into is marked "autonomy will not choose this", which is what the model has said since `280ff08b`.
+
+**Kept as a copy, deliberately, and now pinned.**  Every public way in to `Layout.barredFromAutonomy` is `synchronized` on the Layout, and this is asked three times per repaint on the event thread - taking that monitor there is the freeze this class was rewritten to remove.  So the copy stays and `testTheDashAgreesWithTheRule` compares the two answers on a fixture where they must agree; mutation-confirmed by removing the limb again.
 
 `src/org/traincontrol/gui/AutoLocomotiveStatus.java:139`:
 

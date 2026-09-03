@@ -4995,13 +4995,18 @@ public class Layout
         // first dispatches can both increment before either reads.  Both then see two, NEITHER sweeps,
         // and a hand-placed train's platform signal stays green for the whole run: AU-B7 again, in a
         // window a few instructions wide.
-        final boolean firstOnTheRailway = this.locomotiveThreads.incrementAndGet() == 1;
+        // COUNTED, not read (SVN-C1).  The flag this used to derive - "was mine the increment that
+        // took the count from zero to one" - had exactly one reader, the protecting-signal sweep
+        // `OB-166` removed, and it was carried through a lambda and two signatures for a week after
+        // that.  The count itself is still needed: `locomotiveThreads` is what tells the rest of this
+        // class whether anything is running.
+        this.locomotiveThreads.incrementAndGet();
 
         try
         {
             try
             {
-                return executePathInternal(path, loc, speed, ttp, firstOnTheRailway);
+                return executePathInternal(path, loc, speed, ttp);
             }
             catch (RuntimeException e)
             {
@@ -5096,12 +5101,9 @@ public class Layout
      * @param loc
      * @param speed
      * @param ttp
-     * @param firstOnTheRailway whether the caller's own increment was the one that took the count
-     *  from zero to one - the fact, as it was at that instant, rather than the counter to ask again
      * @return 
      */
-    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
-        boolean firstOnTheRailway)
+    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
     {    
         // Sanity check
         if (!this.isValid())
@@ -6346,6 +6348,18 @@ public class Layout
      *
      * The cost is one command per signal at the start of a run.  Set against a platform standing green
      * with a train in it, that is nothing.
+     *
+     * **NO PRODUCTION CALLER, since `OB-166` took it off all three doors** (SVN-C2, 2026-09-03).
+     * What calls it is `testAutoLayout` and `testBothProtectingSignalsAreThrown`, the second of which
+     * records the mutation "putting any of the three refreshAllProtectingSignals() calls back fails
+     * this" - so a reader could reasonably think the sweep still happens.  It does not: signals are
+     * refreshed one at a time, as occupancy changes.
+     *
+     * **And it was the only thing that cleared `signalAspects`**, so that memo now lives for the
+     * session.  Harmless because the skip test asks `acc.isRed() == claimed` as well, which is a fact
+     * about the accessory rather than about the memo; the memo's own half can only ever be stale.
+     * Left rather than fixed here, because removing either the memo or this method is a change to how
+     * signals are driven, and that is not a release-candidate change.
      */
     public void refreshAllProtectingSignals()
     {

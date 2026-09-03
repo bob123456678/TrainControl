@@ -131,12 +131,26 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      *
      * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
      * the full predicate is spelled out to match the rule in Layout rather than relying on that.
+     *
+     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON** (SVN-C4).  `280ff08b` moved that
+     * rule out of `isPathClear` into `pickPath`, `hasAutonomousDestination` and `barredFromAutonomy`,
+     * and this fourth mirror was missed - so before the move a terminus never reached
+     * `getPossiblePaths` for a non-reversible locomotive, and after it, one is listed with no dash.
+     *
+     * **Why this is a copy at all**, which is a fair question in a codebase that keeps paying for
+     * copies: `Layout.barredFromAutonomy` is the rule, and every public way in to it is `synchronized`
+     * on the Layout.  This runs on the event thread, three times per repaint, and this class exists
+     * because taking that monitor here froze the interface for as long as a path was being configured.
+     * So the copy is deliberate and lock-free, and `testTheDashAgreesWithTheRule` is what keeps it
+     * honest.
      */
     private static String notChosenByAutonomy(Point p, Locomotive loc)
     {
         if (p == null) return "";
 
-        return (p.isReversing() && p.isDestination()) || p.getExcludedLocs().contains(loc) ? " -" : "";
+        return (p.isReversing() && p.isDestination())
+            || (loc != null && p.isTerminus() && !loc.isReversible())
+            || p.getExcludedLocs().contains(loc) ? " -" : "";
     }
 
     /**

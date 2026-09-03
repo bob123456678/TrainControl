@@ -5326,13 +5326,22 @@ public class AutonomySession
      * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
      * reason the setting itself moved into the station submenu (FR-046).
      *
-     * @return the squares
+     * **Gated on the railway measuring something, like its sibling** (SVN-C3, 2026-09-03).  Adam set
+     * that condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not
+     * to model lengths"* - and this check, six days older, never got it: every station on a layout
+     * that models no lengths at all was listed, which is thirty of them on his own railway, on the
+     * list this file's javadoc twice says is made useless by ordinary things standing beside real
+     * problems.  A railway that has started measuring gets the notices back.
+     *
+     * @return the squares, empty when the layout measures nothing
      */
     private java.util.Set<TileKey> stationsWithoutMaxLength()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
 
-        if (reducer == null) return out;
+        if (reducer == null || store == null) return out;
+
+        if (!store.measuresAnyTrack()) return out;
 
         for (TileKey square : reducer.getPoints().keySet())
         {
