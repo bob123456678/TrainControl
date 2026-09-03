@@ -72,16 +72,23 @@ about ten seconds belongs on that list.
 
 **A one-off probe is not covered by any of this.** Both runners fingerprint `cs2_sample_layout`
 before and after and refuse to stay quiet if it moved; a `java` command typed straight at a class,
-which is how most probes get run, is guarded by nothing. On 2026-09-03 one of them left a
-`config/autonomy/setup-before-edit.json` in that folder - the snapshot the editor writes and clears
-on dispose - and nothing said a word, because no runner was involved. Its content turned out to
-match the live setup exactly, so the cost was nil this time; what it cost the time before was
-facings, placements, priorities and an exclusion list (see `testEveryLanguageFits`).
+which is how most probes get run, is guarded by nothing at all.
 
 So: **a probe opens `support.LayoutSandbox` before it builds a model or a window**, exactly as a test
 does, or it is run through `one.sh` where the fingerprint can see it. There is no third option that
 is safe, because the layout path is a machine-global preference and every probe that skips this step
-reads and writes the operator's live railway by default.
+reads and writes the operator's live railway by default. What it costs when it goes wrong is on
+record: facings, placements, priorities and an exclusion list, in `testEveryLanguageFits`'s own
+header.
+
+**And before hunting for the class that wrote to that folder, look for a running TrainControl.** On
+2026-09-03 a `config/autonomy/setup-before-edit.json` appeared there and read as exactly this failure;
+it was the *application*, launched from NetBeans at 02:19 and still open six hours later, leaving its
+own unfinished-edit snapshot. `battery.sh`'s warning says to check this first, and it is right:
+a running railway rewrites that folder as trains move, and no fingerprint can tell it from a test.
+A leftover application also holds the UDP port, which is what a `BindException` in a tool that does
+not pass `-Dtraincontrol.anyReceivePort=true` - the 2.8.1 jar in `docs/tools/parity/`, for one -
+actually means.
 
 ---
 
