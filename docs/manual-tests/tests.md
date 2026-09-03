@@ -13887,6 +13887,18 @@ It also un-minimises first, because an iconified window cannot be activated at a
 
 *Run against a build after this commit.*
 
+**Fourth pass, 2026-09-02.  Adam: "the window still isn't focused on startup."**
+
+The always-on-top dance was the right mechanism and it was undone too quickly.  `setAlwaysOnTop(true)` changes the window's native style, `toFront()` *posts* a raise, and the `finally` handed the style back in the same breath - so by the time the window manager acted on the raise the window was an ordinary one again and the same foreground rule refused it.
+
+The flag now comes back on a timer, four hundred milliseconds later, and the whole thing is tried a second time if the first did not take.
+
+**And if it still does not work, the log now says so.**  This has failed silently four times, and every one of those was a window that looked ordinary and did nothing when typed at.  The line names the cause - Windows only lets the application you are already using come to the front - and tells you the one thing that always works, which is to click the window once.
+
+5. **If it fails again, please send the log line.**  Its presence or absence is the fact I have been guessing at: present means the window manager refused us twice and this is not something the application can fix from inside; absent means the window thinks it IS active and the problem is somewhere else entirely.
+
+*Run against a build after this commit.*
+
 ---
 
 <a id="mt-260"></a>
@@ -14115,5 +14127,11 @@ diagram tile's OTHER question: with the track power off, that tile offers "turn 
 3. **With the power off and autonomy running, click a switch on the keyboard tab.**  It should ask about the power first, then about the conflict if there is one, and put the button back if you cancel either.
 
 *Run against a build after this commit.*
+
+**Adam, 2026-09-02 (triage, second round).** *"control+A is enough.  change show home locomotives to Show Homes."*
+
+Both done.  `R28-C5` is closed: Control+H sets the home locomotive in the autonomy editor, and the address keeps Control+A in the track editor with no second key and no new way for autonomy mode to edit the diagram.  The checkbox reads **Show Homes**.
+
+That is all four rulings answered and this entry closed for everything except the hands-on steps above.
 
 ---

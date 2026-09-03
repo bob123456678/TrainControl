@@ -386,7 +386,11 @@ lost behaviour. It is the only bundle key in this class and is easy to miss beca
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | 2026-09-02: one restored, one DECLINED |
+
+**Control+H is back**, in the autonomy editor, on the square under the pointer - Adam: *"set control+H for home."*  It is a second door onto the menu item that already exists, which is what this finding asked for.
+
+**The address key is declined**, on his second answer: *"control+A is enough."*  He had asked whether Control+8 could be used; the reason it was put back to him is that the autonomy editor has no address action at all, so a key there would mean letting that mode edit the diagram, which it deliberately does not do.  Control+A keeps it in the track editor, where the action lives.
 | **Confidence** | confirmed by reading |
 
     git show master:src/org/traincontrol/gui/GraphViewer.java:608   Ctrl+S -> set the hovered point's s88

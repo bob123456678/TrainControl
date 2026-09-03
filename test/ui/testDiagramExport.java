@@ -336,6 +336,69 @@ public class testDiagramExport
     }
 
     /**
+     * The diagram carries the column and row numbers when the setting is on (FR-057).
+     *
+     * Adam, after the first build of this: **"I don't see the axis labels in the editor grid."**
+     *
+     * `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS, and it drew correctly the
+     * whole time - what nothing covered was whether anybody put one on the diagram, which is this
+     * project's own "the extracted rule is tested and the call site is not".  Here rather than in that
+     * class because building a grid needs the application: a tile draws itself through the window's
+     * image cache, and that is what this class already has.
+     *
+     * Both directions, because a test of the ON case alone passes for a grid that always carries a
+     * ruler, and the switch is the whole of what was asked for.
+     *
+     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, or reading a preference key
+     * nothing writes.
+     */
+    @Test
+    public void testTheGridCarriesTheCoordinateRulerWhenTheSettingIsOn() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+
+        assertNotNull(page, "no page to draw");
+
+        boolean was = TrainControlUI.getPrefs().getBoolean(
+            TrainControlUI.SHOW_COORDINATES_PREF, false);
+
+        try
+        {
+            for (final boolean on : new boolean[] { true, false })
+            {
+                TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, on);
+
+                final javax.swing.JPanel panel = new javax.swing.JPanel();
+                final org.traincontrol.gui.LayoutGrid[] built =
+                    new org.traincontrol.gui.LayoutGrid[1];
+
+                SwingUtilities.invokeAndWait(() ->
+                    built[0] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui));
+
+                javax.swing.border.Border border = built[0].getContainer().getBorder();
+
+                if (on)
+                {
+                    assertTrue(border instanceof org.traincontrol.gui.AxisRuler,
+                        "the setting is on and the diagram carries " + border + ", so the numbers are "
+                        + "drawn nowhere - which is what Adam reported: \"I don't see the axis labels "
+                        + "in the editor grid\"");
+                }
+                else
+                {
+                    assertFalse(border instanceof org.traincontrol.gui.AxisRuler,
+                        "the setting is off and the diagram still carries a ruler, so the toggle only "
+                        + "goes one way");
+                }
+            }
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, was);
+        }
+    }
+
+    /**
      * Building a grid over a panel retires the grid that was there.
      *
      * DD-B3. Four places in the application build a `LayoutGrid` over an existing panel, and three of

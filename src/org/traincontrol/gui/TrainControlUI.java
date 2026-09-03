@@ -7184,24 +7184,66 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
         }
 
-        boolean wasOnTop = isAlwaysOnTop();
+        raiseOnce(isAlwaysOnTop(), 1);
+    }
 
-        try
+    /**
+     * How long the window manager is given to act on a raise before the topmost flag is handed back.
+     *
+     * **This number is the fix.**  `setAlwaysOnTop(true)` changes the window's native style and
+     * `toFront()` POSTS a raise; handing the flag back in the same breath - which is what a `finally`
+     * does - meant the raise was processed against an ordinary window and refused by the same
+     * foreground rule the flag exists to get past.
+     */
+    private static final int FOREGROUND_SETTLE_MS = 400;
+
+    /**
+     * One attempt at the front, with the topmost flag handed back afterwards rather than immediately.
+     *
+     * Tried twice in all.  The first attempt happens while the application is still starting, which is
+     * the moment the window manager is least likely to co-operate; the second is a quarter of a second
+     * later, when whatever else was claiming the screen has usually finished.  Two rather than a loop,
+     * because an application that keeps pulling itself in front is a worse fault than one that does
+     * not come forward, and the operator may have deliberately switched away by then.
+     *
+     * @param wasOnTop the always-on-top setting to restore, which is the operator's and not ours
+     * @param attempt 1 for the first go, 2 for the retry
+     */
+    private void raiseOnce(final boolean wasOnTop, final int attempt)
+    {
+        setAlwaysOnTop(true);
+
+        toFront();
+
+        requestFocus();
+
+        javax.swing.Timer settle = new javax.swing.Timer(FOREGROUND_SETTLE_MS, event ->
         {
-            setAlwaysOnTop(true);
-
-            toFront();
-
-            requestFocus();
-        }
-        finally
-        {
-            // In a finally because what it wraps is native and can throw, and an application left
-            // permanently above everything else would be a worse fault than the one being fixed - and
-            // one the operator could not undo, since the menu item would then disagree with the
-            // window.
+            // The operator's setting back, always.  An application left permanently above everything
+            // else is a worse fault than the one being fixed, and one they could not undo - the menu
+            // item would then disagree with the window.
             setAlwaysOnTop(wasOnTop);
-        }
+
+            if (isActive()) return;
+
+            if (attempt < 2)
+            {
+                raiseOnce(wasOnTop, attempt + 1);
+
+                return;
+            }
+
+            // SAID OUT LOUD, because it has now failed silently four times.
+            //
+            // Adam has reported this as OB-168, twice as OB-170 and once again after that, and every
+            // one of those was a window that looked ordinary and did nothing when typed at.  A line in
+            // the log turns the next one into a fact rather than a symptom - and tells him the one
+            // thing that always works.
+            if (this.model != null) this.model.logf("ui.warnCouldNotTakeTheForeground");
+        });
+
+        settle.setRepeats(false);
+        settle.start();
     }
 
     /**

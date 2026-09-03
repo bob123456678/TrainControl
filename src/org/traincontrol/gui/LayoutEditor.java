@@ -4866,7 +4866,7 @@ public class LayoutEditor extends PositionAwareJFrame
     public boolean toggleCoordinates()
     {
         boolean now = !TrainControlUI.getPrefs().getBoolean(
-            TrainControlUI.SHOW_COORDINATES_PREF, false);
+            TrainControlUI.SHOW_COORDINATES_PREF, LayoutGrid.SHOW_COORDINATES_DEFAULT);
 
         TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, now);
 
@@ -4884,7 +4884,8 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public static boolean showingCoordinates()
     {
-        return TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF, false);
+        return TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
+            LayoutGrid.SHOW_COORDINATES_DEFAULT);
     }
     
     public void clear()

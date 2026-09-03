@@ -479,7 +479,13 @@ public class testTheWindowTakesTheKeyboard
      * Both directions, because a one-directional test passes on `setAlwaysOnTop(false)` unconditionally
      * - which is exactly the wrong answer for an operator who has the setting turned on.
      *
-     * MUTATION this catches: dropping the `finally`, or replacing the restore with a bare
+     * **The restore is on a timer, and that is the fix rather than an implementation detail.**  Handing
+     * the flag back in the same breath as the raise - which a `finally` does - was the fourth-pass
+     * defect: `toFront()` posts a raise, and by the time the window manager acted on it the window was
+     * an ordinary one again.  So this waits for the flag to come back rather than reading it
+     * immediately, and the wait is bounded so a restore that never happens fails rather than hangs.
+     *
+     * MUTATION this catches: dropping the restore, or replacing it with a bare
      * `setAlwaysOnTop(false)`.
      */
     @Test(timeOut = 300000)
@@ -519,7 +525,14 @@ public class testTheWindowTakesTheKeyboard
                     }
                 });
 
-                settle();
+                // Bounded, because the restore is posted rather than immediate - up to two attempts
+                // at FOREGROUND_SETTLE_MS each, and then some slack for a busy event thread.
+                for (int waited = 0; waited < 4000 && up.ui.isAlwaysOnTop() != onTop; waited += 100)
+                {
+                    Thread.sleep(100);
+
+                    settle();
+                }
 
                 assertEquals(up.ui.isAlwaysOnTop(), onTop,
                     "coming to the front left always-on-top at " + up.ui.isAlwaysOnTop() + " when the "

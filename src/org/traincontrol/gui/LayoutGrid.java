@@ -76,6 +76,15 @@ public class LayoutGrid
     public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
 
     /**
+     * Whether a diagram prints its coordinates when nobody has said either way (FR-057).
+     *
+     * ON.  Adam asked for "a grid around the diagram" because "coordinates are referenced in issues
+     * but not visible to the user", and an option that has to be found before it does anything is not
+     * an answer to that.  Control+K turns it off, in either editor, and the choice is remembered.
+     */
+    public static final boolean SHOW_COORDINATES_DEFAULT = true;
+
+    /**
      * Whether station captions are left off this diagram entirely (FR-030).
      *
      * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
@@ -844,7 +853,8 @@ public class LayoutGrid
         //
         // Read from the preference on every build, which is what makes the toggle a redraw rather than
         // a special case.
-        if (TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF, false))
+        if (TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
+            SHOW_COORDINATES_DEFAULT))
         {
             container.setBorder(new AxisRuler(size, offsetX, offsetY, width - 1, height - 1));
         }
@@ -856,11 +866,30 @@ public class LayoutGrid
         // Generate grid
         container.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints(); 
-        container.setSize(width * size, height * size);
-        container.setMaximumSize(new Dimension(width * size, height * size));
-        
-        maxWidth = width * size;
-        maxHeight = height * size;
+
+        // AND THE ROOM THE RULER ASKED FOR, added to the panel rather than taken out of the diagram
+        // (FR-057, Adam: "I don't see the axis labels in the editor grid").
+        //
+        // A border paints inside the component's own bounds, so the eighteen pixels it reserves come
+        // out of whatever the component was given.  These three numbers were all `width * size` by
+        // `height * size` - the grid exactly - so the gutter was carved out of the diagram: the tiles
+        // were pushed right and down inside a panel that had not grown, and the numbers went under the
+        // edge of the scroll pane.  The border was there the whole time and could not be seen, which
+        // is a worse failure than not drawing it at all.
+        //
+        // `maxWidth` and `maxHeight` are what the EDITOR sizes its own panel from, so they have to
+        // carry the gutter too - otherwise the panel is the old size and the container overflows it.
+        java.awt.Insets gutter = container.getBorder() == null
+            ? new java.awt.Insets(0, 0, 0, 0) : container.getBorder().getBorderInsets(container);
+
+        int fullWidth = width * size + gutter.left + gutter.right;
+        int fullHeight = height * size + gutter.top + gutter.bottom;
+
+        container.setSize(fullWidth, fullHeight);
+        container.setMaximumSize(new Dimension(fullWidth, fullHeight));
+
+        maxWidth = fullWidth;
+        maxHeight = fullHeight;
                
         grid = new LayoutLabel[width][height];
                        
