@@ -2193,6 +2193,56 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * Undo re-opens a link whose two halves are on different pages (SVN-B8).
+     *
+     * A portal is a pair of squares on two pages - that is what it is for - and `setPortalDisabled`
+     * writes **both** ends. `453a3ef4` taught `PairMapKept` and `ListMapKept` to capture an entry with
+     * either end on the page being snapshotted, and left the set kind alone; `disabledLinks` is a set,
+     * and it is the one set whose members are paired across pages.
+     *
+     * So: link open, snapshot page 1 (captures nothing about it), shut the link (both ends go in),
+     * undo page 1. The members on page 1 are dropped and nothing is put back, leaving the far half
+     * alone in the set - and `isPortalDisabled` answers through the partner, so **the undo did not
+     * re-open the link**. What reaches disk is `disabledLinks` with one end in it, the shape
+     * `TileGraph.portalClosed` calls out as having no migration.
+     *
+     * Both directions are asserted, because a fix that simply cleared the set would pass the first.
+     *
+     * MUTATION: constructing `disabledLinks` as an unpaired `SquareSetKept` fails this.
+     */
+    @Test
+    public void testUndoReopensALinkWhoseHalvesAreOnDifferentPages() throws IOException
+    {
+        TileKey here = new TileKey("1", 10, 9);
+        TileKey there = new TileKey("5", 15, 5);
+
+        store.pairPortals(here, there);
+
+        assertFalse(store.isPortalDisabled(here), "precondition: the link starts open");
+
+        // What the editor pushes before the gesture.
+        java.util.Map<String, Object> pushed = store.snapshotPage("1");
+
+        store.setPortalDisabled(here, true);
+
+        assertTrue(store.isPortalDisabled(here) && store.isPortalDisabled(there),
+            "precondition: shutting a link shuts both ends of it");
+
+        // Ctrl+Z.
+        store.restorePage("1", pushed);
+
+        assertFalse(store.isPortalDisabled(here),
+            "undo did not re-open the link.  The snapshot of page 1 was taken before the link was "
+            + "shut and captured nothing, because the set kind only ever looked at members ON the "
+            + "page - so the undo dropped the near half and left the far one, and "
+            + "isPortalDisabled answers through the partner (SVN-B8)");
+
+        assertFalse(store.isPortalDisabled(there),
+            "the far half is still in disabledLinks on its own, so disabledLinks reaches disk with "
+            + "one end of a pair in it - the shape TileGraph.portalClosed says has no migration");
+    }
+
+    /**
      * A rename reaches a setup that nothing has open.
      *
      * OB-062. A locomotive rename has to reach the database, the setup in memory and the setup on

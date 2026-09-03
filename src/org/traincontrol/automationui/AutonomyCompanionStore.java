@@ -3017,6 +3017,58 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * The same, for a set whose members are PAIRED ACROSS PAGES (SVN-B8).
+     *
+     * `disabledPortals` is the one set like that: `setPortalDisabled` writes both ends, and the two
+     * ends are on different pages by definition - that is what a portal is. `453a3ef4` taught
+     * `PairMapKept` and `ListMapKept` to capture at either end and left the set kind alone, so a page
+     * snapshot of one end captured nothing and the undo removed one half of the pair and put nothing
+     * back.
+     *
+     * The link stayed shut - `isPortalDisabled` answers through the partner - and `disabledLinks` went
+     * to disk with one end in it, which is the shape `TileGraph.portalClosed` calls out as having no
+     * migration.
+     *
+     * @param from the set
+     * @param page the page being snapshotted
+     * @return the members with either end on that page
+     */
+    private Set<TileKey> membersOnPageEitherEnd(Set<TileKey> from, String page)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (TileKey key : from)
+        {
+            if (isOnPage(key, page) || isOnPage(getPortalPartner(key), page)) out.add(key);
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts a paired set's page back, both ends of every pair with it.
+     *
+     * The pairing is read as it stands NOW, and that is correct rather than lucky: `portals` is
+     * restored before `disabledLinks` in the registry order below, so by the time this runs the
+     * pairing is already the one the snapshot was taken under.
+     *
+     * @param into the set
+     * @param page the page being restored
+     * @param was what the snapshot held, or null to leave the page's entries gone
+     */
+    private void putPairedMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
+    {
+        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
+        {
+            TileKey key = keys.next();
+
+            if (isOnPage(key, page) || isOnPage(getPortalPartner(key), page)) keys.remove();
+        }
+
+        if (was != null) into.addAll(was);
+    }
+
+    /**
      * Lets go of everything the setup holds about a set of squares.
      *
      * Both halves: what is written ABOUT the square, and what elsewhere POINTS AT it.  A caption
@@ -4298,10 +4350,19 @@ public class AutonomyCompanionStore
     {
         final Set<TileKey> set;
 
+        /** Whether the members are paired across pages, which only `disabledLinks` is (SVN-B8). */
+        final boolean paired;
+
         SquareSetKept(String json, Set<TileKey> set)
+        {
+            this(json, set, false);
+        }
+
+        SquareSetKept(String json, Set<TileKey> set, boolean paired)
         {
             super(json);
             this.set = set;
+            this.paired = paired;
         }
 
         @Override void clear() { set.clear(); }
@@ -4327,12 +4388,17 @@ public class AutonomyCompanionStore
             set.removeAll(squares);
         }
 
-        @Override Object snapshotOf(String page) { return membersOnPage(set, page); }
+        @Override Object snapshotOf(String page)
+        {
+            return paired ? membersOnPageEitherEnd(set, page) : membersOnPage(set, page);
+        }
 
         @Override @SuppressWarnings("unchecked")
         void restoreTo(String page, Object snapshot)
         {
-            putMembersBack(set, page, (Set<TileKey>) snapshot);
+            if (paired) putPairedMembersBack(set, page, (Set<TileKey>) snapshot);
+
+            else putMembersBack(set, page, (Set<TileKey>) snapshot);
         }
 
         @Override void squaresOn(String page, Set<TileKey> into)
@@ -4431,7 +4497,7 @@ public class AutonomyCompanionStore
         all.add(new PageSetKept("excludedPages", excludedPages));
         // Called disabledLinks in the file and disabledPortals in the code, which is the whole reason
         // the file's known-field list needed an exemption in the textual guard.  Named once, here.
-        all.add(new SquareSetKept("disabledLinks", disabledPortals));
+        all.add(new SquareSetKept("disabledLinks", disabledPortals, true));
 
         kept = all;
 

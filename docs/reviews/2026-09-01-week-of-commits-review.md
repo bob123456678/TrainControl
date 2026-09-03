@@ -371,7 +371,7 @@ of the three doors.
 | **SVN-B5** | `connected` and `firstClearRoute` disagree about a train standing on a reversing point | **DEFERRED — needs Adam** |
 | **SVN-B6** | The running diagram draws no cross on a shut *plain* point | **fixed** 2026-09-02 (`1cfdf370`) |
 | **SVN-B7** | The "route already running" guard is on one door of three | **fixed** 2026-09-02 (`87b6c10a`), reasoning corrected by `V31-B2` |
-| **SVN-B8** | Undo cannot re-open a portal whose two halves are on different pages | open |
+| **SVN-B8** | Undo cannot re-open a portal whose two halves are on different pages | **fixed** |
 | **SVN-B9** | Nothing repairs the on-disk pre-edit note when a locomotive is renamed | **fixed** |
 | **SVN-B10** | The load door asks a narrower question than the start door | **fixed** 2026-09-02 (`87b6c10a`) |
 | **SVN-B11** | A cut consumed by a paste that carried nothing, then a paste back that forgets the setup | **fixed** |
@@ -645,6 +645,25 @@ Reachable: `AutonomyEditorPanel.java:1460` `on -> session.setPortalDisabled(targ
 control; `LayoutEditor.restoreCaptions` → `AutonomySession.restorePage` → `store.restorePage` is the undo
 path. Not confirmed whether the checkbox itself pushes an undo point; if it does not, the asymmetry
 still fires on any Ctrl+Z whose snapshot predates the toggle.
+
+**Disposition: fixed, and it fires on the checkbox itself - that half of the finding is settled by
+the test.**
+
+`SquareSetKept` takes a `paired` flag, set only for `disabledLinks`, and the two helpers beside
+`membersOnPage`/`putMembersBack` capture and drop a member with **either** end on the page. That is
+the same correction `453a3ef4` made to `PairMapKept` and `ListMapKept`, arriving at the third kind.
+
+The pairing is read as it stands when the restore runs, and that is correct rather than lucky:
+`portals` is restored before `disabledLinks` in the registry order, so the pairing in hand is already
+the one the snapshot was taken under.
+
+`testUndoReopensALinkWhoseHalvesAreOnDifferentPages` walks the finding's sequence on the real pair from
+`setup.json` - `1:10,9` and `5:15,5` - and asserts **both** ends afterwards, because a fix that simply
+cleared the set would pass on the near one. MUTATION: constructing `disabledLinks` unpaired again fails
+it (66 tests, 1 failure).
+
+`testAutonomyDiagramSession` (109), `testDiagramShiftKeepsSetup`, `testEditorSwitchClearsPageState` and
+`testPageIdsAreDurable` (19) re-run green.
 
 ### SVN-B9 — nothing repairs the on-disk pre-edit note when a locomotive is renamed
 
