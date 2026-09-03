@@ -341,6 +341,44 @@ introduced, which is worth knowing before anybody goes looking for a regression 
 builder or `getPossiblePaths` - this round is the staging planner and the diagram's painting - so the
 comparison still stands, but a re-run after the next NetBeans build would confirm rather than assume it.
 
+**Update, 2026-09-03: the re-run was attempted and is blocked on one thing only, which is Adam's to
+clear.**
+
+The harness could not be set up at all - `TSX-C16`. `REPO` in both `setup-env.sh` and `run.sh` is
+`dirname $0/../..`, which was the repository root while these scripts lived at `tools/parity/` and has
+resolved to `docs/` since `fb3722f5` moved them. That is fixed, both scripts now find the jar, the
+sample layout and the drivers, and `setup-env.sh` builds the environment cleanly against today's
+`dist/TrainControl.jar`.
+
+`run.sh` then builds the 3.0.0 configuration from the track diagram (207,089 characters over 5 pages,
+as before) and stops recording 2.8.1:
+
+```
+Exception in thread "main" java.net.BindException: Address already in use: Cannot bind
+    at org.traincontrol.marklin.udp.NetworkProxy.<init>(NetworkProxy.java:42)
+```
+
+**A TrainControl started on 2026-09-03 at 02:19:14 is still running** (`java ... TrainControl 0 1 1`,
+from `build/classes`, so launched out of NetBeans) and is holding the port. `run.sh` passes
+`-Dtraincontrol.anyReceivePort=true`, which is how the test suite shares a machine, but the 2.8.1 jar
+predates that flag and cannot take another port - so the 2.8.1 half of any parity run needs the
+application closed. Nothing here kills it: it is his session, and it has an unfinished layout edit in
+it (`config/autonomy/setup-before-edit.json`, written at 02:19:22).
+
+So the re-measure is **two commands after he closes it**, and it is in the report of things waiting on
+him:
+
+```bash
+sh docs/tools/parity/setup-env.sh && sh docs/tools/parity/run.sh
+```
+
+The side note is fixed regardless. `docs/tools/parity/README.md:102` said `Layout.pathPreference` is
+static and is loaded only by the window's menu builder; at HEAD it is a `private volatile` instance
+field (`Layout.java:223`) that `fromJSON` reads back out of the configuration (`:7157`), because Adam
+asked for the setting to travel with the config rather than with the UI. That is not a footnote for
+this file - it is what `PathPreferenceProbe` exists to measure - so the paragraph now says what the
+field does, and the "18 of 132 edges" figure beside it is dated to the build it was taken from.
+
 ## C - the test gaps
 
 The five the release-candidate review named first. `A101` is above as part of the previous commit; the

@@ -99,9 +99,17 @@ both of those exist in the derived graph.
 choose, rather than reading the code and inferring. Two ways the setting can silently not apply, both
 worth knowing:
 
-- `Layout.pathPreference` is **static** and defaults to RANDOM, and the only thing that loads the saved
-  value into it is the menu builder in the window. Anything running autonomy without building that
-  menu - a script, an example - is on RANDOM whatever is saved.
+- `Layout.pathPreference` **used to be static**, and this paragraph used to say so: one value shared by
+  every configuration, loaded out of the UI preferences by the window's menu builder, so anything
+  running autonomy without building that menu - a script, this probe - was on RANDOM whatever had been
+  chosen. That is no longer true, and it matters here more than anywhere: at HEAD it is a
+  `private volatile` instance field (`Layout.java:223`) and `fromJSON` reads it back out of the
+  configuration (`:7157-7161`), because Adam asked for the setting to travel with the config rather
+  than with the UI. **So the probe now measures a preference that arrives with the layout it loads**,
+  which is what it was always trying to measure. A configuration written before the change has no
+  `pathPreference` key and keeps the model's own RANDOM default, which is the behaviour those railways
+  already had.
 - Length-based options rank by `lengthOf`, so on edges with no length they all score zero and
   SHORTEST_LENGTH and LONGEST_LENGTH become the same setting. 18 of 132 edges in the derived graph
-  carry a length.
+  carried a length **when this was measured, on the 2026-08-29 build**. Nothing has re-measured it
+  since; the run that would is the one described at the top of this file.
