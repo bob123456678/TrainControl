@@ -284,7 +284,7 @@ about work already done, is a dialog whose only button is OK.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | the three descriptions agree now; whether the behaviour is right is **Adam's** |
 | **Confidence** | confirmed by reading |
 
 The changelog says: *"a route fired by a sensor stops instead, because there is nobody there to ask."*
@@ -317,6 +317,33 @@ code - disagree.
 both sets turnout N and issues a `locspeed` fire. Print the accessory's state and the locomotive's
 speed before and after, and grep the log for `route.refusedAccessoryOnActivePath`. Expect the
 accessory unchanged, the speed changed, and one log line.
+
+**Disposition: the disagreement is closed. The behaviour is not changed, and should not be by me.**
+
+The finding's own sentence is the one to answer: *"I have not decided which behaviour is right; the
+safety argument for dropping the accessories is sound. What is wrong is that three descriptions of it -
+the changelog, the rule at `:585`, and the code - disagree."* All three now say the same thing.
+
+- **The two log messages**, which were the worst of it, were fixed on 2026-09-03 (`8a8ce798`): one said
+  *"nothing further in the route was switched either"*, which reads as the route having stopped, and
+  the other said *"the rest of the route ran"*, which hides the ironwork being skipped. An operator
+  reading either could not tell what his railway had just done. Both say the true thing now, in all
+  eight bundles.
+- **The changelog** was the half left, and it was the half a user actually reads. It said *"a route
+  fired by a sensor stops instead"*; it now says it *"sets none of its switches and signals instead...
+  the rest of it, such as speeds and functions, still runs."*
+- **The code's own comment** at `MarklinRoute.java:618-626` already describes the s88 door exactly -
+  every accessory dropped as a group, nobody there to ask, and why per-command refusal would be worse
+  there. It is the rule at `:585` that generalised, and the comment beneath it is the specific case.
+
+**Why the behaviour is left alone.** Two reasons, and neither is caution for its own sake. Adam's
+recorded ruling is that a conflicting route must stay executable *"in case of a transient accessory
+failure"*; and the alternative - refusing the route whole - discards the `isStop()` commands with
+everything else, which is to say it throws away an emergency stop because a turnout was busy. That is
+a worse failure than the one being fixed, and it is the shape of change that has to be his.
+
+**So the question goes in the report**, phrased as the code phrases it: should a route fired by a
+sensor, which cannot set its ironwork, still drive trains over track it did not switch?
 
 ### B3 - the v2.7.4 changelog section was rewritten, so two 3.0.0 changes read as things the user already has
 
