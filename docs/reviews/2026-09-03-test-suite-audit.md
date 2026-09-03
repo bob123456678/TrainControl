@@ -349,6 +349,17 @@ to check against the same rule.
 
 #### B4 - what greys the autonomy menu, and what its tooltips say, is tested nowhere
 
+**FIXED 2026-09-03.**  `testTheAutonomyMenuSaysWhyItIsGrey` drives `refreshEnabled()` through the menu
+and asserts both halves: that it greys with no layout, and that the tooltip gives the no-layout reason
+rather than the remote-layout one - two reasons that are not interchangeable, because a menu that greys
+for the second and blames the first sends somebody looking for a layout they already have.
+
+Mutation-confirmed by swapping the two tooltip arms.
+
+The `local` half is not driven, and that is recorded rather than claimed: reaching it needs a model
+holding a Central Station layout, which this class has no fixture for.  What is pinned is the shape and
+the first reason; `canUseAutonomy`'s own behaviour is `RGN-A2`'s ground and is Adam's to rule on.
+
 **Status: open.** Missing test.
 
 `src/org/traincontrol/gui/AutonomyMenu.java:77-96` is a GUI rule of exactly the kind this audit is asked

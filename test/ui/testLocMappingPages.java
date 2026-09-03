@@ -247,6 +247,65 @@ public class testLocMappingPages
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
     }
 
+    /**
+     * The autonomy menu greys itself, and says which of the two reasons it is (TSX-B4).
+     *
+     * `AutonomyMenu.refreshEnabled()` decides two things a person meets: whether the menu can be
+     * opened at all, and what the tooltip tells them instead.  Both were tested nowhere - and this is
+     * the pattern this project has paid for repeatedly, most recently as OB-057 and OB-090: the
+     * control that OFFERS an action has to ask the guard's own question, and nothing was checking that
+     * this one still did.
+     *
+     * Two reasons, and they are not interchangeable: no layout at all, and a layout that came straight
+     * from the Central Station, which has nowhere to keep a setup.  A menu that greyed for the second
+     * and blamed the first would send somebody looking for a layout they already have.
+     *
+     * Driven through the menu rather than read from the source, so what is asserted is what the
+     * operator would see.
+     *
+     * MUTATION this catches: dropping either half of `setEnabled(hasLayout && local)`, or swapping the
+     * two tooltip arms.
+     */
+    @Test
+    public void testTheAutonomyMenuSaysWhyItIsGrey() throws Exception
+    {
+        TrainControlUI ui = build();
+
+        try
+        {
+            org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui);
+
+            // NO MODEL AT ALL, which is the first of the two reasons.
+            menu.refreshEnabled();
+
+            assertFalse(menu.isEnabled(),
+                "the autonomy menu offers itself with no layout loaded, so every gesture in it "
+                + "comes back having done nothing");
+
+            String tip = menu.getToolTipText();
+
+            assertNotNull(tip, "the menu is grey and says nothing about why");
+
+            assertTrue(tip.contains(strip(org.traincontrol.util.I18n.t("autosetup.ui.tooltipNoLayout"))),
+                "the tooltip does not give the no-layout reason.  Got: " + tip);
+
+            assertFalse(tip.contains(strip(org.traincontrol.util.I18n.t("autosetup.ui.tooltipNeedsLocalLayout"))),
+                "the menu blames the layout being remote when there is no layout at all - which "
+                + "sends somebody looking for a setting instead of opening a layout.  Got: " + tip);
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
+        }
+    }
+
+    /**
+     * The message, without the HTML `wrapped` puts round it.
+     */
+    private static String strip(String message)
+    {
+        return message.replace("<html>", "").replace("</html>", "");
+    }
     private TrainControlUI build() throws Exception
     {
         // The window reads the layout preference in its constructor, so it opens Adam’s railway
