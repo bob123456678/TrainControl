@@ -20,7 +20,17 @@
 
 set -e
 
-REPO=$(cd "$(dirname "$0")/../.." && pwd)
+# THREE LEVELS, NOT TWO (TSX-C16).
+#
+# These scripts moved from `tools/parity/` to `docs/tools/parity/` in fb3722f5, and this line
+# did not move with them: `../..` from here is `docs/`, not the repository.  Everything reached
+# through $REPO was therefore one folder short - the jar at $REPO/dist, the sample layout, the
+# four copied files, and `cd "$REPO"` - and the harness could not be set up at all.
+#
+# The three driver paths below were the exception, and that is what made it hard to see: they
+# still read `$REPO/tools/parity`, which resolved correctly BECAUSE $REPO was wrong.  Both
+# halves have to be right at once or the fix is invisible.
+REPO=$(cd "$(dirname "$0")/../../.." && pwd)
 TARGET=${1:-"$REPO/../traincontrol-parity"}
 
 JAR_URL="https://github.com/bob123456678/TrainControl/releases/download/v2_8_1/TrainControl.jar"
@@ -111,7 +121,7 @@ do
     "$JAVAC" -nowarn -encoding UTF-8 \
         -cp "$TARGET/$ENGINE/TrainControl.jar" \
         -d "$TARGET/$ENGINE/classes" \
-        "$REPO/tools/parity/ParityDriver.java"
+        "$REPO/docs/tools/parity/ParityDriver.java"
 
     echo "compiled ParityDriver against $ENGINE"
 done
@@ -120,7 +130,7 @@ done
 "$JAVAC" -nowarn -encoding UTF-8 \
     -cp "$TARGET/v3_0_0/TrainControl.jar" \
     -d "$TARGET/v3_0_0/classes" \
-    "$REPO/tools/parity/BuildDiagramSetup.java"
+    "$REPO/docs/tools/parity/BuildDiagramSetup.java"
 
 echo "compiled BuildDiagramSetup against v3_0_0"
 
@@ -128,7 +138,7 @@ echo "compiled BuildDiagramSetup against v3_0_0"
 "$JAVAC" -nowarn -encoding UTF-8 \
     -cp "$TARGET/v3_0_0/TrainControl.jar" \
     -d "$TARGET/v3_0_0/classes" \
-    "$REPO/tools/parity/PathPreferenceProbe.java"
+    "$REPO/docs/tools/parity/PathPreferenceProbe.java"
 
 echo "compiled PathPreferenceProbe against v3_0_0"
 echo ""
