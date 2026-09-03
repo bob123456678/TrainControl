@@ -347,6 +347,16 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> clipboardCutSquares;
 
+    /**
+     * The subset of {@link #clipboardCutSquares} that actually held a tile.
+     *
+     * How `emptyCutOrigins` can tell an undone cut from an outstanding one. A square that was always
+     * empty answers "yes, I am empty" either way, and a column selection is mostly such squares - so
+     * asking every cut square whether it is empty said the cut was still outstanding after an undo had
+     * put the track back, and the setup on the one square that had any was left behind.
+     */
+    private java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> clipboardCutHadTiles;
+
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
     
@@ -2687,6 +2697,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.groupClipboard = taken;
         this.clipboardOrigins = origins;
         this.clipboardCutSquares = null;
+        this.clipboardCutHadTiles = null;
 
         // A copy is not a move: the original keeps its setup, so pasting one only clears what it
         // builds over, exactly as it did before LE-A1.
@@ -2815,6 +2826,32 @@ public class LayoutEditor extends PositionAwareJFrame
             new java.util.LinkedHashSet<>();
 
         if (this.clipboardCutSquares == null) return empty;
+
+        // AN UNDONE CUT IS OUTSTANDING NOWHERE, NOT MOSTLY.
+        //
+        // The set above is every picked square, occupied or not - deliberately, because an empty
+        // square can still hold a caption worth moving.  But a square that was ALWAYS empty answers
+        // "I am empty" whether the cut has been undone or not, and a column selection is mostly such
+        // squares.  So a cut column, undone, still had fifteen of its sixteen squares saying the cut
+        // was outstanding: the move map came back with fifteen entries, the paste was read as the
+        // move, and the setup on the one square that had any track was left behind - and then
+        // forgotten by the paste that put the block back.
+        //
+        // Undo is atomic.  If any square the cut emptied OF A TILE is full again, the cut has been put
+        // back, and there is nothing outstanding for a paste to carry.  Conservative where a user has
+        // redrawn one square by hand rather than undoing: the setup then stays where it is, which is
+        // the answer that loses nothing.
+        if (this.clipboardCutHadTiles != null)
+        {
+            for (org.traincontrol.automationui.TileGraph.TileKey square : this.clipboardCutHadTiles)
+            {
+                if (layout.getName().equals(square.getPage())
+                    && layout.getComponent(square.getX(), square.getY()) != null)
+                {
+                    return empty;
+                }
+            }
+        }
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : this.clipboardCutSquares)
         {
@@ -2963,8 +3000,23 @@ public class LayoutEditor extends PositionAwareJFrame
                     rememberAutonomy(autonomy);
                 }
 
-                // Used up either way.  Cut then paste twice is a move and then a copy.
-                this.clipboardWasCut = false;
+                // Used up BY A PASTE THAT ACTUALLY MOVED SOMETHING (SVN-B11).
+                //
+                // "Cut then paste twice is a move and then a copy" is still the rule, and it is what
+                // the flag is for.  What was wrong is which paste counts as the move: this cleared it
+                // for any paste that got here, and getting here means only that cutMoves returned a
+                // map.  It returns an EMPTY one - never null - whenever no origin is both cut and
+                // still empty: after an undo has refilled them, or on another page, where the setup is
+                // deliberately left behind to be picked up on the way back (see cutMoves).
+                //
+                // So a paste that carried nothing spent the cut, and the next paste - the one that
+                // would have carried it - fell into the else below and called forgetBuiltOver on the
+                // origins.  Pasting a block back where it came from then DESTROYED its setup instead
+                // of restoring it, which is LE-A4 arriving through a door this rewrite opened.
+                //
+                // An empty map is not a move.  The per-square question in cutMoves has already decided
+                // that, and this line now agrees with it.
+                if (!moves.isEmpty()) this.clipboardWasCut = false;
             }
             else
             {
@@ -3217,10 +3269,20 @@ public class LayoutEditor extends PositionAwareJFrame
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptied =
             new java.util.LinkedHashSet<>();
 
+        // And which of them had a tile on it, which is what says later whether the cut is still
+        // outstanding.  Read here because after the delete every one of them is empty.
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> hadTiles =
+            new java.util.LinkedHashSet<>();
+
         for (org.traincontrol.base.TileSelection.At at : this.selection.all())
         {
-            emptied.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                layout.getName(), at.getX(), at.getY()));
+            org.traincontrol.automationui.TileGraph.TileKey square =
+                new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), at.getX(), at.getY());
+
+            emptied.add(square);
+
+            if (layout.getComponent(at.getX(), at.getY()) != null) hadTiles.add(square);
         }
 
         // FALSE: the paste carries the setup, captions included, and forgetting them here would
@@ -3230,6 +3292,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.groupClipboard = carried;
         this.clipboardOrigins = from;
         this.clipboardCutSquares = emptied;
+        this.clipboardCutHadTiles = hadTiles;
 
         // SET AFTER THE DELETE, not before: delete() ends by resetting the clipboard, which is the
         // reason the list above has to be held across it, and a flag set first would be cleared with

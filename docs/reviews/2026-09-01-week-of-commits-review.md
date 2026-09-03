@@ -374,7 +374,7 @@ of the three doors.
 | **SVN-B8** | Undo cannot re-open a portal whose two halves are on different pages | open |
 | **SVN-B9** | Nothing repairs the on-disk pre-edit note when a locomotive is renamed | open |
 | **SVN-B10** | The load door asks a narrower question than the start door | open |
-| **SVN-B11** | A cut consumed by a paste that carried nothing, then a paste back that forgets the setup | open |
+| **SVN-B11** | A cut consumed by a paste that carried nothing, then a paste back that forgets the setup | **fixed** |
 | **SVN-B12** | The MT-149 timetable repaint sits behind two early returns | open |
 | **SVN-B13** | `rebuildHomeStations` dedups by locomotive, not by square | open |
 | **SVN-B14** | The autonomy function slots are written before OK is pressed | open |
@@ -726,6 +726,57 @@ Two reachable sequences:
 2. Ctrl+X, Ctrl+Z (origins refilled → empty map → flag consumed), Ctrl+Y (origins emptied again, setup
    still on them), Ctrl+V at the origin → `forgetBuiltOver` destroys the block's setup. That is LE-A4
    reached through a door the LE-A3/RC-A1 rewrite opened.
+
+**Disposition: fixed.** `LayoutEditor.java:2967` is now
+
+```java
+if (!moves.isEmpty()) this.clipboardWasCut = false;
+```
+
+"Cut then paste twice is a move and then a copy" is still the rule, and it is what the flag is for.
+What was wrong is which paste counts as the move: reaching that line means only that `cutMoves`
+returned a map, and it returns an empty one - never null - in exactly the two cases above. An empty
+map is not a move; `cutMoves` has already decided that per square, and this line now agrees with it.
+
+`testAPasteThatCarriedNothingDoesNotUseUpTheCut` covers it, and **writing it took two attempts, which
+is worth recording because the first one passes for the wrong reason.** Cutting a *column* from that
+fixture picks up fifteen squares that were never occupied, and `emptyCutOrigins` counts those as
+vacated - rightly, since an empty square can still hold a caption. So the map comes back with fifteen
+moves in it, the paste is a real move, and the flag is spent fairly. The first version of this test
+failed, and it failed for a different defect than this one: an undo that refills the *one* occupied
+square leaves the other fifteen "vacated", the setup on the occupied square is correctly left behind,
+and the paste back then forgets it. The fix here does not address that, and the test would have gone
+green with the fix in place only by accident.
+
+So the test cuts the single square that has anything on it - through the `selection` field, because
+`selectRow` and `selectColumn` are the only doors the editor offers and either drags in squares that
+were empty before the cut. Then the map really is empty and the sequence is the finding's.
+MUTATION: restoring the unconditional `this.clipboardWasCut = false;` fails it (17 tests, 1 failure).
+
+`testTheEditorTellsAutonomy`, `testDiagramShiftKeepsSetup`, `testARunSurvivesADiagramEdit` and
+`testDiscardedEditsDoNotDeleteSetup` re-run green.
+
+**And the second half, found while writing that test and fixed with it.** The column case is a
+different defect reached by the same gesture, and it is the one a user is likelier to meet: cut a
+column, press Ctrl+Z, paste anywhere, paste back.
+
+`clipboardCutSquares` is every picked square, occupied or not - deliberately, because an empty square
+can still hold a caption worth moving. `emptyCutOrigins` then asked each of them "are you empty now?",
+and **a square that was always empty answers yes whether the cut has been undone or not**. A column
+selection is mostly such squares, so a cut column that had been undone still had fifteen of its
+sixteen squares reporting the cut as outstanding. The map came back with fifteen entries, the paste
+was a real move by the rule above, the cut was fairly spent - and the setup on the one square that
+had track, correctly left behind because that square was full again, was forgotten by the paste that
+put the block back.
+
+Undo is atomic, so `cutSelection` now records which picked squares held a tile, and `emptyCutOrigins`
+returns nothing outstanding as soon as any of those is full again. Conservative where somebody has
+redrawn one square by hand instead of undoing: the setup then stays where it is, which is the answer
+that loses nothing.
+
+`testAnUndoneCutIsNotStillOutstandingOnItsEmptySquares` covers it, and asserts both halves - the
+station still on 5,3 and **not** on 9,3, so a fix that carried it away instead would fail too.
+MUTATION: dropping the put-back check fails it (18 tests, 1 failure).
 
 ### SVN-B12 — the MT-149 timetable repaint sits behind two early returns neither rename door can clear
 

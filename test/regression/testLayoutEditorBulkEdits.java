@@ -496,6 +496,124 @@ public class testLayoutEditorBulkEdits
         });
     }
 
+    /**
+     * A paste that carried nothing does not use up the cut (SVN-B11).
+     *
+     * `clipboardWasCut` says "the squares these tiles came from are empty now, so the setup should
+     * move with them". It was cleared by **any** paste that reached `cutMoves`, and `cutMoves` returns
+     * an empty-but-not-null map whenever no origin is both cut and still empty - after an undo has put
+     * the track back, or on another page, where the setup is deliberately left behind to be picked up
+     * on the way back.
+     *
+     * So a paste that moved nothing spent the cut, and the next paste - the one that would have
+     * carried it - fell into the `else` and called `forgetBuiltOver` on the origins. Pasting the block
+     * back where it came from then **destroyed** its setup instead of leaving it alone, which is
+     * `LE-A4` arriving through a door the `LE-A3`/`RC-A1` rewrite opened.
+     *
+     * **One square, not a column**, and that is the whole difficulty of writing this. A column cut
+     * from this fixture has fifteen squares that were never occupied; `emptyCutOrigins` counts them as
+     * vacated - rightly, an empty square can still hold a caption - so the map comes back with fifteen
+     * moves in it and the paste is a real move that spends the cut fairly. The sequence the finding is
+     * about needs every cut square full again, which here means cutting only the square that has
+     * anything on it.
+     *
+     * MUTATION: clearing `clipboardWasCut` unconditionally - which is what `:2967` did - fails this.
+     */
+    @Test
+    public void testAPasteThatCarriedNothingDoesNotUseUpTheCut() throws Exception
+    {
+        withEditor("tc-cut-spent", (editor, session, page) ->
+        {
+            // The one square with anything on it.  There is no single-square door on the editor -
+            // selectRow and selectColumn are the two it offers - and a row or a column would drag in
+            // squares that were empty before the cut, which is the case this test exists to avoid.
+            try
+            {
+                java.lang.reflect.Field picked =
+                    org.traincontrol.gui.LayoutEditor.class.getDeclaredField("selection");
+
+                picked.setAccessible(true);
+
+                ((org.traincontrol.base.TileSelection) picked.get(editor)).addRectangle(5, 3, 5, 3);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            editor.cutSelection();
+
+            // The origin is full again, so nothing is a move any more...
+            editor.undo();
+
+            // ...and this paste therefore carries no setup and must not spend the cut.
+            editor.pasteSelection(9, 0);
+
+            // Back where it came from.  The landing square gets its own tile, so there is nothing here
+            // to forget - unless the paste above has already been read as the move.
+            editor.pasteSelection(5, 3);
+        }, (session, page) ->
+        {
+            assertTrue(session.getStore().isStation(at(page, 5, 3)),
+                "pasting the square back where it came from destroyed its setup.  The paste before "
+                + "it carried nothing - undo had put the track back on the origin - but it spent "
+                + "clipboardWasCut all the same, so this paste took the else branch and called "
+                + "forgetBuiltOver on the square the block came from (SVN-B11)");
+        });
+    }
+
+    /**
+     * An undone cut is outstanding nowhere, not mostly (SVN-B11, second half).
+     *
+     * `clipboardCutSquares` is every picked square, occupied or not - deliberately, because an empty
+     * square can still hold a caption worth moving. `emptyCutOrigins` then asked each of them "are you
+     * empty now?", and **a square that was always empty answers yes whether the cut has been undone or
+     * not**. A column selection is mostly such squares.
+     *
+     * So: cut a column, press Ctrl+Z, and fifteen of its sixteen squares still said the cut was
+     * outstanding. The move map came back with fifteen entries in it, the next paste was read as the
+     * move and spent the cut - and the setup on the one square that had any track, correctly left
+     * behind because that square was full again, was then forgotten by the paste that put the block
+     * back. The station was destroyed by a sequence whose second step was an undo.
+     *
+     * Undo is atomic, so the question is now asked of the squares the cut emptied **of a tile**: if any
+     * of those is full again, the cut has been put back and nothing is outstanding.
+     *
+     * Found while writing the test above, which failed against this rather than against the flag it
+     * was aimed at - the two are one gesture apart and need separate fixes.
+     *
+     * MUTATION: dropping the `clipboardCutHadTiles` check from `emptyCutOrigins` fails this.
+     */
+    @Test
+    public void testAnUndoneCutIsNotStillOutstandingOnItsEmptySquares() throws Exception
+    {
+        withEditor("tc-cut-undone", (editor, session, page) ->
+        {
+            editor.selectColumn(5);
+            editor.cutSelection();
+
+            editor.undo();
+
+            // Fifteen of the sixteen squares on this column were never occupied, so before the fix
+            // this paste carried their setup away and spent the cut with it.
+            editor.pasteSelection(9, 0);
+
+            editor.pasteSelection(5, 0);
+        }, (session, page) ->
+        {
+            assertTrue(session.getStore().isStation(at(page, 5, 3)),
+                "a cut column, undone, and pasted back lost the station on it.  The undo put the "
+                + "track back, but the fifteen squares on that column which were never occupied "
+                + "still read as emptied by the cut - so the paste in between looked like the move, "
+                + "spent the cut, and left this square's setup behind for the paste back to forget "
+                + "(SVN-B11, second half)");
+
+            assertFalse(session.getStore().isStation(at(page, 9, 3)),
+                "the station was carried to the paste target even though undo had put the cut track "
+                + "back where it came from");
+        });
+    }
+
     /** What the editor does between the cut and the paste. */
     private interface Gesture
     {
