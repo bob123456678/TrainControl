@@ -288,7 +288,7 @@ accessory unchanged, the speed changed, and one log line.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - moved to v2.8.0, not v3.0.0; see below |
 | **Confidence** | confirmed by reading |
 
 `git show v2_7_4c:Readme.md` line 331:
@@ -336,6 +336,36 @@ the bullets are all there and a reader gets the truth by reading further up. Edi
 section is not harmless, because it is the one section a 2.7.4c user will *skip*.
 
 **How to confirm.** The three git commands above; no execution needed.
+
+**Disposition: fixed, and both bullets belong to v2.8.0 rather than to 3.0.0.**
+
+The finding is right that they did not ship in v2.7.4, and the tag history says which release they
+did ship in. `v2_7_4c` - the last tag on that line - is `1ef11b62`, **2026-07-25 01:27**.
+`PATH_INTEGRITY_VALIDATION` first appears in `20fa6d05` "Path validation initial", **2026-07-25
+15:33**, and `git merge-base --is-ancestor 20fa6d05 v2_7_4c` says no. The semi-autonomous trigger fix
+is `b51ff24a`, the same day. Neither is in `v2_7_4`, `v2_7_4b` or `v2_7_4c` (`RAW_VERSION` is
+`"2.7.4"` in all three and the constant is in none of them). The next release heading after those
+commits is `v2.8.0 [8/2/2026]`.
+
+So they are 2.8.0 changes, and 2.8.0 already carries the *refinement*: "Path integrity validation now
+waits for the Central Station to confirm every switch and signal on the path" sits under its Autonomy
+Bug Fixes, which only makes sense with the introduction above it. Both bullets moved there - the
+feature into `- Autonomy`, the fix into `- Autonomy Bug Fixes` - and the v2.7.4 section is now
+character-for-character what `v2_7_4c` shipped, minus the heading restructure Adam did later.
+
+**This still fixes the harm the finding names.** What made it worse than the untagged-2.8.x point was
+that v2.7.4 is the one section a 2.7.4c user skips; 2.8.0 is one they read. Filing it under 3.0.0
+instead would also have been read - but it would have been wrong, and a user on 2.8.1 would be told a
+feature they have had since August is new.
+
+**One question for Adam, in the report:** `v2.8.0` and `v2.8.1` have changelog sections and dates but
+no git tags. If those two never went out, then everything from 2026-07-25 onward is 3.0.0 content and
+three headings want merging - but that is a call about what he released, not something the repository
+can answer.
+
+Not covered by a test. A rule that says "no bullet under a released version may describe code absent
+from that tag" is writable, but two of the three headings involved have no tag to check against, so it
+would assert over the part that was never in doubt.
 
 ---
 

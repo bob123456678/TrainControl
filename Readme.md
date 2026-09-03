@@ -470,6 +470,7 @@ Tab icons provided by Freepik.
     - Locomotive Control Page
         - Removed copy-to-next/-previous page option from button right-click menus (now redundant with 2.7.3's drag and drop)
     - Autonomy
+        - Added Path Integrity Validation.  If a switch or signal cannot be confirmed by the Central Station, the locomotive will not run.  Configurable under the menu bar preferences, and a warning is shown if confirmation keeps failing
         - Added a "return home" feature that will return all locomotives back to where they started, if routing is possible.
         - You can now pick which locomotive belongs at each station, so "return home" brings each one back to the station you chose instead of the one it happened to start on
         - A locomotive standing at the station you assigned it to now shows its location highlighted in teal; * marks one standing at its timetable starting point
@@ -483,6 +484,7 @@ Tab icons provided by Freepik.
         - A locomotive whose name contains an equals sign is no longer dropped from its multi-unit when importing from the Central Station
         - Downloading the track diagram from the Central Station no longer fails part way through when a page name contains a slash, colon, or similar character.  Such pages are saved under a corrected filename, and are found again when the layout is loaded
     - Autonomy Bug Fixes
+        - Fixed bug where only one locomotive could be triggered from the track diagram in semi-autonomous mode
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
         - Path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
@@ -534,12 +536,9 @@ Tab icons provided by Freepik.
         - The debug log no longer slows TrainControl down during a long session.  It used to grow without limit, making the whole application gradually less responsive
 
 * v2.7.4 [7/25/2026]   
-    - Autonomy
-        - Added Path Integrity Validation features. If a switch/signal configuration cannot be confirmed by the Central Station, the locomotive will not run.  Configurable via the menu bar preferences.  A warning popup will be shown if configuration fails successively.
     - UI
         - Backups are now saved to the tc_backup folder in the current directory
     - Bug fixes
-        - Fixed bug where only one locomotive could be triggered from the track diagram in semi-autonomous mode
         - Minor UI performance improvements
         - Fixed rare race conditions in autonomy code
 
