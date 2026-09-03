@@ -245,6 +245,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
     public static final String SHOW_STATION_LENGTH = "ShowStationLength";
 
+    /**
+     * Whether the diagram prints its column and row numbers (FR-057).
+     *
+     * Adam: "coordinates are referenced in issues but not visible to the user."  Every warning the
+     * autonomy editor raises names a square as `page:x,y`, and counting cells from the corner was the
+     * only way to find it.
+     *
+     * A preference rather than a field on the editor, because both editors draw the same diagram and
+     * the answer should be the same in each - and because somebody who turns it on is working through
+     * a list of coordinates and will want it still on tomorrow.
+     */
+    public static final String SHOW_COORDINATES_PREF = "ShowCoordinates";
+
     // HideReversingEdges and ShowHomeLocomotives are gone (R28-C3).
     //
     // Both were read and written by the graph window - declutter and a home badge - and both were the
@@ -4702,6 +4715,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Which locomotive LIVES at a square, as opposed to which one is standing on it (MT-261 ruling 2).
+     *
+     * Adam asked for the home assignment to be drawn, because nothing in 3.0.0 drew it - `R28-C3` -
+     * and the only way to see where a locomotive belonged was to open one square's menu at a time.
+     *
+     * @param station the square
+     * @return the home locomotive's name, or null where the square has no home or there is no setup
+     */
+    public String autonomyHomeAt(org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || station == null) return null;
+
+        Object stored = session.getPointProperty(station, "home");
+
+        return stored instanceof String && !((String) stored).trim().isEmpty()
+            ? (String) stored : null;
+    }
+
+    /**
      * The CAPTION for a square the setup puts a locomotive on - what the diagram draws, not the name.
      *
      * The name alone was what the autonomy editor drew, and a caption is not a name: it is bracketed
@@ -7078,10 +7112,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void takeTheKeyboard()
     {
-        // Once now, for the case where the window is already up and active.
+        // THE WINDOW FIRST, THEN WHAT IS IN IT.  Two different questions, and the first one is the
+        // one Adam kept answering no to.
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            toFront();
+            comeToTheForeground();
 
             focusTheKeyboard();
         });
@@ -7116,6 +7151,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeLater(() -> focusTheKeyboard());
             }
         });
+    }
+
+    /**
+     * Makes this the active window, which on Windows is not what `toFront()` does (OB-170, third pass).
+     *
+     * **The two fixes before this one were aimed a level too deep.**  They arranged which COMPONENT
+     * holds the keyboard once the window has it; Adam's answer both times was that the window does not
+     * have it - *"the frame is not active and keystrokes do not go to it.  the previous active
+     * application window retains focus"*, and *"the entire window is still not in focus, rather the
+     * parent app like the python or netbeans remains"*.  Nothing about focus WITHIN a window helps
+     * with that.
+     *
+     * Windows refuses a foreground change requested by a process that is not already in the
+     * foreground.  An application started from NetBeans, a terminal or a script is never that process,
+     * so `toFront()` raises the window behind whatever is in front and flashes the taskbar button
+     * instead.  The always-on-top toggle below is the way out, and it is less a trick than the one
+     * case the rule leaves open: a topmost window is allowed to raise itself, because it is already
+     * above everything.
+     *
+     * Called once, from start-up.  Doing it on every activation would let the application pull itself
+     * in front of whatever the operator had just switched to - the fault this cures, pointed the other
+     * way.
+     */
+    private void comeToTheForeground()
+    {
+        // Un-minimised first: a window in the iconified state cannot be activated at all.  The
+        // ICONIFIED bit is cleared rather than the state replaced, because the same field carries the
+        // maximised bits and replacing it would un-maximise a window somebody had maximised.
+        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
+        {
+            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        }
+
+        boolean wasOnTop = isAlwaysOnTop();
+
+        try
+        {
+            setAlwaysOnTop(true);
+
+            toFront();
+
+            requestFocus();
+        }
+        finally
+        {
+            // In a finally because what it wraps is native and can throw, and an application left
+            // permanently above everything else would be a worse fault than the one being fixed - and
+            // one the operator could not undo, since the menu item would then disagree with the
+            // window.
+            setAlwaysOnTop(wasOnTop);
+        }
     }
 
     /**
@@ -19294,7 +19380,87 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param button the button, put back when the operator says no
      * @return true to let the command through
      */
-    private boolean keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)
+    private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)
+    {
+        // THE POWER QUESTION, which the diagram tile asks and this did not (MT-261 ruling 4).
+        //
+        // Adam: "yes, route through the same guards."  A command sent with the power off does nothing,
+        // and the tile has offered these three answers for as long as it has had the dialog; the
+        // keyboard sent it into the dark and left the button looking as though it had worked.
+        //
+        // Asked FIRST, because it is about whether anything can happen at all, and because the tile
+        // asks it first for the same reason.
+        if (!this.model.getPowerState())
+        {
+            Object[] powerOptions = {
+                I18n.t("layout.ui.optionTurnPowerOnAndProceed"),
+                I18n.t("layout.ui.optionProceed"),
+                I18n.t("ui.cancel")
+            };
+
+            int answer = javax.swing.JOptionPane.showOptionDialog(this,
+                I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
+                I18n.t("layout.ui.dialogPleaseConfirm"),
+                javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE,
+                null, powerOptions, powerOptions[0]);
+
+            // Anything that is not one of the two yeses is a no - Escape and the close box included,
+            // which is the correction the tile's own dialogs needed.
+            if (answer != 0 && answer != 1) return refuse(button);
+
+            // The autonomy questions still have to be asked, and the answer to this one carried past
+            // them - so it is remembered rather than returned here.
+            if (answer == 0)
+            {
+                return keyboardAutonomyAllows(address, button)
+                    ? KeyboardSwitch.POWER_ON_THEN_PROCEED : KeyboardSwitch.REFUSED;
+            }
+        }
+
+        return keyboardAutonomyAllows(address, button)
+            ? KeyboardSwitch.PROCEED : KeyboardSwitch.REFUSED;
+    }
+
+    /**
+     * What a keyboard click may do, once the operator has answered whatever had to be asked.
+     */
+    private enum KeyboardSwitch
+    {
+        /** Send it. */
+        PROCEED,
+
+        /** Turn the track power on, wait for it, then send it. */
+        POWER_ON_THEN_PROCEED,
+
+        /** Do nothing; the button has already been put back. */
+        REFUSED
+    }
+
+    /**
+     * Puts the toggle back and refuses.
+     *
+     * The toggle has already flipped by the time an ActionEvent arrives, so refusing means undoing it.
+     * `setSelected` fires no ActionEvent, so this cannot re-enter the handler.
+     *
+     * @param button the button to put back
+     * @return REFUSED, so callers can `return refuse(button)` in one line
+     */
+    private KeyboardSwitch refuse(javax.swing.JToggleButton button)
+    {
+        button.setSelected(!button.isSelected());
+
+        return KeyboardSwitch.REFUSED;
+    }
+
+    /**
+     * The two autonomy questions the diagram tile and the route door both ask.
+     *
+     * @param address the accessory address on the button
+     * @param button the button, put back when the operator says no
+     * @return true to let the command through
+     */
+    private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)
     {
         if (!this.model.hasAutoLayout() || !this.model.isAutonomyRunning()) return true;
 
@@ -19329,10 +19495,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Anything that is not OK is a no, Escape and the close box included - the same reading the
         // tile's dialogs were corrected to, where -1 used to fall through to "proceed".
-        //
-        // The toggle has already flipped by the time an ActionEvent arrives, so refusing means putting
-        // it back.  setSelected fires no ActionEvent, so this cannot re-enter the handler.
-        button.setSelected(!button.isSelected());
+        refuse(button);
 
         return false;
     }
@@ -19341,11 +19504,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         int switchId = Integer.parseInt(b.getText());
 
-        // THE THIRD HAND-SWITCHING DOOR NOW ASKS WHAT THE OTHER TWO ASK (SVN-B17, V31-C2, AU-C12).
+        // THE THIRD HAND-SWITCHING DOOR NOW ASKS WHAT THE OTHER TWO ASK (SVN-B17, V31-C2, AU-C12),
+        // AND ABOUT THE POWER TOO (MT-261 ruling 4).
         //
-        // Before the button is repainted, because a refusal has to leave it as it was.  Answering
-        // false has already put the toggle back.
-        if (!keyboardSwitchAllowed(switchId, b)) return;
+        // Before the button is repainted, because a refusal has to leave it as it was.  REFUSED has
+        // already put the toggle back.
+        final KeyboardSwitch allowed = keyboardSwitchAllowed(switchId, b);
+
+        if (allowed == KeyboardSwitch.REFUSED) return;
 
         if (b.isSelected())
         {
@@ -19364,6 +19530,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
             {
+                // The power first, if that is what was agreed, and the same bounded wait the diagram
+                // tile uses - an unbounded one parks this thread for ever on a station that has been
+                // switched off, and the command goes out either way.
+                if (allowed == KeyboardSwitch.POWER_ON_THEN_PROCEED)
+                {
+                    this.model.go();
+
+                    if (this.model.getNetworkCommState())
+                    {
+                        try
+                        {
+                            if (!this.model.waitForPowerState(true,
+                                org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
+                            {
+                                this.model.logf("layout.warnPowerNotConfirmed", switchId);
+                            }
+
+                            Thread.sleep(1000);
+                        }
+                        catch (InterruptedException ex)
+                        {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+
                 this.model.setAccessoryState(switchId, getKeyboardProtocol(), b.isSelected());
             }).start();
     }//GEN-LAST:event_UpdateSwitchState

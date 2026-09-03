@@ -224,6 +224,17 @@ public class AutonomyEditorPanel extends JPanel
     private static final String PREF_CAPTION_TRAINS = "autonomyEditorCaptionTrains";
 
     /**
+     * Whether captions name each square's HOME locomotive (MT-261 ruling 2).
+     *
+     * Adam: "add a display option ... ('show home locomotives').  If set, labels show the home
+     * locomotive in white to indicate it's not there (and black/no change if it's there)."
+     *
+     * Beside `PREF_CAPTION_TRAINS` because it is the same kind of question - what the caption SAYS -
+     * and because the two answers are alternatives: a caption has room for one name.
+     */
+    private static final String PREF_CAPTION_HOMES = "autonomyEditorCaptionHomes";
+
+    /**
      * Restrictions only, by default.
      *
      * Open track is most of a layout and its arrows say what the reader can already assume, so a
@@ -242,6 +253,16 @@ public class AutonomyEditorPanel extends JPanel
      */
     private final JCheckBox showParkedTrains =
         new JCheckBox(I18n.t("autosetup.ui.btnShowParkedTrains"), false);
+
+    /**
+     * Names each square's HOME locomotive on its caption (MT-261 ruling 2, R28-C3).
+     *
+     * Off by default, like its neighbour and for the same reason: the caption's own answer is the
+     * station's name, and this is a question somebody asks while arranging homes rather than all the
+     * time.
+     */
+    private final JCheckBox showHomeLocomotives =
+        new JCheckBox(I18n.t("autosetup.ui.btnShowHomeLocomotives"), false);
 
 
     // Built in the constructor, mounted by the window across the bottom of the diagram
@@ -515,6 +536,9 @@ public class AutonomyEditorPanel extends JPanel
         showParkedTrains.setSelected(VIEW_PREFS.getBoolean(PREF_CAPTION_TRAINS, false));
         showParkedTrains.setFocusable(false);
 
+        showHomeLocomotives.setSelected(VIEW_PREFS.getBoolean(PREF_CAPTION_HOMES, false));
+        showHomeLocomotives.setFocusable(false);
+
         // Not focusable, like every other control in this window (OB-019).
         //
         // It went through control(), which sets the font and nothing else, while excludePage beside it
@@ -533,6 +557,15 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
             refresh();
+        });
+
+        showHomeLocomotives.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_CAPTION_HOMES, showHomeLocomotives.isSelected());
+
+            // The GRID, for the reason the neighbour below gives: a caption's text is decided when the
+            // diagram is built.
+            if (onDiagramChanged != null) onDiagramChanged.run();
         });
 
         showParkedTrains.addActionListener(e ->
@@ -920,6 +953,10 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JPopupMenu only = new javax.swing.JPopupMenu();
 
             only.add(bulkTools());
+
+            javax.swing.JCheckBoxMenuItem numbers = coordinatesItem();
+
+            if (numbers != null) only.add(numbers);
 
             return only;
         }
@@ -1579,6 +1616,10 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(bulkTools());
 
+        javax.swing.JCheckBoxMenuItem showCoordinates = coordinatesItem();
+
+        if (showCoordinates != null) menu.add(showCoordinates);
+
 
         // A station name can go on almost any square, not only on a text square.  The label is drawn
         // beside the tile wherever it sits, so there is no reason to make the user find a text square
@@ -1757,6 +1798,43 @@ public class AutonomyEditorPanel extends JPanel
         if (partner == null || !onThisPage(partner)) return;
 
         onReveal.accept(partner);
+    }
+
+    /**
+     * Shows or hides the diagram's column and row numbers (FR-057).
+     *
+     * Adam: "coordinates are referenced in issues but not visible to the user."  Every warning this
+     * window raises names its square as `page:x,y`, so this is the menu where the numbers are most
+     * worth having - and it is on the track editor's menu too, reading the same preference, because
+     * moving a square to the coordinate a warning named happens in that one.
+     *
+     * On the ignored-square menu as well as the ordinary one, for the same reason Bulk Tools is there:
+     * it is not about the square, and an excluded page is exactly where somebody is trying to work out
+     * which square a warning meant.
+     *
+     * Null when this panel is not inside an editor window - the main window builds these menus too,
+     * from a panel held only for that, and the viewer's diagram is not what Adam asked for.  Returning
+     * null rather than offering an item that would have nothing to redraw.
+     *
+     * @return the item, ticked to match what the diagram is doing, or null outside an editor
+     */
+    private javax.swing.JCheckBoxMenuItem coordinatesItem()
+    {
+        java.awt.Component where = owner();
+
+        if (!(where instanceof LayoutEditor)) return null;
+
+        final LayoutEditor editor = (LayoutEditor) where;
+
+        javax.swing.JCheckBoxMenuItem item = new javax.swing.JCheckBoxMenuItem(
+            I18n.t("layout.ui.menuShowCoordinates"));
+
+        item.setSelected(LayoutEditor.showingCoordinates());
+        item.setToolTipText(wrapped(I18n.t("layout.ui.tooltipShowCoordinates")));
+
+        item.addActionListener(event -> editor.toggleCoordinates());
+
+        return item;
     }
 
     /**
@@ -3451,6 +3529,21 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return null;
+    }
+
+    /**
+     * Sets a square's home locomotive, from somewhere other than its own right-click menu (R28-C5).
+     *
+     * Adam: "set control+H for home."  At 2.8.1 the graph window had a key for this; the action
+     * survived as a menu item and the key did not, which is the shape `R28-C5` names.  One line rather
+     * than making the prompt itself public, so the panel keeps deciding what a home means and this only
+     * decides who may ask - the same door `promptNameFor` opened for Control+S.
+     *
+     * @param tile the square to set a home on, ignored when null
+     */
+    public void promptHomeFor(TileKey tile)
+    {
+        if (tile != null) promptHome(tile);
     }
 
     private void promptHome(TileKey tile)
@@ -6753,6 +6846,24 @@ public class AutonomyEditorPanel extends JPanel
     public boolean isShowingParkedTrains()
     {
         return showParkedTrains.isSelected();
+    }
+
+    /**
+     * @return the home-locomotive toggle, for the window's Toggle visibility box
+     */
+    public JCheckBox getShowHomeLocomotives()
+    {
+        return control(showHomeLocomotives);
+    }
+
+    /**
+     * Whether captions in this editor should name each square's home locomotive (MT-261 ruling 2).
+     *
+     * @return true to name the home
+     */
+    public boolean isShowingHomeLocomotives()
+    {
+        return showHomeLocomotives.isSelected();
     }
 
     /**

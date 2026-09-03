@@ -358,15 +358,6 @@ search a point name, the right page is opened and the tile highlighted.
 
 when other page points are clicked from warnings, also highlight it after the editor window switch
 
-### FR-057 - 2026-09-02 - add coordinates to autonomy editor
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-02 19:59  
-**Build:** commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-coordinates are referenced in issues but not visible to the user.  add a grid around the diagram
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -381,6 +372,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-02 | FR-057 | feature request | the diagram prints its column and row numbers, toggled with Control+K or from either editor's right-click menu | fixed unvalidated | - |
 | 2026-09-02 | OB-170 | bug | the window still came up without the keyboard, and the request was never made again | - | [MT-259](tests.md#mt-259) |
 | 2026-09-02 | FR-056 | feature request | right-clicking a tunnel flashes the square it is joined to, when that square is on this page | fixed unvalidated | - |
 | 2026-09-02 | R28-C1 | feature request | "Clear All Home Locomotives" restored to the autonomy editor, with a confirmation | - | [MT-254](tests.md#mt-254) |

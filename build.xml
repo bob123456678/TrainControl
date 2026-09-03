@@ -236,6 +236,7 @@
         <test-one-class class="testTheWindowTakesTheKeyboard"/>
         <test-one-class class="testTheMenuShowsWhereALinkGoes"/>
         <test-one-class class="testTheAutonomyEditorKnowsWhichSquare"/>
+        <test-one-class class="testTheDiagramPrintsItsCoordinates"/>
         <test-one-class class="testAMovedTileCarriesItsSetup"/>
         <test-one-class class="testBackupArchiveNamesTheLayout"/>
         <test-one-class class="testARunSurvivesAPageRename"/>

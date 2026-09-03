@@ -318,7 +318,9 @@ right-clicks. On Adam's graph that is up to 62.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | DECLINED 2026-09-02 |
+
+**Adam's word, on MT-261:** *"this is deprecated since edges are now calculated."*  What the item copied was a connection's commands, lock edges and length; the first two are derived from the diagram now, and there is no successor to build because there is nothing left worth copying.
 | **Confidence** | confirmed by reading |
 
     git show master:src/org/traincontrol/gui/GraphRightClickPointMenu.java:730

@@ -704,7 +704,7 @@ public class testEditorSurfaceRules
             "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
 
         String keyboard = withoutComments(bodyOf(window,
-            "private boolean keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)"));
+            "private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)"));
 
         assertFalse(keyboard.isEmpty(),
             "the switch keyboard has no guard at all - a turnout on a locked path can be thrown from "
@@ -713,6 +713,24 @@ public class testEditorSurfaceRules
         assertTrue(keyboard.contains("clearsProtection") && keyboard.contains("getActiveAccs"),
             "the switch keyboard asks fewer than both halves of the question the other two doors ask.  "
             + "Body: " + keyboard);
+
+        // AND THE POWER QUESTION (MT-261 ruling 4).
+        //
+        // Adam: "yes, route through the same guards."  A command sent with the power off does nothing,
+        // and the keyboard used to send it into the dark leaving the button looking as though it had
+        // worked - the one question of the three that is about whether anything can happen at all.
+        String asks = withoutComments(bodyOf(window,
+            "private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)"));
+
+        assertFalse(asks.isEmpty(), "keyboardSwitchAllowed has moved or been renamed");
+
+        assertTrue(asks.contains("getPowerState") && asks.contains("confirmAccessorySwitchPowerOff"),
+            "the switch keyboard no longer asks about the track power, so a click with the power off "
+            + "goes nowhere and says so nowhere.  Body: " + asks);
+
+        assertTrue(asks.contains("keyboardAutonomyAllows"),
+            "the power question is asked and the two autonomy ones are not, which is one guard where "
+            + "there should be three.  Body: " + asks);
 
         assertTrue(withoutComments(window).contains("keyboardSwitchAllowed(switchId, b)"),
             "the switch keyboard's guard exists and nothing calls it, which is the shape of a fix that "

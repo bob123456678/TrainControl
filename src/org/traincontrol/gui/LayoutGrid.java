@@ -63,6 +63,19 @@ public class LayoutGrid
     public static final int LAYOUT_STATION_OPACITY = 210;
 
     /**
+     * The pill under a home locomotive that is not standing at its home (MT-261 ruling 2).
+     *
+     * Adam: "labels show the home locomotive in white to indicate it's not there."  The colour that
+     * makes a name white is the one BEHIND it - `StationCaption.onPill` chooses a foreground that
+     * reads on whatever fill it is handed - so this is a dark fill rather than a white foreground,
+     * which on the pale resting pill would have been an invisible caption.
+     *
+     * Translucent to the same degree as its sibling, so the tile art still shows through it and an
+     * away-from-home platform does not become a solid block on the diagram.
+     */
+    public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
+
+    /**
      * Whether station captions are left off this diagram entirely (FR-030).
      *
      * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
@@ -817,6 +830,29 @@ public class LayoutGrid
         //     container = parent;
         // }
 
+        // THE COLUMN AND ROW NUMBERS, in the margin the border reserves (FR-057).
+        //
+        // Adam: "coordinates are referenced in issues but not visible to the user.  add a grid around
+        // the diagram."  Drawn as a border rather than as two more rows of cells - see AxisRuler for
+        // why - so the grid inside is exactly what it was and every caller that addresses it by
+        // coordinate is unaffected.
+        //
+        // The numbers are the DIAGRAM's, not the cell indices: `offsetX`/`offsetY` are where its
+        // left-most and top-most track actually are, which is what makes the printed number the one an
+        // issue would quote.  `width` and `height` have already been incremented for the spacer row and
+        // column, which hold nothing, so the ruler is told the real counts.
+        //
+        // Read from the preference on every build, which is what makes the toggle a redraw rather than
+        // a special case.
+        if (TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF, false))
+        {
+            container.setBorder(new AxisRuler(size, offsetX, offsetY, width - 1, height - 1));
+        }
+        else
+        {
+            container.setBorder(null);
+        }
+
         // Generate grid
         container.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints(); 
@@ -909,6 +945,10 @@ public class LayoutGrid
                     // Set by the autonomy editor's placed-train branch below, and read after the
                     // generic label styling, which would otherwise take the translucency back.
                     boolean standingTrain = false;
+
+                    // Whether this caption names a home locomotive that is somewhere else (MT-261
+                    // ruling 2).  It picks the pill's fill, which is what makes the name read white.
+                    boolean awayFromHome = false;
 
                     // Black unless something below has a reason to say otherwise
                     Color labelColour = Color.BLACK;
@@ -1040,7 +1080,46 @@ public class LayoutGrid
                                 || ((LayoutEditor) master).getAutonomyPanel() == null
                                 || !((LayoutEditor) master).getAutonomyPanel().isShowingParkedTrains();
 
-                            if (naming)
+                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261
+                            // ruling 2, R28-C3).
+                            //
+                            // Adam: "labels show the home locomotive in white to indicate it's not
+                            // there (and black/no change if it's there)."  Nothing in 3.0.0 drew the
+                            // home assignment at all, so the only way to see where a locomotive
+                            // belonged was to open one square's menu at a time.
+                            //
+                            // Asked FIRST, because it is the more specific question: a caption has
+                            // room for one name, and somebody who has turned this on is looking at
+                            // homes rather than at station names or at what happens to be parked.
+                            // Squares with no home fall through to whichever of the other two is on.
+                            boolean homes = master instanceof LayoutEditor
+                                && ((LayoutEditor) master).getAutonomyPanel() != null
+                                && ((LayoutEditor) master).getAutonomyPanel().isShowingHomeLocomotives();
+
+                            String home = homes ? ui.autonomyHomeAt(captioned) : null;
+
+                            if (home != null)
+                            {
+                                text.setText(stationCaption(home, ""));
+
+                                // AWAY IS THE DARK ONE, which is how the name comes out white.
+                                //
+                                // `StationCaption.onPill` picks a foreground that reads on whatever
+                                // fill it is given, so the colour is chosen by naming the FILL rather
+                                // than by hard-coding a white that would vanish on the resting pill.
+                                // Home and standing here gets the ordinary resting fill and its
+                                // ordinary near-black text - "no change if it's there".
+                                String standing = ui.autonomyLocomotiveAt(captioned);
+
+                                boolean athome = home.equals(standing);
+
+                                standingTrain = true;
+
+                                labelColour = athome ? Color.BLACK : Color.WHITE;
+
+                                awayFromHome = !athome;
+                            }
+                            else if (naming)
                             {
                                 // The station's own name, which is what the track editor used to show
                                 // and what this window is for. Greyed like the placeholder was: it is
@@ -1175,9 +1254,18 @@ public class LayoutGrid
                         // A pill paints its own fill and must stay transparent, or Swing draws the
                         // rectangle underneath it that the pill exists to replace.
                         text.setOpaque(!text.isPill());
-                        text.setBackground(text.isPill()
-                            ? StationCaption.restingFill()
-                            : new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+
+                        // A HOME THAT IS EMPTY GETS THE DARK PILL (MT-261 ruling 2).
+                        //
+                        // Adam asked for the name "in white to indicate it's not there".  White ink on
+                        // the resting pill - which is pale - would be invisible, so the fill is what
+                        // changes and `onPill` below picks the readable foreground for it.  The result
+                        // is the white he asked for, on a caption that can still be read.
+                        Color fill = text.isPill()
+                            ? (awayFromHome ? AWAY_FROM_HOME_FILL : StationCaption.restingFill())
+                            : new Color(255, 255, 255, LAYOUT_STATION_OPACITY);
+
+                        text.setBackground(fill);
 
                         text.setForeground(
                             StationCaption.onPill(text.getBackground(), labelColour));

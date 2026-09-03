@@ -505,6 +505,24 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         diagramSubmenu.add(menuItem);
         
         add(diagramSubmenu);
+
+        // AND THE COORDINATES, at the foot of the menu (FR-057).
+        //
+        // Adam: "coordinates are referenced in issues but not visible to the user."  It is a view
+        // switch rather than an edit, so it sits below everything that changes the diagram, with the
+        // same shape the autonomy editor's copy has - one preference, so ticking it in either window
+        // ticks it in both.
+        addSeparator();
+
+        javax.swing.JCheckBoxMenuItem coordinates =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("layout.ui.menuShowCoordinates"));
+
+        coordinates.setSelected(LayoutEditor.showingCoordinates());
+        coordinates.setToolTipText(I18n.t("layout.ui.tooltipShowCoordinates"));
+
+        coordinates.addActionListener(event -> edit.toggleCoordinates());
+
+        add(coordinates);
     }
 
     /**

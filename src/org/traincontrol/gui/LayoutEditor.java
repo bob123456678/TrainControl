@@ -1683,6 +1683,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
                 visibility.add(autonomyPanel.getShowParkedTrains());
 
+                // AND WHERE EACH TRAIN LIVES (MT-261 ruling 2, R28-C3).
+                //
+                // Adam asked for this as a display option under Preferences - Autonomy.  It is here
+                // instead, beside the two switches that decide the same thing this one does, because
+                // that tab is laid out by the GUI builder and adding a control to it means editing the
+                // .form, which is a standing rule against.  Say the word and it moves.
+                autonomyPanel.getShowHomeLocomotives().setAlignmentX(
+                    java.awt.Component.LEFT_ALIGNMENT);
+
+                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+                visibility.add(autonomyPanel.getShowHomeLocomotives());
+
                 // A label, because unlike its neighbours this one is a choice rather than a switch and
                 // "All" alone does not say what it is about.
                 //
@@ -4837,6 +4849,43 @@ public class LayoutEditor extends PositionAwareJFrame
             this.parent.getModel().log(e);
         }
     }
+
+    /**
+     * Shows or hides the diagram's column and row numbers (FR-057).
+     *
+     * Adam: "axis labels can be printed in both autonomy editor and track diagram editor, with an
+     * optional toggle."  One preference for both, because it is the same diagram and somebody working
+     * through a list of coordinates wants the same answer in each window.
+     *
+     * A redraw rather than a repaint: the numbers live in a border whose insets change the size of the
+     * panel, so the layout has to be done again.  `drawGrid` is what every other view switch in this
+     * window calls for the same reason.
+     *
+     * @return whether the numbers are now shown, so a caller can tick its own control
+     */
+    public boolean toggleCoordinates()
+    {
+        boolean now = !TrainControlUI.getPrefs().getBoolean(
+            TrainControlUI.SHOW_COORDINATES_PREF, false);
+
+        TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, now);
+
+        drawGrid();
+
+        // The main window draws the same diagram, and its grid is built from the same preference - so
+        // it is redrawn too rather than left showing the other answer until something else rebuilds it.
+        if (this.parent != null) this.parent.repaintLayout();
+
+        return now;
+    }
+
+    /**
+     * @return whether the diagram is currently printing its coordinates
+     */
+    public static boolean showingCoordinates()
+    {
+        return TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF, false);
+    }
     
     public void clear()
     {
@@ -6545,6 +6594,43 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
             {
                 toggleAddresses();
+
+                return;
+            }
+
+            // Control+K prints the column and row numbers (FR-057).
+            //
+            // With Control+G, Control+L and Control+D, above the guard, and by that guard's own rule:
+            // "Every shortcut below places, cuts, rotates or retextures a tile."  This one shows and
+            // hides a number, which is what all four of these do.
+            //
+            // Both modes, because the coordinates are what warnings are written in and the track
+            // editor is where squares get moved to the coordinates a warning named.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_K)
+            {
+                toggleCoordinates();
+
+                return;
+            }
+
+            // Control+H sets the home locomotive of the square under the pointer (R28-C5).
+            //
+            // Adam: "set control+H for home."  The graph window had a key for this and the autonomy
+            // editor has only the menu item, which is the half of `R28-C5` that is a second door onto
+            // something already here - the same relationship Control+S has to Rename.
+            //
+            // Autonomy mode only, and it takes `autonomyHover` for the reason MT-258 item 4 records:
+            // the placement variables are deliberately not set in that mode, so asking them gets -1,-1
+            // and a key that fires and finds nothing.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H)
+            {
+                LayoutLabel over = autonomyHover;
+
+                if (over != null && autonomyPanel != null)
+                {
+                    autonomyPanel.promptHomeFor(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), getX(over), getY(over)));
+                }
 
                 return;
             }

@@ -29,12 +29,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-246](#mt-246) | 2026-08-31 | Signals stay put, and a non-reversing train backs into its home | needs test | OB-166 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | needs test | FX2-2, SVN-A4 |
 | [MT-248](#mt-248) | 2026-09-01 | The length notice and the guard it is meant to arm | needs test | FX2-3, TCX-B2 |
-| [MT-249](#mt-249) | 2026-09-01 | A parking berth a train cannot get out of | needs test | FX2-4, RTG-A1 |
 | [MT-250](#mt-250) | 2026-09-01 | Homing a train that is already standing on a reversing point | needs test | D24-B1 |
-| [MT-251](#mt-251) | 2026-09-02 | The letter keys work the moment the window appears | fixed unvalidated | OB-168 |
-| [MT-252](#mt-252) | 2026-09-02 | Placing tile after tile from the palette, over track that is already there | fixed unvalidated | OB-169 |
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
-| [MT-255](#mt-255) | 2026-09-02 | Out of service, on a square that is not a station | fixed unvalidated | D24-B5, SVN-B6 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
@@ -13356,7 +13352,7 @@ saying it is unsound until you rule.
 
 ### MT-249 - 2026-09-01 - A parking berth a train cannot get out of
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FX2-4, RTG-A1
 
 **Written:** 2026-09-01
@@ -13381,6 +13377,8 @@ failing and still excluded from the battery.
 addressed offline
 
 *Run against commit 409d4ce8.*
+
+**Closed 2026-09-02.**  Adam: *"Works.  addressed offline."*
 
 ---
 
@@ -13413,7 +13411,7 @@ blamed the track.
 
 ### MT-251 - 2026-09-02 - The letter keys work the moment the window appears
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-168
 
 **Written:** 2026-09-02
@@ -13446,13 +13444,15 @@ the entire window is still not in focus, rather the parent app like the python o
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Superseded by [MT-259](#mt-259) (2026-09-02).**  Adam: *"the entire window is still not in focus, rather the parent app like the python or netbeans remains."*  That is the same symptom MT-259 carries and the same fix; testing it twice would be testing it twice.
+
 ---
 
 <a id="mt-252"></a>
 
 ### MT-252 - 2026-09-02 - Placing tile after tile from the palette, over track that is already there
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-169
 
 **Written:** 2026-09-02
@@ -13487,6 +13487,8 @@ uses the mouse on the diagram was disturbed.
 **Adam, 2026-09-02 (triage).** Works.
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Closed 2026-09-02.**  Adam: *"Works."*  OB-169 is fixed and validated, and `testThePaletteStillPlacesTiles` holds it.
 
 ---
 
@@ -13607,7 +13609,7 @@ Locomotives - see MT-257 item 1, which is where he asked for both.
 
 ### MT-255 - 2026-09-02 - Out of service, on a square that is not a station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** D24-B5, SVN-B6
 
 **Written:** 2026-09-02
@@ -13638,6 +13640,8 @@ see MT-257.
 **Adam, 2026-09-02 (triage).** Works.
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Closed 2026-09-02.**  Adam: *"Works."*  D24-B5 and SVN-B6 - the same defect through two doors - are fixed and validated.
 
 ---
 
@@ -13868,6 +13872,21 @@ critical - does not work.  the frame is not active and keystrokes do not go to i
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Third pass, 2026-09-02.  Both earlier fixes were aimed a level too deep.**
+
+You said it twice - here, marked critical: *"the frame is not active and keystrokes do not go to it.  the previous active application window retains focus"*, and on [MT-251](#mt-251): *"the entire window is still not in focus, rather the parent app like the python or netbeans remains."*  Both of my fixes arranged which CONTROL inside the window holds the keyboard, and the window never had it.  Nothing about focus within a window can help with that.
+
+**What was actually wrong.**  Windows refuses a foreground change asked for by a process that is not already in the foreground.  Started from NetBeans, a terminal or a script, TrainControl is never that process - so `toFront()` raised the window behind whatever was in front of it and flashed the taskbar button, which is exactly what you describe.  The one case the rule leaves open is a topmost window raising itself, so the window is made topmost, brought to the front, and put back to whatever your always-on-top setting says.
+
+It also un-minimises first, because an iconified window cannot be activated at all.
+
+1. **Start it from NetBeans and do not touch the mouse.**  Press a letter mapped to a locomotive.  This is the case that has failed three times.
+2. **Start it from a shortcut, and from a terminal.**  Same test.
+3. **Check your always-on-top setting afterwards** - the Layouts menu item and the window should agree.  The fix works by turning that on for a moment, and leaving it on would be a worse fault than the one being fixed.
+4. **Start it while it is already running and minimised**, if your launcher does that.
+
+*Run against a build after this commit.*
+
 ---
 
 <a id="mt-260"></a>
@@ -14073,5 +14092,28 @@ diagram tile's OTHER question: with the track power off, that tile offers "turn 
 4. yes, route through the same guards
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-02 (triage).** Answered, all four.
+
+> 1. this is deprecated since edges are now calculated
+> 2. add a display option to Preferences -> Autonomy ("show home locomotives").  If set, labels show the home locomotive in white to indicate it's not there (and black/no change if it's there)
+> 3. set  control+H for home . can we use control+8?  If not, then control+A for address.
+> 4. yes, route through the same guards
+
+**Three built, one declined, and one half of ruling 3 put back to you.**
+
+**1. Declined**, on your word: `R28-C2` is closed.  Copying a connection's configuration means nothing now that the edges are derived.
+
+**2. Built, with the control in a different place than you named.**  Captions can name each square's home locomotive, dark-pilled and white-lettered when that locomotive is somewhere else and ordinary when it is standing there.  The switch is in the autonomy editor's **Toggle visibility** column, beside *Show parked trains* and *Show lengths* - not in the Autonomy Settings tab, because that tab is laid out by the GUI builder and adding a control to it means editing the `.form`, which is a standing rule against.  Say the word and it moves.
+
+**3. Control+H is in**, in the autonomy editor, on the square under the pointer - the same shape Control+S has.  **Control+8 is not**, and this is the half I want you to decide: the autonomy editor has no address action at all, and the track editor already has Control+A for it.  Adding one to the autonomy editor means letting that mode edit the diagram, which it deliberately does not do.  Do you want the address editable from the autonomy editor, or is Control+A in the track editor enough?
+
+**4. Built.**  The switch keyboard asks about the power the way the diagram tile does - turn it on and proceed, proceed anyway, or cancel - before it asks the two autonomy questions.
+
+1. **Tick Show home locomotives** in the autonomy editor and check the captions.  A platform whose home train is elsewhere should be dark with a white name; one with its own train standing on it should look as it does now.
+2. **Hover a square and press Control+H.**  The home prompt should open on that square.
+3. **With the power off and autonomy running, click a switch on the keyboard tab.**  It should ask about the power first, then about the conflict if there is one, and put the button back if you cancel either.
+
+*Run against a build after this commit.*
 
 ---

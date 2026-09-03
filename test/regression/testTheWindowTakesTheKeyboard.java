@@ -467,6 +467,155 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
+     * Coming to the foreground gives the always-on-top setting back (OB-170, third pass).
+     *
+     * **The fix works by breaking a rule, so this is the test that it puts the rule back.**  Windows
+     * refuses a foreground change asked for by a process that is not already in the foreground, and
+     * the one exception is a topmost window - so the window is made topmost, raised, and set back to
+     * whatever the operator chose.  Leaving it topmost would be a worse fault than the one being
+     * fixed: the application would sit above everything else for the rest of the session, and the menu
+     * item that controls it would disagree with the window.
+     *
+     * Both directions, because a one-directional test passes on `setAlwaysOnTop(false)` unconditionally
+     * - which is exactly the wrong answer for an operator who has the setting turned on.
+     *
+     * MUTATION this catches: dropping the `finally`, or replacing the restore with a bare
+     * `setAlwaysOnTop(false)`.
+     */
+    @Test(timeOut = 300000)
+    public void testComingToTheForegroundGivesTheOnTopSettingBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the window is a window");
+        }
+
+        Started up = start();
+
+        try
+        {
+            java.lang.reflect.Method raise =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("comeToTheForeground");
+            raise.setAccessible(true);
+
+            for (final boolean onTop : new boolean[] { false, true })
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setAlwaysOnTop(onTop));
+
+                settle();
+
+                assertEquals(up.ui.isAlwaysOnTop(), onTop,
+                    "precondition: the window would not take the always-on-top setting at all");
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        raise.invoke(up.ui);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                settle();
+
+                assertEquals(up.ui.isAlwaysOnTop(), onTop,
+                    "coming to the front left always-on-top at " + up.ui.isAlwaysOnTop() + " when the "
+                    + "operator had it at " + onTop + " - the flag is how the raise gets past Windows' "
+                    + "foreground rule, and it has to be handed back afterwards");
+            }
+        }
+        finally
+        {
+            up.close();
+        }
+    }
+
+    /**
+     * And an iconified window is un-iconified, without un-maximising a maximised one.
+     *
+     * A window in the iconified state cannot be activated at all, so the raise would be a no-op on the
+     * one occasion somebody most needs it - the application already running, minimised, and asked for
+     * again.  The maximised bits live in the same field, which is why the ICONIFIED bit is cleared
+     * rather than the state replaced.
+     *
+     * MUTATION this catches: removing the un-iconify entirely.  The maximise half would catch
+     * `setExtendedState(java.awt.Frame.NORMAL)`, and on THIS window it cannot run at all - the frame
+     * is built `setResizable(false)` and refuses the maximised bits - so it is guarded by what the
+     * fixture actually managed to arrange rather than left to pass on a state nobody set.
+     */
+    @Test(timeOut = 300000)
+    public void testComingToTheForegroundUnMinimisesWithoutUnMaximising() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the window is a window");
+        }
+
+        Started up = start();
+
+        try
+        {
+            java.lang.reflect.Method raise =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("comeToTheForeground");
+            raise.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setExtendedState(
+                java.awt.Frame.ICONIFIED | java.awt.Frame.MAXIMIZED_BOTH));
+
+            settle();
+
+            // WHAT THE FIXTURE ACTUALLY GOT, before anything is asserted about what changed it.
+            //
+            // This window is built `setResizable(false)`, and a non-resizable frame refuses the
+            // maximised bits - so the second assertion below is about a state this fixture may not be
+            // able to reach.  Read here rather than assumed, and the assertion is made conditional on
+            // it: an assertion whose precondition silently failed is worse than no assertion, because
+            // it reads as coverage.
+            final int arranged = up.ui.getExtendedState();
+
+            assertEquals(arranged & java.awt.Frame.ICONIFIED, java.awt.Frame.ICONIFIED,
+                "precondition: the window would not take the iconified state at all, so nothing below "
+                + "is a statement about un-minimising it");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    raise.invoke(up.ui);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            settle();
+
+            assertEquals(up.ui.getExtendedState() & java.awt.Frame.ICONIFIED, 0,
+                "the window is still iconified after being asked to come to the front, and an "
+                + "iconified window cannot be activated at all");
+
+            // ONLY WHERE THE FIXTURE COULD SET IT.  On this window it cannot - `setResizable(false)`
+            // is in the form - so this half is exercised by any future window that can, and says so
+            // rather than passing quietly on a state nobody arranged.
+            if ((arranged & java.awt.Frame.MAXIMIZED_BOTH) != 0)
+            {
+                assertEquals(up.ui.getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH,
+                    java.awt.Frame.MAXIMIZED_BOTH,
+                    "coming to the front un-maximised a window somebody had maximised - the two states "
+                    + "share one field, and this one is not ours to change");
+            }
+        }
+        finally
+        {
+            up.close();
+        }
+    }
+
+    /**
      * And it does NOT take the caret back from something that already has it.
      *
      * **This is the fix attacking itself.** Asking for the keyboard on every activation is a bigger
