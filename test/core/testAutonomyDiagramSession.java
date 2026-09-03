@@ -1233,6 +1233,75 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The session says which pages the migration rewrote, and how many names it took (RGN-B1).
+     *
+     * The migration edits files the user owns. A `Point:` name typed onto their own track diagram is
+     * taken into the setup and emptied out of the `.cs2`, and nothing at this build writes those
+     * labels back - so an upgrader who later opens 2.7.4c finds their station captions gone from the
+     * diagram. `saveChanges` keeps a `.cs2.bak`, which makes them recoverable by hand.
+     *
+     * **Failures were reported and successes were not**, which is the wrong way round: a failure means
+     * the migration simply runs again next time, and a success is the one-way half.
+     * `TrainControlUI` writes these two into the log at start-up; what is asserted here is that the
+     * session has them to write, because the log line itself is one string in a method that needs a
+     * window and a Central Station.
+     *
+     * MUTATION: dropping either `migratedPages.add` or `migratedCaptions++` fails this.
+     */
+    @Test
+    public void testTheSessionSaysWhichPagesTheMigrationRewrote() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.save();
+
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        // And an orphan, which is rewritten out of nothing: it names no station this setup knows, so
+        // it stays on the diagram and must not be counted among the names taken.
+        page.addComponent(componentType.TEXT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "GhostSiding");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertTrue(reopened.getMigrationFailures().isEmpty(),
+            "precondition: the page has to have been rewritten for there to be anything to report: "
+            + reopened.getMigrationFailures());
+
+        assertEquals(reopened.getMigratedPages(), Arrays.asList(page.getName()),
+            "the session cannot say which of the user's page files it rewrote, so the start-up log "
+            + "cannot say it either - and a user who upgrades, then goes back to 2.7.4c and finds "
+            + "their station captions gone from the diagram, has nothing anywhere telling them what "
+            + "happened or that a .cs2.bak is sitting beside each page (RGN-B1)");
+
+        assertEquals(reopened.getMigratedCaptions(), 1,
+            "the count of names taken over is wrong.  One label named a station this setup knows and "
+            + "one named nothing; only the first is taken, and only the first is removed from the "
+            + "user's file");
+
+        // A SECOND OPEN HAS NOTHING TO REPORT, which is what makes the log line trustworthy.
+        //
+        // The counters are per-open, not cumulative: a session that reported the same pages every
+        // time it was opened would put the notice in front of a user whose files nothing had touched.
+        AutonomySession again = new AutonomySession(layout);
+        again.open(Arrays.asList(page));
+
+        assertTrue(again.getMigratedPages().isEmpty(),
+            "a second open reports the first one's work, so the notice appears at every start-up "
+            + "instead of the once after the upgrade: " + again.getMigratedPages());
+
+        assertEquals(again.getMigratedCaptions(), 0, "and so does the count");
+    }
+
+    /**
      * A caption the user\u2019s own writing sits on top of is reported.
      *
      * The square belongs to the diagram, so the text is what gets drawn and the caption is what goes

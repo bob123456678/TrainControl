@@ -207,7 +207,7 @@ The cheap unit-level version: assert that `valid && loaded && isLocalLayout()` c
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - it is announced now, in the changelog and in the log |
 | **Confidence** | confirmed by reading, and confirmed against the shipped layout |
 
 `AutonomySession.open()` calls `migrateStationLabels()` unconditionally (`:139`). That method
@@ -245,6 +245,40 @@ be rewritten" anywhere the user will see. That is at minimum a changelog line an
 **How to confirm.** Already confirmed by the fixture above. To watch it happen: copy a layout folder,
 put a `Point:X` label on a tile, create a setup with a station named `X`, open a session over it, and
 diff the page file before and after `open()`.
+
+**Disposition: fixed as the finding framed it - "at minimum a changelog line" - and with the log line
+as well. What it does is unchanged.**
+
+Re-reading it before touching it, the migration is careful in every way that matters: it only takes a
+label naming a station the setup already knows, it leaves an unrecognised one exactly where it is, it
+rewrites only pages it actually changed, and `LayoutDiagram.saveChanges:470` keeps a `.cs2.bak` the
+**first** time a page is rewritten - deliberately the first, so the copy is the state before this build
+touched anything. So the fifteen names in the fixture are not lost; they are in the `.bak` the finding
+itself listed.
+
+What was actually wrong is narrower and is what the finding's last paragraph says: **it edits files the
+user owns and says nothing.** Failures were reported (`TrainControlUI.java:2650`) and successes were
+not - which is the wrong way round, because a failure means it runs again next time and a success is
+the one-way half.
+
+- `AutonomySession` now records `migratedPages` and `migratedCaptions`, cleared at each `open()` so
+  they describe that open and not the history.
+- `TrainControlUI` logs them beside the existing failure report: which pages were rewritten, how many
+  names were taken, and that a `.cs2.bak` is sitting beside each one. The log rather than a dialog -
+  it happens once, on the first start after an upgrade, and it is a record of something already done
+  rather than a question.
+- `Readme.md` gains a bullet under 3.0.0 saying the same thing in the user's words, including that a
+  name matching no station is left alone.
+
+`testTheSessionSaysWhichPagesTheMigrationRewrote` covers both counters and, in its second half, that a
+**second** open reports nothing - a cumulative counter would put the notice in front of a user whose
+files nothing had touched, at every start-up for ever. MUTATION: dropping `migratedPages.add` fails it
+(109 tests, 1 failure; restored, 109 green).
+
+**Not made into a prompt.** The finding says "arguably a prompt", and the argument against is that a
+prompt implies a choice: there is nothing to decide - the labels have to move for the new setup to own
+them, and refusing would leave the diagram showing every station name twice. A modal at first start,
+about work already done, is a dialog whose only button is OK.
 
 ### B2 - an s88-fired route with a conflict does not stop; it drops its accessories and runs the rest
 

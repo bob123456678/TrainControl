@@ -136,6 +136,9 @@ public class AutonomySession
         // once; see migrateStationLabels.  Its failures are kept for the UI to report rather than thrown,
         // because a page that could not be rewritten is not a reason to refuse to open the setup - the
         // migration simply runs again next time.
+        migratedPages.clear();
+        migratedCaptions = 0;
+
         migrationFailures = migrateStationLabels();
 
         forgetCaptionsOfNonStations();
@@ -274,6 +277,34 @@ public class AutonomySession
     public List<String> getMigrationFailures()
     {
         return Collections.unmodifiableList(migrationFailures);
+    }
+
+    /**
+     * The pages the caption migration DID rewrite, for the same reader (RGN-B1).
+     *
+     * The migration edits files the user owns - a `Point:` label typed onto their own track diagram is
+     * taken into the setup and emptied out of the `.cs2` - and until this it did so without a word.  A
+     * user who upgraded, then went back to 2.7.4c, found their station captions gone from the diagram
+     * and nothing anywhere saying why.  `LayoutDiagram.saveChanges` keeps a `.cs2.bak` the first time
+     * it rewrites a page, so the names are recoverable; that is only useful to somebody who knows to
+     * look.
+     *
+     * Failures were already reported and successes were not, which is the wrong way round for a change
+     * that is one-way: a failure means it will simply run again next time.
+     */
+    private List<String> migratedPages = new ArrayList<>();
+
+    public List<String> getMigratedPages()
+    {
+        return Collections.unmodifiableList(migratedPages);
+    }
+
+    /** How many captions the migration took over, across every page. */
+    private int migratedCaptions;
+
+    public int getMigratedCaptions()
+    {
+        return migratedCaptions;
     }
 
     /**
@@ -1857,6 +1888,8 @@ public class AutonomySession
                     store.setCaption(where, station);
 
                     migrated = true;
+
+                    migratedCaptions++;
                 }
             }
         }
@@ -1915,6 +1948,8 @@ public class AutonomySession
             try
             {
                 entry.getKey().saveChanges(null, false);
+
+                migratedPages.add(entry.getKey().getName());
             }
             catch (Exception e)
             {

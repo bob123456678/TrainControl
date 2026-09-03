@@ -2644,6 +2644,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     + "left in place: config/autonomy/setup-before-edit.json");
             }
 
+            // AND THE PAGES IT DID REWRITE, which is the half that was silent (RGN-B1).
+            //
+            // This edits files the user owns: a `Point:` name typed onto their own track diagram is
+            // taken into the setup and emptied out of the `.cs2`.  It is one-way - nothing at this
+            // build writes those labels back - so somebody who upgrades and then opens 2.7.4c again
+            // finds their station captions gone from the diagram.  `saveChanges` keeps a `.cs2.bak`
+            // the first time it rewrites a page, which makes them recoverable by hand; that is only
+            // any use to a reader who knows the file exists, hence this line.
+            //
+            // The log rather than a dialog: it happens once, on the first start after an upgrade,
+            // and it is a record of something already done rather than a question.
+            if (!session.getMigratedPages().isEmpty())
+            {
+                this.model.log("Station names written on the track diagram by an earlier version have"
+                    + " been taken into the autonomy setup (" + session.getMigratedCaptions()
+                    + " of them) and removed from these page files: "
+                    + String.join(", ", session.getMigratedPages())
+                    + ".  A copy of each page as it was is kept beside it with a .bak extension");
+            }
+
             // Captions written into the layout file by an earlier version are brought into the setup
             // when it opens.  A page that could not be rewritten leaves its old labels behind, and the
             // migration simply runs again next time - but the user is told, because until it succeeds
