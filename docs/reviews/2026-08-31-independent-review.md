@@ -230,6 +230,16 @@ is done. Refuted if a dialog appears.
 
 ### B1 - "Highlight on Diagram" throws on any route containing a locomotive command
 
+**FIXED 2026-09-03**, re-derived by pass 4 of the release review.  Both loops - the commands and the
+conditions - ask `hasAddress()` before reading one, which is what that method exists for.  The
+conditions loop this document says it did not settle is covered by the same edit.
+
+**Honest about the test.**  `testHighlightSurvivesALocomotiveCommand` drives the button on a route
+holding a locomotive command and asserts it does not throw, and it does NOT discriminate: with no parent
+window there is no diagram to highlight on, so the method returns before walking the rows - measured, by
+taking the guard out again.  What is pinned instead is the contract the fix rests on, a locomotive
+command answering `hasAddress()` false and `getAddress()` throwing, and the gap is written at the test.
+
 | | |
 |---|---|
 | **Disposition** | open |
