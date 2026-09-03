@@ -109,33 +109,121 @@ esac
 # scope the hazard has - the Preferences store these runs fight over is per user, not per session.
 LOCK="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
 
+# THE SAME TAKE, TOO, WORD FOR WORD (REL-B2).
+#
+# battery.sh was hardened on 2026-09-03 and this file was not, on the same lock: the take was still
+# test-then-write, the fallback still wrote a bare MSYS pid, and this reader could not parse the
+# "msys:NNN" the other file had started writing - so a one.sh could read a LIVE battery's lock as
+# clear and overwrite it.  Three legs of one defect, and the third was created by fixing the first
+# somewhere else.  This project's most repeated mistake, in the file that documents it.
+#
+# What the lock covers is the COMPILE.  The JVM probe above sees test JVMs; two runs that overlap in
+# javac own no JVM at all, which is exactly where the 2026-09-01 double-run overlapped.
 LOCK_PID=$(cat /proc/$$/winpid 2>/dev/null | tr -d '\r\n ')
 
+# THE NAMESPACE, WRITTEN WITH THE NUMBER (SV2-C2).
+#
+# A bare integer that is an MSYS pid is one `Get-Process` is guaranteed to call dead, so a lock
+# written from a shell with no /proc could be cleared while its run was still going.
 case "$LOCK_PID" in
-    ''|*[!0-9]*) LOCK_PID=$$ ;;
+    ''|*[!0-9]*) LOCK_PID="msys:$$" ;;
 esac
+
+# Whether the holder is alive, dead, or a number this shell cannot resolve.
+lock_holder_state()
+{
+    held="$1"
+
+    case "$held" in
+        '') echo "unknown"; return;;
+        msys:*) held_msys=${held#msys:}; held_win="";;
+        *[!0-9]*) echo "unknown"; return;;
+        *) held_msys="$held"; held_win="$held";;
+    esac
+
+    state="unknown"
+
+    if [ -n "$held_win" ]
+    then
+        state=$(powershell.exe -NoProfile -Command \
+            "if (Get-Process -Id $held_win -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
+            2>/dev/null | tr -d '\r\n ')
+    fi
+
+    # Only ever ADDS a yes: two tests that can say "still running" cannot combine into a false stale,
+    # which is the only direction that costs anything here.
+    if [ "$state" != "yes" ] && [ -n "$held_msys" ] && kill -0 "$held_msys" 2>/dev/null
+    then
+        state="yes"
+    fi
+
+    # A number Windows was never asked about is unknown rather than dead: this may simply be a
+    # different MSYS runtime.
+    if [ "$state" != "yes" ] && [ -z "$held_win" ]
+    then
+        state="unknown"
+    fi
+
+    echo "$state"
+}
+
+# TAKEN, OR NOT, IN ONE STEP (SV2-C3, and REL-C9's correction of it).
+#
+# `set -o noclobber` with `: >` makes "create it only if it does not exist" one operation the
+# filesystem decides.  A lock whose holder is gone, or whose number nobody can resolve, is taken OVER
+# with `mv` - which is also one operation, so two shells racing past the same stale lock cannot both
+# win it.  The pid is written to a temp file and moved into place, so the lock is never present and
+# empty for a reader to find (REL-C9's second half).
+take_the_lock()
+{
+    if ( set -o noclobber; : > "$LOCK" ) 2>/dev/null
+    then
+        printf "%s\n" "$LOCK_PID" > "$LOCK.mine.$$" && mv -f "$LOCK.mine.$$" "$LOCK"
+
+        return 0
+    fi
+
+    return 1
+}
 
 if [ -f "$LOCK" ]
 then
     HELD=$(cat "$LOCK" 2>/dev/null | tr -d '\r\n ')
 
-    ALIVE=$(powershell.exe -NoProfile -Command \
-        "if (Get-Process -Id $HELD -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
-        2>/dev/null | tr -d '\r\n ')
+    case "$(lock_holder_state "$HELD")" in
+        yes)
+            echo "*** A BATTERY OR ANOTHER RUN IS ALREADY GOING (pid $HELD) - nothing was run ***"
+            exit 2
+            ;;
+        no)
+            echo "(clearing a stale lock from pid $HELD, which is no longer running)"
+            echo ""
 
-    if [ "$ALIVE" != "yes" ] && kill -0 "$HELD" 2>/dev/null
-    then
-        ALIVE="yes"
-    fi
+            mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
+            ;;
+        *)
+            # WARNS AND PROCEEDS, which is what the unknown arm is for (REL-C10).
+            #
+            # A lock nobody can resolve is possibly days old, and refusing here would leave deleting
+            # the file by hand as the only way past - the learned behaviour the probe's own comment
+            # forbids.  Taken over with `mv`, so two shells arriving together cannot both take it.
+            echo "*** WARNING: could not tell whether the run holding this lock (pid $HELD) is still"
+            echo "    going - that check DID NOT RUN.  Make sure nothing else is running tests."
+            echo ""
 
-    if [ "$ALIVE" = "yes" ]
-    then
-        echo "*** A BATTERY OR ANOTHER RUN IS ALREADY GOING (pid $HELD) - nothing was run ***"
-        exit 2
-    fi
+            mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
+            ;;
+    esac
 fi
 
-echo "$LOCK_PID" > "$LOCK"
+if ! take_the_lock
+then
+    echo "*** ANOTHER RUN TOOK THE LOCK IN THE SAME INSTANT - nothing was run ***"
+    echo ""
+    echo "Two started within a few milliseconds of each other.  Wait for the other one and try again."
+
+    exit 2
+fi
 
 BUILD="$S/build/one-$$"
 

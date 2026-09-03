@@ -274,39 +274,53 @@ then
     esac
 fi
 
+
+# TAKEN, OR TAKEN OVER, IN ONE STEP (SV2-C3, corrected by REL-C9 and REL-C10).
+#
+# `set -o noclobber` with `: >` makes "create it only if it does not exist" one operation the
+# filesystem decides, rather than two this script decides with a `powershell.exe` start between them -
+# which is the few hundred milliseconds two runs launched together spend in parallel.
+#
+# **A lock nobody owns is taken OVER, not deleted and re-created.**  The first version of this did
+# `rm -f` and then created, which is two steps again: two shells racing past the same stale lock could
+# interleave rm-A, create-A, rm-B, create-B and both proceed (REL-C9).  `mv` is one operation, so
+# exactly one of them wins it.
+#
+# **And the unknown arm still warns and proceeds** (REL-C10).  A lock whose number nobody can resolve
+# is possibly days old; refusing would leave deleting the file by hand as the only way past, which is
+# the learned behaviour the probe's own comment forbids.
+#
+# The pid goes through a temp file, so the lock is never present and empty for a reader to find.
+take_the_lock()
+{
+    if ( set -o noclobber; : > "$LOCK" ) 2>/dev/null
+    then
+        printf "%s\n" "$LOCK_PID" > "$LOCK.mine.$$" && mv -f "$LOCK.mine.$$" "$LOCK"
+
+        return 0
+    fi
+
+    return 1
+}
+
 if [ -n "$STALE" ]
 then
     echo "(clearing a stale lock from pid $STALE, which is no longer running)"
     echo ""
+
+    mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
 fi
 
-# TAKEN IN ONE STEP (SV2-C3).
-#
-# The test above and this write used to be a plain pair, and between them is a `powershell.exe` start
-# of a few hundred milliseconds - which two batteries launched together spend in parallel.  Both found
-# no file, both wrote, both ran.  That is the incident of 2026-08-30, which damaged the real railway,
-# arriving through the guard rather than around it.
-#
-# `set -o noclobber` with `: >` makes creation a question the filesystem answers: exactly one of two
-# racing shells gets the file, and the other gets a non-zero status.  In a subshell, so the option does
-# not outlive the attempt.
-#
-# The stale case is why this can still overwrite: a lock whose holder is gone was cleared above in
-# spirit but not on disk, so it is removed here, immediately before the attempt, by the run that
-# established it is dead.
-if [ -n "$STALE" ]
+if [ "$ALIVE" = "unknown" ] && [ -f "$LOCK" ]
 then
-    rm -f "$LOCK"
+    mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
 fi
 
-if ( set -o noclobber; : > "$LOCK" ) 2>/dev/null
+if ! take_the_lock
 then
-    # The winpid, not $$ - see FV2-A1 above.  A lock Windows cannot resolve reads as stale.
-    echo "$LOCK_PID" > "$LOCK"
-else
-    echo "*** ANOTHER BATTERY TOOK THE LOCK WHILE THIS ONE WAS CHECKING ***"
+    echo "*** ANOTHER RUN TOOK THE LOCK IN THE SAME INSTANT - nothing was run ***"
     echo ""
-    echo "Two started within the same instant.  Wait for the other one and run this again."
+    echo "Two started within a few milliseconds of each other.  Wait for the other one and try again."
     echo ""
 
     exit 2
