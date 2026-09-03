@@ -210,10 +210,15 @@ public class testTimetableOnDerivedGraph
             }
         }
 
-        assertTrue(startedAt.size() >= locomotives.size(),
-            "every locomotive this test placed stands on a station, so all of them should have been "
-            + "recorded as restorable - found " + startedAt.size() + " for " + locomotives.size()
-            + " placed" + andTheSeed());
+        // THE ONES THIS TEST PLACED, not a count of all of them (TSX-C11).
+        //
+        // `startedAt` is filled by walking every locomotive on the graph, and the configuration parks
+        // trains all over the railway - so a count comparison was satisfied by the fixture's own
+        // placements and a locomotive this test placed could fail to land without anything noticing.
+        assertTrue(startedAt.keySet().containsAll(locomotives),
+            "a locomotive this test placed is not recorded as restorable, so it did not land where it "
+            + "was put - which is what this assertion exists to catch.  Placed: " + locomotives
+            + ", restorable: " + startedAt.keySet() + andTheSeed());
 
         // ---- capture -------------------------------------------------------------------------
         //
@@ -453,10 +458,18 @@ public class testTimetableOnDerivedGraph
 
         // The configuration Adam actually runs.  Deriving whichever happened to be active last would
         // make this test describe a different railway from one machine to the next.
-        if (session.getStore().getConfigurationNames().contains(CONFIGURATION))
-        {
-            session.getStore().setActiveConfiguration(CONFIGURATION);
-        }
+        // A GUARD, not a preference (TSX-C11, and what is left of TST-B11).
+        //
+        // The `if` meant a fixture without this configuration silently fell back to whichever was
+        // active last, which is the very thing the comment above forbids - and the reason it has always
+        // worked is that Main is the only configuration the fixture has.  That is a coincidence, and
+        // this class's own javadoc says so.
+        assertTrue(session.getStore().getConfigurationNames().contains(CONFIGURATION),
+            "the fixture has no configuration called " + CONFIGURATION + ", so this test would have "
+            + "described whichever railway happened to be active instead.  Has: "
+            + session.getStore().getConfigurationNames());
+
+        session.getStore().setActiveConfiguration(CONFIGURATION);
 
         if (session.getStore().getActiveConfiguration() == null)
         {

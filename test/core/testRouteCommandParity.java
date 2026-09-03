@@ -133,7 +133,33 @@ public class testRouteCommandParity
 
         assertTrue(from >= 0, "execRoute has moved or changed shape - this test is reading nothing");
 
-        String dispatch = source.substring(from);
+        // TO THE END OF THE METHOD, not to the end of the file (TSX-C12).
+        //
+        // `substring(from)` took `execRoute` and the 363 lines after it, and one of the predicates the
+        // table below asks about already lives out there - `if (r.isAccessory())`, inside `toCSV`.
+        // Nothing was vacuous, because ACCESSORY is both offered and dispatched; what was wrong is
+        // that the bound the comment claims was not the bound the code took, and the two kinds that
+        // are NOT offered were protected by nothing but their predicate happening to be absent from
+        // unrelated methods.
+        //
+        // Walked on braces, which is what the method's own extent is.
+        int opens = source.indexOf('{', from);
+
+        assertTrue(opens > from, "execRoute has no body - this test is reading nothing");
+
+        int depth = 0;
+        int closes = -1;
+
+        for (int i = opens; i < source.length(); i++)
+        {
+            if (source.charAt(i) == '{') depth++;
+            else if (source.charAt(i) == '}' && --depth == 0) { closes = i; break; }
+        }
+
+        assertTrue(closes > opens,
+            "could not find the end of execRoute, so the extent this test reads is not a method");
+
+        String dispatch = source.substring(from, closes);
 
         // Comments stripped, for the reason three findings this round were about: prose that describes
         // a branch reads exactly like the branch.

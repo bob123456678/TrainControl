@@ -1242,6 +1242,11 @@ after the flattening, that no point outside A/B/C carries a non-zero priority, c
 
 #### C11 - two residues in `testTimetableOnDerivedGraph`, both from half-applied fixes
 
+**FIXED 2026-09-03**, both residues.  The count comparison is `containsAll(locomotives)` - the ones this
+test placed, which is what its message describes - and the configuration guard is an assertion rather
+than an `if`, so a fixture without that configuration fails instead of silently describing a different
+railway.
+
 **The count is over the wrong set.** `:213-216`:
 
 ```java
@@ -1280,6 +1285,14 @@ a guard and a preference.
 
 #### C12 - "the dispatch only" is the whole file from `execRoute` down
 
+**FIXED 2026-09-03.**  The dispatch is bounded by `execRoute`'s own braces rather than running to the end
+of the file, so the two kinds that are not offered are protected by the method's extent instead of by
+their predicate happening to be absent from 363 lines of unrelated code.
+
+`TST-C6`, confirmed open in the same class, is left where it is: a `catch (Exception expected) {}` that
+counts any throw as a refusal.  It is the next thing to do in this file and wants the message assertion
+its neighbour already uses.
+
 `test/core/testRouteCommandParity.testEveryKindOfferedAsACommandIsOneExecutionActsOn:126-199` carves out
 what it calls the dispatch, at `:130-136`:
 
@@ -1314,6 +1327,14 @@ so the `assertNull` inside the `try` is at least still live.) The fix is the one
 is the guard's own, with the reason written out.
 
 #### C13 - two more assertions the fixture guarantees, in a file whose neighbour states the rule
+
+**FIXED 2026-09-03.**  The two setter read-backs are gone, and what stands in their place is the
+precondition this test actually needs: the two timetable entries are different locomotives on different
+paths.  If the fixture ever built one path twice, a skipped leg and a run leg would be the same leg and
+nothing here could tell them apart.
+
+The sequential-flag assertion keeps its check and loses its "precondition" label, which was describing
+something the ordering does not test.
 
 New sites for `TCX-C3`. `test/core/testStagingSkipsALegWithNoSpeed.java:132-140`:
 

@@ -126,18 +126,24 @@ public class testStagingSkipsALegWithNoSpeed
         layout.setTimetableSequential(true);
 
         assertTrue(layout.isTimetableSequential(),
-            "precondition: the sequential flag survived setTimetable, or this exercises the parallel "
-            + "loop instead and waits three minutes to do it");
+            "the sequential flag did not survive being set after setTimetable, so this exercises the "
+            + "parallel loop instead and waits three minutes to do it");
 
         loc(LOC_MOVING).setPreferredSpeed(35);
         loc(LOC_STUCK).setPreferredSpeed(0);
 
-        assertTrue(loc(LOC_STUCK).getPreferredSpeed() < 1,
-            "precondition: the first entry's locomotive has no usable speed");
+        // NOT A PRECONDITION ON THE TWO LINES ABOVE (TSX-C13, the rule stated at testHomeStaging).
+        //
+        // Reading a speed back after setting it proves that a setter sets.  What this test needs to be
+        // true is that the two ENTRIES are different trains on different paths - if the fixture built
+        // one path twice, a skipped leg and a run leg are the same leg and nothing here could tell.
+        assertNotSame(entries.get(0).getLoc(), entries.get(1).getLoc(),
+            "precondition: both timetable entries name the same locomotive, so a skipped leg cannot be "
+            + "told from a run one");
 
-        assertTrue(loc(LOC_MOVING).getPreferredSpeed() >= 1,
-            "precondition: the second entry's locomotive does, or this test cannot tell a skipped "
-            + "leg from a broken fixture");
+        assertNotEquals(entries.get(0).getPath(), entries.get(1).getPath(),
+            "precondition: both entries run the same path, so this test cannot tell which leg the "
+            + "staging run took");
 
         final boolean[] ranToTheEnd = new boolean[1];
         final Throwable[] thrown = new Throwable[1];
