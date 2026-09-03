@@ -613,6 +613,10 @@ one of the two is the square at `{0}` itself. Cosmetic and only in the plural me
 single-square case takes the singular key, which speaks of "its track" and is right. The fix is
 wording ("this square and the way in"), in all eight bundles.
 
+**FIXED 2026-09-03.**  Confirmed - the count includes the turnaround square, because that square's own
+length is one of the things the guard needs.  The sentence says so in all eight bundles: "{2} squares
+there and on the way in".  The singular key is untouched and was already right.
+
 ### D10
 
 **Regression shapes checked and found clean.** Each of these is a specific way the week could have
