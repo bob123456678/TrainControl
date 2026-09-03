@@ -521,6 +521,9 @@ public class testTheWindowTakesTheKeyboard
 
         Started up = start();
 
+        boolean onTopWas = org.traincontrol.gui.TrainControlUI.getPrefs().getBoolean(
+            org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, false);
+
         try
         {
             java.lang.reflect.Method raise =
@@ -529,12 +532,23 @@ public class testTheWindowTakesTheKeyboard
 
             for (final boolean onTop : new boolean[] { false, true })
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setAlwaysOnTop(onTop));
+                // THE PREFERENCE, not the window's current flag (OB-170, seventh pass).
+                //
+                // The raise restores what the OPERATOR chose, because the window arrives at it still
+                // topmost on purpose - `display()` no longer takes the flag off, and reading it back
+                // would leave the application above everything else for ever.  So the setting under
+                // test is the stored one, and a test that only moved the window's flag would be
+                // asserting against whatever happened to be in the preferences store.
+                org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                    org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, onTop);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setAlwaysOnTop(!onTop));
 
                 settle();
 
-                assertEquals(up.ui.isAlwaysOnTop(), onTop,
-                    "precondition: the window would not take the always-on-top setting at all");
+                assertEquals(up.ui.isAlwaysOnTop(), !onTop,
+                    "precondition: the window would not take the always-on-top setting at all, so "
+                    + "the restore below could pass without restoring anything");
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
@@ -559,12 +573,15 @@ public class testTheWindowTakesTheKeyboard
 
                 assertEquals(up.ui.isAlwaysOnTop(), onTop,
                     "coming to the front left always-on-top at " + up.ui.isAlwaysOnTop() + " when the "
-                    + "operator had it at " + onTop + " - the flag is how the raise gets past Windows' "
-                    + "foreground rule, and it has to be handed back afterwards");
+                    + "operator's setting is " + onTop + " - the flag is how the raise gets past "
+                    + "Windows' foreground rule, and it has to be handed back afterwards");
             }
         }
         finally
         {
+            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, onTopWas);
+
             up.close();
         }
     }
@@ -741,4 +758,94 @@ public class testTheWindowTakesTheKeyboard
             up.close();
         }
     }
+    /**
+     * `display()` does not take the topmost flag off after showing the window (OB-170, seventh pass).
+     *
+     * **The one invariant here that no behavioural test can hold.**  `setViewListener` makes the frame
+     * topmost before it is shown, and says why - *"start with true to ensure keyboard events register
+     * properly"*.  That is not a preference, it is the mechanism: a topmost window is the one case
+     * Windows lets a process raise itself without already owning the foreground.  `display()` used to
+     * put the operator's setting back on the very next line, and showing a window is asynchronous, so
+     * the style was gone before the window manager had acted on the show.
+     *
+     * 2.8.1 survives that because its main window is the FIRST window the process shows and is
+     * activated by the one-time right a process gets when the user starts it.  3.0.0 shows a splash
+     * first, which spends that right - so the frame has nothing but the trick, and the trick was being
+     * undone microseconds after it was played.
+     *
+     * **Measured: putting the restore back passes all five tests in this class.**  Whether Windows
+     * grants the foreground is not something this process can read back, so there is nothing for a
+     * behavioural test to assert.  The invariant is pinned where it lives instead - the same device
+     * `testTheWindowAttachesItsRefreshCallback` uses, and for the same reason.
+     *
+     * The restore has not gone away: `takeTheKeyboard`'s raise holds the flag for four hundred
+     * milliseconds and hands the operator's setting back afterwards.
+     */
+    @Test
+    public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
+    {
+        java.io.File source = new java.io.File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(source.exists(), "cannot find " + source.getAbsolutePath()
+            + " - this test reads the window's source, so it has to run from the project root");
+
+        String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        int opens = body.indexOf("public void display()");
+
+        assertTrue(opens > 0, "display() has been renamed or removed");
+
+        int shows = body.indexOf("setVisible(true);", opens);
+
+        assertTrue(shows > opens, "display() no longer shows the window");
+
+        int closes = body.indexOf("\n    }", shows);
+
+        assertTrue(closes > shows, "cannot find the end of display()");
+
+        String afterTheShow = body.substring(shows, closes);
+
+        assertFalse(afterTheShow.contains("setAlwaysOnTop"),
+            "display() takes the always-on-top flag off after showing the window.  That flag is how "
+            + "the window gets the foreground at all when a splash has already spent the process's one "
+            + "chance at it, and removing it in the same breath as the show is what left the keyboard "
+            + "dead on start-up through six attempts at fixing something else.  The restore belongs to "
+            + "takeTheKeyboard's raise, which holds it long enough to be used.  What display() says "
+            + "after the show:\n" + afterTheShow);
+    }
+
+    /**
+     * Java source with its comments removed, so a check reads the code and not the prose about it.
+     *
+     * The paragraph above this test explains at length why the restore must not be in `display()`, and
+     * a search of the raw text would find `setAlwaysOnTop` in that explanation.
+     */
+    private static String withoutComments(String source)
+    {
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
+        }
+
+        return out.toString();
+    }
+
 }

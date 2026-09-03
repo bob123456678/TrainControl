@@ -7053,10 +7053,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Ensure the locomotive pane is updated
         this.repaintLoc(true, null);
         
+        // SHOWN WHILE STILL TOPMOST, and it stays that way until the raise below hands the flag back
+        // (OB-170, seventh pass).
+        //
+        // `setViewListener` sets always-on-top true before this, and says why: "start with true to
+        // ensure keyboard events register properly".  That is not a preference, it is the mechanism -
+        // a topmost window is the one case Windows lets a process raise without already owning the
+        // foreground.
+        //
+        // The operator's setting used to be restored on the very next line, and showing a window is
+        // asynchronous: the style was gone before the window manager had acted on the show.  In 2.8.1
+        // that did no harm, because there the main window is the FIRST window the process shows and is
+        // activated by the one-time right a process gets when the user starts it.  3.0.0 shows a splash
+        // first, which spends that right - so the frame has nothing but the trick, and the trick was
+        // being undone microseconds after it was played.
+        //
+        // `takeTheKeyboard` at the foot of this method owns the restore now.  It already holds the flag
+        // for four hundred milliseconds, which is the window the show needs.
         setVisible(true);
-             
-        // Restore correct preference
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT)); 
+
         pack();
         displayMenuBar();
         
@@ -7187,7 +7202,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
         }
 
-        raiseOnce(isAlwaysOnTop(), 1);
+        // THE OPERATOR'S SETTING, not the window's current one (OB-170, seventh pass).
+        //
+        // The window arrives here still topmost on purpose - `display()` no longer takes the flag off,
+        // because doing so before the show had been acted on is what stopped the raise working.  So
+        // asking `isAlwaysOnTop()` would read our own mechanism back and leave the application above
+        // everything else for ever.
+        raiseOnce(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT), 1);
     }
 
     /**

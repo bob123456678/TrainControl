@@ -13962,6 +13962,38 @@ next to the fix.
    If it works now, the splash was the whole of it.  If it does not, the bracketed words in the log
    line are still what I need.
 
+**Adam, 2026-09-03: "still nothing.  look near `theUI.setViewListener(model, null);` in the UI
+class."**
+
+What is near it has been there since 2.8.1, and it is the whole mechanism:
+
+> `// Start with true to ensure keyboard events register properly`
+> `// If we don't do this, initializing the UI from the EDT will cause issues`
+> `setAlwaysOnTop(true);`
+
+The frame is made topmost while it is still invisible, and `display()` then shows it - because a
+topmost window is the one case Windows lets a process raise itself without already owning the
+foreground.  And the very next statement in `display()` put the operator's setting back.  Those two
+lines are adjacent, and showing a window is asynchronous: the style was gone before the window manager
+had acted on the show.
+
+**Which is why 2.8.1 works and 3.0.0 does not.**  In 2.8.1 the main window is the FIRST window the
+process shows, so it is activated by the one-time right a process is given when the user starts it, and
+the topmost trick is never needed.  3.0.0 shows the splash first, which spends that right - so the
+frame has nothing but the trick, and the trick was being undone microseconds after it was played.
+
+The restore now belongs to the raise at the foot of `display()`, which already holds the flag for four
+hundred milliseconds and hands back what the operator chose.  The splash fix from the pass before this
+stays: it should never have been taking activation either.
+
+**One honest note.**  Putting that line back passes all five of the behavioural tests here - measured,
+by making the edit.  Whether Windows grants the foreground is not something the process can read back,
+so there is nothing for a behavioural test to hold.  The invariant is pinned as a source rule instead,
+which is what this project does for invariants about what the code says.
+
+8. **The test is the one you have run seven times**: start it from NetBeans, do not touch the mouse,
+   press a letter.
+
 ---
 
 <a id="mt-260"></a>
