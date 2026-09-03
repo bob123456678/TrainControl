@@ -220,153 +220,17 @@ public class AutonomyChecks
     {
     }
 
-    /**
-     * Runs every check.
-     *
-     * @param graph the tile graph, for the problems the diagram itself has
-     * @param reducer the reduction, already run
-     * @return everything found, most serious first
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer)
-    {
-        return run(graph, reducer, Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * @param termini the Points the user marked as termini
-     *
-     * A terminus used to be inferred here as "has no outgoing edge", which is a different thing from
-     * what the user marked - so a marked terminus that reaches no station got the generic message, and
-     * an ordinary dead end got the terminus one.  The flag lives in the configuration, so it is passed
-     * in rather than guessed at.
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini)
-    {
-        return run(graph, reducer, termini, null);
-    }
-
-    /**
-     * @param labelledStations the stations a caption of the track diagram is showing, by their squares,
-     *        or null to skip that check.  Passed in rather than read here: the checks know about the
-     *        setup, and which square carries which caption is the session’s business.
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations)
-    {
-        return run(graph, reducer, termini, labelledStations, Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * @param mayTurnOnDeadEnd squares set to "trains MAY change direction here" that have only one way
-     *        in, where the choice cannot mean anything
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd,
-            Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * @param trapped squares a train can reach from some direction and then not leave, because the only
-     *        way on from there is back the way it came and it has not been told it may turn round
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            Collections.<TileKey, TileKey>emptyMap());
-    }
-
-    /**
-     * @param coveredCaptions squares where a station’s caption and the user’s own diagram text
-     *        want the same square, as caption square to the station it names
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, Collections.<TileKey, String>emptyMap());
-    }
-
-    /**
-     * @param placedLocomotives which locomotive the configuration records standing on each square.
-     *        Passed in for the same reason the captions are: this knows about the derived graph, and
-     *        what is standing where belongs to the configuration.
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, placedLocomotives, Collections.<TileKey, Boolean>emptyMap());
-    }
-
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
-        Map<TileKey, Boolean> shutStations)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, placedLocomotives, shutStations,
-            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * @param shutStations which stations have had every arrival side barred.  Worked out by the
-     *        session, which knows both the restrictions and how a square splits; this only reports it.
-     * @param mayTurn / @param mustTurn the turn sets the station reachability walk needs to match the
-     *        runtime.  Only the fullest form threads them through; the shorter overloads pass empty
-     *        sets, which is the same convenience-default pattern the rest of these arguments follow -
-     *        and only the session's own check() uses the fullest form, so the checks a person actually
-     *        sees are the split-aware ones.
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
-        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn,
-            Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * @param homes the squares an authored home locomotive lives at
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
-        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        Set<TileKey> homes)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes,
-            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey>emptySet(),
-            // No bars, which is what this shorter form has always meant.
-            Collections.<TileKey, Set<TilePorts.Side>>emptyMap());
-    }
-
-    /**
-     * @param signalsGone the stations whose paired protecting signal no longer resolves to an accessory
-     */
-    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
-        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
-        Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred)
-    {
-        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
-            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes, signalsGone,
-            stationsWithoutSignal, facingsImpossible, barred,
-            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey, String>emptyMap(), Collections.<TileKey>emptySet(),
-            Collections.<TileKey, String>emptyMap(), Collections.<TileKey, String>emptyMap(),
-            Collections.<TileKey, String>emptyMap());
-    }
+    // ELEVEN OVERLOADS REMOVED HERE (SVN-C7, 2026-09-03).
+    //
+    // They were a cascade of `Collections.emptySet()` defaults in front of the one below, and nothing
+    // called any of them: the repository has a single call site, `AutonomySession.check()`, and it
+    // passes everything.  Every test goes through `session.check()` too.
+    //
+    // Worth removing rather than leaving: one of the defaults was the empty map for `barred`, and a
+    // caller that took it got a check that could not see barred arrivals - which is `OB-120`, the
+    // defect that argument was added for.  A convenience overload that silently drops an argument is
+    // how that happens twice.  `AutonomySession`'s own rule, a few hundred lines away: "dead code that
+    // looks load-bearing is worse than none".
 
     /**
      * @param withoutTrainLength squares whose locomotive has no length recorded (FR-046)
@@ -784,9 +648,11 @@ public class AutonomyChecks
      * A home on a square every train must turn round at.
      *
      * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS -
-     * which HomeStaging.canRest refuses to a locomotive that cannot reverse.  So the home is perfectly
-     * good for a reversible locomotive and impossible for any other, and the only way to find that out
-     * used to be Return Home reporting IMPOSSIBLE with no mention of the square.
+     * which staging refuses to a locomotive that cannot reverse unless the route turns on the way
+     * (`mustBackIn`, since `20c30781`; this said `canRest`, which lost the clause - SVN-C14).  So the
+     * home is perfectly good for a reversible locomotive, and for any other it depends on the route
+     * existing at all - which the only way to find out used to be Return Home reporting IMPOSSIBLE
+     * with no mention of the square.
      *
      * Not an error, and not something to fix in the setup: a berth every train must back out of is a
      * real place, and a home there is a reasonable thing to want.  It is said out loud so the

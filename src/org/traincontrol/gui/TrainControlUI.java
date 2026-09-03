@@ -515,6 +515,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Hack to store additional information in the mapping data
     private static final int SAVE_KEY_ACTIVE_MAPPING_NUMBER = -1;
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
+
+    /**
+     * The page names, without the two sentinels stored beside them (SVN-C13).
+     *
+     * `pageNames` is not only page names: `saveState` puts the active page number and the active
+     * button's key code into the same map under the negative keys above, and they survive a load.  Any
+     * question about "is this a page name" has to skip them, and asking `containsValue` did not.
+     *
+     * @return the names, trimmed, as a set
+     */
+    private java.util.Set<String> namesOfPages()
+    {
+        java.util.Set<String> names = new java.util.HashSet<>();
+
+        for (java.util.Map.Entry<Integer, String> page : this.pageNames.entrySet())
+        {
+            if (page.getKey() == null || page.getKey() < 1) continue;
+
+            if (page.getValue() != null) names.add(page.getValue().trim());
+        }
+
+        return names;
+    }
                      
     // Image cache
     // ConcurrentHashMap (not HashMap): this cache is read/written concurrently by the EDT,
@@ -6507,7 +6530,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             input = input.trim();
 
-            if (this.pageNames.containsValue(input)
+            // THE PAGE NAMES, not the two sentinels that share the map (SVN-C13).
+            //
+            // `pageNames` also holds the active page number and the active button's key code, under
+            // keys -1 and -2, and they are written as strings.  `containsValue` saw them - so after any
+            // start from a saved state, naming a page the digits of the last-saved active page ("3"),
+            // or the key code of the active button ("81" for Q), was refused as a duplicate of a page
+            // that does not exist.
+            if (namesOfPages().contains(input)
                 && !input.equals(this.getPageName(this.locMappingNumber, true).trim()))
             {
                 JOptionPane.showMessageDialog(

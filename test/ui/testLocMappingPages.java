@@ -197,6 +197,56 @@ public class testLocMappingPages
      * worst kind. No layout and no model: the constructor alone gives `numLocMappings` its default,
      * and nothing here needs a railway.
      */
+    /**
+     * A page may be called "3", and the two sentinels in the name map do not make it a duplicate.
+     *
+     * `pageNames` is not only page names: `saveState` writes the active page number and the active
+     * button's key code into it under keys -1 and -2, as strings, and they survive a load.  The rename
+     * dialog asked `containsValue`, which saw them - so after any start from a saved state, naming a
+     * page the digits of the last-saved active page, or the key code of the active button ("81" for Q),
+     * was refused as a duplicate of a page that does not exist (SVN-C13).
+     *
+     * Asked of the predicate rather than through the dialog, which is modal and would hang a battery.
+     *
+     * MUTATION this catches: `namesOfPages()` dropping the `< 1` test, which is `containsValue` again.
+     */
+    @Test
+    public void testASentinelIsNotAPageName() throws Exception
+    {
+        TrainControlUI ui = build();
+
+        java.lang.reflect.Field names = TrainControlUI.class.getDeclaredField("pageNames");
+        names.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<Integer, String> pageNames = (java.util.Map<Integer, String>) names.get(ui);
+
+        pageNames.clear();
+
+        pageNames.put(1, "Yard");
+
+        // The two sentinels, exactly as saveState writes them.
+        pageNames.put(-1, "3");
+        pageNames.put(-2, "81");
+
+        java.lang.reflect.Method ofPages = TrainControlUI.class.getDeclaredMethod("namesOfPages");
+        ofPages.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Set<String> asked = (java.util.Set<String>) ofPages.invoke(ui);
+
+        assertTrue(asked.contains("Yard"), "a real page name was not offered as one: " + asked);
+
+        assertFalse(asked.contains("3"),
+            "the active page number is treated as a page name, so a page cannot be called 3 - which "
+            + "is what a person naming pages by number would try first.  Names: " + asked);
+
+        assertFalse(asked.contains("81"),
+            "the active button's key code is treated as a page name.  Names: " + asked);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
+    }
+
     private TrainControlUI build() throws Exception
     {
         // The window reads the layout preference in its constructor, so it opens Adam’s railway

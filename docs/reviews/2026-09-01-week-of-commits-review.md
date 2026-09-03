@@ -965,6 +965,10 @@ and it is listed with no dash.
 
 ### SVN-C5 — the staging audit has no exemption for the divergence the terminus move created
 
+**FIXED 2026-09-03.**  The audit has a fifth exemption, in the shape of the four above it: a terminus this train must back into is skipped, because `280ff08b` took that rule out of `isPathClear` on Adam's ruling and left it in selection - a divergence the commit states outright, and one that logged "the planner is stricter than the railway" on every debug-mode Return Home.
+
+What it costs is written at the exemption: a planner defect that refuses such a terminus for the WRONG reason is now invisible here.  That is the same trade the other four make, and the alternative is an instrument that cries wolf, which is the state that gets an instrument ignored.
+
 `HomeStaging.auditAgainstRuntime` (`:602-687`) carries four documented exemptions so the instrument does
 not cry wolf. Since `280ff08b`, `isPathClear` allows a terminus to a non-reversible locomotive while
 `firstClearRoute` still refuses it unless the route turns (`mustBackIn`, `:1016`) — a deliberate
@@ -973,6 +977,10 @@ divergence the commit states outright. It is not exempted, so every such pair lo
 exists to find *real* divergence.
 
 ### SVN-C6 — the excluded-page filter reached one check and not its twin
+
+**FIXED 2026-09-03.**  `signalsThatAreGone()` skips a pairing whose station is on an excluded page, and skips an individual signal on one - the filter its sibling three thousand lines up already had.  Not reachable on Adam's setup today, which is why it was a C; reachable the moment a pairing crosses a page he switches off.
+
+The `measuresAnyTrack()` limb of this finding is left: it scans raw `tileLengths`, and narrowing it would change which railways get the length notices at all - which is Adam's ruling to make, not a filter to add quietly.
 
 `AutonomySession.java:1141` gained `if (store.getExcludedPages().contains(tile.getPage())) continue;`.
 Its sibling at `:2977` did not:
@@ -990,6 +998,8 @@ has the same blindness: it scans raw `tileLengths.values()`, so lengths recorded
 would arm `SVN-B1`'s notice for a configuration that contains none of them.
 
 ### SVN-C7 — nine dead `AutonomyChecks.run` overloads
+
+**FIXED 2026-09-03.**  Eleven overloads gone; one `run`, the one that is called.  The note left in their place says why they were worth removing rather than leaving: one of the defaults they supplied was the empty map for `barred`, and a caller that took it got a check blind to barred arrivals - which is `OB-120`, the defect that argument was added for.
 
 `AutonomyChecks.java:213-350`. Repo-wide there is exactly one call site, and it uses the fullest 20-argument
 form (`AutonomySession.java:3203`); every test goes through `session.check()`. That leaves roughly 140
@@ -1009,6 +1019,12 @@ setup to disk, every file of it."* Its sibling one method away was not. Reachabl
 paste and every palette drop onto a blank square; the layout folder is under OneDrive.
 
 ### SVN-C9 — the impassable badge throws away the placement it just computed
+
+**OPEN, and deliberately not fixed in 3.0.0** (2026-09-03).
+
+Confirmed by reading: the impassable case draws from `trackCentre` and ignores both the corner rule and the clamp that the placement above it computed, and `badgeDrawnAt` still points at the abandoned spot - which is the anchor the train star uses, so a shut station on a bend with a train draws the two marks in different places.
+
+Narrow, as the finding says: it needs the editor, a curved feedback station, and shut.  What it needs is a change to how a badge decides where to draw, in the class that draws every mark on every tile, and that is not a change to make between a release candidate and a release with the diagram under manual test.  Carried into the post-3.0.0 list.
 
 `TileAnnotation.java:1599-1610` clamps the badge inside the square and records where it went:
 
@@ -1036,6 +1052,8 @@ Narrow: needs the editor, a curved feedback station, and shut.
 
 ### SVN-C10 — two weaker limbs of `SVN-A2`
 
+**OPEN - harness, and recorded rather than fixed** (2026-09-03).  Both limbs are real and neither can damage the railway: parity's four JVMs take no lock, and `battery.sh` fingerprints after the run has been allowed to start.  The battery is the thing Adam runs; parity is a tool I run, and the fix for the second limb is to fingerprint before the guard rather than after it.  Worth doing next time the harness is opened, not during a release.
+
 - `docs/tools/parity/run.sh:37,48,61,72` launches four JVMs with `-Dtraincontrol.anyReceivePort=true` and
   has no lock and no `RUNNING_JVMS` check of its own. The guard is asymmetric: parity makes a later
   battery refuse, but a battery does not stop parity.
@@ -1043,6 +1061,8 @@ Narrow: needs the editor, a curved feedback station, and shut.
   so a folder damaged before the run (which is the state today — see `SVN-A1`) reads as clean.
 
 ### SVN-C11 — two names for one field, and a dead disjunct
+
+**OPEN, recorded** (2026-09-03).  `isShut()`/`isImpassable()` being one field with two javadocs is real, and so is the dead disjunct: every Badge the application builds has `shut => parking`, so `828b1ff1`'s new term cannot change a production answer and its proof rests on a fixture combination no door produces.  Nothing behaves wrongly; merging the two, or removing the disjunct, is a change to the drawing code and belongs with `SVN-C9`.
 
 `TileAnnotation.java:268-270` and `:291-293` are both `return shut;`, with javadoc insisting they mean
 different things; `isShut()` has zero callers in `src/` or `test/`. `toString()` at `:326` collapses a
@@ -1063,6 +1083,8 @@ production badges. Its mutation proof rests on `testAutonomyDiagramMonitor.java:
 
 ### SVN-C12 — `versionWritten` inspects one of the two collections that write the version-2 shape
 
+**OPEN, recorded** (2026-09-03).  Confirmed: `translateTileListMap` emits an array for `blockedPoints` too, so a station held back by two squares writes the version-2 shape into a file stamped 1.  Latent - `blockedPoints` arrived after `VERSION = 2`, so no released build reads that field with a string-only reader - and the fix is a change to how the store decides its version, which is the file format, in a release candidate.
+
 `AutonomyCompanionStore.java:4612`:
 
 ```java
@@ -1079,6 +1101,10 @@ with a string-only reader — but it is a latent contract violation.
 
 ### SVN-C13 — the page-rename duplicate check sees sentinels
 
+**FIXED 2026-09-03.**  The rename dialog asks `namesOfPages()`, which skips the two sentinels the same map carries - so a page may be called "3", or "81", which is what a person naming pages by number tries first.
+
+Covered by `testASentinelIsNotAPageName`, mutation-confirmed against dropping the key test.
+
 `TrainControlUI.java:6430` tests `this.pageNames.containsValue(input)`, but `pageNames` is not only page
 names: `:2106-2107` puts two sentinels into the same map, keyed `-1` and `-2`, holding
 `Integer.toString(this.locMappingNumber)` and the key code of the active button. They survive the load
@@ -1088,6 +1114,13 @@ naming a page the digits of the last-saved active page (`"3"`) or the key code o
 ≥ 1.
 
 ### SVN-C14 — smaller items
+
+**PART FIXED 2026-09-03**, part recorded.
+
+- **`connected(Point, Point)`** - dead, and removed by `FV2-C6`'s fix.
+- **The stale javadocs** in `AutonomyBuilder` and `AutonomyChecks` asserting a rule `20c30781` deleted: swept with `DY3-C9`, which was the same sentence at the third site.
+- **`blockedSensors(Map state)`** - the parameter it never reads is still there, and the finding's own reading is why: reading `this.start` is CORRECT, so removing the parameter is right and changing the body would be a bug.  Left with this note rather than done blind between candidate and release.
+- **The home badge asking the Point rather than the square** - real, and it bites on ten of Adam's thirty-six station squares.  Not fixed here because the honest fix needs the layout's own square-aware answer, and every public way in to it is `synchronized`; this runs on the event thread, where taking that monitor is the freeze this class was rewritten to remove.  Carried into the post-3.0.0 list beside `SVN-C4`, which is the same tension answered the other way.
 
 - **Dead overload.** `HomeStaging.connected(Point, Point)` (`:1646`) has no caller in `src/` or `test/`
   since `09777d4c` replaced its last one.
@@ -1157,11 +1190,15 @@ naming a page the digits of the last-saved active page (`"3"`) or the key code o
 
 ### SVN-C15 — `accessoryHeldByAutonomy()` is computed and thrown away at every human door
 
+**OPEN, recorded** (2026-09-03).  Confirmed: with `auto == false` the result cannot affect anything and the call still walks every Point and asks `getActiveAccs()` per accessory command.  Pure cost at a human door, and the fix is to compute it inside the `auto` branch - which is a change to the order of operations in the route-throwing path, on the eve of a release, for a cost nobody has reported feeling.  Post-3.0.0.
+
 `MarklinRoute.java:576` computes it; it is read only at `:578` (`&& auto`) and `:625` (`auto && …`). With
 `auto == false` the result cannot affect anything, but the call still walks every `Point` in the layout
 and calls `getActiveAccs()` once per accessory command. Pure cost on the door a person is standing at.
 
 ### SVN-C16 — one `OVERRIDE` disables the guard for accessories the operator was never shown
+
+**FIXED 2026-09-03** - the javadoc, which is what was wrong.  It says what one "OK" actually covers: the whole run, including an accessory locked by a different dispatch afterwards, because asking per accessory means a dialog per command in the middle of throwing a route.  The behaviour is deliberate and is left exactly as it was.
 
 `MarklinRoute.java:650` — `String[] now = override ? null : heldReason(rc);`. After one "OK", a
 *different* accessory locked by a *different* dispatch five seconds later is set with no check.
@@ -1171,6 +1208,8 @@ asking per accessory is explicitly rejected at `:664-668` as unusable — but th
 the override actually covers.
 
 ### SVN-C17 — `atomicRoutes` can in principle be flipped between the early release and `unlockPath`
+
+**FIXED 2026-09-03** - a sentence at `setAtomicRoutes`, which is what the finding asked for.  It names the direction that costs (true to false, mid-run, leaves an edge held for the session), says the window is narrow because the interface refuses the checkbox while anything is running, and says why it is written down rather than locked: taking the layout monitor there would put a click behind a whole route being thrown.
 
 `TrainControlUI.java:18804-18809` guards on `isAutoLayoutRunning()` → `Layout.isRunning()`, which does
 include hand dispatches, so the ordinary path is safe. The residual window is a check-then-set on the

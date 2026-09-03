@@ -674,6 +674,30 @@ public final class HomeStaging
                 // not in runtimeSays and there is nothing here to skip.
                 if (Point.heldBackBy(p, loc) != null) continue;
 
+                // AND THE FIFTH: a terminus this train cannot back into (SVN-C5).
+                //
+                // `280ff08b` took the terminus rule OUT of `isPathClear` on Adam's ruling - "in manual
+                // operation, non reversing trains must be able to back into a terminus if the graph
+                // makes that possible" - and left it in selection: `pickPath` for autonomy, and
+                // `mustBackIn` here for staging, which refuses a terminus to a non-reversible train
+                // unless the route turns on the way.
+                //
+                // That divergence is deliberate and the commit says so.  Unexempted, every such pair
+                // logged "the staging planner is stricter than the railway" on any debug-mode Return
+                // Home - which is the same false accusation the four exemptions above exist to stop,
+                // from the one instrument that exists to find real ones.
+                //
+                // Narrow on purpose: only where the planner's own rule applies.  A terminus a
+                // REVERSIBLE train is refused for some other reason still shows up as a divergence,
+                // and so does any other square.
+                //
+                // What it costs, said plainly: a planner defect that refuses a terminus to a
+                // non-reversible train for the WRONG reason is now invisible to this audit.  That is
+                // the same trade the four exemptions above make, and the alternative is an instrument
+                // that cries wolf on every run - which is worse, because it is the state that gets an
+                // instrument ignored.
+                if (mustBackIn(loc, p)) continue;
+
                 if (!plannerSays.contains(p))
                 {
                     disagreements++;
@@ -1690,17 +1714,12 @@ public final class HomeStaging
             && at.validateTrainLength(loc);
     }
 
-    /**
-     * Whether any route exists between two points at all, ignoring who is standing where.
-     *
-     * Deliberately blind to occupancy: it answers "could this locomotive ever get home", which is the
-     * only impossibility this class can prove.  A route blocked merely by another train is not
-     * impossible - moving that train is exactly what the planner is for.
-     */
-    private boolean connected(Point from, Point to)
-    {
-        return connected(from, to, false);
-    }
+    // THE TWO-ARGUMENT `connected` IS GONE (SVN-C14, FV2-C6).
+    //
+    // It defaulted `mustReverse` to false, and its last caller went with `09777d4c`.  A convenience
+    // overload that silently supplies one of the two things this question turns on is worth removing
+    // rather than keeping: the whole of `SV2-A1` was about which value that argument should take.
+
 
     /**
      * As above, but able to insist the way there turns the train round (Adam, 2026-08-31).

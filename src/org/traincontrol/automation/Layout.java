@@ -6644,6 +6644,22 @@ public class Layout
         return atomicRoutes;
     }
 
+    /**
+     * Turns the early release of passed track on or off.
+     *
+     * **NOT WHILE ANYTHING IS RUNNING** (SVN-C17).  A path releases its edges under one setting and
+     * `unlockPath` finishes under the other, and the true-to-false direction is the one that costs:
+     * `unlockPath` skips an edge it believes was already given up early, so an edge that never was
+     * stays held for the session.
+     *
+     * The window is narrow rather than open - the interface refuses the checkbox while
+     * `isAutoLayoutRunning()`, which includes hand dispatches, so what is left is a check-then-set on
+     * the event thread against a dispatch starting in the same instant.  Written down rather than
+     * locked: taking the layout monitor here would put a click behind a whole route being thrown,
+     * which is the freeze this class has twice been repaired for.
+     *
+     * @param atomicRoutes whether a route holds all its track until it finishes
+     */
     public void setAtomicRoutes(boolean atomicRoutes)
     {
         this.atomicRoutes = atomicRoutes;

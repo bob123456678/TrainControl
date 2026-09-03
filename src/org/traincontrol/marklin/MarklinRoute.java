@@ -306,6 +306,15 @@ public class MarklinRoute extends Route
      *
      * Not passed down to chained routes: a route this one triggers is asked about on its own terms,
      * because the operator agreed to THIS route's conflict and was never shown the other's.
+     *
+     * **WHAT ONE "OK" ACTUALLY COVERS** (SVN-C16).  This paragraph used to describe the answer as
+     * covering "this route's conflict", singular; the override is a flag on the whole run, so every
+     * accessory this route sets is set unchecked - including one locked by a DIFFERENT dispatch five
+     * seconds later, which the operator was never shown.
+     *
+     * Deliberate, and the alternative is written at the guard itself: asking per accessory means a
+     * dialog per command in the middle of throwing a route, which is unusable.  What the operator is
+     * agreeing to is "run this route anyway", and this says so rather than implying something narrower.
      */
     public void execRouteOverridingConflicts()
     {

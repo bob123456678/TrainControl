@@ -3406,8 +3406,19 @@ public class AutonomySession
         // one approach and not on the other, which is exactly the state worth warning about.
         for (Map.Entry<TileKey, List<TileKey>> pair : store.getProtectingSignals().entrySet())
         {
+            // NOT ABOUT A PAGE THAT IS SWITCHED OFF (SVN-C6).
+            //
+            // `getProtectingSignals()` is the raw store, so a pairing whose station sits on an excluded
+            // page finds no tile in the graph - the graph does not carry that page - and reports the
+            // station's protecting signal as GONE.  The sibling check three thousand lines up got this
+            // filter and this one did not.  Not reachable on Adam's setup today, where no pairing
+            // crosses an excluded page; reachable the moment one does.
+            if (store.getExcludedPages().contains(pair.getKey().getPage())) continue;
+
             for (TileKey tile : pair.getValue())
             {
+                if (store.getExcludedPages().contains(tile.getPage())) continue;
+
                 LayoutDiagramComponent signal = graph.getTiles().get(tile);
 
                 if (signal == null || signal.getAccessory() == null)
