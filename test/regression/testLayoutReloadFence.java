@@ -51,7 +51,7 @@ public class testLayoutReloadFence
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        model.deleteLoc("RF loc");
+        if (model != null) model.deleteLoc("RF loc");
     }
 
     /**

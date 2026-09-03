@@ -284,22 +284,22 @@ public class testAutoLayout
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        model.deleteLoc("Test loc MU 1+2");
-        model.deleteLoc("Test loc MU 3+2");
+        if (model != null) model.deleteLoc("Test loc MU 1+2");
+        if (model != null) model.deleteLoc("Test loc MU 3+2");
 
-        model.deleteLoc("Test loc 1");
-        model.deleteLoc("Test loc 1 copy");
+        if (model != null) model.deleteLoc("Test loc 1");
+        if (model != null) model.deleteLoc("Test loc 1 copy");
         
-        model.deleteLoc("Test loc 2");
-        model.deleteLoc("Test loc 3");
-        model.deleteLoc("Test loc 4");
-        model.deleteLoc("Test loc 5");
+        if (model != null) model.deleteLoc("Test loc 2");
+        if (model != null) model.deleteLoc("Test loc 3");
+        if (model != null) model.deleteLoc("Test loc 4");
+        if (model != null) model.deleteLoc("Test loc 5");
 
-        model.deleteLoc("Test loc 1 DCC");
+        if (model != null) model.deleteLoc("Test loc 1 DCC");
         
-        model.deleteLoc("Test loc MU CS");
+        if (model != null) model.deleteLoc("Test loc MU CS");
         
-        model.deleteRoute("Testcase Route 1");
+        if (model != null) model.deleteRoute("Testcase Route 1");
     }
 
     @BeforeMethod

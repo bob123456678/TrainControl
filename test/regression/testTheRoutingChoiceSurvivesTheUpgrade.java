@@ -660,4 +660,117 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * The Auto tab on a layout whose autonomy is an `autonomy.json` (RGN-A2, MT-244).
+     *
+     * Adam asked for exactly this: *"make a test case for this.  in my testing, it loaded OK."*
+     *
+     * **What the finding says.**  `refreshAutonomyTabState` computes
+     * `loaded = getAutonomySession() == null || activeDiagramConfiguration != null`, and disables the
+     * tab when that is false.  A user upgrading from 2.7.4c has a local layout, a session (because the
+     * layout is local), and no diagram configuration - so the reasoning goes that their Auto tab is
+     * greyed and the thing they have been using for a year is unreachable.
+     *
+     * **What this asserts is the state, not the theory.**  It puts a window on a local layout that
+     * carries a legacy `autonomy.json` and no diagram configuration at all, parses that JSON the way
+     * the JSON path does, and asks the tab.
+     */
+    @Test
+    public void testTheAutoTabIsReachableWithALegacyAutonomyJson() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the tab is on a window");
+        }
+
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        org.traincontrol.marklin.MarklinControlStation model = null;
+
+        try
+        {
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model.stop();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            // The legacy path: a graph parsed straight from an autonomy.json, with no diagram
+            // configuration behind it.
+            String legacy = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "test/operator_layout/config/autonomy_legacy/autonomy.json")),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            model.parseAuto(legacy);
+
+            assertTrue(model.hasAutoLayout() && model.getAutoLayout().isValid(),
+                "precondition: the legacy file must parse, or the tab is off for a reason that has "
+                + "nothing to do with this finding.  " + org.traincontrol.automation.Layout.getLastError());
+
+            java.lang.reflect.Field active = org.traincontrol.gui.TrainControlUI.class
+                .getDeclaredField("activeDiagramConfiguration");
+
+            active.setAccessible(true);
+
+            assertNull(active.get(ui[0]),
+                "precondition: this test is about a layout with NO diagram configuration active");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].refreshAutonomyTabState());
+
+            java.lang.reflect.Field tabs = org.traincontrol.gui.TrainControlUI.class
+                .getDeclaredField("KeyboardTab");
+
+            tabs.setAccessible(true);
+
+            javax.swing.JTabbedPane pane = (javax.swing.JTabbedPane) tabs.get(ui[0]);
+
+            assertTrue(pane.getTabCount() > 2, "the window has no Auto tab to ask about");
+
+            assertTrue(pane.isEnabledAt(2),
+                "the Auto tab is greyed on a local layout whose autonomy comes from an autonomy.json "
+                + "- which is every user upgrading from 2.7.4c, and the thing they have been using "
+                + "for a year (RGN-A2)");
+
+            // AND WITH A SESSION IN EXISTENCE, which is the half the finding turns on.
+            //
+            // `loaded` is `session == null || activeDiagramConfiguration != null`, so the tab is only
+            // at risk once something has built a session - opening the editor, or anything else that
+            // asks for one.  Asking for it here is what makes this test discriminate rather than pass
+            // because nothing had been built yet.
+            assertNotNull(ui[0].getAutonomySession(),
+                "asking for a session on a local layout did not produce one, so the state this "
+                + "finding is about cannot be reached from here and the assertion below proves "
+                + "nothing");
+
+            assertNull(active.get(ui[0]),
+                "building a session set an active diagram configuration, so this is no longer the "
+                + "legacy state");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].refreshAutonomyTabState());
+
+            assertTrue(pane.isEnabledAt(2),
+                "the Auto tab is greyed once a session exists, on a layout whose autonomy is an "
+                + "autonomy.json and which has no diagram configuration - so an upgrading user loses "
+                + "the tab as soon as anything touches the editor.  This is RGN-A2, and it is the "
+                + "state Adam could not reproduce by hand");
+        }
+        finally
+        {
+            if (ui[0] != null)
+            {
+                final org.traincontrol.gui.TrainControlUI closing = ui[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            sandbox.close();
+        }
+    }
 }

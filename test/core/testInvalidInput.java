@@ -93,8 +93,8 @@ public class testInvalidInput
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        model.deleteLoc(LOC_PLACED);
-        model.deleteRoute(ROUTE_NAME);
+        if (model != null) model.deleteLoc(LOC_PLACED);
+        if (model != null) model.deleteRoute(ROUTE_NAME);
     }
 
     // ---------------------------------------------------------------------------------------------

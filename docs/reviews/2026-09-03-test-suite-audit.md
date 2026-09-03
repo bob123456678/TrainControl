@@ -53,6 +53,7 @@ in [the release review](2026-09-03-release-review.md).
 | D7 | Not a defect | Six core classes read against their own stated mutations and found sound | Pass 2 |
 | D8 | Not a defect | What pass 2 did not cover | Pass 2 |
 | B7 | Medium | `battery.sh` reads `ALIVE` outside the block that sets it, under `set -u` - so the battery aborts before it compiles anything whenever there is no lock file, which is the ordinary case. Today's `REL-C10` fix; `one.sh` does not have it | Pass 3 |
+| B8 | Medium | Two fixture factories open the sandbox and then do the work that can throw; every one of their eight callers has the `finally`, and the object it closes is what does not exist when the factory throws - pass 1's `B1` at two sites its sweep could not reach | Pass 3 |
 | C14 | Low | The two runners' exit paths: neither reaps nor fingerprints the live layout when the run is killed; `battery.sh` fingerprints BEFORE reaping and `one.sh` after; and both traps delete a lock the run may no longer own | Pass 3 |
 | C15 | Low | `one.sh` was given `battery.sh`'s out-of-heap diagnostic and not the `-Xmx512m` that removes the cause, nor any way to pass one | Pass 3 |
 | C16 | Low | `docs/tools/parity/setup-env.sh` still compiles from `$REPO/tools/parity/`, a path that has not existed since `fb3722f5` - the fifth file that commit missed, and the one its sweep's needle list could not match | Pass 3 |
@@ -1533,5 +1534,762 @@ Said plainly.
   agent under me; I spawned no subagents. `cs2_sample_layout` was never read from or written to. I did
   observe, from `git status` alone, that two files under it are modified in the working tree again at
   the time of writing, which is `TCX-A4`'s standing complaint and not a new finding.
+
+---
+
+## Pass 3 - the regression tests, the support classes, and the harness
+
+**Reviewed:** `test/regression/`, `test/support/`, `docs/tools/` and `build.xml`, on 2026-09-03. No tests were run; every claim below is from reading.
+
+Scope in numbers: the 54 classes of `test/regression/` (26,000 lines), the three classes of
+`test/support/`, `docs/tools/one.sh` (467 lines), `docs/tools/battery.sh` (639), `docs/tools/reap.ps1`
+(56), `docs/tools/parity/` (seven files), `build.xml` and the parts of `nbproject/build-impl.xml` that
+`ant test` actually runs through. `D11` says what that leaves.
+
+**The harness first, because the briefing is right that it is worth more.** `REL-B2`, `REL-C3`,
+`REL-C9` and `REL-C10` all landed today and I checked each of them at HEAD before looking for anything
+new. Three are genuinely closed and one of them is closed unusually well: `one.sh` now has
+`lock_holder_state` (`:133`), the `mv` take-over (`:202`, `:214`), the `noclobber` create with the pid
+written through a temp file (`:179-181`) and the post-loop `reap` (`:426`) - `REL-C3`'s comment had been
+claiming that reap since 2026-09-02 and it is now true.
+
+**What is left is that the two files are still not the same, and the file that did not get restructured
+is the one that broke.** `REL-B2`'s own closing sentence is *"The two takes are now word for word the
+same, which is the only arrangement that stops it happening a fourth time."* They are not: `one.sh`
+was rewritten around a function and a `case`, `battery.sh` was patched in place, and `battery.sh` now
+reads a variable outside the block that sets it. That is `B7`, and under `set -u` it means the battery
+does not start at all in the ordinary case. Everything else this pass found is smaller.
+
+**No A.** Nothing here is wrong behaviour on the layout or a silent loss of railway data. `B7` is
+loud - it prints bash's own error and exits before the compile - and `C18` is the closest thing to a
+data cost, for the reason its entry gives.
+
+---
+
+### B - medium
+
+#### B7 - `battery.sh` reads `ALIVE` outside the block that sets it, and `set -u` is on
+
+**FIXED 2026-09-03, and this one was mine from this morning.**  `ALIVE=""` is initialised beside
+`STALE=""`, four lines above, which was initialised for exactly this reason.
+
+The finding is right about the cause as well as the fault: `one.sh` was RESTRUCTURED and `battery.sh`
+was patched in place, so "the two takes are now word for word the same" was not true - and the file that
+missed the restructure is the one that broke.  Verified by running `battery.sh` with no lock present: it
+now gets past the guard and into the compile, where it was exiting 1 before touching anything.
+
+**Status: open.** Verified by reading. Introduced today, by `REL-C10`'s fix. Severity: on a machine
+with no lock file - which is every machine after any run that exited normally, because both traps
+delete it - `bash docs/tools/battery.sh` writes `battery.sh: line 314: ALIVE: unbound variable` and
+exits **1** without compiling anything, running anything, or fingerprinting the live layout.
+
+`ALIVE` is assigned in four places and every one of them is inside `if [ -f "$LOCK" ]`
+(`docs/tools/battery.sh:214`):
+
+```sh
+    ALIVE="unknown"                                     # :234, inside the if
+    ...
+        ALIVE=$(powershell.exe ... )                    # :238
+    ...
+        ALIVE="yes"                                     # :248
+    ...
+        ALIVE="unknown"                                 # :255
+    ...
+    esac
+fi                                                      # :275, the block ends here
+```
+
+The reader is outside it, at `:314`:
+
+```sh
+if [ "$ALIVE" = "unknown" ] && [ -f "$LOCK" ]
+then
+    mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
+fi
+```
+
+`set -u` is at `:21` and the shebang is `#!/bin/bash` (`:1`). POSIX and the bash manual are both
+unambiguous about what that combination does: *"When the shell tries to expand an unset parameter ...
+it shall write a message to standard error and, if not interactive, shall exit."* There is no `${ALIVE:-}`
+and no default anywhere.
+
+**The neighbouring variable shows this was known.** `STALE=""` is initialised at `:203`, before the
+same block, precisely so that its reader at `:306` is safe:
+
+```sh
+STALE=""                                       # :203
+
+...
+
+if [ -n "$STALE" ]                             # :306
+```
+
+The `ALIVE` reader was added four lines below it, in the same commit, without the same line.
+
+**`one.sh` does not have it**, and the reason is structural rather than lucky: its take-over sits
+*inside* the `case` arms that computed the answer (`docs/tools/one.sh:198-215`), so there is no
+variable to carry out of the block. Its state function returns a string
+(`lock_holder_state`, `:133-168`) and the arms act on it in place. That is the better shape, and it is
+the one `battery.sh` did not get.
+
+**What it costs beyond not running.** The exit status is 1, which is this script's own documented code
+for *"classes with failures"* (`:629-632`, under a comment saying the code exists so the run can be
+read *"by something other than a person"* and *"stops being a trap the first time somebody puts it
+behind `&&` or in CI"*). So a caller that chains on the battery is told the tests failed by a run that
+never compiled. That is the shape the file names as its own recurring defect three times - *"the third
+defect in this harness to report a FALSE RESULT rather than an error"* (`:58-60`).
+
+One thing this is **not**: it does not leave a lock behind. The traps are installed at `:339-340`,
+below the failure, so nothing is created and nothing is orphaned. The failure is clean, loud and total.
+
+And one narrow way it does not fire: if `ALIVE` happens to be exported in the caller's environment,
+the expansion succeeds and the script proceeds - with an inherited value deciding whether to take a
+lock over. That is not a defence; it is a second way the same line is wrong.
+
+**Not verified by running.** I did not run `battery.sh`, and I did not run the one-line probe that
+would settle it either. **What I would run:** `bash -c 'set -u; if [ "$NOPE" = x ]; then :; fi; echo
+reached'`, expecting the error and no `reached`; and then, with the lock file absent,
+`bash docs/tools/battery.sh`, expecting `battery.sh: line 314: ALIVE: unbound variable` and exit 1
+before the first `--- class` line. The claim rests on documented shell semantics and on the `grep`
+above, which shows every assignment inside `:214-275`.
+
+**The fix is one line** - `ALIVE=""` beside `STALE=""` at `:203` - or, better and in the spirit of
+`REL-B2`, replacing `:214-317` with `one.sh`'s `lock_holder_state` and its `case`, so that the two
+doors are the same text rather than two texts that agree today.
+
+#### B8 - two fixture factories open the sandbox, then do the work that can throw, and only their callers have the `finally`
+
+**Status: open.** Verified by reading. This is pass 1's `B1` at two sites its sweep could not reach,
+and the consequence is identical: the operator's machine-global layout preference is left pointing at a
+folder in `%TEMP%`, so the next time he starts TrainControl it opens the fixture railway - or nothing -
+instead of his own.
+
+`B1` was closed by putting `alwaysRun = true` on every `@AfterClass` and by moving one `open()` above
+its `try`. Both of those fix a sandbox held by a *class*. These two are held by a *helper that builds
+one*, and the helper is where the throwing happens.
+
+`test/regression/testTheWindowTakesTheKeyboard.java:77-104`:
+
+```java
+    private static Started start() throws Exception
+    {
+        Started up = new Started();
+
+        up.sandbox = support.LayoutSandbox.open();
+
+        up.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+        ...
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            ...
+                made[0] = new org.traincontrol.gui.TrainControlUI();
+                made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+                made[0].display();
+        });
+
+        up.ui = made[0];
+
+        settle();
+```
+
+and `test/regression/testTheAutonomyEditorKnowsWhichSquare.java:78-95` is the same construction with a
+`LayoutEditor` on the end.
+
+**Every caller guards the result, and the result is what does not exist when this throws.** Five sites
+in the first file (`start()` called at `:332`, `:402`, `:522`, `:622`, `:706`; closed at `:369`,
+`:488`, `:597`, `:679`, `:770`) and three in the second
+(`open()` called at `:275`, `:373`, `:394`; closed at `:298`, `:391`, `:407`) are all
+
+```java
+        Started up = start();
+
+        try
+        {
+            ...
+        }
+        finally
+        {
+            up.close();
+        }
+```
+
+`up` is assigned only when `start()` returns. A throw at `init`, inside the `invokeAndWait`, or in
+`settle()` leaves the assignment unmade, the `try` unentered, `close()` uncalled - and the preference
+written at `LayoutSandbox.java:86` still pointing at the temp copy. The holders' own `close()` methods
+are null-guarded field by field for exactly this partial state
+(`testTheAutonomyEditorKnowsWhichSquare:48-66`, `testTheWindowTakesTheKeyboard:51-63`); they are simply
+unreachable, because the object that owns them never escapes the factory.
+
+**`init` throwing here is the documented case, not a hypothetical.** Both runners pass
+`-Dtraincontrol.anyReceivePort=true` because a UDP bind failure comes out of exactly this call, and
+`test/ui/testBusyDialogInteraction.java:36-39` writes up what it looks like. `ant test` passes no such
+flag (`C20`), so under the runner the operator uses, the bind failure and this leak are the same event.
+`start()` also calls `display()`, which puts a real window on screen and is the one line in either
+factory that touches native window state.
+
+**Why B and the same B as `B1`.** Nothing under `cs2_sample_layout` is touched - the sandbox is a copy
+and the original is only read. What is lost is the configured layout path; it is silent, machine-global,
+survives the JVM, and `LayoutSandbox` never deletes the temp folder, so the application comes up showing
+the fixture railway looking like a working installation. `LayoutSandbox`'s own javadoc grades that
+outcome as *"worse than the churn this class exists to remove"* - and the churn was OB-111.
+
+**The fix is three lines and both holders are already built for it:** wrap each factory body after the
+first assignment in `catch (Exception e) { up.close(); throw e; }`. `close()` already tolerates every
+field being null, which is the hard half and is already done.
+
+**Not verified by running.** The claim rests on reading the two factories, their eight call sites, and
+Java's assignment ordering. I have not watched an `init` fail.
+
+---
+
+### C - low
+
+#### C14 - the two runners' exit paths: what they do not do, what they do in the wrong order, and what they do that is not theirs
+
+Three things about six lines of code, filed together because they are the same six lines.
+
+**One: the kill path drops both guards.** `docs/tools/one.sh:268-269`:
+
+```sh
+trap 'rm -f "$LOCK"; rm -rf "$BUILD"; exit 130' INT TERM
+trap 'rm -f "$LOCK"; rm -rf "$BUILD"' EXIT
+```
+
+`docs/tools/battery.sh:339-340` is the same pair. Neither calls `reap`, and neither compares the live
+layout. So a run that is stopped part-way leaves the class it was on running, and `reap.ps1` matches
+the run id whole while the id embeds the dead shell's pid - which is exactly the permanence argument
+`battery.sh` writes out for the post-loop reap it *does* have (`:575-583`): *"A run that ends on a
+class which left a JVM behind therefore leaves it behind for good ... and the next run's start-of-run
+probe refuses to start, with a message saying the check clears itself."*
+
+The same six lines say a killed run is the normal case (`battery.sh:335-338`): *"INT and TERM as well
+as EXIT, because a battery is usually stopped rather than waited for."* And `one.sh`'s header states
+the rule the missing fingerprint breaks, in its own words (`:30`): *"A guard that only runs on the slow
+path is a guard that is not running."* The run most likely to have written to `cs2_sample_layout` is
+the one that was killed because a class hung, and that is the run neither script checks.
+
+In a terminal, Ctrl-C reaches the `java.exe` through the foreground process group, so the leftover
+half of this is narrower than it reads there; a `kill -TERM` on the script, or a harness timeout - how
+these runs are actually stopped in an agent session - does not propagate. The fingerprint half is not
+narrower either way.
+
+**Two: `battery.sh` fingerprints before it reaps, and `one.sh` after.** `battery.sh:573` then
+`:584-588`:
+
+```sh
+live_after=$(fingerprint)
+
+# AND AFTER THE LAST CLASS (V33-C1).
+...
+if [ -n "$REAPER" ]
+then
+    powershell.exe ... -File "$REAPER" -RunId "$RUN_ID" ...
+```
+
+`one.sh:426-428` is the other way round - `reap` and then `live_after=$(fingerprint)`. `one.sh`'s
+order is the right one: a leftover JVM is by definition one that is still running, and the whole
+subject of `LayoutSandbox`'s javadoc is deferred work landing after everybody stopped watching. In
+`battery.sh` the fingerprint is taken while that JVM is alive, and the JVM is then killed - so a write
+it makes in between is invisible, and the run reports the folder untouched. This is pass 1's `C2` on
+the same folder, arriving from the harness end, and the fix is to swap two statements.
+
+**Three: both traps delete `$LOCK` whoever owns it.** `rm -f "$LOCK"` does not ask whether the file
+still holds this run's pid. Since `REL-C10`'s answer, the unknown arm deliberately takes a live but
+unresolvable lock **over** (`battery.sh:314-317`, `one.sh:204-215`, both with the reasoning that
+refusing would teach people to delete the file by hand) - so two runs holding the "same" lock is now a
+designed-for state, and the first of them to finish deletes the second's lock and leaves the machine
+unlocked while a battery is running. `REL-C9` names this exact sequence in passing - *"A's EXIT trap
+then deletes B's lock behind it"* - and the fix that closed `C9` was for the `mv`, not for the trap.
+The trap wants the same test the take had: remove the lock only if it still reads back as ours.
+
+#### C15 - `one.sh` was given the message about a bounded heap and not the bound
+
+`docs/tools/one.sh:333-334` is the whole of how it starts a class:
+
+```sh
+    "$JAVA" -Dtraincontrol.anyReceivePort=true -Dtraincontrol.batteryRun="$RUN_ID" \
+        -cp "$BUILD;$CP" org.testng.TestNG -testclass "$T" -d "$S/oneout" > "$S/one-run.txt" 2>&1
+```
+
+No `-Xmx`, and no variable through which one could be passed - `battery.sh` has both
+(`TC_JAVA_FLAGS` at `:369`, `TC_JAVA_HEAP:--Xmx512m` at `:408`), `one.sh` has neither, though it takes
+`TC_JAVAC` and `TC_JAVA` overrides for the tools themselves at `:288` and `:298`.
+
+What it *was* given, four days later, is `battery.sh`'s diagnostic for the failure the bound removes
+(`one.sh:341-354`):
+
+```sh
+        if grep -qE "Could not reserve enough space|Unable to allocate.*heap" "$S/one-run.txt"
+        then
+            echo "*** $T DID NOT RUN - no heap (machine busy, rerun)"
+```
+
+`battery.sh:399-406` says why the bound is there: *"A default-heap JVM reserves a fraction of physical
+RAM up front. With NetBeans open and Adam running his own tests, three classes in battery34 could not
+get it, died before TestNG loaded, and were reported as DID NOT RUN ... All three pass in 512m."* So
+`one.sh` is the runner more likely to hit the condition and the only one with no defence against it,
+having been handed the sentence that describes it. Same sibling drift as `REL-B2` and `REL-C3`, on the
+same file, in the message rather than in the mechanism - which is the harder half to notice, because
+the message reads as evidence the fix is there.
+
+The fix is `${TC_JAVA_HEAP:--Xmx512m}` on the line above, and it is the same words.
+
+#### C16 - the parity environment cannot be built: three paths that have not existed since 2026-08-30
+
+`docs/tools/parity/setup-env.sh` compiles its three drivers from a folder that is not in the
+repository. `:111-114`:
+
+```sh
+    "$JAVAC" -nowarn -encoding UTF-8 \
+        -cp "$TARGET/$ENGINE/TrainControl.jar" \
+        -d "$TARGET/$ENGINE/classes" \
+        "$REPO/tools/parity/ParityDriver.java"
+```
+
+and the same at `:123` (`BuildDiagramSetup.java`) and `:131` (`PathPreferenceProbe.java`).
+
+```
+$ ls -d tools
+ls: cannot access 'tools': No such file or directory
+
+$ grep -rn "REPO/tools/" docs
+docs/tools/parity/setup-env.sh:114
+docs/tools/parity/setup-env.sh:123
+docs/tools/parity/setup-env.sh:131
+```
+
+The files are at `docs/tools/parity/`, where `fb3722f5` moved them on 2026-08-30 - *the same commit
+whose message says "all eleven referring files repointed" and which missed `battery.sh`'s call to
+`reap.ps1`*, which is `TS3-A1` and cost four days of unreaped JVMs. The reaper was found and fixed on
+2026-09-02; these three were not, and the reason is in the sweep's own record:
+`docs/reviews/2026-09-02-third-validation.md:458` lists what was searched for - *"`tools/reap`, `sh
+tools/`, `tools/battery.sh` and `tools/one.sh`"* - four literal needles, none of which `tools/parity`
+matches. The sibling in the same folder, `run.sh`, is correct throughout: it derives `REPO` from
+`$(dirname "$0")` at `:18` and names `docs/tools/parity/compare.py` at `:85`.
+
+C rather than B because the failure is loud and immediate: `set -e` is on (`:21`), `javac` reports the
+missing file, and nothing is half-built. What it costs is that the parity comparison - the tool that
+answers whether 3.0.0 is a superset of 2.8.1, on the release this audit is for - cannot be re-run
+without an edit, and nobody would find that out until they needed it.
+
+**Not verified by running.** `ls` and `grep` settle that the path does not exist; I did not run the
+script.
+
+#### C17 - the shared fixture server binds a fixed port, and says it has one to ask about
+
+`test/support/CS3TestServer.java:15`:
+
+```java
+    private int port = 8080;
+```
+
+No setter, no constructor argument, no system property, and `startServer` hands it straight to the
+socket (`:49`):
+
+```java
+        server = HttpServer.create(new InetSocketAddress(port), 0);
+```
+
+while `getPort()` (`:136-139`) reads the constant back - an accessor that implies the number is
+answerable when it is not. 8080 is the single most contended port on a developer machine.
+
+**The suite has already paid for this on the other port, twice, and written it down both times.**
+`battery.sh:360-368` is the whole argument: *"Every class that builds a MarklinControlStation used to
+bind UDP 15730, so the battery could not run while TrainControl was open, an orphaned JVM poisoned
+every class after it, and two classes could never overlap ... The failure it removes is a nasty one to
+read: a bind failure comes out of @BeforeClass as 'Total tests run: 16, Failures: 0, Skips: 16' - zero
+failures, having tested nothing."* Every word applies here, and the answer that was found for 15730 -
+`-Dtraincontrol.anyReceivePort=true`, a free port - has no equivalent in this class.
+
+Both runners would catch the resulting whole-class skip (`battery.sh:558-570`, `one.sh:406-412`), so
+this is not a green run over nothing. What it is, is the one shared support class carrying the defect
+the harness was rebuilt around, in a form no flag can reach.
+
+**And neither caller puts it down safely.** `test/core/testParseWebServer.java:82` opens a server as a
+method local and stops it at `:103` and `:124` - as the last statement of each test, not in a
+`finally`. Any assertion above those lines failing leaves 8080 held for the life of the JVM, and the
+*second* test in the class then fails on the bind rather than on its own subject, which reads as two
+faults where there is one. `test/core/testImportRename.java:93-96` does it correctly, in an
+`@AfterClass(alwaysRun = true)` with a null guard. Those two files are pass 2's folder; the class they
+share is this pass's, and the fix belongs in it: take port 0, let the OS choose, and let `getPort()`
+answer `server.getAddress().getPort()` - which is what its callers already ask it for.
+
+#### C18 - `alwaysRun = true` was lifted onto fifty teardowns; ten of them assume the set-up finished
+
+**FIXED 2026-09-03**, ten teardowns and the sharp one.
+
+The blanket `alwaysRun = true` is kept - a skipped teardown is never what anybody wanted - and every
+teardown it newly reaches now guards the static it dereferences, so a set-up that threw produces the
+failure it should rather than an NPE on the way out that hides it.
+
+`testTheGoldenLayoutHoldsTogether` is the one this finding calls sharp, and it is: its set-up throws
+`SkipException` when there is no golden layout, and the teardown would then have compared against a null
+`before`.  It returns instead, which is what "skipped" means.
+
+Pass 1's `B1` was closed today by putting `alwaysRun = true` on *"fifty classes, not only the eight
+that hold a sandbox"*, and that is the right call. What did not travel with it is the precondition
+that makes it safe. `alwaysRun` means the teardown now runs on the path where `@BeforeClass` threw -
+which is the path on which its statics were never assigned.
+
+Ten teardowns dereference `model` with no guard. `test/regression/testAutoLayoutRace.java:476-479`:
+
+```java
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass() throws Exception
+    {
+        model.deleteLoc("Race loc A");
+    }
+```
+
+and `test/core/testHomeStaging.java:70-76` is the same shape over a loop of fixture names. The others
+are `testAdvancedRoutes:68`, `testAutoLayout:284`, `testAutonomySimulationSanity:153`,
+`testInvalidInput:93`, `testLayoutRenameKeys:69`, `testLocDB:234`, `testLocomotive:723` and
+`testLayoutReloadFence:51`.
+
+The idiom that makes them safe is in the same tree - `testTheGoldenLayoutHoldsTogether:101-105`:
+
+```java
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass()
+    {
+        if (model != null) model.stop();
+    }
+```
+
+and pass 1's own note on the `B1` fix says the rule out loud, for the one site it was applied to: *"Its
+teardown is null-guarded so a set-up that never completed cannot throw a second time on the way out."*
+One site of fifty.
+
+**It is not a regression** - before today those teardowns did not run at all on that path - which is
+why this is a C. What it costs is that the extra `NullPointerException` is a second configuration
+failure that names nothing about the real cause and is the one that prints last, and that these
+teardowns are the ones that delete fixture locomotives from the operator's real database: a run whose
+set-up fails after `model` is built cleans up, and one that fails before it now throws on the first
+line of the cleanup instead of the last.
+
+**The sharp one is `testTheGoldenLayoutHoldsTogether`, because there the dereference is the
+assertion.** `:143-150`:
+
+```java
+    @AfterClass(alwaysRun = true)
+    public void testNothingWroteToTheGoldenLayout() throws Exception
+    {
+        Map<String, String> after = fingerprint(GOLDEN);
+
+        List<String> changed = new ArrayList<>();
+
+        for (Map.Entry<String, String> was : before.entrySet())
+```
+
+`before` is assigned at `:82`, *after* the skip at `:77-80`:
+
+```java
+        if (!GOLDEN.isDirectory())
+        {
+            throw new SkipException("no golden layout at " + GOLDEN.getAbsolutePath());
+        }
+```
+
+So on a machine without `cs2_sample_layout` this class no longer skips - it reports a configuration
+failure with a `NullPointerException` in it, and the class javadoc's promise at `:55-56` becomes
+false: *"Skipped rather than failed when the folder is not there, so this travels with the repository
+without demanding that everybody have Adam's railway."* Latent today, because
+`git ls-files cs2_sample_layout` returns ten tracked files, so a clone has the folder; realised the
+moment anybody renames or moves it, which is the one thing that folder's own review history says
+people do.
+
+#### C19 - "carries an annotation" is not "carries a TestNG annotation"
+
+`test/regression/testEveryTestIsInTheBattery.testEveryTestShapedMethodCarriesAnAnnotation` is the
+guard for `TST-C2` - five methods that had quietly lost their `@Test` and had never run. Its javadoc
+draws the line precisely (`:152-157`):
+
+```
+     * Deliberately permissive about WHICH annotation: `@AfterClass`/`@BeforeClass`/`@BeforeMethod`/
+     * etc. on a method named like a test is a lifecycle hook ... What
+     * must never happen is a `public void testX()` with no TestNG annotation above it at all - that
+     * is a method TestNG will never call, whatever it is named.
+```
+
+The walk that implements it does not read that line (`:208-212`):
+
+```java
+                        if (line.startsWith("@"))
+                        {
+                            annotated = true;
+                            continue;
+                        }
+```
+
+Any `@` satisfies it. `@Override`, `@SuppressWarnings("unchecked")`, `@Deprecated` - none of which
+TestNG has heard of - all mark a test-shaped method as annotated, and the second of those is exactly
+what somebody adds above a method while working on it. The permissiveness the javadoc argues for is a
+list of eight TestNG annotations; the code's is "anything at all", and the gap between them is the
+whole of what the test claims to catch.
+
+**Measured, nothing violates it today.** I re-ran the walk's own logic over `test/`: no test-shaped
+method anywhere is preceded by annotations of which none begins `@Test`, `@Before`, `@After`,
+`@DataProvider`, `@Factory`, `@Listeners`, `@Parameters` or `@Optional`. So this is a hole rather than
+a defect, and the fix is to replace `line.startsWith("@")` with a check against that list - which the
+javadoc has already written out.
+
+The same class is otherwise in good order and `D10` says so.
+
+#### C20 - `ant test` has none of the three flags, and is green for a class that skipped everything
+
+`TST-B1` confirmed at HEAD, with the mechanism it did not name and two halves it did not have.
+
+`build.xml:106-114` is the whole of how `ant test` starts a class:
+
+```xml
+        <macrodef name="test-one-class">
+            <attribute name="class"/>
+            <sequential>
+                <echo message="---------- @{class} ----------"/>
+                <j2seproject3:test includes="${includes}" testincludes="**/@{class}.java"/>
+            </sequential>
+        </macrodef>
+```
+
+That reaches `nbproject/build-impl.xml:622-632`, and the forked JVM gets exactly one jvmarg:
+
+```xml
+                <testng classfilesetref="test.set" failureProperty="tests.failed" ... >
+                    ...
+                    <jvmarg line="${endorsed.classpath.cmd.line.arg}"/>
+                    <customize/>
+                </testng>
+```
+
+No `run.jvmargs`, no `run.test.jvmargs` - the TestNG branch takes neither, unlike the JUnit branch at
+`:533` - and `<customize/>` is not used by `build.xml`. So:
+
+1. **No `-Dtraincontrol.anyReceivePort=true`.** Every class that builds a model binds UDP 15730, so
+   `ant test` cannot run while TrainControl is open and no two of its classes can overlap - the
+   condition `battery.sh:360-368` and `test/ui/testBusyDialogInteraction.java:36-39` both write up.
+   Also confirmed by search: the flag appears in `battery.sh`, `one.sh`, `parity/run.sh` and
+   `NetworkProxy.java` and nowhere else in the tree.
+2. **No `-Xmx512m`.** `ant test` carries the out-of-heap DID-NOT-RUN condition `battery.sh:399-408`
+   bounded on 2026-08-25, and unlike both runners it has no message that tells the two apart.
+3. **No `-Dtraincontrol.batteryRun`.** `reap.ps1` matches on that flag (`:47-51`), so an abandoned
+   `ant test` JVM can never be reaped by anything - while both runners' start-of-run probe *does* see
+   it, through the `*testng*` clause, and refuses with *"Nothing needs deleting: this check clears
+   itself when those processes exit."* It will not.
+
+**The door exists and is unused.** `build-impl.xml:623-626` maps any ant property named
+`test-sys-prop.X` to system property `X` in the forked JVM. One line in
+`nbproject/project.properties` - `test-sys-prop.traincontrol.anyReceivePort=true` - closes the first
+of the three without touching `build.xml`.
+
+**And the fourth half, which is new.** `failureProperty="tests.failed"` is the only result property
+set; there is no `skippedProperty` anywhere in `build-impl.xml`, and `-post-test-run` (`:1644-1646`)
+is `<fail if="tests.failed" unless="ignore.failing.tests">`. TestNG's ant task sets that property from
+the failure bit of the exit code and the skip bit is a different one - so a class that reports
+`Total tests run: 16, Failures: 0, Skips: 16` leaves `tests.failed` unset and `ant test` passes.
+`build.xml:93` claims otherwise: *"-post-test-run still fails the build at the end if any of them
+failed."* True for failures, and this is the sentence's blind spot: *"green is not no failures"* is the
+correction `battery.sh` was given on 2026-08-25 (`:559-568`) and `one.sh` on 2026-09-02
+(`:389-397`), and `ant test` never got it. It is the runner the operator uses.
+
+**Not verified by running.** The exit-code claim rests on reading `build-impl.xml` and on TestNG
+6.14.3's documented bitmask, not on a run. **What I would run:** `ant test` with one class temporarily
+`@Test(enabled = false)`, expecting BUILD SUCCESSFUL. Legs 1 to 3 are settled by `grep` alone.
+
+---
+
+### D - not defects
+
+#### D9 - where the earlier passes' findings in this scope stand at HEAD, and the two handoffs answered
+
+**The four harness repairs of 2026-09-03, re-checked one by one.**
+
+| Finding | What I checked at HEAD |
+|---|---|
+| `REL-B2` - one.sh's lock had none of battery.sh's corrections | **Closed, all three legs.** `lock_holder_state` reads `msys:NNN` as well as a bare winpid and asks each of the tool that can answer it (`one.sh:133-168`); `take_the_lock` is a `noclobber` create with the pid moved in from `$LOCK.mine.$$` (`:177-188`); the stale and unknown arms both take over with `mv` (`:202`, `:214`). The fallback writes `msys:$$` (`:129`), so leg 2 is closed too |
+| `REL-C3` - one.sh claimed a reap it did not have | **Closed.** `reap` is defined at `:259` and called at `:331` and `:426`. The post-loop call carries the comment `battery.sh` has, naming the finding |
+| `REL-C9` - battery.sh's stale branch took the lock in two steps | **Closed, both halves.** `mv` at `:311`, and the pid written through `$LOCK.mine.$$` at `:298` so the lock is never present and empty |
+| `REL-C10` - the unknown arm's fall-through contradicted its own comment | **Closed as to the arm, and it is what introduced `B7`.** The arm now warns (`:270-273`) and takes the lock over (`:314-317`) - and `:314` is the line that reads `ALIVE` outside the block that sets it |
+
+**Pass 2 handed me two sites under its `C9` (an LF-pinned anchor over a file `.gitattributes` does not
+protect). Both are already safe, for two different reasons, and the premise underneath them needs
+correcting.**
+
+- `test/regression/testEditorSurfaceRules.java:2264` reads `PANEL` through a read that strips carriage
+  returns two dozen lines above it (`:2206-2209`), with a comment saying exactly why - *"Carriage
+  returns stripped, because the window below ends on a newline and four spaces and a closing brace,
+  and this repository checks out CRLF on Windows (FBR-C8)"* - and the assertion carries an `||` arm for
+  the un-wrapped spelling. Not a defect.
+- `test/regression/testSwitchingToACentralStationLayout.java:1108` is
+  `assertTrue(bundle.contains("\nui.splashConnecting="))`. The `\n` is the **first** character of the
+  anchor, so a CRLF file reads `...=\r\nui.splashConnecting=` and the anchor still matches - CRLF puts
+  the extra byte *before* the newline, and only an anchor with content before its `\n` can break. Not a
+  defect. The same is true of `testARunSurvivesADiagramEdit:137`,
+  `testARunSurvivesAPageRename:116` and `testLocomotiveIdentityPropagates:704-705`, which was the rest
+  of the sweep.
+
+**But `C9`'s premise is wrong in the direction that makes `C9` worse, not better.** It says *"The
+working tree here is LF today (`Layout.java`: 8,242 LF, 0 CRLF)"*. That is true of `Layout.java` and
+false of the tree. Counted over every `.java` and `.properties` under `src/`:
+
+```
+LF-only:   34 files   (Layout.java, TrainControlUI.java, AutonomyEditorPanel.java,
+                       messages*.properties, and the rest of what has been edited recently)
+CRLF:      86 files   (LayoutEditor.java, LayoutGrid.java, MarklinRoute.java, ...)
+mixed:      0
+```
+
+So the hazard `C9` describes is **already realised in the working tree** - on 86 files, including the
+two biggest targets of the editor-surface rules - and the reason nothing is red is that the anchors
+over those files are all either line-based (`split("\n")` then `trim()`, which removes `\r` because
+`\r` is below `' '`), brace-counted (`testEditorSurfaceRules.bodyOf:1168-1189`,
+`testNoSelfRecursiveWrappers.bodyOf:171-206`), or leading-`\n`. That is luck earned by style rather
+than by a rule, which is `C9`'s point and is worth more evidence than it had. `C9`'s one-line fix -
+`* text=auto eol=lf` in `.gitattributes` - would also normalise the 86.
+
+**The other earlier findings in this scope:**
+
+- **`TST-B1`** (`ant test` passes no receive-port flag) - **confirmed open**, restated with its
+  mechanism as `C20`.
+- **`TS3-A1`** (the reaper read from `pwd`) - **closed** in both runners, and both say so out loud
+  (`battery.sh:472-478`, `one.sh:242-257`), each with a warning when the file is missing rather than a
+  silent `2>/dev/null`. `C16` is the same commit's fifth miss, in the folder the sweep's needles could
+  not reach.
+- **`TCX-B11`** (`testTheGoldenLayoutHoldsTogether` names `cs2_sample_layout`) - not a defect, for
+  pass 1's `D3` reason and one more: the folder is only ever read, the fingerprint at `:396-455` is
+  the class's own guard against itself, and `AutonomyCompanionStore` is opened for `load()` and never
+  `save()`.
+- **`TST-B2`** (the golden fingerprint ran as the first `@Test`) - **closed**, and closed well: it is
+  an `@AfterClass` now, with the reasoning at `:114-124` including what the fix still cannot see.
+- **`VAL-C8`** (a total can absorb a repair and a new offence in the same round) - **closed in all
+  three ratchets I found**: `testJavadocsAreAttached` pins `ORPHANS_BY_FILE` as well as `ALLOWED`
+  (`:57-100`, `:142-152`), and `testSwitchingToACentralStationLayout` pins
+  `MODELS_WITHOUT_A_SANDBOX_NAMES` as well as the count (`:240-296`, `:724-740`).
+
+#### D10 - checked and found sound
+
+Recorded so the absence of findings against these is a result rather than an omission.
+
+**Both ratchets are exact at HEAD, recomputed rather than read.** I re-implemented
+`testJavadocsAreAttached.orphansIn` (`:161-179`) character for character - including Java's `trim()`
+semantics, which strip only below `' '` - and ran it over `src/`:
+
+```
+TOTAL 93
+  src\org\traincontrol\automation\Layout.java (3)
+  ... 21 files ...
+  src\org\traincontrol\marklin\MarklinControlStation.java (1)
+```
+
+`ALLOWED` is 93 (`:48`) and `ORPHANS_BY_FILE` is those same 21 entries with those same counts. Nothing
+has drifted, and the class is self-flooring in the way `TSX-B6`'s subject is not: `assertEquals(found,
+ALLOWED)` at `:135` cannot be satisfied by a scan that read nothing, because 0 is not 93.
+
+**`build.xml`'s hand-kept list is complete and has no duplicates.** 148 `<test-one-class>` entries, 148
+distinct names, and the set difference against the 149 files under `test/` that contain `@Test` is
+exactly `{testAutoDetect}` - which is `DELIBERATELY_OUT`'s one entry
+(`testEveryTestIsInTheBattery:40-44`) and the one omission `build.xml:98-100` explains. The reverse
+direction is empty too: no entry names a class that is not on disk. So the guard's subject is in the
+state the guard claims.
+
+**Six harness mechanisms read against the failure each was written for:**
+
+- **`reap.ps1`** - the id is matched whole, both spellings (`:47-51`), and the file records the
+  measurement that made it whole (`:35-43`, `battery-777` against `battery-7777`). It matches
+  `Name='java.exe'` only, which is right: both runners invoke `java.exe`, and NetBeans' own
+  TrainControl carries no run id. The blast-radius argument at `:1-27` is the best-written thing in
+  `docs/tools/`.
+- **`testEveryTestIsInTheBattery.withoutXmlComments`** (`:272-295`) - blanks comment spans rather than
+  parsing, says why, and gets the unterminated case right in the same direction ant would
+  (`:266-267`). `TA-B1`'s mutation - commenting a class out - is genuinely caught.
+- **`testSwitchingToACentralStationLayout.withoutStringsAndComments`** (`:799-859`) - one scanner in
+  the order the compiler works, with six assertions of its own driving it
+  (`testTheWindowScannerReadsCodeAndNotProse:430-474`) including both directions and an escaped quote.
+  `inASetupMethod` (`:867-891`) is bounded at the previous method's closing brace, with its own
+  two-case fixture at `:490-529`. This is the strongest source-rule machinery in the suite.
+- **`testNoSelfRecursiveWrappers`** (`:99-146`) - the bare-name regex, the arity check that keeps
+  `saveState`'s overload pair from reading as recursion, and `assertTrue(checked > 0)` at `:77`. The
+  floor, the qualified and unqualified spellings, and the comment stripping are all present with the
+  measurement that produced each.
+- **`testConfirmedGoodState`** - the capture path is a documented `-Dbaseline.capture=true`, the
+  compare strips carriage returns with the incident written above it (`:255-268`), the
+  reduced-to-nothing case is an assertion and not a skip (`:98-104`, `TD-4`), and `firstDifference`
+  reports a line rather than two files.
+- **`testTheGoldenLayoutHoldsTogether`'s two `@AfterClass` methods** (`:101` and `:143`) run in an
+  order TestNG does not define, which I checked because the fingerprint would be worthless if
+  `tearDownClass` wrote anything first. It does not: `MarklinControlStation.stop()` sends a
+  `CMD_SYSSUB_STOP` CAN message and touches no file. Order-independent, so not a finding.
+
+**Two shapes I looked for across the whole scope and did not find:** an `@Test` in `test/regression/`
+whose body contains no `assert` or `fail`, and a `Random`, `Math.random` or `ThreadLocalRandom`
+anywhere in it. Pass 1's `D4` holds for my half of the folder too.
+
+**The sandbox sweep, in full, because it is the one that found something.** There are 16
+`LayoutSandbox.open(` call sites in `test/regression/` - 15 when I swept, and a sixteenth appeared in
+`testTheRoutingChoiceSurvivesTheUpgrade` (`:687`, sound, one statement above its own `try`) while this
+was being written; that file is being edited by somebody else as of this pass, so its line numbers
+below are as of the tree I read. Fourteen are sound: nine declare the local as
+`null` before the `try` and open it **inside** it, which is the strongest form and the one pass 1 named
+as the model (`testDiagramShiftKeepsSetup:312`/`:321`, `testLayoutEditorBulkEdits:530`/`:538` and
+`:695`/`:704`, `testThePaletteStillPlacesTiles:47`/`:54`,
+`testTheRoutingChoiceSurvivesTheUpgrade:119`/`:125`, `:276`/`:285`, `:377`/`:385`, `:483`/`:491`,
+`:577`/`:585`), one is class-scoped behind an `alwaysRun` teardown (`testARunSurvivesADiagramEdit:72`),
+and
+`testSwitchingToACentralStationLayout:123`/`:379` and `testTheWindowTakesTheKeyboard:892` each open one
+statement above their own `try`. The two that are not are `B8`.
+
+#### D11 - what pass 3 did not cover
+
+Said plainly.
+
+- **Read in full:** `docs/tools/one.sh`, `docs/tools/battery.sh`, `docs/tools/reap.ps1`,
+  `docs/tools/parity/setup-env.sh`, `docs/tools/parity/run.sh`, `build.xml`, the `-do-test-run` /
+  `-post-test-run` / TestNG-macro region of `nbproject/build-impl.xml`, all three classes of
+  `test/support/`, and in `test/regression/`: `testEveryTestIsInTheBattery`,
+  `testJavadocsAreAttached`, `testConfirmedGoodState`, `testTheGoldenLayoutHoldsTogether`,
+  `testNoSelfRecursiveWrappers`, and the source-rule half of `testSwitchingToACentralStationLayout`
+  (`:230-300`, `:420-780`, `:947-1111`).
+- **Read in part, guided by the sweeps:** `testEditorSurfaceRules` (its readers, `bodyOf`, `codeOnly`,
+  `withoutComments`, and every anchor carrying an embedded newline - `:180-240`, `:455-540`,
+  `:880-1035`, `:1160-1330`, `:2040-2310`, `:2430-2470`), `testTheCheckerAgreesWithTheBuild` (header
+  and fixture only), and the fixture factory and eight call sites of
+  `testTheWindowTakesTheKeyboard` / `testTheAutonomyEditorKnowsWhichSquare` that `B8` is about - the
+  `@Test` bodies of both, which pass 1 also left, are still unread.
+- **Swept mechanically, not read:** all 54 classes of `test/regression/`, for - every `@AfterClass`
+  and whether its body dereferences a static without a guard (17 hits, of which `C18` names the ten
+  that matter); every `LayoutSandbox` site against its close; every `MarklinControlStation.init`
+  against a matching `stop`; every string literal carrying an embedded `\n` and whether the file it is
+  matched against is CRLF; every `@Test` with no `assert` or `fail`; every generator.
+- **Not looked at at all:** the `@Test`-level content of `testPageIdsAreDurable` (1,426 lines),
+  `testARouteDoesNotThrowSwitchesUnderATrain` (1,401), `testTheCheckerAgreesWithTheBuild` (781),
+  `testBothProtectingSignalsAreThrown`, `testStationBlockedByAnotherPoint`,
+  `testBarredArrivalIsNotADestination`, `testCancelRestoresPlacements`,
+  `testDiscardedEditsDoNotDeleteSetup`, `testAutonomyStoreSettingsMatrix`, `testAutonomyTileMove`,
+  `testLocomotiveIdentityPropagates`, `testRenameRoundTripThroughTheUIPath`,
+  `testStoreCollectionsAreHandledEverywhere`, `testLayoutFolderRobustness`, `testDataSafetyRoundTrips`,
+  `testStuckTrainAdvisory`, `testTriggerWaitsSayNothing`, `testTimetableCapture`,
+  `testFacingFollowsTheTrack`, `testLocomotiveAddressRules`, `testRouteEditorRoundTripCases`,
+  `testBackupArchiveNamesTheLayout` - pass 1's `D5` handed me the first eight of these and I did not
+  get to them. `docs/tools/parity/ParityDriver.java`, `BuildDiagramSetup.java`,
+  `PathPreferenceProbe.java` and `compare.py` were opened only far enough to confirm `C16`; the
+  comparison logic in `compare.py` (376 lines) is unread, and it is the thing that decides whether
+  3.0.0 is a superset of 2.8.1.
+- **The largest single thing left undone**, and it is cheap: nothing in this pass checked that the
+  ratchet in `testSwitchingToACentralStationLayout` (`MODELS_WITHOUT_A_SANDBOX = 56`, and its 56
+  names) is current. Recomputing it needs `withoutStringsAndComments` reimplemented rather than a
+  `grep`, which the javadoc ratchet did not, and I chose the one I could do exactly over the one I
+  could do approximately. The 20 in `assertEquals(checked, 20, ...)` at `:665` is unverified for the
+  same reason.
+- **Three claims I could not settle by reading**, all named at their findings: that `set -u` aborts
+  `battery.sh` at `:314` (`B7` - documented shell semantics, no run); that `ant test` passes for a
+  class that skipped everything (`C20` - TestNG's exit-code bitmask, read not measured); and whether a
+  Ctrl-C in a terminal reaches the test JVM through the process group while a `kill -TERM` does not
+  (`C14` - stated as the reason that half is narrower than it reads).
+- **Nothing was run.** No `javac`, no `ant`, no `java`, no TestNG, no `one.sh`, no `battery.sh`, no
+  application, no PowerShell, no subagents. The only things executed were `git` in read-only form,
+  `grep`, `ls`, `wc` and two Python scripts that read text files and print counts - one
+  re-implementing `orphansIn`, one re-implementing the annotation walk of
+  `testEveryTestShapedMethodCarriesAnAnnotation` - both written to the scratch directory, neither
+  touching the repository. `cs2_sample_layout` was never read from or written to; the only thing this
+  pass did to it was ask `git ls-files` how many of its files are tracked, which is `C18`'s evidence.
 
 ---

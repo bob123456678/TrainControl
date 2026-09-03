@@ -202,6 +202,19 @@ esac
 
 STALE=""
 
+# INITIALISED, like STALE above it, and for the reason that one was (TSX-B7).
+#
+# `ALIVE` is assigned only inside the `if [ -f "$LOCK" ]` block below, and read again after it - so on
+# every machine with no lock file, which is every machine after any run that ended normally, `set -u`
+# killed the script with "ALIVE: unbound variable" before it compiled anything.  Exit 1 is this
+# script's own code for "classes with failures", so a caller chaining on it was told the tests failed
+# by a run that never started.
+#
+# Introduced by REL-C10's fix this morning: `one.sh` was RESTRUCTURED and this file was patched in
+# place, which is why the claim that the two takes are "word for word the same" was not true - and the
+# one that missed the restructure is the one that broke.
+ALIVE=""
+
 # TESTED AND TAKEN AS ONE STEP, further down (SV2-C3).
 #
 # What follows READS the lock, and the write used to be a plain `echo >` a few lines later - so two

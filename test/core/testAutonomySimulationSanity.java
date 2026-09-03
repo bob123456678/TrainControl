@@ -155,7 +155,7 @@ public class testAutonomySimulationSanity
     {
         if (model.hasAutoLayout())
         {
-            model.getAutoLayout().stopLocomotives();
+            if (model != null) model.getAutoLayout().stopLocomotives();
         }
 
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
@@ -163,7 +163,7 @@ public class testAutonomySimulationSanity
 
         for (String name : LOCO_NAMES)
         {
-            model.deleteLoc(name);
+            if (model != null) model.deleteLoc(name);
         }
     }
 

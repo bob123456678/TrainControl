@@ -476,6 +476,6 @@ public class testAutoLayoutRace
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        model.deleteLoc("Race loc A");
+        if (model != null) model.deleteLoc("Race loc A");
     }
 }

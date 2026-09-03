@@ -723,23 +723,23 @@ public class testLocomotive
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        model.deleteLoc("Test loc 3");
-        model.deleteLoc("Test loc 4");
-        model.deleteLoc("Test loc 5");
-        model.deleteLoc("Test loc 6");
-        model.deleteLoc("Test loc 7");
-        model.deleteLoc("Test loc 8");
-        model.deleteLoc("Test loc 88");
-        model.deleteLoc("Test loc 888");
-        model.deleteLoc("Test loc 9");
+        if (model != null) model.deleteLoc("Test loc 3");
+        if (model != null) model.deleteLoc("Test loc 4");
+        if (model != null) model.deleteLoc("Test loc 5");
+        if (model != null) model.deleteLoc("Test loc 6");
+        if (model != null) model.deleteLoc("Test loc 7");
+        if (model != null) model.deleteLoc("Test loc 8");
+        if (model != null) model.deleteLoc("Test loc 88");
+        if (model != null) model.deleteLoc("Test loc 888");
+        if (model != null) model.deleteLoc("Test loc 9");
 
-        model.deleteLoc("Test loc MU");
-        model.deleteLoc("Test loc child 1");
-        model.deleteLoc("Test loc child 2");
+        if (model != null) model.deleteLoc("Test loc MU");
+        if (model != null) model.deleteLoc("Test loc child 1");
+        if (model != null) model.deleteLoc("Test loc child 2");
 
         // TST-B20: testMultiUnitCommands creates "Test loc child 3" (:720) and nothing ever deleted it -
         // left in the restored DB image for whatever ran next in this JVM.
-        model.deleteLoc("Test loc child 3");
+        if (model != null) model.deleteLoc("Test loc child 3");
 
         // TST-B20: testLocomotiveConstructor (:41) and testMultiUnitCommands (:359) both set this true
         // with no restore.  Left true, testAutoLayoutRace.testWaitingForPowerGivesUp can have its GO

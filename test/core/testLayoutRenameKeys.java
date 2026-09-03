@@ -73,7 +73,7 @@ public class testLayoutRenameKeys
             "RK excluded", "RK excluded 2", "RK export", "RK export 2", "RK torun", "RK torun 2",
             "RK addr", "RK deleted", "RK drifted", "RK drifted renamed" })
         {
-            model.deleteLoc(name);
+            if (model != null) model.deleteLoc(name);
         }
 
         // TST-B20: attach() installs a hand-built Layout into the shared model by reflection, and

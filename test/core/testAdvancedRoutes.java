@@ -70,7 +70,7 @@ public class testAdvancedRoutes
     {
         for (String name : TEST_LOCS)
         {
-            model.deleteLoc(name);
+            if (model != null) model.deleteLoc(name);
         }
     }
 

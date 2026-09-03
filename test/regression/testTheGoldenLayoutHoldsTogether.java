@@ -143,6 +143,14 @@ public class testTheGoldenLayoutHoldsTogether
     @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
+        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE (TSX-C18).
+        //
+        // `alwaysRun` arrived on 2026-09-03 so that a teardown holding a sandbox cannot be skipped by
+        // a set-up that threw - which is right, and means this now runs after the `SkipException` the
+        // set-up throws when there is no golden layout to read.  `before` is null there, and the
+        // comparison below would report an NPE where the class had simply been skipped.
+        if (before == null) return;
+
         Map<String, String> after = fingerprint(GOLDEN);
 
         List<String> changed = new ArrayList<>();
