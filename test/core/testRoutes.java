@@ -1099,7 +1099,7 @@ public class testRoutes
         testRoutes.model = init(null, true, false, false, false);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

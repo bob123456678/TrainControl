@@ -63,7 +63,7 @@ public class testBothProtectingSignalsAreThrown
         assertNotNull(far, "could not get an accessory at " + FAR);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         // Left as found.  These are rows in the operator's own accessory database, and a test that

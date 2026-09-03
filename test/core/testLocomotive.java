@@ -720,7 +720,7 @@ public class testLocomotive
         model.newMFXLocomotive("Test loc child 3", 3);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         model.deleteLoc("Test loc 3");

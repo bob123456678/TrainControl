@@ -147,7 +147,7 @@ public class testTrainsComeHomeToTheirPlatforms
         layout.setMaxDelay(0);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         try

@@ -90,7 +90,7 @@ public class testImportRename
         set("isCS3", true);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (server != null) server.stopServer();

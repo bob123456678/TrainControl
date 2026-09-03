@@ -75,6 +75,15 @@ closest, and the reason it is not an A is set out in its entry.
 
 #### B1 - the sandbox is opened where a throw can skip the close, in eight GUI classes
 
+**FIXED 2026-09-03.**  Every `@AfterClass` in the suite carries `alwaysRun = true` - fifty classes, not
+only the eight that hold a sandbox, because a teardown that has been skipped is never what anybody
+wanted and two of them put the operator's real signals back.
+
+And the sharp variant is closed at the site: `testUiStateIsNotLostWhenUnreadable` opens its sandbox
+INSIDE the `try` whose `finally` closes it, with the class's own rule quoted where it was broken - a
+guard that runs after the thing it guards is not a guard.  Its teardown is null-guarded so a set-up that
+never completed cannot throw a second time on the way out.
+
 **Status: open.** Verified by reading. Severity: the operator's machine-global layout preference is left
 pointing at a temporary folder, so the next time he starts TrainControl it opens the fixture railway - or
 nothing - instead of his own.
@@ -246,6 +255,16 @@ timetable entry's own name - is sound and does bite. B.
 ---
 
 #### B3 - three tests hand the operator's own preferences back without the guard the fourth was given
+
+**FIXED 2026-09-03**, all three sites.
+
+`testDiagramExport` and `testTheWindowTakesTheKeyboard` ask whether the preference was ever stored and
+REMOVE it when it was not, rather than writing the accessor's default back.  `testDiagramLooksRight`'s
+own site is the sharp one - the click itself writes the key - so it remembers whether the panel's node
+held it and removes it afterwards if it did not.
+
+The rule this finding names, stated in the sweep that produced it, is now true of every site the sweep
+was about.
 
 **Status: open.** Verified by reading.
 

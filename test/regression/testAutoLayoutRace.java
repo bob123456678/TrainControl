@@ -473,7 +473,7 @@ public class testAutoLayoutRace
         model.newMM2Locomotive("Race loc A", 2);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         model.deleteLoc("Race loc A");

@@ -51,7 +51,7 @@ public class testTheStationGoingAwayDoesNotJamSwitching
         model.stop();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (sandbox != null) sandbox.close();

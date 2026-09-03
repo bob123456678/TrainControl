@@ -48,7 +48,7 @@ public class testTimetableCapture
         }
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownModel()
     {
         if (model != null) model.stop();

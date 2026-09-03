@@ -59,7 +59,7 @@ public class testRouteTilePlacement
         model = MarklinControlStation.init(null, true, false, false, true);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void disconnect() throws Exception
     {
         if (model != null) model.stop();

@@ -70,7 +70,7 @@ public class testStagingSkipsALegWithNoSpeed
         model.newMM2Locomotive(LOC_MOVING, MOVING_ADDRESS);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (model != null)

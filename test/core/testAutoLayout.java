@@ -281,7 +281,7 @@ public class testAutoLayout
                 2001, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, false, null);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         model.deleteLoc("Test loc MU 1+2");

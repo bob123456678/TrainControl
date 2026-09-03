@@ -101,7 +101,7 @@ public class testReturnHomeOnRealLayout
         config = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (model != null && model.getAutoLayout() != null)

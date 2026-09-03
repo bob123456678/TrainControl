@@ -66,7 +66,7 @@ public class testLayoutRenameKeys
         hadAutoLayout = readAutoLayout();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         for (String name : new String[] {

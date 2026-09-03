@@ -74,7 +74,7 @@ public class testARunSurvivesADiagramEdit
         model = init(null, true, false, false, false);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (model != null)

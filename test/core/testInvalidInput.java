@@ -90,7 +90,7 @@ public class testInvalidInput
         model.newMM2Locomotive(LOC_PLACED, LOC_PLACED_ADDRESS);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         model.deleteLoc(LOC_PLACED);

@@ -146,7 +146,7 @@ public class testParseCS3Routes
         
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

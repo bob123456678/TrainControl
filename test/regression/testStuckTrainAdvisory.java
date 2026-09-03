@@ -90,7 +90,7 @@ public class testStuckTrainAdvisory
         Logger.getLogger(MarklinControlStation.class.getName()).addHandler(listener);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         Locomotive.FEEDBACK_ADVISORY_MS = quotaWas;

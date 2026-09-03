@@ -321,7 +321,7 @@ public class testParseCS2Layout
         
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

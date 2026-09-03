@@ -65,7 +65,7 @@ public class testAutonomyPathValidation
         Layout.PATH_INTEGRITY_VALIDATION = true;
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;

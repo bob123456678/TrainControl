@@ -485,7 +485,7 @@ public class testAccessory
         model.stop();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

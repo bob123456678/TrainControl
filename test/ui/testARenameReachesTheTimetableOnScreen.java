@@ -69,7 +69,7 @@ public class testARenameReachesTheTimetableOnScreen
         model.newMM2Locomotive(BEFORE, ADDRESS);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null)

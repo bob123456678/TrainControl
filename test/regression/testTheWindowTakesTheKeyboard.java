@@ -521,6 +521,10 @@ public class testTheWindowTakesTheKeyboard
 
         Started up = start();
 
+        // WHETHER IT WAS STORED (TSX-B3) - the note at `testDiagramExport` says why.
+        boolean onTopStored = org.traincontrol.gui.TrainControlUI.getPrefs()
+            .get(org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, null) != null;
+
         boolean onTopWas = org.traincontrol.gui.TrainControlUI.getPrefs().getBoolean(
             org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, false);
 
@@ -579,8 +583,16 @@ public class testTheWindowTakesTheKeyboard
         }
         finally
         {
-            org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
-                org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, onTopWas);
+            if (onTopStored)
+            {
+                org.traincontrol.gui.TrainControlUI.getPrefs().putBoolean(
+                    org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, onTopWas);
+            }
+            else
+            {
+                org.traincontrol.gui.TrainControlUI.getPrefs()
+                    .remove(org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF);
+            }
 
             up.close();
         }

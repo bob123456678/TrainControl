@@ -62,7 +62,7 @@ public class testALocomotiveDoesNotEvictItself
         model.newMM2Locomotive(NAME, ADDRESS);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null)

@@ -70,7 +70,7 @@ public class testDiagramExport
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (ui != null)
@@ -362,6 +362,14 @@ public class testDiagramExport
 
         assertNotNull(page, "no page to draw");
 
+        // WHETHER IT WAS STORED, not what the accessor answers (TSX-B3).
+        //
+        // Writing the accessor's default back materialises a preference on a machine that never set
+        // one, so the operator ends up with a setting he did not choose and a later change of default
+        // cannot reach him.  The rule is stated at `testDiagramLooksRight`, in the sweep that produced
+        // it - this was one of the three sites that sweep missed.
+        boolean stored = TrainControlUI.getPrefs().get(TrainControlUI.SHOW_COORDINATES_PREF, null) != null;
+
         boolean was = TrainControlUI.getPrefs().getBoolean(
             TrainControlUI.SHOW_COORDINATES_PREF, false);
 
@@ -416,7 +424,8 @@ public class testDiagramExport
         }
         finally
         {
-            TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, was);
+            if (stored) TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, was);
+            else TrainControlUI.getPrefs().remove(TrainControlUI.SHOW_COORDINATES_PREF);
 
             if (editor[0] != null)
             {

@@ -48,7 +48,7 @@ public class testLayoutReloadFence
         model.stop();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         model.deleteLoc("RF loc");

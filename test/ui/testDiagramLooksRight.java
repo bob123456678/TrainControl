@@ -73,7 +73,7 @@ public class testDiagramLooksRight
         OUT.mkdirs();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null) model.stop();
@@ -1247,6 +1247,17 @@ public class testDiagramLooksRight
 
         panel[0].setOnDiagramChanged(() -> rebuilds[0]++);
 
+        // WHETHER IT WAS STORED, not what the accessor answers (TSX-B3).
+        //
+        // This one is the sharp version: the click below WRITES the preference, so a machine that had
+        // never set it ends up with it set - and putting `was` back writes the accessor's default,
+        // which is not the same as leaving it alone.  The key lives in the panel's own node, so the
+        // test reaches for that node rather than TrainControlUI's.
+        java.util.prefs.Preferences viewPrefs = java.util.prefs.Preferences.userNodeForPackage(
+            org.traincontrol.gui.AutonomyEditorPanel.class);
+
+        boolean captionTrainsStored = viewPrefs.get("autonomyEditorCaptionTrains", null) != null;
+
         boolean was = panel[0].isShowingParkedTrains();
 
         javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].getShowParkedTrains().doClick());
@@ -1274,6 +1285,9 @@ public class testDiagramLooksRight
         {
             if (panel[0].isShowingParkedTrains() != was) panel[0].getShowParkedTrains().doClick();
         });
+
+        // And if nothing was stored before this test ran, nothing is stored after it.
+        if (!captionTrainsStored) viewPrefs.remove("autonomyEditorCaptionTrains");
 
         assertNotEquals(remembered, was,
             "a new editor came up with the old setting, so the switch is not persisted and has to be "

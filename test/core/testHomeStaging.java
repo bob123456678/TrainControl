@@ -67,7 +67,7 @@ public class testHomeStaging
         }
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         for (String name : TEST_LOCS)

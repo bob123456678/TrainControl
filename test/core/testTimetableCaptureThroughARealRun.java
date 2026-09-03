@@ -102,7 +102,7 @@ public class testTimetableCaptureThroughARealRun
         model.newSignal(7, MM2, false);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null && model.hasAutoLayout()) model.getAutoLayout().stopLocomotives();

@@ -289,7 +289,7 @@ public class testParseCS3Loks
 
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

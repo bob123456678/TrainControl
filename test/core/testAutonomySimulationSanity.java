@@ -150,7 +150,7 @@ public class testAutonomySimulationSanity
         loadSanityFixture();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model.hasAutoLayout())

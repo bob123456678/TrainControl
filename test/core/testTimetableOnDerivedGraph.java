@@ -118,7 +118,7 @@ public class testTimetableOnDerivedGraph
         model.stop();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         if (model != null && model.getAutoLayout() != null)

@@ -132,12 +132,19 @@ public class testUiStateIsNotLostWhenUnreadable
         // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
         // Opened here rather than in a @BeforeClass because this is the only place that builds one,
         // and the finally below is already where this method puts things back.
-        sandbox = support.LayoutSandbox.open();
-
-        SwingUtilities.invokeAndWait(() -> window[0] = new TrainControlUI());
-
+        // INSIDE THE TRY, so the close cannot be skipped (TSX-B1).
+        //
+        // This stood one line above `new TrainControlUI()` - the statement it exists to protect - and
+        // outside the `try` whose `finally` closes it.  A throw from the constructor left the
+        // operator's machine-global layout preference pointing at a folder under %TEMP%, which is what
+        // TrainControl would then open on his next start.  This class's own javadoc states the rule
+        // it was breaking: a guard that runs after the thing it guards is not a guard.
         try
         {
+            sandbox = support.LayoutSandbox.open();
+
+            SwingUtilities.invokeAndWait(() -> window[0] = new TrainControlUI());
+
             // Which reads the state file, fails, and remembers that it failed
             window[0].setViewListener(model, new CountDownLatch(1));
 
@@ -172,16 +179,16 @@ public class testUiStateIsNotLostWhenUnreadable
         {
             final TrainControlUI closing = window[0];
 
-            SwingUtilities.invokeAndWait(() -> closing.dispose());
+            if (closing != null) SwingUtilities.invokeAndWait(() -> closing.dispose());
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
     /**
      * Puts the operator's own file back, whatever happened above.
      */
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         File live = new File(DATA);

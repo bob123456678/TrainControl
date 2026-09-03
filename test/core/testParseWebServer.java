@@ -131,7 +131,7 @@ public class testParseWebServer
 
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

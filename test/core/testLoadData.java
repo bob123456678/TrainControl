@@ -355,7 +355,7 @@ public class testLoadData
         model = init(null, true, false, false, true);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

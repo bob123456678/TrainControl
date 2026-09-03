@@ -92,7 +92,7 @@ public class testMockCentralStation
         model.stop();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (server != null) server.stop(0);

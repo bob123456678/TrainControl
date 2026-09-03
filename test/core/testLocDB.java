@@ -231,7 +231,7 @@ public class testLocDB
         testLocDB.model = init(null, true, false, false, false); 
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         // TST-B20: testRenameLoc creates "New locomotive test 2" (MFX 20) and renames it to "New

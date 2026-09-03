@@ -98,7 +98,7 @@ public class testTheGoldenLayoutHoldsTogether
         store.load();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null) model.stop();
@@ -140,7 +140,7 @@ public class testTheGoldenLayoutHoldsTogether
      * because `after` was taken before that write happened; run last, it sees the rewritten file and
      * fails.
      */
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
         Map<String, String> after = fingerprint(GOLDEN);

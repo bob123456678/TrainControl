@@ -75,7 +75,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /** Puts the real node back, and takes the throwaway one away with it. */
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void giveThePreferencesBack() throws Exception
     {
         java.lang.reflect.Field field =

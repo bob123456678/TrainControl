@@ -77,7 +77,7 @@ public class testLayoutTiles
         previousHandler = Thread.getDefaultUncaughtExceptionHandler();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
         Thread.setDefaultUncaughtExceptionHandler(previousHandler);

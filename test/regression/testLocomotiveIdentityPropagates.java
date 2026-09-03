@@ -62,7 +62,7 @@ public class testLocomotiveIdentityPropagates
         }
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         // The test locomotives are rows in the operator's own database

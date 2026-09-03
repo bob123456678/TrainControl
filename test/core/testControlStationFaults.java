@@ -39,7 +39,7 @@ public class testControlStationFaults
         model.setNetworkCommState(false);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         // Both are process-global, so leaving either set would change how every later class in the

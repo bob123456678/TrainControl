@@ -50,7 +50,7 @@ public class testUdpMessagesReachTheWire
         proxy = new NetworkProxy(InetAddress.getByName("127.0.0.1"));
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (proxy != null) proxy.stopListening();

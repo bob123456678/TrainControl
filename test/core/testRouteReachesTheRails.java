@@ -58,7 +58,7 @@ public class testRouteReachesTheRails
         model.setNetworkCommState(false);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         // Restored, because it is process-global: leaving it set would make every later class in the

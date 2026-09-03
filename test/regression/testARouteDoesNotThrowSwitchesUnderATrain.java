@@ -79,7 +79,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null)

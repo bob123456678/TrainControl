@@ -289,7 +289,7 @@ public class testParseCS2Routes
         
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }

@@ -130,7 +130,7 @@ public class testAutoDetect
         pingRetryField.set(null, TEST_PING_RETRY);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
     }
