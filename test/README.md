@@ -70,6 +70,19 @@ each: a full runner and a fast one that excludes the handful of slow classes. Th
 a class out when it turns out to be slow. Time a new class before assuming it is fast; anything over
 about ten seconds belongs on that list.
 
+**A one-off probe is not covered by any of this.** Both runners fingerprint `cs2_sample_layout`
+before and after and refuse to stay quiet if it moved; a `java` command typed straight at a class,
+which is how most probes get run, is guarded by nothing. On 2026-09-03 one of them left a
+`config/autonomy/setup-before-edit.json` in that folder - the snapshot the editor writes and clears
+on dispose - and nothing said a word, because no runner was involved. Its content turned out to
+match the live setup exactly, so the cost was nil this time; what it cost the time before was
+facings, placements, priorities and an exclusion list (see `testEveryLanguageFits`).
+
+So: **a probe opens `support.LayoutSandbox` before it builds a model or a window**, exactly as a test
+does, or it is run through `one.sh` where the fingerprint can see it. There is no third option that
+is safe, because the layout path is a machine-global preference and every probe that skips this step
+reads and writes the operator's live railway by default.
+
 ---
 
 ## One thing that bites when a test moves
