@@ -13348,6 +13348,8 @@ the train turns round part way along - a 10 + 1 + 2 approach admits an eight-uni
 of real room under the first reading. I have not changed the rule; the guard now carries a comment
 saying it is unsound until you rule.
 
+**The rule these steps describe changed on 2026-09-02 (`3f829ced`).**  Adam ruled that the room is measured between the last SWITCH and the station rather than over the whole run in, and that the notice should ask for that stretch.  So any step here that says "sum the segments leading up to it" is describing the old arithmetic: a train can now be refused on a route whose total is ample, and the notice asks about more squares than it did.  Run it against the new rule, or ignore it in favour of MT-260's steps 1-4, which were written for it.
+
 ---
 
 <a id="mt-249"></a>
