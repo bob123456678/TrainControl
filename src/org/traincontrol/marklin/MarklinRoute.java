@@ -661,6 +661,21 @@ public class MarklinRoute extends Route
                                     // back seconds later, while the power is still on and the operator
                                     // is watching a train they wanted stopped.  Same rule, both ends:
                                     // a route that cuts the power skips the accessory and carries on.
+                                    // AND IT PARKS THE REST OF THE ROUTE WHILE IT STANDS
+                                    // (SVN-B15).
+                                    //
+                                    // This is called on the route's own thread, so the speeds, the
+                                    // functions and any chained route after this command wait for the
+                                    // answer.  That is deliberate and not an oversight: the answer
+                                    // decides whether this route's ironwork is set at all, and running
+                                    // its speeds over turnouts that were not set is the worse of the
+                                    // two.  What was wrong was `View`'s javadoc, which called the
+                                    // answer one about "the rest of its accessories"; it is corrected
+                                    // there.
+                                    //
+                                    // The one command that must never wait on a person does not reach
+                                    // here: `hasEmergencyStop()` is the whole route's stop, tested
+                                    // before the question, on Adam's ruling (`FX2-2`, `SVN-A4`).
                                     if (!auto && !this.hasEmergencyStop()
                                         && this.network.getGUI() != null
                                         && this.network.getGUI().confirmRouteConflictMidway(

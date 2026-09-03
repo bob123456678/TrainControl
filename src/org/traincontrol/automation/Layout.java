@@ -1138,25 +1138,53 @@ public class Layout
 
             // AND THE SQUARE RULE, which was only on the other door (SVN-B13).
             //
-            // The loop above asks whether this LOCOMOTIVE already has a home.  `claimHome`, thirty
-            // lines up, asks the other question - whether this SQUARE is already somebody's home -
-            // and says why: two locomotives homed on two copies of one platform is a state nothing
-            // can satisfy.  `sharesSection` sees two active Points on one sensor and Return Home
-            // answers IMPOSSIBLE naming both, for the rest of the session, while the diagram shows
-            // what look like two different stations.
+            // The loop above asks whether this LOCOMOTIVE already has a home.  `claimHome`, some way
+            // up, asks the other question - whether this SQUARE is already somebody's home - and says
+            // why: two locomotives homed on two copies of one platform is a state nothing can satisfy.
             //
             // Assignments walk straight past that.  `parseAuto` writes a home onto the Point itself,
             // so a file - or a setup written before the editor swept - carrying two different
             // locomotives on two copies of one square reached `homeStations` with both intact.  That
             // is the DAY-A1 state, arriving through the one door a person cannot be warned at.
             //
+            // **WHAT THIS CATCHES, EXACTLY, AND WHAT IT DOES NOT (V31-C4).**
+            //
+            // `isSamePlaceAs` is the BLOCK, which `AutonomyBuilder` emits only where one square became
+            // several Points.  So this catches two homes on two copies of ONE square, which is the
+            // state the two doors are meant to agree about, and it is right that it matches
+            // `claimHome` exactly.
+            //
+            // It does NOT catch two homes on two genuinely different squares that happen to share a
+            // detection section.  `HomeStaging.sharesSection` keys on the S88, and the builder's own
+            // comment says why the two cannot be the same key: "genuinely different places share a
+            // sensor on a real layout - a station, its approach guard and a reversing point can be
+            // three Points on one feedback - so the sensor cannot say which Points are one square."
+            // Such a pair still reaches `homeStations` intact and can still make Return Home answer
+            // IMPOSSIBLE naming both.
+            //
+            // That is the open sensor-versus-block question `sharesSection`'s javadoc defers to Adam
+            // under MT-187, and widening this rule to the sensor would settle it by the back door -
+            // and settle it wrongly, by refusing homes on squares that are not one square.  The
+            // earlier version of this comment claimed the sensor case as prevented; it never was.
+            //
             // Dropped with the same warning as the case above, and for the same reason: keeping the
             // loser re-warns on every load and is written back out on every save.
+            //
+            // WHICH copy is named is the FIRST found, not the last (V31-C4).  The message prints a
+            // name, so it should print the same name twice running; without the break it printed
+            // whichever copy `homeStations` happened to iterate to last.  Which of the two ASSIGNMENTS
+            // survives is still decided by iteration order over `points.values()` - the same property
+            // the sibling rule above records as having cost a defect - and this rule does not change
+            // that, it only reports it consistently.
             Point sameSquare = null;
 
             for (Point taken : this.homeStations.values())
             {
-                if (taken.isSamePlaceAs(p)) sameSquare = taken;
+                if (taken.isSamePlaceAs(p))
+                {
+                    sameSquare = taken;
+                    break;
+                }
             }
 
             if (sameSquare != null)
@@ -6178,6 +6206,33 @@ public class Layout
     }
 
     /**
+     * Whether commanding this accessory that way would take protection off an occupied platform.
+     *
+     * **The aspect is half the rule, and leaving it out was `WK3-B1`.**  A protecting signal's only
+     * harmful command is the one that turns protection OFF.  Setting it to danger is doing what the
+     * protection mechanism itself would do, and refusing that was "pure over-strictness" when the
+     * route door did it - found and removed by an earlier review, with the reasoning still written at
+     * `MarklinRoute.heldReason`.
+     *
+     * **Why the caller supplies the direction rather than this reading it.**  The three doors know it
+     * in three different ways and only they can say.  A diagram tile TOGGLES, so its green direction is
+     * `!isStraight()`.  The switch keyboard SETS an absolute state, so its green direction is "the
+     * button is not selected", and reading the accessory's current aspect there would answer about
+     * where it is rather than where it is being sent.  A route knows it from the command it holds.
+     *
+     * Only the question that follows is shared - and it has to be, because three surfaces asking three
+     * versions of it is how this project keeps finding one door guarded and its twin not.
+     *
+     * @param accessory what is being commanded, ignored when null
+     * @param commandingGreen whether the command about to be sent is the one that clears protection
+     * @return true when a person should be asked first
+     */
+    public boolean clearsProtection(Accessory accessory, boolean commandingGreen)
+    {
+        return accessory != null && commandingGreen && protectsAnOccupiedSquare(accessory);
+    }
+
+    /**
      * The measured room a train has behind it if it reverses at the end of this path (TCX-A2).
      *
      * **Pure**, which is what lets the staging planner ask it.  Every other rule in `isPathClear`
@@ -6208,15 +6263,48 @@ public class Layout
 
         if (!ending.isTerminus() && !ending.isReversing()) return null;
 
+        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam, 2026-09-02).
+        //
+        // "If the train crosses the fork through the base, then the track after the switch has to be
+        // long enough to accommodate it.  In other words, between the switch and the station, the
+        // length must be >= length of the train" - and, on whether the direction over the points
+        // changes that, "for the switches, for simplicity, let's use any direction, that way we are
+        // guaranteed to be safe."
+        //
+        // So this walks the route BACKWARDS and stops at the first edge that crosses a switch, adding
+        // only the part of that edge which lies after it.  The last switch is the binding one: a train
+        // that fits between it and the station fits between any earlier switch and the station too,
+        // because those are further away.
+        //
+        // What this replaces summed every segment of the route, which was too permissive by exactly
+        // the track before that switch - and a train longer than the remainder comes to rest standing
+        // on the points, where it blocks every route through them while the model records it only at
+        // the berth.
+        //
+        // An unmeasured edge still answers null, as it always has: this guard acts on measurements and
+        // declines to act on their absence.  Only the edges it actually counts are asked, so a route
+        // whose earlier half is unmeasured is now judgeable where it was not.
         int room = 0;
 
-        for (Edge segment : path)
+        for (int i = path.size() - 1; i >= 0; i--)
         {
+            Edge segment = path.get(i);
+
+            if (segment.crossesASwitch())
+            {
+                // -1 is bounded-but-unmeasured, which is the same answer as an unmeasured edge.
+                if (segment.getRoomAtTheEnd() < 0) return null;
+
+                return room + segment.getRoomAtTheEnd();
+            }
+
             if (segment.getLength() <= 0) return null;
 
             room += segment.getLength();
         }
 
+        // No switch anywhere on the route, so nothing bounds where the train may stand except the
+        // route itself - which is what the whole-route sum always was.
         return room;
     }
 
@@ -7851,6 +7939,17 @@ public class Layout
                     });                    
                 }            
                 
+                // The room after the last switch, where the builder recorded one (Adam, 2026-09-02).
+                //
+                // Read before the length rather than after it, because the length branch below has an
+                // `else` that invalidates the layout and there is no reason for this to sit inside
+                // either arm: it is a separate fact about the same edge, and a file that has one and
+                // not the other is an ordinary older file rather than a broken one.
+                if (edge.has("roomAtTheEnd") && edge.get("roomAtTheEnd") instanceof Integer)
+                {
+                    e.setRoomAtTheEnd(edge.getInt("roomAtTheEnd"));
+                }
+
                 if (edge.has("length"))
                 {
                     if (edge.get("length") instanceof Integer && edge.getInt("length") >= 0)

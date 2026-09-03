@@ -40,6 +40,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
 | [MT-259](#mt-259) | 2026-09-02 | The keyboard, when the window comes to the front | needs test | OB-170 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | needs test | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
+| [MT-261](#mt-261) | 2026-09-02 | Four things the C sweep needs you to choose | needs test | R28-C2, R28-C3, R28-C5, V31-C2 |
 
 Everything else - 231 of 258 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 3 fixed but not yet validated.)
@@ -13437,6 +13438,12 @@ If it comes up focused but a *particular* letter does nothing, that is a differe
 
 *Run against a build after commit bec51e31.*
 
+**Adam, 2026-09-02 (triage).** Does not work.
+
+the entire window is still not in focus, rather the parent app like the python or netbeans remains
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-252"></a>
@@ -13474,6 +13481,10 @@ uses the mouse on the diagram was disturbed.
    behind - that is what the code being changed here was originally added for.
 
 *Run against a build after commit bec51e31.*
+
+**Adam, 2026-09-02 (triage).** Works.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -13621,6 +13632,10 @@ service and it is a station, which always worked.  It is a 2.8.1 upgrade that me
 see MT-257.
 
 *Run against a build after commit 1cfdf370.*
+
+**Adam, 2026-09-02 (triage).** Works.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -13845,6 +13860,12 @@ If it comes up focused but a *particular* letter does nothing, that is a differe
 
 *Run against a build after this commit.*
 
+**Adam, 2026-09-02 (triage).** Does not work.
+
+critical - does not work.  the frame is not active and keystrokes do not go to it.  the previous active application window retains focus.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-260"></a>
@@ -13994,5 +14015,73 @@ second case?
 
 Everything else about the ruling is clear and is what will be built: the measurement is the stretch
 from the turnout to the station, not the whole route.
+
+**Adam, 2026-09-02 (triage).** Works.
+
+confirmed already, be conservative with switches and consider any entry point.
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-261"></a>
+
+### MT-261 - 2026-09-02 - Four things the C sweep needs you to choose
+
+**Disposition:** needs test
+**From:** R28-C2, R28-C3, R28-C5, V31-C2
+
+**Written:** 2026-09-02
+
+You said "fix all the mentioned C's and let me know what input you need".  Everything that had one
+right answer is built.  These four do not: three are capabilities that went with the graph window and
+whose successors are yours to shape, and one is a question about how much a frequently used control
+should interrupt you.
+
+**1. "Copy Outgoing Edge..." has no successor.**  (`R28-C2`.)  At 2.8.1 it duplicated one connection's
+whole configuration - commands, lock edges, length - onto another pair of points.  Most of what it
+copied is derived from the diagram now and needs no copying.  What is still authored, and still has to
+be set one square at a time, is the **tile length**, the **direction restrictions**, the **protecting
+signals**, the **maximum train length** and the **priority**.
+
+> Do you want "copy these settings to another square" on the autonomy editor's right-click menu, and
+> if so which of those five?  Length alone would cover most of the typing; all five would make a
+> platform reproducible in two clicks.
+
+**2. The home assignment is not drawn anywhere.**  (`R28-C3`.)  2.8.1 drew the home locomotive on its
+point in the graph window, behind a **Show home locomotives** toggle.  Nothing in 3.0.0 shows it: the
+diagram has no home badge, the editor has no annotation for it, and the only way to see where a
+locomotive lives is to open the square's menu.  Both dead preferences have been removed; this half is
+a real gap rather than a stale constant.
+
+> A badge on the square, the locomotive's name beside the station's, or only in the autonomy editor?
+> And always on, or behind a toggle the way it used to be?
+
+**3. Two shortcuts lost their keys.**  (`R28-C5`.)  Setting a point's **s88 address** and its **home
+locomotive** both had keyboard shortcuts on the graph window; both survive as right-click menu items
+with no key.  Control+S is taken - it names a square, which you asked for as MT-257 item 4 - and
+Control+G, Control+L and Control+D are the three that show and hide things.
+
+> Which keys?  Control+8 and Control+H would be free and roughly mnemonic, but they are your fingers.
+
+**4. Should the switch keyboard ask about the power?**  (`V31-C2`.)  It now asks the two questions the
+diagram tile and the route door ask - a turnout on a locked path, and a signal about to be set green
+over an occupied platform - and puts the button back if you say no.  What it still does not ask is the
+diagram tile's OTHER question: with the track power off, that tile offers "turn power on and proceed",
+"proceed anyway" or "cancel", because a command sent with the power off does nothing.
+
+> Add that dialog to the keyboard too, or is the keyboard deliberately the quick path where you are
+> expected to know the power is off?
+
+*No build needed to answer these.*
+
+**Adam, 2026-09-02 (triage).** Does not work.
+
+1. this is deprecated since edges are now calculated
+2. add a display option to Preferences -> Autonomy ("show home locomotives").  If set, labels show the home locomotive in white to indicate it's not there (and black/no change if it's there)
+3. set  control+H for home . can we use control+8?  If not, then control+A for address.
+4. yes, route through the same guards
+
+*Run against commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

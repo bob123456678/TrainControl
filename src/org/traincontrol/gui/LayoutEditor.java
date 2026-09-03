@@ -2354,11 +2354,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 if (landing != null)
                 {
-                    landing.forgetTiles(java.util.Collections.singletonList(
+                    // ONLY IF IT CHANGED ANYTHING (SVN-C8).
+                    //
+                    // `delete` was fixed for exactly this and said why: "forgetCaptionsAt returns
+                    // whether it changed anything, and this ignored it - so deleting a square that had
+                    // no caption still wrote the whole setup to disk, every file of it."  Its sibling
+                    // one method away was not swept, and this is the more expensive of the two: it is
+                    // reached on every single-tile paste and every palette drop onto a blank square,
+                    // and the layout folder is under OneDrive.
+                    if (landing.forgetTiles(java.util.Collections.singletonList(
                         new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), getX(destLabel), getY(destLabel))));
-
-                    rememberAutonomy(landing);
+                            layout.getName(), getX(destLabel), getY(destLabel)))))
+                    {
+                        rememberAutonomy(landing);
+                    }
                 }
             }
 

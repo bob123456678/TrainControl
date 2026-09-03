@@ -2006,6 +2006,24 @@ public class AutonomySession
             if (!isTurnAround(tile)) continue;
 
             if (store.getTileLength(tile) <= 0) out.add(tile);
+
+            // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2, 2026-09-02).
+            //
+            // Asking for the reversal square alone left the guard unable to fire: it needs the whole
+            // stretch that bounds the train, and returns "unknown" if any tile in it is unmeasured.
+            // So somebody could clear every notice this raised and still have a guard that judged
+            // nothing - which is what `D24-C7` and `TCX-B2` both said, and what he was shown when he
+            // answered "20 warnings sounds OK".
+            //
+            // WHICH squares comes from ruling 1: the stretch after the LAST switch on the edge
+            // arriving here, because that is the one the room is measured over.  Not every segment of
+            // the run in, which was the question put to him and is more than the rule needs.
+            for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
+            {
+                if (!arriving.getEnd().equals(tile)) continue;
+
+                out.addAll(reducer.unmeasuredAfterTheLastSwitch(arriving));
+            }
         }
 
         return out;
@@ -2032,7 +2050,20 @@ public class AutonomySession
      */
     public java.util.Map<TileKey, String> destinationCopiesWithNoWayOut()
     {
-        return badCopies(true);
+        return badCopies(true, builtForInspection(), null);
+    }
+
+    /**
+     * The same, over a graph somebody has already built (D3F-C6).
+     *
+     * @param built the configuration as JSON, or null to build one here
+     * @param byName the builder's own tile-name map, or null to ask for one here
+     * @return the squares to warn about, mapped to the copy that is at fault
+     */
+    java.util.Map<TileKey, String> destinationCopiesWithNoWayOut(org.json.JSONObject built,
+        java.util.Map<String, TileKey> byName)
+    {
+        return badCopies(true, built, byName);
     }
 
     /**
@@ -2050,7 +2081,20 @@ public class AutonomySession
      */
     public java.util.Map<TileKey, String> destinationCopiesWithNoWayIn()
     {
-        return badCopies(false);
+        return badCopies(false, builtForInspection(), null);
+    }
+
+    /**
+     * The same, over a graph somebody has already built (D3F-C6).
+     *
+     * @param built the configuration as JSON, or null to build one here
+     * @param byName the builder's own tile-name map, or null to ask for one here
+     * @return the squares to warn about, mapped to the copy that is at fault
+     */
+    java.util.Map<TileKey, String> destinationCopiesWithNoWayIn(org.json.JSONObject built,
+        java.util.Map<String, TileKey> byName)
+    {
+        return badCopies(false, built, byName);
     }
 
     /**
@@ -2059,13 +2103,12 @@ public class AutonomySession
      * @param wantNoWayOut true for copies nothing can leave, false for copies nothing can reach
      * @return the squares, mapped to the offending copy's name
      */
-    private java.util.Map<TileKey, String> badCopies(boolean wantNoWayOut)
+    private java.util.Map<TileKey, String> badCopies(boolean wantNoWayOut,
+        org.json.JSONObject built, java.util.Map<String, TileKey> named)
     {
         java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
 
         if (reducer == null) return out;
-
-        org.json.JSONObject built = builtForInspection();
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
@@ -2100,7 +2143,7 @@ public class AutonomySession
         // emitted name is the tile's own, there is no authored name to match, and the check silently
         // found nothing: it reported clean on a fixture built to be broken.  `tilesByName` is what the
         // builder itself uses, so the two cannot disagree about what a Point is called.
-        java.util.Map<String, TileKey> byName = builder(null).tilesByName();
+        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
         java.util.Set<String> good = wantNoWayOut ? hasOut : hasIn;
 
@@ -2181,11 +2224,22 @@ public class AutonomySession
      */
     public java.util.Map<TileKey, String> destinationCopiesReachingNoStation()
     {
+        return destinationCopiesReachingNoStation(builtForInspection(), null);
+    }
+
+    /**
+     * The same, over a graph somebody has already built (D3F-C6).
+     *
+     * @param built the configuration as JSON, or null to build one here
+     * @param named the builder's own tile-name map, or null to ask for one here
+     * @return the squares to warn about, mapped to the copy that is at fault
+     */
+    java.util.Map<TileKey, String> destinationCopiesReachingNoStation(org.json.JSONObject built,
+        java.util.Map<String, TileKey> named)
+    {
         java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
 
         if (reducer == null) return out;
-
-        org.json.JSONObject built = builtForInspection();
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
@@ -2215,7 +2269,7 @@ public class AutonomySession
             onward.get(start).add(e.getString("end"));
         }
 
-        java.util.Map<String, TileKey> byName = builder(null).tilesByName();
+        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
         for (String copy : stations)
         {
@@ -3576,6 +3630,12 @@ public class AutonomySession
             if (!component.getLabel().trim().isEmpty()) covered.put(caption.getKey(), caption.getValue());
         }
 
+        // Built once here rather than three times below (D3F-C6).
+        org.json.JSONObject inspected = builtForInspection();
+
+        java.util.Map<String, TileKey> namesForInspection =
+            inspected == null ? null : builder(null).tilesByName();
+
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
@@ -3590,8 +3650,14 @@ public class AutonomySession
             reversalsWithoutLength(),
             // Copies a train could be sent to and never leave, and copies nothing can reach at all
             // (Adam, 2026-09-02).  Per COPY, which is what every other check here cannot see.
-            destinationCopiesWithNoWayOut(), destinationCopiesWithNoWayIn(),
-            destinationCopiesReachingNoStation());
+            //
+            // ONE BUILD FOR THE THREE OF THEM (D3F-C6).  Each used to build the configuration for
+            // itself and ask the builder for its own name map, so one `check()` was three full graph
+            // builds - on paths whose own comment already reads "four full walks of the railway on the
+            // event thread, every time somebody right-clicks a station".
+            destinationCopiesWithNoWayOut(inspected, namesForInspection),
+            destinationCopiesWithNoWayIn(inspected, namesForInspection),
+            destinationCopiesReachingNoStation(inspected, namesForInspection));
     }
 
     /**

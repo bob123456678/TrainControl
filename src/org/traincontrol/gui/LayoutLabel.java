@@ -380,8 +380,25 @@ public final class LayoutLabel extends JLabel
                                                 return;
                                         }
                                     }
-                                    // Warn user of switching accessories along active routes
-                                    else if (tcUI.getModel().hasAutoLayout() && tcUI.getModel().isAutonomyRunning())
+                                    // ASKED WHETHER OR NOT THE POWER WAS ON (V35-C2).
+                                    //
+                                    // This was the `else` of the dialog above, so with the power off
+                                    // the conflict question was not asked at all - and the power-off
+                                    // gesture is exactly the one somebody makes after an emergency
+                                    // stop, with trains standing where they stopped and autonomy still
+                                    // loaded.  "Turn power on and proceed" then cleared protection at
+                                    // an occupied platform without the platform being mentioned.
+                                    //
+                                    // Two dialogs in a row in that case, which is the honest cost: the
+                                    // second only appears when autonomy is running AND this accessory
+                                    // actually conflicts, and each asks about something different.
+                                    //
+                                    // Remembered, because the worker below re-asks the protection
+                                    // question and must not refuse a click the operator was already
+                                    // warned about and accepted.
+                                    boolean askedAboutProtection = false;
+
+                                    if (tcUI.getModel().hasAutoLayout() && tcUI.getModel().isAutonomyRunning())
                                     {
                                         Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
                                         
@@ -458,6 +475,11 @@ public final class LayoutLabel extends JLabel
                                                 default: // cancel, Escape, or the close box
                                                     return;
                                             }
+
+                                            // Only when the question that was answered was the
+                                            // PROTECTION one.  Agreeing to throw an accessory on an
+                                            // active route says nothing about a platform.
+                                            askedAboutProtection = protecting;
                                         }                                
                                     }
 
@@ -488,6 +510,7 @@ public final class LayoutLabel extends JLabel
                                     // dialogs above have already been answered, on the thread they belong
                                     // on.
                                     final boolean powerOn = powerOnFirst;
+                                    final boolean warnedAboutProtection = askedAboutProtection;
 
                                     submitSwitching(() ->
                                     {
@@ -585,6 +608,38 @@ public final class LayoutLabel extends JLabel
 
                                                 component.execSwitching();
                                             }).start();
+
+                                            return;
+                                        }
+
+                                        // AND ASK AGAIN, HERE, WHERE THE COMMAND ACTUALLY GOES
+                                        // (V32-C5).
+                                        //
+                                        // The question above was answered on the event thread; this
+                                        // runs later, on the single switching thread, after a power-on
+                                        // that waits a further second.  `Layout.refreshOneSignal` can
+                                        // drive the same accessory from an occupancy change in that
+                                        // gap.  The order that matters: the signal was green when it
+                                        // was clicked, so no dialog was shown; a train then arrived
+                                        // and protection set it red; and this command would have set
+                                        // it green again over an occupied platform, with nobody asked
+                                        // anything.
+                                        //
+                                        // Refused rather than re-asked.  Asking from here would hold
+                                        // the one switching thread the whole application shares - the
+                                        // freeze the power-state wait was given a deadline to avoid -
+                                        // and the honest answer to "the situation changed under you"
+                                        // is to not act and say so, leaving the operator to click
+                                        // again if they still mean it.
+                                        //
+                                        // Skipped for a click the operator was already warned about
+                                        // and accepted: they were asked about this exact accessory.
+                                        if (!warnedAboutProtection
+                                            && (aboutToClearProtection(tcUI, c.getAccessory())
+                                                || aboutToClearProtection(tcUI, c.getAccessory2())))
+                                        {
+                                            tcUI.getModel().logf("layout.warnProtectionArrived",
+                                                component.getAddress());
 
                                             return;
                                         }
@@ -1389,9 +1444,9 @@ public final class LayoutLabel extends JLabel
 
         if (!tcUI.getModel().hasAutoLayout() || tcUI.getModel().getAutoLayout() == null) return false;
 
-        // Currently straight means the click is about to TURN it - red, protective, harmless.
-        if (accessory.isStraight()) return false;
-
-        return tcUI.getModel().getAutoLayout().protectsAnOccupiedSquare(accessory);
+        // A tile TOGGLES, so the click is about to command green exactly when the accessory is not
+        // straight now.  The rest of the question - and the reason the aspect is half of it - lives on
+        // `Layout.clearsProtection`, which the switch keyboard asks too (V31-C2).
+        return tcUI.getModel().getAutoLayout().clearsProtection(accessory, !accessory.isStraight());
     }
 }

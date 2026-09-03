@@ -54,6 +54,8 @@ continuation with a `finally` at the statements themselves, a `finally` around t
 
 ### C1 - Clear All Home Locomotives greys on an excluded page, though the action is setup-wide
 
+**FIXED 2026-09-02.**  The finding was overtaken once and then true again one level up.  Both actions moved into a **Bulk Tools** submenu whose items grey on their own counts alone - so the `ignored` term the finding names is gone - but an excluded page answered every right-click with "nothing here is yours to set" and no menu at all, which took the setup-wide action away by a different route.  Such a square now gets a menu carrying Bulk Tools and nothing else: the sentence is still said, and the menu is not empty afterwards.
+
 | | |
 |---|---|
 | **Disposition** | open |
@@ -78,6 +80,8 @@ tooltip (`AutonomyEditorPanel.java:6237-6239`) shows the action's confirmation t
 is disabled.
 
 ### C2 - the protecting-signal question is asked only in the power-on branch
+
+**FIXED 2026-09-02.**  It was the `else` of the power-off dialog and is now its own `if`, so the question is asked whether or not the power was on.  Two dialogs in a row in that case, which is the honest cost: the second only appears when autonomy is running and the accessory actually conflicts.  The finding's own reachability argument is why this was worth doing rather than writing down - power off with trains standing is exactly the state an emergency stop leaves, and "turn power on and proceed" is the gesture that follows it.
 
 | | |
 |---|---|

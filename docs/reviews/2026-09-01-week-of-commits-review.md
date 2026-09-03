@@ -806,6 +806,10 @@ dialog copy need not be.
 
 ### SVN-B15 — the mid-route question parks the rest of the route, stop included, behind an unanswered modal
 
+**HALF OVERTAKEN, HALF FIXED (2026-09-02).**  "Stop included" is no longer true: `FX2-2` added `!this.hasEmergencyStop()` before the question on Adam's ruling that emergency stop should never conflict or prompt, and that method is exactly "this route contains a stop command" - so a route which cuts the power never reaches the question.
+
+What remains is that the speeds, the functions and any chained route wait for the answer, and that is deliberate rather than an oversight: the answer decides whether this route's ironwork is set at all, and running its speeds over turnouts that were not set is the worse of the two.  The defect was the documentation - `View` called the answer one about "the rest of its accessories" - and both it and the call site now say what actually happens.
+
 `MarklinRoute.java:668-670` calls `confirmRouteConflictMidway` **synchronously on the route's own
 thread**, and `TrainControlUI.java:24261` → `askAboutRouteConflict` → `SwingUtilities.invokeAndWait`.
 Everything after the conflicting accessory — `isStop`, `allFunctionsOff`, locomotive speeds, chained
@@ -837,6 +841,8 @@ through `route.conflictingAccessoryAndReason()`. Fix-one-site-miss-the-twin, on 
 C-weight in isolation; B when a hand-driven train is standing at the platform that signal protects.
 
 ### SVN-B17 — AU-C12 is still open, and the Keyboard tab has no guard of any kind
+
+**FIXED 2026-09-02, with `V31-C2` and `AU-C12`, which are the same door.**  The switch keyboard asks both halves of the question the other two doors ask - `getActiveAccs` for a turnout on a locked path, and the shared rule for a signal about to be set green over an occupied platform - and puts the toggle back when the operator says no.  The aspect half moved onto `Layout.clearsProtection`, so each door supplies only which way IT is about to command the accessory: a tile toggles, a keyboard button sets an absolute state.  Pinned by `testEditorSurfaceRules`, which now reads all three doors and the rule itself.
 
 `TrainControlUI.java:19085-19108`:
 
@@ -981,6 +987,8 @@ whose absence caused OB-120. By the author's own rule (`AutonomySession.java:296
 looks load-bearing is worse than none."*
 
 ### SVN-C8 — `execCopy` writes the whole setup to disk on every palette click
+
+**FIXED 2026-09-02.**  `execCopy` honours `forgetTiles`'s return the way `delete` was made to honour `forgetCaptionsAt`'s - the sibling one method away that was not swept.  A palette drop on a blank square now writes nothing.
 
 `LayoutEditor.java:2317-2321` discards the return of `forgetTiles` and calls `rememberAutonomy(landing)`
 unconditionally. `delete` was fixed for exactly this at `:3385-3395`: *"forgetCaptionsAt returns whether

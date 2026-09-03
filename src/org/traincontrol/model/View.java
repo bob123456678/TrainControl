@@ -101,12 +101,27 @@ public interface View
      * doors". The alternative he turned down was letting the route finish and merely logging it,
      * which is the one that can move a switch under a train.
      *
+     * **THIS BLOCKS THE ROUTE, not merely its accessories (SVN-B15).**  It is called on the route's
+     * own thread, and everything after the conflicting accessory - locomotive speeds, functions off,
+     * chained routes - waits for the answer.  The javadoc used to say the answer was about "the rest
+     * of its accessories", which understated it by the width of a route.
+     *
+     * That IS the right behaviour, and it is worth saying why rather than leaving it to be read as an
+     * oversight: the answer decides whether this route's ironwork gets set, and running its speeds
+     * while its turnouts are not set is worse than making the operator answer first.
+     *
+     * **A route carrying an emergency stop never gets here.**  `MarklinRoute` tests
+     * `hasEmergencyStop()` before asking, on Adam's ruling of 2026-09-01 - "emergency stop should
+     * never conflict or prompt" (`FX2-2`, `SVN-A4`) - so the one command that must not wait on a
+     * person does not.
+     *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
      * @param reason the message key the route would have logged for this refusal, so the question
      *  names the right one of the two: a turnout on a locked path, or a signal protecting a
      *  platform with a train parked at it
-     * @return true to set it anyway and finish the route, false to leave the rest of its accessories
+     * @return true to set it anyway and finish the route, false to skip this accessory and every
+     *  later one; in both cases the rest of the route runs once this returns
      */
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 

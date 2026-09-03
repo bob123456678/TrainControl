@@ -235,6 +235,8 @@ Neither is a DECISION site — `LayoutRightclickAutonomyMenu` decides on `canSta
 
 ### V31-C2 — the accessory keyboard is a third hand-switching door and asks neither half
 
+**FIXED 2026-09-02.**  See `SVN-B17` for the fix; this finding is what got it built, because it put the number on it - three surfaces, one unguarded, and the invariant `87b6c10a` stated was "one rule, asked by both doors".
+
 **Status: open. Pre-existing, not introduced by these fixes** — filed because `87b6c10a`'s stated
 invariant is "one rule, asked by both doors", and there are three surfaces that command an accessory
 by hand.
@@ -290,6 +292,8 @@ out of service on his diagram setup, and `D24-B5` changes nothing there. The exp
 import path, which is documented at `AutonomySession.java:519-525` — see `V31-D9`.
 
 ### V31-C4 — the new loader rule keys on the block, the harm it names keys on the sensor
+
+**FIXED 2026-09-02, as the finding asked - the comment rather than the rule.**  The rule matches `claimHome` exactly and that is right; what was wrong was the sentence above it claiming to prevent a state it only partly prevents.  It now says what the block catches, what the sensor case is, and why widening this to the sensor would settle the open MT-187 question by the back door and settle it wrongly - by refusing homes on squares that are not one square.  Both smaller notes are in too: the search `break`s at the first copy so the message names a stable one, and the iteration-order property is written down rather than left to be noticed.
 
 **Status: open.**
 

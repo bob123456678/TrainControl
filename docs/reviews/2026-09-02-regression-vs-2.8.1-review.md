@@ -344,7 +344,11 @@ Readme, the method's own comment, and the message that was kept to explain the m
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | FIXED 2026-09-02 |
+
+**Called once, from `display()`, on every path.**  The finding is exactly right about where it was: `mountAutonomyControls` returns early when there is no local layout folder, and the removal sat after that return - so on that path the item stayed on the menu and pressing it reached a handler whose entire body is `if (true) return;`.  A menu item that does nothing, silently, is worse than one that is gone.
+
+Nothing about the removal depends on autonomy or on which layout is loaded, which is what the javadoc always claimed and what is now true.
 | **Confidence** | confirmed by reading; the reachability half is bounded by two predicates I could not execute, and the entry says so |
 
 A 2.8.1 Windows user could open their diagram in the Märklin editor: TrainControl unpacked a bundled

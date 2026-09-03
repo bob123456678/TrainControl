@@ -327,6 +327,94 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * And how much of that length lies after the last switch, which is the room a train has to stop in
+     * (Adam, 2026-09-02).
+     *
+     * *"Between the switch and the station, the length must be >= length of the train"*, and *"for the
+     * switches, for simplicity, let's use any direction, that way we are guaranteed to be safe."*  So
+     * the reducer measures the stretch beyond the last switch on each edge, and
+     * `Layout.measuredRoomToReverseInto` bounds the train by that rather than by the whole route.
+     *
+     * **The switch tile itself is not counted.**  The rule exists so the train comes to rest clear of
+     * the points; track it would be standing on while fouling them is not room.
+     *
+     * Three states, and all three are asserted here because two of them are easy to collapse into one:
+     * an edge with no switch does not bound anything (`crossesASwitch` false), an edge with one and a
+     * full set of lengths gives a number, and an edge with one and a gap gives `-1` - bounded, but
+     * unknown.  Reading the third as zero would refuse every train on an unmeasured layout.
+     *
+     * MUTATION this catches: counting the switch tile (the room becomes 16 rather than 9); walking
+     * forwards instead of backwards, which finds the FIRST switch; and returning 0 rather than -1 for
+     * the unmeasured case.
+     */
+    @Test
+    public void testTheRoomAfterTheLastSwitchIsMeasuredSeparately() throws IOException
+    {
+        // sensor - track - SWITCH - track - track - sensor, with the switch's branch going somewhere
+        // so that it is a real fork rather than a dead end.
+        LayoutDiagram page = page("main", 9, 4);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        add(page, componentType.SWITCH_LEFT, 3, 1, 3, 7);
+        wire(page, 3, 1, 7, Accessory.accessoryType.SWITCH);
+        straight(page, 4, 1);
+        straight(page, 5, 1);
+        feedback(page, 6, 1, 12);
+        feedbackNS(page, 3, 0, 13);
+
+        Map<TileKey, Integer> lengths = new HashMap<>();
+        lengths.put(key("main", 2, 1), 5);
+        lengths.put(key("main", 3, 1), 7);   // the switch itself, which must NOT be counted
+        lengths.put(key("main", 4, 1), 3);
+        lengths.put(key("main", 5, 1), 4);
+        lengths.put(key("main", 6, 1), 2);   // the far endpoint, which IS part of the edge's length
+
+        GraphReducer reducer = reduce(graph(page), authored(lengths, null, null));
+
+        List<ReducedEdge> through = edgesBetween(reducer, key("main", 1, 1), key("main", 6, 1));
+
+        assertEquals(through.size(), 1, "the fixture did not produce the one edge this is about:\n"
+            + describe(reducer));
+
+        ReducedEdge edge = through.get(0);
+
+        assertEquals(edge.getLength(), 21,
+            "the whole edge is 5 + 7 + 3 + 4 + 2; this is the number the old rule bounded trains by");
+
+        assertTrue(edge.crossesASwitch(),
+            "an edge that runs through a switch says it does not, so nothing bounds where a train may "
+            + "come to rest on it");
+
+        assertEquals(edge.getRoomAtTheEnd(), 9,
+            "the room beyond the switch is 3 + 4 + 2.  Counting the switch tile gives 16, and finding "
+            + "the wrong switch or none gives the whole 21");
+
+        // AN EDGE WITH NO SWITCH does not bound anything, which is a different answer from zero.
+        LayoutDiagram plain = page("plain", 6, 3);
+        feedback(plain, 1, 1, 21);
+        straight(plain, 2, 1);
+        feedback(plain, 3, 1, 22);
+
+        ReducedEdge noSwitch = edgesBetween(reduce(graph(plain), null),
+            key("plain", 1, 1), key("plain", 3, 1)).get(0);
+
+        assertFalse(noSwitch.crossesASwitch(),
+            "an edge of plain track claims to cross a switch, so the guard would stop walking back at "
+            + "it and bound the train by a stretch that nothing divides");
+
+        // BOUNDED BUT UNMEASURED, which must not read as zero room.
+        Map<TileKey, Integer> gap = new HashMap<>(lengths);
+        gap.remove(key("main", 4, 1));
+
+        ReducedEdge unmeasured = edgesBetween(reduce(graph(page), authored(gap, null, null)),
+            key("main", 1, 1), key("main", 6, 1)).get(0);
+
+        assertEquals(unmeasured.getRoomAtTheEnd(), -1,
+            "a stretch with an unmeasured tile in it came back as a number, so the guard would judge "
+            + "a train against a total that is missing a piece - an unknown length is not a zero one");
+    }
+
+    /**
      * Two edges that share a tile are the same piece of railway and must not run at once.
      */
     @Test

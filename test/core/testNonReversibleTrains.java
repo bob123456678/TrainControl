@@ -309,10 +309,15 @@ public class testNonReversibleTrains
     }
 
     /**
-     * The room is the WHOLE run in, not the last stretch of it (Adam, 2026-09-01).
+     * With no switch on the route, the room is the WHOLE run in (Adam, 2026-09-01).
      *
      * "Do you sum the track segments leading up to it?  if they are long enough, then we are good.  if
      * segments < train length, then we can't reverse over the switch."
+     *
+     * **NARROWED on 2026-09-02, and this test is the half that survived.**  He ruled that the
+     * measurement is "between the switch and the station", so the whole-route sum now applies only
+     * where the route crosses no switch at all - which is this fixture, whose edges are hand-built and
+     * carry no switch.  `testTheRoomIsMeasuredFromTheLastSwitch` is the other half.
      *
      * The first version of the guard added the last two edges, reading "the station track plus switch
      * track" as a count of segments rather than as an example of them - which is stricter than his
@@ -359,6 +364,95 @@ public class testNonReversibleTrains
             assertTrue(layout.isPathClear(longPath(layout), loc, false),
                 "a path with an unmeasured segment was refused on a total that cannot be worked out - "
                 + "an unknown length is not a zero one, and the editor's notice is what asks for it");
+        }
+        finally
+        {
+            loc.setReversible(was);
+            loc.setTrainLength(wasLength == null ? 0 : wasLength);
+        }
+    }
+
+    /**
+     * With a switch on the route, the room is only the track after it (Adam, 2026-09-02).
+     *
+     * He was asked whether a train longer than berth-plus-switch may still come to rest across the
+     * switch behind its berth when the run in as a whole is long enough, and answered: *"it depends on
+     * the direction.  if the train crosses the fork through the base, then the track after the switch
+     * has to be long enough to accommodate it.  in other words, between the switch and the station,
+     * the length must be >= length of the train."*  Asked which crossings that covers, since on a
+     * simple turnout every route touches the toe: *"for the switches, for simplicity, let's use any
+     * direction, that way we are guaranteed to be safe."*
+     *
+     * So the binding constraint is the LAST switch before the destination, whichever way the route
+     * crosses it.  A train longer than what is left beyond it stands on the points, blocking every
+     * route through them, while the model records it only at the berth.
+     *
+     * **The same fixture as the test above, and that is the point.**  Nine units of run in, four of
+     * them after the switch.  A train of eight passed the old rule and fails this one; nothing about
+     * the layout changed except that the last edge now says where its switch is.
+     *
+     * MUTATION this catches: summing the whole path again - the first assertion passes a train of
+     * eight into four units of room.  Also: counting the switch tile itself, which would make the
+     * third assertion accept a train that does not fit.
+     */
+    @Test
+    public void testTheRoomIsMeasuredFromTheLastSwitch() throws Exception
+    {
+        Layout layout = longerBackingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+        Integer wasLength = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(false);
+
+            layout.getEdge("LONG_a", "LONG_b").setLength(2);
+            layout.getEdge("LONG_b", "LONG_mid").setLength(3);
+            layout.getEdge("LONG_mid", "LONG_end").setLength(4);
+
+            // The last edge crosses a switch, and four of its units lie beyond it.  This is what the
+            // reducer records from the diagram; here it is set by hand, because this test is about
+            // what the guard does with it.
+            layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(4);
+
+            loc.setTrainLength(8);
+
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "a train of eight was let into four units of track beyond the switch because the "
+                + "whole nine-unit run in was counted - which is the rule Adam narrowed: \"between "
+                + "the switch and the station, the length must be >= length of the train\"");
+
+            loc.setTrainLength(4);
+
+            assertTrue(layout.isPathClear(longPath(layout), loc, false),
+                "a train of four was refused four units of room, so the measurement is short of the "
+                + "stretch it is meant to be");
+
+            loc.setTrainLength(5);
+
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "a train of five was accepted into four units of room");
+
+            // BOUNDED BUT UNMEASURED is not the same as unbounded, and it is not zero either.
+            layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(-1);
+
+            assertTrue(layout.isPathClear(longPath(layout), loc, false),
+                "a route whose stretch beyond the switch is unmeasured was judged anyway - an unknown "
+                + "length is not a short one, and the editor's notice is what asks for it");
+
+            // AND AN EARLIER UNMEASURED EDGE NO LONGER MATTERS, which is a widening rather than a
+            // narrowing: the guard counts only the edges it actually uses.
+            layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(4);
+            layout.getEdge("LONG_a", "LONG_b").setLength(0);
+
+            loc.setTrainLength(5);
+
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "an unmeasured edge at the far end of the route made the room unknowable, though "
+                + "nothing beyond the last switch depends on it");
         }
         finally
         {

@@ -301,6 +301,8 @@ because references like this get followed.
 
 ### D3F-C6 - `check()` now builds the configuration three times per call, on call paths already documented as expensive
 
+**FIXED 2026-09-02.**  `check()` builds the configuration once and hands it, with the builder's name map, to all three copy checks.  The public entry points still build their own, because a caller asking one question should not have to know that.  Three builds and three name maps per `check()` become one of each; the pre-existing four walks the finding quotes are untouched and remain on the deferred list.
+
 **Status: open, unmeasured.** Filed as a cost observation for the deferred-optimizations list, not as
 a defect with a demonstrated symptom.
 

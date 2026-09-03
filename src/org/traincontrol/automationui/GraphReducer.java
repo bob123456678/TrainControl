@@ -141,6 +141,17 @@ public class GraphReducer
         private final int length;
 
         /**
+         * The track from the last SWITCH on this edge to its far end, which is the room a train has to
+         * stop in without standing on the points (Adam's ruling, 2026-09-02).
+         *
+         * `Integer.MIN_VALUE` when this edge crosses no switch at all, which is not the same thing as
+         * zero and not the same thing as unmeasured: such an edge does not bound the room and the
+         * caller keeps walking back through the route.  `-1` when it does cross one and some tile in
+         * the stretch after it has no length recorded - bounded, but unknown.
+         */
+        private final int roomAtTheEnd;
+
+        /**
          * Which side of the start tile this edge leaves by, and which side of the end tile it arrives
          * at.  Null for a move through a portal, which has no side on the grid.
          *
@@ -153,7 +164,8 @@ public class GraphReducer
         private final Side entrySide;
 
         ReducedEdge(TileKey start, TileKey end, List<TileStep> path,
-            Map<String, accessorySetting> commands, int length, Side exitSide, Side entrySide)
+            Map<String, accessorySetting> commands, int length, Side exitSide, Side entrySide,
+            int roomAtTheEnd)
         {
             this.start = start;
             this.end = end;
@@ -162,6 +174,24 @@ public class GraphReducer
             this.length = length;
             this.exitSide = exitSide;
             this.entrySide = entrySide;
+            this.roomAtTheEnd = roomAtTheEnd;
+        }
+
+        /**
+         * @return the room after the last switch on this edge; `Integer.MIN_VALUE` when it crosses
+         *  none, `-1` when it crosses one and the stretch is not fully measured
+         */
+        public int getRoomAtTheEnd()
+        {
+            return roomAtTheEnd;
+        }
+
+        /**
+         * @return whether this edge crosses a switch, and so bounds where a train may come to rest
+         */
+        public boolean crossesASwitch()
+        {
+            return roomAtTheEnd != Integer.MIN_VALUE;
         }
 
         /**
@@ -944,7 +974,7 @@ public class GraphReducer
 
             ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),
                 new LinkedHashMap<>(commands), sumLength(path) + lengthOf(tile),
-                exitSide, landing.getEntrySide());
+                exitSide, landing.getEntrySide(), roomAfterTheLastSwitch(path, tile));
 
             edges.add(edge);
             edgeByPair.put(pair, edge);
@@ -1047,6 +1077,93 @@ public class GraphReducer
     private int lengthOf(TileKey tile)
     {
         return Math.max(0, authored.getTileLength(tile));
+    }
+
+    /**
+     * The track between the last switch on this edge and the square it ends at, endpoint included.
+     *
+     * Adam's ruling of 2026-09-02: the room a train needs is measured "between the switch and the
+     * station", not over the whole route - and *"for the switches, for simplicity, let's use any
+     * direction, that way we are guaranteed to be safe"*, so which way the path crosses the points
+     * does not enter into it.
+     *
+     * The switch tile itself is NOT counted.  The whole point of the rule is that the train comes to
+     * rest clear of the points; track the train would be standing on while fouling them is not room.
+     *
+     * Walks backwards and stops at the first switch, because that is the binding one: a train that
+     * fits between the last switch and the station also fits between any earlier switch and it.
+     *
+     * @param path the tiles between the two Points, endpoints excluded
+     * @param end the square the edge arrives at, whose own length is part of the room
+     * @return the measured room, `-1` when a tile in that stretch has no length, or
+     *  `Integer.MIN_VALUE` when this edge crosses no switch at all
+     */
+    private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
+    {
+        int atTheEnd = authored.getTileLength(end);
+
+        int room = Math.max(0, atTheEnd);
+
+        boolean measured = atTheEnd > 0;
+
+        for (int i = path.size() - 1; i >= 0; i--)
+        {
+            TileKey tile = path.get(i).getTile();
+
+            LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+            if (component != null && component.isSwitch())
+            {
+                return measured ? room : -1;
+            }
+
+            int here = authored.getTileLength(tile);
+
+            if (here > 0) room += here; else measured = false;
+        }
+
+        return Integer.MIN_VALUE;
+    }
+
+    /**
+     * The squares in an edge's bounding stretch that nobody has measured (Adam's ruling 2, 2026-09-02).
+     *
+     * The mirror of `roomAfterTheLastSwitch`: that one adds the lengths up, this one names the tiles
+     * that have none, so the editor can ask for exactly what the guard needs and no more.
+     *
+     * The switch tile itself is not asked for - it is not part of the room - and the far endpoint is,
+     * because it is where the train comes to rest.
+     *
+     * An edge that crosses no switch has its WHOLE length asked for and the walk stops at its start.
+     * Strictly the bounding stretch then runs back through earlier edges, but asking for a whole route
+     * is a nag rather than a notice, and the guard declines to judge what it cannot measure - so the
+     * cost of stopping here is a guard that stays quiet, not one that gets it wrong.
+     *
+     * @param edge the edge arriving at the square trains turn round on
+     * @return the unmeasured tiles, in no particular order, empty when the stretch is fully measured
+     */
+    public List<TileKey> unmeasuredAfterTheLastSwitch(ReducedEdge edge)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        if (edge == null) return out;
+
+        if (authored.getTileLength(edge.getEnd()) <= 0) out.add(edge.getEnd());
+
+        List<TileStep> path = edge.getPath();
+
+        for (int i = path.size() - 1; i >= 0; i--)
+        {
+            TileKey tile = path.get(i).getTile();
+
+            LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+            if (component != null && component.isSwitch()) return out;
+
+            if (authored.getTileLength(tile) <= 0) out.add(tile);
+        }
+
+        return out;
     }
 
     private int sumLength(List<TileStep> path)

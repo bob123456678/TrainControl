@@ -243,9 +243,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
-    public static final String HIDE_REVERSING_EDGES_PREF = "HideReversingEdges";
     public static final String SHOW_STATION_LENGTH = "ShowStationLength";
-    public static final String SHOW_HOME_LOCOMOTIVES = "ShowHomeLocomotives";
+
+    // HideReversingEdges and ShowHomeLocomotives are gone (R28-C3).
+    //
+    // Both were read and written by the graph window - declutter and a home badge - and both were the
+    // only occurrence of their own name in the tree once that window was deleted, so the stored values
+    // sat unread and the constants named settings nobody could reach.  The values are left in the
+    // preferences store rather than cleared: they cost nothing there, and clearing a key is the one
+    // action that cannot be undone if the setting ever comes back.
+    //
+    // The DECLUTTER goes with the window it decluttered.  Drawing the home assignment does not: no
+    // surface in 3.0.0 shows it, which is a real gap and is a question for Adam rather than a constant
+    // to keep warm.
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
 
@@ -3206,6 +3216,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * item is still built and still added by initComponents, and is taken off again immediately
      * afterwards.  Say the word and it comes out of the .form properly.
      *
+     * **CALLED ONCE, FROM THE WINDOW'S OWN SET-UP (RG3-C3).**  It used to be called from
+     * `mountAutonomyControls`, after the early return taken when there is no local layout folder - so
+     * on that path the item stayed on the menu, and pressing it reached a handler whose entire body is
+     * `if (true) return;`.  A menu item that does nothing, silently, is worse than one that is gone.
+     *
+     * Nothing about this removal depends on autonomy or on which layout is loaded.  The executable is
+     * not shipped on any path, so the item should not be on the menu on any path either - which is
+     * what the javadoc always claimed and what is now true.
+     *
      * What it did: unpacked a bundled Windows executable into the layout folder and ran it, so that
      * a diagram could be drawn in the tool the Central Station's own files came from.  The diagram
      * editor in this window does that now, on every platform, without shipping a hundred and fifty
@@ -3407,8 +3426,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // place those actions live, because they are a few hundred lines of dialogs and file handling
         // that gain nothing from being copied into a menu class.
         mountAutonomyMenu();
-
-        removeLegacyEditorItem();
 
         removeEditCurrentPageItem();
 
@@ -7035,6 +7052,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
                 
         restoreLayoutTitles();
+
+        // On every path, not only the one with a local layout folder (RG3-C3).
+        removeLegacyEditorItem();
 
         takeTheKeyboard();
     }
@@ -19247,9 +19267,85 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.switchKeyboard(this.keyboardNumber - 1);
     }//GEN-LAST:event_PrevKeyboardActionPerformed
 
+    /**
+     * Whether a click on the switch keyboard may go to the railway, asking the operator when it may not
+     * (SVN-B17, V31-C2, AU-C12).
+     *
+     * **This surface asked nothing at all.**  It went straight to `setAccessoryState`, which goes
+     * straight to `turn()`/`straight()` - no autonomy check, no confirmation, no log line - while the
+     * diagram tile beside it and the route door both ask two questions before commanding the same
+     * accessory.  Filed by the author in `6b6e6bd4`'s own message and open since; recorded again when
+     * this week added two more guarded doors without closing it, which left the unguarded one as the
+     * odd one out rather than the norm.
+     *
+     * The two questions are the ones the other doors ask, and they are asked of the same code:
+     * `getActiveAccs` for a turnout on a path a train is running over, and `Layout.clearsProtection`
+     * for a signal about to be set green over a platform somebody is standing at.
+     *
+     * **The direction this door supplies is the button's, not the accessory's.**  A keyboard button
+     * SETS an absolute state - selected is thrown, clear is straight - so the green command is the one
+     * that leaves it clear.  Reading the accessory's own aspect here would answer about where it is
+     * rather than where it is being sent.
+     *
+     * Nothing is asked when autonomy is not running, which is the same gate the tile uses: with no
+     * layout there are no locked paths and no protected platforms.
+     *
+     * @param address the accessory address on the button
+     * @param button the button, put back when the operator says no
+     * @return true to let the command through
+     */
+    private boolean keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)
+    {
+        if (!this.model.hasAutoLayout() || !this.model.isAutonomyRunning()) return true;
+
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+        if (layout == null) return true;
+
+        org.traincontrol.base.Accessory accessory =
+            this.model.getAccessoryByAddressIfPresent(address, getKeyboardProtocol());
+
+        if (accessory == null) return true;
+
+        boolean onAPath = layout.getActiveAccs().contains(accessory);
+
+        // Clear, not selected, is the green one - see the javadoc.
+        boolean protecting = layout.clearsProtection(accessory, !button.isSelected());
+
+        if (!onAPath && !protecting) return true;
+
+        Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
+
+        int choice = javax.swing.JOptionPane.showOptionDialog(this,
+            protecting
+                ? I18n.t("layout.ui.confirmAccessoryProtecting")
+                : I18n.t("layout.ui.confirmAccessoryActiveRoute"),
+            I18n.t("layout.ui.dialogPleaseConfirm"),
+            javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
+            javax.swing.JOptionPane.QUESTION_MESSAGE,
+            null, options, options[0]);
+
+        if (choice == 0) return true;
+
+        // Anything that is not OK is a no, Escape and the close box included - the same reading the
+        // tile's dialogs were corrected to, where -1 used to fall through to "proceed".
+        //
+        // The toggle has already flipped by the time an ActionEvent arrives, so refusing means putting
+        // it back.  setSelected fires no ActionEvent, so this cannot re-enter the handler.
+        button.setSelected(!button.isSelected());
+
+        return false;
+    }
+
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         int switchId = Integer.parseInt(b.getText());
+
+        // THE THIRD HAND-SWITCHING DOOR NOW ASKS WHAT THE OTHER TWO ASK (SVN-B17, V31-C2, AU-C12).
+        //
+        // Before the button is repainted, because a refusal has to leave it as it was.  Answering
+        // false has already put the toggle back.
+        if (!keyboardSwitchAllowed(switchId, b)) return;
 
         if (b.isSelected())
         {

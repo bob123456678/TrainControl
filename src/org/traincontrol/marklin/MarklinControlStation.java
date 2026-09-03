@@ -2985,6 +2985,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // every route; deleting left the name behind.
             for (MarklinRoute r : this.getRoutes())
             {
+                // WHICH ROUTES LOSE COMMANDS, by name, before they lose them (Adam, 2026-09-02).
+                //
+                // "Say how many in the popup and which in the log."  The count has been in the
+                // confirmation since 2026-09-01; this is the other half, and it is here rather than at
+                // the dialog because this is where the commands actually go - so a delete from
+                // anywhere is recorded, not only the one door that asks first.
+                //
+                // Asked BEFORE `locomotiveDeleted`, which is what removes them: afterwards there is
+                // nothing left to name.
+                boolean drove = r.commandsDrive(name);
+
                 // A condition naming the deleted locomotive is left in place on purpose - see the note
                 // on locomotiveDeleted - so it is said out loud instead.  That route will not fire
                 // again until somebody edits it, and a route that has silently stopped firing is
@@ -2992,6 +3003,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (r.locomotiveDeleted(name))
                 {
                     this.logf("route.warnConditionNamesDeletedLocomotive", r.getName(), name);
+                }
+
+                if (drove)
+                {
+                    this.logf("route.warnCommandsRemovedForDeletedLocomotive", r.getName(), name);
                 }
             }
         }

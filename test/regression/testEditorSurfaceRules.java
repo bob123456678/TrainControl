@@ -617,9 +617,18 @@ public class testEditorSurfaceRules
      * green on the same window was not.  The second is the one `getActiveAccs` cannot see, because a
      * protecting signal is driven by occupancy rather than by an active path.
      *
-     * The rule lives on `Layout` now so both can ask it.  This pins that both do.
+     * The rule lives on `Layout` now so every door can ask it, and there are THREE of them: the route,
+     * the diagram tile, and the switch keyboard, which asked nothing at all until `V31-C2` (`SVN-B17`,
+     * `AU-C12`).  This pins that all three do.
      *
-     * MUTATION: deleting either call to `protectsAnOccupiedSquare` fails this.
+     * The aspect half moved with the rule.  `Layout.clearsProtection(accessory, commandingGreen)`
+     * carries it, and each door supplies only which way IT is about to command the accessory - a tile
+     * toggles, so its green direction is `!isStraight()`; a keyboard button sets an absolute state, so
+     * its green direction is "the button is not selected".  Reading the aspect at the keyboard would
+     * answer about where the accessory is rather than where it is being sent.
+     *
+     * MUTATION: deleting either call to `aboutToClearProtection`, dropping `commandingGreen` from the
+     * rule, or taking the question off any one of the three doors fails this.
      */
     @Test
     public void testSwitchingAnAccessoryByHandAsksAboutProtectingSignals() throws Exception
@@ -639,7 +648,7 @@ public class testEditorSurfaceRules
             "the diagram's accessory tile does not ask about BOTH accessories of the tile, so a "
             + "three-way's second drive can be switched with no warning");
 
-        assertTrue(label.contains("if (accessory.isStraight()) return false;"),
+        assertTrue(label.contains("clearsProtection(accessory, !accessory.isStraight())"),
             "the tile's protecting-signal question does not ask which way the click will throw the "
             + "signal.  Setting a protecting signal to RED is the protective act, and the route door "
             + "explicitly permits it - a warning here is the over-strictness that door had removed");
@@ -655,9 +664,9 @@ public class testEditorSurfaceRules
 
         assertFalse(helper.isEmpty(), "aboutToClearProtection has moved or been renamed");
 
-        assertTrue(helper.contains("protectsAnOccupiedSquare(accessory)"),
-            "the tile's protecting-signal helper no longer asks the shared rule at all, so the two "
-            + "doors are back to different definitions of one question.  Body: " + helper);
+        assertTrue(helper.contains("clearsProtection(accessory"),
+            "the tile's protecting-signal helper no longer asks the shared rule at all, so the doors "
+            + "are back to different definitions of one question.  Body: " + helper);
 
         String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);
@@ -670,7 +679,44 @@ public class testEditorSurfaceRules
             "src/org/traincontrol/automation/Layout.java")), java.nio.charset.StandardCharsets.UTF_8);
 
         assertTrue(layout.contains("public boolean protectsAnOccupiedSquare(Accessory accessory)"),
-            "the rule both doors delegate to is not on Layout, so one of them is carrying a copy");
+            "the rule the doors delegate to is not on Layout, so one of them is carrying a copy");
+
+        // AND THE ASPECT IS PART OF THE RULE, not of one caller (V31-C2).
+        //
+        // It used to be a line in the tile's own helper, which is why the keyboard could not ask it
+        // without copying it.  Dropping the direction from the signature would let every door warn
+        // about a click that sets a signal to danger - the over-strictness the route door had removed.
+        String rule = withoutComments(bodyOf(layout,
+            "public boolean clearsProtection(Accessory accessory, boolean commandingGreen)"));
+
+        assertFalse(rule.isEmpty(), "Layout.clearsProtection has moved or been renamed");
+
+        assertTrue(rule.contains("commandingGreen") && rule.contains("protectsAnOccupiedSquare"),
+            "the shared rule no longer asks both halves - which way the accessory is being commanded, "
+            + "and whether it protects somewhere occupied.  Body: " + rule);
+
+        // AND THE THIRD DOOR (SVN-B17, V31-C2, AU-C12).
+        //
+        // The switch keyboard went straight to setAccessoryState with no check of any kind, while the
+        // two doors above asked two questions each.  It is the door most likely to be forgotten again,
+        // because it is the one that never had a guard to begin with.
+        String window = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String keyboard = withoutComments(bodyOf(window,
+            "private boolean keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)"));
+
+        assertFalse(keyboard.isEmpty(),
+            "the switch keyboard has no guard at all - a turnout on a locked path can be thrown from "
+            + "it under a running train, which is AU-A2 through the one door that never asked");
+
+        assertTrue(keyboard.contains("clearsProtection") && keyboard.contains("getActiveAccs"),
+            "the switch keyboard asks fewer than both halves of the question the other two doors ask.  "
+            + "Body: " + keyboard);
+
+        assertTrue(withoutComments(window).contains("keyboardSwitchAllowed(switchId, b)"),
+            "the switch keyboard's guard exists and nothing calls it, which is the shape of a fix that "
+            + "was written and not wired");
     }
 
     /**

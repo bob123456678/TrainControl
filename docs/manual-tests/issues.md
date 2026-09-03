@@ -358,6 +358,15 @@ search a point name, the right page is opened and the tile highlighted.
 
 when other page points are clicked from warnings, also highlight it after the editor window switch
 
+### FR-057 - 2026-09-02 - add coordinates to autonomy editor
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-02 19:59  
+**Build:** commit 409d4ce8, build\classes, compiled 02 Sep 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+coordinates are referenced in issues but not visible to the user.  add a grid around the diagram
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

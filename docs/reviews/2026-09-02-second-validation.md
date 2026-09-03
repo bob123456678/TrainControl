@@ -380,6 +380,8 @@ reason: the repeats guard against the neighbour order mattering, and it is asser
 
 ### V32-C5 - the aspect is read on one thread and acted on by another
 
+**FIXED 2026-09-02.**  The question is asked again on the switching thread, immediately before the command goes out, and the click is refused with a log line if protection arrived in the gap.  Refused rather than re-asked: asking from there would hold the one switching thread the whole application shares, which is the freeze the power-state wait was given a deadline to avoid.  A click the operator was already warned about and accepted is let through, because they were asked about that exact accessory.
+
 The guard runs on the event thread inside `invokeLater` (`LayoutLabel.java:341`, 415-417). The command
 runs later, on the single-thread switching pool (`LayoutLabel.java:482`, 582), and `doSwitch()` reads
 `isStraight()` again at that moment. Between the two, `Layout.refreshOneSignal` can drive the same

@@ -1053,6 +1053,18 @@ public class AutonomyBuilder
             json.put("end", pair[1]);
             json.put("length", edge.getLength());
 
+            // AND HOW MUCH OF IT IS AFTER THE LAST SWITCH (Adam's ruling, 2026-09-02).
+            //
+            // "Between the switch and the station, the length must be >= length of the train", and
+            // "for the switches, for simplicity, let's use any direction, that way we are guaranteed
+            // to be safe".  The reducer measures that stretch because it is the only part of this that
+            // walks tiles; runtime `Edge` knows a length and nothing about what it is made of.
+            //
+            // Written only where the edge crosses a switch.  An edge that crosses none does not bound
+            // where a train may stop, and the guard walks back past it - so the key being ABSENT is
+            // meaningful and is not the same as a zero.
+            if (edge.crossesASwitch()) json.put("roomAtTheEnd", edge.getRoomAtTheEnd());
+
             JSONArray commands = new JSONArray();
 
             List<String> accessoryNames = new ArrayList<>(edge.getCommands().keySet());

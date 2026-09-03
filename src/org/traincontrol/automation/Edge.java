@@ -43,6 +43,21 @@ public class Edge
     private final Map<String, Accessory.accessorySetting> configCommands;
     private int length = 0;
 
+    /**
+     * The track between the last switch on this edge and the Point it ends at (Adam, 2026-09-02).
+     *
+     * `Integer.MIN_VALUE` - the default - when this edge crosses no switch, which is what a
+     * hand-written configuration and every pre-3.0.0 file will leave it as.  Such an edge does not
+     * bound where a train may come to rest, and `Layout.measuredRoomToReverseInto` walks back past it.
+     *
+     * `-1` when it does cross one and some tile in the stretch after it has no length recorded: the
+     * room is bounded but unknown, and unknown is the case this guard has always declined to act on.
+     *
+     * Not authored anywhere.  It is derived from the diagram by `GraphReducer`, which is the only part
+     * of the system that knows which tiles an edge is made of.
+     */
+    private int roomAtTheEnd = Integer.MIN_VALUE;
+
     // A list of edges that should be locked whenever this edge is locked
     // This is useful if the layout contains crossings that cannot otherwise be modeled as a graph edge
     private final List<Edge> lockEdges;
@@ -291,6 +306,33 @@ public class Edge
     }
 
     /**
+     * @return the room after the last switch on this edge; `Integer.MIN_VALUE` when it crosses none,
+     *  `-1` when it crosses one and the stretch is not fully measured
+     */
+    public int getRoomAtTheEnd()
+    {
+        return this.roomAtTheEnd;
+    }
+
+    /**
+     * @return whether this edge crosses a switch, and so bounds where a train may come to rest
+     */
+    public boolean crossesASwitch()
+    {
+        return this.roomAtTheEnd != Integer.MIN_VALUE;
+    }
+
+    /**
+     * Records the room measured by the reducer.
+     *
+     * @param roomAtTheEnd the measured stretch, `-1` for bounded-but-unmeasured
+     */
+    public void setRoomAtTheEnd(int roomAtTheEnd)
+    {
+        this.roomAtTheEnd = roomAtTheEnd;
+    }
+
+    /**
      * Sets the length of the edge.  Used in path validity calculation
      * @param length 
      */
@@ -529,6 +571,10 @@ public class Edge
         jsonObj.put("start", this.start.getName());
         jsonObj.put("end", this.end.getName());
         jsonObj.put("length", this.getLength());
+
+        // Only when there is one - see the field.  An absent key means "crosses no switch", which is
+        // what every hand-written and pre-3.0.0 configuration should read as.
+        if (this.crossesASwitch()) jsonObj.put("roomAtTheEnd", this.getRoomAtTheEnd());
 
         if (!commandList.isEmpty())
         {

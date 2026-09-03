@@ -903,10 +903,25 @@ public class AutonomyEditorPanel extends JPanel
 
         // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu
         // whose every item would be a no-op.
+        //
+        // EXCEPT BULK TOOLS, which are not about this square (V35-C1).
+        //
+        // Both actions under that heading are about the whole setup, and "ignored" includes *the page
+        // being excluded from autonomy* - so on such a page every square answered this way and Clear
+        // All Home Locomotives could not be reached at all, though its subject is not that page and
+        // its own guard does not ask about one.  Affordance stricter than guard, which is the shape
+        // three findings were spent removing this round.
+        //
+        // The sentence still gets said.  What changes is that the menu is not empty afterwards.
         if (isIgnored(tile))
         {
             say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
-            return null;
+
+            javax.swing.JPopupMenu only = new javax.swing.JPopupMenu();
+
+            only.add(bulkTools());
+
+            return only;
         }
 
         // Right-clicking anywhere in a run opens the run's own menu, so the greyed tiles are not dead
@@ -1562,36 +1577,7 @@ public class AutonomyEditorPanel extends JPanel
         // for both, rather than one each in two different surfaces.
         menu.addSeparator();
 
-        javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
-
-        bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
-
-        int placed = session == null ? 0 : session.tilesWithALocomotive().size();
-        int homed = session == null ? 0 : session.tilesWithAHome().size();
-
-        // Each greys itself on its own count, which is the guard's own question - the two actions are
-        // independent and a setup can easily have one and not the other.
-        javax.swing.JMenuItem clearLocs = item(
-            I18n.f("autolayout.ui.menuClearLocomotives", placed), () -> clearAllPlacements());
-
-        clearLocs.setEnabled(placed > 0);
-        clearLocs.setToolTipText(wrapped(placed > 0
-            ? I18n.t("autolayout.ui.confirmClearLocomotives")
-            : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
-
-        bulk.add(clearLocs);
-
-        javax.swing.JMenuItem clearHomesItem = item(
-            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed), () -> clearAllHomes());
-
-        clearHomesItem.setEnabled(homed > 0);
-        clearHomesItem.setToolTipText(wrapped(homed > 0
-            ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
-            : I18n.t("autosetup.ui.infoNoHomesToClear")));
-
-        bulk.add(clearHomesItem);
-
-        menu.add(bulk);
+        menu.add(bulkTools());
 
 
         // A station name can go on almost any square, not only on a text square.  The label is drawn
@@ -1771,6 +1757,54 @@ public class AutonomyEditorPanel extends JPanel
         if (partner == null || !onThisPage(partner)) return;
 
         onReveal.accept(partner);
+    }
+
+    /**
+     * The actions that are about the whole setup rather than about one square (MT-257, V35-C1).
+     *
+     * Adam: "Put both Clear Locomotives and Clear All Home Locomotives into a 'bulk tools' category in
+     * the autonomy edit right-click menu."
+     *
+     * Built here rather than inline because there are two doors onto it: the ordinary tile menu, and
+     * the one-item menu an IGNORED square gets.  A square on a page excluded from autonomy has nothing
+     * of its own to set, and used to get no menu at all - which took a setup-wide action away on the
+     * ground that this page is not part of the setup, an argument about the wrong subject.
+     *
+     * Each item greys on its OWN count, which is the guard's own question: the two actions are
+     * independent and a setup can easily have one and not the other.  Neither asks about the page.
+     *
+     * @return the submenu, always present, its items enabled or not
+     */
+    private javax.swing.JMenu bulkTools()
+    {
+        javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
+
+        bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
+
+        int placed = session == null ? 0 : session.tilesWithALocomotive().size();
+        int homed = session == null ? 0 : session.tilesWithAHome().size();
+
+        javax.swing.JMenuItem clearLocs = item(
+            I18n.f("autolayout.ui.menuClearLocomotives", placed), () -> clearAllPlacements());
+
+        clearLocs.setEnabled(placed > 0);
+        clearLocs.setToolTipText(wrapped(placed > 0
+            ? I18n.t("autolayout.ui.confirmClearLocomotives")
+            : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
+
+        bulk.add(clearLocs);
+
+        javax.swing.JMenuItem clearHomesItem = item(
+            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed), () -> clearAllHomes());
+
+        clearHomesItem.setEnabled(homed > 0);
+        clearHomesItem.setToolTipText(wrapped(homed > 0
+            ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
+            : I18n.t("autosetup.ui.infoNoHomesToClear")));
+
+        bulk.add(clearHomesItem);
+
+        return bulk;
     }
 
     // Which square the open right-click menu is acting on
