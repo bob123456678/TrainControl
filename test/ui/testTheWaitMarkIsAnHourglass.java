@@ -697,4 +697,58 @@ public class testTheWaitMarkIsAnHourglass
                 + "should look the same, or the loop visibly jumps - " + different + " pixels differ");
         }
     }
+    /**
+     * The start-up splash never takes the foreground (OB-170, sixth pass).
+     *
+     * Adam: **"2.8.1 works fine, the keyboard is focused on startup.  no message on 3.0.0."**  That
+     * makes it a regression, and the start-up path has exactly one window in 3.0.0 that 2.8.1 does not
+     * have.
+     *
+     * **Windows gives a process one chance to put a window in the foreground when the user starts it,
+     * and showing a top-level window spends it.**  A splash that is always-on-top, up for the whole of
+     * the connect and then destroyed spends that right and hands the foreground back to whatever was
+     * there before - the application we were launched from.  Which is what he reported four times:
+     * "the previous active application window retains focus".
+     *
+     * He asked about the splash on the very first report and was told it could not be the cause,
+     * because it closes before the window is shown.  That answered a question about ORDERING, and the
+     * cost is not in the order.
+     *
+     * Two properties, because they are two questions: `isFocusableWindow` is the platform's
+     * no-activate window style, and `getAutoRequestFocus` is whether showing it asks for activation.
+     * A splash wants neither - it cannot be typed into and it cannot be clicked.
+     *
+     * MUTATION this catches: removing either line from `StartupSplash.show`.
+     */
+    @Test(timeOut = 60000)
+    public void testTheSplashNeverTakesTheForeground() throws Exception
+    {
+        org.traincontrol.gui.StartupSplash splash = org.traincontrol.gui.StartupSplash.show("probe");
+
+        assertNotNull(splash, "no splash was built, so this proves nothing about the one that is");
+
+        try
+        {
+            java.lang.reflect.Field held =
+                org.traincontrol.gui.StartupSplash.class.getDeclaredField("window");
+            held.setAccessible(true);
+
+            javax.swing.JWindow window = (javax.swing.JWindow) held.get(splash);
+
+            assertNotNull(window, "the splash has no window");
+
+            assertFalse(window.isFocusableWindow(),
+                "the splash can be focused, so the platform may activate it - and a window that takes "
+                + "the foreground during start-up spends the one chance the main window needs");
+
+            assertFalse(window.isAutoRequestFocus(),
+                "the splash asks for activation when it is shown, which is the same right spent a "
+                + "different way");
+        }
+        finally
+        {
+            org.traincontrol.gui.StartupSplash.closeIfShown(splash);
+        }
+    }
+
 }

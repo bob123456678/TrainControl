@@ -13938,6 +13938,30 @@ and names what has it instead - so it reads something like:
 
 6. **If it fails again, the words in the brackets are the whole of what I need.**
 
+**Adam, 2026-09-03: "2.8.1 works fine, the keyboard is focused on startup.  no message on 3.0.0."**
+
+**That makes it a regression, and the start-up path has exactly one window in 3.0.0 that 2.8.1 does
+not have: the splash.**  You asked about it on your very first report - *"could it be related to the
+startup loading notice?"* - and I told you it could not be, because the splash closes before the
+window is shown.  That answered a question about ordering.  The cost is not in the order.
+
+Windows gives a process **one** chance to put a window in the foreground when the user starts it, and
+showing a top-level window spends it.  The splash is always-on-top, up for the whole of the connect,
+and then destroyed - so it takes the foreground, spends the right, and hands the foreground back to
+whatever was there before, which is the application you launched us from.  "The previous active
+application window retains focus", four times, in your own words.
+
+Two lines say the splash is not that kind of window: the platform's no-activate style, and not asking
+for activation when it is shown.  A splash wants neither - it cannot be typed into and it cannot be
+clicked.  Covered by `testTheSplashNeverTakesTheForeground`, mutation-confirmed.
+
+**You were right about the splash on day one and I talked you out of it.**  That is worth writing down
+next to the fix.
+
+7. **The test that settles it is the one you already ran**: start it from NetBeans and press a letter.
+   If it works now, the splash was the whole of it.  If it does not, the bracketed words in the log
+   line are still what I need.
+
 ---
 
 <a id="mt-260"></a>

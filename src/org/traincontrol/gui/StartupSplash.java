@@ -76,6 +76,30 @@ public final class StartupSplash
             content.add(says, BorderLayout.SOUTH);
 
             w.setContentPane(content);
+
+            // AND IT NEVER TAKES THE FOREGROUND (OB-170, sixth pass).
+            //
+            // Adam asked on his first report whether the splash was involved, and I said it could not
+            // be because it closes before the window is shown.  That answered a question about
+            // ORDERING; the cost is not in the order.
+            //
+            // Windows gives a process ONE chance to put a window in the foreground when the user
+            // starts it, and showing a top-level window spends it.  A splash that is always-on-top,
+            // visible for the whole of the connect and then destroyed spends that right and hands the
+            // foreground back to whatever was there before - which is the application the operator
+            // launched us from, and which is exactly what he reported four times: "the previous active
+            // application window retains focus", "rather the parent app like the python or netbeans
+            // remains".
+            //
+            // 2.8.1 has no splash, and 2.8.1's keyboard works on startup.  That is the whole of the
+            // evidence and it is the first piece any of the five earlier passes had.
+            //
+            // Both lines, because they are different questions: the first is the platform's
+            // no-activate window style, the second is whether showing it asks for activation.  A
+            // splash wants neither - it cannot be typed into and it cannot be clicked.
+            w.setFocusableWindowState(false);
+            w.setAutoRequestFocus(false);
+
             w.setAlwaysOnTop(true);
             w.pack();
             w.setLocationRelativeTo(null);
