@@ -832,16 +832,17 @@ public class AutonomyViewerPanel extends JPanel
         refresh();
     }
 
+    /**
+     * The session's own count (DY3-C7).
+     *
+     * This was the only copy of the loop, so the start door had none and said "one thing" whatever the
+     * number was.  Kept as a method rather than inlined because the call sites read better for it.
+     *
+     * @return how many problems would stop the setup being built
+     */
     private int countBlocking()
     {
-        int blocking = 0;
-
-        for (org.traincontrol.automationui.TileGraph.Problem problem : session().getGraph().getProblems())
-        {
-            if (problem.isBlocking()) blocking++;
-        }
-
-        return blocking;
+        return session().blockingProblemCount();
     }
 
     private void revert(String previous)

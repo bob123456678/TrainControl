@@ -1707,9 +1707,12 @@ public final class HomeStaging
      *
      * "For homing: I would also like non-reversing trains to have to back in."
      *
-     * The runtime already insists - `Layout.isPathClear` refuses a terminus to a locomotive that
-     * cannot reverse unless the path passes a reversing point, so it arrives already turned, backs in,
-     * and leaves forwards. This search did not know that rule, so a home reachable only by a route
+     * The rule this seed is for lives in SELECTION rather than in `isPathClear` (DY3-C9).  This used
+     * to say `Layout.isPathClear` refuses a terminus to a locomotive that cannot reverse, and that
+     * stopped being true on 2026-09-01, on Adam's ruling: *"in manual operation, non reversing trains
+     * must be able to back into a terminus if the graph makes that possible"*.  What insists now is
+     * `pickPath` for autonomy and `mustBackIn` here, and `connected` carries its own copy - which is
+     * why its behaviour is unaffected and only the reason given for it was wrong. This search did not know that rule, so a home reachable only by a route
      * with no reversing point read as reachable and the planner produced a plan the runtime would
      * refuse on its first move.
      *

@@ -5241,9 +5241,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reason that door has a singular at all: this branch is reached when nothing produced a
         // finding and the graph simply will not build, which is one thing rather than a number of
         // them (DY3-C7).
+        // THE SAME PAIR THE LOAD DOOR PICKS FROM, and picked the same way (DY3-C7).
+        //
+        // `errorCannotBuildDetailOne` is the singular of two and this took it unconditionally, so with
+        // three blocking problems it said one thing has to be dealt with.  The load door counts, and
+        // says why: "1 things" in the one message a user meets before their railway will run is not
+        // the first impression to make.
+        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+
+        int blocking = asked == null ? 0 : asked.blockingProblemCount();
+
         JOptionPane.showMessageDialog(this, errors > 0
             ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-            : I18n.t("autosetup.ui.errorCannotBuildDetailOne"));
+            : blocking > 1
+                ? I18n.f("autosetup.ui.errorCannotBuildDetail", blocking)
+                : I18n.t("autosetup.ui.errorCannotBuildDetailOne"));
 
         return true;
     }
@@ -20843,12 +20855,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // only the second one regardless of which it was.  Split the same way
             // `LayoutRightclickAutonomyMenu`'s tooltip already does, so a caller of this API is not told
             // to wait for trains when the real problem is an error count nothing will clear on its own.
+            //
+            // THREE REASONS, not two (V31-C1).  The guard was widened to `hasErrors()`, which also
+            // covers a graph that will not build at all with nothing having turned that into a
+            // finding - and in that case the count is zero, so this fell to "wait for trains" and told
+            // the caller to wait for something that is not happening.  The guard itself gained this
+            // third arm in the commit that widened it; its two twins did not.
             int errors = autonomyErrorCount();
 
             throw new Exception(
                 errors > 0
                     ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-                    : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
+                    : autonomyHasErrors()
+                        ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                        : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
             );
         }
     }

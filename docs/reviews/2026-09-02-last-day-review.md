@@ -227,7 +227,11 @@ string `protectsAnOccupiedSquare`, so it passes with the precondition missing on
 **`active` on a plain square now reaches the graph from a legacy import as well, and the legacy fixture
 has six such points.**
 
-**Status:** open. `1cfdf370` (`D24-B5`).
+**Status:** answered where it belongs, 2026-09-03.  `AutonomySession`'s key list now says what carrying
+`active` unfiltered means for a legacy file whose author wrote the key while it was inert on a
+non-station, and records that this is a RESTORATION rather than a regression - at v2.8.1 the raw
+`autonomy.json` went into `parseAuto` and those six points blocked paths then too.  What a legacy import
+does on Adam's own file is [MT-243](../manual-tests/tests.md#mt-243), which is open and his to run.
 
 The builder no longer drops `active` for a non-station
 (`src/org/traincontrol/automationui/AutonomyBuilder.java:936-953`), which is correct for the editor's
@@ -275,7 +279,9 @@ path for a 2.8.1 user, which is exactly who `importLegacy` exists for.
 
 **Two javadocs still say `active` is ignored on a non-station.**
 
-**Status:** open. `1cfdf370`.
+**Status:** FIXED.  Both javadocs say what the rule is - `Point.isActive` ("not ignored for
+non-stations, which this used to say") and the legacy import's key list, which also carries the
+consequence for an imported file.
 
 `src/org/traincontrol/automation/Point.java:198`:
 
@@ -309,7 +315,10 @@ outlived the code it summarises, sitting where the next reader will trust it ins
 **`executeRoute` is not the funnel the new guard assumes, and the harm the commit describes cannot
 happen.**
 
-**Status:** open. `87b6c10a` (`SVN-B7`).
+**Status:** FIXED, by `V31-B2`, and verified 2026-09-03.  The comment says a second run could not start
+and why (`Route.setExecuting` is an atomic compare-and-set), what the missing guard actually cost (a
+dialog for a run that was discarded, and a re-armed spinner), and that "every door" means every door on
+that window - the diagram's route tile and the s88 trigger reach `execRoute` directly.
 
 Two claims in the fix are checkable and neither holds.
 
@@ -370,7 +379,14 @@ they came to tidy `setExecuting` away.
 **`check()` now costs three full configuration builds and six builder constructions per call, on the
 event thread, and the start door calls it twice.**
 
-**Status:** open. `409d4ce8`, `06516f38`, amplified by `87b6c10a`.
+**Status:** open, and DEFERRED past 3.0.0 deliberately (2026-09-03).
+
+The measurement stands: `check()` is uncached and the start door asks it twice.  What closes it is a
+cached `check()` on the session, invalidated on `touched()` - and a cache over the one method every
+affordance and every guard consults is not a change to make in a release candidate, three days after
+four separate findings about those affordances disagreeing with those guards.  The same cache would
+close `LD-C6` and `V36-C5`, which are the same cost at two other doors; they should be done together and
+with a test that pins the invalidation.
 
 `src/org/traincontrol/automationui/AutonomySession.java:3524`:
 
@@ -435,7 +451,14 @@ local at the start door instead of asking twice.
 **`clearAllHomes` re-derives the station index once per square, where the bulk direction setter batches
 for exactly that reason.**
 
-**Status:** open. `1cfdf370` (`R28-C1`).
+**Status:** FIXED 2026-09-03.  `AutonomySession.clearEveryHome()` writes each property through the same
+method the single-square setter uses and re-derives the station index **once** - the shape the bulk
+direction setter has had since it was written, for the reason its own comment gives.  Sixty-two builder
+constructions on one press become one.
+
+Covered by `testEveryHomeGoesAtOnce`, mutation-confirmed against clearing only the first square.  The
+javadoc's reason for going through the session rather than writing the property in the editor stands and
+is why the bulk method lives there.
 
 `src/org/traincontrol/gui/AutonomyEditorPanel.java:6471`, in `clearAllHomes` (declared at 6450):
 
@@ -480,7 +503,10 @@ disagree later". What is missing is the bulk overload the direction setter alrea
 
 **The Clear All Home Locomotives button does not ask its own predicate.**
 
-**Status:** open. `1cfdf370` (`R28-C1`).
+**Status:** FIXED.  Both actions moved into a **Bulk Tools** submenu whose items grey on their own
+counts and carry a tooltip either way - `clearHomesItem.setEnabled(homed > 0)` with the reason when it
+is off.  The guard inside `clearAllHomes` is kept beside it, and says why: the greying is the affordance
+and the check is the guard, and OB-057 and OB-090 are what happens when one of the two is missing.
 
 `src/org/traincontrol/gui/AutonomyEditorPanel.java:251` and `:480`:
 
@@ -517,7 +543,9 @@ what is missing beside it.
 **The start door's new fallback message always says "one thing", where the door it borrows the key from
 counts.**
 
-**Status:** open. `87b6c10a` (`SVN-B10`).
+**Status:** FIXED 2026-09-03.  The start door counts, through `AutonomySession.blockingProblemCount()` -
+which is also where the load door's hand-written loop now goes, so the two doors cannot drift.  With
+three blocking problems it says three.
 
 `src/org/traincontrol/gui/TrainControlUI.java:5187`:
 
@@ -554,7 +582,7 @@ narrow.
 
 **`ParkingTrack12` in the frozen fixture is a parking berth that is also out of service.**
 
-**Status:** open — needs Adam's ruling, not a code change. Fixture as of `409d4ce8`.
+**Status:** CLOSED - answered by Adam, see below.
 
 **CLOSED 2026-09-02 - deliberate** ([MT-260](../manual-tests/tests.md#mt-260) ruling 6): *"yes, for testing."*  `ParkingTrack12` carries both flags on purpose.  The fixture is right and the finding is answered rather than fixed.
 
@@ -592,7 +620,9 @@ the fixture where the two flags say opposite things.
 **`HomeStaging.connected`'s javadoc still says `isPathClear` refuses a terminus to a non-reversible
 locomotive.**
 
-**Status:** open. Predates this window — introduced by `fbc19cb9`, invalidated by `280ff08b` — found
+**Status:** FIXED 2026-09-03.  The paragraph gives the reason that is true today: the rule lives in
+selection - `pickPath` for autonomy, `mustBackIn` here - because Adam's 2026-09-01 ruling took it out of
+`isPathClear`, and `connected` carries its own copy, which is why only the reason was wrong.
 while reading `975f157d`, which touches the method below it.
 
 `src/org/traincontrol/automation/HomeStaging.java:1696`:
@@ -623,7 +653,10 @@ and it is now the wrong reason. Included in this document rather than left for t
 **The one comment that tells a reader a battery failure is expected describes a test that no longer
 exists under that name or that subject.**
 
-**Status:** open. `188cc1cf` added it, `7931e11a` renamed the class beneath it an hour later.
+**Status:** FIXED 2026-09-03.  `build.xml` says the class is green, why it once was not, and that a
+failure now is a failure - which matters more than an average stale comment, because it is the only
+place in the repository that tells somebody a red battery is expected.  Verified by running the class:
+1 test, 0 failures.
 
 `build.xml:265`:
 

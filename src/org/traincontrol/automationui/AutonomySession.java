@@ -3718,6 +3718,31 @@ public class AutonomySession
         return graph != null && graph.hasBlockingProblems();
     }
 
+    /**
+     * How many of them there are, for the doors that put the number in a sentence (DY3-C7).
+     *
+     * Here rather than in a panel, because two doors say this and one of them was counting by hand:
+     * the load door picked between a singular and a plural message, the start door took the singular
+     * unconditionally, and with three blocking problems it told the operator that one thing had to be
+     * dealt with.
+     *
+     * @return the number of problems that would stop the setup being built, or zero when there is no
+     *         graph to ask
+     */
+    public int blockingProblemCount()
+    {
+        if (graph == null) return 0;
+
+        int blocking = 0;
+
+        for (TileGraph.Problem problem : graph.getProblems())
+        {
+            if (problem.isBlocking()) blocking++;
+        }
+
+        return blocking;
+    }
+
     // --- editing ----------------------------------------------------------------------------------
 
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
@@ -4150,6 +4175,36 @@ public class AutonomySession
     }
 
     /**
+     * Takes the home off every square that has one, re-deriving the station index once (DY3-C5).
+     *
+     * The single-square setter is right for one square and wrong for sixty-two: every call rebuilds the
+     * station index, which is a full builder construction, on the event thread.  The bulk direction
+     * setter has had this shape since it was written and says why - "forty tiles meaning forty full
+     * rebuilds ... for the gesture that exists precisely because it is the common one".
+     *
+     * Here rather than in the editor for the reason the single setter's javadoc gives: a second way of
+     * clearing a home is exactly how the two doors would come to disagree later.  Both doors write the
+     * same property through the same method now, and only the re-derive differs.
+     *
+     * @return how many squares were cleared
+     */
+    public int clearEveryHome()
+    {
+        java.util.List<TileKey> homed = tilesWithAHome();
+
+        for (TileKey tile : homed)
+        {
+            writePointProperty(tile, "home", null);
+        }
+
+        // ONCE, at the end.  Not skipped: the split names are computed from these properties, and a
+        // cached set of them is out of date the moment one changes.
+        deriveStationIndex();
+
+        return homed.size();
+    }
+
+    /**
      * Where this locomotive is already at home, if it is somewhere other than the given square.
      *
      * For the menu, which warns before moving it rather than moving it silently - the same shape as the
@@ -4285,6 +4340,30 @@ public class AutonomySession
 
     public void setPointProperty(TileKey tile, String key, Object value)
     {
+        writePointProperty(tile, key, value);
+
+        // The split names are computed from these properties - which squares turn trains round, and
+        // which are berths - so a cached set of them is out of date the moment one changes.  It was
+        // dropped only on a rebuild, and this method deliberately does not rebuild, so marking a square
+        // while autonomy was running left the labels looking up Point names the running graph had never
+        // heard of, and that station stopped filling in until the next load.
+        deriveStationIndex();
+    }
+
+    /**
+     * The write on its own, for a caller that is about to make several and will re-derive once (DY3-C5).
+     *
+     * Deriving the station index is a full builder construction, so doing it per square turned one
+     * press of "clear every home" into sixty-two of them on the event thread - for the gesture that
+     * exists precisely because sixty-two right-clicks is too many.  This is the same shape the bulk
+     * direction setter already had, and its comment says the same thing.
+     *
+     * @param tile the square
+     * @param key the property
+     * @param value the value, or null to remove it
+     */
+    private void writePointProperty(TileKey tile, String key, Object value)
+    {
         String active = store.getActiveConfiguration();
 
         if (active == null) return;
@@ -4305,13 +4384,6 @@ public class AutonomySession
         else points.getJSONObject(id).put(key, value);
 
         dirty = true;
-
-        // The split names are computed from these properties - which squares turn trains round, and
-        // which are berths - so a cached set of them is out of date the moment one changes.  It was
-        // dropped only on a rebuild, and this method deliberately does not rebuild, so marking a square
-        // while autonomy was running left the labels looking up Point names the running graph had never
-        // heard of, and that station stopped filling in until the next load.
-        deriveStationIndex();
     }
 
     /**

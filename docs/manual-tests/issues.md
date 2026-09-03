@@ -358,6 +358,15 @@ search a point name, the right page is opened and the tile highlighted.
 
 when other page points are clicked from warnings, also highlight it after the editor window switch
 
+### OB-171 - 2026-09-03 - excessive warnings
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-03 02:21  
+**Build:** commit 409d4ce8, build\classes, compiled 03 Sep 01:53 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+warnings like    Trains turn round at 19,14 and its track has no length recorded, so nothing can tell whether a long train would stand across the switch behind it.  Set the track length. fire on many tiles along a line.  Dedupe them, one per segment between a switch and a station.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

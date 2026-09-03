@@ -266,11 +266,20 @@
         <test-one-class class="testNonReversibleTrains"/>
         <test-one-class class="testRenderingCost"/>
         <test-one-class class="testReturnHomeSequencesAReversal"/>
-        <!-- RED ON PURPOSE, Adam 2026-09-01: "ok, so that test should then be red."  Return Home
-             finds no arrangement for his five-train parking berths, so nothing moves when it is
-             pressed.  It was excused from the battery on the grounds that a permanently red run
-             costs more than the test earns; that was the wrong trade.  It comes out when Return
-             Home stages this arrangement, not before. -->
+        <!-- GREEN, and this comment is why it says so (DY3-C10, corrected 2026-09-03).
+
+             It read "RED ON PURPOSE" - Adam, 2026-09-01: "ok, so that test should then be red" -
+             because Return Home found no arrangement for his five-train parking berths.  The commit
+             an hour later retargeted the class onto five plain through platforms with no parking
+             flag, no compulsory reversal and nothing out of service, and it has been green since;
+             two later commits changed the fixture again.  The comment named the arrangement the
+             class had been moved away from, and its exit condition pointed at one it no longer
+             builds.
+
+             That mattered more than the average stale comment: this was the only place in the
+             repository telling somebody a red battery is expected rather than broken, and it is the
+             first thing a person reads when the battery goes red.  If this class fails now, it is a
+             failure. -->
         <test-one-class class="testTrainsComeHomeToTheirPlatforms"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>

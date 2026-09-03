@@ -6688,12 +6688,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        for (TileKey tile : homed)
-        {
-            session.setHome(tile, null);
-        }
+        // THE SESSION'S BULK DOOR, not sixty-two single ones (DY3-C5).
+        //
+        // Every `setHome` re-derives the station index, which is a full builder construction on the
+        // event thread - so this loop cost one per square, for the gesture that exists precisely
+        // because clearing them one at a time is too many right-clicks.  Same property, same method,
+        // one re-derive.
+        int cleared = session.clearEveryHome();
 
-        say(hint, I18n.f("autosetup.ui.infoHomesCleared", homed.size()));
+        say(hint, I18n.f("autosetup.ui.infoHomesCleared", cleared));
 
         refresh();
     }

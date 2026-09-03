@@ -197,15 +197,27 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (!canStart)
                 {
-                    // And say which of the two reasons it is.  The tooltip was hardcoded to the
-                    // waiting-for-trains message, which is a lie whenever Start is off for any other
-                    // reason - including the one immediately above.
+                    // And say which of the THREE reasons it is (V32-C1).
+                    //
+                    // The tooltip was hardcoded to the waiting-for-trains message, which is a lie
+                    // whenever Start is off for any other reason - including the one immediately
+                    // above.  Naming the count fixed two of the three and left the third telling the
+                    // same lie: `canStartAutonomy` refuses on `hasErrors()`, which also covers a graph
+                    // that will not build at all with nothing having turned that into a finding, and
+                    // in that case the count is zero.  So the operator was told to wait for trains
+                    // that are not running and never will be.
+                    //
+                    // The guard has this third arm and got it in the same commit that widened it; the
+                    // affordance did not.  `errorCannotBuildDetailOne` is the load door's own wording
+                    // for exactly this state.
                     int errors = ui.autonomyErrorCount();
 
                     menuItem.setToolTipText(AutonomyEditorPanel.wrapped(
                         errors > 0
                             ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-                            : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
+                            : ui.autonomyHasErrors()
+                                ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                                : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
                 }
 
                 menuItem.addActionListener(event -> 

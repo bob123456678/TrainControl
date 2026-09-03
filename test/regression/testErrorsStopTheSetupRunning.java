@@ -176,13 +176,15 @@ public class testErrorsStopTheSetupRunning
     /**
      * The affordances that offer to start autonomy ask the same question the refusal asks.
      *
-     * `AutonomySession.hasErrors()` - the method the test above exercises - has zero callers left in
-     * `src/`: `grep -rn hasErrors src/` finds only its own declaration. What the guard
-     * (`refuseAutonomyStartWhileBroken`) and the affordances (`TrainControlUI.canStartAutonomy`,
-     * `AutonomyOverlayToggle`, `LayoutRightclickAutonomyMenu`) actually ask today is
-     * `autonomyErrorCount()` / `errorCount()`. A test that only proves `hasErrors()` still computes
-     * correctly is a rule tested and its call site left uncovered - DD-A6, named in this class's own
-     * javadoc and then done anyway, which is TST-B21.
+     * **Written when `AutonomySession.hasErrors()` had no callers at all** - the guard and every
+     * affordance asked `autonomyErrorCount()` / `errorCount()`, so a test that proved only that
+     * `hasErrors()` still computes correctly was a rule tested with its call site left uncovered:
+     * `DD-A6`, named in this class's own javadoc and then done anyway, which is `TST-B21`.
+     *
+     * That is no longer the state of the code and the paragraph saying it was stood here for a week
+     * after the same commit corrected the identical claim two hundred lines up (`V32-C2`).  The guard
+     * asks `hasErrors()` through `TrainControlUI.autonomyHasErrors()`, and so do all three
+     * affordances.  The rule below is what keeps them together.
      *
      * This reads the affordances instead, and asks whether they still consult the guard's own number
      * rather than the narrower graph-only question OB-090 was about.
@@ -236,6 +238,20 @@ public class testErrorsStopTheSetupRunning
         assertFalse(canStart.contains("hasBlockingProblems()"),
             "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "
             + "OB-090 was about, blind to an unnamed station or any other check-only error");
+
+        // AND THE WRAPPER HAS TO REACH THE SESSION'S QUESTION (V32-C2).
+        //
+        // Every rule above names a literal, and the correspondence between the guard's `hasErrors()`
+        // and the affordance's `autonomyHasErrors()` was knowledge held by a person rather than by the
+        // test: gut the wrapper to `return false;` and all of them still passed, with every affordance
+        // then offering Start over a setup that refuses each press.
+        String wrapper = withoutComments(bodyOf(ui, "public boolean autonomyHasErrors()"));
+
+        assertFalse(wrapper.isEmpty(), "autonomyHasErrors() has moved or been renamed");
+
+        assertTrue(wrapper.contains("hasErrors()"),
+            "autonomyHasErrors() no longer asks the session's own question, so the affordances and the "
+            + "guard can agree word for word and mean different things.  Body: " + wrapper);
 
         // THE SAME FOR THE OTHER TWO AFFORDANCES, and asked the same way (V31-B1, V32-B1).
         //
@@ -596,4 +612,61 @@ public class testErrorsStopTheSetupRunning
         }
     }
 
+    /**
+     * All three "why can't I start" messages name the third reason (V31-C1, V32-C1).
+     *
+     * The guard refuses on `hasErrors()`, which covers a graph that will not build at all with nothing
+     * having turned that into a finding - and in that case `autonomyErrorCount()` is **zero**.  Every
+     * message that splits on the count alone therefore falls through to "wait for trains", and tells
+     * the operator to wait for trains that are not running and never will be.
+     *
+     * The guard itself got the third arm in the commit that widened it.  Its twins - the API's
+     * exception and the greyed right-click item's tooltip - did not, and stood like that for a week.
+     * That is the sweep-the-siblings miss this project makes more often than any other, so it is pinned
+     * rather than fixed and forgotten.
+     *
+     * Asked of the source, because what is wrong is a message and no test can read a tooltip's words
+     * back out of a menu that needs a running model to build.
+     *
+     * MUTATION this catches: deleting the `autonomyHasErrors()` arm from any one of the three.
+     */
+    @Test
+    public void testEveryRefusalNamesTheReasonACountCannotSee() throws Exception
+    {
+        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
+        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
+
+        String[][] sites =
+        {
+            {"the guard itself", withoutComments(bodyOf(ui,
+                "private boolean refuseAutonomyStartWhileBroken()"))},
+            {"the API's exception", withoutComments(bodyOf(ui,
+                "public void requestStartAutonomy() throws Exception"))},
+            // THE FILE for this one, and deliberately: the tooltip is built inside the menu's
+            // constructor, whose signature spans three lines, and `bodyOf` reads a declaration on one.
+            // The file is short and this wording appears nowhere else in it.
+            {"the greyed Start item's tooltip", withoutComments(menu)},
+        };
+
+        for (String[] site : sites)
+        {
+            String where = site[0];
+            String body = site[1];
+
+            assertFalse(body.isEmpty(), where + " has moved or been renamed");
+
+            // Only the ones that split on the count are in scope: a site that says one thing whatever
+            // the reason is not lying about which reason it is.
+            if (!body.contains("errorCannotStartWithErrors")) continue;
+
+            assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()"),
+                where + " chooses its wording on the error COUNT alone.  The count is zero when the "
+                + "graph will not build, which is a state the guard refuses and no amount of waiting "
+                + "clears - so this tells the operator to wait for trains that are not running.  "
+                + "Body: " + body);
+
+            assertTrue(body.contains("errorCannotBuildDetailOne"),
+                where + " has no wording for the reason a count cannot see.  Body: " + body);
+        }
+    }
 }

@@ -320,6 +320,65 @@ public class testBarredArrivalIsNotADestination
         assertNull(session.getPointProperty(first, "home"));
     }
 
+    /**
+     * Clearing every home at once clears them all, and asks the station index once (DY3-C5, R28-C1).
+     *
+     * The editor cleared them by calling the single-square setter in a loop, and every one of those
+     * re-derives the station index - a full builder construction, on the event thread.  The feature
+     * exists because clearing sixty-two homes by right-click is too many gestures; doing it cost
+     * sixty-two rebuilds instead.
+     *
+     * **What this pins is the behaviour, not the count**, because the rebuild is not observable from
+     * outside: every home goes, the count comes back, and the index is still right afterwards - which
+     * is the thing a bulk path is most likely to get wrong by skipping the re-derive altogether.
+     *
+     * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryHome`, which
+     * leaves `getStationIndex` naming squares whose home has gone; and clearing only the first square.
+     */
+    @Test
+    public void testEveryHomeGoesAtOnce() throws Exception
+    {
+        session.open(java.util.Arrays.asList(threeSensors()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 2, 1);
+        TileKey third = new TileKey("main", 3, 1);
+
+        session.setHome(first, "BR 218");
+        session.setHome(second, "V 200");
+        session.setHome(third, "E 41");
+
+        assertEquals(session.tilesWithAHome().size(), 3, "precondition: three squares carry a home");
+
+        int cleared = session.clearEveryHome();
+
+        assertEquals(cleared, 3, "the bulk clear did not report what it cleared");
+
+        assertTrue(session.tilesWithAHome().isEmpty(),
+            "a square still has a home after clearing every one of them: "
+            + session.tilesWithAHome());
+
+        for (TileKey tile : java.util.Arrays.asList(first, second, third))
+        {
+            assertNull(session.getPointProperty(tile, "home"), tile + " kept its home");
+        }
+
+        // AND THE INDEX WAS RE-DERIVED.  A bulk path that skips it leaves the split names computed
+        // from properties that have changed - which is what the single setter's own comment is about.
+        session.setHome(first, "BR 218");
+
+        assertEquals(session.getPointProperty(first, "home"), "BR 218",
+            "the session stopped accepting homes after a bulk clear, so the clear left it in a state "
+            + "the editor cannot use");
+
+        assertEquals(session.tilesWithAHome().size(), 1,
+            "the square list did not follow the clear, so something is reading a cache the clear did "
+            + "not drop.  Homes: " + session.tilesWithAHome());
+    }
+
     private LayoutDiagram threeSensors() throws java.io.IOException
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);

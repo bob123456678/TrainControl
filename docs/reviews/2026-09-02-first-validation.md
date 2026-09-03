@@ -201,7 +201,15 @@ doors, with a log line that should say so rather than say "already running".
 
 ### V31-C1 — two of the three "why can't I start" messages still split on the count
 
-**Status: open.**
+**FIXED 2026-09-03**, and pinned so the next widening cannot leave a twin behind.
+
+Both twins now carry the guard's third arm: `requestStartAutonomy`'s exception and the greyed
+right-click item's tooltip say `errorCannotBuildDetailOne` when `hasErrors()` refuses and the count is
+zero, instead of telling the operator to wait for trains that are not running.
+
+`testEveryRefusalNamesTheReasonACountCannotSee` holds all three sites in one rule, and is
+mutation-confirmed against deleting the arm from any of them.  This is the sweep-the-siblings miss this
+project makes more often than any other, so it is pinned rather than fixed and forgotten.
 
 `2e83b737` gave `refuseAutonomyStartWhileBroken` a second message for the case where `hasErrors()`
 refuses and `errorCount()` is zero (`TrainControlUI.java:5193-5195`):
@@ -234,6 +242,8 @@ Neither is a DECISION site — `LayoutRightclickAutonomyMenu` decides on `canSta
 (`:194`), which is correct — so this is about what the operator is told, not about what is allowed.
 
 ### V31-C2 — the accessory keyboard is a third hand-switching door and asks neither half
+
+**FIXED 2026-09-02** (see `SVN-B17`), and the status line saying otherwise is corrected 2026-09-03.
 
 **FIXED 2026-09-02.**  See `SVN-B17` for the fix; this finding is what got it built, because it put the number on it - three surfaces, one unguarded, and the invariant `87b6c10a` stated was "one rule, asked by both doors".
 

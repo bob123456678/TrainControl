@@ -219,6 +219,10 @@ now worse than none.
 
 ### V32-C1 - the greyed Start item now explains itself wrongly
 
+**FIXED 2026-09-03.**  The tooltip has the third arm, and the comment above it names all three reasons
+rather than two.  Covered with its twins by `testEveryRefusalNamesTheReasonACountCannotSee` - see
+`V31-C1`.
+
 `src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java:194-209`
 
 ```java
@@ -254,6 +258,16 @@ the comment three lines above is about this precise failure at this precise line
 errorCannotBuildDetailOne : waitForTrains`.
 
 ### V32-C2 - the rule that pins the affordance to the guard still names both questions
+
+**FIXED 2026-09-03**, both halves.
+
+`autonomyHasErrors()`'s own body is pinned to `hasErrors()` now, so the correspondence between the two
+literals is held by the test rather than by a person: gutting the wrapper to `return false;` fails it,
+which it did not before - mutation-confirmed.
+
+And the javadoc no longer says `hasErrors()` has zero callers.  It says what that paragraph was written
+about, that it is no longer the state of the code, and that it stood for a week after the same commit
+corrected the identical claim two hundred lines up - which is this finding.
 
 The commit message says the rule "now READS the guard rather than naming a question, because naming
 one is how it came to enforce the divergence it exists to catch", and the test's own comment
@@ -292,6 +306,10 @@ is also the one `V32-B1` is about: it is still true of `AutonomyOverlayToggle`.)
 rewrite lines 179-185.
 
 ### V32-C3 - `doSwitch()` is not what the second limb runs
+
+**FIXED 2026-09-03.**  The comment at `LayoutLabel` names `execSwitching` as what runs for the second
+limb, and the accounting under it now covers all four states rather than three branches - see `V34-C5`,
+which found the half this finding's fix had left out.
 
 `src/org/traincontrol/gui/LayoutLabel.java:411-414`:
 
@@ -350,6 +368,10 @@ Switch/Signal prefix fallback. Contrived; worth one clause in the comment rather
 `LayoutLabel.java:411`.
 
 ### V32-C4 - the staging test's shuffle claim is wrong
+
+**FIXED, by the round that followed** (verified 2026-09-03).  The shuffle claim is gone: the comment
+says the pre-fix code fails all twenty and why - the queue is FIFO and both ways in leave the origin -
+and says why the repetition is kept anyway.  Cited there as `V33-C10`.
 
 `test/core/testHomeStaging.java:3383-3391`:
 
