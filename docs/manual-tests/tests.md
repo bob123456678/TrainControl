@@ -38,6 +38,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | needs test | OB-171 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
+| [MT-265](#mt-265) | 2026-09-03 | Four gestures behind today's fixes | needs test | SVN-B8, SVN-B11, IPR-B2, IPR-B4 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -148,6 +149,52 @@ have seen once and which is worth one deliberate pass.
 5. **Press a locomotive letter** as soon as the application appears, without touching the mouse.
 
 *Run against v3_0_0_rc8 or later.*
+
+---
+
+<a id="mt-265"></a>
+
+### MT-265 - 2026-09-03 - Four gestures behind today's fixes
+
+**Disposition:** needs test
+**From:** SVN-B8, SVN-B11, IPR-B2, IPR-B4
+
+**Written:** 2026-09-03
+
+Each of these was found by reading, fixed, and proved by a test that was written first and watched to
+fail. Every one of those tests works one level below the mouse - at the store, at the panel, at the
+factory - because that is where the rule lives. **What is left for you is that the gesture reaches the
+code the test covers**, which is four short checks rather than four tests.
+
+**What to do.**
+
+1. **A link whose two halves are on different pages, shut and then undone.** Pair two portals across
+   two pages - `1:10,9` and `5:15,5` on your own railway are already a pair - open the autonomy
+   editor on the page holding the near half, switch the link off with the checkbox, then Ctrl+Z. The
+   link should be **open** again at both ends. Before this, the undo dropped the near half, left the
+   far one behind, and the link stayed shut with nothing on screen saying so.
+2. **Cut a column, undo, paste it back.** In the layout editor, pick a column carrying a station, cut
+   it, press Ctrl+Z so the track comes back, paste it anywhere else once, then paste it back over the
+   column it came from. **The station should still be there.** Before this, the paste in the middle
+   used up the cut and the paste back forgot the setup on every square it landed on. The same is
+   worth trying with a single square rather than a column - they failed for two different reasons and
+   are two separate fixes.
+3. **A route condition with a bracket that is not at the start.** If you have a route written in the
+   old text editor whose condition reads like `3 or ((1 or 2) and 4)` - a bracket anywhere but the
+   first thing - open it in the route editor and read the sentence under the table. It should say
+   what you wrote. Before this the AND became an OR, nothing was flagged red, the Test button
+   evaluated the wrong expression, and saving wrote it back. **If you have no such route, say so and
+   this step is done** - the check that mattered is that the editor cannot build the shape itself,
+   and that has a test.
+4. **Crop a large photograph at full zoom-out.** Set a locomotive icon from the biggest picture you
+   have - a phone photograph is ideal - drag the zoom slider all the way to the left so the frame
+   hangs off the picture on every side, and press OK. It should produce the icon. Before this it
+   asked for about 500 MB to make a 296 x 114 image, and what you saw was OK doing nothing and the
+   dialog staying open. **Check the icon itself looks right**, not just that the button worked: the
+   picture is now scaled before it is composed rather than after, and that is the part no test can
+   look at.
+
+*Run against the next release candidate.*
 
 ---
 
