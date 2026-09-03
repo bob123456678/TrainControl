@@ -79,85 +79,101 @@ public class testTheAutonomyEditorKnowsWhichSquare
     {
         Editor open = new Editor();
 
-        open.sandbox = support.LayoutSandbox.open();
-
-        open.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
-
-        final org.traincontrol.marklin.MarklinControlStation model = open.model;
-        final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        try
         {
-            try
+            open.sandbox = support.LayoutSandbox.open();
+
+            open.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            final org.traincontrol.marklin.MarklinControlStation model = open.model;
+            final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                made[0] = new org.traincontrol.gui.TrainControlUI();
-                made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
-            }
-            catch (Exception e)
+                try
+                {
+                    made[0] = new org.traincontrol.gui.TrainControlUI();
+                    made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            open.ui = made[0];
+
+            java.io.File folder = java.nio.file.Files.createTempDirectory("tc-which-square").toFile();
+
+            final LayoutDiagram diagram = new LayoutDiagram("Naming Page", 12, 8, null, null);
+
+            for (int x = 2; x <= 6; x++)
             {
-                throw new RuntimeException(e);
+                diagram.addComponent(componentType.STRAIGHT, x, 2, 0, 0, 0, 0,
+                    accessoryDecoderType.MM2, null);
             }
-        });
 
-        open.ui = made[0];
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-which-square").toFile();
-
-        final LayoutDiagram diagram = new LayoutDiagram("Naming Page", 12, 8, null, null);
-
-        for (int x = 2; x <= 6; x++)
-        {
-            diagram.addComponent(componentType.STRAIGHT, x, 2, 0, 0, 0, 0,
+            diagram.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 9, 21,
                 accessoryDecoderType.MM2, null);
+
+            diagram.setEdit(true);
+            diagram.checkBounds();
+
+            final AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(diagram));
+
+            java.lang.reflect.Field sessionField =
+                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
+            sessionField.setAccessible(true);
+            sessionField.set(open.ui, session);
+
+            final org.traincontrol.gui.LayoutEditor[] built = new org.traincontrol.gui.LayoutEditor[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                built[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, made[0], 0));
+
+            open.editor = built[0];
+
+            java.lang.reflect.Method drawGrid =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+            drawGrid.setAccessible(true);
+
+            java.lang.reflect.Field gridField =
+                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
+            gridField.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    if (autonomy) built[0].setAutonomyMode(session);
+
+                    drawGrid.invoke(built[0]);
+
+                    open.grid = (org.traincontrol.gui.LayoutGrid) gridField.get(built[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            return open;
         }
-
-        diagram.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 9, 21,
-            accessoryDecoderType.MM2, null);
-
-        diagram.setEdit(true);
-        diagram.checkBounds();
-
-        final AutonomySession session = new AutonomySession(folder);
-
-        session.open(Arrays.asList(diagram));
-
-        java.lang.reflect.Field sessionField =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-        sessionField.setAccessible(true);
-        sessionField.set(open.ui, session);
-
-        final org.traincontrol.gui.LayoutEditor[] built = new org.traincontrol.gui.LayoutEditor[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            built[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, made[0], 0));
-
-        open.editor = built[0];
-
-        java.lang.reflect.Method drawGrid =
-            org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
-        drawGrid.setAccessible(true);
-
-        java.lang.reflect.Field gridField =
-            org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
-        gridField.setAccessible(true);
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        catch (Exception | Error failed)
         {
-            try
-            {
-                if (autonomy) built[0].setAutonomyMode(session);
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            //
+            // Every caller wraps the RETURNED holder in a try/finally, and the holder is
+            // what does not exist when this throws.  `init` binds a UDP port and a window
+            // constructor can fail; either left the machine-global layout preference
+            // pointing at a folder under %TEMP%, which is what TrainControl opens next
+            // time.  `close()` is already null-guarded for a partial build.
+            open.close();
 
-                drawGrid.invoke(built[0]);
-
-                open.grid = (org.traincontrol.gui.LayoutGrid) gridField.get(built[0]);
-            }
-            catch (ReflectiveOperationException e)
-            {
-                throw new RuntimeException(e);
-            }
-        });
-
-        return open;
+            throw failed;
+        }
     }
 
     /**

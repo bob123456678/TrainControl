@@ -120,10 +120,13 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testAGreyedDiagramTabIsNotOpenedByTheProgram() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         try
         {
+            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             final org.traincontrol.gui.TrainControlUI[] built =
                 new org.traincontrol.gui.TrainControlUI[1];
 
@@ -168,7 +171,7 @@ public class testSwitchingToACentralStationLayout
         }
         finally
         {
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
@@ -376,10 +379,13 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testTheStoredAnswerMatchesTheModel() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         try
         {
+            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             org.traincontrol.marklin.MarklinControlStation model =
                 org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
 
@@ -410,7 +416,7 @@ public class testSwitchingToACentralStationLayout
         }
         finally
         {
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
@@ -1107,5 +1113,162 @@ public class testSwitchingToACentralStationLayout
 
         assertTrue(bundle.contains("\nui.splashConnecting="),
             "the notice asks for a message key that is not in the bundle, so it would show the key");
+    }
+
+    /**
+     * A sandbox that is opened is a sandbox that gets put back, on every path (TSX-B8).
+     *
+     * `close()` is what returns the layout preference to whatever the operator had, and the
+     * preference is machine-global: a run that does not close leaves TrainControl opening a folder
+     * under %TEMP% the next time Adam starts it.  The rule above - `testNoTestOpensTheOperatorsRailway`
+     * - says a sandbox must be opened BEFORE the window.  This is the other half: that having opened
+     * one, nothing can get out of the method without closing it.
+     *
+     * **Four ways out that are easy to miss**, and all four were in the suite when this was written:
+     * a window constructor that throws, `MarklinControlStation.init` failing to bind its port, an
+     * assertion in the set-up part of a test - and `SkipException`, which is not a failure at all but
+     * an ordinary outcome, thrown on any machine where the icon folder cannot be created.
+     *
+     * The shape asked for is one sentence long, so it can be obeyed without reading this: **the open
+     * goes inside a `try`.**  Setup methods are exempt because their `@AfterClass(alwaysRun = true)`
+     * teardown runs even when the set-up threw - which is only true since TSX-C18, and is the reason
+     * that exemption is safe to grant.
+     *
+     * MUTATION: moving any of these opens back above its `try` fails this.
+     */
+    @Test
+    public void testEverySandboxIsClosedOnEveryPath() throws Exception
+    {
+        java.util.List<String> offenders = new java.util.ArrayList<>();
+
+        int checked = 0;
+
+        java.io.File root = new java.io.File("test");
+
+        assertTrue(root.isDirectory(), "the test sources are not where this expects them");
+
+        for (java.io.File f : filesUnder(root))
+        {
+            // The support class is what does the opening and closing.
+            if (f.getName().equals("LayoutSandbox.java")) continue;
+
+            String raw = new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            if (!raw.contains("LayoutSandbox.open(")) continue;
+
+            String scan = withoutStringsAndComments(raw);
+
+            for (int at = scan.indexOf("LayoutSandbox.open("); at >= 0;
+                 at = scan.indexOf("LayoutSandbox.open(", at + 1))
+            {
+                checked++;
+
+                // A setup method hands its sandbox to a teardown that always runs.
+                if (inASetupMethod(scan, at)) continue;
+
+                if (!insideATry(scan, at))
+                {
+                    offenders.add(f.getName() + ", in " + methodAround(scan, at));
+                }
+            }
+        }
+
+        assertTrue(checked >= 40,
+            "only " + checked + " sandbox opens were found in the whole suite, which is fewer than "
+            + "there were when this was written - so this check is reading the wrong thing and is "
+            + "passing because it looked at almost nothing");
+
+        assertEquals(offenders.toString(), "[]",
+            offenders.size() + " sandbox(es) are opened outside a try, so anything that throws "
+            + "between the open and the close - a window constructor, init binding its port, a "
+            + "failed assertion, or a SkipException, which is not a failure at all - leaves the "
+            + "machine-global layout preference pointing at a folder under %TEMP%.  That is the "
+            + "railway TrainControl opens the next time it starts (TSX-B8, OB-111).  Put the open "
+            + "inside the try");
+    }
+
+    /**
+     * Whether an offset sits inside a `try` block.
+     *
+     * By walking the braces from the top of the file rather than by looking for the word nearby: a
+     * `try` five lines above may belong to a block that has already closed, and a `try` far above may
+     * still be open.  Only the stack knows.
+     *
+     * @param scan the source with its strings and comments already removed
+     * @param at where to ask about
+     * @return true if some enclosing block is a try
+     */
+    private static boolean insideATry(String scan, int at)
+    {
+        java.util.List<Boolean> stack = new java.util.ArrayList<>();
+
+        for (int i = 0; i < at; i++)
+        {
+            char c = scan.charAt(i);
+
+            if (c == '{')
+            {
+                stack.add(opensATry(scan, i));
+            }
+            else if (c == '}' && !stack.isEmpty())
+            {
+                stack.remove(stack.size() - 1);
+            }
+        }
+
+        return stack.contains(Boolean.TRUE);
+    }
+
+    /**
+     * Whether the brace at {@code brace} is the one that opens a try block.
+     *
+     * Both spellings: `try {`, and `try (...) {` for try-with-resources, which closes its own
+     * subject and would otherwise read as an ordinary block and hide a real enclosing try.
+     */
+    private static boolean opensATry(String scan, int brace)
+    {
+        int j = brace - 1;
+
+        while (j >= 0 && Character.isWhitespace(scan.charAt(j))) j--;
+
+        if (j >= 0 && scan.charAt(j) == ')')
+        {
+            int depth = 0;
+
+            while (j >= 0)
+            {
+                if (scan.charAt(j) == ')') depth++;
+
+                else if (scan.charAt(j) == '(' && --depth == 0) break;
+
+                j--;
+            }
+
+            j--;
+
+            while (j >= 0 && Character.isWhitespace(scan.charAt(j))) j--;
+        }
+
+        // j is now on the last character of the keyword, if there is one
+        return j >= 2 && scan.startsWith("try", j - 2)
+            && (j - 3 < 0 || !Character.isJavaIdentifierPart(scan.charAt(j - 3)));
+    }
+
+    /** The method header above an offset, so a failure names something findable. */
+    private static String methodAround(String scan, int at)
+    {
+        java.util.regex.Matcher m = METHOD_HEADER.matcher(scan);
+
+        String header = "(no method header above it)";
+
+        while (m.find() && m.start() < at)
+        {
+            int ends = scan.indexOf('\n', m.start() + 1);
+
+            header = scan.substring(m.start() + 1, ends < 0 ? scan.length() : ends).trim();
+        }
+
+        return header;
     }
 }

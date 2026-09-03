@@ -53,7 +53,7 @@ in [the release review](2026-09-03-release-review.md).
 | D7 | Not a defect | Six core classes read against their own stated mutations and found sound | Pass 2 |
 | D8 | Not a defect | What pass 2 did not cover | Pass 2 |
 | B7 | Medium | `battery.sh` reads `ALIVE` outside the block that sets it, under `set -u` - so the battery aborts before it compiles anything whenever there is no lock file, which is the ordinary case. Today's `REL-C10` fix; `one.sh` does not have it | Pass 3 |
-| B8 | Medium | Two fixture factories open the sandbox and then do the work that can throw; every one of their eight callers has the `finally`, and the object it closes is what does not exist when the factory throws - pass 1's `B1` at two sites its sweep could not reach | Pass 3 |
+| B8 | Medium | Two fixture factories open the sandbox and then do the work that can throw; every one of their eight callers has the `finally`, and the object it closes is what does not exist when the factory throws - pass 1's `B1` at two sites its sweep could not reach | Pass 3 - **fixed**, plus six more sites the finding did not name |
 | C14 | Low | The two runners' exit paths: neither reaps nor fingerprints the live layout when the run is killed; `battery.sh` fingerprints BEFORE reaping and `one.sh` after; and both traps delete a lock the run may no longer own | Pass 3 |
 | C15 | Low | `one.sh` was given `battery.sh`'s out-of-heap diagnostic and not the `-Xmx512m` that removes the cause, nor any way to pass one | Pass 3 |
 | C16 | Low | `docs/tools/parity/setup-env.sh` still compiles from `$REPO/tools/parity/`, a path that has not existed since `fb3722f5` - the fifth file that commit missed, and the one its sweep's needle list could not match | Pass 3 |
@@ -1659,7 +1659,9 @@ doors are the same text rather than two texts that agree today.
 
 #### B8 - two fixture factories open the sandbox, then do the work that can throw, and only their callers have the `finally`
 
-**Status: open.** Verified by reading. This is pass 1's `B1` at two sites its sweep could not reach,
+**Status: fixed** (disposition at the end of this finding).
+
+**Originally:** Verified by reading. This is pass 1's `B1` at two sites its sweep could not reach,
 and the consequence is identical: the operator's machine-global layout preference is left pointing at a
 folder in `%TEMP%`, so the next time he starts TrainControl it opens the fixture railway - or nothing -
 instead of his own.
@@ -1739,6 +1741,47 @@ field being null, which is the hard half and is already done.
 
 **Not verified by running.** The claim rests on reading the two factories, their eight call sites, and
 Java's assignment ordering. I have not watched an `init` fail.
+
+**Disposition: fixed, and the sweep found five more sites than the finding named.**
+
+Both factories now open the sandbox inside a `try` and close it on the way out - `start()` with a
+`catch (Exception | Error failed) { up.close(); throw failed; }`, and `open()` the same. Every caller
+still guards the returned holder; what changed is that a factory that never returns one now tidies up
+after itself.
+
+**The finding said two sites. There were eight.** Asking the same question of the whole suite rather
+than of the two files named:
+
+- `testLocIconCrop.java:34` and `:264` are the same defect in a `@Test`, and worse than the two
+  named: between the open and the `try` they build a window, create a temporary folder, write two
+  files - and **throw `SkipException`**, which is not a failure at all but the ordinary outcome on any
+  machine where the icon folder cannot be created. Every skip leaked the preference. Both are now
+  opened inside the `try`.
+- `testSwitchingToACentralStationLayout:123`/`:379`, `testTheWindowTakesTheKeyboard:892`,
+  `testTheRoutingChoiceSurvivesTheUpgrade:687` and `testEveryLanguageFits:106` open one statement
+  above their own `try` - the shape pass 4 read and called sound, and it is sound, because an array
+  allocation cannot throw. They are moved anyway, so the rule below has no exemption to argue about.
+  The four `build()` factories in `test/ui/` were the same and moved with them.
+
+**The rule is written down, because eight sites is not a thing anybody re-derives.**
+`testSwitchingToACentralStationLayout.testEverySandboxIsClosedOnEveryPath` walks the brace stack of
+every test source and fails for any `LayoutSandbox.open(` that is not lexically inside a `try`, with
+`@Before*` methods exempt - and exempt *safely*, which is only true since `C18` made their teardowns
+`alwaysRun`. It sits beside `testNoTestOpensTheOperatorsRailway`, which says the sandbox must be
+opened *before* the window; this is the other half, that having opened one you cannot get out without
+closing it.
+
+It has the control the protocol asks for (`checked >= 40`, so it cannot pass by reading nothing), and
+it was **written before the last five fixes and failed naming all five** - the failure message above
+is where that list came from. MUTATION: moving `testEveryLanguageFits:106`'s open back outside its
+`try` fails it; restored, 12/12 green.
+
+Still not verified by watching an `init` fail - the fix is a `catch`, and what a `catch` does under a
+throw is not the part that was in doubt. Ten classes re-run green:
+`testTheWindowTakesTheKeyboard` (7), `testTheAutonomyEditorKnowsWhichSquare` (3), `testLocIconCrop`
+(5), `testLocMappingPages` (6), `testRoutingRuleTooltips`, `testStagingOutcomeMessages`,
+`testTimetableColumnHeadings`, `testEveryLanguageFits` (1 each),
+`testSwitchingToACentralStationLayout` (12), `testTheRoutingChoiceSurvivesTheUpgrade` (6).
 
 ---
 

@@ -103,10 +103,13 @@ public class testEveryLanguageFits
         //
         // Not one per language: a window schedules work that outlives dispose(), and with the
         // preference already put back that work wrote to the operator's own layout.
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         try
         {
+            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             for (String language : LANGUAGES)
             {
                 int[] seen = {0};
@@ -139,7 +142,7 @@ public class testEveryLanguageFits
                 // A queue that will not drain is not a reason to skip the check below.
             }
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
 
             // AND IN THE FINALLY, because the run most likely to have written is the one that threw
             // (TSX-C2).  This stood after the try, so a window constructor that failed took the

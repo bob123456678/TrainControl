@@ -684,7 +684,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the tab is on a window");
         }
 
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
@@ -692,6 +692,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
         try
         {
+            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             // THE LEGACY STATE, which the fixture is not: it ships a diagram configuration called
             // Main, and asking for a session makes that one active - which is exactly the state this
             // finding says is safe.  What an upgrading user has is a layout with NO diagram
@@ -786,7 +789,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             if (model != null) model.stop();
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 }

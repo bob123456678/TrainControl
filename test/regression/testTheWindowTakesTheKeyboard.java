@@ -78,55 +78,72 @@ public class testTheWindowTakesTheKeyboard
     {
         Started up = new Started();
 
-        up.sandbox = support.LayoutSandbox.open();
-
-        up.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
-
-        final org.traincontrol.marklin.MarklinControlStation model = up.model;
-        final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        try
         {
-            try
+            up.sandbox = support.LayoutSandbox.open();
+
+            up.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            final org.traincontrol.marklin.MarklinControlStation model = up.model;
+            final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                made[0] = new org.traincontrol.gui.TrainControlUI();
-                made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
-                made[0].display();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        });
+                try
+                {
+                    made[0] = new org.traincontrol.gui.TrainControlUI();
+                    made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+                    made[0].display();
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
 
-        up.ui = made[0];
-
-        settle();
-
-        // AND THE RAISE HAS TO FINISH (OB-170, fifth pass).
-        //
-        // `takeTheKeyboard` posts the raise, the raise hands its always-on-top flag back four hundred
-        // milliseconds later, and only THEN is the keyboard asked for - because the flag's restore is
-        // a native window-style change that resets which component holds the focus, which is what
-        // undid the fourth pass.  A test that drained the event queue and read the answer would be
-        // reading it before start-up had given one.
-        //
-        // Bounded, and it does not assert: a machine where the keyboard never arrives is what the
-        // tests below are for, and they say so in their own words.
-        for (int waited = 0; waited < 4000; waited += 100)
-        {
-            java.awt.Component willGetIt = up.ui.getMostRecentFocusOwner();
-
-            Object tab = field(up.ui, "KeyboardTab");
-
-            if (willGetIt != null && isTheKeyboard(willGetIt, (java.awt.Component) tab)) break;
-
-            Thread.sleep(100);
+            up.ui = made[0];
 
             settle();
-        }
 
-        return up;
+            // AND THE RAISE HAS TO FINISH (OB-170, fifth pass).
+            //
+            // `takeTheKeyboard` posts the raise, the raise hands its always-on-top flag back four hundred
+            // milliseconds later, and only THEN is the keyboard asked for - because the flag's restore is
+            // a native window-style change that resets which component holds the focus, which is what
+            // undid the fourth pass.  A test that drained the event queue and read the answer would be
+            // reading it before start-up had given one.
+            //
+            // Bounded, and it does not assert: a machine where the keyboard never arrives is what the
+            // tests below are for, and they say so in their own words.
+            for (int waited = 0; waited < 4000; waited += 100)
+            {
+                java.awt.Component willGetIt = up.ui.getMostRecentFocusOwner();
+
+                Object tab = field(up.ui, "KeyboardTab");
+
+                if (willGetIt != null && isTheKeyboard(willGetIt, (java.awt.Component) tab)) break;
+
+                Thread.sleep(100);
+
+                settle();
+            }
+
+            return up;
+        }
+        catch (Exception | Error failed)
+        {
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            //
+            // Every caller wraps the RETURNED holder in a try/finally, and the holder is
+            // what does not exist when this throws.  `init` binds a UDP port and a window
+            // constructor can fail; either left the machine-global layout preference
+            // pointing at a folder under %TEMP%, which is what TrainControl opens next
+            // time.  `close()` is already null-guarded for a partial build - it was only
+            // ever unreachable.
+            up.close();
+
+            throw failed;
+        }
     }
 
     /**
@@ -889,12 +906,15 @@ public class testTheWindowTakesTheKeyboard
 
         // BEFORE the window, not after it (OB-111): its construction reads the machine-global layout
         // preference and would otherwise open Adam's real railway.
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
 
         try
         {
+            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
 
             final org.traincontrol.gui.TrainControlUI ui = made[0];
@@ -956,7 +976,7 @@ public class testTheWindowTakesTheKeyboard
                 javax.swing.SwingUtilities.invokeAndWait(() -> window.dispose());
             }
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

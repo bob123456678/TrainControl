@@ -36,135 +36,151 @@ public class testLocIconCrop
         // On the EDT, as every other test in this package builds one (C3).  A Swing window put
         // together off the event thread is a race that usually wins, which is the worst kind.
         // The window reads the layout preference in its constructor, so without this it opens the
-        // operator's own railway (OB-111). Closed in the finally further down, with everything else.
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-
-        TrainControlUI ui = built[0];
-
-        File folder = java.nio.file.Files.createTempDirectory("fr032").toFile();
-
-        folder.deleteOnExit();
-
-        File crop = new File(folder, "crop.png");
-        File source = new File(folder, "photograph.jpg");
-
-        write(crop, "not really a png");
-        write(source, "not really a jpeg");
-
-        // A crop of OURS is the only kind that carries a note - `cropSourceOf` asks isLocIconFile
-        // first, and a picture in the user's own folder is never ours to annotate.
-        // The round trip, in the folder crops actually live in.
-        // A name of its own, because tc_loc_icons is the REAL folder and already holds Adam's crops
-        // (C3).  A fixed name races any other run - the battery runs this class while anything else
-        // might be running it too - and two runs sharing one file fail each other for no reason.
-        File ours = org.traincontrol.util.Util.getLocIconFile(
-            "fr032_test_" + java.util.UUID.randomUUID() + ".png");
-
-        if (ours == null)
-        {
-            throw new org.testng.SkipException("the icon folder could not be created here");
-        }
+        // operator's own railway (OB-111).
+        support.LayoutSandbox sandbox = null;
 
         try
         {
-            // Inside the try, so a failure here is tidied up like everything else (validator).
-            assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
-                "a file outside the application's own icon folder came back with a source, which "
-                + "would mean writing notes beside the user's own pictures");
-
-            write(ours, "not really a png either");
-
-            ui.rememberCropSource(ours, source);
-
-            String url = ours.toPath().toUri().toString();
-
-            assertEquals(ui.cropSourceOf(url), source,
-                "what rememberCropSource wrote is not what cropSourceOf reads back, so re-cropping "
-                + "would silently fall back to cropping the crop");
-
-            // The photograph goes away, as the user's files may at any time.
-            assertTrue(source.delete(), "could not delete the test photograph");
-
-            assertNull(ui.cropSourceOf(url),
-                "a note naming a photograph that is no longer there was believed. Re-cropping would "
-                + "then try to read a file that does not exist rather than falling back to the crop");
-
-            // And the note goes with the crop it belongs to.
-            File note = new File(ours.getAbsolutePath() + ".source");
-
-            write(source, "back again");
-            ui.rememberCropSource(ours, source);
-
-            assertTrue(note.exists(), "the note was not written at all");
-
-            ui.deleteLocIcon(url);
-
-            assertFalse(note.exists(),
-                "the crop was deleted and its note was left behind - a file in the application's own "
-                + "folder that nothing points at and nothing would ever remove");
-
-            // AND THAT ANYBODY CALLS ANY OF IT (C4).
+            // INSIDE the try, because everything below it throws (TSX-B8).
             //
-            // Everything above tests the three helpers directly, and all of it passes with the whole
-            // feature unwired: nothing fails if `cropLocIcon` stops writing the note, if `recropLocIcon`
-            // stops reading it, or if re-crop stops deleting the crop it replaced. That is the same
-            // fault this project has a name for - extracting a rule moves the defect to its call site -
-            // and the OB-117 test had to be patched for it two days ago.
-            //
-            // Read rather than run: these are private, on a frame, driven by a modal dialog. What this
-            // catches is the wiring being dropped, which is what a reader can break here.
-            String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/org/traincontrol/gui/TrainControlUI.java")),
-                java.nio.charset.StandardCharsets.UTF_8);
+            // The window constructor, the temporary folder, the writes - and the
+            // SkipException below, which is not a failure at all but an ordinary
+            // outcome on a machine where the icon folder cannot be made.  Opened
+            // outside, every one of those left the machine-global layout preference
+            // pointing at a folder under %TEMP%, which is the railway TrainControl
+            // opens next time (OB-111).
+            sandbox = support.LayoutSandbox.open();
 
-            assertTrue(bodyOf(wiring, "private String cropLocIcon(").contains("rememberCropSource("),
-                "a crop is saved without noting where it came from, so re-cropping it can never pan "
-                + "back out to anything the crop discarded");
+            final TrainControlUI[] built = new TrainControlUI[1];
 
-            String recrop = bodyOf(wiring, "public void recropLocIcon(");
+            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
 
-            assertTrue(recrop.contains("cropSourceOf("),
-                "re-crop no longer looks for the original picture, so it always crops the crop");
+            TrainControlUI ui = built[0];
 
-            assertTrue(recrop.contains("cropSourceNoteOf("),
-                "re-crop no longer READS the note when the picture is missing");
+            File folder = java.nio.file.Files.createTempDirectory("fr032").toFile();
 
-            // AND WRITES IT BACK, which is the half that carries the path.
-            //
-            // Checking only the read did not bind: a validator replaced the write-back with an empty
-            // block and this test passed, with the data-loss defect fully restored - the old note is
-            // still deleted, and the fresh one still names the crop. Reading a value and then not using
-            // it is precisely the shape of that defect, so a test that only proves the read happened
-            // proves nothing about it.
-            assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
-                "re-crop reads the old note and never writes it over the fresh one, so the fresh note "
-                + "names the crop this was cut from and the path to the photograph is gone the moment "
-                + "the old crop is deleted - which is the whole of the defect this exists to stop");
+            folder.deleteOnExit();
 
-            // In that ORDER: written after the new crop exists, before the old one is deleted.
-            assertTrue(recrop.indexOf("rememberCropSource(fresh, remembered)")
-                    < recrop.indexOf("deleteLocIconFile("),
-                "the old crop is deleted before its note is carried forward, so the note being copied "
-                + "is read from a file that has already gone");
+            File crop = new File(folder, "crop.png");
+            File source = new File(folder, "photograph.jpg");
 
-            assertTrue(recrop.contains("deleteLocIconFile("),
-                "re-crop leaves the crop it replaced behind, so the icon folder grows by one file "
-                + "every time the user adjusts a crop");
+            write(crop, "not really a png");
+            write(source, "not really a jpeg");
+
+            // A crop of OURS is the only kind that carries a note - `cropSourceOf` asks isLocIconFile
+            // first, and a picture in the user's own folder is never ours to annotate.
+            // The round trip, in the folder crops actually live in.
+            // A name of its own, because tc_loc_icons is the REAL folder and already holds Adam's crops
+            // (C3).  A fixed name races any other run - the battery runs this class while anything else
+            // might be running it too - and two runs sharing one file fail each other for no reason.
+            File ours = org.traincontrol.util.Util.getLocIconFile(
+                "fr032_test_" + java.util.UUID.randomUUID() + ".png");
+
+            if (ours == null)
+            {
+                throw new org.testng.SkipException("the icon folder could not be created here");
+            }
+
+            try
+            {
+                // Inside the try, so a failure here is tidied up like everything else (validator).
+                assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
+                    "a file outside the application's own icon folder came back with a source, which "
+                    + "would mean writing notes beside the user's own pictures");
+
+                write(ours, "not really a png either");
+
+                ui.rememberCropSource(ours, source);
+
+                String url = ours.toPath().toUri().toString();
+
+                assertEquals(ui.cropSourceOf(url), source,
+                    "what rememberCropSource wrote is not what cropSourceOf reads back, so re-cropping "
+                    + "would silently fall back to cropping the crop");
+
+                // The photograph goes away, as the user's files may at any time.
+                assertTrue(source.delete(), "could not delete the test photograph");
+
+                assertNull(ui.cropSourceOf(url),
+                    "a note naming a photograph that is no longer there was believed. Re-cropping would "
+                    + "then try to read a file that does not exist rather than falling back to the crop");
+
+                // And the note goes with the crop it belongs to.
+                File note = new File(ours.getAbsolutePath() + ".source");
+
+                write(source, "back again");
+                ui.rememberCropSource(ours, source);
+
+                assertTrue(note.exists(), "the note was not written at all");
+
+                ui.deleteLocIcon(url);
+
+                assertFalse(note.exists(),
+                    "the crop was deleted and its note was left behind - a file in the application's own "
+                    + "folder that nothing points at and nothing would ever remove");
+
+                // AND THAT ANYBODY CALLS ANY OF IT (C4).
+                //
+                // Everything above tests the three helpers directly, and all of it passes with the whole
+                // feature unwired: nothing fails if `cropLocIcon` stops writing the note, if `recropLocIcon`
+                // stops reading it, or if re-crop stops deleting the crop it replaced. That is the same
+                // fault this project has a name for - extracting a rule moves the defect to its call site -
+                // and the OB-117 test had to be patched for it two days ago.
+                //
+                // Read rather than run: these are private, on a frame, driven by a modal dialog. What this
+                // catches is the wiring being dropped, which is what a reader can break here.
+                String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                    "src/org/traincontrol/gui/TrainControlUI.java")),
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+                assertTrue(bodyOf(wiring, "private String cropLocIcon(").contains("rememberCropSource("),
+                    "a crop is saved without noting where it came from, so re-cropping it can never pan "
+                    + "back out to anything the crop discarded");
+
+                String recrop = bodyOf(wiring, "public void recropLocIcon(");
+
+                assertTrue(recrop.contains("cropSourceOf("),
+                    "re-crop no longer looks for the original picture, so it always crops the crop");
+
+                assertTrue(recrop.contains("cropSourceNoteOf("),
+                    "re-crop no longer READS the note when the picture is missing");
+
+                // AND WRITES IT BACK, which is the half that carries the path.
+                //
+                // Checking only the read did not bind: a validator replaced the write-back with an empty
+                // block and this test passed, with the data-loss defect fully restored - the old note is
+                // still deleted, and the fresh one still names the crop. Reading a value and then not using
+                // it is precisely the shape of that defect, so a test that only proves the read happened
+                // proves nothing about it.
+                assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
+                    "re-crop reads the old note and never writes it over the fresh one, so the fresh note "
+                    + "names the crop this was cut from and the path to the photograph is gone the moment "
+                    + "the old crop is deleted - which is the whole of the defect this exists to stop");
+
+                // In that ORDER: written after the new crop exists, before the old one is deleted.
+                assertTrue(recrop.indexOf("rememberCropSource(fresh, remembered)")
+                        < recrop.indexOf("deleteLocIconFile("),
+                    "the old crop is deleted before its note is carried forward, so the note being copied "
+                    + "is read from a file that has already gone");
+
+                assertTrue(recrop.contains("deleteLocIconFile("),
+                    "re-crop leaves the crop it replaced behind, so the icon folder grows by one file "
+                    + "every time the user adjusts a crop");
+            }
+            finally
+            {
+                new File(ours.getAbsolutePath() + ".source").delete();
+
+                ours.delete();
+                crop.delete();
+                source.delete();
+                folder.delete();
+
+            }
         }
         finally
         {
-            new File(ours.getAbsolutePath() + ".source").delete();
-
-            ours.delete();
-            crop.delete();
-            source.delete();
-            folder.delete();
-
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
@@ -265,81 +281,97 @@ public class testLocIconCrop
     public void testACropRemembersTheViewItWasTakenAt() throws Exception
     {
         // The window reads the layout preference in its constructor, so without this it opens the
-        // operator's own railway (OB-111). Closed in the finally further down, with everything else.
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-
-        TrainControlUI ui = built[0];
-
-        File folder = java.nio.file.Files.createTempDirectory("ob125").toFile();
-
-        folder.deleteOnExit();
-
-        File source = new File(folder, "photograph.jpg");
-
-        write(source, "not really a jpeg");
-
-        File ours = org.traincontrol.util.Util.getLocIconFile(
-            "ob125_test_" + java.util.UUID.randomUUID() + ".png");
-
-        if (ours == null)
-        {
-            throw new org.testng.SkipException("the icon folder could not be created here");
-        }
+        // operator's own railway (OB-111).
+        support.LayoutSandbox sandbox = null;
 
         try
         {
-            write(ours, "not really a png");
+            // INSIDE the try, because everything below it throws (TSX-B8).
+            //
+            // The window constructor, the temporary folder, the writes - and the
+            // SkipException below, which is not a failure at all but an ordinary
+            // outcome on a machine where the icon folder cannot be made.  Opened
+            // outside, every one of those left the machine-global layout preference
+            // pointing at a folder under %TEMP%, which is the railway TrainControl
+            // opens next time (OB-111).
+            sandbox = support.LayoutSandbox.open();
 
-            String url = ours.toPath().toUri().toString();
+            final TrainControlUI[] built = new TrainControlUI[1];
 
-            // AN OLDER NOTE - a bare path, which is every note written before this.
-            ui.rememberCropSource(ours, source);
+            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
 
-            assertEquals(ui.cropSourceOf(url), source,
-                "a note without a view no longer reads back as a path, so every crop made before "
-                + "this change has lost the photograph behind it");
+            TrainControlUI ui = built[0];
 
-            assertNull(ui.cropViewOf(url),
-                "a note with no view line answered with one anyway, so the panel would be opened on "
-                + "numbers nobody wrote");
+            File folder = java.nio.file.Files.createTempDirectory("ob125").toFile();
 
-            // AND ONE WITH A VIEW.
-            double[] view = { 250.5, 200.25, 0.4, 2.5, 0.7 };
+            folder.deleteOnExit();
 
-            ui.rememberCropSource(ours, source, view);
+            File source = new File(folder, "photograph.jpg");
 
-            assertEquals(ui.cropSourceOf(url), source,
-                "the path no longer reads back once a view is stored beside it - the whole file is "
-                + "being taken for a filename, so re-crop would look for a photograph whose name has "
-                + "the view appended to it");
+            write(source, "not really a jpeg");
 
-            double[] read = ui.cropViewOf(url);
+            File ours = org.traincontrol.util.Util.getLocIconFile(
+                "ob125_test_" + java.util.UUID.randomUUID() + ".png");
 
-            assertNotNull(read, "the view was written and did not come back");
-
-            for (int i = 0; i < 5; i++)
+            if (ours == null)
             {
-                assertEquals(read[i], view[i], 1e-9,
-                    "the view came back changed at position " + i + " - it was written as "
-                    + view[i] + " and read as " + read[i]);
+                throw new org.testng.SkipException("the icon folder could not be created here");
             }
 
-            // A note that says something else on its second line is not a view.
-            ui.rememberCropSource(ours, source);
+            try
+            {
+                write(ours, "not really a png");
 
-            assertNull(ui.cropViewOf(url),
-                "re-recording the source without a view left the OLD view in place, so the panel "
-                + "would open on where a crop that no longer exists was taken");
+                String url = ours.toPath().toUri().toString();
+
+                // AN OLDER NOTE - a bare path, which is every note written before this.
+                ui.rememberCropSource(ours, source);
+
+                assertEquals(ui.cropSourceOf(url), source,
+                    "a note without a view no longer reads back as a path, so every crop made before "
+                    + "this change has lost the photograph behind it");
+
+                assertNull(ui.cropViewOf(url),
+                    "a note with no view line answered with one anyway, so the panel would be opened on "
+                    + "numbers nobody wrote");
+
+                // AND ONE WITH A VIEW.
+                double[] view = { 250.5, 200.25, 0.4, 2.5, 0.7 };
+
+                ui.rememberCropSource(ours, source, view);
+
+                assertEquals(ui.cropSourceOf(url), source,
+                    "the path no longer reads back once a view is stored beside it - the whole file is "
+                    + "being taken for a filename, so re-crop would look for a photograph whose name has "
+                    + "the view appended to it");
+
+                double[] read = ui.cropViewOf(url);
+
+                assertNotNull(read, "the view was written and did not come back");
+
+                for (int i = 0; i < 5; i++)
+                {
+                    assertEquals(read[i], view[i], 1e-9,
+                        "the view came back changed at position " + i + " - it was written as "
+                        + view[i] + " and read as " + read[i]);
+                }
+
+                // A note that says something else on its second line is not a view.
+                ui.rememberCropSource(ours, source);
+
+                assertNull(ui.cropViewOf(url),
+                    "re-recording the source without a view left the OLD view in place, so the panel "
+                    + "would open on where a crop that no longer exists was taken");
+            }
+            finally
+            {
+                ui.deleteLocIcon(ours.toPath().toUri().toString());
+
+            }
         }
         finally
         {
-            ui.deleteLocIcon(ours.toPath().toUri().toString());
-
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

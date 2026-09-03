@@ -95,17 +95,21 @@ public class testRoutingRuleTooltips
      */
     private TrainControlUI build() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
 
         final TrainControlUI[] built = new TrainControlUI[1];
 
         try
         {
+            // Inside the try, so nothing between the open and the close can leave the
+            // preference behind (TSX-B8).
+            sandbox = support.LayoutSandbox.open();
+
             javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
         }
         finally
         {
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
 
         return built[0];
