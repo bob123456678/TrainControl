@@ -7112,14 +7112,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void takeTheKeyboard()
     {
-        // THE WINDOW FIRST, THEN WHAT IS IN IT.  Two different questions, and the first one is the
-        // one Adam kept answering no to.
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            comeToTheForeground();
-
-            focusTheKeyboard();
-        });
+        // THE WINDOW FIRST, AND THEN WHAT IS IN IT - but not in the same breath (OB-170, fifth pass).
+        //
+        // `focusTheKeyboard()` used to be called here, one line after the raise.  The raise is not
+        // finished when it returns: the always-on-top flag it sets is handed back four hundred
+        // milliseconds later, and changing that flag is a native window-style change that resets which
+        // component holds the focus.  So the keyboard was given to the tabbed pane and then taken away
+        // again by our own restore.
+        //
+        // Adam's evidence for this is the message that did NOT appear: the window was active, so the
+        // front was never the problem by then.
+        javax.swing.SwingUtilities.invokeLater(() -> comeToTheForeground());
 
         // AND AGAIN WHENEVER IT GAINS FOCUS WITH NOTHING INSIDE IT FOCUSED (OB-170).
         //
@@ -7224,26 +7227,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // item would then disagree with the window.
             setAlwaysOnTop(wasOnTop);
 
-            if (isActive()) return;
-
-            if (attempt < 2)
+            if (!isActive() && attempt < 2)
             {
                 raiseOnce(wasOnTop, attempt + 1);
 
                 return;
             }
 
-            // SAID OUT LOUD, because it has now failed silently four times.
+            // AND ONLY NOW THE KEYBOARD (fifth pass).
             //
-            // Adam has reported this as OB-168, twice as OB-170 and once again after that, and every
-            // one of those was a window that looked ordinary and did nothing when typed at.  A line in
-            // the log turns the next one into a fact rather than a symptom - and tells him the one
-            // thing that always works.
-            if (this.model != null) this.model.logf("ui.warnCouldNotTakeTheForeground");
+            // After the flag is back, not before it: the restore above is a native window-style change
+            // and it resets which component holds the focus, so a request made before it is undone by
+            // it.  Posted rather than called, so that the style change has been processed first - the
+            // same reason every other focus request in this class is posted.
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                focusTheKeyboard();
+
+                sayIfTheKeyboardIsLost();
+            });
         });
 
         settle.setRepeats(false);
         settle.start();
+    }
+
+    /**
+     * Says so in the log when nothing in this window ended up holding the keyboard (OB-170).
+     *
+     * **The question this asks is the one four rounds of fixes did not.**  The first version asked
+     * whether the window was ACTIVE, and Adam's answer - "the message does NOT appear" - said it was,
+     * while the letters still did nothing.  Being in front and having the keyboard are two facts, and
+     * only the second one is what he is reporting.
+     *
+     * So this asks about the keyboard, and names what has it instead.  Its absence now means the
+     * application believes everything is as it should be, which is a much stronger statement than the
+     * old message's absence was.
+     */
+    private void sayIfTheKeyboardIsLost()
+    {
+        if (this.model == null) return;
+
+        java.awt.Component owner = java.awt.KeyboardFocusManager
+            .getCurrentKeyboardFocusManager().getFocusOwner();
+
+        if (owner != null && javax.swing.SwingUtilities.isDescendingFrom(owner, this)) return;
+
+        this.model.logf("ui.warnCouldNotTakeTheForeground",
+            (isActive() ? "active" : "not active") + ", "
+            + (owner == null ? "nothing has the keyboard"
+                             : "the keyboard is on " + owner.getClass().getSimpleName()));
     }
 
     /**

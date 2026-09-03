@@ -867,7 +867,33 @@ public class LayoutGrid
             && TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
                 SHOW_COORDINATES_DEFAULT))
         {
-            container.setBorder(new AxisRuler(size, offsetX, offsetY, width - 1, height - 1));
+            // MEASURED, NOT MULTIPLIED (Adam: "the axis numbers drift and are out of alignment.
+            // The first few are centered, but the rest aren't").
+            //
+            // The first version worked the positions out as `column * size`, which is right only while
+            // every cell is exactly a tile wide - and with the grey grid on each square wears a line
+            // border that reserves room, so the real pitch is a pixel or two more.  The error is
+            // cumulative: the first few numbers sit over their squares and the twentieth is a whole
+            // square out, which is why it read as "off by one" at the end.
+            //
+            // These two lambdas are asked at PAINT time, when the layout has run and a square's bounds
+            // are what they really are.  `grid` is filled in below, after this line, and that is fine
+            // for the same reason.
+            final LayoutGrid drawing = this;
+
+            container.setBorder(new AxisRuler(offsetX, offsetY, width - 1, height - 1,
+                column ->
+                {
+                    LayoutLabel cell = drawing.getValueAt(column, 0);
+
+                    return cell == null ? null : cell.getBounds();
+                },
+                row ->
+                {
+                    LayoutLabel cell = drawing.getValueAt(0, row);
+
+                    return cell == null ? null : cell.getBounds();
+                }));
         }
         else
         {

@@ -103,6 +103,29 @@ public class testTheWindowTakesTheKeyboard
 
         settle();
 
+        // AND THE RAISE HAS TO FINISH (OB-170, fifth pass).
+        //
+        // `takeTheKeyboard` posts the raise, the raise hands its always-on-top flag back four hundred
+        // milliseconds later, and only THEN is the keyboard asked for - because the flag's restore is
+        // a native window-style change that resets which component holds the focus, which is what
+        // undid the fourth pass.  A test that drained the event queue and read the answer would be
+        // reading it before start-up had given one.
+        //
+        // Bounded, and it does not assert: a machine where the keyboard never arrives is what the
+        // tests below are for, and they say so in their own words.
+        for (int waited = 0; waited < 4000; waited += 100)
+        {
+            java.awt.Component willGetIt = up.ui.getMostRecentFocusOwner();
+
+            Object tab = field(up.ui, "KeyboardTab");
+
+            if (willGetIt != null && isTheKeyboard(willGetIt, (java.awt.Component) tab)) break;
+
+            Thread.sleep(100);
+
+            settle();
+        }
+
         return up;
     }
 

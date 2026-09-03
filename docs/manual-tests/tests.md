@@ -13913,6 +13913,31 @@ coming to the front, and I have been fixing the wrong thing for four rounds.  If
 refused us twice and no amount of Java changes that from inside the application; the answer would be a
 launcher change or living with one click.
 
+**Adam, 2026-09-02: "the message does NOT appear."**
+
+That is the answer, and it is the first fact this has had under it in five rounds.  The window WAS
+active - Windows let it come to the front - and the keyboard still did nothing.  So the front was
+never the whole problem, and two of my four fixes were aimed at the half that already worked.
+
+**What was left is the fourth pass's own doing.**  `takeTheKeyboard` asked for the keyboard the
+instant after asking for the front.  The front is asked for with the always-on-top toggle, whose
+restore happens four hundred milliseconds LATER - and changing that flag is a native window-style
+change that resets which component holds the focus.  So the order was: give the tabbed pane the
+keyboard, then pull the window's style out from under it.
+
+The keyboard is taken after the flag is back now, not before.
+
+**And the message asks a better question.**  It used to ask whether the window was ACTIVE, which is
+why its silence was misleading: being in front and having the keyboard are two facts, and only the
+second is the one you are reporting.  It now asks whether anything in this window holds the keyboard,
+and names what has it instead - so it reads something like:
+
+> The keyboard did not end up on this window (active, the keyboard is on JRootPane).  Windows only
+> lets the application you are already using come to the front - click the window once and the
+> shortcuts will work.
+
+6. **If it fails again, the words in the brackets are the whole of what I need.**
+
 ---
 
 <a id="mt-260"></a>
@@ -14147,5 +14172,28 @@ diagram tile's OTHER question: with the track power off, that tile offers "turn 
 Both done.  `R28-C5` is closed: Control+H sets the home locomotive in the autonomy editor, and the address keeps Control+A in the track editor with no second key and no new way for autonomy mode to edit the diagram.  The checkbox reads **Show Homes**.
 
 That is all four rulings answered and this entry closed for everything except the hands-on steps above.
+
+**Adam, 2026-09-02 (third round).**  *"The axis labels show up now, but they are missing for the last
+row/col, and they are visible in the track diagram viewer when they shouldn't be."*  Then, on looking
+closer: *"the axis numbers drift and are out of alignment.  The first few are centered, but the rest
+aren't.  That's why it looks off by one."*
+
+**Both fixed, and the second explains the first.**
+
+The ruler worked its positions out as `column * tileSize`, which is right only while every square is
+exactly one tile wide.  With the grey grid switched on each square wears a line border that RESERVES
+room, so the real pitch is a pixel or two more - and the error is cumulative.  The first few numbers
+sit over their squares, the twentieth is a whole square out, and the far end reads as a row and column
+with no number.  Nothing was missing; everything after the first few was in the wrong place.
+
+It asks the grid where its squares actually are now, at paint time, so it cannot drift whatever a
+square turns out to be made of.  The test that would have caught this exists: every earlier one used a
+uniform pitch and so agreed with the arithmetic that was wrong.
+
+And the viewer no longer draws them.  The preference was asked and the WINDOW was not.
+
+4. **Turn the grey grid on and off** with the numbers showing, and check they stay over their squares
+   both ways - that is the case that was broken, and the one an eye can check in a second.
+5. **Look at the running diagram.**  No numbers there.
 
 ---

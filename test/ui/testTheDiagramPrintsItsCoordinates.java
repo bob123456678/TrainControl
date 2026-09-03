@@ -35,7 +35,7 @@ public class testTheDiagramPrintsItsCoordinates
     @Test
     public void testTheGutterIsOnTheTopAndTheLeft()
     {
-        java.awt.Insets insets = new AxisRuler(SIZE, 0, 0, 4, 4).getBorderInsets(null);
+        java.awt.Insets insets = AxisRuler.uniform(SIZE, 0, 0, 4, 4).getBorderInsets(null);
 
         assertTrue(insets.top > 0, "no room was reserved above the diagram for the column numbers");
         assertTrue(insets.left > 0, "no room was reserved beside the diagram for the row numbers");
@@ -59,8 +59,8 @@ public class testTheDiagramPrintsItsCoordinates
     @Test
     public void testTheNumbersAreTheDiagramsOwn()
     {
-        String zeroBased = paint(new AxisRuler(SIZE, 0, 0, 4, 3));
-        String offset = paint(new AxisRuler(SIZE, 12, 7, 4, 3));
+        String zeroBased = paint(AxisRuler.uniform(SIZE, 0, 0, 4, 3));
+        String offset = paint(AxisRuler.uniform(SIZE, 12, 7, 4, 3));
 
         assertFalse(zeroBased.equals(offset),
             "a diagram drawn from 12,7 printed the same ruler as one drawn from 0,0 - so the numbers "
@@ -89,11 +89,101 @@ public class testTheDiagramPrintsItsCoordinates
     public void testANumberTooWideForItsSquareIsLeftOut()
     {
         // Four pixels a square: nothing fits, so nothing should be drawn.
-        String tiny = paint(new AxisRuler(4, 100, 100, 6, 6));
+        String tiny = paint(AxisRuler.uniform(4, 100, 100, 6, 6));
 
         assertEquals(digitsIn(tiny), java.util.Collections.emptyList(),
             "three-digit numbers were printed into four-pixel squares, so each one overhangs its "
             + "neighbours and points at the wrong square");
+    }
+
+    /**
+     * Every number sits over its own square, even where the squares are not a tile apart (FR-057).
+     *
+     * Adam: *"the axis numbers drift and are out of alignment.  The first few are centered, but the
+     * rest aren't.  That's why it looks off by one."*
+     *
+     * **The first version worked the positions out as `column * size`**, and that is right only while
+     * every cell is exactly one tile wide.  With the grey grid switched on each square wears a line
+     * border that reserves room, so the real pitch is a pixel or two more - and the error is
+     * cumulative.  The first few numbers land over their squares; the twentieth is a whole square out.
+     *
+     * Every other test in this class used a uniform pitch, so every one of them agreed with the
+     * arithmetic that was wrong.  This one gives the ruler cells that are thirty-one pixels apart and
+     * thirty wide - which is exactly what the grid with its borders on looks like - and then reads back
+     * where the ink landed.
+     *
+     * MUTATION this catches: going back to `column * size`, or centring on the pitch rather than on
+     * the cell.
+     */
+    @Test
+    public void testTheNumbersFollowTheSquaresRatherThanTheTileSize()
+    {
+        final int pitch = 31;
+        final int cell = 30;
+        final int gutter = 18;
+        final int columns = 12;
+
+        AxisRuler drifting = new AxisRuler(0, 0, columns, 0,
+            column -> new java.awt.Rectangle(gutter + column * pitch, gutter, cell, cell),
+            row -> null);
+
+        java.util.List<int[]> ink = inkGroups(paint(drifting));
+
+        assertEquals(ink.size(), columns,
+            "a twelve-column ruler painted " + ink.size() + " numbers");
+
+        for (int column = 0; column < columns; column++)
+        {
+            int[] group = ink.get(column);
+
+            int left = gutter + column * pitch;
+
+            assertTrue(group[0] >= left && group[1] <= left + cell,
+                "the number for column " + column + " was painted at " + group[0] + ".." + group[1]
+                + ", and its square is " + left + ".." + (left + cell) + " - which is the drift Adam "
+                + "reported: the first few are centred and the rest walk off their squares");
+        }
+    }
+
+    /**
+     * The ranges of x where the top strip has ink on it, one per number.
+     *
+     * A gap of a pixel or two inside a two-digit number would split it in two, so groups are joined
+     * across small gaps: what is being measured is which SQUARE a number sits over, not how its digits
+     * are spaced.
+     */
+    private static java.util.List<int[]> inkGroups(String ink)
+    {
+        java.util.List<int[]> out = new java.util.ArrayList<>();
+
+        int start = -1, last = -1;
+
+        for (int x = 0; x < 400; x++)
+        {
+            boolean inked = false;
+
+            for (int y = 0; y < 18; y++)
+            {
+                if (ink.charAt(y * 400 + x) == '#') inked = true;
+            }
+
+            if (inked)
+            {
+                if (start < 0) start = x;
+
+                last = x;
+            }
+            else if (start >= 0 && x - last > 3)
+            {
+                out.add(new int[] { start, last });
+
+                start = -1;
+            }
+        }
+
+        if (start >= 0) out.add(new int[] { start, last });
+
+        return out;
     }
 
     /**
