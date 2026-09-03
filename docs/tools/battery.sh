@@ -189,24 +189,70 @@ esac
 # false "stale", which is the only direction that costs anything here.
 LOCK_PID=$(cat /proc/$$/winpid 2>/dev/null | tr -d '\r\n ')
 
+# THE NAMESPACE, WRITTEN WITH THE NUMBER (SV2-C2).
+#
+# The fallback wrote a bare MSYS pid, and a reader cannot tell which space a bare integer is in.
+# `Get-Process` is guaranteed to answer "no" about an MSYS pid - measured - so such a lock was
+# resolvable only by `kill -0`, and where that cannot answer either (a different MSYS installation,
+# WSL, an EPERM) both readers say no, the lock reads STALE, and a LIVE battery's lock is cleared.  That
+# is FV2-A1's failure mode surviving in the one branch nobody exercised.
 case "$LOCK_PID" in
-    ''|*[!0-9]*) LOCK_PID=$$ ;;
+    ''|*[!0-9]*) LOCK_PID="msys:$$" ;;
 esac
 
 STALE=""
 
+# TESTED AND TAKEN AS ONE STEP, further down (SV2-C3).
+#
+# What follows READS the lock, and the write used to be a plain `echo >` a few lines later - so two
+# batteries launched together both found no file, both wrote, and both proceeded.  It needs sub-second
+# simultaneity, which is exactly what two runs started by the same script have.
+#
+# The creation below uses `set -o noclobber`, which makes "create it only if it does not exist" one
+# operation the filesystem decides rather than two this script decides.  This read stays: it is what
+# produces the message, and what clears a lock whose holder is gone.
 if [ -f "$LOCK" ]
 then
     HELD=$(cat "$LOCK" 2>/dev/null | tr -d '\r\n ')
 
-    ALIVE=$(powershell.exe -NoProfile -Command \
-        "if (Get-Process -Id $HELD -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
-        2>/dev/null | tr -d '\r\n ')
+    # EACH NUMBER ASKED OF THE TOOL THAT CAN ANSWER IT (SV2-C2).
+    #
+    # A winpid is a bare integer and Windows can resolve it.  An MSYS pid is written "msys:NNN" and
+    # only `kill -0` can, and only from a shell in the same MSYS runtime - so asking Windows about one
+    # returns "no" for the wrong reason, which is how a live battery's lock came to be cleared.
+    case "$HELD" in
+        msys:*)
+            HELD_MSYS=${HELD#msys:}
+            HELD_WIN=""
+            ;;
+        *)
+            HELD_MSYS="$HELD"
+            HELD_WIN="$HELD"
+            ;;
+    esac
 
-    # The second opinion, for a lock written before this change or by a shell with no /proc.
-    if [ "$ALIVE" != "yes" ] && kill -0 "$HELD" 2>/dev/null
+    ALIVE="unknown"
+
+    if [ -n "$HELD_WIN" ]
+    then
+        ALIVE=$(powershell.exe -NoProfile -Command \
+            "if (Get-Process -Id $HELD_WIN -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
+            2>/dev/null | tr -d '\r\n ')
+    fi
+
+    # The second opinion, for a lock written before this change or by a shell with no /proc.  Only ever
+    # ADDS a "yes": two tests that can say "still running" cannot combine into a false "stale", which is
+    # the only direction that costs anything here.
+    if [ "$ALIVE" != "yes" ] && [ -n "$HELD_MSYS" ] && kill -0 "$HELD_MSYS" 2>/dev/null
     then
         ALIVE="yes"
+    fi
+
+    # An MSYS lock that `kill -0` could not resolve is UNKNOWN rather than dead: this shell may simply
+    # be a different MSYS runtime.  The unknown arm warns and proceeds, which is what it is for.
+    if [ "$ALIVE" != "yes" ] && [ -z "$HELD_WIN" ]
+    then
+        ALIVE="unknown"
     fi
 
     case "$ALIVE" in
@@ -234,8 +280,37 @@ then
     echo ""
 fi
 
-# The winpid, not $$ - see FV2-A1 above.  A lock Windows cannot resolve reads as stale.
-echo "$LOCK_PID" > "$LOCK"
+# TAKEN IN ONE STEP (SV2-C3).
+#
+# The test above and this write used to be a plain pair, and between them is a `powershell.exe` start
+# of a few hundred milliseconds - which two batteries launched together spend in parallel.  Both found
+# no file, both wrote, both ran.  That is the incident of 2026-08-30, which damaged the real railway,
+# arriving through the guard rather than around it.
+#
+# `set -o noclobber` with `: >` makes creation a question the filesystem answers: exactly one of two
+# racing shells gets the file, and the other gets a non-zero status.  In a subshell, so the option does
+# not outlive the attempt.
+#
+# The stale case is why this can still overwrite: a lock whose holder is gone was cleared above in
+# spirit but not on disk, so it is removed here, immediately before the attempt, by the run that
+# established it is dead.
+if [ -n "$STALE" ]
+then
+    rm -f "$LOCK"
+fi
+
+if ( set -o noclobber; : > "$LOCK" ) 2>/dev/null
+then
+    # The winpid, not $$ - see FV2-A1 above.  A lock Windows cannot resolve reads as stale.
+    echo "$LOCK_PID" > "$LOCK"
+else
+    echo "*** ANOTHER BATTERY TOOK THE LOCK WHILE THIS ONE WAS CHECKING ***"
+    echo ""
+    echo "Two started within the same instant.  Wait for the other one and run this again."
+    echo ""
+
+    exit 2
+fi
 
 BUILD="$S/build/battery-$$"
 
@@ -363,6 +438,19 @@ do
     # Skipped for the reason build.xml gives: it "probes the network for a real Central Station at a
     # hardcoded address" and blocks until that answers. It hung this runner for fourteen minutes.
     case "$cls" in *testAutoDetect) echo "SKIP $cls (needs a Central Station)"; continue;; esac
+
+    # THE HELPERS ARE NOT TESTS, and counting them taught the reader to ignore the line.
+    #
+    # `support/` holds CS3TestServer, LayoutSandbox and TestStationAddress - a fake station, the
+    # preference redirect that keeps tests off Adam's railway, and an address helper.  None has a
+    # @Test, so every run ended "classes that tested nothing: 3" and that number was never zero.
+    #
+    # A count that is always three is not a signal.  The check exists to catch a class whose
+    # @BeforeClass threw - which reports every test skipped and none failed - and a reader who has
+    # learned that the last line always says three will not see the four.  `build.xml` already says
+    # TestStationAddress is "a helper rather than a test"; this is the same statement, made where the
+    # counting happens.
+    case "$cls" in support.*) continue;; esac
 
     # Only THIS RUN's leftover JVMs - reap.ps1 says why that is narrower than "every test JVM", and
     # narrower again than "every java.exe".

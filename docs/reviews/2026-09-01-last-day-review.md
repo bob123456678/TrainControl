@@ -296,6 +296,8 @@ model at all - is Adam's, and is listed under the open questions.
 
 ### C1 - a public method that documents a call that no longer exists
 
+**FIXED 2026-09-03** (`SVN-C2` is the same finding).  `refreshAllProtectingSignals`'s javadoc says it has no production caller, names the two test classes that hold it, and records the consequence this finding raised separately: it was the only thing that cleared `signalAspects`, so the memo now lives for the session and is benign only because the skip test also asks the accessory.
+
 `Layout.refreshAllProtectingSignals()` (`Layout.java:6089`) is now called only from
 `test/core/testAutoLayout.java:966` and `test/regression/testBothProtectingSignalsAreThrown.java`.
 Its javadoc still opens *"Called when a run begins, and forgetting the memo is not enough on its
@@ -307,6 +309,8 @@ That turns out to be harmless - see D24-D2 - but it is no longer true that the m
 the start of a run, and nothing says so.
 
 ### C2 - a dead parameter with a paragraph of justification
+
+**FIXED 2026-09-03** (`SVN-C1`).  `firstOnTheRailway` is gone from the local, the lambda, the javadoc and the signature; the `incrementAndGet()` stays, with a comment saying which half was dead.
 
 `Layout.java:4913` still computes
 
@@ -322,6 +326,8 @@ parameter are not.
 
 ### C3 - the argument for the sweep outlives the sweep
 
+**FIXED 2026-09-03.**  The block is in the past tense and says so in its heading - it argues for a sweep that was removed, and the removal only makes sense beside the case for it.  The `refreshAllProtectingSignals` javadoc is `C1`.
+
 Two comment blocks now argue for something and then say it is gone:
 
 - `Layout.java:5108-5141` - eight paragraphs beginning *"The signals are swept, exactly as the other
@@ -334,6 +340,8 @@ keeping; the case for the thing removed is what has stopped being true.
 
 ### C4 - `setHomeLocomotive`'s two contradictory paragraphs
 
+**FIXED 2026-09-03.**  `setHomeLocomotive`'s block opens with what is true - nothing is refused here any more - and the argument for the refusal is summarised in its own past tense underneath, with the two doors that walked past it.
+
 `Layout.java:1178-1206`. The block still reads *"Refused at the MODEL door, not only in the menu ...
 this is a state Adam has ruled invalid rather than merely unwise - 'any home with two graph points
 should be refused'"*, and then, without a break, *"NOTHING IS REFUSED HERE ANY MORE (Adam,
@@ -341,6 +349,8 @@ should be refused'"*, and then, without a break, *"NOTHING IS REFUSED HERE ANY M
 though it did.
 
 ### C5 - the runtime rule two comments rely on was never what they say
+
+**FIXED 2026-09-03**, both copies: `connected`'s javadoc (as `DY3-C9`) and the assertion message in `testHomeStaging`, which now names `mustBackIn` and records that the sentence said RUNTIME and the runtime has not refused a terminus since Adam's 2026-09-01 ruling.
 
 `HomeStaging.connected(Point, Point, boolean)` javadoc (`HomeStaging.java:1650-1666`):
 
@@ -362,6 +372,8 @@ now the only place a reader would go to learn why the boolean exists (see D24-B4
 
 ### C6 - the assertion was inverted; its javadoc was not
 
+**FIXED 2026-09-03.**  The javadoc says the assertion was reversed by `OB-166` and this text was not, keeps the pre-`OB-166` account in its own past tense, and states the mutation in the direction that matters now - putting the sweep BACK fails the test.
+
 `test/regression/testBothProtectingSignalsAreThrown.java:355-379`. The method was renamed to
 `testAHandDispatchLeavesAStandingTrainsSignalAlone` and its assertion changed from `assertTrue` to
 `assertFalse`, with a good comment at the assertion explaining the ruling. The javadoc above the
@@ -375,6 +387,8 @@ which is now exactly backwards: removing it is what makes the test pass. The tes
 restoring the sweep would command the signal RED and the assertion would fail.
 
 ### C7 - the notice asks about the reversal square, the guard needs the run-in
+
+**OPEN - Adam's** (MT-248).  The notice asks about the reversal square and the guard needs the run-in; `OB-171` has since changed the notice to one per square trains turn at, counting the whole stretch, which is the shape this finding argued for.  What is still his is the question MT-248 puts.
 
 `AutonomySession.reversalsWithoutLength()` (`AutonomySession.java:1921-1943`) lists turnaround
 squares whose **own** tile has no length:
@@ -404,6 +418,8 @@ on first opening the editor after upgrading?
 **Put to Adam as [MT-260](../manual-tests/tests.md#mt-260) (2026-09-02).**  Still open - collecting it is not answering it.
 
 ### C8 - the signal ruling gives up two things and MT-246 records one
+
+**OPEN - Adam's.**  The signal ruling gives up two things and MT-246 records one; carried in MT-260's tail.
 
 `docs/manual-tests/tests.md`, MT-246, under "What this deliberately gives up", records only the
 direction where a hand-placed train's platform stays **green**. The other direction follows from the
@@ -441,6 +457,8 @@ cross. Unreachable on the live configuration - every `active: false` square in
 
 ### C10 - the cross and the train star are placed by different rules
 
+**OPEN, deferred past 3.0.0** (2026-09-03) - the same finding as `SVN-C9`, and deferred with it: the cross and the train star are placed by different rules, and reconciling them is a change to the class that draws every mark on every tile, with the diagram under manual test.
+
 `TileAnnotation.paintBadge` records `badgeDrawnAt` at `:1610`, **after** the rule that moves a
 station's badge to the bottom-left corner on a bend (`:1582-1594`), and that field is what the
 "train is standing here" star follows (`:1079`). The cross added at `:1651-1675` is drawn at
@@ -460,6 +478,8 @@ FR-054 both got rows in "What has been picked up" in the same round (`:346-347`)
 so it still reads as outstanding.
 
 ### C12 - two small things about the placeholder locomotive
+
+**OPEN, deferred past 3.0.0** (2026-09-03).  Both halves confirmed and neither reachable today: the placeholder's aspect is four pixels off the icon it was chosen to match, and `pantograph()` would draw above the canvas at a size no call site asks for.  Worth doing with the drawing work `SVN-C9` and `C10` are waiting for.
 
 `LocomotivePlaceholder.ASPECT` is `0.4f`, so `image(LOC_ICON_WIDTH)` at
 `TrainControlUI.java:9091` produces 296x118. A real cropped icon is exactly

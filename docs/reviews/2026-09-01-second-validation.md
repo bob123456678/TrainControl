@@ -306,6 +306,8 @@ never landed. It has already propagated once — the brief for this pass carries
 
 ### SV2-C2 — the second opinion asks the wrong pid space, and the fallback writes an untagged number
 
+**FIXED 2026-09-03.**  The fallback writes `msys:NNN`, and the reader splits on the prefix: a winpid goes to `Get-Process`, an MSYS pid to `kill -0` only, and an MSYS lock this shell cannot resolve is UNKNOWN rather than dead - which warns and proceeds instead of clearing a live battery's lock.  The paragraph claiming the two tests were redundant is replaced by what they actually are: one can only ever ADD a yes.
+
 The comment at `docs/tools/battery.sh:161-164` claims a redundancy:
 
 > liveness is "either test says alive": Get-Process for the Windows number, and `kill -0` as well, which
@@ -340,6 +342,8 @@ Narrow, because `/proc/<pid>/winpid` exists in Git Bash, but it is narrow in the
 each with the reader that can answer it. Then no answer is ever "no" for the wrong reason.
 
 ### SV2-C3 — the lock is not created atomically
+
+**FIXED 2026-09-03.**  The lock is created with `( set -o noclobber; : > "$LOCK" )`, so which of two racing shells gets it is a question the filesystem answers rather than one this script answers twice.  A stale lock is removed immediately before the attempt, by the run that established its holder is gone.  Proven in isolation: first takes it, second refused, and after removal a third takes it.
 
 `:173` tests `[ -f "$LOCK" ]` and `:213` writes it; when no lock exists the two are microseconds apart,
 but both are preceded by a `powershell.exe` start-up of a few hundred milliseconds, so two batteries
