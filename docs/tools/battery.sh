@@ -380,8 +380,20 @@ release_the_lock()
 
 REPORTED=""
 
+# ONCE, NOT TWICE (VD9-B2).
+#
+# `trap '...; exit 130' INT TERM` runs its body and then exits - and exiting fires the EXIT trap,
+# which runs the same body again.  Measured, not assumed: a throwaway script with this exact pair
+# prints its handler twice.  So a killed run reaped twice and, worse, printed the "this run was
+# stopped and the layout changed" warning twice, which reads as two events.
+DONE=""
+
 on_the_way_out()
 {
+    if [ -n "$DONE" ]; then return; fi
+
+    DONE=1
+
     # BEFORE the fingerprint, because a leftover JVM is by definition one that is still running and
     # deferred work landing after everybody stopped watching is the whole subject of LayoutSandbox.
     #

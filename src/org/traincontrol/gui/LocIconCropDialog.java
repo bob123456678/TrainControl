@@ -1364,17 +1364,21 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * What the frame actually covers, at the picture's own resolution.
+         * What the frame actually covers, in the rectangle's own proportions.
          *
-         * Where the rectangle lies inside the photograph this is the photograph. Where it reaches
-         * past the edge - which the user can now ask for - the rest is white, because that is what
-         * the dialog has been showing them under the frame while they dragged it there.
+         * Where the rectangle lies inside the photograph this is the photograph, at its own
+         * resolution. Where it reaches past the edge - which the user can now ask for - the rest is
+         * white, because that is what the dialog has been showing them under the frame while they
+         * dragged it there, and **the result is scaled down to at most the icon's size** on the way
+         * out (`IPR-B4`; this javadoc said "at the picture's own resolution" and "exactly that
+         * rectangle", and both stopped being true of that branch - `VD9-C4`).
          *
          * Drawn rather than sub-imaged: getSubimage throws on a rectangle that is not wholly inside,
          * and clipping the rectangle to make it legal would quietly return a different crop.
          *
          * @param region the rectangle in source coordinates, possibly overhanging
-         * @return an image of exactly that rectangle
+         * @return an image of that rectangle - the rectangle itself when it lies wholly inside the
+         *         source, otherwise the same shape scaled to fit the icon
          */
         private BufferedImage contentOf(Rectangle region)
         {
@@ -1404,7 +1408,9 @@ public class LocIconCropDialog extends JDialog
             // same step done before the memory is spent rather than after.
             //
             // The branch above needs no such bound.  A rectangle wholly inside the source can only be
-            // as large as the source, which is linear in it and is the picture the user opened.
+            // as large as the source - linear in it, not quadratic, which is the whole difference.
+            // Not free: a big photograph still costs its own size there, and that cost is the same one
+            // ImageIO already paid to decode it.
             double shrink = Math.min(1.0, Math.min((double) this.outWidth / region.width,
                 (double) this.outHeight / region.height));
 
@@ -1467,9 +1473,12 @@ public class LocIconCropDialog extends JDialog
         /**
          * Produces the icon the current view describes.
          *
-         * Cut at the source picture's own resolution and then scaled once, through the same helpers
-         * getLocImage uses, so a cropped icon and a whole-picture icon are resampled identically and
-         * cannot look like they came from different programs.
+         * Cut and then scaled once - never twice, which is the property that matters and the one that
+         * survived `IPR-B4`. A rectangle wholly inside the picture is cut at its own resolution and
+         * resampled by `ImageUtil.getScaledImage`, the same helper `getLocImage` uses. An overhanging
+         * one is composed and resampled in the same step by `Graphics2D`, and the `getScaledImage`
+         * below it is then an identity scale, because `fit` comes out at exactly 1. Two paths, one
+         * resampling each (`VD9-C4`).
          *
          * @return a new image of exactly the requested icon size, never null
          */

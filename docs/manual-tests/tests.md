@@ -168,11 +168,14 @@ code the test covers**, which is four short checks rather than four tests.
 
 **What to do.**
 
-1. **A link whose two halves are on different pages, shut and then undone.** Pair two portals across
-   two pages - `1:10,9` and `5:15,5` on your own railway are already a pair - open the autonomy
-   editor on the page holding the near half, switch the link off with the checkbox, then Ctrl+Z. The
-   link should be **open** again at both ends. Before this, the undo dropped the near half, left the
-   far one behind, and the link stayed shut with nothing on screen saying so.
+1. **A link whose two halves are on different pages, shut and then undone.** `1:10,9` and `5:15,5` on
+   your own railway are already a pair. **The order matters, and it is not the obvious one:** the
+   link checkbox pushes no undo point of its own, so the snapshot has to be taken first. In the
+   **track diagram editor**, on the page holding the near half, make any small edit - that is what
+   takes the undo point. Then shut the link. Then Ctrl+Z. The link should be **open** again at both
+   ends. Before this, the undo dropped the near half, left the far one behind, and the link stayed
+   shut with nothing on screen saying so. Doing it the other way round - toggle, then edit, then
+   Ctrl+Z - is *not* this test and will leave the link shut, correctly.
 2. **Cut a column, undo, paste it back.** In the layout editor, pick a column carrying a station, cut
    it, press Ctrl+Z so the track comes back, paste it anywhere else once, then paste it back over the
    column it came from. **The station should still be there.** Before this, the paste in the middle

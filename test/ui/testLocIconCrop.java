@@ -517,6 +517,26 @@ public class testLocIconCrop
         java.awt.image.BufferedImage source =
             new java.awt.image.BufferedImage(8000, 6000, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
+        // PAINTED, so the composition can be asserted and not only its size (VD9-C5).
+        //
+        // A blank source lets every assertion below pass against a bound that puts the photograph in
+        // the wrong place - swapping the scale and the offset, which is the one mistake the code’s
+        // own comment names, produces an image of identical dimensions.  Two blocks of different
+        // colours make "where did it land" answerable.
+        java.awt.Graphics2D paint = source.createGraphics();
+
+        try
+        {
+            paint.setColor(java.awt.Color.RED);
+            paint.fillRect(0, 0, 8000, 3000);
+            paint.setColor(java.awt.Color.BLUE);
+            paint.fillRect(0, 3000, 8000, 3000);
+        }
+        finally
+        {
+            paint.dispose();
+        }
+
         org.traincontrol.gui.LocIconCropDialog.CropPanel panel =
             new org.traincontrol.gui.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
 
@@ -564,7 +584,29 @@ public class testLocIconCrop
         // AND THE WHOLE WAY THROUGH still gives the icon that was asked for.
         java.awt.image.BufferedImage icon = panel.getCroppedImage();
 
+        // Both of these are structural: every return path of getCroppedImage is CONSTRUCTED at the
+        // icon size, so no value of `cut` can make them fail.  Kept as a shape check and not counted
+        // as evidence (VD9-C5).
         assertEquals(icon.getWidth(), OUT_WIDTH, "the icon is the wrong width");
         assertEquals(icon.getHeight(), OUT_HEIGHT, "the icon is the wrong height");
+
+        // AND THE PICTURE LANDED WHERE IT SHOULD, which is the assertion that can actually fail.
+        //
+        // The frame is centred on the source, so the middle of the cut is the middle of the
+        // photograph - red above, blue below.  A bound that scaled without moving the offset with it,
+        // or that translated before it scaled, puts the join somewhere else entirely while leaving
+        // every size assertion above green.
+        int middle = cut.getWidth() / 2;
+
+        java.awt.Color above = new java.awt.Color(cut.getRGB(middle, cut.getHeight() / 2 - 1), true);
+        java.awt.Color below = new java.awt.Color(cut.getRGB(middle, cut.getHeight() / 2 + 1), true);
+
+        assertTrue(above.getRed() > above.getBlue(),
+            "the top half of the crop is not the red half of the photograph, so the picture was not "
+            + "composed where the frame is standing over it - the scale and the offset have come "
+            + "apart (VD9-C5).  Found " + above);
+
+        assertTrue(below.getBlue() > below.getRed(),
+            "the bottom half of the crop is not the blue half of the photograph.  Found " + below);
     }
 }

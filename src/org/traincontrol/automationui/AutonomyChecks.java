@@ -595,9 +595,13 @@ public class AutonomyChecks
      *
      * A train reversing into a berth shorter than itself stands across the switch behind it, and
      * `isPathClear` refuses that - but only where the track has been measured, because unmeasured
-     * track is unknown rather than short. So the squares this names are exactly the ones where the
-     * guard cannot do its job: somewhere a train turns round, with nothing recorded about how much
-     * room it has.
+     * track is unknown rather than short.
+     *
+     * **This used to add that the squares named here are exactly the ones where the guard cannot do
+     * its job. They are not, quite** (`SVN-B1`, `VD9-B7`). The account of which way they differ, and
+     * why it is narrower than it sounds, is at `AutonomySession.reversalsWithoutLength` - which is
+     * where the set is computed. It is written once, there, because this class had its own copy of
+     * the claim and the copy outlived the correction of the original.
      *
      * **Only on a layout that measures track at all**, which is his condition and a good one: a
      * railway that records no lengths has decided not to model them, and a notice on every reversing

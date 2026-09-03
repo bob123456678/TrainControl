@@ -673,8 +673,16 @@ control; `LayoutEditor.restoreCaptions` → `AutonomySession.restorePage` → `s
 path. Not confirmed whether the checkbox itself pushes an undo point; if it does not, the asymmetry
 still fires on any Ctrl+Z whose snapshot predates the toggle.
 
-**Disposition: fixed, and it fires on the checkbox itself - that half of the finding is settled by
-the test.**
+**Disposition: fixed. The half the finding left open is answered the other way, and that matters to
+whoever tries to see it happen** (`VD9-B3`).
+
+The finding asked *"not confirmed whether the checkbox itself pushes an undo point; if it does not, the
+asymmetry still fires on any Ctrl+Z whose snapshot predates the toggle."* **It does not.**
+`AutonomyEditorPanel` contains no `snapshotLayout` and no undo point of any kind; `previousCaptions` is
+pushed only by `LayoutEditor.snapshotLayout()`, whose call sites are all track-diagram gestures. So the
+sequence that reaches this is: a diagram edit in the layout editor takes the snapshot, the link is then
+shut in the autonomy editor, and Ctrl+Z restores the earlier page - which is exactly the
+"snapshot predates the toggle" case the finding named.
 
 `SquareSetKept` takes a `paired` flag, set only for `disabledLinks`, and the two helpers beside
 `membersOnPage`/`putMembersBack` capture and drop a member with **either** end on the page. That is

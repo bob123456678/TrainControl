@@ -395,9 +395,26 @@ Nine neighbouring classes re-run green: `testAdvancedRoutes`, `testConditionRows
 `testRouteRoundTrip`, `testRoutes`, `testRouteEditorRoundTripCases`, `testRouteEditorValidation`,
 `testRouteEditorShading`, `testCommandTableMarks`.
 
-**The reachability in the finding stands and is why this is still B.** Adam has no `NodeGroup` in
-`routes.json`, and no production caller of `fromTextRepresentation` remains, so no new tree of this
-shape can be made - only a stored one met. The fix costs nothing either way.
+**The reachability conclusion stands; the screen behind it was wrong, and the right one is better
+news** (`VD9-C1`).
+
+The finding said Adam has **no** `NodeGroup` in `routes.json`. He has two, both in
+*Auto Emergency Stop Main BC*, and I repeated the claim without checking it. Screened properly - by
+walking the condition trees rather than counting types - that route is:
+
+```
+Or( Group(And(a,b)), Group(And(c,d)) )
+```
+
+Both groups are direct children of the root, so **both are outermost**, which is the shape that always
+round-tripped. Run through `of()` and `toExpression()` it comes back byte-identical:
+`or(and(1,2),and(3,4))` in and out, with `problems()` empty. `IPR-B2` does not reach his railway, and
+neither does `IPR-B3` - which is worth knowing, because `IPR-B3` was filed wanting a ruling and its
+cost was unknown. It is not refusing anything he owns today.
+
+So the fix is still costless and still worth having, for the stored non-leading bracket nobody has
+met yet - `fromTextRepresentation` has no production caller left, so no new tree of this shape can be
+created either.
 
 ### B3 - two bracketed groups at the same indent are flagged red and the save is refused, for an outline the reader parses correctly
 

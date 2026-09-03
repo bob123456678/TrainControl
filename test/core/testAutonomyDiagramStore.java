@@ -2218,7 +2218,21 @@ public class testAutonomyDiagramStore
 
         store.pairPortals(here, there);
 
+        // AND A SECOND LINK, ON PAGES THIS RESTORE IS NOT ABOUT (VD9-B5).
+        //
+        // Without it the test passes against a putPairedMembersBack that simply empties the set -
+        // the very fix this test’s own comment says it rules out - because the snapshot of page 1
+        // was empty, so "put back nothing" and "put back what was there" look identical.  A member
+        // that must SURVIVE is the only thing that can tell them apart.
+        TileKey farA = new TileKey("3", 2, 2);
+        TileKey farB = new TileKey("4", 7, 7);
+
+        store.pairPortals(farA, farB);
+        store.setPortalDisabled(farA, true);
+
         assertFalse(store.isPortalDisabled(here), "precondition: the link starts open");
+
+        assertTrue(store.isPortalDisabled(farA), "precondition: the unrelated link starts shut");
 
         // What the editor pushes before the gesture.
         java.util.Map<String, Object> pushed = store.snapshotPage("1");
@@ -2240,6 +2254,12 @@ public class testAutonomyDiagramStore
         assertFalse(store.isPortalDisabled(there),
             "the far half is still in disabledLinks on its own, so disabledLinks reaches disk with "
             + "one end of a pair in it - the shape TileGraph.portalClosed says has no migration");
+
+        assertTrue(store.isPortalDisabled(farA) && store.isPortalDisabled(farB),
+            "restoring page 1 re-opened a link on pages 3 and 4, which that snapshot says nothing "
+            + "about.  A restore that empties the set instead of replacing this page’s part of it "
+            + "passes every other assertion here, because the snapshot was empty - this is the one "
+            + "that tells the two apart (VD9-B5)");
     }
 
     /**

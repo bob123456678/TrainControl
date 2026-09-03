@@ -114,10 +114,21 @@
       were written; this file never had it.
 
       Through `test-sys-prop.`, which the TestNG macro in nbproject/build-impl.xml maps onto system
-      properties of the forked JVM.  That indirection is the reason it can be done here at all: the
-      macro takes exactly one jvmarg and NetBeans owns that file, so -Xmx and the skipped-class
-      rule - the other two halves of TSX-C20 - still cannot be set from build.xml.  docs/tools/
-      battery.sh remains the gate, and test/README.md says why.
+      properties of the forked JVM.
+
+      -Xmx IS reachable and this comment used to say it was not (VD9-B4).  The chain is real:
+      j2seproject3:test fills <customize> with <jvmarg line="${run.jvmargs}"/> (build-impl.xml:684-688),
+      test-impl forwards it into the testng task's own <customize/> (:663-675, :632), and :203 defaults
+      run.jvmargs inside a target - so a top-level property here would win.
+
+      It is deliberately not set, for a different reason: that same property feeds the `java` macro
+      the Run and Debug targets use (:915, :948), so bounding it would bound TrainControl itself.
+      Capping the application to make `ant test` tidier is the wrong trade, and `ant test` runs one
+      JVM at a time, which is not the pressure the bound exists for - docs/tools/battery.sh runs many
+      and does set it.  battery.sh remains the gate, and test/README.md says why.
+
+      The skipped-class rule is the one leg with no door at all: TestNG's ant task has no way to fail
+      a run for a class that reported only skips.
     -->
     <property name="test-sys-prop.traincontrol.anyReceivePort" value="true"/>
     <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">

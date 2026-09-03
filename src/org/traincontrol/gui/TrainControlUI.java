@@ -2650,8 +2650,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // taken into the setup and emptied out of the `.cs2`.  It is one-way - nothing at this
             // build writes those labels back - so somebody who upgrades and then opens 2.7.4c again
             // finds their station captions gone from the diagram.  `saveChanges` keeps a `.cs2.bak`
-            // the first time it rewrites a page, which makes them recoverable by hand; that is only
-            // any use to a reader who knows the file exists, hence this line.
+            // the FIRST time it rewrites a page - not every time - which makes them recoverable by
+            // hand; that is only any use to a reader who knows the file exists, hence this line.
+            // The wording says "the first time this version rewrote it" for that reason (VD9-B8):
+            // a page that already had a .bak keeps the older one, which is the state this build
+            // found rather than the state before the last save.
             //
             // The log rather than a dialog: it happens once, on the first start after an upgrade,
             // and it is a record of something already done rather than a question.
@@ -2661,7 +2664,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     + " been taken into the autonomy setup (" + session.getMigratedCaptions()
                     + " of them) and removed from these page files: "
                     + String.join(", ", session.getMigratedPages())
-                    + ".  A copy of each page as it was is kept beside it with a .bak extension");
+                    + ".  Each of those pages has a .bak file beside it holding the page as it"
+                    + " stood the first time this version rewrote it");
             }
 
             // Captions written into the layout file by an earlier version are brought into the setup

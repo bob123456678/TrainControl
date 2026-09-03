@@ -1974,22 +1974,39 @@ public class AutonomySession
      * `Layout.isPathClear` refuses that now - but it can only refuse what it can measure, and
      * unmeasured track is unknown rather than short.
      *
-     * **These are NOT "the squares where the guard is blind", which is what this used to claim**
-     * (`SVN-B1`). Two things are true instead, and both matter to somebody acting on a notice.
+     * **What this set is, exactly** (`SVN-B1`, corrected by `VD9-B6`). The first attempt at this
+     * paragraph said the guard "walks every edge and gives up the moment one has no length" and that a
+     * reversal square with no number of its own leaves it under-counting rather than blind. Both are
+     * false, and the second is backwards. Traced against the two methods rather than against a summary
+     * of them:
      *
-     * The guard is blind on a PATH, not on a square: `isPathClear` walks every edge of the route and
-     * gives up the moment one has no length, so an unmeasured stretch anywhere earlier blinds it on
-     * every path through there - and no notice names that stretch, because a notice is anchored to a
-     * square trains turn at. Clearing every notice this raises does not guarantee the guard can judge
-     * any particular journey; it guarantees it can judge the room at the end of one.
+     * - `Layout.measuredRoomToReverseInto` walks the path's **edges** backwards and **stops at the
+     *   first one that crosses a switch**. Before that it needs each edge's own `getLength() > 0`; at
+     *   it, `getRoomAtTheEnd() >= 0`. It never looks past the last switch, so an unmeasured stretch
+     *   beyond it blinds nothing.
+     * - `GraphReducer.roomAfterTheLastSwitch` is that number: one edge's **tiles**, walked backwards
+     *   from the end, stopping at the first switch, `-1` if any of them has no length.
+     * - `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this asks
+     *   for. **So for the last edge the notice and the guard agree by construction.**
      *
-     * And a square listed here is not necessarily one the guard cannot see. An edge's length is
-     * `sumLength(path) + lengthOf(tile)`, so a reversal square with no number of its own, arrived at
-     * over measured track, still has a positive edge - the guard is not blind there, it is UNDER-
-     * COUNTING by exactly the room the train comes to rest in. That is worth a notice too, and it is
-     * why the square's own length is asked for whether or not its edge already has one.
+     * **The square's own length is the first thing that stretch contains**, and it is why asking for
+     * it is not the over-report the finding called it: `roomAfterTheLastSwitch` seeds `measured` from
+     * `getTileLength(end)`, so without it the answer is `-1` and the guard returns null. Blind, not
+     * under-counting.
      *
-     * **The condition is his, and it is what stops this being a nag.** A railway that records no
+     * **Two ways they still disagree, and both are narrower than "anywhere earlier":**
+     *
+     * - **Under-reports.** When the arriving edge crosses no switch the guard carries on to the edge
+     *   before it, and this only ever looks at edges arriving at the reversal square. Nothing names
+     *   the earlier one, so a notice can be cleared with the guard still blind.
+     * - **Over-reports.** On an edge that crosses no switch the guard asks only that the edge's own
+     *   length - a sum over its tiles - be positive, while this names every unmeasured tile on it. A
+     *   square listed for that reason is worth measuring and is not blinding anything.
+     *
+     * Neither is worth chasing without a ruling: closing the first means walking the graph backwards
+     * from every reversal square, which changes what the count means, and Adam has already accepted
+     * the count as it stands ("20 warnings sounds OK").
+     *     * **The condition is his, and it is what stops this being a nag.** A railway that records no
      * lengths anywhere has decided not to model them, and every reversing square on it would be
      * listed for something nobody is trying to do. One that records some has started, and these are
      * the ones that matter most.
