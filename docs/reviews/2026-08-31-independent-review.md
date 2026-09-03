@@ -174,6 +174,18 @@ says the import hands back *"every station name, station flag and length it was 
 
 ### A2 - a save that prunes tile properties reports nothing at all, and the display is the only thing missing
 
+**FIXED 2026-09-03**, re-derived by pass 4 of the release review.
+
+`isClean()` counts three lists and the dialog was built from two, so a save whose only casualty was
+track lengths and directions passed `isClean()` false, produced an empty text and showed nothing at all -
+the numbers somebody had typed went and the application said not a word.  `getDroppedTileProperties` had
+no reader in `src/` at all, which is how it stayed missing.
+
+The third list reaches the dialog, with its own sentence in all eight bundles.  And the words are a
+function now - `AutonomyReport.describe(report)` - because nothing could have caught this while they
+were built inside a method whose only observable effect is a modal dialog.
+`testATileGoingAwayDropsWhatWasOnIt` asserts them, mutation-confirmed by taking the new block out again.
+
 | | |
 |---|---|
 | **Disposition** | open |

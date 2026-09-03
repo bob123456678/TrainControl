@@ -63,6 +63,31 @@ public class AutonomyReport
 
         if (report.isClean()) return;
 
+        String text = describe(report);
+
+        if (!text.isEmpty())
+        {
+            JOptionPane.showMessageDialog(owner, text,
+                I18n.t("autosetup.ui.titleSetupTidied"), JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    /**
+     * What the dialog would say about a reconciliation, or an empty string for nothing worth saying.
+     *
+     * **Separated from the dialog so it can be tested** (IPR-A2).  `isClean()` counts three lists and
+     * this used to build its text from two, so a save whose only casualty was track lengths and
+     * directions produced an empty text and showed nothing at all: the operator lost numbers they had
+     * typed and the application said not a word.  Nothing could have caught that, because the words
+     * were built inside a method whose only observable effect is a modal dialog.
+     *
+     * @param report what `AutonomySession.save` returned
+     * @return the text, empty when there is nothing to say
+     */
+    public static String describe(AutonomyCompanionStore.Reconciliation report)
+    {
+        if (report == null) return "";
+
         // Say WHAT happened and WHY, not just a list of names (OB-052).
         //
         // This showed the names alone, with no title and no sentence - Adam: "I got a popup message
@@ -95,10 +120,28 @@ public class AutonomyReport
             }
         }
 
-        if (text.length() > 0)
+        // AND THE THIRD LIST, which nothing showed (IPR-A2).
+        //
+        // `isClean()` counts three: the names forgotten, the names kept because something still refers
+        // to them, and the LENGTHS AND DIRECTIONS dropped because their tile is gone.  The dialog was
+        // built from the first two - so an edit whose only casualty was measurements passed `isClean()`
+        // false, built an empty text, and showed nothing at all.  The operator lost the numbers they
+        // had typed and the application said not a word.
+        //
+        // `getDroppedTileProperties` had no reader in `src/` before this, which is how it stayed
+        // missing: the list was filled at ten sites and read only by tests.
+        if (!report.getDroppedTileProperties().isEmpty())
         {
-            JOptionPane.showMessageDialog(owner, text.toString(),
-                I18n.t("autosetup.ui.titleSetupTidied"), JOptionPane.INFORMATION_MESSAGE);
+            if (text.length() > 0) text.append("\n");
+
+            text.append(I18n.t("autosetup.ui.infoTilePropertiesDropped")).append("\n\n");
+
+            for (String dropped : report.getDroppedTileProperties())
+            {
+                text.append("    ").append(dropped).append("\n");
+            }
         }
+
+        return text.toString();
     }
 }

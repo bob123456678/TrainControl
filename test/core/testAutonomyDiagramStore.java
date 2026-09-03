@@ -774,6 +774,26 @@ public class testAutonomyDiagramStore
         assertNull(store.getTileDirection(removed, new RouteId(0, 0)));
 
         assertEquals(report.getDroppedTileProperties().size(), 2, "both are reported, not just removed");
+
+        // AND THE OPERATOR IS TOLD (IPR-A2).
+        //
+        // `isClean()` counts this list, and the dialog was built from the other two - so a save whose
+        // only casualty was lengths and directions passed `isClean()` false, produced an empty text,
+        // and showed nothing at all.  The numbers somebody typed went and the application said not a
+        // word.  What is asserted is the WORDS, because the dialog itself cannot be driven from a
+        // battery.
+        assertTrue(report.getForgottenNames().isEmpty() && report.getNamesStillReferenced().isEmpty(),
+            "precondition: this reconciliation must have dropped ONLY tile properties, or the text "
+            + "below could be produced by one of the other two lists");
+
+        String said = org.traincontrol.gui.AutonomyReport.describe(report);
+
+        assertFalse(said.isEmpty(),
+            "a save that dropped track lengths and directions says nothing at all - isClean() counts "
+            + "them, so the dialog is reached, and then there is nothing in it to show");
+
+        assertTrue(said.contains(org.traincontrol.util.I18n.t("autosetup.ui.infoTilePropertiesDropped")),
+            "the text does not carry the sentence that explains what was dropped: " + said);
     }
 
     /**

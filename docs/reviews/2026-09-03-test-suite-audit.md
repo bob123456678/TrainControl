@@ -52,6 +52,17 @@ in [the release review](2026-09-03-release-review.md).
 | D6 | Not a defect | Where the `TST` / `TCX` / `TS3` findings in `test/core` stand at HEAD - fourteen closed, nine confirmed open - and pass 1's `B3` handoff answered | Pass 2 |
 | D7 | Not a defect | Six core classes read against their own stated mutations and found sound | Pass 2 |
 | D8 | Not a defect | What pass 2 did not cover | Pass 2 |
+| B7 | Medium | `battery.sh` reads `ALIVE` outside the block that sets it, under `set -u` - so the battery aborts before it compiles anything whenever there is no lock file, which is the ordinary case. Today's `REL-C10` fix; `one.sh` does not have it | Pass 3 |
+| C14 | Low | The two runners' exit paths: neither reaps nor fingerprints the live layout when the run is killed; `battery.sh` fingerprints BEFORE reaping and `one.sh` after; and both traps delete a lock the run may no longer own | Pass 3 |
+| C15 | Low | `one.sh` was given `battery.sh`'s out-of-heap diagnostic and not the `-Xmx512m` that removes the cause, nor any way to pass one | Pass 3 |
+| C16 | Low | `docs/tools/parity/setup-env.sh` still compiles from `$REPO/tools/parity/`, a path that has not existed since `fb3722f5` - the fifth file that commit missed, and the one its sweep's needle list could not match | Pass 3 |
+| C17 | Low | `CS3TestServer` hardcodes port 8080 with no override, `getPort()` reads the constant back, and neither of the two classes that start it stops it in a `finally` | Pass 3 |
+| C18 | Low | Today's blanket `@AfterClass(alwaysRun = true)` reached ten teardowns that dereference a static the `@BeforeClass` may never have assigned; `testTheGoldenLayoutHoldsTogether` is the sharp one, and its javadoc's portability claim is now false | Pass 3 |
+| C19 | Low | `testEveryTestIsInTheBattery` counts ANY annotation as an annotation, including `@Override`, while its own javadoc says what must never happen is a test-shaped method with no TestNG annotation at all | Pass 3 |
+| C20 | Low | `build.xml` passes none of the three JVM flags the runners give every class, and `ant test` is green for a class that skipped everything - `TST-B1` confirmed, with its mechanism and two more halves | Pass 3 |
+| D9 | Not a defect | Where the earlier passes' findings in this scope stand at HEAD, pass 2's two `C9` handoffs answered, and the line-ending census that corrects `C9`'s premise | Pass 3 |
+| D10 | Not a defect | Both ratchets recomputed and exact, `build.xml`'s list complete and duplicate-free, and six harness mechanisms read against their stated failures and found sound | Pass 3 |
+| D11 | Not a defect | What pass 3 did not cover | Pass 3 |
 
 ---
 
