@@ -857,6 +857,15 @@ added, and `A1` is the more serious of the two.
 
 #### A1 - `roomAtTheEnd` - the whole input to the reverse-over-switch guard - is named by no test at all
 
+**FIXED 2026-09-03.**  `testTheRoomAfterTheLastSwitchReachesTheRunningLayout` walks the whole chain the
+finding names: the reducer measures nine, the BUILDER writes it into the configuration, an `Edge` reads
+it back and answers `crossesASwitch()`, and `Edge.toJSON` writes it out again.
+
+Mutation-confirmed by deleting the builder's one line - which is exactly the deletion the finding says
+left the suite green, and now does not.  The finding's framing is worth keeping: `lockedges` got this
+test on 2026-08-31 and `roomAtTheEnd` did not, which is the sibling drift this repository keeps paying
+for.
+
 **Status: open.** Missing test. Verified by reading and by `grep`. Severity: the defect that would go
 unnoticed is a train backed into a berth it does not fit, standing across the points behind it, which is
 the hazard Adam raised on 2026-09-01 and the reason `Layout.measuredRoomToReverseInto` was narrowed on

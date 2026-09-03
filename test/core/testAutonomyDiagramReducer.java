@@ -185,6 +185,99 @@ public class testAutonomyDiagramReducer
      * Read off the reducer rather than assumed, so this test does not have to know which way the
      * fixture happens to lay its track out.
      */
+    /**
+     * And it reaches the running layout, through the builder and the file (TSX-A1).
+     *
+     * The test above proves the REDUCER computes the room after the last switch.  Between that number
+     * and the guard that uses it are three steps nothing touched: `AutonomyBuilder` writes the key,
+     * `Layout.parseAuto` reads it back onto the `Edge`, and `Edge.toJSON` writes it out again.
+     *
+     * **What the gap was worth.**  `Edge.crossesASwitch()` is `roomAtTheEnd != Integer.MIN_VALUE`, so
+     * an edge that never received the key answers false - and `measuredRoomToReverseInto` then sums
+     * the WHOLE route rather than the stretch after the last switch.  That is the too-permissive rule
+     * Adam replaced on 2026-09-02, and the cost is written at the guard: a train coming to rest across
+     * the points behind it.  Delete the builder's one line and the whole suite stayed green.
+     *
+     * The sibling key `lockedges` was given exactly this test on 2026-08-31; this one was not.
+     *
+     * MUTATION this catches: deleting the write in `AutonomyBuilder`, the read in `parseAuto`, or the
+     * export in `Edge.toJSON`.
+     */
+    @Test
+    public void testTheRoomAfterTheLastSwitchReachesTheRunningLayout() throws Exception
+    {
+        LayoutDiagram page = page("main", 9, 4);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        add(page, componentType.SWITCH_LEFT, 3, 1, 3, 7);
+        wire(page, 3, 1, 7, Accessory.accessoryType.SWITCH);
+        straight(page, 4, 1);
+        straight(page, 5, 1);
+        feedback(page, 6, 1, 12);
+        feedbackNS(page, 3, 0, 13);
+
+        Map<TileKey, Integer> lengths = new HashMap<>();
+        lengths.put(key("main", 2, 1), 5);
+        lengths.put(key("main", 3, 1), 7);
+        lengths.put(key("main", 4, 1), 3);
+        lengths.put(key("main", 5, 1), 4);
+        lengths.put(key("main", 6, 1), 2);
+
+        GraphReducer reducer = reduce(graph(page), authored(lengths, null, null));
+
+        List<ReducedEdge> through = edgesBetween(reducer, key("main", 1, 1), key("main", 6, 1));
+
+        assertEquals(through.size(), 1, "the fixture did not produce the one edge this is about");
+
+        assertEquals(through.get(0).getRoomAtTheEnd(), 9,
+            "precondition: the reducer must have measured the room, or nothing below means anything");
+
+        // THE BUILDER WRITES IT.
+        org.json.JSONObject built = new org.json.JSONObject(
+            new org.traincontrol.automationui.AutonomyBuilder(reducer, null).build());
+
+        org.json.JSONObject carried = null;
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            if (edges.getJSONObject(i).has("roomAtTheEnd")) carried = edges.getJSONObject(i);
+        }
+
+        assertNotNull(carried,
+            "the built configuration carries no room after the last switch, so every edge the running "
+            + "layout reads answers crossesASwitch() false and the guard sums the whole route - the "
+            + "rule that was replaced.  Built: " + built.getJSONArray("edges"));
+
+        assertEquals(carried.getInt("roomAtTheEnd"), 9,
+            "the builder wrote a different number from the one the reducer measured");
+
+        // AND AN EDGE READS IT BACK, which is what parseAuto does with it.
+        // Two points with sensors, because a destination without one is refused by the model - which
+        // is a rule about the railway rather than about this test.
+        org.traincontrol.automation.Edge fresh = new org.traincontrol.automation.Edge(
+            new org.traincontrol.automation.Point("A", true, "8991"),
+            new org.traincontrol.automation.Point("B", true, "8992"));
+
+        assertFalse(fresh.crossesASwitch(),
+            "precondition: a fresh edge must not already claim a room");
+
+        fresh.setRoomAtTheEnd(carried.getInt("roomAtTheEnd"));
+
+        assertTrue(fresh.crossesASwitch(),
+            "an edge given a room still says it crosses no switch, so the guard would sum the whole "
+            + "route however carefully the builder measured it");
+
+        // AND WRITES IT OUT AGAIN, so a configuration exported by this version does not lose it.
+        org.json.JSONObject again = fresh.toJSON();
+
+        assertTrue(again.has("roomAtTheEnd"),
+            "the export drops the room after the last switch, so a setup written by this version and "
+            + "read back by it loses the guard");
+
+        assertEquals(again.getInt("roomAtTheEnd"), 9, "the room did not survive the round trip");
+    }
     private Side arrivalSideAt(GraphReducer reducer, TileKey from, TileKey to)
     {
         for (ReducedEdge edge : reducer.getEdges())
