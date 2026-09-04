@@ -1558,6 +1558,69 @@ public class testHomeStaging
     }
 
     /**
+     * A train that cannot reverse is homed at a terminus with nothing on the way to turn it round.
+     *
+     * **Adam, 2026-09-04: "Return home is manual, take the rule out and say why."**
+     *
+     * The rule was `mustBackIn` - a terminus was refused to a non-reversible train unless a reversing
+     * point lay on the route, so that it backed in and could leave forwards. `280ff08b` had put it
+     * here deliberately, keeping staging on the strict side of his 2026-09-01 ruling that *"in manual
+     * operation, non reversing trains must be able to back into a terminus if the graph makes that
+     * possible"*. This is that decision revisited with a case in front of it.
+     *
+     * **The case was his own railway.** `EN57-203` is not reversible, stands on `BottomMainA` and is
+     * homed at `TunnelLongPark`, which is authored `mustReverse` and built as a terminus. Return Home
+     * answered `NO_PLAN_FOUND`. Measured through a sandbox copy: setting `reversible` true and
+     * re-planning gave `READY`, and setting it back gave `NO_PLAN_FOUND` again - one flag, the whole
+     * of it. His railway carries exactly one reversing point and it is not on the way.
+     *
+     * The fixture is the plain ring: four stations, edges both ways, **no reversing point anywhere**.
+     * That is the point of it - if a reversing point existed the old rule would have been satisfied
+     * and this would have passed before the change.
+     *
+     * MUTATION, stated exactly: restoring `mustBackIn` at either of its two routing sites -
+     * `firstClearRoute`'s arrival test or the `connected` seed - fails this.
+     */
+    @Test
+    public void testATrainThatCannotReverseIsStillStagedHomeToATerminus() throws Exception
+    {
+        Layout layout = load(ringAssigning(LOC_A));
+
+        Point d = layout.getPoint("HS D");
+
+        // Locomotive state outlives the layout - load() re-parses the graph, not the database.
+        final boolean wasReversible = loc(LOC_A).isReversible();
+
+        try
+        {
+            loc(LOC_A).setReversible(false);
+
+            d.setTerminus(true);
+
+            // THE FIXTURE HAS TO BE THE HARD CASE, or this passes for the wrong reason.
+            for (Point p : layout.getPoints())
+            {
+                assertFalse(p.isReversing(),
+                    "the ring must carry no reversing point - " + p.getName() + " does, so the old "
+                    + "rule would have been satisfied and this would prove nothing");
+            }
+
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d),
+                "precondition: the chooser already allows a terminus as a home, so any refusal below "
+                + "is the routing rule rather than the home rule");
+
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            assertTrue(plan.isPossible(),
+                "a train that cannot reverse was refused a plan home to its terminus, and Adam ruled "
+                + "on 2026-09-04 that Return Home is manual operation.  Outcome: " + plan.getOutcome());
+        }
+        finally
+        {
+            loc(LOC_A).setReversible(wasReversible);
+        }
+    }
+    /**
      * A retired Layout refuses a path outright rather than part-running it.
      *
      * Reloading the autonomy file builds a new Layout, and the version counter is static, so the old
@@ -2627,9 +2690,23 @@ public class testHomeStaging
             + "and setting off again is two ordinary moves.  IMPOSSIBLE is a claim about the track, and "
             + "it sends the operator to look at track that is fine: " + impossible);
 
-        assertFalse(impossible.isPossible(),
-            "and the control: it should not find an arrangement here either, so this test is about "
-            + "WHICH refusal rather than about the planner suddenly succeeding: " + impossible);
+        // AND IT NOW FINDS THE ARRANGEMENT, which is this test's own argument arriving (2026-09-04).
+        //
+        // The control here used to be `assertFalse(impossible.isPossible())` - "it should not find an
+        // arrangement either, so this test is about WHICH refusal".  That was true, and the reason was
+        // `mustBackIn` rather than the track: `HS alpha` cannot reverse and HS B is a terminus, so the
+        // move INTO HS B was refused, and the two-move route this test argues for could not be built.
+        //
+        // Adam took that rule out on 2026-09-04 - "Return home is manual" - and the planner now does
+        // what the paragraph above says the track allows: stop at HS B, set off again, reach HS C.
+        assertFalse(loc(LOC_A).isReversible(),
+            "the fixture rests on this train not being reversible - if it were, the old rule never "
+            + "applied here and this assertion would say nothing about the change");
+
+        assertTrue(impossible.isPossible(),
+            "HS B is a station, so stopping there and setting off again is two ordinary moves - and "
+            + "this is now the only route.  The planner declining it is the refusal Adam overturned: "
+            + impossible.getOutcome());
 
         assertTrue(impossible.getBlocked().isEmpty(),
             "nobody is named as blocked, because nobody has been shown to be: " + impossible);
@@ -3997,22 +4074,27 @@ public class testHomeStaging
     }
 
     /**
-     * A train that cannot reverse must BACK INTO its home, or it has no way there (Adam, 2026-08-31).
+     * A train that cannot reverse gets home to its terminus WITH OR WITHOUT a reversing point on the
+     * way (Adam, 2026-09-04).
      *
-     * "For homing: I would also like non-reversing trains to have to back in.  I know this is complex,
-     * but we need to manage it."
+     * **This test asserted the opposite until then, and it is kept rather than deleted because the
+     * contrast is the point.** It was written for his ruling of 2026-08-31 - *"For homing: I would
+     * also like non-reversing trains to have to back in. I know this is complex, but we need to manage
+     * it"* - and `mustBackIn` was that rule: a terminus was refused unless the route turned the train,
+     * so it backed in and could leave forwards.
      *
-     * The runtime already insists: `Layout.isPathClear` refuses a terminus to a locomotive that cannot
-     * reverse unless the path passes a reversing point, so the train arrives already turned and leaves
-     * forwards. The planner did not know that rule. Its reachability scan asks `connected`, a plain
-     * breadth-first search, so a home reachable only by a route with no reversing point read as
-     * reachable - and the plan it then produced was one the runtime would refuse.
+     * He overturned it on 2026-09-04 - *"Return home is manual, take the rule out and say why"* -
+     * after `EN57-203` could not be sent home to `TunnelLongPark` on his own railway, which carries
+     * one reversing point and not on that route. The reasoning is at `firstClearRoute`'s arrival test:
+     * pressing Return Home IS the operator asking, which is what makes it manual, and his ruling of
+     * 2026-09-01 already said manual operation may back a non-reversible train into a terminus.
      *
-     * The two ends of this test are the same railway with one flag moved, which is what makes it about
-     * the rule rather than about the fixture.
+     * The two halves are the same railway with one flag moved, which is what keeps this about the rule
+     * rather than about the fixture - and both halves now answer the same way, which is the whole
+     * content of the change.
      *
-     * MUTATION: asking `connected` without the reversal requirement passes the first half and fails
-     * the second.
+     * MUTATION: restoring `mustBackIn` at `firstClearRoute`'s arrival test fails the first half and
+     * leaves the second passing.
      */
     @Test
     public void testATrainThatCannotReverseHasToBackIntoItsHome() throws Exception
@@ -4040,18 +4122,18 @@ public class testHomeStaging
             assertFalse(middle.isReversing(), "the fixture did not take: nothing may reverse it yet");
 
             assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(),
-                HomeStaging.Outcome.IMPOSSIBLE,
-                "the planner offered to send a train that cannot reverse into a terminus by a route "
-                + "that never turns it round - which is `mustBackIn`, the planner's own rule since "
-                + "Adam's ruling of 2026-09-01 took the terminus clause out of isPathClear.  (This "
-                + "said the RUNTIME refuses it, and the runtime has not since that ruling: D24-C5.)");
+                HomeStaging.Outcome.READY,
+                "a train that cannot reverse was refused a plan home to its terminus because nothing "
+                + "on the way turns it round.  Adam took that rule out on 2026-09-04: Return Home is "
+                + "manual operation, and manual operation may back a train into a terminus - his own "
+                + "ruling of 2026-09-01, which isPathClear has followed since");
 
-            // The same railway, with a reversing point on the way: now it can back in.
+            // The same railway, with a reversing point on the way.  It made the difference once; the
+            // content of the change is that it no longer does.
             middle.setReversing(true);
 
             assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
-                "with a reversing point on the way the train arrives already turned - it backs in and "
-                + "leaves forwards - and the planner still called it impossible");
+                "and with a reversing point on the way, as it always did");
         }
         finally
         {

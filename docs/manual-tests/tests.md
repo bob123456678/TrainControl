@@ -13794,6 +13794,51 @@ the locomotive.
    put a reversing point on its approach. That is data rather than code, and it is worth knowing that
    one reversing point on a railway this size is what makes this bite.
 
+**Adam, 2026-09-04: "Return home is manual, take the rule out and say why."  Done.**
+
+`mustBackIn` is gone from all three of its sites - the arrival test in `firstClearRoute`, the seed
+`connected` was given, and an exemption in the staging audit that existed only to stop the rule
+reporting itself as a divergence. That last one mattered: its own comment recorded what it cost -
+*"a planner defect that refuses a terminus to a non-reversible train for the WRONG reason is now
+invisible to this audit"* - and leaving it would have kept the blindness after the reason for it went.
+
+**Two existing tests asserted the old rule and now assert its absence**, which is how you can tell the
+change bit rather than being described. `testATrainThatCannotReverseHasToBackIntoItsHome` kept its
+name and its fixture on purpose: both halves now answer READY, and the reversing point that used to
+make the difference no longer does. The other one,
+`testAHomeReachableOnlyThroughATerminusIsNotProvedImpossible`, had a control saying the planner would
+not find the two-move arrangement its own prose argued the track allowed - it did not find it because
+of this rule, and now it does.
+
+MUTATION: putting the rule back at the arrival test fails all three.
+
+**What to do.** Press Return Home with EN57-203 where it is. It should now plan and go to
+TunnelLongPark, backing in. **Watch it arrive** - this is the case your 2026-08-31 instinct was about,
+and the thing to check is that what it does on the track is what you want to see, not just that the
+button worked.
+
+**One thing I did not do, because "say why" reads two ways.** I took it as the reason for the removal,
+and it is written into the code at `firstClearRoute`'s arrival test and into both tests. The other
+reading is remedy 2 above - a refusal naming the locomotive and the cause. That is still unbuilt and
+still worth building: `NO_PLAN_FOUND` remains deliberately vague, which is right for a search that ran
+out of room and wrong for anything permanent. Say the word.
+
+**AND ONE THING TO LOOK AT WHEN YOU RUN IT, because taking the rule out has a price and this is the
+test that always named it.**
+
+`testALeavingTerminusDoesNotCountAsHavingBackedIn` builds two berths with nothing between them that
+turns a train, and a locomotive that cannot reverse. It asserted `NO_PLAN_FOUND` for two months, on
+the grounds that READY *"would be a plan that drives a non-reversible train nose first into a berth it
+cannot reverse out of"*. It now asserts READY, because that is your ruling.
+
+EN57-203 to TunnelLongPark is that case: no reversing point on the route, so it goes in **nose first**
+rather than backing in. It gets home, which is what you asked for.
+
+**So the thing to check is whether you can get it out again afterwards.** If you can, the ruling is
+complete and this paragraph is just a record. If you cannot, what we want is narrower than what you
+ruled - allow it into its HOME, where it is meant to sit, and keep the rule for intermediate stops -
+and that is a small change from here.
+
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 01:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

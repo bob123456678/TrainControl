@@ -386,29 +386,35 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A train leaving a TERMINUS leaves forwards, so the planner may not claim it can back in.
+     * Two berths with nothing between them that turns a train, and the planner now takes it
+     * (Adam, 2026-09-04).
      *
-     * The other half of D24-B1 was that `executePath` flips direction on arrival at a terminus and at a
-     * reversing point alike, in one statement.  True - and it does not mean the two seed this search
-     * the same way, which is what the first fix assumed and what SV2-A1 caught before it shipped.
+     * **This test asserted `NO_PLAN_FOUND` until then, and the change of answer is the ruling.**
+     * *"Return home is manual, take the rule out and say why."*  `mustBackIn` refused a terminus to a
+     * train that cannot reverse unless the route turned it, and this fixture is the sharpest case
+     * there is: berth A to berth B, both termini, nothing on the way that turns anything.
      *
-     * `turned` is asked at arrival by `mustBackIn`, and it means "this train will BACK INTO the berth
-     * it is ending at".  At a reversing point the arrival flip leaves the train trailing, so it goes on
-     * backing.  At a terminus that flip is the one that turns a backed-in train round to face OUT
-     * again; it is spent.  A train leaving a berth leaves forwards, and would arrive nose first at the
-     * next one - stuck in a berth it cannot reverse out of, which is the whole of what Adam asked for
-     * when he said non-reversing trains must back in.
+     * **WHAT IT COSTS, said plainly, because this is the test that always said it.**  The train is now
+     * driven NOSE FIRST into a berth it cannot reverse out of.  It gets home, which is what he asked
+     * for; whether it can leave again is the question the old rule was protecting, and it is his own
+     * *"otherwise we'd need a third kind of station"* arriving from the other side.
      *
-     * **So the right answer here is that no plan is found, and the point of the test is WHICH refusal.**
-     * `NO_PLAN_FOUND` says "I did not find a way" and is allowed to be wrong.  `IMPOSSIBLE` says "there
-     * is no way", and this class only ever offers that as a proof - the operator is told to go and look
-     * at the track.  `connected` is what makes that claim, and it seeds from a terminus as well as a
-     * reversing point precisely so it cannot over-claim: a proof may be looser than the search it
-     * guards, never tighter.
+     * The reasoning for accepting that is at `firstClearRoute`'s arrival test: pressing Return Home is
+     * the operator asking, a berth is where a train is meant to sit, and his railway carries one
+     * reversing point - so the alternative was `EN57-203` never going home at all.
      *
-     * MUTATION: dropping `|| from.isTerminus()` from `connected` turns the outcome into IMPOSSIBLE and
-     * fails the first assertion.  Restoring it in `firstClearRoute` as well fails the second, because
-     * the planner then offers a plan that drives a train nose first into a berth it cannot leave.
+     * **The `turned` seeding is untouched and still right**, and this is still where it is written
+     * down.  `executePath` flips direction on arrival at a terminus and at a reversing point alike, in
+     * one statement - true, and it does not mean the two seed a search the same way.  At a reversing
+     * point the arrival flip leaves the train trailing, so it goes on backing.  At a terminus that flip
+     * is the one that turns a backed-in train round to face OUT; it is spent.  `SV2-A1` caught that
+     * before it shipped and `D24-B1` is the other half of it.  Nothing reads the flag as a rule now,
+     * but it still decides how a route is described, and a wrong description is what the next rule
+     * would be built on.
+     *
+     * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to
+     * `NO_PLAN_FOUND`; dropping `|| from.isTerminus()` from `firstClearRoute`'s seed leaves it READY,
+     * which is why the seed has its own assertion below rather than riding on the outcome.
      */
     @Test
     public void testALeavingTerminusDoesNotCountAsHavingBackedIn() throws Exception
@@ -441,22 +447,16 @@ public class testReturnHomeSequencesAReversal
 
             // THE OUTCOME ITSELF, which is what this test is about (TV2-C5).
             //
-            // Two assertions stood here - not IMPOSSIBLE, and not possible - and between them they
-            // admitted five of the seven outcomes.  The javadoc says the point of the test is WHICH
-            // refusal, and that was the one thing neither of them checked: if the home assignment ever
+            // Named exactly rather than asserted as "not impossible", which is the shape this had
+            // before and which admitted five of the seven outcomes: if the home assignment ever
             // stopped taking, `triage()` would answer NO_HOMES before a line of the code under test
-            // ran, and this would stay green while exercising nothing.
-            //
-            // One assertion implies both: NO_PLAN_FOUND is neither IMPOSSIBLE (a claim about the
-            // track, which is fine) nor READY (a plan that drives the train in nose first).  Both
-            // mutations still fail it - IMPOSSIBLE from the `connected` one, READY from the
-            // `firstClearRoute` one.
-            assertEquals(String.valueOf(plan.getOutcome()), "NO_PLAN_FOUND",
-                "the planner did not answer NO_PLAN_FOUND.  IMPOSSIBLE would be a claim about the "
-                + "track, and the track is fine; READY would be a plan that drives a non-reversible "
-                + "train nose first into a berth it cannot reverse out of; anything else means this "
-                + "test never reached the code it is about.  Blocked: " + plan.getBlocked()
-                + ", moves: " + plan.getMoves());
+            // ran, and it would stay green while exercising nothing.
+            assertEquals(String.valueOf(plan.getOutcome()), "READY",
+                "the planner did not answer READY.  Adam took `mustBackIn` out on 2026-09-04, so a "
+                + "train that cannot reverse is now driven nose first into its berth rather than "
+                + "refused - IMPOSSIBLE would be a claim about the track, and the track is fine; "
+                + "NO_PLAN_FOUND is the answer this gave while the rule was there.  Blocked: "
+                + plan.getBlocked() + ", moves: " + plan.getMoves());
         }
         finally
         {

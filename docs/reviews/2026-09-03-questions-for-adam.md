@@ -94,6 +94,19 @@ square-level menu ask a per-train question and it moved `BottomMainB` and `Botto
 everything it reaches is either a square you have marked as not an automatic destination, or itself a
 reversing point?
 
+Make it a notice.
+
+**Done, 2026-09-04 - and it already was one, which is what made it affordable.**
+
+The check now counts only a station autonomy would actually choose: `checkReversingGoesSomewhere` asks
+`AutonomySession.stationsAutonomyWillNotChoose()`, which is the runtime's own `isAutoDestination`
+clause asked of the diagram, and skips the reversing squares as well. A pocket of track whose only
+station is a parking berth now says so.
+
+Only the two SQUARE-level clauses, for the reason below: the other two take a locomotive and this
+notice is drawn on a square. `testAPocketWhoseOnlyStationIsAParkingBerthStillLeadsNowhere` covers it,
+and asserts the severity is `NOTICE` so that a later widening cannot quietly promote it.
+
 **The trade, in your own numbers.** 20 of your 71 squares carry `autoDestination: false` and 5 more can
 reverse. `MT-253` records that this warning fires on exactly one square today - RampDown southbound. I
 have not measured how many it would fire on tightened, because that needs the reachable set of every
@@ -135,6 +148,21 @@ stations, so the useful half is the *unreachable* list and it should probably le
 reason it is better is the same reason the Why tool is better than a yes/no: you are almost never
 asking "can A reach B" out of curiosity - you are asking because something did not work, and the
 reason is what you want. (a) makes you guess which pair to test.
+
+Don't we already do this via "Why isn't it moving"?  I am OK with the current setup unless I am
+missing something.
+
+**You are right for every case with a train in it, and there is exactly one gap.**
+
+The Why tool opens with `if (standing == null) { say(whyNoTrainHere); return; }`
+(`AutonomyEditorPanel:5562`). It answers about the train standing on the square, so on a square with no
+train it says "no train here" and stops. That is the case 2.8.1's Test Connection covered and this does
+not: **planning a setup on an empty railway**, before anything is placed, asking whether the track you
+have just drawn actually joins up.
+
+If you build setups with trains already on the layout - which, looking at your configuration, you do -
+then you never reach that gap and there is nothing here worth building. **I am treating `RG3-C4` as
+declined on that basis**; say otherwise and it goes back on the list.
 
 Either way it wants a name that is not "Test Connection", which meant something else.
 

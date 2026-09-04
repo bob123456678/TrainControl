@@ -278,6 +278,7 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
+        Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation)
     {
@@ -309,7 +310,8 @@ public class AutonomyChecks
         findings.addAll(checkNames(reducer));
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
 
-        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred));
+        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred,
+            notAutoDestinations));
         findings.addAll(checkTrappedArrivals(reducer, trapped));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
         findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred));
@@ -446,7 +448,8 @@ public class AutonomyChecks
      * @return one finding per reversing square that leads nowhere
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
-        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred)
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -455,11 +458,39 @@ public class AutonomyChecks
         reversing.addAll(mayTurn);
         reversing.addAll(mustTurn);
 
+        // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station (V36-C4).
+        //
+        // This counted any station, and the runtime does not: `Layout:3576` requires
+        // `!isReversing() && isAutoDestination()` before a square is a candidate at all.  So a
+        // reversing point whose only reachable station is a parking berth read as healthy here and
+        // was useless in the run - a train sent there turns round and is still nowhere, which is the
+        // exact sentence this notice exists to say.
+        //
+        // ONLY THE TWO SQUARE-LEVEL CLAUSES.  The runtime's other two - a terminus this train cannot
+        // leave, and a station that excludes it - both take a locomotive, and this notice is drawn on
+        // a square with no train in the question.  Asking them would mean choosing a train, or
+        // quantifying over every train owned; and "no locomotive on the railway could go there" is a
+        // weaker claim than the one this notice makes.  That is the same square-versus-train
+        // distinction that moved `BottomMainB` on `FR-058` the day before, from the other side.
+        //
+        // Adam, 2026-09-04: *"Make it a notice."*  It already was, and that is what makes tightening
+        // it affordable: 20 of the 71 squares on his railway are not automatic destinations, so this
+        // may now say something about a good many of them, and a notice is the one severity that can
+        // carry that without drowning the list.
         Set<TileKey> stationTiles = new LinkedHashSet<>();
 
         for (ReducedPoint point : reducer.getPoints().values())
         {
-            if (point.isStation()) stationTiles.add(point.getTile());
+            if (!point.isStation()) continue;
+
+            if (notAutoDestinations.contains(point.getTile())) continue;
+
+            // A reversing station is not a destination either, and it is the older spelling of the
+            // same idea - `isAutoDestination` already treats it so, but the reversing sets are what
+            // this method has in its hand, so it is asked here too rather than trusted twice over.
+            if (reversing.contains(point.getTile())) continue;
+
+            stationTiles.add(point.getTile());
         }
 
         for (TileKey tile : reversing)

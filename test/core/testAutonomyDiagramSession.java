@@ -1428,6 +1428,96 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A pocket whose only station is one autonomy may never choose still leads nowhere (V36-C4).
+     *
+     * **Adam, 2026-09-04: "Make it a notice."** - which is the severity half of the question, and it
+     * is why this is safe to tighten. `20` of the `71` squares on his own railway carry
+     * `autoDestination: false`, so matching the runtime could put a line against a good many of them;
+     * a notice is the one severity that can afford that.
+     *
+     * **The finding.** The check counted any STATION as somewhere to go. The runtime does not:
+     * `Layout:3576` requires `!isReversing() && isAutoDestination()` before autonomy will pick a
+     * destination at all. So a reversing point whose only reachable station is a parking berth read as
+     * healthy in the editor and was useless in the run - a train sent there turns round, and there is
+     * still nowhere for autonomy to send it next.
+     *
+     * **Only the two SQUARE-level clauses.** The runtime's other two - a terminus this train cannot
+     * leave, and a station that excludes it - both take a locomotive, and this notice is drawn on a
+     * square with no train in the question. Asking them here would mean picking a train or quantifying
+     * over every train owned, and "no locomotive on the railway could go there" is a different and
+     * much weaker claim than the one the notice makes. That distinction is the one that moved
+     * `BottomMainB` on `FR-058` the day before, arriving from the other side.
+     *
+     * The fixture is the one above with one flag moved, so this is about the rule rather than about
+     * the track.
+     *
+     * MUTATION: counting a station regardless of `isAutoDestination` - which is what the check did -
+     * fails the second half; counting nothing at all fails the first.
+     */
+    @Test
+    public void testAPocketWhoseOnlyStationIsAParkingBerthStillLeadsNowhere() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey farEnd = new TileKey("main", 1, 3);
+        TileKey reversing = new TileKey("main", 4, 3);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setPointName(farEnd, "Siding End");
+        session.setPointName(reversing, "Turnback");
+
+        session.getStore().createConfiguration("Reversing", null);
+        session.getStore().setActiveConfiguration("Reversing");
+
+        session.setPointFlag(reversing, AutonomyBuilder.CAN_REVERSE, true);
+
+        // The pocket gets its station, which is what silences the notice above.
+        session.getStore().setStation(farEnd, true);
+
+        session.rebuild();
+
+        assertTrue(session.mayTurnTiles().contains(reversing)
+            || session.mandatoryTurnTiles().contains(reversing),
+            "precondition: the square is not actually one where trains change direction");
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE),
+            "precondition: an ordinary station in the pocket must silence the notice, or the second "
+            + "half below proves nothing");
+
+        // AND NOW IT IS A BERTH AUTONOMY MAY NEVER CHOOSE.
+        session.setAutoDestination(farEnd, false);
+
+        session.rebuild();
+
+        assertFalse(session.isAutoDestination(farEnd),
+            "the fixture did not take: the station is still one autonomy may choose");
+
+        assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE),
+            "the only station reachable from that reversing point is one autonomy will never choose, "
+            + "so a train sent there turns round and is still nowhere - which is exactly what this "
+            + "notice is for, and the editor counted it as somewhere to go (V36-C4)");
+
+        // AND THE SEVERITY IS THE ONE HE ASKED FOR.
+        for (org.traincontrol.automationui.AutonomyChecks.Finding f : session.check())
+        {
+            if (!org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE
+                .equals(f.getMessageKey())) continue;
+
+            assertEquals(f.getSeverity(),
+                org.traincontrol.automationui.AutonomyChecks.Severity.NOTICE,
+                "Adam asked for a notice, and tightening the rule is only safe because it is one");
+        }
+    }
+    /**
      * What a square is called, in the three cases there are.
      *
      * OB-112 put a name at the top of the diagram\u2019s right-click menu, and the menu in the editor

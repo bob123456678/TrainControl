@@ -674,30 +674,6 @@ public final class HomeStaging
                 // not in runtimeSays and there is nothing here to skip.
                 if (Point.heldBackBy(p, loc) != null) continue;
 
-                // AND THE FIFTH: a terminus this train cannot back into (SVN-C5).
-                //
-                // `280ff08b` took the terminus rule OUT of `isPathClear` on Adam's ruling - "in manual
-                // operation, non reversing trains must be able to back into a terminus if the graph
-                // makes that possible" - and left it in selection: `pickPath` for autonomy, and
-                // `mustBackIn` here for staging, which refuses a terminus to a non-reversible train
-                // unless the route turns on the way.
-                //
-                // That divergence is deliberate and the commit says so.  Unexempted, every such pair
-                // logged "the staging planner is stricter than the railway" on any debug-mode Return
-                // Home - which is the same false accusation the four exemptions above exist to stop,
-                // from the one instrument that exists to find real ones.
-                //
-                // Narrow on purpose: only where the planner's own rule applies.  A terminus a
-                // REVERSIBLE train is refused for some other reason still shows up as a divergence,
-                // and so does any other square.
-                //
-                // What it costs, said plainly: a planner defect that refuses a terminus to a
-                // non-reversible train for the WRONG reason is now invisible to this audit.  That is
-                // the same trade the four exemptions above make, and the alternative is an instrument
-                // that cries wolf on every run - which is worse, because it is the state that gets an
-                // instrument ignored.
-                if (mustBackIn(loc, p)) continue;
-
                 if (!plannerSays.contains(p))
                 {
                     disagreements++;
@@ -970,11 +946,25 @@ public final class HomeStaging
 
         // A train already standing on a reversing point sets off turned; anywhere else it does not.
         //
+        // **WHAT `turned` MEANS NOW IS ONLY "a different way of getting here"** (Adam, 2026-09-04).
+        //
+        // It used to be a rule: `mustBackIn` asked it at arrival and refused a terminus to a train
+        // that could not reverse unless the route had turned it. That rule came out on his ruling
+        // that Return Home is manual operation. Nothing reads the flag as a rule any more - it
+        // survives only in the visited key below, where it keeps two routes to one square apart.
+        //
+        // **Left in deliberately rather than ripped out.** Collapsing the key would prune one of
+        // those two and change which route this search returns first, and a route change is not
+        // worth the tidiness on release eve. `connected` lost the same state, because it only ever
+        // answered yes or no and pruning cannot change that answer.
+        //
+        // The seeding argument is kept below because it is still the thing a reader will wonder
+        // about, and because if the rule ever comes back this is where it was right:
+        //
         // NOT A TERMINUS, and this was briefly changed to include one (FV2-B2, reverted by SV2-A1).
         // The argument for adding it was that `executePath` flips direction on arrival at a terminus
-        // and at a reversing point alike, in one statement - which is true, and not what this flag
-        // means.  `turned` is asked at arrival, by `mustBackIn`, and it means "this train will BACK
-        // INTO the terminus it is ending at".
+        // and at a reversing point alike, in one statement - which is true, and was not what this
+        // flag meant. It meant "this train will BACK INTO the terminus it is ending at".
         //
         // At a reversing point the arrival flip leaves the train trailing, so it goes on backing:
         // seeding true is right.  At a TERMINUS the flip is the one that turns a backed-in train round
@@ -982,14 +972,14 @@ public final class HomeStaging
         // true there counts the same flip twice and tells the planner a train arrives backing in when
         // it arrives nose first.
         //
-        // What that produces is a plan that strands a locomotive: sent nose first into a berth it
-        // cannot reverse out of, on Adam's own rule that "non reversing trains must be able to back
-        // into a terminus".  Nothing downstream would have caught it - isPathClear has had no terminus
-        // rule since his ruling of 2026-09-01, and the timetable simply drives the plan.
+        // What seeding it wrong produces is a plan that strands a locomotive: sent nose first into a
+        // berth it cannot reverse out of.  That is still true and still worth avoiding, even though
+        // the planner no longer refuses such a berth - the flag decides how the route is DESCRIBED,
+        // and a wrong description is what a later rule would be built on.
         //
-        // `connected` does seed from either, deliberately.  It is the proof of impossibility, and a
-        // proof may only be looser than the search, never tighter: the invariant is that `connected`
-        // accepts everything `firstClearRoute` would, not that the two agree.
+        // (`connected` used to seed from either, and no longer seeds at all - it lost its reversal
+        // state with the rule.  The invariant that mattered there is unchanged and now trivial: a
+        // proof may be looser than the search it guards, never tighter.)
         queue.add(new Candidate(from, new LinkedList<Edge>(),
             new HashMap<String, Accessory.accessorySetting>(), from.isReversing()));
 
@@ -1074,22 +1064,34 @@ public final class HomeStaging
                 if (!seen.containsKey(key)) seen.put(key, new ArrayList<>());
                 seen.get(key).add(commands);
 
-                // TURNED ROUND ON THE WAY, when the destination demands it (Adam, 2026-08-31).
-                //
-                // "For homing: I would also like non-reversing trains to have to back in."  A
-                // terminus is a place a train can only leave by reversing, so one that cannot reverse
-                // has to arrive already turned - and this is the method that decides what it actually
-                // does, so this is where the rule has to bite.  Refusing here rather than accepting
-                // and letting the runtime refuse is the difference between a plan that works and one
-                // that fails on its first move.
                 if (next.equals(to))
                 {
                     // Room was asked above, before this arrival was recorded - see the note there
                     // for why the order is the whole of it (TCX-A2, WK3-B2).
-                    if (!mustBackIn(loc, to) || turned) return route;
-
-                    // Not this way round.  Keep looking: another route may turn it.
-                    continue;
+                    //
+                    // NO TURN IS REQUIRED HERE ANY MORE (Adam, 2026-09-04).
+                    //
+                    // This read `if (!mustBackIn(loc, to) || turned) return route;` - a terminus was
+                    // refused to a train that cannot reverse unless a reversing point lay on the way,
+                    // so that it backed in and could leave forwards.
+                    //
+                    // His ruling: *"Return home is manual, take the rule out and say why."*  The why
+                    // is that this is the same question he settled on 2026-09-01 for `isPathClear` -
+                    // *"in manual operation, non reversing trains must be able to back into a terminus
+                    // if the graph makes that possible"* - and `280ff08b` kept staging on the strict
+                    // side of it deliberately, reasoning that a staged run drives itself and cannot
+                    // ask the operator to shunt.  That was decided without a case in front of it.
+                    //
+                    // The case: `EN57-203` cannot reverse, stands on `BottomMainA`, and is homed at
+                    // `TunnelLongPark`, which is authored `mustReverse` and built as a terminus.  His
+                    // railway carries exactly ONE reversing point and it is not on the way, so Return
+                    // Home refused - permanently, and for a berth he had deliberately chosen.  Pressing
+                    // the button IS the operator asking for it, which is what makes it manual.
+                    //
+                    // `pickPath` keeps the rule, and should: autonomy chooses destinations nobody asked
+                    // for, and backing a train into a dead end unasked is a different thing from doing
+                    // it because somebody pressed Return Home.
+                    return route;
                 }
 
                 // A terminus may be arrived at but not driven through, so it is never expanded
@@ -1595,21 +1597,6 @@ public final class HomeStaging
         return there != null && !there.equals(loc);
     }
 
-    /**
-     * Whether this locomotive has to be turned round before it may end here.
-     *
-     * The runtime's rule, asked in the planner's own terms: a terminus is a place a train can only
-     * leave by reversing, so one that cannot reverse must arrive already turned - it backs in past a
-     * reversing point and leaves forwards.
-     *
-     * @param loc the locomotive
-     * @param at where it would come to rest
-     * @return true when a reversing point has to lie on the way
-     */
-    private static boolean mustBackIn(Locomotive loc, Point at)
-    {
-        return at != null && at.isTerminus() && loc != null && !loc.isReversible();
-    }
 
     /**
      * Whether this locomotive could get home at all, over any copy of the home square (2026-08-31).
@@ -1632,7 +1619,7 @@ public final class HomeStaging
 
         if (home.getBlock() == null || home.getLayout() == null)
         {
-            return canRest(loc, home) && connected(from, home, mustBackIn(loc, home));
+            return canRest(loc, home) && connected(from, home);
         }
 
         boolean sawACopy = false;
@@ -1643,11 +1630,11 @@ public final class HomeStaging
 
             sawACopy = true;
 
-            if (canRest(loc, copy) && connected(from, copy, mustBackIn(loc, copy))) return true;
+            if (canRest(loc, copy) && connected(from, copy)) return true;
         }
 
         // A block naming no copies cannot be answered by looking at them.
-        return sawACopy ? false : (canRest(loc, home) && connected(from, home, mustBackIn(loc, home)));
+        return sawACopy ? false : (canRest(loc, home) && connected(from, home));
     }
 
     /**
@@ -1722,90 +1709,67 @@ public final class HomeStaging
 
 
     /**
-     * As above, but able to insist the way there turns the train round (Adam, 2026-08-31).
+     * Whether a route exists from one square to another, ignoring who is standing where.
      *
-     * "For homing: I would also like non-reversing trains to have to back in."
+     * **This used to be able to insist that the way there turned the train round** (Adam, 2026-08-31:
+     * *"For homing: I would also like non-reversing trains to have to back in"*), seeded by
+     * `mustBackIn`. That rule came out on 2026-09-04 - *"Return home is manual, take the rule out and
+     * say why"* - and with its only seed gone the parameter had one possible value and the reversal
+     * state keyed a visited set on a distinction that could no longer change an answer.
      *
-     * The rule this seed is for lives in SELECTION rather than in `isPathClear` (DY3-C9).  This used
-     * to say `Layout.isPathClear` refuses a terminus to a locomotive that cannot reverse, and that
-     * stopped being true on 2026-09-01, on Adam's ruling: *"in manual operation, non reversing trains
-     * must be able to back into a terminus if the graph makes that possible"*.  What insists now is
-     * `pickPath` for autonomy and `mustBackIn` here, and `connected` carries its own copy - which is
-     * why its behaviour is unaffected and only the reason given for it was wrong. This search did not know that rule, so a home reachable only by a route
-     * with no reversing point read as reachable and the planner produced a plan the runtime would
-     * refuse on its first move.
+     * Removed rather than left passing `false`, because a parameter every caller answers the same way
+     * is how a reader comes to believe there is a choice being made here. `DAY-C1` is an open finding
+     * about the same shape kept in the diagram code.
      *
-     * **A square reached with a reversal behind it and the same square reached without one are two
-     * different states**, and that is the whole of what makes this more than a flag: a route that
-     * turns the train may be longer, so arriving somewhere the short way must not close it off. They
-     * are queued and remembered separately.
+     * `firstClearRoute` still tracks `turned` and still keys on it. That is deliberate: collapsing ITS
+     * key changes which route the search returns first, and this one only had to answer yes or no.
      *
      * @param from where the train is
      * @param to where it is going
-     * @param mustReverse whether a reversing point has to lie on the way
      * @return true when such a route exists, ignoring who is standing where
      */
-    private boolean connected(Point from, Point to, boolean mustReverse)
+    private boolean connected(Point from, Point to)
     {
         if (from == null || to == null) return false;
         if (from.equals(to)) return true;
 
-        // Keyed by the pair, not by the Point - see the javadoc.
         Set<String> seen = new HashSet<>();
         Deque<Point> queue = new ArrayDeque<>();
-        Deque<Boolean> turned = new ArrayDeque<>();
 
-        // THE SAME STARTING STATE firstClearRoute USES (D24-B1, 2026-09-01).
+        // NO REVERSAL STATE ANY MORE (Adam, 2026-09-04).
         //
-        // This began at `false` unconditionally while firstClearRoute begins at `from.isReversing()` -
-        // "a train already standing on a reversing point sets off turned".  The two searches answer the
-        // same question about the same railway and disagreed about where the train starts.
+        // This search used to carry a `turned` flag beside every square, seeded from
+        // `from.isReversing() || from.isTerminus()` and keyed into the visited set, so that a square
+        // reached with a reversal behind it and the same square reached without one were two states.
+        // The whole of that existed to answer one question - had the train been turned by the time it
+        // arrived - and nothing asks it now.
         //
-        // In a heuristic that would not matter.  It matters here because this one is what plan()
-        // consults to call a locomotive UNREACHABLE, and unreachable is the only thing this class
-        // claims to have PROVED: the outcome is IMPOSSIBLE, no moves are offered, and the operator is
-        // sent to look at track that is perfectly fine.  A proof may only use rules the runtime
-        // actually enforces - being stricter than the executor does not make it safe, it makes it
-        // wrong.  So the strictness went, rather than being copied into firstClearRoute.
-        // A TERMINUS TURNS A TRAIN TOO (FV2-B2, the same day).
-        //
-        // The first version of this said `from.isReversing()` alone, copying firstClearRoute's seed
-        // exactly - and firstClearRoute was already missing the other half.  `executePath` turns the
-        // train on arrival at EITHER: `if (end.isTerminus() || end.isReversing())`, one statement, one
-        // switchDirection.  So "a train already standing on a reversing point sets off turned" is true
-        // of a terminus word for word.
-        //
-        // This is the limb that reaches real track.  On a diagram-derived graph a reversing Point is
-        // not a destination, so plan()'s own !isDestination() clause catches that locomotive before
-        // this search is consulted at all - but a terminus copy IS emitted as a destination, and Adam's
-        // parking berths are termini.  A train parked in a berth, homed at another berth, with nothing
-        // between them that turns anything, is the case that gets here, and it was proved impossible.
-        boolean startsTurned = from.isReversing() || from.isTerminus();
-
-        seen.add(from.getUniqueId() + "/" + startsTurned);
+        // The findings that shaped it are worth keeping in view, because they are about this search's
+        // relationship to the executor rather than about the reversal rule: `D24-B1` was the two
+        // searches disagreeing about where a train starts, and `FV2-B2` was this one forgetting that
+        // `executePath` turns a train on arrival at a terminus as well as at a reversing point. Both
+        // were cases of the PROOF being stricter than the runtime, which is the error that matters
+        // here: `plan()` consults this to call a locomotive UNREACHABLE, and unreachable is the only
+        // thing this class claims to have proved. A proof may be looser than the search it guards,
+        // never tighter.
+        seen.add(from.getUniqueId());
         queue.add(from);
-        turned.add(startsTurned);
 
         while (!queue.isEmpty())
         {
             Point at = queue.poll();
-            boolean reversed = turned.poll();
 
             for (Edge e : this.layout.getNeighbors(at))
             {
                 Point next = e.getEnd();
 
-                // The same test reversesAlongTheWay applies, asked one step at a time: a reversing
-                // point at the END of an edge on the route is what turns the train.
-                boolean now = reversed || next.isReversing();
-
                 // Arriving is checked before the visited set, as it always was - the destination may
                 // be a terminus, which is a place this search will not travel THROUGH.
-                if (next.equals(to) && (!mustReverse || now)) return true;
+                if (next.equals(to)) return true;
 
-                if (seen.contains(next.getUniqueId() + "/" + now)) continue;
+                if (seen.contains(next.getUniqueId())) continue;
 
-                seen.add(next.getUniqueId() + "/" + now);
+                seen.add(next.getUniqueId());
 
                 // A TERMINUS IS TRAVELLED THROUGH HERE, BY STOPPING AT IT (Adam, 2026-09-01).
                 //
@@ -1825,9 +1789,7 @@ public final class HomeStaging
                 // search inventing a move the planner cannot make - the opposite error, and the one
                 // that costs more: a proof may be looser than the search it guards, never tighter.
                 //
-                // The train leaves such a stop facing OUT, so `now` is carried unchanged rather than
-                // set - the arrival flip at a terminus is spent turning it round to leave (SV2-A1).
-                //
+
                 // WHERE THIS IS STILL TIGHTER THAN THE SEARCH, for whoever widens it next (TV2-C6).
                 // An out-of-service or non-destination terminus is not expanded at all, and the search
                 // WILL end a leg at one and start the next from it - so a graph whose only route home
@@ -1838,7 +1800,6 @@ public final class HomeStaging
                 if (!next.isTerminus() || (next.isDestination() && next.isActive()))
                 {
                     queue.add(next);
-                    turned.add(now);
                 }
             }
         }

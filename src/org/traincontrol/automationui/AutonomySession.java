@@ -2869,6 +2869,33 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * The stations autonomy may never choose for itself (V36-C4).
+     *
+     * The runtime's own rule is `Layout:3576` - `!end.isReversing() && end.isAutoDestination()` before
+     * a destination is a candidate at all - and `isAutoDestination` here is the same switch under a
+     * different name, so this is that clause asked of the diagram.
+     *
+     * Written for `checkReversingGoesSomewhere`, which counted any station as somewhere to go and so
+     * passed a reversing point whose only reachable station is a parking berth. Adam, 2026-09-04:
+     * *"Make it a notice."*
+     *
+     * @return the tiles that are stations but not automatic destinations
+     */
+    public Set<TileKey> stationsAutonomyWillNotChoose()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (reducer == null) return out;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (store.isStation(tile) && !isAutoDestination(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
     public Set<TileKey> mandatoryTurnTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -3722,6 +3749,9 @@ public class AutonomySession
             repeatedSensorPages(),
             // Squares trains reverse at that nobody has measured (Adam, 2026-09-01).
             reversalsWithoutLength(),
+            // Stations autonomy will never choose, so a pocket holding only those still leads
+            // nowhere (V36-C4).
+            stationsAutonomyWillNotChoose(),
             // Copies a train could be sent to and never leave, and copies nothing can reach at all
             // (Adam, 2026-09-02).  Per COPY, which is what every other check here cannot see.
             //
