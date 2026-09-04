@@ -2,6 +2,11 @@
 
 **Status:** open
 
+**Every finding in it is dispositioned as of 2026-09-03 evening** - all eight Bs and all twenty Cs
+fixed, the thirteen Ds confirmations that needed nothing. It stays `open` until a second validation
+pass has read those fixes, because three of round one's Bs were defects in *corrections*, and the
+corrections to those are the least-reviewed code in the tree.
+
 **Prefix:** `VD9`. Cite findings from here as `VD9-B1`, `VD9-C4`, and so on.
 (`DAY DY3 IPR LE R28 RC REL RG3 RGN SG TSX SVN V31 V32 V33 MT` are in use elsewhere.)
 
@@ -83,7 +88,7 @@ user-facing promise about a backup that the code does not make.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the whole sentence restored, and the two lines that were left dangling with it |
 | **Confidence** | confirmed by reading; the diff hunk is quoted below |
 
 `src/org/traincontrol/automation/Layout.java:2974`:
@@ -116,7 +121,7 @@ of the day whose entire subject is sentences that had stopped being true.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `DONE` guard, re-measured with a throwaway script: one call, not two |
 | **Confidence** | confirmed by reading, and the shell semantics confirmed by executing the same eight-line shape in this Git-Bash (not by running the harness) |
 
 `docs/tools/one.sh:329-330` and `docs/tools/battery.sh:413-414`:
@@ -152,7 +157,7 @@ already done.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has the order right |
 | **Confidence** | confirmed by reading; the undo-point enumeration is exhaustive |
 
 `AutonomyCompanionStore.putPairedMembersBack`, `:3049-3052`:
@@ -193,7 +198,7 @@ directly and never opens an editor), and it remains unaddressed.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `-Xmx` IS reachable via `run.jvmargs`; not set because that property also feeds Run and Debug |
 | **Confidence** | confirmed by reading `nbproject/build-impl.xml` directly |
 
 `build.xml:116-120`:
@@ -230,7 +235,7 @@ commit exists to remove, arriving in the commit two hours later.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - a link on unrelated pages must now survive, and the clear-the-set fix fails it |
 | **Confidence** | confirmed by reading; traced by hand against the alternative implementation |
 
 `test/core/testAutonomyDiagramStore.java:2213-2243`, and its javadoc:
@@ -259,7 +264,7 @@ from *the wrong fix*, which is what its javadoc claims.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - traced against the two methods; both replacement sentences were wrong and the second was backwards |
 | **Confidence** | confirmed by reading the guard and the reducer; the deciding lines are quoted |
 
 `SVN-B1` was right that *"These are the squares where that guard is blind"* was wrong. Both
@@ -305,7 +310,7 @@ the switch-crossing case, which is most of the population the notice names.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `AutonomyChecks` points at the one account instead of carrying a second copy |
 | **Confidence** | confirmed by reading |
 
 `src/org/traincontrol/automationui/AutonomyChecks.java:597-600`:
@@ -329,7 +334,7 @@ reached both copies.)
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the log line and the changelog say "the first time this version rewrote it" |
 | **Confidence** | confirmed by reading, and by the two `.bak` files already sitting in the operator's own layout |
 
 `Readme.md:377`, and the same sentence emitted to the log for every migrated page at
@@ -370,7 +375,7 @@ places, since the design decision itself is deliberate and defensible.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - re-screened by parsing under both engines, which is a better screen than either earlier one |
 | **Confidence** | confirmed by reading `cs2_sample_layout/config/gleisbilder/routes.json` (read-only) |
 
 `docs/reviews/2026-08-31-independent-review.md`, `IPR-B2`'s disposition:
@@ -401,7 +406,7 @@ throughout, which writes flat at depth 0.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the sentence is narrower, the family is wider, and the bracket-free case is a test |
 | **Confidence** | confirmed by reading; a second counterexample constructed |
 
 `src/org/traincontrol/base/ConditionOutline.java:236-241`, the commit message of `2e96769f`, the
@@ -429,7 +434,7 @@ after a deeper run.*
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the refusal names the rows `edgesAreEmpty` actually checks, in eight languages |
 | **Confidence** | confirmed by reading; the caller is quoted |
 
 `src/org/traincontrol/resources/messages.properties:1852` and the same key in all seven other bundles:
@@ -451,7 +456,7 @@ that was not swept is the one that reaches the user.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the javadoc describes the branch it is attached to |
 | **Confidence** | confirmed by reading |
 
 `src/org/traincontrol/gui/LocIconCropDialog.java:1367` — *"What the frame actually covers, **at the
@@ -479,7 +484,7 @@ Two neighbours in the same shape:
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - it asserts a pixel now, mutation-confirmed against an unscaled offset |
 | **Confidence** | confirmed by reading both return paths |
 
 `test/ui/testLocIconCrop.java:565-568`:
@@ -512,7 +517,7 @@ assertions stay green.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the assertion no implementation could fail is gone, with its reason |
 | **Confidence** | confirmed by reading; both variants traced |
 
 `test/regression/testLayoutEditorBulkEdits.testAnUndoneCutIsNotStillOutstandingOnItsEmptySquares`:
@@ -531,7 +536,7 @@ assertion is false. The first assertion in the same method does discriminate, an
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `$LOCK`, `$REPORTED` and `$DONE` are defaulted, so the claim is true |
 | **Confidence** | confirmed by reading both scripts |
 
 `docs/tools/one.sh:303-305` (and the same text in `battery.sh`):
@@ -559,7 +564,7 @@ contains no blocking command.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed with `C20` - the `ant test` paragraph and the property comment agree now |
 | **Confidence** | confirmed by reading |
 
 `test/README.md:61-63`:
@@ -576,7 +581,7 @@ still true and is reason enough for the conclusion; only the third clause has to
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - written in place, which is the primitive this class measured as surviving the lock |
 | **Confidence** | confirmed by reading |
 
 `AutonomyCompanionStore.repairTheUnfinishedEditNote:1421` ends `rememberBeforeEdit(note)`, which writes
@@ -603,7 +608,7 @@ is narrow (a rename or deletion made while an edit note exists *and* the folder 
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `run.sh` explains `run.sh`, including what moved for `TARGET` |
 | **Confidence** | confirmed by reading both files |
 
 `docs/tools/parity/run.sh:20-26` is a verbatim copy of the comment written for `setup-env.sh`. It says
@@ -621,7 +626,7 @@ workspace at the old location is now orphaned and nothing says so.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed with `B3` - the diagram edit comes first, because the checkbox pushes no undo point |
 | **Confidence** | confirmed by reading; the undo-point enumeration is the same one as `VD9-B3` |
 
 `docs/manual-tests/tests.md`, `MT-265` step 1:
@@ -644,7 +649,7 @@ his railway and so is present in the snapshot's `portals`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - cited by method name, which is the form that does not go stale |
 | **Confidence** | confirmed by reading; each cited line opened |
 
 Five, all from today:
@@ -670,7 +675,7 @@ edit above it and there is no test that can notice.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - nine, not four; and the unreachable arm says it is unreachable |
 | **Confidence** | confirmed by counting the enum |
 
 `src/org/traincontrol/base/CommandRow.java:280`: *"The other four kinds are still absent"*. `Kind` has
@@ -690,7 +695,7 @@ pre-existing row, so `case AUTO_LOCOMOTIVE: return "";` in `defaultSettingFor` i
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the fixture server is stopped in a `finally` |
 | **Confidence** | confirmed by reading |
 
 `TSX-C17` is three-part: a hardcoded 8080, `getPort()` reading a constant back, *and* *"neither of the
@@ -706,7 +711,7 @@ The audit's own table at `:60` and the disposition at `:1953` both say fixed.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - renamed `testEverySandboxIsOpenedInsideATry`, which is what it checks |
 | **Confidence** | confirmed by reading |
 
 `test/regression/testSwitchingToACentralStationLayout.java:1140-1189`. The predicate is
@@ -723,7 +728,7 @@ so that the next person does not read it as coverage it does not give.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - `captionsOnPage` describes its own caller, and the three assertions agree with the tree |
 | **Confidence** | confirmed by reading |
 
 Deleting `restoreCaptionsOnPage` left its partner's javadoc describing a job that partner does not do:
@@ -745,7 +750,7 @@ matches its name, which is the shape `REL-C15` was filed about.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the coordinates are named as decorative |
 | **Confidence** | confirmed by reading the fixture |
 
 > *"`testUndoReopensALinkWhoseHalvesAreOnDifferentPages` walks the finding's sequence **on the real
@@ -762,7 +767,7 @@ It would not.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - three more sites swept |
 | **Confidence** | confirmed by grep |
 
 The changelog sentence and the two log messages were corrected. These were not:
@@ -783,7 +788,7 @@ and what `MarklinRoute.java:631-640` does. Same sweep, three more sites.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the second open is on the same session, and fails with the reset removed |
 | **Confidence** | confirmed by reading |
 
 `test/core/testAutonomyDiagramSession.java:1290-1301` builds `AutonomySession again = new
@@ -801,7 +806,7 @@ orphaned `GhostSiding` label makes the `== 1` assertion discriminate rather than
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - counted per page, added on the write; the sentence names pages rather than files |
 | **Confidence** | confirmed by reading |
 
 Two small ways the new counters can disagree with the sentence they are printed in.
