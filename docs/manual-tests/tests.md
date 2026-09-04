@@ -555,6 +555,22 @@ and then the route editor refuses every route that mentions it.
 I have deliberately done neither. I could not show that any locomotive of yours has a bracket in its
 name, so this may be entirely theoretical - **if none does, say so and I will close it.**
 
+**Adam, 2026-09-04: "bracketed loc names should just be allowed."  Done.**
+
+`isNameUsable` refuses only the comma now. The comma is genuinely fatal - a command is written
+`prefix,name,value` and read back by splitting on commas - and the bracket is not, any more: it was
+refused because the condition parser turns brackets into grouping, and conditions are no longer stored
+as text. `MarklinRoute.fromJSON` reads them through `NodeExpression.fromJSON`, and the text parser has
+no caller left in `src/` at all.
+
+`testANameWithABracketIsAllowedAndSurvivesTheJsonForm` asserts both halves - the JSON form carries the
+name, the text form still cannot - because it is the two disagreeing that makes allowing it safe.
+
+**What to check.** If you have a locomotive with a bracket in its name, put it in a route command,
+save, and reopen. One thing to look at rather than test: a bracketed name will read oddly in the CSV
+export and in the read-only display of a condition the outline cannot draw, which are the two places
+the text form survives. Nothing parses those back, so it is a cosmetic quirk - say if it bothers you.
+
 *Run against the next release candidate.*
 
 ---
@@ -12614,6 +12630,12 @@ page brought must produce none. Checked failing with the `break` back in.
 3. **Tell me if that is now too much noise.** Forty errors for one zoomed page is honest but it may
    read as a wall; if so the right shape is probably one finding per page with the sensors listed
    inside it, and that is a small change from here.
+
+**Adam, 2026-09-04: "en57-203 can get out since it backs in."**
+
+So the ruling is complete and this is closed. The narrower version - allow it into its home, keep the
+rule for intermediate stops - is not needed, and the paragraph above is left as the record of what was
+weighed rather than as an open question.
 
 **Adam, 2026-08-30 (triage).** Works.
 

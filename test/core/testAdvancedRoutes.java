@@ -655,39 +655,70 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A name with a bracket cannot survive the CONDITION parser, which is the other half of the rule.
+     * A name with a bracket is allowed, and survives the way routes are actually stored (RGN-C3).
      *
-     * preprocessText rewrites every bracket into a line break to find the grouping - the same
-     * unanchored-replacement mistake that was fixed for AND and OR, and not for brackets.  A real
-     * locomotive in the sample file is called "SBB 460 (2)".
+     * **This test asserted the opposite until 2026-09-04**, and its own closing sentence said what
+     * would change it: *"would mean this name could simply be allowed"*. Adam ruled exactly that -
+     * *"bracketed loc names should just be allowed"*.
+     *
+     * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a
+     * line break to find the grouping, so a condition naming `SBB 460 (2)` was torn into pieces. That
+     * mattered while conditions were stored as TEXT. They are not: `MarklinRoute.fromJSON` reads them
+     * through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
+     *
+     * So the guard outlived its reason, and what it cost was real - a 2.7.4c route naming such a
+     * locomotive could not be saved at all, not even to change the route's own name.
+     *
+     * **Both halves are asserted**, because the interesting fact is that they now disagree: the text
+     * form still cannot carry the name, and the JSON form can. That is what makes allowing it safe,
+     * and if the text form ever became load-bearing again this test would still be telling the truth
+     * about it.
+     *
+     * MUTATION: putting the bracket back into `isNameUsable` fails the first assertion.
      */
     @Test
-    public void testANameWithABracketCannotSurviveTheConditionParser() throws Exception
+    public void testANameWithABracketIsAllowedAndSurvivesTheJsonForm() throws Exception
     {
-        assertFalse(RouteCommand.isNameUsable("SBB 460 (2)"), "a bracket is refused");
+        assertTrue(RouteCommand.isNameUsable("SBB 460 (2)"),
+            "a bracketed locomotive name is refused, so a route naming one cannot be saved at all - "
+            + "which is what Adam overturned on 2026-09-04 (RGN-C3)");
 
-        NodeExpression condition =
-            new NodeRouteCommand(RouteCommand.RouteCommandAutoLocomotive("SBB 460 (2)", 50));
+        assertFalse(RouteCommand.isNameUsable("BR 103, 001"),
+            "the comma is still fatal: a command is written prefix,name,value and read back by "
+            + "splitting on commas, so this half of the rule has to stay");
+
+        RouteCommand bracketed = RouteCommand.RouteCommandAutoLocomotive("SBB 460 (2)", 50);
+
+        // THE FORM ROUTES ARE STORED IN, which is what makes the name safe to allow.
+        RouteCommand back = RouteCommand.fromJSON(bracketed.toJSON());
+
+        assertEquals(back.getName(), "SBB 460 (2)",
+            "the JSON form did not carry the bracket, so allowing the name would lose it on the "
+            + "path routes are actually saved and loaded through");
+
+        // AND THE TEXT FORM STILL CANNOT, which is why this was ever a rule.
+        NodeExpression condition = new NodeRouteCommand(bracketed);
 
         String asText = NodeExpression.toTextRepresentation(condition, null);
 
-        boolean survived;
+        boolean survivedText;
 
         try
         {
-            NodeExpression back = NodeExpression.fromTextRepresentation(asText, null);
+            NodeExpression reparsed = NodeExpression.fromTextRepresentation(asText, null);
 
-            survived = !NodeExpression.toList(back).isEmpty()
-                && "SBB 460 (2)".equals(NodeExpression.toList(back).get(0).getName());
+            survivedText = !NodeExpression.toList(reparsed).isEmpty()
+                && "SBB 460 (2)".equals(NodeExpression.toList(reparsed).get(0).getName());
         }
         catch (Exception e)
         {
-            survived = false;
+            survivedText = false;
         }
 
-        assertFalse(survived,
-            "the condition parser carried a bracket after all, which would make the guard "
-                + "unnecessary - and would mean this name could simply be allowed");
+        assertFalse(survivedText,
+            "the text form carried the bracket after all.  That would not be a defect - it would "
+            + "mean this test's account of WHY the rule existed is wrong, and the note in "
+            + "isNameUsable should be corrected with it");
     }
 
     /**

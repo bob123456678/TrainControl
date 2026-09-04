@@ -580,28 +580,33 @@ public class RouteCommand implements java.io.Serializable
      * Whether a locomotive name can survive this class's text format.
      *
      * A command is written as "prefix,name,value" and read back by splitting on commas, so a name
-     * carrying one comes back as a different locomotive at a different speed.  A condition goes
-     * further: NodeExpression rewrites every bracket into a line break to find its grouping, so a name
-     * carrying one is torn into pieces and the whole expression fails to parse.
+     * carrying one comes back as a different locomotive at a different speed.  That is still true and
+     * is the whole of what this refuses.
+     *
+     * **BRACKETS ARE ALLOWED AGAIN** (Adam, 2026-09-04: *"bracketed loc names should just be
+     * allowed"*).  They were refused because `NodeExpression` rewrites a bracket into a line break to
+     * find its grouping, so a condition naming `SBB 460 (2)` was torn into pieces - and that mattered
+     * while conditions were stored as text.  They are not: `MarklinRoute.fromJSON` reads them through
+     * `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/` at all.
+     *
+     * So the restriction outlived its reason, and what it cost was real: a 2.7.4c route naming such a
+     * locomotive could not be saved at all, not even to change the route's own name (RGN-C3).
+     *
+     * The text form survives in `toTextRepresentation`, which feeds the CSV export and the read-only
+     * display of a condition the outline cannot draw.  A bracketed name will read oddly there.  That
+     * is a display quirk on a path nothing parses back, which is a different thing from a route that
+     * will not load.
      *
      * The rule lives here, next to the format that imposes it, because several doors have to agree
      * about it, and when only one of them knew, the others let names through that broke routes which
      * had been working.
      *
-     * **THIS SAID THREE DOORS AND THERE ARE MORE THAN THREE THAT MATTER** (RGN-C3).  It is asked by
-     * the route editor and by the two rename dialogs.  It is NOT asked by `AddLocomotive`, and not by
-     * anything in `marklin/` - so a bracketed name can still arrive by being typed in or by a Central
-     * Station sync, and the route editor then refuses every route that mentions it, including a refusal
-     * to save a change to the route's own name.
-     *
-     * **And the rule is wider than the format needs.**  At `v2_7_4c` the only check was comma-only and
-     * only for conditions; `locspeed,SBB 460 (2),40` saved and ran.  The comma is genuinely fatal to a
-     * COMMAND, and brackets are genuinely fatal to a CONDITION - but this refuses both to both, so a
-     * 2.8.1 user with a bracketed locomotive loses routes that used to work.
-     *
-     * Left alone pending Adam's ruling rather than widened or narrowed quietly: narrowing it to what
-     * each format actually needs is a parser-adjacent change, and tightening the other doors would
-     * take away a name he is allowed to use today.  `MT-270` asks him which.
+     * **The doors that ask are still not all of them** (RGN-C3): the route editor and the two rename
+     * dialogs ask; `AddLocomotive` and the Central Station sync do not.  That mattered while the rule
+     * refused brackets, because a name could arrive by a door that did not ask and then poison every
+     * route mentioning it.  With only the comma left it matters much less - a comma in a locomotive
+     * name is not something anybody types by accident - and closing those doors would now cost more
+     * than it buys.
      *
      * A null name is not this method's problem, and is reported usable.
      *
@@ -612,7 +617,7 @@ public class RouteCommand implements java.io.Serializable
     {
         if (name == null) return true;
 
-        return !name.contains(",") && !name.contains("(") && !name.contains(")");
+        return !name.contains(",");
     }
 
     public String toLine(Accessory linkedAccessory)

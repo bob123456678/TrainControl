@@ -200,7 +200,7 @@ and re-verified directly, and the 116/50/90 count was re-measured from the file.
 | | |
 |---|---|
 | **Severity** | B |
-| **Disposition** | **comment fixed, behaviour left for Adam** - the census names the fifth caller now; whether closing the track diagram editor should stop the trains is his ruling and MT-269 asks it |
+| **Disposition** | **closed by Adam's ruling, 2026-09-04: "closing track diagram should not stop trains"** - so the behaviour was already right and the fifth caller belongs on the not-interactive side.  The census is corrected and the ruling recorded with it, including the point the ruling settles: the boundary is whether the OPERATOR asked for a different railway, not how much of the layout was rebuilt |
 | **Confidence** | Both sites and the parameter plumbing verified by reading; the hand-throttled-train scenario reasoned, not executed. |
 
 `23f233ca` (VD11-A2) made `autonomyLoadedFromDiagram` stop trains only `if (!resumed)`

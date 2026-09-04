@@ -3652,9 +3652,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // keeps rolling while the new layout thinks everything is parked.  2.8.1 through rc11 stopped
         // trains there.
         //
-        // Left as it is pending Adam's ruling rather than changed quietly, because the boundary is
-        // his to draw and either answer is defensible - but the census is corrected now so that
-        // whoever draws it can see all five callers.  `MT-269` carries the question.
+        // **AND HE HAS RULED: closing the track diagram editor does NOT stop the trains** (Adam,
+        // 2026-09-04).  So the behaviour here is right as it stands, and the fifth caller belongs on
+        // the not-interactive side with the other two.
+        //
+        // Which means the boundary is not "has the layout been replaced" - it is whether the
+        // OPERATOR asked for a different railway.  Choosing a configuration is that; finishing an edit
+        // to the one already running is not, however much of the layout object it rebuilds.  Worth
+        // writing down because the retained justification above argues from the hand-throttled train,
+        // and that argument would have taken this the other way.
         if (!resumed)
         {
             AltEmergencyStopActionPerformed(null);

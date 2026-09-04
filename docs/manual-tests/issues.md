@@ -385,6 +385,44 @@ in the right click menu on the track diagrams, show only active stations that ca
 
 some axis labels vanish when switching between track diagram editor and autonomy editor - 1 and 3 in my case.  they reappear if the grid setting is cycled.  fix this, and then tie the appearance of the numbers to the enablement of the grid, so we only see the axis labels if the grid is also on.
 
+### FR-060 - 2026-09-04 - back a train into a parking track, and a parking designation to say where
+
+**Kind:** feature request  
+**Raised from:** noticed while ruling on MT-250  
+**Filed:** 2026-09-04
+
+Adam: *"if a backwards route is possible to a parking track, we can allow that and just reverse the
+train.  we would want a new 'parking' designation on stations."*
+
+**What this is really about.** Today a berth a train has to back into is expressed as a TERMINUS, and
+a terminus means one thing to the graph - a square you may arrive at and not drive through. Whether a
+train may back into one has been argued three times this fortnight from that single flag: `280ff08b`
+took the rule out of `isPathClear`, `mustBackIn` kept it in staging, and on 2026-09-04 that came out
+too. Each time the question was really *"is this a place where reversing is normal?"* and the only
+thing available to answer it was *"is this a dead end?"*.
+
+A parking designation separates them. A parking track is somewhere a train is meant to sit, where
+backing in is ordinary rather than exceptional; a terminus is a fact about the track. With both, the
+planner can say "a backwards route to a parking track is fine" without that also licensing every dead
+end on the railway.
+
+**What it would need, as far as I can see it now.**
+
+- The designation itself, alongside `terminus` and `reversing` - and the three have to be made to say
+  something different from each other, or this is a fourth spelling of the same idea. `setAutoDestination`
+  already clears two older spellings for exactly that reason.
+- Pathfinding that will build a backwards approach to such a square, and a plan that reverses the
+  train on arrival rather than refusing.
+- Somewhere on the diagram to set it, and something drawn so it can be told from a terminus.
+- **And a decision about the twenty squares that already carry `autoDestination: false`** on his own
+  railway, most of which are parking in everything but name. Whether they become parking tracks
+  automatically or one at a time is the part that decides how much work this is for him.
+
+**Worth saying before it is built:** this is the "third kind of station" his own 2026-09-01 ruling said
+we would need if non-reversible trains could not back into termini - *"Otherwise we'd need a third kind
+of station."* He chose not to need one then. This is that idea arriving on its own terms, wanted for
+what it enables rather than to avoid something.
+
 ### OB-173 - 2026-09-04 - autonomy editor does not appear on top of the main window
 
 **Kind:** bug  
@@ -417,6 +455,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-04 | FR-060 | feature request | back a train into a parking track, with a new parking designation to say which stations those are | needs test | - |
 | 2026-09-04 | OB-173 | bug | the editor opened behind other windows on the first open; it now raises itself as the second open always did | - | [MT-268](tests.md#mt-268) |
 | 2026-09-04 | OB-172 | bug | one missing square could delete an axis number; the ruler now looks in three rows, and the numbers follow the grid setting | - | [MT-268](tests.md#mt-268) |
 | 2026-09-03 | FR-058 | feature request | the diagram's right-click menu lists only what autonomy would choose; everything else valid is under **More Destinations**, uncapped | - | [MT-266](tests.md#mt-266) |
