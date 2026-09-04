@@ -5788,4 +5788,50 @@ public class testAutonomyDiagramSession
             "the line does not say how many connections carried locks, which is the whole of what it "
             + "is for: " + with);
     }
+    /**
+     * A modern export coming back through the legacy door is spotted by each of its three keys
+     * (ACC-C7, and the test OPV-C1 says should have existed).
+     *
+     * `detectImportFormat` calls any file whose `points` is an ARRAY a legacy graph, and a
+     * configuration serialised by `Layout.toJSON` is one of those - so a modern setup exported and
+     * re-imported comes through a door that carries none of the fields the modern format added.
+     *
+     * **The first version of this check asked for `blocks` and the key is `block`**, singular, as
+     * `Layout:7533` reads it and `AutonomyBuilder:844` writes it. The detector therefore missed every
+     * file whose only modern key was that one, and nothing caught it because the fix shipped with no
+     * test at all. That is the whole of `OPV-B1` in one line.
+     *
+     * Each key is asserted separately for that reason: a test that checked only `autoDestination`
+     * would have passed against the broken one.
+     *
+     * MUTATION: renaming any of the three keys in `whatALegacyImportLeaves` fails its own assertion
+     * here.
+     */
+    @Test
+    public void testAModernExportIsSpottedByEachOfItsKeys() throws Exception
+    {
+        String[] keys = {"autoDestination", "protectingSignal", "block"};
+
+        for (String key : keys)
+        {
+            String json = ("{'points':[{'name':'A','" + key + "':'x'}],'edges':[]}")
+                .replace('\'', '"');
+
+            java.util.List<String> said =
+                session.whatALegacyImportLeaves(new org.json.JSONObject(json));
+
+            assertEquals(said.size(), 1,
+                "a file carrying `" + key + "` - a key the old format never wrote - was not "
+                + "reported as looking like an export from this version.  Report was: " + said);
+        }
+
+        // AND THE CONTROL: a genuine legacy file must say nothing, or the check above is satisfied by
+        // a report that fires on everything.
+        String plain = "{'points':[{'name':'A','s88':1}],'edges':[]}".replace('\'', '"');
+
+        assertEquals(session.whatALegacyImportLeaves(new org.json.JSONObject(plain)),
+            new java.util.ArrayList<String>(),
+            "a genuine 2.8.1 file was reported as a modern export, which would put a warning on every "
+            + "supported migration");
+    }
 }

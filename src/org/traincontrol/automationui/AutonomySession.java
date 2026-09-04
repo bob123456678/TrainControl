@@ -1022,7 +1022,7 @@ public class AutonomySession
                 if (p == null) continue;
 
                 if (p.has(AutonomyBuilder.AUTO_DESTINATION) || p.has("protectingSignal")
-                    || p.has("blocks"))
+                    || p.has("block"))
                 {
                     modern++;
                 }

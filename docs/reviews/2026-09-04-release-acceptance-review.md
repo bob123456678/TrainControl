@@ -286,7 +286,7 @@ written in the past tense and are not part of this finding.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | fixed - the report now lists the four rules that make a row expected, so a reader can tell a regression from a rule working; the signal ruling of 2026-08-18 is named, since three of the four rows traced to it |
+| **Disposition** | **half done, and the first wording of this was untrue (OPV-C2)** - the paragraph went into `compare.py`, which GENERATES the report; the checked-in `report.md` is a previous run's output and still says nothing.  It will carry the explanation the next time the parity harness runs, and until then the artefact a reader opens is unchanged |
 | **Confidence** | Three of the four rows traced to Adam's recorded ruling; the fourth reported, not re-derived. |
 
 `2026-09-03-parity-report.md` frames itself as "3.0.0 should offer at least what 2.8.1 does", then

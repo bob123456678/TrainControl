@@ -1698,4 +1698,88 @@ public class testAutoLayout
             plain.setReversible(wasReversible);
         }
     }
+    /**
+     * A failure during the LOCK PHASE leaves the train where it is standing (ACC-A1).
+     *
+     * **The release blocker, and until now it was pinned by nothing** - `OPV-B1` found that the gate
+     * could be deleted and all 310 tests still passed.
+     *
+     * A throw out of `configureAndLockPath`'s lock loop is already recovered in full: the taken prefix
+     * is released, and `handleMisconfiguredPath` re-reserves the locomotive on the point it never left
+     * (*"Provably at its start"*). It then RETHROWS, and Adam's ruling of 2026-09-03 - *"force a
+     * graceful stop, alert the user, then unlock"* - had `executePath`'s handler unlock the whole path
+     * unconditionally, over the top of that recovery.
+     *
+     * What that cost: `unlockPath`'s `i == 0` clause cleared the start reservation, so the train stood
+     * on a square the model believed empty and `pickPath` could route another train into it; and every
+     * never-taken edge was released, each cascading to lock edges whose occupancy is a COUNT shared
+     * with other running dispatches.
+     *
+     * **The throw is real rather than simulated.** A null in an edge's `lockEdges` makes
+     * `Edge.setOccupied` throw as it cascades - which happens inside the lock loop, after
+     * `edgesLocked++`, which is precisely the window the recovery was written for.
+     *
+     * MUTATION, stated exactly: removing the `hadItsPath` gate fails the second assertion; reading it
+     * AFTER the `activeLocomotives.remove` instead of before makes it always false, which is what the
+     * first version of the fix did - and that is caught by
+     * `testAFailedPathStopsTheRunAndGivesTheTrackBack`, not by this.
+     */
+    @Test
+    public void testALockPhaseFailureLeavesTheTrainWhereItStands() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback from = model.newFeedback(180, null);
+        MarklinFeedback to = model.newFeedback(181, null);
+
+        model.setFeedbackState(from.getName(), false);
+        model.setFeedbackState(to.getName(), false);
+
+        layout.createPoint("LOCKFAIL_FROM", true, from.getName());
+        layout.createPoint("LOCKFAIL_TO", true, to.getName());
+        layout.createEdge("LOCKFAIL_FROM", "LOCKFAIL_TO");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Point start = layout.getPoint("LOCKFAIL_FROM");
+
+        start.setLocomotive(loc);
+
+        java.util.List<Edge> path = new java.util.ArrayList<>();
+
+        path.add(layout.getEdge("LOCKFAIL_FROM", "LOCKFAIL_TO"));
+
+        assertNotNull(path.get(0), "the fixture produced no edge, so nothing below is exercised");
+
+        // THE THROW, inside the lock loop: setOccupied cascades over lockEdges and this one holds a
+        // null.  Nothing in the tree does this, which is the point - the recovery exists for the
+        // unexpected, and an unexpected failure is what has to be injected to reach it.
+        path.get(0).addLockEdge(null);
+
+        layout.runLocomotives();
+
+        try
+        {
+            layout.executePath(path, loc, 20, null);
+
+            fail("the lock loop did not throw, so the handler under test never ran - the fixture no "
+                + "longer reaches the code this is about");
+        }
+        catch (RuntimeException expected)
+        {
+            // Rethrown deliberately: executeTimetable's retry loop depends on it.
+        }
+
+        // THE PRECONDITION, so a passing assertion below cannot come from the train never having been
+        // placed at all.
+        assertFalse(layout.isRunning(),
+            "the run did not stop itself, so this is not the state the handler leaves behind");
+
+        assertEquals(start.getCurrentLocomotive(), loc,
+            "the failed locomotive was erased from the model.  configureAndLockPath had already "
+            + "released what it took and re-reserved the train on the point it never left; the "
+            + "handler then unlocked the WHOLE path over the top of that recovery, and unlockPath's "
+            + "i == 0 clause cleared the start.  The train is standing on a square the model believes "
+            + "is empty, so pickPath can route another train into it (ACC-A1)");
+    }
 }
