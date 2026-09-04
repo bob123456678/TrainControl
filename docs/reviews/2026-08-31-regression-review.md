@@ -494,7 +494,7 @@ revisions; print `rc.getDelay()` for every command.
 
 | | |
 |---|---|
-| **Disposition** | **still open**, re-checked 2026-09-04 - `RouteCommand.isNameUsable:600` still refuses `,`, `(` and `)`.  Note the finding cites `RouteEditor.java`, which has since been deleted; the surviving door is `RouteEditorFrame` |
+| **Disposition** | **needs Adam's ruling** - the comment claiming three doors is corrected to say which doors do and do not ask, and what the rule costs a 2.8.1 user; MT-270 asks whether to narrow the rule to what each format needs or to widen the doors, and notes I could not show any locomotive of his is affected |
 | **Confidence** | confirmed by reading; whether any real locomotive is affected needs Adam's own database |
 
 `RouteEditorFrame.java:2227` refuses to save a route any of whose commands names a locomotive failing

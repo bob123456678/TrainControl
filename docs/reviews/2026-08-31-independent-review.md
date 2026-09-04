@@ -464,7 +464,7 @@ equivalent pair reads as equivalent, an identical pair reads as byte-identical, 
 
 | | |
 |---|---|
-| **Disposition** | **still open**, re-checked 2026-09-04 - `ConditionOutline:156-167` still keys `settled` on depth alone across the whole list, so the check remains stricter than `read`.  This wants Adam's ruling more than a patch, and it has not had one |
+| **Disposition** | fixed 2026-09-04 - a joiner closes every run deeper than itself, so two groups at one indent are no longer read as one level disagreeing with itself; the rule the class states (two words side by side at one level) is unchanged.  MUTATION: dropping the close fails the new test |
 | **Confidence** | confirmed by reading |
 
 `ConditionOutline.problems` (`:147-170`) keys its `settled` map on **depth alone, across the whole

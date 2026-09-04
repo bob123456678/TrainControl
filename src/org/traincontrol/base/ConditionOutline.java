@@ -152,7 +152,21 @@ public final class ConditionOutline
 
         if (rows == null) return out;
 
-        // The word first seen at each depth
+        // The word first seen in the RUN currently open at each depth (IPR-B3).
+        //
+        // This was keyed on depth alone, across the whole list - so `A and (B or C) and (D and E)`
+        // read as one level disagreeing with itself, was shown in red, and the save was REFUSED for an
+        // outline `read` parses perfectly.  The only ways out were Discard or restructuring a
+        // condition the operator had not got wrong.
+        //
+        // `read` does not work that way: it consumes each indented run in its own recursive call, so
+        // two runs at one depth are unambiguous to it.  The check was stricter than the code it
+        // protects, which is the shape Adam has ruled on before - an over-strict guard that blocks a
+        // legitimate gesture is worse than no guard.
+        //
+        // What still holds is the rule the class states: two different words SIDE BY SIDE at one level
+        // are a sentence with two meanings.  A joiner at a shallower depth closes every run deeper
+        // than it, which is exactly what a bracket closing means here.
         java.util.Map<Integer, Joiner> settled = new java.util.LinkedHashMap<>();
 
         for (int at = 0; at < rows.size(); at++)
@@ -160,6 +174,12 @@ public final class ConditionOutline
             Row row = rows.get(at);
 
             if (!row.isJoiner()) continue;
+
+            // Everything deeper than this word belonged to a group this word has just ended.
+            for (java.util.Iterator<Integer> deeper = settled.keySet().iterator(); deeper.hasNext();)
+            {
+                if (deeper.next() > row.getDepth()) deeper.remove();
+            }
 
             Joiner already = settled.get(row.getDepth());
 

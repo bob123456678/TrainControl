@@ -43,6 +43,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
 | [MT-268](#mt-268) | 2026-09-04 | The axis numbers, and the editor coming forward | needs test | OB-172, OB-173 |
 | [MT-269](#mt-269) | 2026-09-04 | Three from the acceptance review, and one ruling | needs test | ACC-B1, ACC-B2, ACC-B3 |
+| [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -509,6 +510,49 @@ data that nothing else would bring back.
 the edit should be there. You should also see a line saying the positions were not saved. **If losing
 the positions annoys you more than I expect, say so** - the alternative is remembering which point the
 edit touched, which is more bookkeeping and more ways to be wrong.
+
+*Run against the next release candidate.*
+
+---
+
+<a id="mt-270"></a>
+
+### MT-270 - 2026-09-04 - Brackets in a locomotive name
+
+**Disposition:** needs test
+**From:** RGN-C3
+
+**Written:** 2026-09-04
+
+**A ruling, and a small thing to try.**
+
+A locomotive whose name contains `(`, `)` or `,` cannot be used in any route command. In v2.7.4c the
+only check was on commas, and only for conditions - `locspeed,SBB 460 (2),40` saved and ran perfectly
+well. So if you have a locomotive with brackets in its name, routes that used to work can no longer be
+saved, **including saving a change to the route's own name**.
+
+The rule is wider than the format needs. A comma really is fatal to a command, because commands are
+split on commas. A bracket really is fatal to a *condition*, because the condition parser turns
+brackets into grouping. But the check refuses both to both.
+
+It is also asked at only some of the doors: the route editor and the two rename dialogs ask it; **Add
+Locomotive does not, and neither does a Central Station sync.** So a bracketed name can still arrive,
+and then the route editor refuses every route that mentions it.
+
+**What to do.**
+
+1. **Add a locomotive called `Test (2)`** through Add Locomotive. If that is accepted - I expect it is -
+   then the two halves genuinely disagree.
+2. **Try to use it in a route command**, and then try to save any existing route that mentions it.
+3. **Then tell me which way to go:**
+   - **Narrow the rule** to what each format actually needs: commas refused everywhere, brackets
+     refused only in conditions. That restores what 2.7.4c let you do, and it touches the parser's
+     neighbourhood.
+   - **Or widen the doors**: make Add Locomotive and the sync refuse the name too, so the answer is at
+     least consistent. That takes away a name you are allowed to use today.
+
+I have deliberately done neither. I could not show that any locomotive of yours has a bracket in its
+name, so this may be entirely theoretical - **if none does, say so and I will close it.**
 
 *Run against the next release candidate.*
 

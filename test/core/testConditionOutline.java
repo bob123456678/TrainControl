@@ -679,4 +679,58 @@ public class testConditionOutline
             + "enough to do this; nothing is flagged and the reading under the table shows the new "
             + "sentence (IPR-B2)");
     }
+    /**
+     * Two bracketed groups at one indent are not a disagreement (IPR-B3).
+     *
+     * `A and (B or C) and (D and E)` is an outline somebody can build with ordinary gestures - indent
+     * B, set OR, add C, outdent the joiner, indent D, add E - and it is one `toExpression` reads
+     * correctly. `problems` flagged it anyway, so the editor showed a line in red and **refused the
+     * save**, and the only ways out were Discard or restructuring a condition that was not wrong.
+     *
+     * The cause: `settled` was keyed on DEPTH ALONE across the whole list, so the OR inside the first
+     * group and the AND inside the second were read as one level disagreeing with itself. `read` does
+     * not work that way - it consumes each indented run in its own recursive call, so two runs at one
+     * depth are unambiguous to it. **The check was stricter than the code it protects.**
+     *
+     * That is the shape Adam has ruled on before - an over-strict check that blocks a legitimate
+     * gesture is worse than no check - and the rule the class states is unchanged: a word may still
+     * not disagree with another word in the SAME run.
+     *
+     * MUTATION: going back to a single map keyed on depth flags row 7 and fails the first assertion.
+     */
+    @Test
+    public void testTwoGroupsAtOneIndentAreNotADisagreement()
+    {
+        java.util.List<ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+        rows.add(condition(0, 1));
+        rows.add(joining(0, ConditionOutline.Joiner.AND));
+        rows.add(condition(1, 2));
+        rows.add(joining(1, ConditionOutline.Joiner.OR));
+        rows.add(condition(1, 2));
+        rows.add(joining(0, ConditionOutline.Joiner.AND));
+        rows.add(condition(1, 2));
+        rows.add(joining(1, ConditionOutline.Joiner.AND));
+        rows.add(condition(1, 2));
+
+        assertEquals(ConditionOutline.problems(rows), java.util.Collections.emptySet(),
+            "`A and (B or C) and (D and E)` was flagged as a level disagreeing with itself.  The two "
+            + "runs at depth 1 are separated by a joiner at depth 0, so they are different groups - "
+            + "which is exactly how `read` consumes them, and the editor refused to save an outline "
+            + "it reads perfectly (IPR-B3)");
+
+        // AND THE RULE IT STILL ENFORCES, which is what stops this being a licence to disagree.
+        java.util.List<ConditionOutline.Row> mixed = new java.util.ArrayList<>();
+
+        mixed.add(condition(0, 1));
+        mixed.add(joining(0, ConditionOutline.Joiner.AND));
+        mixed.add(condition(0, 1));
+        mixed.add(joining(0, ConditionOutline.Joiner.OR));
+        mixed.add(condition(0, 1));
+
+        assertEquals(ConditionOutline.problems(mixed), new java.util.LinkedHashSet<>(
+            java.util.Arrays.asList(3)),
+            "two words side by side at one level still have to be flagged - that is a sentence with "
+            + "two meanings, and it is the whole reason this check exists");
+    }
 }
