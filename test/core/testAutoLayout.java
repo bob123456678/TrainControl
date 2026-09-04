@@ -1616,8 +1616,86 @@ public class testAutoLayout
         assertFalse(layout.isChoosableByAutonomy(off),
             "a switched-off square is being offered to autonomy");
 
-        assertFalse(off.isActive(),
-            "the switched-off square is the one the menu drops before the split, so this is the "
-            + "property the drop reads");
+        // (A third assertion here read back the setter two lines above it, and would pass for as long
+        // as a setter sets - removed rather than left as evidence it is not, VD11-C6.)
+    }
+
+    /**
+     * A terminus stays in the base list, and an excluded square leaves the menu (Adam, 2026-09-04).
+     *
+     * Two rulings on one gesture, given after seeing `BottomMainB` and `BottomMainC` move out of the
+     * base list for `2-8-4 3505 SP`: *"We should still show the same number of base options (unless
+     * unselectable)"* and *"if it excludes the loc, don't even include it in the list."*
+     *
+     * The first undid `VD11-C2`, which had the menu ask `isChoosableByAutonomy(end, locomotive)` on
+     * the strength of a comment I had written promising that a terminus a non-reversible train could
+     * not get out of belonged in More Destinations. It did not: his ruling of 2026-09-01, quoted at
+     * `isPathClear`, is that such a train may back into one by hand. Measured on `test/operator_layout`
+     * before changing anything - the fixture emits each of those squares twice, once as a through
+     * arrival and once as a reverse arrival that is a terminus, and it was the terminus copies that
+     * moved. Neither square excludes any locomotive, so the exclusion clause was never involved.
+     *
+     * MUTATION, stated exactly: putting the terminus clause back into `isOfferableToOperator` fails
+     * the first assertion; dropping its exclusion clause fails the second; dropping its `isActive`
+     * clause fails the third.
+     *
+     * **What this does NOT cover is the menu's choice of predicate** - the menu needs a window, and it
+     * is package-private besides. That half is `MT-266`. What the rule having a name on `Layout` buys
+     * is that the menu now holds one call rather than a copy of the rule.
+     */
+    @Test
+    public void testATerminusIsOfferedByHandAndAnExcludedSquareIsNotOfferedAtAll() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback end = model.newFeedback(170, null);
+
+        model.setFeedbackState(end.getName(), false);
+
+        Point terminus = layout.createPoint("VD11_TERMINUS", true, end.getName());
+
+        terminus.setTerminus(true);
+
+        Locomotive plain = model.getLocByName(model.getLocList().get(0));
+
+        // Borrowed from the real database and given back - the suite runs against the live LocDB, and
+        // a locomotive left non-reversible would follow this test into every class after it.
+        boolean wasReversible = plain.isReversible();
+
+        try
+        {
+            plain.setReversible(false);
+
+            // THE RULING: a train that cannot turn round may still be backed into a terminus by hand.
+            assertTrue(layout.isOfferableToOperator(terminus, plain),
+                "a terminus is being kept off the menu for a non-reversible train, which is the rule Adam "
+                + "overturned on 2026-09-04 - it belongs in the base list");
+
+            // AND THE OTHER RULING: an exclusion is not a demotion, it is a removal.
+            MarklinFeedback barred = model.newFeedback(171, null);
+
+            model.setFeedbackState(barred.getName(), false);
+
+            Point excluded = layout.createPoint("VD11_EXCLUDED", true, barred.getName());
+
+            assertTrue(layout.isOfferableToOperator(excluded, plain),
+                "an ordinary station is already off the menu, so the exclusion below proves nothing");
+
+            excluded.getExcludedLocs().add(plain);
+
+            assertFalse(layout.isOfferableToOperator(excluded, plain),
+                "a station that excludes this train is still on its menu - Adam: 'if it excludes the loc, "
+                + "don't even include it in the list'");
+
+            // And the earlier ruling this shares a method with, which is the one it must not break.
+            excluded.setActive(false);
+
+            assertFalse(layout.isOfferableToOperator(excluded, null),
+                "a switched-off square is still on the menu, which is the 2026-09-01 ruling");
+        }
+        finally
+        {
+            plain.setReversible(wasReversible);
+        }
     }
 }

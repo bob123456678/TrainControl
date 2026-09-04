@@ -39,6 +39,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
 | [MT-265](#mt-265) | 2026-09-03 | Four gestures behind today's fixes | needs test | SVN-B8, SVN-B11, IPR-B2, IPR-B4 |
+| [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -196,6 +197,47 @@ code the test covers**, which is four short checks rather than four tests.
    dialog staying open. **Check the icon itself looks right**, not just that the button worked: the
    picture is now scaled before it is composed rather than after, and that is the part no test can
    look at.
+
+*Run against the next release candidate.*
+
+---
+
+<a id="mt-266"></a>
+
+### MT-266 - 2026-09-03 - The destination menu, split in two
+
+**Disposition:** needs test
+**From:** FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10
+
+**Written:** 2026-09-03
+
+FR-058 as you asked for it: right-clicking a train now lists only the stations autonomy itself would
+send it to, with everything else it can still be sent to by hand under **More Destinations**.
+
+**This one needs you more than most.** The menu needs a window, so nothing in the suite can build it -
+and three defects were found in it by reading rather than by running, after it was written. A fourth
+would look exactly the same.
+
+**What to do.**
+
+1. **Right-click a train on a busy square.** The top list should hold the stations autonomy itself
+   would choose, and **More Destinations** the rest - parking tracks, reversing points, and squares
+   you have marked as not automatic.
+   **A terminus belongs in the TOP list**, even for a train that cannot turn round, because you may
+   still back it in by hand - that is your ruling of 1 September, and I had it the wrong way round for
+   a day. It is why `BottomMainB` and `BottomMainC` moved on you.
+   **A square that excludes that train should not be in either list**, which is your other ruling: it
+   is off the menu entirely, like a switched-off square. Check one you have excluded something from.
+2. **The "..." should appear only when something is genuinely not shown.** It offers to jump you to
+   the Auto tab. Before this was fixed it appeared on essentially every right-click, because the count
+   of "what is possible" still included everything now sitting in the submenu.
+3. **Right-click a train that has nothing automatic to offer** - one standing where every reachable
+   station is a parking track, say. The submenu should still come with a separator above it and the
+   locomotive's name over it, the same as a normal list.
+4. **Send a train from More Destinations**, and check it actually goes: the item is built by the same
+   code as the top-level ones, including the power check and the "check the log" message on failure.
+5. **Count the submenu on your biggest station.** It is deliberately not shortened. If it ever runs
+   off the screen, say so - it wants a scroller rather than a second "...".
 
 *Run against the next release candidate.*
 
@@ -13489,9 +13531,16 @@ was broken; it was not, and that mattered enough to correct.
 
 **It was seven doors of nine**, not one: `setTurning`, `setUsage`, `setStation`, `promptNumber`,
 `promptPercent`, `promptHome` and `promptLocomotives`. The two that worked - `placementChanged` and
-`promptName` - are the two that had been reported before and fixed one at a time. All nine share one
-exit now, `setupChanged()`, and `testEditorSurfaceRules.testEveryDoorThatWritesTheSetupAnnouncesIt`
-fails if a writer does not end there. MUTATION: removing it from `promptHome` alone fails that test.
+`promptName` - are the two that had been reported before and fixed one at a time.
+
+**And then it was seventeen or more, not nine.** Counting the doors was the mistake: two later passes
+each widened the list and each missed some, one of them by a single character - `setDirections` beside
+`setDirection`. So the test no longer holds a list at all. It reads every mutator `AutonomySession`
+declares out of that class's own source and requires each caller to end at `setupChanged()`, which is
+the one exit they now share. A door added tomorrow is covered on the day it is written.
+
+MUTATION: removing `setupChanged()` from any one of them fails
+`testEditorSurfaceRules.testEveryDoorThatWritesTheSetupAnnouncesItWiderSweep`.
 
 **"EN57-203 can't go to TunnelLeftPark semi-autonomously (no option shown)" is the behaviour this
 test asked for**, and there are two independent reasons for it. Measured on the frozen copy of your

@@ -43,6 +43,17 @@ fi
 
 mkdir -p "$TARGET/out"
 
+# LAST RUN'S REPORTS GO FIRST (VD11-C4).
+#
+# Everything below runs under `set -e`, and the condition drivers sit before `compare.py`.  So a
+# driver that crashes takes the whole script with it BEFORE the autonomy report is regenerated, and
+# leaves the previous run's `report.md` sitting there with its own date on it - a stale answer that
+# reads exactly like a fresh one.
+#
+# Deleting rather than stamping: a report that is not there cannot be misread, and there is no marker
+# to remember to look for.
+rm -f "$TARGET/out/report.md" "$TARGET/out/conditions.md"
+
 # Debug mode dumps every CAN packet, which is worth keeping and useless on a terminal.
 echo "building the 3.0.0 configuration from the track diagram..."
 
@@ -159,10 +170,21 @@ python docs/tools/parity/compare.py "$TARGET/out/v2_8_1.tsv" "$TARGET/out/v3_0_0
 
 STATUS=$?
 
-# A condition that changed meaning between the two engines is a parity failure like any other.
-if [ "${CONDITION_STATUS:-0}" -ne 0 ]
+# A condition that changed meaning between the two engines is a parity failure like any other - and a
+# comparison that DID NOT RUN is a third thing, which this used to flatten into the second (VD11-C4).
+#
+# 1 means something is wrong with the railway.  2 means this run does not know, because the routes
+# file was missing or too small to be evidence.  Collapsing them told a reader who checked the exit
+# code that a skipped section had failed - which is the same shape as the finding that put the floor
+# in, arriving at the code that reports it.
+#
+# A real difference wins over a skip, because it is the more serious of the two.
+if [ "${CONDITION_STATUS:-0}" -eq 1 ]
 then
     STATUS=1
+elif [ "${CONDITION_STATUS:-0}" -ne 0 ] && [ "$STATUS" -eq 0 ]
+then
+    STATUS="$CONDITION_STATUS"
 fi
 
 set -e

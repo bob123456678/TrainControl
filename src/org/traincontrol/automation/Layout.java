@@ -4065,6 +4065,49 @@ public class Layout
     }
 
     /**
+     * Whether an operator should be offered this station for this train AT ALL (Adam, 2026-09-04).
+     *
+     * Not the same question as `isChoosableByAutonomy`, and deliberately a much smaller one. That asks
+     * whether autonomy would ever *pick* a square; this asks whether a human may *send* a train there,
+     * and almost everything answers yes - a parking track, a reversing point, a square marked as not
+     * an automatic destination are all somewhere an operator may legitimately go by hand. Those are
+     * offered, just not among the automatic ones.
+     *
+     * Two things are not offered:
+     *
+     * - A SWITCHED-OFF square, which is the ruling of 2026-09-01: *"make the inactive stations
+     *   disappear from the track diagram menu - they should only be visible in the autonomy tab."*
+     * - A square that EXCLUDES this locomotive, which is the ruling of 2026-09-04: *"if it excludes
+     *   the loc, don't even include it in the list."*
+     *
+     * Both are the operator's own settings, saying this train does not belong there - so they are a
+     * third category rather than a reason to demote something into a submenu of things he may still
+     * choose.
+     *
+     * **A TERMINUS IS NOT ONE OF THEM**, which is the whole reason this method exists rather than a
+     * locomotive argument on `isChoosableByAutonomy`. That overload was added on 2026-09-03 and its
+     * one caller was the menu's split; passing a locomotive brought the terminus clause with it, and
+     * `BottomMainB` and `BottomMainC` - which the fixture emits twice, once as a through arrival and
+     * once as a reverse arrival that is a terminus - dropped out of the base list for the
+     * non-reversible `2-8-4 3505 SP`. Measured, not deduced: neither square excludes anything.
+     *
+     * Adam's answer was that the base list keeps the same options unless they are unselectable, and a
+     * terminus is selectable - his ruling of 2026-09-01, quoted at `isPathClear`: *"In manual
+     * operation, non reversing trains must be able to back into a terminus if the graph makes that
+     * possible. Otherwise we'd need a third kind of station."*
+     *
+     * @param end the candidate station
+     * @param loc the locomotive being offered it
+     * @return false only where the operator has said this train does not belong there
+     */
+    synchronized public boolean isOfferableToOperator(Point end, Locomotive loc)
+    {
+        if (end == null || !end.isActive()) return false;
+
+        return loc == null || !end.getExcludedLocs().contains(loc);
+    }
+
+    /**
      * Why autonomy will never choose this point for this locomotive, or null when it is a candidate.
      *
      * The STANDING bars only - the ones that are a property of how the railway is set up rather than
@@ -5109,6 +5152,7 @@ public class Layout
                 // `unlockPath` consults `clearedEdges` for the edges the tail gave up early, so it has
                 // to run while that map still has them - exactly as `executePathInternal`'s ordinary
                 // ending does.  The clear follows it here for the same reason it follows it there.
+                //
                 // THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1).
                 //
                 // Adam's ruling is "force a graceful stop, alert the user, then unlock", and this used
@@ -5533,14 +5577,16 @@ public class Layout
                             // that reporting an edge clear early only moves a signal. It does not:
                             // `clearedEdges` is read by `getActiveAccs`, which `MarklinRoute
                             // .heldReason` consults to refuse a route that would set an accessory on
-                            // an active path - and with atomicRoutes ON the
-                            // lock is held for the whole run by design.
-        //
-        // NOT "which is what Adam runs", which this said (VD10-C15): his active configuration
-        // has `"atomicRoutes": false`, so the branch of `unlockPath` that reads this map is the
-        // one his railway actually takes - which is the premise `VD10-A1` turned on., so being in this set is the
-                            // ONLY thing that drops an edge's protection. An early clear lets a route
-                            // throw a turnout on track the train is still standing on.
+                            // an active path - and with atomicRoutes ON the lock is held for the whole
+                            // run by design, so being in this set is the ONLY thing that drops an edge's
+                            // protection.  An early clear lets a route throw a turnout on track the
+                            // train is still standing on.
+                            //
+                            // NOT "with atomicRoutes on, which is what Adam runs", which this said
+                            // (VD10-C15, repaired by VD11-C1): his active configuration carries
+                            // `"atomicRoutes": false`, so the non-atomic branch of `unlockPath` - the one
+                            // that reads this map - is the branch his railway actually takes.  That is the
+                            // premise `VD10-A1` turned on.
                             if (!tailHasProvablyPassed(pathIsUnmeasured, waiting[1],
                                 loc.getTrainLength()))
                             {

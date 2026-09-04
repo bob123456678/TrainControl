@@ -329,11 +329,28 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         {
                             Point end = path.get(path.size() - 1).getEnd();
 
-                            // Switched-off squares are off this menu altogether, which is the earlier
-                            // ruling and is not what FR-058 changes: they are not "still valid", and
-                            // the autonomy tab is still where everything is listed.
-                            if (!end.isActive()) continue;
+                            // OFF THIS MENU ALTOGETHER: switched off, or excluded for this train.
+                            //
+                            // The rule is named on the layout rather than written out here, because
+                            // this class is package-private and a rule nothing can reach is a rule
+                            // nothing can test - which is how the terminus went in and out of it
+                            // twice.  Its javadoc carries both rulings.
+                            //
+                            // These still count towards `possible` below, so the ellipsis offers the
+                            // autonomy tab, which lists everything.
+                            if (!ui.getModel().getAutoLayout().isOfferableToOperator(end, locomotive))
+                            {
+                                continue;
+                            }
 
+                            // WHICH OF THE TWO LISTS, asked about the square and deliberately not
+                            // about this train (Adam, 2026-09-04).
+                            //
+                            // `isOfferableToOperator` above has already asked everything that is
+                            // about the train.  What is left is a property of the square - a
+                            // reversing point, a square marked as not an automatic destination - and
+                            // the square form is the same predicate the "no available paths" window
+                            // and the diagram's captions ask, which is what that javadoc is for.
                             if (ui.getModel().getAutoLayout().isChoosableByAutonomy(end))
                             {
                                 shownPaths.add(path);
@@ -372,7 +389,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             // were dropped and before the cap, so this fires for either reason and for
                             // both together - which is what Adam asked for: "if there are more
                             // possible options than what is shown ... always show the ...".
-                            if (++shown >= Math.min(MAX_PATHS, paths.size()) && possible > shown)
+                            // WHAT IS ACTUALLY LEFT OUT, which the submenu changed (VD11-B1).
+                            //
+                            // `possible` is counted before the split, and the non-choosable paths are
+                            // no longer omitted - they are in More Destinations, on screen.  Comparing
+                            // against `shown` alone therefore made this fire whenever anything at all
+                            // was non-choosable, offering to jump the operator to the autonomy tab
+                            // while every destination was already in front of him.  On the author's own
+                            // configuration, 20 of 71 squares are marked as not automatic destinations
+                            // and 5 more can reverse, so it fired on essentially every right-click -
+                            // which is the complaint FR-058 was filed to fix, arriving from the other
+                            // side.
+                            if (++shown >= Math.min(MAX_PATHS, paths.size())
+                                && possible > shown + otherPaths.size())
                             {
                                 menuItem = new JMenuItem("...");
                                 menuItem.addActionListener(event -> 
@@ -393,17 +422,46 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         }
 
                         // MORE DESTINATIONS (FR-058), which is where everything valid but not
-                        // automatic now lives: a terminus a non-reversible train would have to be
-                        // turned into, a reversing point, a square marked as not an automatic
+                        // automatic lives: a reversing point, and a square marked as not an automatic
                         // destination.  Each is somewhere the operator may legitimately send a train
-                        // by hand - "filtering at selection, never refusing at execution" - and none
-                        // of them is something autonomy would ever pick on its own.
+                        // by hand - "filtering at selection, never refusing at execution" - and
+                        // neither is something autonomy would pick on its own.
                         //
-                        // Uncapped, deliberately.  The cap exists because the top level competes with
-                        // the rest of the menu for the first screenful; a submenu competes with
-                        // nothing, and truncating it would put an ellipsis inside an ellipsis.
+                        // NOT a terminus, which an earlier version of this comment promised and which
+                        // Adam ruled out on 2026-09-04: a non-reversible train may back into one, so
+                        // it belongs in the base list.  And not an excluded square, which is off the
+                        // menu entirely rather than demoted.
+                        //
+                        // Uncapped.  The cap on the top level is about competing with the rest of the
+                        // menu for the first screenful, which a submenu does not do - but a submenu
+                        // does compete with the height of the screen, and Swing gives an over-tall
+                        // JMenu no scroller unless one is installed (VD11-C9).
+                        //
+                        // Measured rather than argued: on the author's own configuration 20 of 71
+                        // squares are marked as not automatic destinations and 5 more can reverse, and
+                        // `withoutGoingNowhere` reduces to distinct destinations - so the ceiling here
+                        // is about twenty-five items, which fits.  If a railway ever exceeds a screen
+                        // this wants a scroller rather than a second ellipsis.
                         if (!otherPaths.isEmpty())
                         {
+                            // The heading, when the top-level list did not already add it (VD11-C3).
+                            //
+                            // Both the separator and the locomotive's name are gated on the TOP-LEVEL
+                            // list being non-empty, and this sits outside that gate - so a train with
+                            // nothing automatic to offer got a bare "More Destinations" hanging off
+                            // the previous item with no separator and no name to say whose it was.
+                            if (paths.isEmpty())
+                            {
+                                addSeparator();
+
+                                javax.swing.JMenuItem whose =
+                                    new javax.swing.JMenuItem(locomotive.getName());
+
+                                whose.setEnabled(false);
+
+                                add(whose);
+                            }
+
                             javax.swing.JMenu more =
                                 new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
 

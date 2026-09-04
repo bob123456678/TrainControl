@@ -24,6 +24,8 @@ Home" lights up, close the application, reopen, check the home is still there.
 
 ## 2. Should the semi-autonomous destination list say why a station is absent?
 
+No- this is what the autonomy editor is for.
+
 This came out of your MT-246 triage: *"EN57-203 can't go to bottomleftpark semi-autonomously (no option
 shown)."*
 
@@ -47,6 +49,8 @@ choice about a list you use constantly, and it is yours.
 
 Data rather than code, so yours to keep or clear.
 
+Clean it up for me.
+
 - **Six fabricated `tileLengths`** (`IPR-A1`): `5:20,13`, `5:0,11`, `5:20,14`, `5:1,10`, `5:14,3`,
   `5:5,4`. The import that wrote them is fixed; the numbers are still there.
 - **34 captions for 33 stations, with `5:6,4` named twice** (`IPR-C1`), measured on the frozen copy.
@@ -59,8 +63,17 @@ Data rather than code, so yours to keep or clear.
 In `2026-09-03-c-sweep-report.md` under "What needs Adam", repeated here only so this is one list:
 
 1. Should the editor's "reaches nothing" warning match the runtime's rule? (`V36-C4`)
+
+Elaborate
+
 2. What shape should "Test Connection" come back in? (`RG3-C4`, MT-257 item 5) — your question back.
+
+elaborate
+
 3. Should a route-command deletion say what it removed? (`FV2-C9`, `R28-A1`)
+
+put it in the log, popup on count.
+
 4. `DY3-C8` — already answered on MT-260; a pointer only.
 
 And three smaller ones from the release review:
@@ -96,6 +109,8 @@ the whole tree, then confirming each by hand.
 `getAutonomyOverlay`, `getMarks`, `getTraces`, `isSaying`, `isSignalAt`, `isRotated`, `showTextMenu`,
 `addBoxHighlighted`, `receiveKeyEvent`, `editTextWithDropdown` - and deleting them buys tidiness and
 nothing else.
+
+Delete them and check via the compiler and battery.
 
 **Why I stopped there, in one sentence:** a sixteen-method deletion inside a release candidate is a
 diff nobody can review by eye, for no behavioural gain, and the whole point of the finding was that

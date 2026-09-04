@@ -2350,6 +2350,9 @@ public class AutonomyEditorPanel extends JPanel
 
         refresh();
 
+        // The running layout is what the captions are drawn from (VD11-A1).
+        setupChanged();
+
         return true;
     }
 
@@ -2589,6 +2592,9 @@ public class AutonomyEditorPanel extends JPanel
         refresh();
 
         flashMenuTarget();
+
+        // The running layout is what the captions are drawn from (VD11-A1).
+        setupChanged();
     }
 
     /**
@@ -3804,6 +3810,11 @@ public class AutonomyEditorPanel extends JPanel
             // And into the setup, so the next build puts the train where it now is
             session.placeLocomotive(target,
                 point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
+
+            // AND THE RAILWAY IS TOLD (VD11-A1).  This door moves a train, which is the one thing the
+            // running layout most needs to hear about - and it is the sibling of `placementChanged`,
+            // which every other placement door has gone through since it was written.
+            setupChanged();
         }));
     }
 
@@ -4369,6 +4380,9 @@ public class AutonomyEditorPanel extends JPanel
         if (at < 0) return;
 
         session.pairPortals(tile, candidates.get(at));
+
+        // A portal pair is an edge in the running graph (VD11-A1).
+        setupChanged();
     }
 
     /**
@@ -5227,6 +5241,9 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
 
         if (changed != 0) showRestrictionsIfHidden();
+
+        // A run's direction is an edge in the running graph (VD11-A1).
+        setupChanged();
     }
 
     /**
@@ -5311,6 +5328,9 @@ public class AutonomyEditorPanel extends JPanel
 
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
+
+        // Directions are edges in the running graph (VD11-A1).
+        setupChanged();
     }
 
     /**
@@ -6238,6 +6258,13 @@ public class AutonomyEditorPanel extends JPanel
             }
 
             refresh();
+
+            // IN THE LAMBDA, beside the write, not at the end of the builder (VD11-A1).
+            //
+            // A run's direction is an edge in the running graph, and this radio is the one-way choice
+            // sitting on the same submenu as "All branches", which has announced since VD10-B2.  So
+            // the bulk answer reached the railway and the per-route one beside it did not.
+            setupChanged();
         });
 
         return item;
@@ -6714,6 +6741,9 @@ public class AutonomyEditorPanel extends JPanel
         if (onDiagramChanged != null) onDiagramChanged.run();
 
         refresh();
+
+        // An excluded page is absent from the running graph entirely (VD11-A1).
+        setupChanged();
     }
 
     private void nameEverything()

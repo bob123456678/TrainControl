@@ -3565,11 +3565,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
         // both from the JSON path, and for the same reasons: the route list repaints against the new
-        // layout, and the unconditional stop catches hand-throttled trains that isAutonomyBusy() does
-        // not cover - a train somebody was driving keeps rolling while the new layout thinks everything
-        // is parked
+        // layout, and the stop catches hand-throttled trains that isAutonomyBusy() does not cover - a
+        // train somebody was driving keeps rolling while the new layout thinks everything is parked
         this.refreshRouteList();
-        AltEmergencyStopActionPerformed(null);
+
+        // ON AN INTERACTIVE LOAD ONLY, WHICH IS WHAT `resumed` HAS ALWAYS BEEN FOR (VD11-A2).
+        //
+        // The stop was unconditional, and the argument above is about CHOOSING A DIFFERENT RAILWAY:
+        // the layout is replaced under a train nobody told, so it is stopped.  That reasoning does not
+        // reach an edit to the setup this railway is already running - and `setupChanged` puts every
+        // such edit through here, so on 2026-09-03 typing a link's display name, typing a tile length,
+        // pairing a signal or ticking an arrival side each stopped every locomotive on the layout.
+        // Two gestures had reached it for a long time; nine more were added in one commit.
+        //
+        // `resumed` is `!interactive`, and it has been computed and ignored since this method was
+        // written.  The two interactive callers are the autonomy menu and the Configurations dialog -
+        // somebody deliberately switching railways, which is the case the stop is for.  The two that
+        // are not are the start-up resume, where nothing is running yet, and this rebuild.
+        if (!resumed)
+        {
+            AltEmergencyStopActionPerformed(null);
+        }
 
         setAutonomyDependentTabs(true);
 
@@ -3974,6 +3990,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (to == null) session.getStore().locomotiveDeleted(from);
             else session.getStore().locomotiveRenamed(from, to);
+
+            // AND SOMETHING READS IT (VD11-B2).
+            //
+            // `repairTheUnfinishedEditNote` records a failure in a field, and `VD9-C9`'s stated
+            // minimum was that a failed write deserves what a failed delete gets.  The field had no
+            // reader, so the minimum had not been met - the note keeps the old name, and the revert
+            // on the next start would put back a locomotive the database no longer has.
+            if (session.getStore().didTheNoteRepairFail())
+            {
+                this.model.log("A record of an unfinished layout edit could not be updated for the"
+                    + " renamed locomotive, so it has been left naming the old one:"
+                    + " config/autonomy/setup-before-edit.json.  If TrainControl is restarted before"
+                    + " that edit is finished, the setup it puts back will name a locomotive that no"
+                    + " longer exists - delete that file to prevent it.");
+            }
 
             session.getStore().save();
 

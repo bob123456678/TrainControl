@@ -390,7 +390,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
-| 2026-09-03 | FR-058 | feature request | the diagram's right-click menu lists only what autonomy would choose; everything else valid is under **More Destinations**, uncapped | fixed unvalidated | - |
+| 2026-09-03 | FR-058 | feature request | the diagram's right-click menu lists only what autonomy would choose; everything else valid is under **More Destinations**, uncapped | - | [MT-266](tests.md#mt-266) |
 | 2026-09-03 | OB-171 | bug | the reversal-length notice fired on every square of the run in; one notice per square trains turn at now, saying how many squares still need a length | fixed unvalidated | - |
 | 2026-09-02 | FR-057 | feature request | the diagram prints its column and row numbers, on by default, toggled with Control+K or from either editor's right-click menu | fixed unvalidated | - |
 | 2026-09-02 | OB-170 | bug | the window still came up without the keyboard, and the request was never made again | - | [MT-259](tests.md#mt-259) |

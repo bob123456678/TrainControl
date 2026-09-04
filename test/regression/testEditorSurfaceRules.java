@@ -2270,7 +2270,6 @@ public class testEditorSurfaceRules
             + "(RA-C2).  describeTile falls back to the s88 address and then to the coordinates");
     }
 
-
     /**
      * EVERY branch that raises the latch, not just the one that was looked at.
      *
@@ -2765,13 +2764,6 @@ public class testEditorSurfaceRules
      *
      * MUTATION: removing `setupChanged();` from any one of the nine fails this.
      */
-    /** Every session call that changes the setup, so the rule below covers all of them. */
-    private static final String[] WRITERS = {
-        "session.setPointProperty(", "session.setHome(", "session.setTileLength(",
-        "session.setPointName(", "session.setLinkName(", "session.setDirection(",
-        "session.clearEveryHome(", "session.clearEveryPlacement(", "session.setProtectingSignals(",
-        "session.setBarredArrivals(", "session.setBlockingPoints(", "session.setPortalDisabled(",
-    };
 
     @Test
     public void testEveryDoorThatWritesTheSetupAnnouncesItWiderSweep() throws Exception
@@ -2785,6 +2777,8 @@ public class testEditorSurfaceRules
             java.nio.charset.StandardCharsets.UTF_8);
 
         String[] lines = source.split("\r?\n", -1);
+
+        java.util.List<String> writers = writers();
 
         java.util.List<String> silent = new java.util.ArrayList<>();
 
@@ -2801,7 +2795,7 @@ public class testEditorSurfaceRules
             // knows about.
             boolean writes = false;
 
-            for (String setter : WRITERS)
+            for (String setter : writers)
             {
                 if (lines[i].contains(setter)) { writes = true; break; }
             }
@@ -2845,13 +2839,38 @@ public class testEditorSurfaceRules
             // placementChanged() counts: it ends in setupChanged(), and a door that goes through it
             // has announced the change exactly as one that calls it directly has.
             boolean announces = body.toString().contains("setupChanged()")
-                || body.toString().contains("placementChanged()");
+                || body.toString().contains("placementChanged()")
+
+                // AND ONE HELPER THAT ANNOUNCES FOR ITS CALLER (VD11-A1).
+                //
+                // `radio(...)` runs the action it is given and then calls `placementChanged()` itself,
+                // deliberately - its comment says the redraw belongs there "where every radio gets it,
+                // rather than in whichever lambda somebody reported".  So an expression lambda passed
+                // to it is announced, and nothing lexical in the enclosing method can show that.
+                //
+                // One helper, named, and checked below - not a list of writers, which is the thing
+                // this rule keeps being caught by.
+                || inARadioCall(lines, i);
 
             if (!announces && !silent.contains(name))
             {
                 silent.add(name);
             }
         }
+
+        // The exemption above is only sound while `radio` really does announce.
+        assertTrue(source.contains("placementChanged();"),
+            "AutonomyEditorPanel no longer calls placementChanged anywhere, so the `radio(` "
+            + "exemption below is exempting doors that announce nothing (VD11-A1)");
+
+        int radioAt = source.indexOf("private javax.swing.JMenuItem radio(");
+
+        assertTrue(radioAt > 0, "the radio helper has gone, and the exemption with it should too");
+
+        assertTrue(source.indexOf("placementChanged();", radioAt) > 0
+            && source.indexOf("placementChanged();", radioAt) < radioAt + 2000,
+            "radio() no longer announces, so every radio door on this menu is silent and the "
+            + "exemption is hiding them (VD11-A1)");
 
         assertTrue(checked >= 7,
             "only " + checked + " writers of a point property were found in AutonomyEditorPanel, "
@@ -2864,5 +2883,78 @@ public class testEditorSurfaceRules
             + "The user sets a home and the Return Home item stays greyed, because "
             + "triageReturnToHome asks the running layout; and the edit dies with the process, "
             + "because that panel has no Save (MT-246).  They are: " + silent);
+    }
+
+    /**
+     * Whether a write sits inside a `radio(...)` call, which announces for it (VD11-A1).
+     *
+     * The write is the lambda argument, several lines below the call's own line, so the line the write
+     * is on says nothing.  This walks back to the start of the statement - the previous `;` or block
+     * brace - and asks whether the call is in it.
+     */
+    private static boolean inARadioCall(String[] lines, int at)
+    {
+        for (int i = at; i >= 0 && i > at - 12; i--)
+        {
+            if (lines[i].contains("radio(")) return true;
+
+            String trimmed = lines[i].trim();
+
+            // the start of the statement this write belongs to
+            if (i < at && (trimmed.endsWith(";") || trimmed.endsWith("{") || trimmed.endsWith("}")))
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Every mutator `AutonomySession` has, read from its source rather than listed here (VD11-A1).
+     *
+     * **This was a list three times, and each list was short.** `MT-246`'s rule named the two setters
+     * that finding happened to involve. `VD10-B2` widened it to twelve, in a commit whose own message
+     * says *"a guard that lists the cases it knows about finds the cases it knows about"* - and that
+     * list missed seven more, one of which (`setDirections`) differs from a listed one by a single
+     * character, and one of which (`setBlockingPoints`) could never match anything because both real
+     * writers go through `getStore()`.
+     *
+     * A list is the defect. So the question is asked of the type: every `public` method on
+     * `AutonomySession` whose name begins with a verb that changes something. A new mutator is covered
+     * the day it is written, and a renamed one cannot slip through a stale string.
+     *
+     * @return the `session.name(` fragments to look for
+     */
+    private static java.util.List<String> writers() throws Exception
+    {
+        java.io.File file = new java.io.File(
+            "src/org/traincontrol/automationui/AutonomySession.java");
+
+        assertTrue(file.isFile(), "cannot find " + file.getAbsolutePath());
+
+        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+            "public\\s+(?:synchronized\\s+)?(?:void|int|boolean)\\s+"
+            + "((?:set|clear|forget|move|add|remove|pair|unpair|rename|place|write)[A-Za-z0-9_]*)\\s*\\(")
+            .matcher(source);
+
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        while (m.find())
+        {
+            String fragment = "session." + m.group(1) + "(";
+
+            if (!out.contains(fragment)) out.add(fragment);
+        }
+
+        assertTrue(out.size() >= 20,
+            "only " + out.size() + " mutators were found on AutonomySession, which is fewer than it "
+            + "has - so this derived the wrong list and the rule below would pass having looked for "
+            + "almost nothing");
+
+        return out;
     }
 }
