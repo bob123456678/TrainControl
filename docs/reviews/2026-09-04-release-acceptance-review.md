@@ -286,7 +286,7 @@ written in the past tense and are not part of this finding.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the report now lists the four rules that make a row expected, so a reader can tell a regression from a rule working; the signal ruling of 2026-08-18 is named, since three of the four rows traced to it |
 | **Confidence** | Three of the four rows traced to Adam's recorded ruling; the fourth reported, not re-derived. |
 
 `2026-09-03-parity-report.md` frames itself as "3.0.0 should offer at least what 2.8.1 does", then
@@ -372,7 +372,7 @@ exactly that moment means the undo silently does not stick. Same fix as the sibl
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - a file carrying keys the old format never wrote is counted and reported; reported rather than refused, because 'this key is too new' is evidence and not proof |
 | **Confidence** | Mechanism verified by reading; the "no genuine 2.8.1 file is affected" claim is the sweep's file inventory (five repo fixtures plus Adam's file), reported, not re-run. |
 
 `AutonomySession.detectImportFormat` (`:1136`) classifies any file whose `points` is an **array** as
@@ -405,7 +405,7 @@ verified here at both cited sites.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the three constants nothing read are deleted and the sentence that went stale when Show Homes landed is corrected; stored values left alone, as their siblings were |
 | **Confidence** | Constants and their zero references verified by grep; the stored-value orphaning follows from R28-C3's own recorded decision. |
 
 `HIDE_REVERSING_PREF` (`TrainControlUI.java:230`), `HIDE_INACTIVE_PREF` (`:245`) and

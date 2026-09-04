@@ -998,6 +998,39 @@ public class AutonomySession
 
         if (withLocks > 0) out.add(I18n.f("autosetup.ui.leftEdgeLocks", withLocks));
 
+        // AND A FILE THAT IS NOT ACTUALLY A 2.8.1 ONE (ACC-C7).
+        //
+        // `detectImportFormat` calls any file whose `points` is an ARRAY a legacy graph, and a
+        // configuration serialised by `Layout.toJSON` is one of those too - so exporting a modern
+        // setup and importing it again comes through this door, which carries none of the fields the
+        // modern format added.  No genuine 2.8.1 file has them, so the supported migration is
+        // unaffected; what this catches is the round trip.
+        //
+        // Reported rather than refused.  A refusal would have to be certain, and "this file has a key
+        // the old format never wrote" is evidence rather than proof - somebody hand-editing a legacy
+        // file could produce it.  The operator can see the count and decide.
+        int modern = 0;
+
+        if (legacy.has("points") && legacy.optJSONArray("points") != null)
+        {
+            org.json.JSONArray points = legacy.getJSONArray("points");
+
+            for (int i = 0; i < points.length(); i++)
+            {
+                org.json.JSONObject p = points.optJSONObject(i);
+
+                if (p == null) continue;
+
+                if (p.has(AutonomyBuilder.AUTO_DESTINATION) || p.has("protectingSignal")
+                    || p.has("blocks"))
+                {
+                    modern++;
+                }
+            }
+        }
+
+        if (modern > 0) out.add(I18n.f("autosetup.ui.leftModernFields", modern));
+
         if (legacy.has("timetable") && !legacy.isNull("timetable"))
         {
             out.add(I18n.f("autosetup.ui.leftTimetable",

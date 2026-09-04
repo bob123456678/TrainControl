@@ -227,7 +227,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
     public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
-    public static final String HIDE_REVERSING_PREF = "HideReversing";
 
     /**
      * Whether the diagram shows the captions of stations autonomy cannot choose.
@@ -242,8 +241,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String SHOW_INACTIVE_LABELS_PREF = "ShowInactiveLabels";
 
     public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
-    public static final String HIDE_INACTIVE_PREF = "HideInactive";
-    public static final String SHOW_STATION_LENGTH = "ShowStationLength";
 
     /**
      * Whether the diagram prints its column and row numbers (FR-057).
@@ -266,9 +263,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // preferences store rather than cleared: they cost nothing there, and clearing a key is the one
     // action that cannot be undone if the setting ever comes back.
     //
-    // The DECLUTTER goes with the window it decluttered.  Drawing the home assignment does not: no
-    // surface in 3.0.0 shows it, which is a real gap and is a question for Adam rather than a constant
-    // to keep warm.
+    // The DECLUTTER goes with the window it decluttered.  Drawing the home assignment does not - and
+    // the gap that sentence recorded has since been filled: the diagram's own "Show Homes" toggle
+    // draws it, read at `LayoutGrid.isShowingHomeLocomotives()` (ACC-C9).  So this is no longer a
+    // question for Adam, and what remained of it was three more constants nothing read:
+    // `HideReversing`, `HideInactive` and `ShowStationLength`, deleted with the same reasoning and
+    // their stored values left alone for the same reason.
+    //
+    // Worth saying because the three were not siblings of the two above by accident - they were the
+    // same window's settings, and a sweep that takes two of five leaves the impression the other
+    // three are live.
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
 

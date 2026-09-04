@@ -292,6 +292,28 @@ def main():
             add('')
             add('...and %d more.' % (len(missing) - 80))
 
+        # WHAT A ROW HERE USUALLY MEANS, said once rather than left to the reader (ACC-C2).
+        #
+        # The table names routes and stops; a reader who has not been living in this code has no way
+        # to tell a regression from a rule working as intended, and the most common cause by far is
+        # the second.  The review that raised this traced three of the four rows on the operator's own
+        # layout to one ruling.
+        add('')
+        add('**Before treating a row as a regression, check it against these.**  Each is a rule '
+            '3.0.0 applies that 2.8.1 did not, so a route disappearing because of one is the rule '
+            'working:')
+        add('')
+        add('- A station **protected by a signal** is not offered to a train that would have to pass '
+            'that signal at danger.  Adam ruled on 2026-08-18 that a hand dispatch must not sweep '
+            'protecting signals, and routes that depended on the old sweep are gone by design.')
+        add('- A square marked **not an automatic destination** is never chosen by autonomy, though a '
+            'person may still send a train there.')
+        add('- A **reversing point** is never a destination in its own right.')
+        add('- An **arrival side that has been barred** removes the routes that used it, which is what '
+            'the red arrows on the diagram are for.')
+        add('')
+        add('A row that matches none of those is worth looking at.')
+
     add('')
 
     gained = sorted(set(new_routes) - set(old_routes))
