@@ -116,16 +116,24 @@
       Through `test-sys-prop.`, which the TestNG macro in nbproject/build-impl.xml maps onto system
       properties of the forked JVM.
 
-      -Xmx IS reachable and this comment used to say it was not (VD9-B4).  The chain is real:
-      j2seproject3:test fills <customize> with <jvmarg line="${run.jvmargs}"/> (build-impl.xml:684-688),
-      test-impl forwards it into the testng task's own <customize/> (:663-675, :632), and :203 defaults
-      run.jvmargs inside a target - so a top-level property here would win.
+      -Xmx IS reachable and this comment used to say it was not (VD9-B4).  NetBeans' generated
+      j2seproject3:test macro fills its <customize> element with the run.jvmargs property, test-impl
+      forwards that into the testng task's own <customize/>, and run.jvmargs defaults to empty inside
+      a target - so a top-level property here would win.
 
-      It is deliberately not set, for a different reason: that same property feeds the `java` macro
-      the Run and Debug targets use (:915, :948), so bounding it would bound TrainControl itself.
-      Capping the application to make `ant test` tidier is the wrong trade, and `ant test` runs one
-      JVM at a time, which is not the pressure the bound exists for - docs/tools/battery.sh runs many
-      and does set it.  battery.sh remains the gate, and test/README.md says why.
+      By macro name rather than by line (VD10-C9): the round that adopted "cite by name, a line number
+      in a comment outlives every edit above it" wrote six line citations into this very comment, all
+      pointing into a file the next paragraph says NetBeans regenerates.
+
+      It is deliberately not set through run.jvmargs, because that property also feeds the java macro
+      the Run and Debug targets use - bounding it would bound TrainControl itself, and capping the
+      application to make `ant test` tidier is the wrong trade.
+
+      The narrower route was NOT taken and is worth naming so nobody re-derives it (VD10-C9): the
+      test-one-class macrodef below is ours, and could pass a nested jvmarg through test-impl's own
+      customize element, reaching the fork and nothing else.  What stops that being worth doing is
+      that `ant test` runs one JVM at a time, which is not the pressure the bound exists for -
+      docs/tools/battery.sh runs many and does set it.  battery.sh remains the gate.
 
       The skipped-class rule is the one leg with no door at all: TestNG's ant task has no way to fail
       a run for a class that reported only skips.

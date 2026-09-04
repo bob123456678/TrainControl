@@ -286,8 +286,10 @@ public final class CommandRow
      * and a stale line number in a javadoc outlives every edit above it with nothing able to notice.
      *
      * The other NINE kinds are absent, and for the original reason: a condition built from one is
-     * permanently false.  (This said four, which was right when `Kind` had seven members - it has
-     * thirteen, and this predicate admits four of them.)  One already in a route is preserved
+     * permanently false.  (This said **four**, and there was no version in which four was right:
+     * when `Kind` had seven members this predicate admitted two, so five were absent, and the enum
+     * already had thirteen on the day the sentence was written - `VD10-C5`.)  One already in a
+     * route is preserved
      * read-only, the way every other unsupported kind is.
      */
     public static boolean canBeACondition(Kind kind)

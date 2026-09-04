@@ -1126,8 +1126,10 @@ public class testSwitchingToACentralStationLayout
      * `close()` is what returns the layout preference to whatever the operator had, and the
      * preference is machine-global: a run that does not close leaves TrainControl opening a folder
      * under %TEMP% the next time Adam starts it.  The rule above - `testNoTestOpensTheOperatorsRailway`
-     * - says a sandbox must be opened BEFORE the window.  This is the other half: that having opened
-     * one, nothing can get out of the method without closing it.
+     * - says a sandbox must be opened BEFORE the window.  This is the other half, and it is weaker
+     * than it sounds: having opened one there is a handler to close it in, and no early return
+     * between the open and that handler can skip it - which is how all eight offenders failed.  It
+     * does not check that a `close()` is present (VD10-C8).
      *
      * **Four ways out that are easy to miss**, and all four were in the suite when this was written:
      * a window constructor that throws, `MarklinControlStation.init` failing to bind its port, an

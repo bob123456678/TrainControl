@@ -31,12 +31,24 @@ def atom_of(node):
 
     parts = []
 
+    # CANONICALLY, not by repr (VD10-C13).
+    #
+    # A value that is itself a dict formatted with %s comes out in insertion order, so two engines
+    # whose LinkedHashMap filled in a different order would give one leaf two names - and the tool
+    # would print NOT equivalent for two trees the byte-identity check beside it calls identical.
+    # That check uses sort_keys; this now does too.
+    def rendered(value):
+        if isinstance(value, (dict, list)):
+            return json.dumps(value, sort_keys=True)
+
+        return "%s" % (value,)
+
     for key in ("type", "address", "protocol", "setting", "name", "state", "s88"):
         if key in node:
-            parts.append("%s=%s" % (key, node[key]))
+            parts.append("%s=%s" % (key, rendered(node[key])))
 
         if key in rc:
-            parts.append("rc.%s=%s" % (key, rc[key]))
+            parts.append("rc.%s=%s" % (key, rendered(rc[key])))
 
     if not parts:
         # Fall back to the whole leaf, which is still stable between the two engines
@@ -117,7 +129,67 @@ def load(path):
     return rows
 
 
+def leaf(address):
+    return {"type": "NodeRouteCommand", "address": address}
+
+
+def self_test():
+    """The three pairs that prove this can fail, kept rather than described (VD10-C12).
+
+    They were run once when the comparison was written and thrown away, and the commit message is the
+    only record that they passed.  A comparison nothing in the repo can fail is a comparison nobody
+    can check again - which is exactly the property this module exists to check for somebody else.
+    """
+    AND = lambda l, r: {"type": "NodeAnd", "left": l, "right": r}
+    OR = lambda l, r: {"type": "NodeOr", "left": l, "right": r}
+    GRP = lambda x: {"type": "NodeGroup", "expressions": [x]}
+
+    cases = [
+        # same meaning, different shape - normalize inserting a bracket is the whole reason this
+        # compares by truth table rather than by structure
+        ("reshaped", AND(OR(leaf(1), leaf(2)), leaf(4)),
+                     AND(GRP(OR(leaf(1), leaf(2))), leaf(4)), True),
+
+        # the IPR-B2 corruption itself: an AND that became an OR
+        ("mangled", OR(leaf(3), AND(GRP(OR(leaf(1), leaf(2))), leaf(4))),
+                    OR(OR(leaf(3), GRP(OR(leaf(1), leaf(2)))), GRP(leaf(4))), False),
+
+        ("identical", AND(leaf(7), leaf(8)), AND(leaf(7), leaf(8)), True),
+    ]
+
+    failures = []
+
+    for name, a, b, expected in cases:
+        found = set()
+
+        atoms(a, found)
+        atoms(b, found)
+
+        order = sorted(found)
+
+        got = table(a, order) == table(b, order)
+
+        print("  %-10s equivalent=%-5s expected=%s" % (name, got, expected))
+
+        if got != expected:
+            failures.append(name)
+
+    if failures:
+        print("")
+        print("*** THE COMPARISON DOES NOT DISCRIMINATE: %s ***" % failures)
+
+        return 1
+
+    print("")
+    print("the comparison tells the three cases apart")
+
+    return 0
+
+
 def main(argv):
+    if len(argv) > 1 and argv[1] == "--self-test":
+        return self_test()
+
     if len(argv) < 3:
         print(__doc__)
 
@@ -206,6 +278,29 @@ def main(argv):
         print("TC_CONDITION_FLOOR if the corpus really is this small.")
 
         return 2
+
+    # AND ONTO DISK, which the usage line has always advertised (VD10-C10).
+    #
+    # Without this the answer lived in terminal scrollback: the parity report never mentioned
+    # conditions, so "a section of the parity report" was true of nothing anybody could read later.
+    if len(argv) > 3:
+        with io.open(argv[3], "w", encoding="utf-8") as report:
+            report.write(u"## Route conditions, 2.8.1 against 3.0.0" + u"\n\n")
+            report.write(u"Each condition parsed by BOTH engines and compared by truth table, so two")
+            report.write(u" trees that\nbracket differently and mean the same thing are not a")
+            report.write(u" difference.\n\n")
+            report.write(u"| | |\n|---|---|\n")
+            report.write(u"| conditions compared | %d |\n" % compared)
+            report.write(u"| logically equivalent | %d |\n" % len(same))
+            report.write(u"| of which byte-identical | %d |\n" % identical)
+            report.write(u"| of which reshaped | %d |\n" % (len(same) - identical))
+            report.write(u"| **not equivalent** | **%d** |\n" % len(different))
+            report.write(u"| could not be compared | %d |\n" % len(unreadable))
+            report.write(u"| present in only one | %d |\n\n" % len(only_one))
+
+            for name, a, b in different:
+                report.write(u"### %s\n\n" % name)
+                report.write(u"```\n2.8.1: %s\n3.0.0: %s\n```\n\n" % (a, b))
 
     return 1 if (different or unreadable or only_one) else 0
 

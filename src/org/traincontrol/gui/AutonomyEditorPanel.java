@@ -3041,6 +3041,12 @@ public class AutonomyEditorPanel extends JPanel
             // where negatives are perfectly valid - and the length message told the user their answer
             // had to be "0 or more", which was wrong advice for the field they were standing in.
             JOptionPane.showMessageDialog(owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
+            // NOTHING WAS WRITTEN, so there is nothing to announce (VD10-C14).
+            //
+            // The rule was applied by putting the call after the last statement, and the
+            // failure path was not looked at when it was - so typing "abc" showed an error
+            // and then saved the setup and rebuilt the railway, having changed nothing.
+            return;
         }
 
         // Persisted, and the running layout told (MT-246).
@@ -3115,6 +3121,12 @@ public class AutonomyEditorPanel extends JPanel
         catch (NumberFormatException e)
         {
             JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
+            // NOTHING WAS WRITTEN, so there is nothing to announce (VD10-C14).
+            //
+            // The rule was applied by putting the call after the last statement, and the
+            // failure path was not looked at when it was - so typing "abc" showed an error
+            // and then saved the setup and rebuilt the railway, having changed nothing.
+            return;
         }
 
         // Persisted, and the running layout told (MT-246).
@@ -6387,8 +6399,36 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (onDiagramChanged != null) onDiagramChanged.run();
 
-        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+        // ONE REBUILD PER GESTURE, NOT ONE PER WRITE (VD10-C2).
+        //
+        // `rebuildRunningLayoutFromSetup` is a full configuration load and layout regeneration on the
+        // event thread.  Doors nest - picking "Can stop" runs `setUsage`, which calls `setStation`,
+        // and the radio's own listener then calls `placementChanged` - so putting the exit on each of
+        // them counted one click three times.  That is the cost `DY3-C5` and `REL-C4` spent two
+        // findings taking out of the bulk doors, arriving at the single ones from the other side.
+        //
+        // Coalesced rather than pushed back onto the callers: which doors call which is exactly the
+        // thing that drifts, and a rule that says "announce, unless your caller will" is the rule
+        // that produced nine silent doors in the first place.
+        //
+        // It also fixes a second thing the count hid: the first of the three rebuilt the railway from
+        // a HALF-APPLIED edit - the station flag written and `active` not - before rebuilding it from
+        // the state the user actually asked for.  One rebuild, after the gesture, sees only the
+        // finished edit.
+        if (setupChangePending) return;
+
+        setupChangePending = true;
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            setupChangePending = false;
+
+            if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+        });
     }
+
+    /** Set between a setup change and the single rebuild it coalesces into (VD10-C2). */
+    private boolean setupChangePending;
     /**
      * Re-reads the setup and shows what it says.
      *

@@ -2,6 +2,13 @@
 
 **Status:** open
 
+**The summary table below duplicates each finding's own Disposition row, and that is a defect of this
+document rather than of the findings** (`VD10-C4`). It was written `open` for all 28 while every
+per-finding table said `fixed` - which is the same drift `a4f5990e` had corrected in another document
+the same morning. Both are `fixed` now, and the next reader should treat the per-finding row as the
+one that counts: two places holding one status is what the protocol's "one status, one location"
+rule exists to prevent, and a summary column is a second place by construction.
+
 **Every finding in it is dispositioned as of 2026-09-03 evening** - all eight Bs and all twenty Cs
 fixed, the thirteen Ds confirmations that needed nothing. It stays `open` until a second validation
 pass has read those fixes, because three of round one's Bs were defects in *corrections*, and the
@@ -38,34 +45,34 @@ user-facing promise about a backup that the code does not make.
 
 | | | |
 |---|---|---|
-| **B1** | `REL-C16`'s comment fix left the retracted sentence's tail in place, above the line it was about | open |
-| **B2** | Both runners' `INT`/`TERM` trap fires `on_the_way_out` twice: the reaper runs twice and the live-layout alarm double-prints | open |
-| **B3** | `SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the unfixed one | open |
-| **B4** | `TSX-C20`'s "cannot be set from `build.xml`" is false, and the false premise is now a comment in `build.xml` | open |
-| **B5** | `SVN-B8`'s test passes against the very fix its disposition says it rules out | open |
-| **B6** | `SVN-B1` replaced one wrong sentence with two: the guard *is* blind on an unmeasured reversal square, and an unmeasured stretch *earlier* does not blind it | open |
-| **B7** | `SVN-B1`'s refuted sentence still stands, more strongly, at the sibling that actually builds the notice | open |
-| **B8** | `RGN-B1` promises a `.bak` for every migrated page, in the Readme and in the log; `saveChanges` writes one only if there is not one already | open |
-| **C1** | `IPR-B2`'s reachability screen looked for the wrong thing; Adam's `routes.json` *does* hold a `NodeGroup` | open |
-| **C2** | `IPR-B2`'s central sentence is refuted by the counterexample printed two lines below it, in four places | open |
-| **C3** | `REL-C12` corrected the two edge messages nothing reads and left the one everybody sees still naming the top row | open |
-| **C4** | `IPR-B4`: `contentOf`'s javadoc now says the opposite of what `contentOf` does | open |
-| **C5** | `IPR-B4`: two of the "three assertions" carrying the fix cannot fail | open |
-| **C6** | `SVN-B11`: the second assertion of the second test cannot fail either way | open |
-| **C7** | Both runners' trap comment claims safety by defaulting; the safety is actually by arming order | open |
-| **C8** | `test/README.md`'s `ant test` paragraph was falsified by `TSX-C20` in the same round, and `TSX-C20` points the reader at it | open |
-| **C9** | `SVN-B9` repairs the note through the one write primitive this class documents as failing under the lock it is written for, silently | open |
-| **C10** | `TSX-C16` pasted `setup-env.sh`'s explanation into `run.sh`, where it describes nothing that is there | open |
-| **C11** | `MT-265` step 1 asks for a `Ctrl+Z` after a gesture that pushes no undo point | open |
-| **C12** | Stale line citations written into permanent source and docs, in four places | open |
-| **C13** | `REL-C13`'s replacement javadoc says four kinds are absent; nine are | open |
-| **C14** | `TSX-C17` is dispositioned fixed with its third clause unfixed | open |
-| **C15** | `testEverySandboxIsClosedOnEveryPath` enforces "inside a `try`", which is not what its name or its message promises | open |
-| **C16** | `REL-C15` orphaned `captionsOnPage`'s javadoc and left three documents asserting it has no caller | open |
-| **C17** | `SVN-B8`'s disposition says the test walks the real pair from `setup.json`; the test loads no `setup.json` | open |
-| **C18** | `RGN-B2` says "all three now say the same thing"; three code sites still say the s88 door stops | open |
-| **C19** | `RGN-B1`'s test asserts a second half that cannot fail, and the disposition counts it as coverage | open |
-| **C20** | `RGN-B1`'s caption count is incremented before the page write, and the page list is keyed by page name rather than filename | open |
+| **B1** | `REL-C16`'s comment fix left the retracted sentence's tail in place, above the line it was about | fixed |
+| **B2** | Both runners' `INT`/`TERM` trap fires `on_the_way_out` twice: the reaper runs twice and the live-layout alarm double-prints | fixed |
+| **B3** | `SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the unfixed one | fixed |
+| **B4** | `TSX-C20`'s "cannot be set from `build.xml`" is false, and the false premise is now a comment in `build.xml` | fixed |
+| **B5** | `SVN-B8`'s test passes against the very fix its disposition says it rules out | fixed |
+| **B6** | `SVN-B1` replaced one wrong sentence with two: the guard *is* blind on an unmeasured reversal square, and an unmeasured stretch *earlier* does not blind it | fixed |
+| **B7** | `SVN-B1`'s refuted sentence still stands, more strongly, at the sibling that actually builds the notice | fixed |
+| **B8** | `RGN-B1` promises a `.bak` for every migrated page, in the Readme and in the log; `saveChanges` writes one only if there is not one already | fixed |
+| **C1** | `IPR-B2`'s reachability screen looked for the wrong thing; Adam's `routes.json` *does* hold a `NodeGroup` | fixed |
+| **C2** | `IPR-B2`'s central sentence is refuted by the counterexample printed two lines below it, in four places | fixed |
+| **C3** | `REL-C12` corrected the two edge messages nothing reads and left the one everybody sees still naming the top row | fixed |
+| **C4** | `IPR-B4`: `contentOf`'s javadoc now says the opposite of what `contentOf` does | fixed |
+| **C5** | `IPR-B4`: two of the "three assertions" carrying the fix cannot fail | fixed |
+| **C6** | `SVN-B11`: the second assertion of the second test cannot fail either way | fixed |
+| **C7** | Both runners' trap comment claims safety by defaulting; the safety is actually by arming order | fixed |
+| **C8** | `test/README.md`'s `ant test` paragraph was falsified by `TSX-C20` in the same round, and `TSX-C20` points the reader at it | fixed |
+| **C9** | `SVN-B9` repairs the note through the one write primitive this class documents as failing under the lock it is written for, silently | fixed |
+| **C10** | `TSX-C16` pasted `setup-env.sh`'s explanation into `run.sh`, where it describes nothing that is there | fixed |
+| **C11** | `MT-265` step 1 asks for a `Ctrl+Z` after a gesture that pushes no undo point | fixed |
+| **C12** | Stale line citations written into permanent source and docs, in four places | fixed |
+| **C13** | `REL-C13`'s replacement javadoc says four kinds are absent; nine are | fixed |
+| **C14** | `TSX-C17` is dispositioned fixed with its third clause unfixed | fixed |
+| **C15** | `testEverySandboxIsClosedOnEveryPath` enforces "inside a `try`", which is not what its name or its message promises | fixed |
+| **C16** | `REL-C15` orphaned `captionsOnPage`'s javadoc and left three documents asserting it has no caller | fixed |
+| **C17** | `SVN-B8`'s disposition says the test walks the real pair from `setup.json`; the test loads no `setup.json` | fixed |
+| **C18** | `RGN-B2` says "all three now say the same thing"; three code sites still say the s88 door stops | fixed |
+| **C19** | `RGN-B1`'s test asserts a second half that cannot fail, and the disposition counts it as coverage | fixed |
+| **C20** | `RGN-B1`'s caption count is incremented before the page write, and the page list is keyed by page name rather than filename | fixed |
 | **D1** | `SVN-B11`'s two fixes do not interact badly — eight sequences traced | closed |
 | **D2** | `IPR-B2`'s fix is correct on every shape the writer can produce | closed |
 | **D3** | `REL-C15`'s two deletions are genuinely caller-free, `.form` and reflection included | closed |

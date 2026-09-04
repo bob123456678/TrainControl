@@ -87,7 +87,7 @@ inputs outside the repo. `cs2_sample_layout/` was read and never written.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the clear follows the release, as it does on the ordinary path; test seeds clearedEdges from inside the run and the mutation fails |
 | **Confidence** | confirmed by reading, and the mode confirmed from the operator's own configuration file |
 
 `src/org/traincontrol/automation/Layout.java:5099-5104` says of the new release:
@@ -169,7 +169,7 @@ the one the whole occupancy count was converted from a boolean to prevent.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the premise was false and the real mechanism is the capture on the way out; MT-246 says so now |
 | **Confidence** | confirmed by reading; the two runnables were traced from both construction sites to their call sites |
 
 `AutonomyEditorPanel.setupChanged`'s javadoc, `src/org/traincontrol/gui/AutonomyEditorPanel.java:6340-6343`:
@@ -221,7 +221,7 @@ the difference, since it reads the source for a line rather than driving the sav
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the failed locomotive is stopped before the track is given back |
 | **Confidence** | confirmed by reading; the monitor's hold time is documented in this same file |
 
 Adam's ruling is *"force a graceful stop, alert the user, then unlock"*. The handler's order,
@@ -256,7 +256,7 @@ in the sequence in order to add the release.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - and it was nine doors, not five; the rule now names every writer |
 | **Confidence** | confirmed by reading; each door traced from its menu item to its wrapper |
 
 `buildTileMenu` is one method serving both surfaces, and says so at `:903-908`: *"The items are
@@ -303,7 +303,7 @@ Two smaller consequences of the same scan, worth recording where the rule is:
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - setupChanged sits above refresh's javadoc |
 | **Confidence** | confirmed by execution, and the numbers reproduced independently |
 
 `c892ec03` inserted `setupChanged`'s javadoc and body **between `refresh()`'s javadoc and `refresh()`**,
@@ -353,7 +353,7 @@ raising it is the one thing that test's own javadoc forbids.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - all seven translations have their letters back, as escapes |
 | **Confidence** | confirmed by reading all eight bundles and the lines they replaced |
 
 `416e34c2` rewrote `autolayout.errorRunStoppedByFailure` in all eight bundles. The English is right.
@@ -386,7 +386,7 @@ neighbours. See `D7`.)
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - a floor of 20, TC_CONDITION_FLOOR to override, exit 2 when it bites |
 | **Confidence** | confirmed by executing the committed module on constructed inputs |
 
 `ConditionParityDriver` skips any route with no `"conditions"` key
@@ -407,7 +407,7 @@ number was quoted into the review.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - serialised before the stream is opened, and a failure is recorded |
 | **Confidence** | confirmed by reading |
 
 `VD9-C9` was right that `Files.move` was the wrong primitive under the lock this repair exists for, and
@@ -437,7 +437,7 @@ and log in the catch.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the README says what ant test does, and build.xml no longer points at the false sentence |
 | **Confidence** | confirmed by reading, and by `git log` over the file |
 
 `docs/reviews/2026-09-03-validation-of-the-day.md:567` records `VD9-C8` as *"fixed with `C20` - the
@@ -468,7 +468,7 @@ afford, and this one is in the document whose subject is false dispositions.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed as a side effect of A1, which replaced the block the citation was in |
 | **Confidence** | confirmed by reading the file at the commit that wrote it |
 
 `Layout.java:5100` cites the ordinary release site as `` `:5701` ``. At `416e34c2` itself, `:5701` was
@@ -485,7 +485,7 @@ Related, and the same round: see `C9`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - one rebuild per gesture, coalesced onto the event queue |
 | **Confidence** | confirmed by reading the call chain |
 
 Picking "Can stop", "Can pass through" or "Neither" on the station submenu (`:1144-1154`) runs:
@@ -512,7 +512,7 @@ adding the exit to both members of a nested pair counts the pair twice.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the paragraph break is back |
 | **Confidence** | confirmed by reading |
 
 `src/org/traincontrol/automationui/AutonomySession.java:2028`:
@@ -532,7 +532,7 @@ around what it replaced. Its own fix commit did the same thing one file away.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - and the document now says the summary column is a second place by construction |
 | **Confidence** | confirmed by counting the table at HEAD |
 
 `fcc11670`'s message: *"Twenty-eight findings were fixed in the tree and left reading "Disposition |
@@ -551,7 +551,7 @@ is the durable fix.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - there was no version in which four was right, and it says so |
 | **Confidence** | confirmed by walking every commit that touched the file |
 
 The arithmetic is right: `Kind` has 13 values (`src/org/traincontrol/base/CommandRow.java:31-68`),
@@ -581,7 +581,7 @@ which may be deliberate if review documents are append-only.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the number is attached to the clause it counts |
 | **Confidence** | confirmed by reading |
 
 The counting change is correct and is recorded as `D14`. What it does not do is make the sentence true.
@@ -603,7 +603,7 @@ url, independently of the name, and the `.bak` is written at `newFilePath + ".ba
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the licence cited is the one that applies here |
 | **Confidence** | confirmed by reading both javadocs |
 
 `AutonomyCompanionStore.java:1434-1436` says torn writes are acceptable at the repair site *"for
@@ -622,7 +622,7 @@ not, which is what `VD9-C9` itself was about.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed at both sites - the claim is the weaker true one |
 | **Confidence** | confirmed by reading |
 
 The rename is right and thorough: `testEverySandboxIsOpenedInsideATry`
@@ -643,7 +643,7 @@ paragraph that was edited for `VD9-C15`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - by macro name, and the route not taken is named |
 | **Confidence** | confirmed by reading; all six citations verified accurate today |
 
 `f7bb363a` removed a line citation from `CommandRow.java:284-286` for `VD9-C12`, on the reasoning that
@@ -667,7 +667,7 @@ closed, which is the shape `VD9-B4` was filed about, at reduced strength.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - it writes the report its usage line always advertised, and run.sh asks for it |
 | **Confidence** | confirmed by reading; the absence in the report confirmed by search |
 
 `docs/tools/parity/compare-conditions.py:17` advertises
@@ -683,7 +683,7 @@ something done once"* is not true of any artefact.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the frozen copy by default, and a skipped section exits 2 |
 | **Confidence** | confirmed by reading; `set -e` behaviour verified with a throwaway script |
 
 Three things, all in `docs/tools/parity/run.sh`:
@@ -705,7 +705,7 @@ Three things, all in `docs/tools/parity/run.sh`:
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the three pairs are a --self-test rather than a sentence |
 | **Confidence** | confirmed by search, and the three pairs re-run against the committed module |
 
 The commit says the comparison *"was checked against three constructed pairs first: reshaped reads
@@ -735,7 +735,7 @@ before `:133` prints "compiled ParityDriver", though ParityDriver was compiled f
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - atom names are canonical |
 | **Confidence** | confirmed by executing the committed module |
 
 `compare-conditions.py:27-44` builds a leaf's variable name by formatting the whole state dictionary
@@ -758,7 +758,7 @@ with another (`D11`). Sorting the keys before formatting closes it.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - both failure paths return before announcing |
 | **Confidence** | confirmed by reading |
 
 `promptNumber` (`AutonomyEditorPanel.java:3006-3034`) and `promptPercent` (`:3078-3108`) both put
@@ -774,7 +774,7 @@ in seven places, and the cancel and failure paths were not looked at when it was
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - his configuration has atomicRoutes false, which is A1's premise |
 | **Confidence** | confirmed by reading the operator's configuration |
 
 `Layout.java:5510-5513`:
@@ -795,7 +795,7 @@ one the comment says nobody runs.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed - the quotation carries the two lines that say whether anything was skipped |
 | **Confidence** | confirmed by comparing the quoted block with the program's output |
 
 `docs/reviews/2026-08-31-independent-review.md:442-448` quotes five lines of

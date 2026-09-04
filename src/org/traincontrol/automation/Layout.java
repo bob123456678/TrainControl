@@ -5533,8 +5533,12 @@ public class Layout
                             // that reporting an edge clear early only moves a signal. It does not:
                             // `clearedEdges` is read by `getActiveAccs`, which `MarklinRoute
                             // .heldReason` consults to refuse a route that would set an accessory on
-                            // an active path - and with atomicRoutes on, which is what Adam runs, the
-                            // lock is held for the whole run by design, so being in this set is the
+                            // an active path - and with atomicRoutes ON the
+                            // lock is held for the whole run by design.
+        //
+        // NOT "which is what Adam runs", which this said (VD10-C15): his active configuration
+        // has `"atomicRoutes": false`, so the branch of `unlockPath` that reads this map is the
+        // one his railway actually takes - which is the premise `VD10-A1` turned on., so being in this set is the
                             // ONLY thing that drops an edge's protection. An early clear lets a route
                             // throw a turnout on track the train is still standing on.
                             if (!tailHasProvablyPassed(pathIsUnmeasured, waiting[1],

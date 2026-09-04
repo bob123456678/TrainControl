@@ -105,7 +105,15 @@ tail -1 "$TARGET/out/pathpref.log"
 # fromJSON runs normalize, which INSERTS a NodeGroup around a cross-operator left child, so the tree
 # each engine holds is not the tree in the file.  compare-conditions.py compares by truth table for
 # the same reason - two trees that bracket differently and mean the same thing are not a difference.
-ROUTES="${TC_ROUTES:-$REPO/cs2_sample_layout/config/gleisbilder/routes.json}"
+# THE FROZEN COPY, not the live folder (VD10-C11).
+#
+# `testConditionOutline` reads `test/operator_layout` for a stated reason - "cs2_sample_layout is the
+# live one and moves under a test's feet" - and this read the live one, so the number quoted into the
+# report came from the file that argument calls unstable.  They are identical today, which is exactly
+# how that goes unnoticed.
+#
+# TC_ROUTES still points it anywhere, including at the live file when that is the question being asked.
+ROUTES="${TC_ROUTES:-$REPO/test/operator_layout/config/gleisbilder/routes.json}"
 
 CONDITION_STATUS=0
 
@@ -123,13 +131,20 @@ then
     set +e
 
     python "$REPO/docs/tools/parity/compare-conditions.py" \
-        "$TARGET/out/conditions-v2_8_1.tsv" "$TARGET/out/conditions-v3_0_0.tsv"
+        "$TARGET/out/conditions-v2_8_1.tsv" "$TARGET/out/conditions-v3_0_0.tsv" \
+        "$TARGET/out/conditions.md"
 
     CONDITION_STATUS=$?
 
     set -e
 else
-    echo "*** no routes.json at $ROUTES - the condition comparison was skipped ***"
+    echo "*** NO routes.json AT $ROUTES - THE CONDITION COMPARISON DID NOT RUN ***"
+    echo ""
+    echo "This section has not been checked.  Point TC_ROUTES at a routes file, or accept that the"
+    echo "run says nothing about whether 2.8.1 and 3.0.0 read your conditions the same way."
+
+    # A section that did not run is not a section that passed (VD10-C11).
+    CONDITION_STATUS=2
 fi
 
 echo ""
@@ -154,6 +169,7 @@ set -e
 
 echo ""
 echo "report: $TARGET/out/report.md"
+echo "        $TARGET/out/conditions.md"
 echo "logs:   $TARGET/out/"
 
 exit $STATUS

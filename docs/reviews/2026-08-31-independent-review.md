@@ -444,7 +444,13 @@ logically equivalent:     39
   of which byte-identical:39
   of which reshaped:      0
 NOT equivalent:           0
+could not be compared:    0
+present in only one:      0
 ```
+
+The last two lines matter and were cut from the first version of this quotation (`VD10-C16`):
+"conditions compared" is equivalent plus not-equivalent and **excludes** both of them, so without
+them a reader cannot tell whether 39 is the whole population or merely the part that could be read.
 
 **All 39 of his conditions come out of 2.8.1 and 3.0.0 identical, not merely equivalent** - so
 `normalize` finds nothing to reshape in his file, which is the same conclusion the structural screens

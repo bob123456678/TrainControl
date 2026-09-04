@@ -1483,9 +1483,14 @@ public class AutonomyCompanionStore
             // deserves what `dispose()` gives a failed delete, and this class has no logger - so it
             // records it the way it records a failed migration, for whoever opened the session.
             //
-            // A torn write here is survivable for `forgetBeforeEdit`'s reason: a half-written note
-            // fails `unfinishedEdit`'s shape check, so it is refused and reported rather than applied.
-            // What is lost is the revert, which is why it is worth saying.
+            // A torn write here is survivable, but NOT for `forgetBeforeEdit`'s reason, and citing
+            // that was wrong (`VD10-C7`).  Its licence is *"there is nothing to protect, because the
+            // content being overwritten is the thing being disposed of"* - which is the one thing
+            // that is not true here, where the content is a live snapshot somebody may still need.
+            //
+            // What makes it survivable is narrower: a half-written note fails `unfinishedEdit`'s
+            // shape check, so it is refused and reported rather than applied.  The revert is lost
+            // and nothing bad is done with it, which is why the failure is recorded above.
             noteRepairFailed = true;
         }
     }

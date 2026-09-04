@@ -2660,10 +2660,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // and it is a record of something already done rather than a question.
             if (!session.getMigratedPages().isEmpty())
             {
+                // N COUNTS WHAT WAS REMOVED, so it is attached to the removal (VD10-C6).
+                //
+                // The setup is saved before any page is written, so a page whose write throws has
+                // its captions in the setup and its labels still on disk.  The count follows the
+                // writes - which is right - and so it belongs to the clause about the writes.
                 this.model.log("Station names written on the track diagram by an earlier version have"
-                    + " been taken into the autonomy setup (" + session.getMigratedCaptions()
-                    + " of them) and removed from these pages: "
+                    + " been taken into the autonomy setup and removed from these pages: "
                     + String.join(", ", session.getMigratedPages())
+                    + " (" + session.getMigratedCaptions() + " name(s) in all)"
                     + ".  Each of those pages has a .bak file beside its own .cs2, holding the"
                     + " page as it stood the first time this version rewrote it");
             }

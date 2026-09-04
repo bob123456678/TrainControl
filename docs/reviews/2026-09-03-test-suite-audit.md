@@ -1769,8 +1769,8 @@ checks rather than for the property that shape buys (`VD9-C15`) - walks the brac
 every test source and fails for any `LayoutSandbox.open(` that is not lexically inside a `try`, with
 `@Before*` methods exempt - and exempt *safely*, which is only true since `C18` made their teardowns
 `alwaysRun`. It sits beside `testNoTestOpensTheOperatorsRailway`, which says the sandbox must be
-opened *before* the window; this is the other half, that having opened one you cannot get out without
-closing it.
+opened *before* the window; this is the other half - and weaker than it sounds, since it checks that
+there is a handler to close it in rather than that a `close()` is present (`VD10-C8`).
 
 It has the control the protocol asks for (`checked >= 40`, so it cannot pass by reading nothing), and
 it was **written before the last five fixes and failed naming all five** - the failure message above

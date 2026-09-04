@@ -2025,7 +2025,8 @@ public class AutonomySession
      * Neither is worth chasing without a ruling: closing the first means walking the graph backwards
      * from every reversal square, which changes what the count means, and Adam has already accepted
      * the count as it stands ("20 warnings sounds OK").
-     *     * **The condition is his, and it is what stops this being a nag.** A railway that records no
+     *
+     * **The condition is his, and it is what stops this being a nag.** A railway that records no
      * lengths anywhere has decided not to model them, and every reversing square on it would be
      * listed for something nobody is trying to do. One that records some has started, and these are
      * the ones that matter most.
