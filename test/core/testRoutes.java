@@ -1130,6 +1130,68 @@ public class testRoutes
     }
 
     /**
+     * Editing a route keeps it in the autonomy "Activate routes" selection (AC2-A1).
+     *
+     * **A setting silently discarded, and it takes some sessions to show.** `editRoute` works by
+     * delete-then-re-add, and `deleteRoute` strips the route's id out of `activateRouteIDs` - which is
+     * right for a real delete, because ids are reused and a new route inheriting one would be switched
+     * on without being asked. What was missing is the other half: nothing puts the id back when the
+     * same route is added again.
+     *
+     * `changeRouteId` has exactly that repair and has had it all along, which is what makes this a
+     * sweep failure rather than an oversight: three doors delete and re-add, and one of them knew.
+     *
+     * **Why it survives to bite.** The loss is only in memory until something persists it, and any
+     * mid-session `parseAuto` rebuild restores the list from the stored configuration - so the edit
+     * often looks harmless. It is the save on the way out that writes the shortened list, and the
+     * NEXT launch that disables the route. An s88 automation stops firing, with a log line, some
+     * sessions after the edit that caused it.
+     *
+     * MUTATION, stated exactly: removing the restore from `editRoute` fails the second assertion;
+     * removing it from the `syncWithCS2` refresh is not covered here - that path needs a Central
+     * Station, and `MT-272` carries it.
+     */
+    @Test
+    public void testEditingARouteKeepsItActivated() throws Exception
+    {
+        MarklinRoute route = unusedRoute();
+
+        assertTrue(model.newRoute(route), "precondition: the route must be added");
+
+        final String name = route.getName();
+        final Integer id = route.getId();
+
+        java.util.List<Integer> selection = model.getAutoLayout().getActivateRouteIDs();
+
+        final boolean wasThere = selection.contains(id);
+
+        try
+        {
+            if (!wasThere) selection.add(id);
+
+            assertTrue(model.getAutoLayout().getActivateRouteIDs().contains(id),
+                "precondition: the route has to be in the selection, or the assertion below is "
+                + "satisfied by it never having been there");
+
+            assertTrue(model.editRoute(name, name + " edited", route.getRoute(), route.getS88(),
+                route.getTriggerType(), false, null),
+                "precondition: the edit itself must succeed, or nothing below is exercised");
+
+            assertTrue(model.getAutoLayout().getActivateRouteIDs().contains(id),
+                "editing a route dropped it from the autonomy Activate-routes selection.  editRoute "
+                + "deletes and re-adds, deleteRoute strips the id, and nothing put it back - so the "
+                + "save on the way out writes the shortened list and the next launch leaves the "
+                + "route switched off, some sessions after the edit that caused it (AC2-A1)");
+        }
+        finally
+        {
+            if (!wasThere) model.getAutoLayout().getActivateRouteIDs().remove(id);
+
+            model.deleteRoute(name + " edited");
+            model.deleteRoute(name);
+        }
+    }
+    /**
      * editRoute refuses what it cannot do, says so in its return value, and damages nothing.
      *
      * It edits by delete-then-re-add, so a rename onto a name another route already holds used to

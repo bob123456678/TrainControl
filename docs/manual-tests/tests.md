@@ -45,6 +45,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-269](#mt-269) | 2026-09-04 | Three from the acceptance review, and one ruling | needs test | ACC-B1, ACC-B2, ACC-B3 |
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 | [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
+| [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -630,6 +631,46 @@ not running and there is nothing to restart, and tell you to check where that lo
 **2. The same failure with autonomy running** should still say the old sentence - the run really has
 stopped itself and Start really is what puts it back. If both cases say the same thing, the flag that
 chooses between them is being read after the stop has already cleared it.
+
+*Run against the next release candidate.*
+
+---
+
+<a id="mt-272"></a>
+
+### MT-272 - 2026-09-04 - A route you edit stays switched on for autonomy
+
+**Disposition:** needs test
+**From:** AC2-A1
+
+**Written:** 2026-09-04
+
+**This one had been there a long time and four review rounds walked past it.** An independent pass
+found it by looking somewhere nobody had.
+
+**What was happening.** Editing a route - renaming it, changing its commands, even just toggling its
+enabled box - quietly took it out of autonomy's **Activate routes** selection. `editRoute` works by
+deleting the route and adding it back, and the delete strips it from that list. Nothing put it back.
+
+**Why it took a while to notice.** The loss is only in memory until something saves it, and almost
+anything that rebuilds the graph mid-session puts the list back from the stored file. It is the save
+on the way out that writes the shortened version, and the **next launch** that leaves the route
+switched off. So an automation stops firing some sessions after the edit that caused it, with nothing
+connecting the two but a line in the log.
+
+The Central Station refresh had the same hole: a route re-read because it changed on the CS2 came back
+deselected.
+
+**What to do.**
+
+1. **Tick a route in Activate routes**, then edit that route - a rename is enough. **Quit and
+   restart.** It should still be ticked. Before this it would not be.
+2. **The same with a Central Station sync**, if you can arrange for a route to change on the CS2 and
+   be re-read. That path has no automated test - it needs a real Central Station - so it is the half
+   I am least sure of.
+3. **And check a genuine delete still clears it**: delete a route that was ticked, make a new one, and
+   confirm the new one is not switched on by inheriting the old id. That is why the delete strips the
+   list in the first place, and it must keep doing it.
 
 *Run against the next release candidate.*
 
