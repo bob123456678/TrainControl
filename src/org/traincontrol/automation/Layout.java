@@ -7919,7 +7919,9 @@ public class Layout
                             }
                             // ABSENT MEANS NOT STATED (REL-A2), as above.  This one is worse than the
                             // length: a reversible EMU read back as non-reversible is refused a
-                            // terminus by `mustBackIn` and planned round the long way by `pickPath`,
+                            // terminus by `pickPath` and planned round the long way (ACC-C1: this
+                            // also named `mustBackIn`, which Adam removed on 2026-09-04 - staging
+                            // accepts such a terminus now, and only autonomy's own choice refuses),
                             // so the railway behaves differently and nothing says why.
 
                             // Only throw a warning if this is not a station

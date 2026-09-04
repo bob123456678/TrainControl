@@ -1195,6 +1195,20 @@ public class AutonomyViewerPanel extends JPanel
                 }
             }
 
+            // AND THE FACINGS THAT WERE GUESSED (ACC-C4).
+            //
+            // The old format cannot state which way a train faces, so a placement landing on a split
+            // square has one chosen for it.  That is unavoidable and it is a guess, and it used to be
+            // made silently - so a train pointing the wrong way after an import looked like a defect
+            // rather than the one thing the file could not tell us.
+            //
+            // In the log rather than the dialog, like the list above: the dialog is already a
+            // paragraph, and this is something to read once and then check on the diagram.
+            if (result.facingsInvented > 0 && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.facingsGuessed", result.facingsInvented));
+            }
+
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched

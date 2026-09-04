@@ -570,12 +570,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private AddLocomotive adder;
     private LocomotiveStats stats;
     /**
-     * The route editor, which is now the only one.
-     *
-     * Still called routeEditor because that is what it is: the old text-based one it replaces has
-     * been deleted, so there is no longer a second thing to distinguish it from.
-     */
-    /**
      * Set when a setup edit could not be applied because autonomy was running (ACC-B3).
      *
      * The edit reached the file and not the running layout, so from that moment the configuration on
@@ -590,6 +584,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean setupEditDeclinedDuringRun;
 
+    /**
+     * The route editor, which is now the only one.
+     *
+     * Still called routeEditor because that is what it is: the old text-based one it replaces has
+     * been deleted, so there is no longer a second thing to distinguish it from.
+     */
     private RouteEditorFrame routeEditor;
 
     // Popup references

@@ -724,12 +724,18 @@ public class AutonomyChecks
     /**
      * A home on a square every train must turn round at.
      *
-     * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS -
-     * which staging refuses to a locomotive that cannot reverse unless the route turns on the way
-     * (`mustBackIn`, since `20c30781`; this said `canRest`, which lost the clause - SVN-C14).  So the
-     * home is perfectly good for a reversible locomotive, and for any other it depends on the route
-     * existing at all - which the only way to find out used to be Return Home reporting IMPOSSIBLE
-     * with no mention of the square.
+     * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS.
+     *
+     * **THIS NOTICE IS NOW THE ONLY WARNING THERE IS** (ACC-C1).  Staging used to refuse a terminus
+     * to a locomotive that cannot reverse unless the route turned on the way - `mustBackIn` - so the
+     * consequence of such a home was a refusal the operator would meet at the end of a session.  Adam
+     * removed that rule on 2026-09-04, ruling that Return Home is manual operation, and the refusal
+     * became a plan: the locomotive is driven into the berth NOSE FIRST and has to back out to leave.
+     *
+     * So the home is perfectly good for a reversible locomotive; for any other it now WORKS, and
+     * whether the train can get out again afterwards is a question about the railway that nothing in
+     * the software will ask.  Saying so here is the whole remaining protection, which is why the
+     * wording is about backing out rather than about being refused.
      *
      * Not an error, and not something to fix in the setup: a berth every train must back out of is a
      * real place, and a home there is a reasonable thing to want.  It is said out loud so the

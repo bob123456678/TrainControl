@@ -425,7 +425,16 @@ public class LayoutEditor extends PositionAwareJFrame
         // Straight to disk, for the same reason the move itself goes straight to disk - see
         // rememberAutonomy.  An undo that only reached memory would be forgotten by the reset that
         // follows the next edit, and the thing it undid would come back.
-        autonomy.saveQuietly();
+        //
+        // AND THE ANSWER IS READ, as its sibling reads it (ACC-C6).  This discarded the boolean, so a
+        // write that failed at exactly this moment left the undo not sticking and said nothing - and
+        // disk is authoritative after the session rebuild, so what comes back is the thing that was
+        // undone.  `rememberAutonomy` has logged this since it was written; this door did not.
+        if (!autonomy.saveQuietly() && parent.getModel() != null)
+        {
+            parent.getModel().log("Could not save the autonomy setup after undoing a diagram edit,"
+                + " so the change may come back the next time the setup is loaded.");
+        }
     }
 
     /**

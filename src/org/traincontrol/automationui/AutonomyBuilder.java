@@ -578,9 +578,11 @@ public class AutonomyBuilder
      *   2. any copy trains may arrive at, which on a must-turn square is a turning copy;
      *   3. copy zero, so a home is never silently dropped.
      *
-     * A turning station copy is emitted as a TERMINUS, and staging refuses a terminus to a locomotive
-     * that cannot reverse unless the route turns on the way - `mustBackIn`, since `20c30781` took that
-     * clause out of `canRest` (SVN-C14).  That only decides the home when EVERY copy turns: since
+     * A turning station copy is emitted as a TERMINUS.  Staging used to refuse a terminus to a
+     * locomotive that cannot reverse unless the route turned on the way - `mustBackIn` - and Adam
+     * removed that rule on 2026-09-04, ruling that Return Home is manual operation.  **So such a
+     * locomotive is now driven in nose first** (ACC-C1).  That only decides the home when EVERY copy
+     * turns: since
      * 2026-08-31 the home is the square, and HomeStaging asks whether the locomotive can stand on ANY
      * copy of it - so a platform with a turning berth and a through road is a home for anything.
      * Where every copy turns it is a real property of a berth every train must back out of rather

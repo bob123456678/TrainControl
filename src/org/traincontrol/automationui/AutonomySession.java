@@ -365,6 +365,16 @@ public class AutonomySession
      */
     public static class LegacyImport
     {
+
+        /**
+         * How many placements had a facing chosen for them because the file could not state one
+         * (ACC-C4).
+         *
+         * The old format has no facing, and a split square needs one - so the import picks the first
+         * legal way round.  It is a guess, it is corrected by the first real run's capture and by the
+         * editor, and before this it was made silently AND at random.
+         */
+        public int facingsInvented;
         /**
          * Names written onto a square that had none.
          */
@@ -489,7 +499,10 @@ public class AutonomySession
      * Names already here are kept, the same rule importing a configuration follows: this fills gaps,
      * it does not overwrite somebody's work with a file's.
      *
-     * Nothing is written to disk - the caller saves, so a bad match can still be cancelled.
+     * Nothing is written to disk BY THIS METHOD; the only caller saves immediately afterwards
+     * (`AutonomyViewerPanel:1156-1158`), so in practice an import is committed as soon as it is
+     * asked for.  This used to say a bad match "can still be cancelled", which described a step
+     * that has never existed and would have led the next reader to add it back (ACC-C5).
      *
      * @param legacy the parsed autonomy.json
      * @return what was matched, skipped and not found
@@ -664,6 +677,22 @@ public class AutonomySession
                             // asks the RUNNING graph which copies can be left, and during an import
                             // there is no running graph to ask.  A copy that cannot be left is
                             // reported by the checks, which is the same answer arrived at later.
+                            // THE FIRST ONE, NOT A RANDOM ONE (ACC-C4).
+                            //
+                            // This read `ways.get(new Random().nextInt(ways.size()))`.  The old
+                            // format genuinely cannot state a facing, so something has to be chosen -
+                            // but choosing it by dice meant two imports of the same file could place
+                            // the same train pointing opposite ways, and nothing told the operator a
+                            // choice had been made at all.
+                            //
+                            // Deterministic is strictly better here: it is no more likely to be right,
+                            // and it makes an import reproducible, which is what lets somebody compare
+                            // two runs of it and see that nothing else moved.
+                            //
+                            // Not legality-checked, unlike placing one by hand on the diagram: that
+                            // asks the RUNNING graph which copies can be left, and during an import
+                            // there is no running graph to ask.  A copy that cannot be left is
+                            // reported by the checks, which is the same answer arrived at later.
                             if (getFacing(tile) == null)
                             {
                                 java.util.List<Side> ways =
@@ -671,8 +700,9 @@ public class AutonomySession
 
                                 if (!ways.isEmpty())
                                 {
-                                    setFacing(tile,
-                                        ways.get(new java.util.Random().nextInt(ways.size())));
+                                    setFacing(tile, ways.get(0));
+
+                                    result.facingsInvented++;
                                 }
                             }
 

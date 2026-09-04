@@ -257,7 +257,7 @@ verified here.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - all three now describe the rule in the past tense, and the AutonomyChecks one says what it is protecting against NOW: it is the only remaining warning that a non-reversible train will be driven in nose first |
 | **Confidence** | All three sites re-read at the reviewed tree after the removal commit. |
 
 Commit `489439fa` removed `mustBackIn` from all three of its functional sites and rewrote
@@ -309,7 +309,7 @@ the four rows are right.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open - one sentence, Adam's wording to choose |
+| **Disposition** | fixed - the sentence says autonomy chooses FROM that list rather than that it is exactly what autonomy would choose |
 | **Confidence** | Verified against the menu code and `pickPath`. |
 
 `Readme.md:380`: *"Right-clicking a train on the track diagram lists only the stations autonomy
@@ -326,7 +326,7 @@ non-technical readers, this may be fine to leave - flagged, not argued.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the facing is the first legal one rather than a random one, and the count is reported through a new bundle key in all eight languages |
 | **Confidence** | Verified by reading at the cited lines. |
 
 `AutonomySession.java:669-677`: a legacy placement landing on a split square with no facing picks
@@ -343,7 +343,7 @@ here.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the javadoc describes what the only caller actually does, and says the cancel step never existed |
 | **Confidence** | Verified by reading both sites. |
 
 `AutonomySession.java:492` (javadoc): *"Nothing is written to disk - the caller saves, so a bad
@@ -358,7 +358,7 @@ Loss is bounded because the import is strictly gap-filling. *Found by the sweep,
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the undo door reads saveQuietly's answer and logs, as its sibling does |
 | **Confidence** | Verified by reading both sites. |
 
 `LayoutEditor.java:428`: the undo path calls `autonomy.saveQuietly();` and discards the boolean.
@@ -388,7 +388,7 @@ report line.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open - a release-note line, not a code change |
+| **Disposition** | fixed - a release-note line in Readme.md's 3.0.0 section, in the terms a non-technical reader needs: keep a copy before going back to 2.8.1 |
 | **Confidence** | Both sides verified by reading: master's restore loop and HEAD's cap. |
 
 HEAD allows up to fifty locomotive mapping pages (`MAX_LOC_MAPPINGS = 50`,
@@ -425,7 +425,7 @@ re-verified here.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the ellipsis is added after the loop when the base list is empty, which is the one case it could never reach and the case it is most needed in |
 | **Confidence** | Verified by reading the menu construction. |
 
 `LayoutRightclickAutonomyMenu` counts squares dropped by `isOfferableToOperator` toward `possible`

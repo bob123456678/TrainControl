@@ -421,6 +421,39 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             }
                         }
 
+                        // AND THE SAME WAY OUT WHEN THERE IS NO TOP-LEVEL LIST AT ALL (ACC-C10).
+                        //
+                        // The ellipsis above is built inside the loop over `paths`, so an empty base
+                        // list never reaches it - and that is precisely the case it is most needed in:
+                        // a train whose every choosable destination is switched off or excludes it
+                        // gets a bare *More Destinations* submenu and no route to the tab that would
+                        // explain why.  The squares dropped by `isOfferableToOperator` are counted
+                        // into `possible` so that the ellipsis can offer that explanation, and then
+                        // the one shape where they are ALL dropped could not show it.
+                        //
+                        // `VD11-C3` added the empty-`paths` gate for the submenu's heading, so this
+                        // case had been thought about for the separator and not for this.
+                        if (paths.isEmpty() && possible > otherPaths.size())
+                        {
+                            addSeparator();
+
+                            JMenuItem wayOut = new JMenuItem("...");
+
+                            wayOut.addActionListener(event ->
+                            {
+                                try
+                                {
+                                    ui.jumpToAutonomyLocTab();
+                                }
+                                catch (Exception e)
+                                {
+                                    JOptionPane.showMessageDialog(this, e.getMessage());
+                                }
+                            });
+
+                            add(wayOut);
+                        }
+
                         // MORE DESTINATIONS (FR-058), which is where everything valid but not
                         // automatic lives: a reversing point, and a square marked as not an automatic
                         // destination.  Each is somewhere the operator may legitimately send a train
