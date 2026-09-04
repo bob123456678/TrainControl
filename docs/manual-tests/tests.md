@@ -13457,6 +13457,55 @@ longer, so arriving somewhere the short way must not close off the long one.
 
 *Run against a build after commit fbc19cb9.*
 
+**Adam, 2026-09-03 (triage).** Does not work.
+
+Signals works.
+
+For homing: doesn't work, but reason is unknown.  EN57-203 can't go to bottomleftpark semi-autonomously (no option shown).  Setting a home locomotive via track diagram viewer does not activate the send home button, and it is not persisted when closing the app (after being set in the track diagram viewer)
+
+*Run against commit 409d4ce8, build\classes, compiled 03 Sep 19:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-03.** Two of the three are one defect, found and fixed. The third is not a defect.
+
+**"Does not activate the send home button" and "not persisted when closing the app" are the same
+omission.** `AutonomyEditorPanel` supplies the tile menus for two surfaces. In the layout editor there
+is a Save and a close, and closing rebuilds the running layout. On the **track diagram** there is
+neither: `TrainControlUI` wires the panel's `onDiagramChanged` to `session.save()`, so that runnable
+is the only thing that makes an edit outlive the process, and `rebuildRunningLayoutFromSetup` is the
+only thing that tells the running `Layout` about it.
+
+`promptHome` called neither. So the home went into the setup in memory and nowhere else - and
+"Return Locomotives Home" stayed greyed because `triageReturnToHome` asks the **running** layout,
+which had never been told.
+
+**It was seven doors of nine**, not one: `setTurning`, `setUsage`, `setStation`, `promptNumber`,
+`promptPercent`, `promptHome` and `promptLocomotives`. The two that worked - `placementChanged` and
+`promptName` - are the two that had been reported before and fixed one at a time. All nine share one
+exit now, `setupChanged()`, and `testEditorSurfaceRules.testEveryDoorThatWritesTheSetupAnnouncesIt`
+fails if a writer does not end there. MUTATION: removing it from `promptHome` alone fails that test.
+
+**"EN57-203 can't go to TunnelLeftPark semi-autonomously (no option shown)" is the behaviour this
+test asked for**, and there are two independent reasons for it. Measured on the frozen copy of your
+layout, built into a real graph:
+
+| | |
+|---|---|
+| `TunnelLeftPark` | station, active, **terminus**, not reversing, **autoDestination = false** |
+| `EN57-203` | **not reversible** |
+
+Step 7 of this test is *"a terminus with no reversing point on the way to it should now be reported as
+impossible for that locomotive, rather than offered and then failing on the first move"* - and a
+non-reversible locomotive can only reach a terminus by a route that turns it round. Separately, you
+have marked that square as not an automatic destination.
+
+**So the code is right and the silence is wrong.** An entry that is absent from a list explains
+nothing, and you read it as a failure - which is the correct reading of no feedback at all. That is
+worth its own entry rather than reopening this one: the "Why not Moving?" tool answers exactly this
+question for a train that will not move, and the semi-autonomous destination list has no equivalent.
+
+**What still needs you:** re-run the homing half. Set a home from the track diagram, check the Return
+Home item lights up, close the application, reopen it and check the home is still there.
+
 ---
 
 

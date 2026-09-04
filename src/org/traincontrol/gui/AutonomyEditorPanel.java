@@ -2921,6 +2921,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, may && !must);
         session.setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, must ? Boolean.TRUE : null);
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     /**
@@ -2965,6 +2968,9 @@ public class AutonomyEditorPanel extends JPanel
         // Stored only when it is off, like every other default, so a square nobody has closed carries
         // nothing at all
         session.setPointProperty(tile, "active", open ? null : Boolean.FALSE);
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     private void setStation(TileKey tile, boolean on)
@@ -2984,6 +2990,9 @@ public class AutonomyEditorPanel extends JPanel
         // Active is not cleared here any more: what a square is and whether it is open are the same
         // three-way choice now, and setUsage sets both together.
         if (!on) session.setPointProperty(tile, "terminus", null);
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     private void setAllBranches(TileKey tile, Direction direction)
@@ -3019,6 +3028,9 @@ public class AutonomyEditorPanel extends JPanel
             // had to be "0 or more", which was wrong advice for the field they were standing in.
             JOptionPane.showMessageDialog(owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
         }
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
 
@@ -3090,6 +3102,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
         }
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     /**
@@ -3606,6 +3621,9 @@ public class AutonomyEditorPanel extends JPanel
         session.setHome(tile, picked);
 
         refresh();
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     /**
@@ -3943,9 +3961,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // Rebuilding the running layout is safe to ask for unconditionally: it declines while autonomy
         // is busy, and it is what every placement made from the diagram has always done.
-        if (onDiagramChanged != null) onDiagramChanged.run();
-
-        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+        setupChanged();
 
         refresh();
     }
@@ -4053,6 +4069,9 @@ public class AutonomyEditorPanel extends JPanel
             picked.isEmpty() ? null : new org.json.JSONArray(picked));
 
         refresh();
+
+        // Persisted, and the running layout told (MT-246).
+        setupChanged();
     }
 
     /**
@@ -4203,7 +4222,10 @@ public class AutonomyEditorPanel extends JPanel
         // The failure is written down in that method's comment, in advance: "from that moment the
         // running layout holds names the setup no longer knows ... The caption looks up its station
         // and finds nothing, so the label goes blank."
-        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+        //
+        // Through setupChanged now, which also persists it - a rename made from the diagram had the
+        // same half of MT-246 as the rest: it reached the running layout and never reached disk.
+        setupChanged();
     }
 
     private void promptLinkName(TileKey tile)
@@ -6308,6 +6330,33 @@ public class AutonomyEditorPanel extends JPanel
      * a panel that agrees with itself while the graph has moved on - is the failure this whole design
      * exists to avoid.
      */
+    /**
+     * Says that the setup changed: persist it, and rebuild the railway it describes.
+     *
+     * **The two things every door has to do and seven of nine did not** (MT-246). Adam, 2026-09-03:
+     * *"Setting a home locomotive via track diagram viewer does not activate the send home button, and
+     * it is not persisted when closing the app."* Both halves of that are this method.
+     *
+     * `onDiagramChanged` is wired by `TrainControlUI` to `session.save()`, so it is what makes an edit
+     * outlive the process - the panel that supplies the DIAGRAM's tile menus has no Save button and no
+     * close, so without it the write lives and dies in memory. `rebuildRunningLayoutFromSetup` is what
+     * tells the running `Layout` about it, and every affordance that asks a question about homes,
+     * lengths, priorities or usage reads the running layout rather than the setup.
+     *
+     * Hence a greyed "Return Locomotives Home" after setting a home: `triageReturnToHome` asks the
+     * running layout, which had never been told.
+     *
+     * **One exit rather than a line in each door**, because the two that already worked -
+     * `placementChanged` and `promptName` - are the two that had been reported before, and adding a
+     * third copy is how there comes to be an eighth door without one.
+     * `testEditorSurfaceRules` now fails if a writer does not end here.
+     */
+    private void setupChanged()
+    {
+        if (onDiagramChanged != null) onDiagramChanged.run();
+
+        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+    }
     public final void refresh()
     {
         flowMarks = session.flowMarks();

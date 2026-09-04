@@ -2738,4 +2738,105 @@ public class testEditorSurfaceRules
 
         return found;
     }
+
+    /**
+     * Every door that writes a point property ends by announcing it (MT-246).
+     *
+     * Adam, 2026-09-03, on his own railway: *"Setting a home locomotive via track diagram viewer does
+     * not activate the send home button, and it is not persisted when closing the app."* Both halves
+     * are one omission, and it was in **seven of the nine** doors that write a point property.
+     *
+     * `AutonomyEditorPanel` supplies the tile menus for two surfaces. In the layout editor there is a
+     * Save and a close, and closing rebuilds. On the **track diagram** there is neither:
+     * `TrainControlUI` wires `onDiagramChanged` to `session.save()`, so that runnable is the only
+     * thing that makes an edit outlive the process, and `rebuildRunningLayoutFromSetup` is the only
+     * thing that tells the running `Layout` about it. Every affordance that asks a question about
+     * homes, priorities, lengths or usage reads the running layout - which is why a home set from the
+     * diagram left "Return Locomotives Home" greyed: `triageReturnToHome` asked a layout nobody had
+     * told.
+     *
+     * **The two doors that already worked are the two that had been reported before**
+     * (`placementChanged`, `promptName`), each fixed on its own at the time. That is why this is a
+     * rule and not a ninth patch.
+     *
+     * Asked of the source rather than by driving the panel: these methods are private, they open modal
+     * dialogs, and what is being checked is that a line is present - which is exactly what a surface
+     * rule is for.
+     *
+     * MUTATION: removing `setupChanged();` from any one of the nine fails this.
+     */
+    @Test
+    public void testEveryDoorThatWritesTheSetupAnnouncesIt() throws Exception
+    {
+        java.io.File file = new java.io.File(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java");
+
+        assertTrue(file.isFile(), "cannot find " + file.getAbsolutePath());
+
+        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String[] lines = source.split("\r?\n", -1);
+
+        java.util.List<String> silent = new java.util.ArrayList<>();
+
+        int checked = 0;
+
+        for (int i = 0; i < lines.length; i++)
+        {
+            if (!lines[i].contains("session.setPointProperty(")
+                && !lines[i].contains("session.setHome(")) continue;
+
+            // The enclosing method: back to the nearest declaration at class indent.
+            int start = i;
+
+            while (start > 0 && !(lines[start].startsWith("    private ")
+                || lines[start].startsWith("    public ")
+                || lines[start].startsWith("    protected "))) start--;
+
+            // and forward to its closing brace
+            int depth = 0;
+            boolean open = false;
+            int end = lines.length - 1;
+
+            for (int j = start; j < lines.length; j++)
+            {
+                for (char c : lines[j].toCharArray())
+                {
+                    if (c == '{') { depth++; open = true; }
+                    else if (c == '}') depth--;
+                }
+
+                if (open && depth <= 0) { end = j; break; }
+            }
+
+            StringBuilder body = new StringBuilder();
+
+            for (int j = start; j <= end; j++) body.append(lines[j]).append('\n');
+
+            String name = lines[start].trim();
+
+            checked++;
+
+            // setupChanged is itself allowed to write nothing and announce nothing.
+            if (name.contains("setupChanged")) continue;
+
+            if (!body.toString().contains("setupChanged()") && !silent.contains(name))
+            {
+                silent.add(name);
+            }
+        }
+
+        assertTrue(checked >= 7,
+            "only " + checked + " writers of a point property were found in AutonomyEditorPanel, "
+            + "which is fewer than it has - so this scan is reading the wrong thing and would pass "
+            + "having examined almost nothing");
+
+        assertEquals(silent, new java.util.ArrayList<String>(),
+            silent.size() + " door(s) write a point property and never call setupChanged(), so an "
+            + "edit made from the TRACK DIAGRAM is neither saved nor shown to the running layout.  "
+            + "The user sets a home and the Return Home item stays greyed, because "
+            + "triageReturnToHome asks the running layout; and the edit dies with the process, "
+            + "because that panel has no Save (MT-246)");
+    }
 }

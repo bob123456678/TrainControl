@@ -367,6 +367,15 @@ when other page points are clicked from warnings, also highlight it after the ed
 
 warnings like    Trains turn round at 19,14 and its track has no length recorded, so nothing can tell whether a long train would stand across the switch behind it.  Set the track length. fire on many tiles along a line.  Dedupe them, one per segment between a switch and a station.
 
+### FR-058 - 2026-09-03 - autonomy path options in the rick click track diagram menu
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-03 19:53  
+**Build:** commit 409d4ce8, build\classes, compiled 03 Sep 19:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the right click menu on the track diagrams, show only active stations that can be chosen in full autonomy.  add a menu called More Destinations and in there, list the points that cannot be chosen in full autonomy but are still valid.  the current setup lists both in one flat list, which truncates active stations, which I don't like
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
