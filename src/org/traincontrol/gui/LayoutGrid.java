@@ -735,23 +735,6 @@ public class LayoutGrid
                     }
                 }
 
-                // AND THE AXIS NUMBERS ON TOP OF EVERYTHING (OB-172, Adam 2026-09-04).
-                //
-                // A `Border` is painted by `JComponent.paint` BEFORE `paintChildren`, so every child
-                // that reaches into the gutter is drawn over the number underneath it.  A station
-                // caption is 38 pixels tall and up to 55 wide against a 30-pixel cell, which is why
-                // one of them takes out the numbers for two rows - and why Adam could see numbers
-                // missing on rows that carry no caption of their own.
-                //
-                // MEASURED before it was changed, because two guesses before this one were wrong: on
-                // his own `1 - Main` every cell the ruler measures is exactly 30x30 with none absent,
-                // and the font is 14 pixels tall - so not one of `paintBorder`'s three skip clauses
-                // can fire on that page.  The numbers were never being skipped.  They were being
-                // covered.
-                //
-                // Painted a second time rather than moved out of the border: the border is what
-                // RESERVES the gutter, and a ruler that stopped being one would take the room away
-                // with it.  The same pixels twice cost nothing.
             }
 
             /**
@@ -763,6 +746,20 @@ public class LayoutGrid
              * Swing gives each child its own scratch graphics inside `paintChildren`, and what that
              * costs is not worth working out when there is a place that is unambiguously after
              * everything.
+             *
+             * **Why the numbers vanish without it.**  A `Border` is painted by `JComponent.paint`
+             * BEFORE the children, so every child reaching into the eighteen pixels the ruler reserves
+             * is drawn over the number underneath.  A `StationCaption` is 38 pixels tall and up to 55
+             * wide against a 30-pixel cell, which is why one of them takes out the numbers for two
+             * rows - and why Adam saw numbers missing on rows carrying no caption of their own.
+             *
+             * Measured before it was changed, because two guesses before this one were wrong: on his
+             * own `1 - Main` every cell the ruler measures is exactly 30x30 with none absent, against
+             * a 14-pixel font, so not one of `paintBorder`'s three skip clauses can fire there.  The
+             * numbers were never being skipped.  They were being covered.
+             *
+             * Painted a second time rather than moved out of the border: the border is what RESERVES
+             * the gutter, and a ruler that stopped being one would take the room away with it.
              *
              * `super.paint` runs the whole sequence - background, border, children - and then this
              * puts the ruler back over the top.

@@ -665,19 +665,19 @@ public class AutonomySession
                             extras.put(AutonomyBuilder.LOCOMOTIVE,
                                 new org.json.JSONObject(standing.toString()));
 
-                            // And which way it is pointing, chosen at random from this square's
-                            // copies.
+                            // And which way it is pointing, which the file cannot say (ACC-C4).
+                            //
+                            // This sentence read "chosen at random from this square's copies" until
+                            // 2026-09-04, and stayed that way for six lines after the randomness went
+                            // - the lead sentence contradicting the code under it, which is the
+                            // version of a stale comment that costs (OPV-C3).
                             //
                             // The old graph had one Point per sensor and no notion of facing, so the
                             // file cannot say - and without one every imported locomotive lands on
                             // whichever copy the build walked in by first, which on a real layout
                             // means a yard full of trains all facing the same arbitrary way.
                             //
-                            // Not legality-checked, unlike placing one by hand on the diagram: that
-                            // asks the RUNNING graph which copies can be left, and during an import
-                            // there is no running graph to ask.  A copy that cannot be left is
-                            // reported by the checks, which is the same answer arrived at later.
-                            // THE FIRST ONE, NOT A RANDOM ONE (ACC-C4).
+                            // THE FIRST ONE, NOT A RANDOM ONE.
                             //
                             // This read `ways.get(new Random().nextInt(ways.size()))`.  The old
                             // format genuinely cannot state a facing, so something has to be chosen -

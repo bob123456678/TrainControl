@@ -72,7 +72,7 @@ None of them is a reason to hold the tag; OPV-B1 is a reason not to treat this r
 | | |
 |---|---|
 | **Severity** | B |
-| **Disposition** | open - reported for Adam's decision on whether it gates the tag |
+| **Disposition** | fixed for the finding's headline case - `testALockPhaseFailureLeavesTheTrainWhereItStands` injects a real lock-phase throw (a null in an edge's lockEdges makes setOccupied throw as it cascades) and asserts the train is still on the point it never left; MUTATION: removing the gate fails it.  Tests were also added for ACC-B1, ACC-C7 and IPR-B3.  ACC-B3, C4, C6 and C10 remain untested and are named as such |
 | **Confidence** | Measured, not argued: `grep` over `test/` for every symbol the round introduced, and the two tests that do reach the changed handler were read line by line to establish which branch each takes. The claim "deleting the gate leaves 310 green" is derived from those two tests taking the true branch, not from executing a mutation - I did not edit the tree. |
 
 The round's commits list impressive test runs. All but one of those runs are of **pre-existing**
@@ -130,7 +130,7 @@ skipped.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the key is `block`, and each of the three markers is now asserted separately, because a test checking only autoDestination would have passed against the broken one |
 | **Confidence** | Fully verified. `grep -rn '"blocks"' src/ test/` returns exactly one hit, the new check itself; `"block"` is written at `Point.java:1019` and read at `Layout.java:7533`. Master's `Point.toJSON` was read to confirm all three markers are modern. Not executed. |
 
 `whatALegacyImportLeaves` gained a count of squares carrying keys the 2.8.1 format never wrote, so a
@@ -179,7 +179,7 @@ document side.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the ACC-C2 disposition now says the paragraph is in the generator and the checked-in report is a previous run's output |
 | **Confidence** | Fully verified. `grep -c "Before treating a row as a regression" docs/reviews/2026-09-03-parity-report.md` returns 0; the same string is at `docs/tools/parity/compare.py:302`. The generator's own scoping was read and is correct. |
 
 ACC-C2's disposition reads: *"fixed - the report now lists the four rules that make a row expected, so
@@ -206,7 +206,7 @@ the dump. If the report is kept, it has to be regenerated for the disposition to
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the lead sentence no longer says "chosen at random", and the duplicated paragraph appears once |
 | **Confidence** | Fully verified by reading `AutonomySession.java:660-710`. The determinism of `ways.get(0)` was traced to `StationIndex.facingsAt` -> `pointNamesAt` -> `pointsBySquare`, a `Map<TileKey, List<String>>` in builder emission order; I did **not** prove that order stable across two rebuilds of the same file, which is what "reproducible" ultimately rests on. |
 
 The fix replaced `ways.get(new Random().nextInt(ways.size()))` with `ways.get(0)` and added a counter,
@@ -231,7 +231,7 @@ the code six lines down is the version of that which costs.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the ellipsis is added after the More Destinations submenu, so it is the last item under this train's own heading rather than sitting above the separator |
 | **Confidence** | Verified by reading the whole menu construction (`:288-500`). The resulting item order is derived from the `add`/`addSeparator` sequence, not observed on screen - this class is package-private GUI code with no test at the assembly layer (ACC-D8 says so). |
 
 The fix is correct in the two things that could have gone wrong, and both are checked under OPV-D5: it
@@ -265,7 +265,7 @@ and let the existing heading gate provide the separator.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed both halves - the flag rides on `sayIfDeclined`, which is exactly "this door carried an edit", so the editor-close courtesy no longer sets it; and the message is behind the capture's own four conditions, so it cannot name the declined edit as the cause of a skip that had another one |
 | **Confidence** | The three sites and both call sites of `rebuildRunningLayoutFromSetup` were read. **I could not establish a reachable sequence** in which `autonomyEditorClosed()` runs with `isAutonomyBusy()` true - the editor cannot be opened while autonomy is busy (`TrainControlUI.java:4621`, OB-047) and `refuseWhileEditorOpen()` guards every door that starts trains. So the second half below is structurally real and possibly unreachable, which is this folder's B3/C7/C15 shape. The log-line half is reachable on any exit. |
 
 Two things about `ACC-B3`'s flag, neither of them a reason to change the behaviour it was written for -
@@ -309,7 +309,7 @@ its own), and move the log line inside the branch that would otherwise have capt
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - both citations name the statement (`the activeLocomotives.put in executePathInternal`, `autonomyEditorClosed()`) rather than a line number, which is the finding's own suggestion and does not drift |
 | **Confidence** | Fully verified: each cited target was located by symbol and its current line read. `:3232` and `:2923`, the other two citations in the same comments, are correct. |
 
 The ACC-A1 comment's load-bearing sentence is *"a locomotive joins `activeLocomotives` only after
@@ -337,7 +337,7 @@ does not drift.*
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the paragraph is folded into the javadoc of the `paint()` that carries it, so the heading no longer stands over nothing |
 | **Confidence** | Verified by reading `LayoutGrid.java:704-780`. |
 
 `15a2878d` moved the ruler redraw out of `paintChildren` and into `paint()`, correctly and for a

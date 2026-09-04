@@ -5100,7 +5100,8 @@ public class Layout
                 // WHETHER THIS LOCOMOTIVE EVER GOT ITS PATH, read BEFORE the removal below (ACC-A1).
                 //
                 // A locomotive joins `activeLocomotives` only after `configureAndLockPath` has
-                // returned (`:5373`), so its membership is exactly the question "did the lock phase
+                // returned - at the `activeLocomotives.put` in `executePathInternal` - so its
+                // membership is exactly the question "did the lock phase
                 // succeed" - and the release further down needs the answer.  Asked after the removal
                 // it is always false, which is how the first version of this gate stopped the release
                 // happening at all: `testAFailedPathStopsTheRunAndGivesTheTrackBack` caught it.
@@ -5209,7 +5210,7 @@ public class Layout
                     // lock edges, whose occupancy is a COUNT shared with other running dispatches.
                     //
                     // `activeLocomotives` is the discriminator already in hand: a locomotive joins it
-                    // only after `configureAndLockPath` has returned (`:5373`), so its absence here
+                    // only after `configureAndLockPath` has returned - at the `activeLocomotives.put` in `executePathInternal`, so its absence here
                     // means the lock phase is what threw and has already cleaned up after itself.
                     //
                     // The comment at `:2923` promised this - "it went straight out to executePath's

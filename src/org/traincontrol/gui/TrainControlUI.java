@@ -2276,7 +2276,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // point the edit touched.  The cost is this session's train positions, which the next run
         // re-establishes, against authored data which nothing else would bring back - and that is the
         // same trade `OB-144` settled: an explicit edit beats an inferred one.
-        if (captureSession && setupEditDeclinedDuringRun)
+        // AND ONLY WHEN THE DECLINE IS ACTUALLY WHY (OPV-C5).
+        //
+        // This branch used to precede the capture's own four conditions, so an exit with autonomy
+        // still running, or with no active configuration, or with an invalid layout - each of which
+        // already skipped the capture silently - blamed the declined edit for it.  The LOSS was true
+        // in every one of those; the CAUSE was not, and a message that names the wrong cause sends
+        // somebody to look in the wrong place.
+        if (captureSession && setupEditDeclinedDuringRun
+            && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+            && this.model.getAutoLayout().isValid()
+            && !this.model.getAutoLayout().isRunning())
         {
             this.model.log("Where each locomotive finished has not been saved, because a setup edit"
                 + " made while autonomy was running could not be applied at the time.  Saving would"
@@ -3623,7 +3633,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // THE CENSUS MISSED ONE, and it is the one worth arguing about (ACC-B2).  This used to say
         // "the two that are not are the start-up resume and this rebuild".  There is a THIRD:
-        // `:20298` reloads after the TRACK DIAGRAM EDITOR closes, through
+        // `autonomyEditorClosed()` reloads after the TRACK DIAGRAM EDITOR closes, through
         // `getAutonomyViewerPanel().load(wasRunning, false)`, and `load(name, interactive)` hands
         // `!interactive` down as `resumed` - so that path arrives here with the stop skipped.
         //
@@ -5555,10 +5565,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // a declined edit deleted that edit from disk, silently, on the exact path the message called
         // safe.
         //
-        // Recorded for ANY decline, not only the ones that are spoken: the second caller has already
-        // warned the operator that they are editing during a run, and that warning says nothing about
-        // what happens at exit either.
-        if (activeDiagramConfiguration != null && isAutonomyBusy()
+        // ONLY FROM THE DOOR THAT CARRIES AN EDIT (OPV-C5).
+        //
+        // This was recorded for ANY decline, and one of the two callers does not carry one:
+        // `autonomyEditorClosed()` reaches here on EVERY close, edit or no edit, and its own comment
+        // says so - "this is a courtesy, not a reason to stop their trains".  A session in which
+        // nothing was edited would then lose its exit capture and be told an edit could not be applied.
+        //
+        // `sayIfDeclined` is exactly the question "did this door carry an edit", which is why the
+        // flag now rides on it rather than on the decline alone.
+        if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
             setupEditDeclinedDuringRun = true;
