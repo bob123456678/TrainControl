@@ -953,8 +953,16 @@ public class LocIconCropDialog extends JDialog
             // got the zoomed-out view rather than the one it opens at. Its own tests found that: a
             // crop taken with nobody having touched anything came back letterboxed on white.
             //
-            // Safe against recursion: startAtCover asks cropWindow and getMinScale, and neither of
-            // those asks this.
+            // NOT safe against recursion by the reason this used to give (IPR-C5).
+            //
+            // It said "startAtCover asks cropWindow and getMinScale, and neither of those asks this".
+            // `startAtCover` calls `clampCenter`, and `clampCenter` asks `getScale()` - so the chain
+            // does come back here.  What stops it running away is `startAtCover`'s own guard, which
+            // returns unless the view is still at its opening position; the reason given was a
+            // property of the call graph and the call graph moved.
+            //
+            // Left rather than restructured: the guard is real and the recursion terminates.  What was
+            // wrong was the sentence a reader would have trusted while changing one of these methods.
             startAtCover();
 
             return getMinScale() * Math.pow(MAX_ZOOM / MIN_ZOOM, this.zoomFraction);

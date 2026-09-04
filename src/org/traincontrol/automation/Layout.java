@@ -5139,9 +5139,25 @@ public class Layout
                 // stops at a station.  Start puts the railway back afterwards, which is the point -
                 // the run is stopped, not abandoned.  The end-of-run callback still fires from the
                 // finally below, so the interface learns about it exactly as it does for any ending.
+                // Read BEFORE the stop, which clears it.
+                final boolean wasRunning = this.running;
+
                 stopLocomotives();
 
-                this.control.logf("autolayout.errorRunStoppedByFailure", loc.getName());
+                // THE RIGHT SENTENCE FOR WHICHEVER IT WAS (DAY-C3).
+                //
+                // `executePath` has two other callers and both are manual - the commands panel and
+                // the diagram's right-click menu - and both work with autonomy stopped.  This message
+                // says "Autonomy has stopped itself so the railway can be parked and started again",
+                // which on those doors is a sentence about something that was never running: it sends
+                // the operator to press Start over a hand dispatch that failed.
+                //
+                // `wasRunning` is read before `stopLocomotives()` clears it, for the same reason
+                // `hadItsPath` is read before the removal that consumes it - a fact a recovery
+                // destroys has to be captured before the recovery starts.
+                this.control.logf(wasRunning
+                    ? "autolayout.errorRunStoppedByFailure"
+                    : "autolayout.errorHandDispatchFailed", loc.getName());
 
                 // AND THEN THE TRACK GOES BACK (Adam, 2026-09-03).
                 //

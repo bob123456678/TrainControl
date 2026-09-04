@@ -752,7 +752,7 @@ so it is narrow either way.
 
 | | |
 |---|---|
-| **Disposition** | **still open**, and now confirmed rather than suspected - `startAtCover()` calls `clampCenter()` (`:1000`), which calls `getScale()` (`:1135`).  The comment's stated reason - "startAtCover asks cropWindow and getMinScale, and neither of those asks this" - is false |
+| **Disposition** | fixed - the comment names what actually stops the recursion (startAtCover's own guard) rather than a property of the call graph that stopped being true when clampCenter started asking getScale |
 | **Confidence** | confirmed by reading |
 
 `LocIconCropDialog.java:956-957`:

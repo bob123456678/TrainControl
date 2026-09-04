@@ -375,7 +375,7 @@ style of `testARenameReachesTheTimetableOnScreen`.
 
 | | |
 |---|---|
-| **Disposition** | **still open**, re-checked 2026-09-04 - `Layout:5126-5128` still calls `stopLocomotives()` and logs "Autonomy has stopped itself..." with no test of whether a run was ever going |
+| **Disposition** | fixed - the message is chosen by whether a run was actually going, and `wasRunning` is captured before `stopLocomotives()` clears it.  A hand dispatch that fails now says autonomy was not running and there is nothing to restart, in all eight bundles.  The first consequence - a RuntimeException in a hand dispatch stopping the whole run - is left as Adam ruled it: "force a graceful stop, alert the user, then unlock" |
 | **Confidence** | confirmed by reading |
 | **Where** | `src/org/traincontrol/automation/Layout.java:4828`, reached from `src/org/traincontrol/gui/AutoLocomotiveStatus.java:1027` and `src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java:313` |
 
