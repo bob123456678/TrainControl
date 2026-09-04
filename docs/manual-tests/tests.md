@@ -396,6 +396,35 @@ or whether they look the same height as the rows that kept their numbers. That s
 separates the two remaining explanations, and I will build the fix against whichever it is rather than
 against my best guess.
 
+**Found it, 2026-09-04, by measuring instead of guessing a third time.**
+
+Your screenshot and *"not all have pills, and the x axis is also missing the 0"* were what pointed at
+it. I built your frozen `1 - Main` into a real grid and read the numbers back:
+
+```
+fontHeight=14  ascent=11
+row 0..15: every cell 30x30, none absent
+StationCaption at x=0  55x38   <- against a 30-pixel cell
+StationCaption at x=0  25x38
+```
+
+**Not one of the ruler's three skip clauses can fire on that page.** Every cell it measures is there
+and is 30 pixels tall against a 14-pixel font. The numbers were never being skipped - **they were being
+covered.**
+
+A `Border` is painted before the container's children, so anything reaching into the eighteen-pixel
+gutter is drawn on top of the number underneath it. A station caption is 38 pixels tall and up to 55
+wide against a 30-pixel cell - which is why one caption takes out *two* rows' numbers, and why rows
+carrying no caption of their own lost theirs. The same thing at the top-left takes the `0` off the X
+axis.
+
+The numbers are now painted after the children, in the same hook that already draws trains over
+captions. My earlier fallback - looking in three rows for a usable cell - is left in: it is aimed at a
+real fragility and costs nothing, but it was not your fault and I have said so where it is written.
+
+**What to do.** Open both editors again and check every number on both axes, especially beside
+`TopMainR1Inter` and `TopMainR2Inter` where two captions sit together, and the `0` in each corner.
+
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 03:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
