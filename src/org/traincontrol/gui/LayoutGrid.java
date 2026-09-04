@@ -85,6 +85,30 @@ public class LayoutGrid
     public static final boolean SHOW_COORDINATES_DEFAULT = true;
 
     /**
+     * Whether the column and row numbers are drawn at all (OB-172).
+     *
+     * Two settings rather than one, and the operator's own switch is only half of it: Adam asked for
+     * the numbers to follow the grid, *"so we only see the axis labels if the grid is also on"*.  They
+     * are scenery for reading coordinates off a grid, and a ruler round a diagram with no grid in it
+     * is numbering nothing.
+     *
+     * **The menu item deliberately does NOT ask this.**  Its tick is the operator's own switch, which
+     * is a different question from whether anything is on screen: a checkbox that unticks itself
+     * because a second setting is off reads as the click not having worked.  So the preference is
+     * remembered either way and the grid decides whether it is acted on - which is also what makes
+     * turning the grid back on restore the numbers without touching anything else.
+     *
+     * @return true when the numbers should be drawn
+     */
+    public static boolean coordinatesVisible()
+    {
+        return TrainControlUI.getPrefs() != null
+            && TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
+                SHOW_COORDINATES_DEFAULT)
+            && LayoutEditor.showGrid();
+    }
+
+    /**
      * Whether station captions are left off this diagram entirely (FR-030).
      *
      * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
@@ -863,9 +887,12 @@ public class LayoutGrid
         // `master instanceof LayoutEditor` rather than `inEditor`, which is `layout.getEdit() &&
         // ...` - autonomy mode deliberately does not set that flag, so `inEditor` is false in the one
         // editor where coordinates matter most.
-        if (master instanceof LayoutEditor
-            && TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
-                SHOW_COORDINATES_DEFAULT))
+        // AND ONLY WITH THE GRID ON (OB-172, Adam: "tie the appearance of the numbers to the
+        // enablement of the grid, so we only see the axis labels if the grid is also on").
+        //
+        // The two settings were independent, so the numbers could sit around a diagram with no grid
+        // to number.  They are one thing to look at, and now one thing to switch off.
+        if (master instanceof LayoutEditor && coordinatesVisible())
         {
             // MEASURED, NOT MULTIPLIED (Adam: "the axis numbers drift and are out of alignment.
             // The first few are centered, but the rest aren't").
@@ -881,19 +908,39 @@ public class LayoutGrid
             // for the same reason.
             final LayoutGrid drawing = this;
 
-            container.setBorder(new AxisRuler(offsetX, offsetY, width - 1, height - 1,
-                column ->
+            // MORE THAN ONE ROW TO MEASURE FROM (OB-172).
+            //
+            // This asked `getValueAt(column, 0)` and nothing else, so a column whose top square was
+            // absent - or had not been given its bounds yet, which is what an editor swap can leave
+            // behind for a moment - lost its number entirely.  The first three rows and columns are
+            // offered; they are all the same column, so any of them gives the same x.
+            java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> columnSources =
+                new java.util.ArrayList<>();
+
+            java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> rowSources =
+                new java.util.ArrayList<>();
+
+            for (int probe = 0; probe < Math.min(3, Math.max(width, height)); probe++)
+            {
+                final int which = probe;
+
+                columnSources.add(column ->
                 {
-                    LayoutLabel cell = drawing.getValueAt(column, 0);
+                    LayoutLabel cell = drawing.getValueAt(column, which);
 
                     return cell == null ? null : cell.getBounds();
-                },
-                row ->
+                });
+
+                rowSources.add(row ->
                 {
-                    LayoutLabel cell = drawing.getValueAt(0, row);
+                    LayoutLabel cell = drawing.getValueAt(which, row);
 
                     return cell == null ? null : cell.getBounds();
-                }));
+                });
+            }
+
+            container.setBorder(AxisRuler.overRows(offsetX, offsetY, width - 1, height - 1,
+                columnSources, rowSources));
         }
         else
         {

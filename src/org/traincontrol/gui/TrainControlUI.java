@@ -18063,6 +18063,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 repaintLoc();
                 repaintMappings();
                 selector.refreshLocSelectorList();
+
+                // AND THE TWO THE RENAME DOORS HAVE, which this one never got (DAY-C2).
+                //
+                // `updateVisiblePoints()` is the substantive one.  `OB-081` established that the
+                // station captions on the track diagram are written ONLY by it, and that
+                // `refreshUI()` below redraws the autonomy overlay and not the captions - so
+                // deleting a locomotive standing at a station left that station's caption naming a
+                // locomotive the database no longer has, until something unrelated repainted it.
+                //
+                // `repaintTimetable()` is the same defect `MT-149` was, arriving at the door its fix
+                // never reached: that fix went to the GUARD inside `repaintTimetable`, and the doors
+                // that have to call it were done one at a time.
+                //
+                // Both rename doors carry these two.  A locomotive leaving the database changes
+                // exactly what a rename changes - which name is right - so the door that removes one
+                // needs what the doors that rename one need.
+                updateVisiblePoints();
+                repaintTimetable();
                 
                 // Remove locomotive from graph
                 if (this.model.hasAutoLayout())

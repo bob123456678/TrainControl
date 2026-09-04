@@ -376,6 +376,33 @@ warnings like    Trains turn round at 19,14 and its track has no length recorded
 
 in the right click menu on the track diagrams, show only active stations that can be chosen in full autonomy.  add a menu called More Destinations and in there, list the points that cannot be chosen in full autonomy but are still valid.  the current setup lists both in one flat list, which truncates active stations, which I don't like
 
+### OB-172 - 2026-09-04 - axis labels when switching between track diagram editor and autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-04 03:02  
+**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 02:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+some axis labels vanish when switching between track diagram editor and autonomy editor - 1 and 3 in my case.  they reappear if the grid setting is cycled.  fix this, and then tie the appearance of the numbers to the enablement of the grid, so we only see the axis labels if the grid is also on.
+
+### OB-173 - 2026-09-04 - autonomy editor does not appear on top of the main window
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-04 03:04  
+**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 02:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when clicking edit, the autonomy editor appears below other windows, so I might not even notice it's there.  it should appear above the main TC window.  this works correctly when the track diagram editor is what opens when click on the edit button, but not when the autonomy editor is what opens.  check how it works for the track diagram editor and ensure consistency.  we managed this carefully in 2.7.x
+
+### FR-059 - 2026-09-04 - add the paused autonomy locomotive indicator to right click menu on track diagram
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-04 03:08  
+**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 02:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+add the paused autonomy locomotive indicator (and the ability to toggle whether it's paused) to the right-click menu on the track diagram. maintain parity with the autonomous locomotive commands panel. likely for 3.1.0
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -390,6 +417,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-04 | OB-173 | bug | the editor opened behind other windows on the first open; it now raises itself as the second open always did | - | [MT-268](tests.md#mt-268) |
+| 2026-09-04 | OB-172 | bug | one missing square could delete an axis number; the ruler now looks in three rows, and the numbers follow the grid setting | - | [MT-268](tests.md#mt-268) |
 | 2026-09-03 | FR-058 | feature request | the diagram's right-click menu lists only what autonomy would choose; everything else valid is under **More Destinations**, uncapped | - | [MT-266](tests.md#mt-266) |
 | 2026-09-03 | OB-171 | bug | the reversal-length notice fired on every square of the run in; one notice per square trains turn at now, saying how many squares still need a length | fixed unvalidated | - |
 | 2026-09-02 | FR-057 | feature request | the diagram prints its column and row numbers, on by default, toggled with Control+K or from either editor's right-click menu | fixed unvalidated | - |

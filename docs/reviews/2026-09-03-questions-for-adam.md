@@ -170,11 +170,19 @@ Either way it wants a name that is not "Test Connection", which meant something 
 
 **Your ruling: "put it in the log, popup on count."**
 
-Half of it is already there - `MarklinControlStation:3010` logs
-`route.warnCommandsRemovedForDeletedLocomotive` with the route's name and the locomotive's, and the
-condition case beside it has logged since `FV2-C9`. What is not there is the popup. Building it as: on
-deleting a locomotive, count the route commands that name it across every route, and if that count is
-non-zero say so in a dialog before the delete goes through, with the count and the route names.
+**Both halves are already built, and my note above saying the popup was not was wrong.**
+
+The log: `MarklinControlStation:3010` logs `route.warnCommandsRemovedForDeletedLocomotive` naming the
+route and the locomotive, and the condition case beside it has logged since `FV2-C9`.
+
+The popup: `TrainControlUI.deleteLoc` counts the routes whose commands drive that locomotive and asks
+through `ui.confirmDeleteFromDatabaseWithRoutes`, which takes the count. The comment at
+`MarklinControlStation:2988` records your instruction of 2026-09-02 in your own words - *"Say how many
+in the popup and which in the log"* - and says the count had been in the confirmation since the day
+before.
+
+Checked rather than taken from the code: all three keys are present in all eight bundles and every
+bundle is pure ASCII. Nothing to do here.
 
 4. `DY3-C8` — already answered on MT-260; a pointer only.
 

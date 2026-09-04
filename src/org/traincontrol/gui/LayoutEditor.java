@@ -5399,6 +5399,26 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             
             setVisible(true);
 
+            // AND IN FRONT OF THE WINDOW THAT OPENED IT (OB-173).
+            //
+            // Adam: "when clicking edit, the autonomy editor appears below other windows, so I might
+            // not even notice it's there... we managed this carefully in 2.7.x".
+            //
+            // `setVisible(true)` shows a window; it does not decide where in the stack it lands, and
+            // a window that takes longer to build is likelier to lose that race - which is why this
+            // showed as an autonomy-only fault when both modes come through this same line.
+            //
+            // These are the two calls `TrainControlUI.showOpenEditor()` already makes to bring this
+            // very window forward when the button is pressed a second time.  The first open did not
+            // make them, so the two doors to one window behaved differently.
+            //
+            // No always-on-top trick here, deliberately.  `comeToTheForeground` needs one because
+            // start-up asks for the foreground from a process that does not have it; this runs from a
+            // click on a window that does, which is the case Windows allows.
+            toFront();
+
+            requestFocus();
+
             // Hide the window on close so that LayoutLabels know they can be deleted
             addWindowListener(new WindowAdapter()
             {

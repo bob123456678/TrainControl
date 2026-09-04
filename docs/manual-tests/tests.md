@@ -41,6 +41,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-265](#mt-265) | 2026-09-03 | Four gestures behind today's fixes | needs test | SVN-B8, SVN-B11, IPR-B2, IPR-B4 |
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
+| [MT-268](#mt-268) | 2026-09-04 | The axis numbers, and the editor coming forward | needs test | OB-172, OB-173 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -280,6 +281,83 @@ reintroducing to save a message.
    top of the warning.
 
 *Run against v3_0_0_rc12 or later.*
+
+---
+
+<a id="mt-268"></a>
+
+### MT-268 - 2026-09-04 - The axis numbers, and the editor coming forward
+
+**Disposition:** needs test
+**From:** OB-172, OB-173
+
+**Written:** 2026-09-04
+
+**Both of these are fixes I could not reproduce here, which is why they need you more than most.**
+Each is a window behaving badly, and nothing in the suite builds two editors and switches between
+them. What I could do was close the class of fault and prove that half with tests; whether it closes
+*your* fault is this test.
+
+---
+
+**OB-172, the vanishing numbers.** You reported: *"some axis labels vanish when switching between
+track diagram editor and autonomy editor - 1 and 3 in my case. they reappear if the grid setting is
+cycled."*
+
+**What I found.** The ruler positioned every column's number from exactly one square - the one in the
+top row - and every row's from the one in the left-hand column, and it skips a number whose square is
+missing or has no size yet. One square decided a label about twenty-three others.
+
+**What I ruled out.** Your `1 - Main` page *does* have tiles in its top row at both columns you named,
+so this is not a permanently empty square. A square that exists but has not been given its size when
+the border first paints fits everything you described, including its coming back when you cycle the
+grid and the whole thing is rebuilt - but I could not make that happen on demand.
+
+**What it does now.** It looks in the first three rows for a column and the first three columns for a
+row, and takes the first that has a real size. A single missing or unmeasured square can no longer
+delete a number.
+
+**What to do.**
+
+1. **Switch between the two editors several times**, on `1 - Main` and on a page with an untidy top
+   row. Every column and row number should stay put. **If any still vanishes, say which and on which
+   page** - that tells me it is a repaint rather than a measurement and I will go after it differently.
+2. **Then cycle the grid checkbox**, which is what used to bring them back. Nothing should change now,
+   because nothing should have been missing.
+
+**OB-172's second half: the numbers now follow the grid.** You asked to *"tie the appearance of the
+numbers to the enablement of the grid, so we only see the axis labels if the grid is also on"*.
+
+3. **Turn the grid off.** The numbers should go. **Turn it back on.** They should come back, without
+   your having touched the coordinates setting.
+4. **The coordinates checkbox still remembers your own choice** while the grid is off - it does not
+   untick itself, because a box that unticks itself reads as the click not having worked. So with the
+   grid off and coordinates on you see nothing, and turning the grid on shows them again.
+
+---
+
+**OB-173, the editor opening behind.** You reported: *"when clicking edit, the autonomy editor appears
+below other windows... this works correctly when the track diagram editor is what opens... we managed
+this carefully in 2.7.x"*.
+
+**What I found.** Opening the editor called `setVisible(true)` and nothing else. That shows a window;
+it does not say where in the stack it lands, and a window that takes longer to build is likelier to
+lose that race - which is why it showed as an autonomy-only fault although both modes come through the
+same line. Pressing Edit a *second* time, with the editor already open, went through a different door
+that does raise it properly. So one window had two doors that behaved differently.
+
+**What it does now.** The first open makes the same two calls the second one always made.
+
+5. **With TrainControl behind another window, click Edit for the autonomy editor.** It should come to
+   the front. Try it with the track diagram editor too, which already worked - it must not have got
+   worse.
+6. **Click Edit again while the editor is open**, which brings the existing window forward. That path
+   is untouched and should behave as it did.
+7. **If it still opens behind**, tell me whether the taskbar button flashes. That distinguishes
+   Windows refusing the raise from our never asking for it, and they need different fixes - the
+   refusal is what `comeToTheForeground` deals with at start-up, and it is a heavier hammer than this.
+
+*Run against the next release candidate.*
 
 ---
 

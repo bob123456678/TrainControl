@@ -93,6 +93,62 @@ public class AxisRuler implements Border
     }
 
     /**
+     * The first usable rectangle among several places one might be found (OB-172).
+     *
+     * Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
+     * editor - 1 and 3 in my case.  they reappear if the grid setting is cycled."*
+     *
+     * A column's number was positioned from exactly one cell - the one in the top row - and a row's
+     * from the one in the left-hand column. `paintBorder` skips on `cell == null || cell.width <= 0`,
+     * so any reason that single square is absent, or has not been given its bounds yet, deletes the
+     * label for the whole column. One square decided a number about twenty-three others.
+     *
+     * This lets the caller offer a few places to look and takes the first that answers. It does not
+     * make the ruler cleverer about WHERE a column is - every candidate is the same column, so any of
+     * them gives the same x - it just stops one missing square being fatal.
+     *
+     * @param at the places to look, in order of preference
+     * @param index the column or row being asked about
+     * @return the first rectangle with a real size, or null when none of them has one
+     */
+    public static Rectangle firstUsable(java.util.List<IntFunction<Rectangle>> at, int index)
+    {
+        if (at == null) return null;
+
+        for (IntFunction<Rectangle> source : at)
+        {
+            if (source == null) continue;
+
+            Rectangle found = source.apply(index);
+
+            // The same emptiness `paintBorder` refuses, asked here so that a zero-sized cell falls
+            // through to the next candidate rather than being handed on as an answer.
+            if (found != null && found.width > 0 && found.height > 0) return found;
+        }
+
+        return null;
+    }
+
+    /**
+     * A ruler that looks in several rows for each column, and several columns for each row (OB-172).
+     *
+     * @param offsetX the x the left-most column actually is
+     * @param offsetY the y the top row actually is
+     * @param columns how many columns
+     * @param rows how many rows
+     * @param columnSources where to look for a column's position, in order of preference
+     * @param rowSources the same for a row
+     * @return a ruler no single missing square can silence
+     */
+    public static AxisRuler overRows(int offsetX, int offsetY, int columns, int rows,
+        final java.util.List<IntFunction<Rectangle>> columnSources,
+        final java.util.List<IntFunction<Rectangle>> rowSources)
+    {
+        return new AxisRuler(offsetX, offsetY, columns, rows,
+            column -> firstUsable(columnSources, column),
+            row -> firstUsable(rowSources, row));
+    }
+    /**
      * A ruler over cells that really are exactly one tile apart.
      *
      * For tests, and for any caller that knows its grid has no borders on it. The real diagram does

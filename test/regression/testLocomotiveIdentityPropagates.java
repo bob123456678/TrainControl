@@ -716,6 +716,70 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
+     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does
+     * (DAY-C2).
+     *
+     * The finding: both rename doors call `updateVisiblePoints()` and `repaintTimetable()`, and the
+     * delete door calls neither. It runs `clearCopyTarget`, `repaintLoc`, `repaintMappings`,
+     * `refreshLocSelectorList`, and then `locDeleted`, `repaintAutoLocListFull` and `refreshUI`.
+     *
+     * **`refreshUI()` is not the same thing**, which is the whole of why this is a defect rather than
+     * a tidiness point. `OB-081` established that the station captions on the track diagram are
+     * written only by `updateVisiblePoints`, and that `refreshUI` redraws the autonomy overlay and
+     * not the captions. So deleting a locomotive standing at a station left the caption naming a
+     * locomotive the database no longer has, until something unrelated repainted it.
+     *
+     * **A source rule rather than a behavioural one, for the same reason the rename rule above is
+     * one**: the caption is drawn by a window, and what can be asserted without one is that the door
+     * calls the method that draws it. That is exactly what went wrong - `MT-149`'s fix went to the
+     * guard inside `repaintTimetable` and never to the doors that have to call it - so the door
+     * calling it is the property worth pinning.
+     *
+     * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first
+     * assertion, and removing `repaintTimetable()` fails the second.
+     */
+    @Test
+    public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
+    {
+        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+        String body = withoutComments(new String(
+            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+
+        int at = body.indexOf("this.model.deleteLoc(");
+
+        assertTrue(at > 0,
+            "the delete door could not be found, so this rule is watching nothing - it looks for "
+            + "`this.model.deleteLoc(` in TrainControlUI");
+
+        assertEquals(body.indexOf("this.model.deleteLoc(", at + 1), -1,
+            "there is more than one delete door now.  This rule reads the block after the first and "
+            + "would report the pair as covered after fixing one of them, which is this codebase's "
+            + "most frequent defect and not one a guard against it should commit");
+
+        // The block that follows, bounded so the rule cannot read the rest of the file and pass
+        // whatever the code does - which is how the rename rule above was once green over nothing.
+        int end = body.indexOf("private void ActiveLocLabelMouseReleased", at);
+
+        assertTrue(end > at && end - at < 4000,
+            "the delete door's refresh block could not be bounded, so this rule would read the rest "
+            + "of the file and pass whatever the code did");
+
+        String block = body.substring(at, end);
+
+        assertTrue(block.contains("updateVisiblePoints"),
+            "deleting a locomotive does not rewrite the station labels, so a station it was standing "
+            + "at goes on naming it - refreshUI() redraws the autonomy overlay and not the captions "
+            + "(OB-081), which is why calling that instead is not the same thing (DAY-C2): " + block);
+
+        assertTrue(block.contains("repaintTimetable"),
+            "deleting a locomotive does not repaint the timetable, so it goes on naming a locomotive "
+            + "the database no longer has - the same defect MT-149 was, arriving at the door the "
+            + "rename fix never reached: " + block);
+    }
+    /**
      * Renaming a locomotive rewrites the station labels on the track diagram.
      *
      * OB-081, Adam: "When autonomy is loaded: Renaming a locomotive does not immediately propagate to

@@ -159,6 +159,94 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
+     * A column keeps its number when the one cell the ruler measured is not there (OB-172).
+     *
+     * Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
+     * editor - 1 and 3 in my case.  they reappear if the grid setting is cycled."*
+     *
+     * **The ruler was told to measure one cell per column** - `getValueAt(column, 0)`, the top row -
+     * and one per row, the left-hand column. `paintBorder` skips on `cell == null || cell.width <= 0`,
+     * so any reason that single square is absent, or has no bounds yet, deletes the label for the
+     * whole column. One square decided a number about twenty-three others.
+     *
+     * **What I could NOT establish is that this is the mechanism he saw**, and it is written down
+     * rather than glossed. His `1 - Main` page does have tiles in its top row at both columns he
+     * named, so an always-empty square is ruled out. A square whose bounds are still zero when the
+     * border first paints after an editor swap fits the symptom - including its going away when the
+     * grid setting is cycled and everything is rebuilt - but reproducing that needs the two editors in
+     * front of me. This closes the class of fault; whether it closes his is `MT-268`.
+     *
+     * MUTATION: going back to a single source per column fails the second assertion, and the first
+     * assertion is what stops that mutation passing by drawing nothing at all.
+     */
+    @Test
+    public void testAColumnKeepsItsNumberWhenOneCellIsMissing()
+    {
+        final int pitch = 31;
+        final int cell = 30;
+        final int gutter = 18;
+        final int columns = 6;
+
+        // The top row has nothing usable at columns 1 and 3 - the two he lost - and the row under it
+        // has everything.
+        java.util.function.IntFunction<java.awt.Rectangle> gappy =
+            column -> (column == 1 || column == 3)
+                ? null
+                : new java.awt.Rectangle(gutter + column * pitch, gutter, cell, cell);
+
+        java.util.function.IntFunction<java.awt.Rectangle> whole =
+            column -> new java.awt.Rectangle(gutter + column * pitch, gutter, cell, cell);
+
+        // THE CONTROL FIRST: asking only the gappy row loses exactly two numbers.  Without this, a
+        // ruler that never had the fault would satisfy the assertion below.
+        assertEquals(inkGroups(paint(new AxisRuler(0, 0, columns, 0, gappy, row -> null))).size(),
+            columns - 2,
+            "the fixture is wrong: one gappy row should cost exactly the two numbers whose cell is "
+            + "absent, so the fallback below would be proving nothing");
+
+        java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> sources =
+            java.util.Arrays.asList(gappy, whole);
+
+        java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> noRows =
+            java.util.Collections.emptyList();
+
+        assertEquals(inkGroups(paint(AxisRuler.overRows(0, 0, columns, 0, sources, noRows))).size(),
+            columns,
+            "a column lost its number because the one cell the ruler measures was not there.  Every "
+            + "column on that diagram exists; one absent square should not delete a label (OB-172)");
+    }
+
+    /**
+     * A zero-sized cell falls through to the next place to look, rather than being handed on (OB-172).
+     *
+     * The half that matters for the symptom Adam actually described. An absent square is a null; a
+     * square that exists but has not been laid out yet is a `Rectangle` of no size, and `paintBorder`
+     * refuses both. `firstUsable` therefore has to refuse both too - returning an empty rectangle
+     * because it was not null would move the skip one level up and change nothing.
+     *
+     * MUTATION: testing only `found != null` fails this.
+     */
+    @Test
+    public void testAnUnlaidOutCellIsNotAnAnswer()
+    {
+        java.awt.Rectangle real = new java.awt.Rectangle(10, 10, 30, 30);
+
+        java.util.function.IntFunction<java.awt.Rectangle> notYet =
+            index -> new java.awt.Rectangle(0, 0, 0, 0);
+
+        java.util.function.IntFunction<java.awt.Rectangle> absent = index -> null;
+
+        assertEquals(AxisRuler.firstUsable(java.util.Arrays.asList(notYet, index -> real), 0), real,
+            "a cell that exists but has no size yet was accepted as the answer, so the number is "
+            + "still skipped - which is the state an editor swap leaves behind");
+
+        assertEquals(AxisRuler.firstUsable(java.util.Arrays.asList(absent, index -> real), 0), real,
+            "an absent cell was not fallen through");
+
+        assertEquals(AxisRuler.firstUsable(java.util.Arrays.asList(absent, notYet), 0), null,
+            "with nowhere usable to look this must say so, not invent a rectangle");
+    }
+    /**
      * The ranges of x where the top strip has ink on it, one per number.
      *
      * A gap of a pixel or two inside a two-digit number would split it in two, so groups are joined
