@@ -575,6 +575,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Still called routeEditor because that is what it is: the old text-based one it replaces has
      * been deleted, so there is no longer a second thing to distinguish it from.
      */
+    /**
+     * Set when a setup edit could not be applied because autonomy was running (ACC-B3).
+     *
+     * The edit reached the file and not the running layout, so from that moment the configuration on
+     * disk is NEWER than the layout for at least one point - and the save on the way out folds the
+     * layout back over the configuration, removing what it does not carry.  This is what stops that
+     * save from deleting the edit.
+     *
+     * Never cleared: a rebuild that succeeds afterwards makes the layout current again, but working
+     * out whether it covered the same point is exactly the kind of bookkeeping that goes wrong
+     * quietly.  What it costs when it is stale is one session's train positions, which the next run
+     * re-establishes; what it saves is authored data.
+     */
+    private boolean setupEditDeclinedDuringRun;
+
     private RouteEditorFrame routeEditor;
 
     // Popup references
@@ -2245,7 +2260,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Not on backup: backups run this method from their own thread, and the session is an event
         // thread object - and "Backup data" silently rewriting the active configuration would surprise
         // anybody who pressed it to get a copy, not to commit their session.
-        if (captureSession && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+        // NOT AFTER A DECLINED SETUP EDIT (ACC-B3).
+        //
+        // `captureFromLayout` writes what the running layout knows over the configuration and removes
+        // what it does not carry.  That is right when the layout is the newer of the two, and it is
+        // exactly wrong once an edit has reached the file without reaching the layout - which is what
+        // a declined rebuild is.  The message shown at that moment promises the edit will be picked up
+        // next load; this is what makes that true.
+        //
+        // The whole capture is skipped rather than the one key, because nothing here knows WHICH
+        // point the edit touched.  The cost is this session's train positions, which the next run
+        // re-establishes, against authored data which nothing else would bring back - and that is the
+        // same trade `OB-144` settled: an explicit edit beats an inferred one.
+        if (captureSession && setupEditDeclinedDuringRun)
+        {
+            this.model.log("Where each locomotive finished has not been saved, because a setup edit"
+                + " made while autonomy was running could not be applied at the time.  Saving would"
+                + " have written the older layout back over that edit.  The edit itself is safe and"
+                + " will be there next time.");
+        }
+        else if (captureSession && this.activeDiagramConfiguration != null
+                && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().isRunning())
         {
@@ -3580,8 +3615,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // `resumed` is `!interactive`, and it has been computed and ignored since this method was
         // written.  The two interactive callers are the autonomy menu and the Configurations dialog -
-        // somebody deliberately switching railways, which is the case the stop is for.  The two that
-        // are not are the start-up resume, where nothing is running yet, and this rebuild.
+        // somebody deliberately switching railways, which is the case the stop is for.
+        //
+        // THE CENSUS MISSED ONE, and it is the one worth arguing about (ACC-B2).  This used to say
+        // "the two that are not are the start-up resume and this rebuild".  There is a THIRD:
+        // `:20298` reloads after the TRACK DIAGRAM EDITOR closes, through
+        // `getAutonomyViewerPanel().load(wasRunning, false)`, and `load(name, interactive)` hands
+        // `!interactive` down as `resumed` - so that path arrives here with the stop skipped.
+        //
+        // **On that path the geometry itself was just edited** and every layout object replaced,
+        // which is much closer to "choosing a different railway" than to typing a display name, and
+        // it is exactly the case the retained justification above describes: a hand-throttled train
+        // keeps rolling while the new layout thinks everything is parked.  2.8.1 through rc11 stopped
+        // trains there.
+        //
+        // Left as it is pending Adam's ruling rather than changed quietly, because the boundary is
+        // his to draw and either answer is defensible - but the census is corrected now so that
+        // whoever draws it can see all five callers.  `MT-269` carries the question.
         if (!resumed)
         {
             AltEmergencyStopActionPerformed(null);
@@ -5490,6 +5540,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 + " autonomy started between the edit and the moment it was to be applied.  The edit"
                 + " IS saved - stop autonomy and make it again to have it take effect now, or it will"
                 + " be picked up the next time the setup is loaded.");
+        }
+
+        // AND THE SECOND HALF OF THAT PROMISE HAS TO BE MADE TRUE (ACC-B3).
+        //
+        // "It will be picked up the next time the setup is loaded" was not safe on its own.  The
+        // save on the way out folds the RUNNING layout back over the configuration - `captureFromLayout`
+        // walks `POINT_OPERATIONAL_KEYS` writing what the layout has and REMOVING what it does not,
+        // and `home` is one of them.  The running layout was built before the edit, so exiting after
+        // a declined edit deleted that edit from disk, silently, on the exact path the message called
+        // safe.
+        //
+        // Recorded for ANY decline, not only the ones that are spoken: the second caller has already
+        // warned the operator that they are editing during a run, and that warning says nothing about
+        // what happens at exit either.
+        if (activeDiagramConfiguration != null && isAutonomyBusy()
+            && getAutonomyViewerPanel() != null)
+        {
+            setupEditDeclinedDuringRun = true;
         }
 
         if (activeDiagramConfiguration != null && !isAutonomyBusy()

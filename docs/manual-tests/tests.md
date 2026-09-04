@@ -42,6 +42,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
 | [MT-268](#mt-268) | 2026-09-04 | The axis numbers, and the editor coming forward | needs test | OB-172, OB-173 |
+| [MT-269](#mt-269) | 2026-09-04 | Three from the acceptance review, and one ruling | needs test | ACC-B1, ACC-B2, ACC-B3 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -447,6 +448,69 @@ zero.
 is before any of this landed. Rebuild first.
 
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 03:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-269"></a>
+
+### MT-269 - 2026-09-04 - Three from the acceptance review, and one ruling
+
+**Disposition:** needs test
+**From:** ACC-B1, ACC-B2, ACC-B3
+
+**Written:** 2026-09-04
+
+**1. A ruling I did not want to make for you (ACC-B2).**
+
+When `VD11-A2` stopped the emergency stop firing on every setup edit, its comment listed the callers
+that reach that code. **It listed four and there are five.** The one it missed is the reload after the
+**track diagram editor** closes, and that path arrives with the stop skipped.
+
+That path is different from the others in kind: the geometry itself was just edited and every layout
+object replaced. It is much closer to *choosing a different railway* - which is what the stop is for -
+than to typing a display name, which is what the narrowing was argued from. **2.8.1 through rc11
+stopped trains there and rc12 does not.**
+
+I have corrected the census and left the behaviour alone. **Should closing the track diagram editor
+stop the trains?** My own view is yes, on the grounds that a hand-throttled train keeps rolling while
+the new layout believes everything is parked - but you built that narrowing for a reason and the
+boundary is yours.
+
+**What to do.** Drive a locomotive by hand, open the track diagram editor, change something, close it.
+Does it keep rolling? Tell me whether that is what you want.
+
+**2. The import now says it is dropping your hand-written locks (ACC-B1).**
+
+A 2.8.1 connection could lock other connections by hand. The new model works locks out from the track
+diagram - two connections sharing a square lock each other - which reproduces most of them and cannot
+reproduce a lock between connections that share no square: parallel tracks, an electrical section, a
+clearance rule.
+
+Your own legacy file carries **116 such references across 50 of its 90 connections**. The import was
+silent about all of them; it names them now, as it already named the four other things it drops.
+
+**What to do.** If you ever re-import a 2.7.4c/2.8.1 `autonomy.json`, read that line and think about
+whether any of those locks was doing work the geometry does not do. I have deliberately NOT tried to
+work out which of the 116 are already covered - that needs the derived graph, and a report that names
+a lock which turns out to be reproduced is wrong in the safe direction.
+
+**3. A declined edit is no longer deleted on the way out (ACC-B3).**
+
+When a setup edit cannot be applied because autonomy is running, the message says *"it will be picked
+up the next time the setup is loaded"*. That was not true on its own: the save on the way out folds the
+running layout back over the configuration and removes what the layout does not carry - and the layout
+was built before the edit. Exiting deleted the edit, silently, on the path the message called safe.
+
+Now the exit save is skipped entirely after a declined edit, and says so. **The cost is that this
+session's train positions are not remembered** - which the next run re-establishes - against authored
+data that nothing else would bring back.
+
+**What to do.** Edit the setup while autonomy runs, let it be declined, stop autonomy, quit. Restart:
+the edit should be there. You should also see a line saying the positions were not saved. **If losing
+the positions annoys you more than I expect, say so** - the alternative is remembering which point the
+edit touched, which is more bookkeeping and more ways to be wrong.
+
+*Run against the next release candidate.*
 
 ---
 

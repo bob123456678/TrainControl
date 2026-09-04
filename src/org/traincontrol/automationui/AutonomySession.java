@@ -921,6 +921,7 @@ public class AutonomySession
 
         int withCommands = 0;
         int withLength = 0;
+        int withLocks = 0;
 
         if (legacy.has("edges"))
         {
@@ -936,12 +937,36 @@ public class AutonomySession
                     && e.getJSONArray("commands").length() > 0) withCommands++;
 
                 if (e.optInt("length", 0) > 0) withLength++;
+
+                // HAND-WRITTEN LOCKS, the fifth thing this drops and the only silent one (ACC-B1).
+                //
+                // A 2.8.1 edge could carry `lockedges` - "when this edge is taken, these others are
+                // locked too" - and the new model derives locks from geometry instead:
+                // `GraphReducer.deriveLocks` locks any two edges that occupy a shared tile.
+                //
+                // That reproduces most of them and cannot reproduce the conservative kind: a lock
+                // between edges that share NO tile, written by hand for parallel adjacent tracks, an
+                // electrical section, a clearance rule.  Those simply vanish, and the consequence is
+                // two trains permitted to move at once where the file forbade it.
+                //
+                // Counted rather than compared, deliberately.  Deciding which of them the geometry
+                // already covers means building the derived graph here, and a report that is wrong
+                // in the safe direction - naming locks that turn out to be reproduced - is better
+                // than one that is silent about locks that are not.  Adam's own legacy file carries
+                // 116 references across 50 of its 90 edges.
+                if (e.has("lockedges") && !e.isNull("lockedges")
+                    && e.getJSONArray("lockedges").length() > 0)
+                {
+                    withLocks++;
+                }
             }
         }
 
         if (withCommands > 0) out.add(I18n.f("autosetup.ui.leftEdgeCommands", withCommands));
 
         if (withLength > 0) out.add(I18n.f("autosetup.ui.leftEdgeLengths", withLength));
+
+        if (withLocks > 0) out.add(I18n.f("autosetup.ui.leftEdgeLocks", withLocks));
 
         if (legacy.has("timetable") && !legacy.isNull("timetable"))
         {

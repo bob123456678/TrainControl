@@ -91,7 +91,7 @@ downgrading to 2.8.1 destroys locomotive keyboard pages 11-50 (ACC-C8).
 | | |
 |---|---|
 | **Severity** | A |
-| **Disposition** | open - must be fixed before the tag |
+| **Disposition** | fixed 2026-09-04 - the handler gates the release on `activeLocomotives` membership, captured BEFORE the removal consumes it; the first version of the gate read it after and stopped the mid-run release happening at all, which `testAFailedPathStopsTheRunAndGivesTheTrackBack` caught |
 | **Confidence** | Every layer verified by this reviewer by reading the four methods and the Edge contract; not executed. Reachability is the exact failure class `f2818206` built its recovery and an injection test for. |
 
 Two fixes, each sound alone, combine into the defect:
@@ -159,7 +159,7 @@ here before filing.*
 | | |
 |---|---|
 | **Severity** | B |
-| **Disposition** | open - needs Adam: measure the residue, or add the fifth line to the report |
+| **Disposition** | fixed 2026-09-04 - `autosetup.ui.leftEdgeLocks` is the fifth line, in all eight bundles; counted rather than compared, for the reason written at the count.  MT-269 asks Adam to read it if he ever re-imports |
 | **Confidence** | The drop, the reporting omission, and the derivation mechanism were each verified by reading by this reviewer. Whether any of the 116 refs on Adam's own layout lacks a geometric counterpart was NOT measured. |
 
 A 2.8.1 `autonomy.json` can carry `lockedges` on an edge - "when this edge is taken, these others
@@ -200,7 +200,7 @@ and re-verified directly, and the 116/50/90 count was re-measured from the file.
 | | |
 |---|---|
 | **Severity** | B |
-| **Disposition** | open - needs Adam's ruling: is the editor-close reload "choosing a different railway" or "editing the setup"? |
+| **Disposition** | **comment fixed, behaviour left for Adam** - the census names the fifth caller now; whether closing the track diagram editor should stop the trains is his ruling and MT-269 asks it |
 | **Confidence** | Both sites and the parameter plumbing verified by reading; the hand-throttled-train scenario reasoned, not executed. |
 
 `23f233ca` (VD11-A2) made `autonomyLoadedFromDiagram` stop trains only `if (!resumed)`
@@ -227,7 +227,7 @@ comment corrected either way. *Found by the fixing-round sweep; verified here.*
 | | |
 |---|---|
 | **Severity** | B |
-| **Disposition** | open |
+| **Disposition** | fixed 2026-09-04 - a declined edit sets a flag and the exit capture is skipped entirely rather than folding the older layout over the newer file; it says so, and MT-269 asks whether losing the positions is the right trade |
 | **Confidence** | Mechanism verified by reading all three sites (it is the same mechanism VD10-A2 documented); the four-step sequence was not executed. |
 
 `rebuildRunningLayoutFromSetup(true)` (`TrainControlUI.java:5490`) declines to apply an edit made

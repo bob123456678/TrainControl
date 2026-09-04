@@ -5726,4 +5726,66 @@ public class testAutonomyDiagramSession
             "the import cleared a home without counting it, so nothing can tell the user that a "
             + "choice was made on their behalf");
     }
+    /**
+     * A legacy import says it is leaving hand-written locks behind (ACC-B1).
+     *
+     * A 2.8.1 edge could carry `lockedges` - *"when this edge is taken, these others are locked
+     * too"* - and the diagram model derives locks from geometry instead: `GraphReducer.deriveLocks`
+     * locks any two edges that occupy a shared tile.
+     *
+     * That reproduces most of them and **cannot reproduce the conservative kind**: a lock between
+     * edges that share no tile, written by hand for parallel adjacent tracks, an electrical section, a
+     * clearance rule. Those vanish, and what makes it worth a line is that two trains are then
+     * permitted to move at once where the file forbade it.
+     *
+     * The import already speaks about the four other things it drops - edge commands, edge lengths,
+     * the timetable, route activations - and presents that list as the whole account. This was the
+     * fifth thing and the only silent one. Adam's own legacy file carries 116 references across 50 of
+     * its 90 edges.
+     *
+     * **Counted, not compared.** Deciding which of them the geometry already covers means building
+     * the derived graph inside the report, and a report that names locks which turn out to be
+     * reproduced is wrong in the safe direction; one that is silent about locks which are not is
+     * wrong in the other.
+     *
+     * MUTATION: removing the `withLocks` block from `whatALegacyImportLeaves` fails the second
+     * assertion, and the first is what stops that passing by reporting nothing at all.
+     */
+    @Test
+    public void testALegacyImportSaysItIsLeavingHandWrittenLocksBehind() throws Exception
+    {
+        org.json.JSONObject plain = new org.json.JSONObject("{'points':[],'edges':["
+            + "{'start':'A','end':'B','length':2}"
+            + "]}".replace('\'', '\"'));
+
+        java.util.List<String> without = session.whatALegacyImportLeaves(plain);
+
+        // THE CONTROL: the report is working at all, and says the one thing this file does drop.
+        assertEquals(without.size(), 1,
+            "expected exactly the edge-length line for a file whose only extra is a length, and got: "
+            + without);
+
+        org.json.JSONObject locked = new org.json.JSONObject("{'points':[],'edges':["
+            + "{'start':'A','end':'B','length':2,'lockedges':[{'start':'C','end':'D'}]},"
+            + "{'start':'E','end':'F','lockedges':[{'start':'G','end':'H'}]}"
+            + "]}".replace('\'', '\"'));
+
+        java.util.List<String> with = session.whatALegacyImportLeaves(locked);
+
+        assertEquals(with.size(), without.size() + 1,
+            "the import dropped hand-written locks and said nothing about them.  Every other thing it "
+            + "drops is spoken, and this was the only silent one - two trains can then move at once "
+            + "where the file forbade it (ACC-B1).  Report was: " + with);
+
+        boolean named = false;
+
+        for (String line : with)
+        {
+            if (line.contains("2") && line.toLowerCase().contains("lock")) named = true;
+        }
+
+        assertTrue(named,
+            "the line does not say how many connections carried locks, which is the whole of what it "
+            + "is for: " + with);
+    }
 }
