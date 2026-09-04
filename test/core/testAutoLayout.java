@@ -1411,4 +1411,145 @@ public class testAutoLayout
             "the locomotive is still registered as active, so isRunning() stays true for the rest of "
             + "the session and every guard built on it stands down");
     }
+
+    /**
+     * A failure does not release an edge the tail had already given up (VD10-A1).
+     *
+     * `unlockPath`'s non-atomic branch reads `clearedEdges` to know which edges the tail released as it
+     * passed them, so that it does not release them again. The comment at that lookup says what a
+     * second release costs: *"the second release would take away a claim somebody else made in
+     * between"* - the edge comes free under a train that locked it after the tail went by, and its
+     * lock edges with it.
+     *
+     * **The ordering is the whole of it.** The ordinary ending calls `unlockPath` and clears the map
+     * after it. The failure handler added on 2026-09-03 cleared the map fifty lines BEFORE calling
+     * `unlockPath`, so the lookup was always null and every early-released edge was released twice.
+     * `atomicRoutes` is `false` on the operator's own configuration, so this is the live branch.
+     *
+     * **Seeded, not driven.** Getting a real tail to release an edge early needs a train in motion;
+     * what is under test is whether the map is still populated when `unlockPath` runs, and seeding it
+     * asks exactly that and nothing else.
+     *
+     * MUTATION: moving `clearedEdges.remove(loc)` back above the release fails this.
+     */
+    @Test
+    public void testAFailureDoesNotReleaseAnEdgeTheTailAlreadyGaveUp() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setAtomicRoutes(false);
+
+        MarklinFeedback from = model.newFeedback(150, null);
+        MarklinFeedback mid = model.newFeedback(151, null);
+        MarklinFeedback to = model.newFeedback(152, null);
+
+        model.setFeedbackState(from.getName(), true);
+        model.setFeedbackState(mid.getName(), false);
+        model.setFeedbackState(to.getName(), false);
+
+        layout.createPoint("VD10_FROM", true, from.getName());
+        layout.createPoint("VD10_MID", true, mid.getName());
+        layout.createPoint("VD10_TO", true, to.getName());
+
+        org.traincontrol.automation.Edge first = layout.createEdge("VD10_FROM", "VD10_MID");
+        org.traincontrol.automation.Edge second = layout.createEdge("VD10_MID", "VD10_TO");
+
+        // The throat: `first` names `second` as a lock edge, so releasing `first` releases it too.
+        layout.getEdge("VD10_FROM", "VD10_MID").addLockEdge(second);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("VD10_FROM").setLocomotive(loc);
+
+        java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
+
+        path.add(first);
+
+        // And the tail having already given `first` up, which is what clearedEdges records.
+        java.lang.reflect.Field cleared = Layout.class.getDeclaredField("clearedEdges");
+
+        cleared.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>> map =
+            (java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>>)
+                cleared.get(layout);
+
+
+        // The claim is made IN BETWEEN - after the path is locked, before it fails - because that is
+        // the sequence the lookup exists for.  A throat claimed beforehand simply refuses the lock and
+        // the handler never runs.
+        // Read at the MOMENT OF FAILURE, not before the run: the claim being protected is one made
+        // after the path was locked, so a baseline taken beforehand is a different number.
+        final int[] atTheMoment = { -1 };
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            // SEEDED HERE, not before the dispatch: executePathInternal installs its own clearedEdges
+            // entry for this locomotive when the run starts, which overwrites anything put there
+            // earlier.  By this callback the path is locked and that entry exists, which is exactly
+            // the moment a real tail would be adding to it.
+            java.util.Set<org.traincontrol.automation.Edge> given = map.get(loc);
+
+            if (given == null) { given = new java.util.HashSet<>(); map.put(loc, given); }
+
+            given.add(first);
+
+            // And the claim another train makes in between.
+            second.setOccupied();
+
+            try
+            {
+                java.lang.reflect.Field held =
+                    org.traincontrol.automation.Edge.class.getDeclaredField("occupancy");
+
+                held.setAccessible(true);
+
+                atTheMoment[0] = held.getInt(second);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            throw new RuntimeException("deliberate mid-path failure");
+        });
+
+
+
+
+        layout.runLocomotives();
+
+        try
+        {
+            layout.executePath(path, loc, 20, null);
+
+            fail("executePath swallowed the failure, so the handler under test never ran");
+        }
+        catch (RuntimeException expected)
+        {
+            // expected
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, null);
+        }
+
+        // THE COUNT, not the boolean.  `release()` floors at zero and occupancy is a COUNT now, so a
+        // throat held by two claims and released once is still "occupied" - which is why asserting
+        // isOccupied passed against both orderings and proved nothing (found by mutation).
+        java.lang.reflect.Field occupancy =
+            org.traincontrol.automation.Edge.class.getDeclaredField("occupancy");
+
+        occupancy.setAccessible(true);
+
+        assertTrue(atTheMoment[0] > 0, "the callback never ran, so nothing below is exercised");
+
+        assertEquals(occupancy.getInt(second), atTheMoment[0],
+            "the failure released a throat this locomotive had already given up, taking away the "
+            + "claim another train made after the tail went by.  unlockPath reads clearedEdges to "
+            + "know which edges not to release twice, and the handler had emptied that map fifty "
+            + "lines earlier - so the lookup was null and every early-released edge went again, "
+            + "lock edges included.  The ordinary ending clears the map AFTER the release, which is "
+            + "where this one clears it now (VD10-A1)");
+    }
 }

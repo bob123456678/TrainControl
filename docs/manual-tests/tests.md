@@ -13468,15 +13468,24 @@ For homing: doesn't work, but reason is unknown.  EN57-203 can't go to bottomlef
 **Claude, 2026-09-03.** Two of the three are one defect, found and fixed. The third is not a defect.
 
 **"Does not activate the send home button" and "not persisted when closing the app" are the same
-omission.** `AutonomyEditorPanel` supplies the tile menus for two surfaces. In the layout editor there
-is a Save and a close, and closing rebuilds the running layout. On the **track diagram** there is
-neither: `TrainControlUI` wires the panel's `onDiagramChanged` to `session.save()`, so that runnable
-is the only thing that makes an edit outlive the process, and `rebuildRunningLayoutFromSetup` is the
-only thing that tells the running `Layout` about it.
+omission** - and the second one reaches you by a longer road than the first account of it said
+(corrected by a second validation pass, `VD10-A2`).
 
-`promptHome` called neither. So the home went into the setup in memory and nowhere else - and
-"Return Locomotives Home" stayed greyed because `triageReturnToHome` asks the **running** layout,
-which had never been told.
+`AutonomyEditorPanel` supplies the tile menus for two surfaces. In the layout editor there is a Save
+and a close, and closing rebuilds the running layout. On the **track diagram** there is no rebuild at
+all - so a home written to the setup never reached the running `Layout`, and "Return Locomotives
+Home" stayed greyed because `triageReturnToHome` asks the running layout, which had never been told.
+
+**And that is also why it did not survive closing the application.** The save itself was working: the
+menu wrapper calls `refresh()` after every action, and `refresh()` ends by running the panel's
+`onChanged` runnable, which is `session.save()`. The edit reached disk correctly - and was then
+deleted from it on the way out. `TrainControlUI:2259`, "the save on the way out", captures the
+**running** layout back into the configuration, and `captureFromLayout` walks the operational keys
+writing what the layout has and **removing what it does not** - `home` among them. A running layout
+that had never heard of your home therefore erased it.
+
+So one cause, two symptoms, and the fix closes both. The first write-up of this said the save itself
+was broken; it was not, and that mattered enough to correct.
 
 **It was seven doors of nine**, not one: `setTurning`, `setUsage`, `setStation`, `promptNumber`,
 `promptPercent`, `promptHome` and `promptLocomotives`. The two that worked - `placementChanged` and

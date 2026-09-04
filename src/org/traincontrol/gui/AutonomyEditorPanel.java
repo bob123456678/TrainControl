@@ -6324,32 +6324,34 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Re-reads the setup and shows what it says.
+     * Says that the setup changed: rebuild the railway it describes, and redraw.
      *
-     * Runs after every edit, which is affordable because the derivation is cheap and the alternative -
-     * a panel that agrees with itself while the graph has moved on - is the failure this whole design
-     * exists to avoid.
-     */
-    /**
-     * Says that the setup changed: persist it, and rebuild the railway it describes.
-     *
-     * **The two things every door has to do and seven of nine did not** (MT-246). Adam, 2026-09-03:
+     * **The thing every door has to do and seven of nine did not** (MT-246). Adam, 2026-09-03:
      * *"Setting a home locomotive via track diagram viewer does not activate the send home button, and
-     * it is not persisted when closing the app."* Both halves of that are this method.
+     * it is not persisted when closing the app."* Both halves are this, and they are ONE cause - which
+     * the first version of this javadoc got wrong (`VD10-A2`), so it is written out properly here.
      *
-     * `onDiagramChanged` is wired by `TrainControlUI` to `session.save()`, so it is what makes an edit
-     * outlive the process - the panel that supplies the DIAGRAM's tile menus has no Save button and no
-     * close, so without it the write lives and dies in memory. `rebuildRunningLayoutFromSetup` is what
-     * tells the running `Layout` about it, and every affordance that asks a question about homes,
-     * lengths, priorities or usage reads the running layout rather than the setup.
+     * `rebuildRunningLayoutFromSetup` tells the running `Layout` about the edit. Every affordance that
+     * asks a question about homes, lengths, priorities or usage reads the **running** layout rather
+     * than the setup - so a home set from the diagram left "Return Locomotives Home" greyed, because
+     * `triageReturnToHome` asked a layout nobody had told.
      *
-     * Hence a greyed "Return Locomotives Home" after setting a home: `triageReturnToHome` asks the
-     * running layout, which had never been told.
+     * **And that is also why it did not survive the application closing**, which is the half that
+     * looks like a separate defect and is not. The exit path captures the RUNNING layout back into the
+     * configuration (`TrainControlUI:2259`, "the save on the way out"), and `captureFromLayout` walks
+     * `POINT_OPERATIONAL_KEYS` writing what the layout has and **removing what it does not** - `home`
+     * among them. So the edit was saved to disk correctly and then deleted from it on the way out, by
+     * a running layout that had never heard of it.
+     *
+     * **What this does NOT do is save**, and the first version of this javadoc said it did.
+     * `onDiagramChanged` is wired by `TrainControlUI` to `repaintLayout()`. The save is the panel's
+     * other runnable, `onChanged`, which `refresh()` calls at its end - and `item()` calls `refresh()`
+     * after every menu action, so every door here already reached disk before this method existed.
      *
      * **One exit rather than a line in each door**, because the two that already worked -
      * `placementChanged` and `promptName` - are the two that had been reported before, and adding a
      * third copy is how there comes to be an eighth door without one.
-     * `testEditorSurfaceRules` now fails if a writer does not end here.
+     * `testEditorSurfaceRules` fails if a writer does not end here.
      */
     private void setupChanged()
     {
@@ -6357,6 +6359,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
     }
+    /**
+     * Re-reads the setup and shows what it says.
+     *
+     * Runs after every edit, which is affordable because the derivation is cheap and the alternative -
+     * a panel that agrees with itself while the graph has moved on - is the failure this whole design
+     * exists to avoid.
+     */
     public final void refresh()
     {
         flowMarks = session.flowMarks();

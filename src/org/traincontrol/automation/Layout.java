@@ -5045,11 +5045,19 @@ public class Layout
                 //  - It does not swallow the path's own locks either, but it no longer LEAVES them - see
                 //    the release below, which is Adam's ruling of 2026-09-03 and replaces the argument
                 //    that used to stand here.
+                // clearedEdges is NOT cleared here - it is cleared after the release below, which is
+                // where the ordinary path clears it and where it has to be (VD10-A1).
+                //
+                // `unlockPath`'s non-atomic branch reads that map to know which edges the tail already
+                // gave up as it passed them.  Emptying it first makes that lookup null, so every one of
+                // those edges is released a SECOND time and its lock edges with it - and the cost is
+                // written out at the lookup itself: "the second release would take away a claim
+                // somebody else made in between".  `atomicRoutes` is false on the operator's own
+                // configuration, so this is the live branch rather than the theoretical one.
                 synchronized (this.activeLocomotives)
                 {
                     this.activeLocomotives.remove(loc);
                     this.locomotiveMilestones.remove(loc);
-                    this.clearedEdges.remove(loc);
                 }
 
                 // And any unfinished claim on a slot, for the same reason the registration is cleared:
@@ -5095,12 +5103,17 @@ public class Layout
                 // still can, from the right-click menu - which is why they are told, and why the
                 // message says to look at where that locomotive is standing before starting again.
                 //
-                // Released the same way a finished path is released, under the same lock and in the
-                // same order (`:5701`), so the failure path and the ordinary path end in one state
-                // rather than two.
+                // Released the same way a finished path is released: same lock, and now the same
+                // ORDER, which is the half the first version of this got wrong (VD10-A1).
+                //
+                // `unlockPath` consults `clearedEdges` for the edges the tail gave up early, so it has
+                // to run while that map still has them - exactly as `executePathInternal`'s ordinary
+                // ending does.  The clear follows it here for the same reason it follows it there.
                 synchronized (this.activeLocomotives)
                 {
                     this.unlockPath(path, loc);
+
+                    this.clearedEdges.remove(loc);
                 }
 
                 // And the sensor this locomotive was said to be heading for.  A route condition asking
