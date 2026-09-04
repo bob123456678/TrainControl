@@ -247,6 +247,116 @@ public class testTheDiagramPrintsItsCoordinates
             "with nowhere usable to look this must say so, not invent a rectangle");
     }
     /**
+     * A child standing in the gutter does not rub out the number underneath it (OB-172).
+     *
+     * **This is what OB-172 actually was, after two wrong answers.** Adam lost axis numbers on the two
+     * pages whose columns start at zero, and they came back when the grid setting was cycled. I looked
+     * for a number being SKIPPED twice - a missing cell, then an unmeasured one - and measured his own
+     * page to settle it: every cell the ruler asks about is present and exactly 30x30, against a
+     * 14-pixel font. Not one of `paintBorder`'s three skip clauses can fire there. The numbers were
+     * never being skipped.
+     *
+     * `JComponent.paint` calls `paintBorder` and THEN `paintChildren`, so any child reaching into the
+     * eighteen pixels the ruler reserves is drawn over the number. A `StationCaption` is 38 pixels tall
+     * and up to 55 wide against a 30-pixel cell - which is why one of them takes out two rows' numbers,
+     * and why the top-left one takes the `0` off the column axis as well.
+     *
+     * `LayoutGrid.newDiagramContainer` now paints the ruler again at the end of its `paintChildren`
+     * override - the same hook that already draws trains over captions.
+     *
+     * MUTATION: removing that block fails this. The first assertion is what stops the mutation passing
+     * by painting nothing at all.
+     */
+    @Test
+    public void testAChildInTheGutterDoesNotRubOutTheNumbers() throws Exception
+    {
+        final int size = 30;
+        final int columns = 5;
+
+        final javax.swing.JPanel container = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        container.setLayout(null);
+
+        // WHITE, so that "ink" means a number rather than the panel's own grey.  The first version of
+        // this test left the default background and counted 3024 non-white pixels in an 18x168 strip -
+        // which is every pixel of it, and told me nothing about the numbers at all.
+        container.setOpaque(true);
+        container.setBackground(java.awt.Color.WHITE);
+
+        container.setBorder(AxisRuler.uniform(size, 0, 0, columns, columns));
+
+        container.setBounds(0, 0, 18 + columns * size, 18 + columns * size);
+
+        // AN OPAQUE CHILD ACROSS THE WHOLE GUTTER, which is what a caption at the edge amounts to.
+        javax.swing.JPanel intruder = new javax.swing.JPanel();
+
+        intruder.setOpaque(true);
+        intruder.setBackground(java.awt.Color.WHITE);
+        intruder.setBounds(0, 0, container.getWidth(), container.getHeight());
+
+        container.add(intruder);
+
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+            container.getWidth(), container.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = img.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, img.getWidth(), img.getHeight());
+
+        container.paint(g);
+
+        g.dispose();
+
+        int inkInGutter = 0;
+
+        for (int x = 0; x < img.getWidth(); x++)
+        {
+            for (int y = 0; y < 18; y++)
+            {
+                if ((img.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkInGutter++;
+            }
+        }
+
+        assertTrue(inkInGutter > 0,
+            "nothing at all was painted in the gutter, so this test would pass against a ruler that "
+            + "never drew anything - check the fixture before reading the failure below");
+
+        // And the same container WITHOUT the intruder, as the yardstick.
+        container.remove(intruder);
+
+        java.awt.image.BufferedImage clean = new java.awt.image.BufferedImage(
+            container.getWidth(), container.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g2 = clean.createGraphics();
+
+        g2.setColor(java.awt.Color.WHITE);
+        g2.fillRect(0, 0, clean.getWidth(), clean.getHeight());
+
+        container.paint(g2);
+
+        g2.dispose();
+
+        int inkWithout = 0;
+
+        for (int x = 0; x < clean.getWidth(); x++)
+        {
+            for (int y = 0; y < 18; y++)
+            {
+                if ((clean.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkWithout++;
+            }
+        }
+
+
+        assertEquals(inkInGutter, inkWithout,
+            "a child covering the gutter rubbed out " + (inkWithout - inkInGutter) + " pixels of the "
+            + "axis numbers.  A Border is painted before the container's children, so the ruler has to "
+            + "be drawn again after them - which is what Adam lost on the two pages whose columns "
+            + "start at zero (OB-172)");
+    }
+    /**
      * The ranges of x where the top strip has ink on it, one per number.
      *
      * A gap of a pixel or two inside a two-digit number would split it in two, so groups are joined

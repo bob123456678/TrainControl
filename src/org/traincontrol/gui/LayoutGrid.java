@@ -752,6 +752,26 @@ public class LayoutGrid
                 // Painted a second time rather than moved out of the border: the border is what
                 // RESERVES the gutter, and a ruler that stopped being one would take the room away
                 // with it.  The same pixels twice cost nothing.
+            }
+
+            /**
+             * The axis numbers, drawn last of all (OB-172).
+             *
+             * In `paint` rather than at the end of `paintChildren`, which was the first attempt and
+             * did not work: the override ran, the border was the ruler and the clip was the whole
+             * component, and the numbers were still rubbed out - 69 pixels of ink left of 3024.
+             * Swing gives each child its own scratch graphics inside `paintChildren`, and what that
+             * costs is not worth working out when there is a place that is unambiguously after
+             * everything.
+             *
+             * `super.paint` runs the whole sequence - background, border, children - and then this
+             * puts the ruler back over the top.
+             */
+            @Override
+            public void paint(java.awt.Graphics g)
+            {
+                super.paint(g);
+
                 if (getBorder() instanceof AxisRuler)
                 {
                     getBorder().paintBorder(this, g, 0, 0, getWidth(), getHeight());

@@ -425,6 +425,27 @@ real fragility and costs nothing, but it was not your fault and I have said so w
 **What to do.** Open both editors again and check every number on both axes, especially beside
 `TopMainR1Inter` and `TopMainR2Inter` where two captions sit together, and the `0` in each corner.
 
+**And that fix did not work either. The third attempt does, and this time it is pinned by a test that
+fails without it.**
+
+Painting the ruler at the end of `paintChildren` looked right and was not: the override ran, the border
+was the ruler, the clip was the whole component - and the numbers were still rubbed out. Swing hands
+each child its own graphics inside `paintChildren`, and rather than work out what that costs I moved
+the redraw to the end of `paint()`, which is unambiguously after everything.
+
+**The test that now guards it also caught me measuring the wrong thing.** Its first version counted
+non-white pixels in the gutter and found 3024 of them in an 18x168 strip - every pixel, because it was
+counting the panel's own grey background rather than any number. With the background neutralised the
+count is 69 with a covering child and 69 without, and removing the redraw drops it to 69 against 3024.
+
+**Rendered your own five pages to check rather than reasoning about it**, in both the track diagram and
+autonomy editors, and read the images: every column 0-23 and row 0-15 on `1 - Main`, every column 0-30
+on `4 - Combined`. Those are the two pages you named, and they are the only two whose columns start at
+zero.
+
+**One thing to check before you re-test: your last run was against a build compiled at 03:21**, which
+is before any of this landed. Rebuild first.
+
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 03:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
