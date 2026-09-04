@@ -2765,8 +2765,16 @@ public class testEditorSurfaceRules
      *
      * MUTATION: removing `setupChanged();` from any one of the nine fails this.
      */
+    /** Every session call that changes the setup, so the rule below covers all of them. */
+    private static final String[] WRITERS = {
+        "session.setPointProperty(", "session.setHome(", "session.setTileLength(",
+        "session.setPointName(", "session.setLinkName(", "session.setDirection(",
+        "session.clearEveryHome(", "session.clearEveryPlacement(", "session.setProtectingSignals(",
+        "session.setBarredArrivals(", "session.setBlockingPoints(", "session.setPortalDisabled(",
+    };
+
     @Test
-    public void testEveryDoorThatWritesTheSetupAnnouncesIt() throws Exception
+    public void testEveryDoorThatWritesTheSetupAnnouncesItWiderSweep() throws Exception
     {
         java.io.File file = new java.io.File(
             "src/org/traincontrol/gui/AutonomyEditorPanel.java");
@@ -2784,8 +2792,21 @@ public class testEditorSurfaceRules
 
         for (int i = 0; i < lines.length; i++)
         {
-            if (!lines[i].contains("session.setPointProperty(")
-                && !lines[i].contains("session.setHome(")) continue;
+            // EVERY WRITER, not two of them (VD10-B2).
+            //
+            // The first version of this named setPointProperty and setHome, which are what MT-246
+            // happened to be about - and four more doors wrote the setup through setTileLength,
+            // setPointName, setLinkName and clearEveryHome, and were invisible to the rule written to
+            // catch exactly them.  A guard that lists the cases it knows about finds the cases it
+            // knows about.
+            boolean writes = false;
+
+            for (String setter : WRITERS)
+            {
+                if (lines[i].contains(setter)) { writes = true; break; }
+            }
+
+            if (!writes) continue;
 
             // The enclosing method: back to the nearest declaration at class indent.
             int start = i;
@@ -2821,7 +2842,12 @@ public class testEditorSurfaceRules
             // setupChanged is itself allowed to write nothing and announce nothing.
             if (name.contains("setupChanged")) continue;
 
-            if (!body.toString().contains("setupChanged()") && !silent.contains(name))
+            // placementChanged() counts: it ends in setupChanged(), and a door that goes through it
+            // has announced the change exactly as one that calls it directly has.
+            boolean announces = body.toString().contains("setupChanged()")
+                || body.toString().contains("placementChanged()");
+
+            if (!announces && !silent.contains(name))
             {
                 silent.add(name);
             }
@@ -2837,6 +2863,6 @@ public class testEditorSurfaceRules
             + "edit made from the TRACK DIAGRAM is neither saved nor shown to the running layout.  "
             + "The user sets a home and the Return Home item stays greyed, because "
             + "triageReturnToHome asks the running layout; and the edit dies with the process, "
-            + "because that panel has no Save (MT-246)");
+            + "because that panel has no Save (MT-246).  They are: " + silent);
     }
 }

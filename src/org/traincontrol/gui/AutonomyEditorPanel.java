@@ -1545,7 +1545,15 @@ public class AutonomyEditorPanel extends JPanel
             menu.add(toggle(I18n.t("autosetup.ui.menuUseLink"),
                 "autosetup.ui.hintUseLink",
                 !session.getStore().isPortalDisabled(target),
-                on -> session.setPortalDisabled(target, !on)));
+                on ->
+                {
+                    session.setPortalDisabled(target, !on);
+
+                    // A shut link is a missing edge in the running graph, so the railway has to be
+                    // told (VD10-B2).  This wrote straight from the lambda and was the one writer
+                    // not inside a door at all - which is also why it pushes no undo point (VD9-B3).
+                    setupChanged();
+                }));
 
             menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
@@ -2959,6 +2967,9 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         session.setBarredArrivals(tile, barred);
+
+        // Arrival restrictions are one-way edges in the running graph (VD10-B2).
+        setupChanged();
     }
 
     private void setUsage(TileKey tile, boolean station, boolean open)
@@ -2998,6 +3009,9 @@ public class AutonomyEditorPanel extends JPanel
     private void setAllBranches(TileKey tile, Direction direction)
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
+
+        // Directions are edges in the running graph (VD10-B2).
+        setupChanged();
     }
 
     /**
@@ -4235,7 +4249,12 @@ public class AutonomyEditorPanel extends JPanel
         String name = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptLinkName"), current == null ? "" : current);
 
-        if (name != null) session.setLinkName(tile, name);
+        if (name == null) return;
+
+        session.setLinkName(tile, name);
+
+        // The running layout carries link names too (VD10-B2).
+        setupChanged();
     }
 
     /**
@@ -4741,6 +4760,9 @@ public class AutonomyEditorPanel extends JPanel
             describeTile(station), describeTile(signal)));
 
         if (redraw) refresh();
+
+        // The running layout is what throws a protecting signal (VD10-B2).
+        setupChanged();
     }
 
     /**
@@ -4763,6 +4785,9 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.removedSignal", describeTile(signal), describeTile(station)));
 
         refresh();
+
+        // The running layout is what throws a protecting signal (VD10-B2).
+        setupChanged();
     }
 
     /**
@@ -4901,6 +4926,11 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         selection.clear();
+
+        // Lengths are what the reversal guard measures with, and it asks the RUNNING layout
+        // (VD10-B2).  Typing one from the diagram and having the guard still blind is the same
+        // seam as MT-246, one setter over.
+        setupChanged();
     }
 
     /**
@@ -6702,6 +6732,12 @@ public class AutonomyEditorPanel extends JPanel
         selection.clear();
 
         refresh();
+
+        // OB-034 AGAIN, IN BULK (VD10-B2).  `promptName` rebuilds for a single rename and says
+        // why at length: the running layout keeps the old names, every caption looks up a Point
+        // it has never heard of, and the labels go blank.  Naming sixty squares at once is that
+        // failure sixty times over.
+        setupChanged();
     }
 
     /**
@@ -6760,6 +6796,14 @@ public class AutonomyEditorPanel extends JPanel
         say(hint, I18n.f("autosetup.ui.infoHomesCleared", cleared));
 
         refresh();
+
+        // MT-246'S OWN PROPERTY, IN BULK (VD10-B2).
+        //
+        // Without this the setup is saved and the running layout keeps every home, so
+        // `triageReturnToHome` goes on offering Return Home and sends each train to a home the
+        // operator has just cleared.  `clearAllPlacements`, its sibling three items along the
+        // same menu, has ended in `placementChanged()` all along.
+        setupChanged();
     }
 
     /**
