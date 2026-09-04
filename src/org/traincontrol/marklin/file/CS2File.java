@@ -711,19 +711,37 @@ public final class CS2File
                     continue;
                 }
                 
-                MarklinAccessory acc = new MarklinAccessory(control, 
-                    Integer.parseInt(m.get("id")),
-                    m.get("typ").contains("weiche") ? 
-                        Accessory.accessoryType.SWITCH :
-                        Accessory.accessoryType.SIGNAL, 
-                    m.get("dectyp") != null ?
-                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
-                        Accessory.accessoryDecoderType.MM2,
-                    m.get("name"), 
-                    !"0".equals(m.get("stellung")), 
-                    0);
-                            
-                out.add(acc);       
+                try
+                {
+                    MarklinAccessory acc = new MarklinAccessory(control, 
+                        Integer.parseInt(m.get("id")),
+                        m.get("typ").contains("weiche") ? 
+                            Accessory.accessoryType.SWITCH :
+                            Accessory.accessoryType.SIGNAL, 
+                        m.get("dectyp") != null ?
+                            MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
+                            Accessory.accessoryDecoderType.MM2,
+                        m.get("name"), 
+                        !"0".equals(m.get("stellung")), 
+                        0);
+
+                    out.add(acc);
+                }
+                catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
+                {
+                    // SKIP THE RECORD, NOT THE IMPORT (AC2-C2).
+                    //
+                    // The three sibling parsers were each given this guard with a comment explaining
+                    // the blast radius - `parseRoutes`, `parseLocomotives`, `parseLocomotivesCS3` -
+                    // and this one was not swept.  The null-field guard above covers a MISSING key;
+                    // a key with a non-numeric value, or `id=` with nothing after it, lands here.
+                    //
+                    // What it costs unguarded: `parseRoutes` calls `getMagList(false)`, which fetches
+                    // from the station itself, so the throw reaches `syncWithCS2`'s outer catch, the
+                    // whole sync returns -1, and at start-up that reads as "not connected".  One
+                    // malformed accessory would take every route and locomotive with it.
+                    control.logf("acc.invalidCs2Accessory", m.toString());
+                }
              }
         }
         

@@ -217,6 +217,46 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
+     * A two-pixel spacer does not get to answer for a row that has a real cell (OB-172).
+     *
+     * **This is what the bug actually was**, found by capturing the screen with `Robot` after four
+     * attempts that rested on a probe which could not reproduce it: every earlier one painted the
+     * container into an image, which is a full repaint - the case that always worked.
+     *
+     * On Adam's own page, rows 0, 1, 3 and 11 were handed a cell **two pixels tall** against a
+     * fourteen-pixel font, so `paintBorder` skipped them as too short. Those rows have a full 30-pixel
+     * cell in another column; the first candidate simply happened to be a spacer.
+     *
+     * **"First non-empty" was the wrong rule.** A spacer is not empty - it is a real component with a
+     * real, tiny size - so the zero-check let it through and the method answered with the one
+     * candidate that could not carry a number. Every candidate describes the same row, so any of them
+     * gives the right position and only the size differs: taking the largest is free.
+     *
+     * MUTATION: returning the first usable candidate instead of the largest fails this.
+     */
+    @Test
+    public void testASpacerDoesNotAnswerForARowThatHasARealCell()
+    {
+        java.awt.Rectangle spacer = new java.awt.Rectangle(0, 60, 2, 2);
+        java.awt.Rectangle real = new java.awt.Rectangle(0, 60, 30, 30);
+
+        assertEquals(AxisRuler.firstUsable(
+            java.util.Arrays.asList(index -> spacer, index -> real), 0), real,
+            "a two-pixel spacer answered for a row that has a full cell one column over.  "
+            + "paintBorder then skips the row as too short for the font, and the number never "
+            + "appears - which is rows 0, 1, 3 and 11 on Adam's own page (OB-172)");
+
+        // AND THE OTHER ORDER, so this cannot pass by accident of which came first.
+        assertEquals(AxisRuler.firstUsable(
+            java.util.Arrays.asList(index -> real, index -> spacer), 0), real,
+            "the largest has to win whichever order the candidates arrive in");
+
+        // A spacer alone is still better than nothing - paintBorder makes the final call.
+        assertEquals(AxisRuler.firstUsable(
+            java.util.Arrays.asList(index -> null, index -> spacer), 0), spacer,
+            "with nothing else to offer, the spacer is the honest answer");
+    }
+    /**
      * A zero-sized cell falls through to the next place to look, rather than being handed on (OB-172).
      *
      * The half that matters for the symptom Adam actually described. An absent square is a null; a

@@ -983,7 +983,10 @@ public class LayoutGrid
             java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> rowSources =
                 new java.util.ArrayList<>();
 
-            for (int probe = 0; probe < Math.min(3, Math.max(width, height)); probe++)
+            // Six rather than three: the candidates are now compared by size rather than taken in
+            // order, so a wider sweep costs a few lambda calls at paint time and buys immunity to a
+            // run of spacers at the edge of the diagram.
+            for (int probe = 0; probe < Math.min(6, Math.max(width, height)); probe++)
             {
                 final int which = probe;
 

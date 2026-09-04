@@ -115,18 +115,39 @@ public class AxisRuler implements Border
     {
         if (at == null) return null;
 
+        Rectangle best = null;
+
         for (IntFunction<Rectangle> source : at)
         {
             if (source == null) continue;
 
             Rectangle found = source.apply(index);
 
-            // The same emptiness `paintBorder` refuses, asked here so that a zero-sized cell falls
-            // through to the next candidate rather than being handed on as an answer.
-            if (found != null && found.width > 0 && found.height > 0) return found;
+            // The same emptiness `paintBorder` refuses, so a zero-sized cell falls through rather
+            // than being handed on as an answer.
+            if (found == null || found.width <= 0 || found.height <= 0) continue;
+
+            // THE BIGGEST, NOT THE FIRST - which is what this method got wrong (OB-172).
+            //
+            // Measured on Adam's own page, captured off the SCREEN rather than painted into an image:
+            // rows 0, 1, 3 and 11 were skipped by `paintBorder` because the cell handed to it was
+            // **two pixels tall**, against a fourteen-pixel font.  Those rows have a full 30-pixel
+            // cell in another column; the first candidate simply happened to be a spacer.
+            //
+            // "First non-empty" was the wrong rule.  A spacer is not empty - it is a real component
+            // with a real, tiny size - so the zero-check let it through, and this method confidently
+            // answered with the one candidate that could not carry a number.
+            //
+            // Every candidate describes the SAME row or column, so any of them gives the right
+            // position and only the size differs.  Taking the largest is therefore free.
+            if (best == null || (long) found.width * found.height
+                > (long) best.width * best.height)
+            {
+                best = found;
+            }
         }
 
-        return null;
+        return best;
     }
 
     /**

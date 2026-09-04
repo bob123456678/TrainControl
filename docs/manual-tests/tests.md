@@ -478,6 +478,28 @@ NEGATIVE x, so the left edge sat outside the panel where no scrolling reaches it
 showed on a narrow window. The panel now allows for the gaps, and carries a column of slack the way it
 has always carried a row.
 
+**Adam, 2026-09-04 (fourth report): "the numbers are missing on the first load now."  Found, measured,
+and fixed - and the reason it took five attempts is worth writing down.**
+
+**Every probe I built until now painted the container into an image**, which is a full repaint - the
+one case that has always worked. It showed every number present each time, and I read that as evidence
+four times over. Capturing the actual screen with `Robot` reproduced your report exactly on the first
+try: column 0 gone from the top, rows 0, 1, 3 and 11 gone from the side.
+
+**With a reproduction it took one measurement.** The ruler was being handed a cell **two pixels tall**
+for those rows, against a fourteen-pixel font, so it skipped them as too small to hold a number. Those
+rows do have a full 30-pixel cell - one column over. The rule I had written was "take the first
+candidate that is not empty", and **a spacer is not empty**: it is a real component with a real, tiny
+size. So the method answered with the one candidate that could not work.
+
+It takes the largest candidate now, and looks at six columns rather than three. Every candidate
+describes the same row, so any of them gives the right position and only the size differs - taking the
+biggest costs nothing.
+
+**Verified on the screen, not in a paint buffer**: all sixteen rows and all twenty-four columns present
+at first load, and still present after forcing a caption to repaint itself, which was the other half of
+what you reported.
+
 **One thing to check before you re-test: your last run was against a build compiled at 03:21**, which
 is before any of this landed. Rebuild first.
 
