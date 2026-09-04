@@ -13750,6 +13750,50 @@ blamed the track.
 
 In the current setup, I can't get EN57-203 back to its home of TunnelLongPark
 
+**Measured on your live folder, 2026-09-04 - and this is a different case from the one above.**
+
+Built through a sandbox copy of `cs2_sample_layout`, so nothing was written to it:
+
+```
+loc=EN57-203 reversible=false
+standing=BottomMainA (eastbound)
+home=TunnelLongPark   station=true active=true terminus=true reversing=false autoDest=false
+triageReturnToHome=null      planReturnToHome=NO_PLAN_FOUND
+```
+
+**The cause, proved rather than argued.** With everything else identical - same positions, same graph,
+same homes - I set `EN57-203.reversible` true, re-planned, and got `READY`; then set it back. One flag
+is the whole of it.
+
+`TunnelLongPark` is authored `mustReverse` and the builder emits it as a **terminus**. The planner will
+let a non-reversible train end at a terminus only if the route turns it round on the way, so that it
+backs in and can leave forwards. **Your railway has exactly one reversing point** -
+`BottomMainB (westbound, reverse)` - and it is not on the way to TunnelLongPark.
+
+**So `NO_PLAN_FOUND` here is a rule being applied, not the defect this test was written for.** `D24-B1`
+was about a train standing ON a reversing point; step 1 asks you to put the locomotive on one. EN57-203
+is on a plain platform and it is the HOME that is the terminus, which is the other way round.
+
+**What IS wrong, and it is worth its own fix.** The refusal is permanent and completely explainable,
+and you were told neither. `describeStagingPlan`'s own javadoc says *"NO_PLAN_FOUND must not claim
+impossibility - the search only ran out of room"* - which is right for a search that ran out of room
+and wrong here, where the answer will be the same every time you press it. A `mustBackIn` refusal is
+an `IMPOSSIBLE` in everything but the bucket it lands in, and `IMPOSSIBLE` is the outcome that names
+the locomotive.
+
+**Three ways out, and the first is yours to rule on.**
+
+1. **Should Return Home count as manual operation?** Your ruling of 2026-09-01 is *"in manual
+   operation, non reversing trains must be able to back into a terminus if the graph makes that
+   possible"*, and `280ff08b` deliberately kept staging on the strict side of it - the comment at
+   `HomeStaging:678` says so in as many words. That was a decision made without this case in front of
+   it. If Return Home is manual, the rule comes out and EN57-203 goes home.
+2. **Or say why.** Whichever way 1 goes, a `mustBackIn` refusal should name the locomotive and the
+   reason, the way `IMPOSSIBLE` does. That is a fix I would make regardless.
+3. **Or change the railway.** Mark `TunnelLongPark` as a reversing point rather than a terminus, or
+   put a reversing point on its approach. That is data rather than code, and it is worth knowing that
+   one reversing point on a railway this size is what makes this bite.
+
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 01:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
