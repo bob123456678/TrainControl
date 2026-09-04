@@ -308,9 +308,40 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // which is what the ellipsis below is for.
                         List<List<Edge>> shownPaths = new java.util.ArrayList<>();
 
+                        // AND THE ONES AUTONOMY WOULD NEVER CHOOSE GO IN THEIR OWN SUBMENU (FR-058).
+                        //
+                        // Adam: "show only active stations that can be chosen in full autonomy.  add a
+                        // menu called More Destinations and in there, list the points that cannot be
+                        // chosen in full autonomy but are still valid.  the current setup lists both in
+                        // one flat list, which truncates active stations, which I don't like".
+                        //
+                        // The cap is the reason this matters rather than tidiness: a parking track that
+                        // autonomy will never pick used to cost one of the twelve lines an ordinary
+                        // platform wanted, and the ellipsis appeared with real destinations behind it.
+                        //
+                        // Asked through `isChoosableByAutonomy`, which is the same predicate the
+                        // "no available paths" window and the diagram's caption rule ask - its own
+                        // javadoc is about not having two answers to this question, so this does not
+                        // become a third.
+                        List<List<Edge>> otherPaths = new java.util.ArrayList<>();
+
                         for (List<Edge> path : paths)
                         {
-                            if (path.get(path.size() - 1).getEnd().isActive()) shownPaths.add(path);
+                            Point end = path.get(path.size() - 1).getEnd();
+
+                            // Switched-off squares are off this menu altogether, which is the earlier
+                            // ruling and is not what FR-058 changes: they are not "still valid", and
+                            // the autonomy tab is still where everything is listed.
+                            if (!end.isActive()) continue;
+
+                            if (ui.getModel().getAutoLayout().isChoosableByAutonomy(end))
+                            {
+                                shownPaths.add(path);
+                            }
+                            else
+                            {
+                                otherPaths.add(path);
+                            }
                         }
 
                         paths = shownPaths;
@@ -333,40 +364,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         for (List<Edge> path : paths)
                         {
-                            menuItem = new JMenuItem("-> "
-                                + stationName(path.get(path.size() - 1).getEnd()));
-                            menuItem.addActionListener(event -> 
-                            {
-                                try
-                                {
-                                    // TODO there is commonality with AutoLocomotiveStatus - reuse code
-                                    new Thread(() ->
-                                    {
-                                        if (!ui.getModel().getPowerState())
-                                        {
-                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
-                                        }
-                                        else
-                                        {
-
-                                            boolean success = ui.getModel().getAutoLayout().executePath(
-                                                path, locomotive, locomotive.getPreferredSpeed(), null
-                                            );
-
-                                            if (!success)
-                                            {
-                                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
-                                            }
-                                        }
-                                    }).start();
-                                }
-                                catch (Exception e)
-                                {
-                                    JOptionPane.showMessageDialog(this, e.getMessage());
-                                }
-                            });    
-
-                            add(menuItem);
+                            add(destinationItem(ui, path, locomotive));
 
                             // The way through, whenever anything at all has been left out.
                             //
@@ -392,6 +390,29 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 add(menuItem);
                                 break;
                             }
+                        }
+
+                        // MORE DESTINATIONS (FR-058), which is where everything valid but not
+                        // automatic now lives: a terminus a non-reversible train would have to be
+                        // turned into, a reversing point, a square marked as not an automatic
+                        // destination.  Each is somewhere the operator may legitimately send a train
+                        // by hand - "filtering at selection, never refusing at execution" - and none
+                        // of them is something autonomy would ever pick on its own.
+                        //
+                        // Uncapped, deliberately.  The cap exists because the top level competes with
+                        // the rest of the menu for the first screenful; a submenu competes with
+                        // nothing, and truncating it would put an ellipsis inside an ellipsis.
+                        if (!otherPaths.isEmpty())
+                        {
+                            javax.swing.JMenu more =
+                                new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
+
+                            for (List<Edge> path : otherPaths)
+                            {
+                                more.add(destinationItem(ui, path, locomotive));
+                            }
+
+                            add(more);
                         }
                     }
 
@@ -869,5 +890,57 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // would look to check that the change took.
         ui.updateVisiblePoints();
     }
+
+
+    /**
+     * One "-> somewhere" item, dispatching this locomotive along this path.
+     *
+     * Lifted out of the loop when `FR-058` split the list in two (`More Destinations`). Two copies of
+     * a menu item that starts a train is two places for the power check, the failure dialog and the
+     * off-thread dispatch to fall out of step - and the thread is the part that matters: this runs on
+     * the event thread, and `executePath` blocks until the train arrives.
+     *
+     * @param ui the window, for the model and for the dialogs
+     * @param path the route to take
+     * @param locomotive the train to send
+     * @return the item
+     */
+    private JMenuItem destinationItem(TrainControlUI ui, List<Edge> path, Locomotive locomotive)
+    {
+        JMenuItem item = new JMenuItem("-> " + stationName(path.get(path.size() - 1).getEnd()));
+
+        item.addActionListener(event ->
+        {
+            try
+            {
+                // TODO there is commonality with AutoLocomotiveStatus - reuse code
+                new Thread(() ->
+                {
+                    if (!ui.getModel().getPowerState())
+                    {
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                            this, I18n.t("autolayout.ui.powerOnToStart")));
+                    }
+                    else
+                    {
+                        boolean success = ui.getModel().getAutoLayout().executePath(
+                            path, locomotive, locomotive.getPreferredSpeed(), null
+                        );
+
+                        if (!success)
+                        {
+                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                        }
+                    }
+                }).start();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+
+        return item;
+    }
 }
-   

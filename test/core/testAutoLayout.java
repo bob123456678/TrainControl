@@ -1552,4 +1552,64 @@ public class testAutoLayout
             + "lock edges included.  The ordinary ending clears the map AFTER the release, which is "
             + "where this one clears it now (VD10-A1)");
     }
+
+    /**
+     * The diagram menu's split: what autonomy would choose, and what it never would (FR-058).
+     *
+     * Adam, 2026-09-03: *"show only active stations that can be chosen in full autonomy.  add a menu
+     * called More Destinations and in there, list the points that cannot be chosen in full autonomy
+     * but are still valid.  the current setup lists both in one flat list, which truncates active
+     * stations, which I don't like"*.
+     *
+     * **The cap is why it matters.** The top level shows twelve and then an ellipsis, so a parking
+     * track autonomy will never pick used to cost a line an ordinary platform wanted.
+     *
+     * The menu itself needs a window, so what is asserted here is the predicate the menu splits on -
+     * `isChoosableByAutonomy`, which is also what the "no available paths" window and the diagram's
+     * caption rule ask. If that answer is right, the two lists are right; if it moves, this fails
+     * before the menu does.
+     *
+     * MUTATION: making `isChoosableByAutonomy` ignore `isAutoDestination` puts the parking track in
+     * the top-level list and fails this.
+     */
+    @Test
+    public void testTheDiagramMenuSplitsOnWhatAutonomyWouldChoose() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback ordinary = model.newFeedback(160, null);
+        MarklinFeedback parking = model.newFeedback(161, null);
+        MarklinFeedback shut = model.newFeedback(162, null);
+
+        model.setFeedbackState(ordinary.getName(), false);
+        model.setFeedbackState(parking.getName(), false);
+        model.setFeedbackState(shut.getName(), false);
+
+        Point plain = layout.createPoint("FR058_PLAIN", true, ordinary.getName());
+        Point park = layout.createPoint("FR058_PARK", true, parking.getName());
+        Point off = layout.createPoint("FR058_OFF", true, shut.getName());
+
+        // A station autonomy may pick.
+        assertTrue(layout.isChoosableByAutonomy(plain),
+            "an ordinary active station is not choosable, so the fixture says nothing");
+
+        // One the operator has marked as not an automatic destination - valid to send a train to by
+        // hand, never picked on its own.  This is the case that used to eat a line of the cap.
+        park.setAutoDestination(false);
+
+        assertFalse(layout.isChoosableByAutonomy(park),
+            "a square marked as not an automatic destination is still being offered to autonomy, so "
+            + "the diagram menu would keep it in the capped top-level list (FR-058)");
+
+        // And one switched off, which stays off the menu altogether - Adam's earlier ruling, which
+        // FR-058 does not change: "make the inactive stations disappear from the track diagram menu".
+        off.setActive(false);
+
+        assertFalse(layout.isChoosableByAutonomy(off),
+            "a switched-off square is being offered to autonomy");
+
+        assertFalse(off.isActive(),
+            "the switched-off square is the one the menu drops before the split, so this is the "
+            + "property the drop reads");
+    }
 }
