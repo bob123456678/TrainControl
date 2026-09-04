@@ -2283,25 +2283,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // already skipped the capture silently - blamed the declined edit for it.  The LOSS was true
         // in every one of those; the CAUSE was not, and a message that names the wrong cause sends
         // somebody to look in the wrong place.
-        if (captureSession && setupEditDeclinedDuringRun
-            && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+        // ASKED ONCE (OV2-C5).
+        //
+        // The first version of this wrote the capture's conditions out a second time above it, and the
+        // copy was already short of one term - the original also requires a session.  Two predicates
+        // that have to agree are two predicates that will not: this is the shape the `Destinations`
+        // holder and `barredFromAutonomy` both exist to avoid, one file over.
+        boolean wouldCapture = captureSession && this.activeDiagramConfiguration != null
+            && this.model.hasAutoLayout()
             && this.model.getAutoLayout().isValid()
-            && !this.model.getAutoLayout().isRunning())
+            && !this.model.getAutoLayout().isRunning()
+            && getAutonomySession() != null;
+
+        if (wouldCapture && setupEditDeclinedDuringRun)
         {
             this.model.log("Where each locomotive finished has not been saved, because a setup edit"
                 + " made while autonomy was running could not be applied at the time.  Saving would"
                 + " have written the older layout back over that edit.  The edit itself is safe and"
                 + " will be there next time.");
         }
-        else if (captureSession && this.activeDiagramConfiguration != null
-                && this.model.hasAutoLayout()
-                && this.model.getAutoLayout().isValid()
-                && !this.model.getAutoLayout().isRunning())
+        else if (wouldCapture)
         {
             try
             {
                 org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
+                // `wouldCapture` has already asked this.  Kept because `getAutonomySession()` is not
+                // guaranteed to answer the same way twice, and a null here would be an NPE inside a
+                // try whose catch is about save failures.
                 if (session != null)
                 {
                     // by name: store-active can point elsewhere after a refused load
@@ -5574,6 +5583,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // `sayIfDeclined` is exactly the question "did this door carry an edit", which is why the
         // flag now rides on it rather than on the decline alone.
+        //
+        // ONE FLAG, TWO QUESTIONS, AND WHY THAT IS SAFE HERE (OV2-C2).  `sayIfDeclined` also means
+        // "the operator has not been warned", and the door it excludes - `autonomyEditorClosed()` -
+        // DOES carry edits: closing the track diagram editor is how a geometry change arrives.  What
+        // makes excluding it safe is that it cannot reach here while autonomy is busy: the editor
+        // cannot be opened while a run is going (OB-047), and `refuseWhileEditorOpen()` guards every
+        // door that starts one.  So the decline it would record cannot happen.
+        //
+        // Written down because it was not: a reviewer closed five doors looking for a counter-example
+        // and found none, which is a proof that lives in somebody's head until somebody types it.  If
+        // that guard is ever relaxed, this flag needs its own parameter rather than this one.
         if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
@@ -22554,7 +22574,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     session.setPageExcluded(combined, true);
 
-                    if (session.exists()) session.saveQuietly();
+                    // AND THE ANSWER IS READ HERE TOO (ACC-C6's sweep, found by OV2-C3).
+                    //
+                    // `ACC-C6` gave the undo door the check its sibling had and did not sweep to this
+                    // one - which is the codebase's own fix-one-site-sweep-the-siblings rule, broken
+                    // by the commit that was applying it.  A failed write here means the combined page
+                    // is excluded in memory and not on disk, so the next load offers it to autonomy.
+                    if (session.exists() && !session.saveQuietly() && this.model != null)
+                    {
+                        this.model.log("Could not save the autonomy setup after combining pages, so"
+                            + " the new page may be offered to autonomy the next time the setup is"
+                            + " loaded.");
+                    }
                 }
 
                 // Re-read, so the new page exists as an object with its own file behind it

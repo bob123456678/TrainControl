@@ -1699,30 +1699,42 @@ public class testAutoLayout
         }
     }
     /**
-     * A failure during the LOCK PHASE leaves the train where it is standing (ACC-A1).
+     * A failure during the LOCK PHASE leaves the train where it is standing, and leaves other trains'
+     * claims alone (ACC-A1).
      *
-     * **The release blocker, and until now it was pinned by nothing** - `OPV-B1` found that the gate
-     * could be deleted and all 310 tests still passed.
+     * **The release blocker.  This is the second fixture; the first one passed without reaching the
+     * code it was about** (`OV2-B1`).  It put a `null` into an edge's `lockEdges` on the theory that
+     * `Edge.setOccupied` would throw as it cascaded - and `isPathClear` walks the same list four
+     * statements earlier, so the `NullPointerException` came out THERE, before `takingPath` was
+     * claimed and before anything was locked.  A strictly weaker window, asserted with a javadoc that
+     * told the next reader otherwise.
      *
-     * A throw out of `configureAndLockPath`'s lock loop is already recovered in full: the taken prefix
-     * is released, and `handleMisconfiguredPath` re-reserves the locomotive on the point it never left
-     * (*"Provably at its start"*). It then RETHROWS, and Adam's ruling of 2026-09-03 - *"force a
-     * graceful stop, alert the user, then unlock"* - had `executePath`'s handler unlock the whole path
-     * unconditionally, over the top of that recovery.
+     * The injection that does reach it: a config command mapped to a **null state on an accessory that
+     * exists**.  `isPathClear`'s preview takes `configureEdge`'s `preConfigure != null` arm and
+     * records the command without formatting it, so validation passes; the lock loop then calls
+     * `configureEdge(e, null)`, which reaches `state.toString().toLowerCase()` - inside the try, after
+     * `edgesLocked++`, after `setOccupied()` and after `reserve()`.  `handleMisconfiguredPath` then
+     * genuinely runs.
      *
-     * What that cost: `unlockPath`'s `i == 0` clause cleared the start reservation, so the train stood
-     * on a square the model believed empty and `pickPath` could route another train into it; and every
-     * never-taken edge was released, each cascading to lock edges whose occupancy is a COUNT shared
-     * with other running dispatches.
+     * **The precondition is where the throw came from**, because that is the thing the first fixture
+     * got wrong and no assertion about the outcome could have caught: a stack that never enters
+     * `configureEdge` is not this failure.
      *
-     * **The throw is real rather than simulated.** A null in an edge's `lockEdges` makes
-     * `Edge.setOccupied` throw as it cascades - which happens inside the lock loop, after
-     * `edgesLocked++`, which is precisely the window the recovery was written for.
+     * What the handler used to do over the top of that recovery: `unlockPath`'s `i == 0` clause
+     * cleared the start reservation `handleMisconfiguredPath` had just written, so the train stood on
+     * a square the model believed empty; and every never-taken edge was released, each cascading to
+     * lock edges whose occupancy is a COUNT shared with other running dispatches.
      *
-     * MUTATION, stated exactly: removing the `hadItsPath` gate fails the second assertion; reading it
-     * AFTER the `activeLocomotives.remove` instead of before makes it always false, which is what the
-     * first version of the fix did - and that is caught by
-     * `testAFailedPathStopsTheRunAndGivesTheTrackBack`, not by this.
+     * **Only the first of those two is asserted here, and the second is not testable at this door.**
+     * Making a spurious release observable means giving the untaken edge a claim to lose - and any
+     * claim on it, or on its lock edges, makes `isPathClear` refuse the path, so the lock loop is
+     * never entered and nothing throws.  The fixture and the observation exclude each other.  Said
+     * out loud rather than left as an unasserted sentence in a javadoc, which is how the first
+     * version of this test came to claim more than it checked.
+     *
+     * MUTATION: removing the `hadItsPath` gate fails the second assertion.  Reading the flag after the
+     * `activeLocomotives.remove` rather than before makes it always false, which is caught by
+     * `testAFailedPathStopsTheRunAndGivesTheTrackBack` rather than here.
      */
     @Test
     public void testALockPhaseFailureLeavesTheTrainWhereItStands() throws Exception
@@ -1730,14 +1742,19 @@ public class testAutoLayout
         Layout layout = new Layout(model);
 
         MarklinFeedback from = model.newFeedback(180, null);
-        MarklinFeedback to = model.newFeedback(181, null);
+        MarklinFeedback mid = model.newFeedback(181, null);
+        MarklinFeedback to = model.newFeedback(182, null);
 
         model.setFeedbackState(from.getName(), false);
+        model.setFeedbackState(mid.getName(), false);
         model.setFeedbackState(to.getName(), false);
 
         layout.createPoint("LOCKFAIL_FROM", true, from.getName());
+        layout.createPoint("LOCKFAIL_MID", true, mid.getName());
         layout.createPoint("LOCKFAIL_TO", true, to.getName());
-        layout.createEdge("LOCKFAIL_FROM", "LOCKFAIL_TO");
+
+        layout.createEdge("LOCKFAIL_FROM", "LOCKFAIL_MID");
+        layout.createEdge("LOCKFAIL_MID", "LOCKFAIL_TO");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -1747,39 +1764,57 @@ public class testAutoLayout
 
         java.util.List<Edge> path = new java.util.ArrayList<>();
 
-        path.add(layout.getEdge("LOCKFAIL_FROM", "LOCKFAIL_TO"));
+        path.add(layout.getEdge("LOCKFAIL_FROM", "LOCKFAIL_MID"));
+        path.add(layout.getEdge("LOCKFAIL_MID", "LOCKFAIL_TO"));
 
-        assertNotNull(path.get(0), "the fixture produced no edge, so nothing below is exercised");
+        assertNotNull(path.get(0), "the fixture produced no first edge");
+        assertNotNull(path.get(1), "the fixture produced no second edge");
 
-        // THE THROW, inside the lock loop: setOccupied cascades over lockEdges and this one holds a
-        // null.  Nothing in the tree does this, which is the point - the recovery exists for the
-        // unexpected, and an unexpected failure is what has to be injected to reach it.
-        path.get(0).addLockEdge(null);
+        // An accessory that EXISTS, commanded to a null state.  The preview formats nothing and
+        // passes; the lock loop formats it and throws.
+        MarklinAccessory real = model.newSwitch(190,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+        assertNotNull(model.getAccessoryByName(real.getName()),
+            "the accessory has to exist, or configureEdge refuses in the preview and the lock loop is "
+            + "never reached at all");
+
+        path.get(0).addConfigCommand(real.getName(), null);
+
 
         layout.runLocomotives();
+
+        RuntimeException caught = null;
 
         try
         {
             layout.executePath(path, loc, 20, null);
 
-            fail("the lock loop did not throw, so the handler under test never ran - the fixture no "
-                + "longer reaches the code this is about");
+            fail("the lock loop did not throw, so the handler under test never ran");
         }
         catch (RuntimeException expected)
         {
-            // Rethrown deliberately: executeTimetable's retry loop depends on it.
+            caught = expected;
         }
 
-        // THE PRECONDITION, so a passing assertion below cannot come from the train never having been
-        // placed at all.
+        // WHERE IT THREW, which is the whole of what the first fixture got wrong.
+        java.io.StringWriter trace = new java.io.StringWriter();
+
+        caught.printStackTrace(new java.io.PrintWriter(trace));
+
+        assertTrue(trace.toString().contains("configureEdge"),
+            "the failure did not come out of the lock loop, so this is a weaker window than ACC-A1 is "
+            + "about and the assertions below prove less than they say.  Stack was:" + trace);
+
         assertFalse(layout.isRunning(),
             "the run did not stop itself, so this is not the state the handler leaves behind");
 
         assertEquals(start.getCurrentLocomotive(), loc,
-            "the failed locomotive was erased from the model.  configureAndLockPath had already "
-            + "released what it took and re-reserved the train on the point it never left; the "
-            + "handler then unlocked the WHOLE path over the top of that recovery, and unlockPath's "
-            + "i == 0 clause cleared the start.  The train is standing on a square the model believes "
-            + "is empty, so pickPath can route another train into it (ACC-A1)");
+            "the failed locomotive was erased from the model.  configureAndLockPath had released what "
+            + "it took and re-reserved the train on the point it never left; the handler then "
+            + "unlocked the WHOLE path over the top of that, and unlockPath's i == 0 clause cleared "
+            + "the start.  The train stands on a square the model believes is empty, so pickPath can "
+            + "route another train into it (ACC-A1)");
+
     }
 }

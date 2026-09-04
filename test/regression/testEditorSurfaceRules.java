@@ -2957,4 +2957,61 @@ public class testEditorSurfaceRules
 
         return out;
     }
+    /**
+     * Every door that saves the setup reads whether the save worked (ACC-C6, swept by OV2-C3).
+     *
+     * `saveQuietly()` returns false rather than throwing - that is the whole of what "quietly" means -
+     * so a caller that discards the answer turns a failed write into silence. **Disk is authoritative
+     * after the session rebuild**, so what comes back on the next load is the state the failed write
+     * was meant to replace: an undo that does not stick, a page excluded in memory and offered to
+     * autonomy on disk.
+     *
+     * `ACC-C6` found one such door and fixed it. It did not sweep, and `OV2-C3` found a third the same
+     * day - which is this codebase's own fix-one-site-sweep-the-siblings rule being broken by the
+     * commit that was applying it. **This rule exists so the sweep is not a matter of remembering.**
+     *
+     * Read from source because the alternative is making a real write fail, which needs a window and
+     * an unwritable file. What is pinned is that the answer is CONSULTED - which is exactly what was
+     * missing at all three sites.
+     *
+     * MUTATION: dropping the `!` from any call site fails this.
+     */
+    @Test
+    public void testEverySaveOfTheSetupReadsWhetherItWorked() throws Exception
+    {
+        java.util.List<String> silent = new java.util.ArrayList<>();
+
+        for (java.io.File source : new java.io.File[]{
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java"),
+            new java.io.File("src/org/traincontrol/gui/LayoutEditor.java"),
+            new java.io.File("src/org/traincontrol/gui/AutonomyEditorPanel.java"),
+            new java.io.File("src/org/traincontrol/gui/AutonomyViewerPanel.java")})
+        {
+            if (!source.isFile()) continue;
+
+            String body = withoutComments(new String(
+                java.nio.file.Files.readAllBytes(source.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8));
+
+            for (int at = body.indexOf("saveQuietly()"); at >= 0;
+                at = body.indexOf("saveQuietly()", at + 1))
+            {
+                // The statement this call sits in, back to the previous one.
+                int from = Math.max(0, body.lastIndexOf(';', at) + 1);
+
+                String statement = body.substring(from, at);
+
+                if (!statement.contains("!"))
+                {
+                    silent.add(source.getName() + ": " + statement.trim() + "saveQuietly()");
+                }
+            }
+        }
+
+        assertEquals(silent, new java.util.ArrayList<String>(),
+            "a door saves the autonomy setup and discards the answer.  saveQuietly returns false "
+            + "instead of throwing, and disk is authoritative after the session rebuild - so a failed "
+            + "write there is silent, and what comes back next load is the state the write was meant "
+            + "to replace (ACC-C6, OV2-C3): " + silent);
+    }
 }

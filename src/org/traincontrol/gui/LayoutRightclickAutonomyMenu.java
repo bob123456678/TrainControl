@@ -472,37 +472,36 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             add(more);
 
-                            // AND THE WAY OUT, UNDER THE HEADING RATHER THAN ABOVE IT (ACC-C10,
-                            // placed here by OPV-C4).
-                            //
-                            // The ellipsis is built inside the loop over `paths`, so an empty base
-                            // list never reached it - and that is the case it is most needed in: a
-                            // train whose every choosable destination is switched off or excludes it
-                            // gets a bare *More Destinations* and no route to the tab that would
-                            // explain why.
-                            //
-                            // The first placement put it ABOVE the separator and the locomotive's
-                            // name, so it sat under whatever preceded the menu and read as belonging
-                            // to that.  Here it is the last item under this train's own heading,
-                            // which is where the in-loop one sits too.
-                            if (paths.isEmpty() && possible > otherPaths.size())
+                        }
+
+                        // AND THE WAY OUT (ACC-C10; placed by OPV-C4, corrected by OV2-C1).
+                        //
+                        // Three placements before this one held.  Inside the loop over `paths` it
+                        // could never fire on an empty base list.  Above the separator it read as
+                        // belonging to whatever preceded the menu.  Inside the `otherPaths` branch it
+                        // vanished again in the one case `ACC-C10` is about: BOTH lists empty, every
+                        // destination filtered away, and no route to the tab that would explain why.
+                        //
+                        // Out here it fires whenever anything at all was left out, whichever list is
+                        // empty - and the heading above is added when the base list is empty, so it
+                        // still lands under this train's own name when there is one.
+                        if (paths.isEmpty() && possible > otherPaths.size())
+                        {
+                            JMenuItem wayOut = new JMenuItem("...");
+
+                            wayOut.addActionListener(event ->
                             {
-                                JMenuItem wayOut = new JMenuItem("...");
-
-                                wayOut.addActionListener(event ->
+                                try
                                 {
-                                    try
-                                    {
-                                        ui.jumpToAutonomyLocTab();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        JOptionPane.showMessageDialog(this, e.getMessage());
-                                    }
-                                });
+                                    ui.jumpToAutonomyLocTab();
+                                }
+                                catch (Exception e)
+                                {
+                                    JOptionPane.showMessageDialog(this, e.getMessage());
+                                }
+                            });
 
-                                add(wayOut);
-                            }
+                            add(wayOut);
                         }
                     }
 

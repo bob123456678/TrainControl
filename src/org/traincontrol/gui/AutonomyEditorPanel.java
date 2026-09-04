@@ -6455,7 +6455,7 @@ public class AutonomyEditorPanel extends JPanel
             // This is the door where a decline is a surprise.  The edit was made against a railway
             // that was not running - the editor's other doors warn about that when it is - and the
             // rebuild is posted one event later, so a run starting in between throws the edit away.
-            // `TrainControlUI:5566` passes false because it has already said it.
+            // `TrainControlUI.autonomyEditorClosed()` passes false because it has already said it.
             if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup(true);
         });
     }
