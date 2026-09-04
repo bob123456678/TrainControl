@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import io
 import itertools
+import os
 import json
 import sys
 
@@ -163,7 +164,20 @@ def main(argv):
 
     identical = sum(1 for _, s in same if s)
 
-    print("conditions compared:      %d" % (len(same) + len(different)))
+    compared = len(same) + len(different)
+
+    # A FLOOR, because zero compared is not zero different (VD10-B5).
+    #
+    # The driver skips a route with no "conditions" key, writes its file even when that is no lines,
+    # and exits 0 whatever happens.  So a routes.json in a shape this does not recognise - a renamed
+    # key, a different wrapper - produced "NOT equivalent: 0" and a passing section, having read
+    # nothing.  The test beside this one has carried the same floor since it was written, and says
+    # why: "a green result here would mean nothing".
+    #
+    # Overridable for a deliberately small corpus, and loud when it bites.
+    floor = int(os.environ.get("TC_CONDITION_FLOOR", "20"))
+
+    print("conditions compared:      %d" % compared)
     print("logically equivalent:     %d" % len(same))
     print("  of which byte-identical:%d" % identical)
     print("  of which reshaped:      %d" % (len(same) - identical))
@@ -182,6 +196,16 @@ def main(argv):
 
     for name in only_one:
         print("  ONE SIDE ONLY: %s" % name)
+
+    if compared < floor:
+        print("")
+        print("*** ONLY %d CONDITION(S) WERE COMPARED, WHICH IS FEWER THAN %d ***" % (compared, floor))
+        print("")
+        print("So this section has not checked what it says it checked.  Either the routes file is in")
+        print("a shape ConditionParityDriver does not recognise, or it is the wrong file.  Set")
+        print("TC_CONDITION_FLOOR if the corpus really is this small.")
+
+        return 2
 
     return 1 if (different or unreadable or only_one) else 0
 

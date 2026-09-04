@@ -5109,6 +5109,28 @@ public class Layout
                 // `unlockPath` consults `clearedEdges` for the edges the tail gave up early, so it has
                 // to run while that map still has them - exactly as `executePathInternal`'s ordinary
                 // ending does.  The clear follows it here for the same reason it follows it there.
+                // THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1).
+                //
+                // Adam's ruling is "force a graceful stop, alert the user, then unlock", and this used
+                // to do the first two for AUTONOMY and leave the failed locomotive under power until
+                // after the release.  `stopLocomotives()` above sets `running = false` and nothing
+                // else; the only thing that stops THIS train is the line below.
+                //
+                // It matters because the release is not instantaneous: `unlockPath` is synchronized on
+                // the layout monitor, and `configureAndLockPath` holds that monitor "for seconds on a
+                // long path" - so a hand dispatch happening at the same moment could keep this train
+                // running on track the model had just declared free.
+                //
+                // Guarded so that a second failure here cannot replace the exception that actually
+                // explains what went wrong.
+                try
+                {
+                    loc.setSpeed(0);
+                }
+                catch (RuntimeException stopFailure)
+                {
+                    this.control.log(stopFailure);
+                }
                 synchronized (this.activeLocomotives)
                 {
                     this.unlockPath(path, loc);
@@ -5123,17 +5145,6 @@ public class Layout
                 // never.  notifyAll inside releases anyone already waiting.
                 updatePendingS88(loc, null);
 
-                // Stopping matters more than the bookkeeping: the locomotive is somewhere on the path with
-                // nothing left tracking it.  Guarded so that a second failure here cannot replace the
-                // exception that actually explains what went wrong.
-                try
-                {
-                    loc.setSpeed(0);
-                }
-                catch (RuntimeException stopFailure)
-                {
-                    this.control.log(stopFailure);
-                }
 
                 this.control.log(e);
 

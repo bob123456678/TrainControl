@@ -58,10 +58,13 @@ useful for driving a single class while iterating. But it is weaker than `batter
 matter: a class that skips every test in it (via a `SkipException`, or a `@BeforeClass` failure) reads as
 green to `ant test`, where `battery.sh` classifies "0 passed, N skipped" separately and fails on it; and
 `battery.sh` fingerprints `cs2_sample_layout` before and after the whole run and shouts if anything wrote
-to it, which `ant test` has no way to do. `battery.sh` also sets the
+to it, which `ant test` has no way to do. Both set the
 `-Dtraincontrol.anyReceivePort=true` system property that lets tests share a machine without binding the
-same UDP port; `ant test` does not, so a class whose `@BeforeClass` fails to bind can silently test
-nothing. Use `ant test` (or the scratchpad runners below) for a fast loop on the classes you are
+same UDP port - `ant test` through `build.xml`'s `test-sys-prop.traincontrol.anyReceivePort`, which
+the TestNG macro turns into a `-D` on the fork. **This paragraph said `ant test` does not, and that
+stopped being true on 2026-09-03** (`TSX-C20`, and `VD10-B7` for the fact that the correction was
+dispositioned without being made). What `ant test` still cannot be given is `-Xmx` and the
+skipped-class rule; `build.xml` says why at the property. Use `ant test` (or the scratchpad runners below) for a fast loop on the classes you are
 changing, but treat `docs/tools/battery.sh` as the one that actually has to pass.
 
 While iterating, the scratchpad holds two scripts that run classes in their own JVMs and print one line

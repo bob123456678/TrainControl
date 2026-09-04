@@ -1383,6 +1383,20 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Whether the last rename or deletion failed to reach the pre-edit note (VD10-B6).
+     *
+     * The note is a recovery aid rather than the setup, so a failure here is not fatal - but it means
+     * the revert on the next start would put a locomotive name back that the database no longer has,
+     * which `parseAuto` refuses.  Recorded rather than logged because this class has no logger, in the
+     * same shape as the migration's own failure list.
+     */
+    private boolean noteRepairFailed;
+
+    public boolean didTheNoteRepairFail()
+    {
+        return noteRepairFailed;
+    }
+    /**
      * Follows a locomotive's new name into the pre-edit note on disk (SVN-B9).
      *
      * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the in-memory snapshot Cancel
@@ -1434,17 +1448,45 @@ public class AutonomyCompanionStore
         // Torn writes are acceptable here for forgetBeforeEdit's reason: a half-written note fails
         // unfinishedEdit's shape check, so it is refused, kept and reported - and a refused note is
         // exactly as harmless as the repaired one this is trying to leave.
+        // SERIALISED BEFORE THE STREAM IS OPENED (VD10-B6).
+        //
+        // `new FileOutputStream` truncates at open, and `toString(2)` throws JSONException - a
+        // RuntimeException - so building the text inside the try meant a serialisation failure left a
+        // ZERO-BYTE note.  The `Files.move(REPLACE_EXISTING)` this replaced could not do that: it
+        // either replaced the note or left the old one whole.
+        //
+        // The note is the operator's pre-edit snapshot, so destroying it destroys the revert.  Doing
+        // the work that can throw before anything is opened costs one local and removes that case
+        // entirely.
+        byte[] bytes;
+
+        try
+        {
+            bytes = note.toString(2).getBytes(StandardCharsets.UTF_8);
+        }
+        catch (RuntimeException couldNotSerialise)
+        {
+            noteRepairFailed = true;
+
+            return;
+        }
+
         try (java.io.FileOutputStream out = new java.io.FileOutputStream(beforeEditFile()))
         {
-            out.write(note.toString(2).getBytes(StandardCharsets.UTF_8));
+            out.write(bytes);
 
             out.flush();
         }
         catch (IOException | RuntimeException couldNotWrite)
         {
-            // Nothing to do but leave it: the note still names the old locomotive, which is the state
-            // before this repair existed, and unfinishedEdit's own checks are what stand between that
-            // and a bad revert.
+            // SAID, not swallowed (VD10-B6).  `VD9-C9`'s own stated minimum was that a failed write
+            // deserves what `dispose()` gives a failed delete, and this class has no logger - so it
+            // records it the way it records a failed migration, for whoever opened the session.
+            //
+            // A torn write here is survivable for `forgetBeforeEdit`'s reason: a half-written note
+            // fails `unfinishedEdit`'s shape check, so it is refused and reported rather than applied.
+            // What is lost is the revert, which is why it is worth saying.
+            noteRepairFailed = true;
         }
     }
 

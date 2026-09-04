@@ -1410,6 +1410,14 @@ public class testAutoLayout
         assertFalse(layout.getActiveLocomotives().containsKey(loc),
             "the locomotive is still registered as active, so isRunning() stays true for the rest of "
             + "the session and every guard built on it stands down");
+
+        assertEquals(loc.getSpeed(), 0,
+            "the locomotive that failed is still under power.  Adam’s ruling is \"force a graceful "
+            + "stop, alert the user, then unlock\", and stopLocomotives() only sets running = false - "
+            + "the only thing that stops THIS train is setSpeed(0), and it used to run after the "
+            + "release.  unlockPath is synchronized on the layout monitor, which "
+            + "configureAndLockPath holds for seconds on a long path, so the train could keep "
+            + "running on track the model had just declared free (VD10-B1)");
     }
 
     /**
