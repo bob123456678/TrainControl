@@ -5097,8 +5097,23 @@ public class Layout
                 // written out at the lookup itself: "the second release would take away a claim
                 // somebody else made in between".  `atomicRoutes` is false on the operator's own
                 // configuration, so this is the live branch rather than the theoretical one.
+                // WHETHER THIS LOCOMOTIVE EVER GOT ITS PATH, read BEFORE the removal below (ACC-A1).
+                //
+                // A locomotive joins `activeLocomotives` only after `configureAndLockPath` has
+                // returned (`:5373`), so its membership is exactly the question "did the lock phase
+                // succeed" - and the release further down needs the answer.  Asked after the removal
+                // it is always false, which is how the first version of this gate stopped the release
+                // happening at all: `testAFailedPathStopsTheRunAndGivesTheTrackBack` caught it.
+                //
+                // The same shape as `stopLocomotives()` clearing `running` before anything can ask
+                // whether a run was going.  A fact a recovery destroys has to be captured before the
+                // recovery starts.
+                final boolean hadItsPath;
+
                 synchronized (this.activeLocomotives)
                 {
+                    hadItsPath = this.activeLocomotives.containsKey(loc);
+
                     this.activeLocomotives.remove(loc);
                     this.locomotiveMilestones.remove(loc);
                 }
@@ -5177,7 +5192,33 @@ public class Layout
                 }
                 synchronized (this.activeLocomotives)
                 {
-                    this.unlockPath(path, loc);
+                    // ONLY A PATH THIS LOCOMOTIVE ACTUALLY GOT (ACC-A1).
+                    //
+                    // Adam's ruling of 2026-09-03 - "force a graceful stop, alert the user, then
+                    // unlock" - was made about a failure MID-RUN, and this handler also catches a
+                    // failure from the LOCK PHASE, which is a different thing wearing the same
+                    // exception.
+                    //
+                    // `configureAndLockPath` already recovers that case completely: it releases the
+                    // prefix it took, and `handleMisconfiguredPath` re-reserves the locomotive on the
+                    // point it never left (`:3232`, "Provably at its start").  Then it rethrows, and
+                    // this handler used to unlock the WHOLE path over the top of that recovery -
+                    // clearing the start reservation at `unlockPath`'s `i == 0` clause, so the train
+                    // stood on a square the model believed empty and `pickPath` could route another
+                    // train into it; and releasing edges that were never taken, each cascading to its
+                    // lock edges, whose occupancy is a COUNT shared with other running dispatches.
+                    //
+                    // `activeLocomotives` is the discriminator already in hand: a locomotive joins it
+                    // only after `configureAndLockPath` has returned (`:5373`), so its absence here
+                    // means the lock phase is what threw and has already cleaned up after itself.
+                    //
+                    // The comment at `:2923` promised this - "it went straight out to executePath's
+                    // handler, which deliberately does not unlock" - and stopped being true on
+                    // 2026-09-03.  It is true again.
+                    if (hadItsPath)
+                    {
+                        this.unlockPath(path, loc);
+                    }
 
                     this.clearedEdges.remove(loc);
                 }

@@ -3949,6 +3949,18 @@ public class LayoutEditor extends PositionAwareJFrame
         clearBordersFromChildren(this.newComponents);
 
         if (this.grid != null) clearBordersFromChildren(this.grid.getContainer());
+
+        // AND THE AXIS NUMBERS, which follow the grid now (OB-172, Adam 2026-09-04).
+        //
+        // This method rewrote the CELL borders and nothing else, so the ruler round the outside kept
+        // whatever it was given when the diagram was last built.  His report: "axis numbers do not
+        // appear until after an editor reopen if the grid isn't on beforehand" and "toggling the grid
+        // does not hide the numbers" - one cause, both directions.
+        //
+        // A full redraw rather than reaching into the grid to swap one border: the ruler is built from
+        // the diagram's offsets and dimensions, which live in `drawGrid`, and duplicating that here is
+        // how the two come to disagree.
+        drawGrid();
     }
 
     /**

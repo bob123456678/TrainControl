@@ -359,6 +359,45 @@ that does raise it properly. So one window had two doors that behaved differentl
 
 *Run against the next release candidate.*
 
+**Adam, 2026-09-04 (triage).** Does not work.
+
+windows work.
+
+axis numbers do not appear until after an editor reopen if the grid isn't on beforehand.  afer being turned on, I still don't see 0,1,3,11 on the Y axis.
+
+toggling the grid does not hide  the numbers
+
+**Answered 2026-09-04. One of the three is fixed, one is now understood, and one I am not going to
+guess at a third time.**
+
+**"windows work"** - OB-173 closed. Nothing more needed there.
+
+**"toggling the grid does not hide the numbers"** and **"axis numbers do not appear until after an
+editor reopen if the grid isn't on beforehand"** are one fault and it is fixed. `setShowGrid` rewrote
+the CELL borders and nothing else, so the ruler round the outside kept whatever it was given when the
+diagram was last built - which is why the setting only took effect on a rebuild, in both directions.
+It redraws the grid now.
+
+**"I still don't see 0,1,3,11 on the Y axis"** - still open, and my fix was aimed at the wrong cause.
+
+I had assumed the label was lost because the one square the ruler measures was missing. **Measured on
+your own `1 - Main` and that is not it**: of rows 1 to 14, exactly one - row 12 - has nothing in its
+first three columns, and the rows you lost are 0, 1, 3 and 11. So the squares are there and something
+else is dropping the numbers.
+
+The remaining candidate in the code is the skip that protects against an overhanging number:
+`paintBorder` drops a row's label when `metrics.getHeight() > cell.height`, which compares the full
+line height - ascent, descent and leading - against the square. But I have now been wrong about this
+twice, and guessing a third time costs you another test run.
+
+**What would settle it in one look.** When it next happens, tell me whether the missing numbers are
+the rows whose squares are visibly SHORTER than the others - a row carrying only a text label, say -
+or whether they look the same height as the rows that kept their numbers. That single observation
+separates the two remaining explanations, and I will build the fix against whichever it is rather than
+against my best guess.
+
+*Run against commit 409d4ce8, build\classes, compiled 04 Sep 03:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-065"></a>
