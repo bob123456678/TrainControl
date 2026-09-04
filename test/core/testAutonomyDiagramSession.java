@@ -1291,14 +1291,18 @@ public class testAutonomyDiagramSession
         //
         // The counters are per-open, not cumulative: a session that reported the same pages every
         // time it was opened would put the notice in front of a user whose files nothing had touched.
-        AutonomySession again = new AutonomySession(layout);
-        again.open(Arrays.asList(page));
+        //
+        // ON THE SAME SESSION, which is the only version of this that can fail (VD9-C19).  A brand-new
+        // AutonomySession has empty counters before open() has run at all, so asking a fresh one
+        // stayed green with the reset removed - it was asserting the constructor, not the reset.
+        reopened.open(Arrays.asList(page));
 
-        assertTrue(again.getMigratedPages().isEmpty(),
-            "a second open reports the first one's work, so the notice appears at every start-up "
-            + "instead of the once after the upgrade: " + again.getMigratedPages());
+        assertTrue(reopened.getMigratedPages().isEmpty(),
+            "the second open on this session still reports the first one's work, so the notice "
+            + "appears at every start-up instead of the once after the upgrade: "
+            + reopened.getMigratedPages());
 
-        assertEquals(again.getMigratedCaptions(), 0, "and so does the count");
+        assertEquals(reopened.getMigratedCaptions(), 0, "and so does the count");
     }
 
     /**
@@ -4647,10 +4651,12 @@ public class testAutonomyDiagramSession
      * deleted platform back with no name on it.
      *
      * Driven through session.snapshotPage/restorePage, which is what LayoutEditor.java:325-354 actually
-     * calls.  captionsOnPage/restoreCaptionsOnPage look like the same feature - same javadoc claim, same
-     * shape - but are a second, parallel implementation with no caller anywhere in src/; they round-trip
-     * against themselves and would stay green even if AutonomyCompanionStore.kept() stopped carrying
-     * captions through the real snapshot.  MUTATION this catches: remove "captions" from kept()
+     * calls.  captionsOnPage/restoreCaptionsOnPage looked like the same feature - same javadoc claim,
+     * same shape - but were a second, parallel implementation that round-tripped against themselves and
+     * would have stayed green even if AutonomyCompanionStore.kept() stopped carrying captions through
+     * the real snapshot.  restoreCaptionsOnPage was deleted as uncalled (REL-C15); captionsOnPage has
+     * one caller, LayoutEditor.forgetCaptionsOutsideThePage, which wants the keys and not the round
+     * trip (VD9-C16).  MUTATION this catches: remove "captions" from kept()
      * (AutonomyCompanionStore.java:4354) - restorePage then puts the plaque's TILE back with no name on
      * it, which is the defect this class exists to prevent.
      */
@@ -4720,7 +4726,8 @@ public class testAutonomyDiagramSession
      *
      * The editor works on one page, so restoring every caption in the setup would undo work done
      * somewhere it was never looking.  Driven through snapshotPage/restorePage for the same reason as
-     * the two tests above - captionsOnPage's own page filter has no caller outside these tests.
+     * the two tests above.  captionsOnPage's page filter has one caller in src/ -
+     * LayoutEditor.forgetCaptionsOutsideThePage - and it is not an undo path (VD9-C16).
      */
     @Test
     public void testACaptionSnapshotIsPerPage() throws Exception

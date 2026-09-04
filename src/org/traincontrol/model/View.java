@@ -95,7 +95,8 @@ public interface View
      * that a route cut the power.
      *
      * Only asked when a person started the route - the routes tab or the diagram's route tile. The
-     * s88 trigger door has nobody to ask and stops on its own.
+     * s88 trigger door has nobody to ask, so it sets none of its accessories and runs the rest
+     * (RGN-B2, VD9-C18 - this said "stops on its own", and the route does not stop).
      *
      * Adam, 2026-08-25, choosing between three ways of handling the case: "ask me, at the two human
      * doors". The alternative he turned down was letting the route finish and merely logging it,

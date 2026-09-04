@@ -296,7 +296,7 @@ that his captions sit where I think they do — MT-242 asks him to look.
 
 | | |
 |---|---|
-| **Disposition** | reported; the four new journeys need a person, which is [MT-083](../manual-tests/tests.md#mt-083) |
+| **Disposition** | closed - MT-083 did the person-half; the comparison was re-run on 2026-09-03 and reproduces |
 | **Raised by** | Adam - "make sure it is properly tested against the 2.8.1 test harness for regression" |
 
 `docs/tools/parity/` had already been run, on 2026-08-29, and its report was sitting unread. Its
@@ -371,6 +371,34 @@ him:
 ```bash
 sh docs/tools/parity/setup-env.sh && sh docs/tools/parity/run.sh
 ```
+
+**RUN, 2026-09-03 19:2x, against `dist/TrainControl.jar` of that day.** Adam closed TrainControl; the
+port came free and both scripts completed. The report is copied to
+`docs/reviews/2026-09-03-parity-report.md` so it stops being a file outside the repository that the
+next run overwrites.
+
+**It reproduces 2026-08-29 exactly, which is the answer this finding wanted.**
+
+| | 2026-08-29 | 2026-09-03 |
+|---|---|---|
+| destinations lost | none | **none** (7, 11, 11, 16 per train) |
+| routes missing or reduced | 4 | **4** |
+| concurrency pairs lost | none | **none** (27 judgeable) |
+| routes 3.0.0 adds | - | 28 |
+
+And the four are the four this document already explains. `BottomInner -> Tunnel` is the one the
+parity README lists as still open. The other three are `BottomMainA/B/C -> BottomSecondary`, and they
+are **variant-identity, not capability**: 3.0.0 offers that journey from all three - `v3_0_0.tsv` has
+two PATH rows for PARITY-901 to `BottomSecondary` - but by a different route, because 2.8.1's variants
+run through `BottomSecondaryPre` and `TopMainR2Bypass`, helper points that exist only to make the
+hand-built model work and that the parity README already excludes as expected.
+
+So the headline number is the same and means the same thing it did: **counted as journeys, nothing is
+lost.** That also settles the sentence in this finding that said `BottomMainA -> BottomSecondary` is
+offered by both engines - it still is.
+
+**Section 4 is still empty and always will be here.** The timed run needs a real Central Station;
+simulate mode says so itself. Sections 1-3 do not depend on it.
 
 The side note is fixed regardless. `docs/tools/parity/README.md:102` said `Layout.pathPreference` is
 static and is loaded only by the window's menu builder; at HEAD it is a `private volatile` instance

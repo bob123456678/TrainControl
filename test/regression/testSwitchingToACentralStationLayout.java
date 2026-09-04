@@ -1116,7 +1116,12 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A sandbox that is opened is a sandbox that gets put back, on every path (TSX-B8).
+     * A sandbox is opened inside a `try` (TSX-B8).
+     *
+     * **That is what this checks, and it is weaker than "closed on every path", which is what it used
+     * to be called** (`VD9-C15`). An open inside a `try` whose handler closes nothing would pass. What
+     * the shape buys is that there IS a handler to put the close in, and that the close cannot be
+     * skipped by an early return between the two - which is how all eight offenders failed.
      *
      * `close()` is what returns the layout preference to whatever the operator had, and the
      * preference is machine-global: a run that does not close leaves TrainControl opening a folder
@@ -1137,7 +1142,7 @@ public class testSwitchingToACentralStationLayout
      * MUTATION: moving any of these opens back above its `try` fails this.
      */
     @Test
-    public void testEverySandboxIsClosedOnEveryPath() throws Exception
+    public void testEverySandboxIsOpenedInsideATry() throws Exception
     {
         java.util.List<String> offenders = new java.util.ArrayList<>();
 

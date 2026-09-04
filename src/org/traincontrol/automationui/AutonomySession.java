@@ -149,12 +149,16 @@ public class AutonomySession
     /**
      * Every caption on one page, as a snapshot something else can hold and hand back.
      *
-     * For the track diagram editor's undo.  A caption belongs to the setup rather than to the tile, so
-     * it does not ride the editor's snapshot of components - and the editor moves and deletes captions
-     * as tiles are moved and deleted, which left Ctrl+Z restoring the tile and not the name on it.
+     * **Not the editor's undo, which is what this used to say** (`VD9-C16`). That is
+     * `snapshotPage`/`restorePage`, through the companion store; this method and its partner were a
+     * second, parallel implementation of the same idea, and the partner - `restoreCaptionsOnPage` -
+     * was deleted as uncalled by `REL-C15`.
      *
-     * By page, because that is what an editor session is about, and because restoring captions for
-     * squares on pages nobody was editing would undo somebody else's work.
+     * What is left has one caller: `LayoutEditor.forgetCaptionsOutsideThePage`, the `RC-B1` cleanup
+     * that runs when a page is shrunk and drops the captions now off the edge. It wants the keys and
+     * not the round trip, which is why only half of the pair survived.
+     *
+     * By page, because that is what the caller is about.
      *
      * @param page the page name
      * @return caption square to station square, for that page only
@@ -1832,6 +1836,9 @@ public class AutonomySession
 
         if (found.isEmpty()) return new ArrayList<>();
 
+        // How many captions each page gave up, so the total can follow the writes (VD9-C20).
+        Map<LayoutDiagram, Integer> takenFrom = new LinkedHashMap<>();
+
         for (Map.Entry<LayoutDiagram, List<LayoutDiagramComponent>> entry : found.entrySet())
         {
             for (LayoutDiagramComponent component : entry.getValue())
@@ -1849,7 +1856,15 @@ public class AutonomySession
 
                     migrated = true;
 
-                    migratedCaptions++;
+                    // COUNTED PER PAGE, and added to the total only once that page has been written
+                    // (VD9-C20).  The count and the page list are printed in one sentence - "(N of
+                    // them) ... removed from these page files: ..." - and this used to increment here,
+                    // before any page was saved.  A page whose write threw put its captions inside the
+                    // count while the page itself was absent from the list and its labels were still
+                    // on disk, so the two halves of that sentence described different sets.
+                    Integer soFar = takenFrom.get(entry.getKey());
+
+                    takenFrom.put(entry.getKey(), soFar == null ? 1 : soFar + 1);
                 }
             }
         }
@@ -1910,6 +1925,10 @@ public class AutonomySession
                 entry.getKey().saveChanges(null, false);
 
                 migratedPages.add(entry.getKey().getName());
+
+                Integer took = takenFrom.get(entry.getKey());
+
+                if (took != null) migratedCaptions += took;
             }
             catch (Exception e)
             {

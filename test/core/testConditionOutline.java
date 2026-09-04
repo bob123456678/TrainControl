@@ -438,8 +438,14 @@ public class testConditionOutline
      * "could happen" rather than "does happen", which is why the finding graded it B.
      *
      * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this. The two
-     * are the same number for every outline that steps down one level at a time, which is why this
-     * needed a shape the editor itself cannot produce.
+     * are the same number wherever the run begins exactly one level deeper, which is why this needed a
+     * shape whose depths step by two.
+     *
+     * **That shape does not need a bracket** (`VD9-C2`). `Or(And(Or(1,2), 4), 3)` has no `NodeGroup`
+     * anywhere and comes back as `or(or(or(1,2),4),3)` under the old reader - the same lost AND. The
+     * family is a cross-operator child that is itself the left child of a cross-operator parent: two
+     * alternations in a row down the left spine, each bumped by `writeChild`, both written before the
+     * outer joiner. One alternation is safe.
      */
     @Test
     public void testABracketAfterTheStartSurvivesBeingShownAsAnOutline()
@@ -460,6 +466,44 @@ public class testConditionOutline
             "the condition means something different after being shown as an outline and read back "
             + "- and the difference is an AND that became an OR, so the route fires on any of four "
             + "sensors instead of on 3, or on 4 together with one of 1 and 2 (IPR-B2)");
+    }
+
+    /**
+     * The same defect with no bracket anywhere in the tree (`IPR-B2`, widened by `VD9-C2`).
+     *
+     * `(1 or 2) and 4, or 3` - as a tree, `Or(And(Or(1,2), 4), 3)`. No `NodeGroup`, and it fails the
+     * same way: `or(or(or(1,2),4),3)` under the old reader, with the AND gone.
+     *
+     * **This is the case that says what the family really is.** The first version of this fix was
+     * written up as being about *a bracket in a non-leading position*, and a bracket is only one way
+     * to arrive: the step is two whenever a cross-operator child is itself the left child of a
+     * cross-operator parent, because `writeChild` bumps each of them and the left spine is written
+     * before the outer joiner. One alternation is safe - `Or(And(a,b), c)` steps 1,1,1,0,0 and always
+     * read correctly. Two in a row is not.
+     *
+     * It also matters for who is at risk. Screened on the author's own `routes.json` for **this**
+     * shape rather than for `NodeGroup`, all 39 conditions come back clean - but the two earlier
+     * screens asked the wrong question and happened to reach the same answer.
+     *
+     * MUTATION: reading a deeper run at `row.getDepth()` fails this exactly as it fails the case above.
+     */
+    @Test
+    public void testTwoOperatorChangesInARowSurviveWithNoBracketAtAll()
+    {
+        NodeExpression original = new NodeOr(
+            new NodeAnd(new NodeOr(sensor(1), sensor(2)), sensor(4)),
+            sensor(3));
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(original);
+
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "a condition that came from a real route must not open flagged: "
+            + ConditionOutline.problems(shown));
+
+        assertEquals(meaning(ConditionOutline.toExpression(shown)), meaning(original),
+            "two operator changes in a row down the left spine lost the inner one, and there is no "
+            + "bracket in this tree - so the population at risk is not 'routes with a NodeGroup', "
+            + "which is what the finding and its first disposition both said (VD9-C2)");
     }
 
     /**

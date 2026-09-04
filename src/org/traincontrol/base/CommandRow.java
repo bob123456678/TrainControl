@@ -233,14 +233,18 @@ public final class CommandRow
             case LOCOMOTIVE_SPEED: return "0";
             case FUNCTION: return "0:off";
 
-            // A sensor number, and this method has none to give (REL-C13).
+            // AUTO_LOCOMOTIVE never reaches here, and this arm is kept only to say so (REL-C13,
+            // VD9-C13).
             //
-            // The argument here used to be that refusing is better than offering sensor 1 to somebody
-            // who did not choose it.  That decision was reversed by `ef33f4a8` and the sentence was
-            // left standing: `RouteEditorFrame:3419` offers exactly sensor 1, by name, on the
-            // condition side.  It does it there rather than here because the two sides want different
-            // answers - a COMMAND row of this kind is still refused until a sensor is typed - so what
-            // is left is a genuinely empty default, not a policy.
+            // The argument that used to stand here was that refusing is better than offering sensor 1
+            // to somebody who did not choose it.  That decision was reversed by `ef33f4a8`: the editor
+            // offers exactly sensor 1, by name, on the condition side.
+            //
+            // The replacement sentence was wrong too - it claimed a COMMAND row of this kind is
+            // refused until a sensor is typed, and there is no such state.  `canBeACommand` excludes
+            // the kind outright, the commands dropdown is built from that predicate, and the Kind cell
+            // is read-only on a row that already exists.  So this case is unreachable and identical to
+            // `default`; it stays as the place that record lives.
             case AUTO_LOCOMOTIVE: return "";
 
             default: return "";
@@ -273,13 +277,18 @@ public final class CommandRow
      * AUTO_LOCOMOTIVE **is** offered, and this paragraph used to say it was not (`REL-C13`).
      * `ef33f4a8` added it - *"an AUTONOMY CONDITION could be chosen and did nothing ... it starts on
      * the first locomotive now, like every other kind starts on something"* - and
-     * `RouteEditorFrame:3415-3419` supplies both halves the old sentence said the row could not have:
-     * the first locomotive for the target, and sensor 1 for the setting.  So the editor does build the
-     * row `ConditionRows`' own header uses as its example.
+     * `RouteEditorFrame.conditionKindChanged` supplies both halves the old sentence said the row could
+     * not have: the first locomotive for the target, and sensor 1 for the setting.  So the editor does
+     * build the row `ConditionRows`' own header uses as its example.
      *
-     * The other four kinds are still absent, and for the original reason: a condition built from one
-     * is permanently false.  One already in a route is preserved read-only, the way every other
-     * unsupported kind is.
+     * **By method name, not by line** (`VD9-C12`): the first version of this paragraph cited
+     * `RouteEditorFrame:3415-3419`, which was already wrong when it was copied here out of a review,
+     * and a stale line number in a javadoc outlives every edit above it with nothing able to notice.
+     *
+     * The other NINE kinds are absent, and for the original reason: a condition built from one is
+     * permanently false.  (This said four, which was right when `Kind` had seven members - it has
+     * thirteen, and this predicate admits four of them.)  One already in a route is preserved
+     * read-only, the way every other unsupported kind is.
      */
     public static boolean canBeACondition(Kind kind)
     {

@@ -16,14 +16,18 @@ set -e
 
 # THREE LEVELS, NOT TWO (TSX-C16).
 #
-# These scripts moved from `tools/parity/` to `docs/tools/parity/` in fb3722f5, and this line
-# did not move with them: `../..` from here is `docs/`, not the repository.  Everything reached
-# through $REPO was therefore one folder short - the jar at $REPO/dist, the sample layout, the
-# four copied files, and `cd "$REPO"` - and the harness could not be set up at all.
+# These scripts moved from `tools/parity/` to `docs/tools/parity/` in fb3722f5, and this line did not
+# move with them: `../..` from here is `docs/`, not the repository.  setup-env.sh carries the full
+# account, including the three driver paths that resolved correctly BECAUSE this was wrong.
 #
-# The three driver paths below were the exception, and that is what made it hard to see: they
-# still read `$REPO/tools/parity`, which resolved correctly BECAUSE $REPO was wrong.  Both
-# halves have to be right at once or the fix is invisible.
+# What it costs HERE is smaller and worth naming on its own (VD9-C10): this file uses $REPO twice, for
+# TARGET's default and for the `cd` before compare.py.  So the run used to cd into `docs/` and look for
+# `docs/docs/tools/parity/compare.py`.
+#
+# It also moves TARGET's default.  With REPO wrong, `$REPO/../traincontrol-parity` landed INSIDE the
+# repository; it now lands beside it, which is what the name always meant.  An environment built by
+# the old version is still at the old path and is not found - pass it as $1, or let setup-env.sh build
+# a new one.
 REPO=$(cd "$(dirname "$0")/../../.." && pwd)
 TARGET=${1:-"$REPO/../traincontrol-parity"}
 RUN_SECONDS=${2:-0}

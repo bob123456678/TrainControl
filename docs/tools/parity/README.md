@@ -103,8 +103,8 @@ worth knowing:
   every configuration, loaded out of the UI preferences by the window's menu builder, so anything
   running autonomy without building that menu - a script, this probe - was on RANDOM whatever had been
   chosen. That is no longer true, and it matters here more than anywhere: at HEAD it is a
-  `private volatile` instance field (`Layout.java:223`) and `fromJSON` reads it back out of the
-  configuration (`:7157-7161`), because Adam asked for the setting to travel with the config rather
+  `private volatile` instance field (`Layout.pathPreference`) and `fromJSON` reads it back out of the
+  configuration, because Adam asked for the setting to travel with the config rather
   than with the UI. **So the probe now measures a preference that arrives with the layout it loads**,
   which is what it was always trying to measure. A configuration written before the change has no
   `pathPreference` key and keeps the model's own RANDOM default, which is the behaviour those railways

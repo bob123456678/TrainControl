@@ -226,7 +226,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * route, so it does not go on flipping between the two states as conditions change under it.
      *
      * **Which branch this covers.** Adam ruled that a conflict appearing mid-route should ASK, at the
-     * two doors with a person at them, and stop on its own at the s88 trigger door. This test runs
+     * two doors with a person at them, and set none of its accessories at the s88 trigger door -
+     * which is not the same as stopping, and this said stopping (VD9-C18). This test runs
      * with no interface attached - `init` is called with `showUI` false, so `getGUI()` is null - so it
      * exercises the branch with nobody to ask, which is the one that must never move the switch. It is
      * also exactly what the s88 door does.

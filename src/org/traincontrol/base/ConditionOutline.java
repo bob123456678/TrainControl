@@ -233,9 +233,11 @@ public final class ConditionOutline
             {
                 // A deeper run is one thing at this level, and the whole of it is consumed here.
                 //
-                // AT depth + 1, NOT AT THE ROW’S OWN DEPTH (IPR-B2).  The two are the same number
-                // for every outline that steps down one level at a time, which is every outline this
-                // editor writes.  They differ when a level’s own rows come out AFTER a deeper run -
+                // AT depth + 1, NOT AT THE ROW’S OWN DEPTH (IPR-B2).
+                //
+                // The two are the same number wherever this branch meets a row exactly one level
+                // deeper, which is every outline in which no level’s own rows come out after a
+                // deeper run.  They differ when they do -
                 // "3 or ((1 or 2) and 4)" writes the OR at 0, the AND at 1 and the bracket at 2, and
                 // because the bracket is the AND’s LEFT child the reader meets 0 then 2, with no
                 // depth-1 row yet to anchor on.
@@ -246,6 +248,14 @@ public final class ConditionOutline
                 // flagged, and Save wrote the new meaning back.  Reading it at depth + 1 puts the run
                 // where the writer put it, as the first item of the next level down, and the AND that
                 // follows joins it.
+                //
+                // THE FAMILY IS WIDER THAN A BRACKET, and the first account of this said otherwise
+                // (VD9-C2).  The step is two whenever a cross-operator child is itself the left child
+                // of a cross-operator parent: writeChild bumps each of them and the left spine is
+                // written first, so both bumps land before the outer joiner does.  A NodeGroup is one
+                // way to arrive there and not the only one - `Or(And(Or(1,2), 4), 3)` has no group in
+                // it at all and came back as `or(or(or(1,2),4),3)`, the AND gone, under the old
+                // reader.  One alternation is safe; two in a row is not.
                 NodeExpression inside = read(rows, at, depth + 1);
 
                 if (inside != null) items.add(group(inside));

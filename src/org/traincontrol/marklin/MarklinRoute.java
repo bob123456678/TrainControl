@@ -879,7 +879,8 @@ public class MarklinRoute extends Route
                                             // somebody eventually happened past and pressed OK.
                                             //
                                             // View.java says this in as many words: "The s88 trigger
-                                            // door has nobody to ask and stops on its own."
+                                            // door has nobody to ask, so it sets none of its
+                                            // accessories and runs the rest." (VD9-C18)
                                             r.execRoute(auto, recursionLimit - 1, false);
                                         }
                                         else

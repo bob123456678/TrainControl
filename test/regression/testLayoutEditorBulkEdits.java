@@ -582,6 +582,16 @@ public class testLayoutEditorBulkEdits
      * Found while writing the test above, which failed against this rather than against the flag it
      * was aimed at - the two are one gesture apart and need separate fixes.
      *
+     * **One assertion, not two.** This carried a second - that the station had not travelled to
+     * `9,3` - and no implementation can make it false (`VD9-C6`): with the fix nothing moves at all,
+     * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
+     * A check that both branches satisfy is not a check.
+     *
+     * **One assertion, not two.** This carried a second - that the station had not travelled to
+     * `9,3` - and no implementation can make it false (`VD9-C6`): with the fix nothing moves at all,
+     * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
+     * A check that both branches satisfy is not a check.
+     *
      * MUTATION: dropping the `clipboardCutHadTiles` check from `emptyCutOrigins` fails this.
      */
     @Test
@@ -608,9 +618,6 @@ public class testLayoutEditorBulkEdits
                 + "spent the cut, and left this square's setup behind for the paste back to forget "
                 + "(SVN-B11, second half)");
 
-            assertFalse(session.getStore().isStation(at(page, 9, 3)),
-                "the station was carried to the paste target even though undo had put the cut track "
-                + "back where it came from");
         });
     }
 

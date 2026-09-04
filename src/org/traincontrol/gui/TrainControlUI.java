@@ -2662,10 +2662,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.model.log("Station names written on the track diagram by an earlier version have"
                     + " been taken into the autonomy setup (" + session.getMigratedCaptions()
-                    + " of them) and removed from these page files: "
+                    + " of them) and removed from these pages: "
                     + String.join(", ", session.getMigratedPages())
-                    + ".  Each of those pages has a .bak file beside it holding the page as it"
-                    + " stood the first time this version rewrote it");
+                    + ".  Each of those pages has a .bak file beside its own .cs2, holding the"
+                    + " page as it stood the first time this version rewrote it");
             }
 
             // Captions written into the layout file by an earlier version are brought into the setup
@@ -25145,7 +25145,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one is asked before the first command and the other between two of them is an implementation
         // detail he has no reason to learn.
         //
-        // Reached only from a route a person started; the s88 trigger door stops without asking,
+        // Reached only from a route a person started; the s88 trigger door has nobody to ask, so it
+        // sets none of its accessories and runs the rest (VD9-C18 - this said "stops without
+        // asking"),
         // because there is nobody there. Called on the route's own thread, and the dialog marshals
         // itself onto the event thread, so this blocks that route and nothing else.
         if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;

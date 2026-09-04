@@ -1418,7 +1418,34 @@ public class AutonomyCompanionStore
 
         repairLocomotiveInSetup(note, from, to);
 
-        rememberBeforeEdit(note);
+        // IN PLACE, NOT THROUGH rememberBeforeEdit (VD9-C9).
+        //
+        // That method ends in writeJson -> Files.move(REPLACE_EXISTING), and forgetBeforeEdit below
+        // spends fourteen lines on why that is the wrong primitive for this exact file: on Windows,
+        // replacing a file needs the same DELETE access a OneDrive lock withholds.  The asymmetry was
+        // measured, not guessed - in that lock state delete() fails and the atomic move fails, and a
+        // plain truncating write succeeds.
+        //
+        // Using the atomic write here would have failed in exactly the case this repair exists for: a
+        // rename made while an edit note is open on a locked folder, which is where the stale name
+        // does its damage.  rememberBeforeEdit swallows the IOException and returns false, and nothing
+        // read it, so the failure would have been silent as well.
+        //
+        // Torn writes are acceptable here for forgetBeforeEdit's reason: a half-written note fails
+        // unfinishedEdit's shape check, so it is refused, kept and reported - and a refused note is
+        // exactly as harmless as the repaired one this is trying to leave.
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(beforeEditFile()))
+        {
+            out.write(note.toString(2).getBytes(StandardCharsets.UTF_8));
+
+            out.flush();
+        }
+        catch (IOException | RuntimeException couldNotWrite)
+        {
+            // Nothing to do but leave it: the note still names the old locomotive, which is the state
+            // before this repair existed, and unfinishedEdit's own checks are what stand between that
+            // and a bad revert.
+        }
     }
 
     /**

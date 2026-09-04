@@ -290,7 +290,7 @@ release_the_lock()
 {
     if [ "$(cat "${LOCK:-}" 2>/dev/null | tr -d '\r\n ')" = "${LOCK_PID:-}" ]
     then
-        rm -f "$LOCK"
+        rm -f "${LOCK:-}"
     fi
 }
 
@@ -306,21 +306,26 @@ DONE=""
 
 on_the_way_out()
 {
-    if [ -n "$DONE" ]; then return; fi
+    if [ -n "${DONE:-}" ]; then return; fi
 
     DONE=1
 
     # BEFORE the fingerprint, because a leftover JVM is by definition one that is still running and
     # deferred work landing after everybody stopped watching is the whole subject of LayoutSandbox.
     #
-    # Written out rather than calling reap(), and every variable defaulted: this can fire before the
-    # line that sets any of them, and a trap that fails under `set -u` takes the tidy-up with it.
+    # Written out rather than calling reap(), and every variable defaulted - genuinely every one
+    # now (VD9-C7): $LOCK, $REPORTED and $DONE were not, and under `set -u` an unbound one aborts
+    # the trap at that line and takes `rm -rf "$BUILD"` with it, which is the exact failure this
+    # comment claimed to be preventing.
+    #
+    # It could not happen, because all three are set before the trap is armed - but that is safety
+    # by arming order, and this body is meant to survive being moved.
     if [ -n "${REAPER:-}" ]
     then
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER"             -RunId "${RUN_ID:-}" >/dev/null 2>&1
     fi
 
-    if [ -z "$REPORTED" ] && [ -n "${live_before:-}" ]
+    if [ -z "${REPORTED:-}" ] && [ -n "${live_before:-}" ]
     then
         if [ "$live_before" != "$(fingerprint)" ]
         then

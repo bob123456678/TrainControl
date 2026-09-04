@@ -79,49 +79,62 @@ public class testParseWebServer
     @Test
     public void testParseCS3LoksServer() throws Exception
     {
-        CS3TestServer server = new CS3TestServer(cs3_loks, cs3_loks_v260, cs3_mags, cs3_automatics, cs3_automatics_v260);
+        CS3TestServer server = new CS3TestServer(cs3_loks, cs3_loks_v260, cs3_mags,
+            cs3_automatics, cs3_automatics_v260);
 
-        // Simulate firmware version
-        server.startServer(260);   // or 250
-        
-        parser = new CS2File("localhost:" + server.getPort(), null);
-        
-        List<MarklinLocomotive> db = parser.parseLocomotivesCS3();
-        List<MarklinRoute> routes260 = parser.parseRoutesCS3();
-        
-        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
-        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
-        assertEquals(db.size(), 154);
+        try
+        {
 
-        assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            // Simulate firmware version
+            server.startServer(260);   // or 250
         
-        assertEquals(true, parser.isCS3Version260OrAbove());
+            parser = new CS2File("localhost:" + server.getPort(), null);
         
-        server.stopServer();
+            List<MarklinLocomotive> db = parser.parseLocomotivesCS3();
+            List<MarklinRoute> routes260 = parser.parseRoutesCS3();
         
-        // Test older versions
-        server.startServer(250);
-        assertEquals(false, parser.isCS3Version260OrAbove());
-        
-        db = parser.parseLocomotivesCS3();
-        List<MarklinRoute> routes250 = parser.parseRoutesCS3();
+            assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+            assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+            assertEquals(db.size(), 154);
 
-        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
-        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
-        assertEquals(db.size(), 136);
-
-        assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
-        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
         
-        assertEquals(routes250.size(), routes260.size());
-        assertEquals(!routes250.isEmpty(), true);
+            assertEquals(true, parser.isCS3Version260OrAbove());
+        
+            server.stopServer();
+        
+            // Test older versions
+            server.startServer(250);
+            assertEquals(false, parser.isCS3Version260OrAbove());
+        
+            db = parser.parseLocomotivesCS3();
+            List<MarklinRoute> routes250 = parser.parseRoutesCS3();
 
-        server.stopServer();
+            assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+            assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+            assertEquals(db.size(), 136);
+
+            assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+            assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        
+            assertEquals(routes250.size(), routes260.size());
+            assertEquals(!routes250.isEmpty(), true);
+
+        }
+        finally
+        {
+            // IN A FINALLY, so an assertion above does not leak the server (VD9-C14).
+            //
+            // This was the last statement of the method, which stops it only when the test
+            // passes.  A failure left an HttpServer bound for the life of the JVM - and every
+            // class after this one in a battery shares that JVM's machine.
+            server.stopServer();
+        }
     }
       
     

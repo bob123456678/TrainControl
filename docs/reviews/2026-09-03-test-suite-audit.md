@@ -1764,7 +1764,8 @@ than of the two files named:
   The four `build()` factories in `test/ui/` were the same and moved with them.
 
 **The rule is written down, because eight sites is not a thing anybody re-derives.**
-`testSwitchingToACentralStationLayout.testEverySandboxIsClosedOnEveryPath` walks the brace stack of
+`testSwitchingToACentralStationLayout.testEverySandboxIsOpenedInsideATry` - named for what it
+checks rather than for the property that shape buys (`VD9-C15`) - walks the brace stack of
 every test source and fails for any `LayoutSandbox.open(` that is not lexically inside a `try`, with
 `@Before*` methods exempt - and exempt *safely*, which is only true since `C18` made their teardowns
 `alwaysRun`. It sits beside `testNoTestOpensTheOperatorsRailway`, which says the sandbox must be

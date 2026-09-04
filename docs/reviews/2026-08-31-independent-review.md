@@ -377,8 +377,8 @@ NodeExpression inside = read(rows, at, row.getDepth());   // before
 NodeExpression inside = read(rows, at, depth + 1);        // after
 ```
 
-For every outline that steps down one level at a time - which is every outline this editor writes -
-those two are the same number, which is why nothing else moved. They differ only on the shape above:
+Those two are the same number wherever the run begins exactly one level deeper, which is why nothing
+else moved. They differ when a level's own rows come out after a deeper run:
 reading the run at 2 made `1 or 2` a **sibling of the 3** at depth 0, and then read the depth-1
 remainder as a second sibling, a level holding one item whose AND had nowhere to go. Reading it at
 `depth + 1` puts the run where the writer put it - the first item of the next level down - and the AND
@@ -415,6 +415,17 @@ cost was unknown. It is not refusing anything he owns today.
 So the fix is still costless and still worth having, for the stored non-leading bracket nobody has
 met yet - `fromTextRepresentation` has no production caller left, so no new tree of this shape can be
 created either.
+
+**And the shape is wider than a bracket** (`VD9-C2`). `Or(And(Or(1,2), 4), 3)` contains no
+`NodeGroup` at all and came back as `or(or(or(1,2),4),3)` under the old reader - the same lost AND.
+So the family is *a cross-operator child that is itself the left child of a cross-operator parent*:
+two alternations in a row down the left spine, each bumped by `writeChild`, both written before the
+outer joiner. One alternation is safe; two is not. A `NodeGroup` is one way to arrive there and was
+never the requirement.
+
+**Which means both earlier screens of Adam's routes asked the wrong question.** Screened for the real
+shape - walking all 39 conditions in `routes.json` for two consecutive left-spine alternations -
+**zero match**. The conclusion is unchanged and is now founded on the property that matters.
 
 ### B3 - two bracketed groups at the same indent are flagged red and the save is refused, for an outline the reader parses correctly
 

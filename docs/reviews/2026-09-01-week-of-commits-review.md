@@ -692,9 +692,14 @@ The pairing is read as it stands when the restore runs, and that is correct rath
 `portals` is restored before `disabledLinks` in the registry order, so the pairing in hand is already
 the one the snapshot was taken under.
 
-`testUndoReopensALinkWhoseHalvesAreOnDifferentPages` walks the finding's sequence on the real pair from
-`setup.json` - `1:10,9` and `5:15,5` - and asserts **both** ends afterwards, because a fix that simply
-cleared the set would pass on the near one. MUTATION: constructing `disabledLinks` unpaired again fails
+`testUndoReopensALinkWhoseHalvesAreOnDifferentPages` walks the finding's sequence and asserts **both**
+ends afterwards, because a fix that simply
+cleared the set would pass on the near one.
+
+It uses the coordinates of the real pair - `1:10,9` and `5:15,5`, which `setup.json` does pair - but
+they are **decorative**: the fixture is an empty temp folder and the test pairs them itself, so any
+two page-distinct keys give the identical run (`VD9-C17`). It would not notice that pair disappearing
+from his railway, and the first version of this paragraph implied it would. MUTATION: constructing `disabledLinks` unpaired again fails
 it (66 tests, 1 failure).
 
 `testAutonomyDiagramSession` (109), `testDiagramShiftKeepsSetup`, `testEditorSwitchClearsPageState` and
