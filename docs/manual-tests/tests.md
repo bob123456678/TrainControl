@@ -446,6 +446,37 @@ autonomy editors, and read the images: every column 0-23 and row 0-15 on `1 - Ma
 on `4 - Combined`. Those are the two pages you named, and they are the only two whose columns start at
 zero.
 
+
+
+**Adam, 2026-09-04 (third report).** *"row 0,1,3,11 disappear when switching between editors on page 1.
+column 11 is missing on page 2.  it must be the drawing order, because minimizing and then maximizing
+the window fixes it."*
+
+**That sentence is the diagnosis, and it was the piece I did not have.** A full repaint goes through
+the container's `paint`, which draws the ruler last and is correct - which is why minimising and
+restoring fixes it. An ordinary repaint does not go through the container at all.
+
+`isOptimizedDrawingEnabled` defaults to TRUE, which is a promise to Swing that no two children of a
+container overlap. On that promise Swing repaints a dirty child DIRECTLY, without its parent. **The
+promise was false here** - a station caption is 38 pixels tall and up to 55 wide against a 30-pixel
+cell - so a caption repainting itself drew over the axis numbers and nothing put them back until the
+whole window repainted.
+
+The container says its children overlap now. `testRenderingCost` is unchanged, which is the cost this
+could have had.
+
+**What to do.** Switch between the editors on pages 1 and 2 several times, and watch rows 0, 1, 3, 11
+on page 1 and column 11 on page 2 specifically. Then move a train, let a caption change, and check the
+numbers again - a repaint of one square is the case that was broken, and it is not the same case as
+switching pages.
+
+**And more room to scroll**, which you asked for in the same breath. The panel holding the diagram is
+laid out by `FlowLayout`, which centres it and adds five pixels on each side - and the panel was sized
+to the diagram exactly, with no allowance for them. A centred row wider than its container gets a
+NEGATIVE x, so the left edge sat outside the panel where no scrolling reaches it. That is why it only
+showed on a narrow window. The panel now allows for the gaps, and carries a column of slack the way it
+has always carried a row.
+
 **One thing to check before you re-test: your last run was against a build compiled at 03:21**, which
 is before any of this landed. Rebuild first.
 

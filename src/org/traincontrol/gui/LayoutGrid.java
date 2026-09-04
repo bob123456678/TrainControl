@@ -738,6 +738,30 @@ public class LayoutGrid
             }
 
             /**
+             * These children DO overlap, and Swing has to be told (OB-172, third report).
+             *
+             * Adam: *"it must be the drawing order, because minimizing and then maximizing the window
+             * fixes it."*  That is the whole diagnosis.  A full repaint goes through this container's
+             * `paint`, which redraws the ruler last and is correct.  An ordinary repaint does not:
+             * `isOptimizedDrawingEnabled` defaults to TRUE, which promises Swing that no two children
+             * overlap - so it repaints a dirty child DIRECTLY, without the parent, and a caption that
+             * reaches into the gutter paints over the numbers with nothing to put them back.
+             *
+             * The promise was false here.  A `StationCaption` is 38 pixels tall and up to 55 wide
+             * against a 30-pixel cell; overlapping is what this container is for.  Saying so is not a
+             * trick - it is the flag that exists for exactly this arrangement, and it makes every
+             * repaint go through the parent, which is what the numbers need.
+             *
+             * It costs repaint area.  `testRenderingCost` is the measure of that and is part of this
+             * change's evidence.
+             */
+            @Override
+            public boolean isOptimizedDrawingEnabled()
+            {
+                return false;
+            }
+
+            /**
              * The axis numbers, drawn last of all (OB-172).
              *
              * In `paint` rather than at the end of `paintChildren`, which was the first attempt and

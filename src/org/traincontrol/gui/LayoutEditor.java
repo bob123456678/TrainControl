@@ -628,6 +628,26 @@ public class LayoutEditor extends PositionAwareJFrame
     LayoutEditorRightclickMenu popup;
 
     /**
+     * The gap `FlowLayout` leaves around the diagram, on every side.
+     *
+     * `new FlowLayout()`'s own default is five, and the panel that holds the diagram was sized
+     * without it - so the row it lays out was ten pixels wider than the panel, and a CENTRE
+     * layout put the diagram at a NEGATIVE x.  Those pixels are off the panel entirely, which no
+     * amount of scrolling reaches (Adam: *"if the window is narrow, I can't pull it all the way
+     * to the left"*).
+     */
+    private static final int DIAGRAM_GAP = 5;
+
+    /**
+     * Slack beyond the diagram's own width, so it can be scrolled past its edges.
+     *
+     * The vertical slack has been a row of tiles since it was added - "anything that takes a few
+     * pixels pushes the last row out of sight".  This is the same argument sideways, which Adam
+     * asked for in the same breath: *"make there be more horizontal scrollability"*.
+     */
+    private static final int DIAGRAM_SLACK_COLUMNS = 1;
+
+    /**
      * Popup window showing editable train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
@@ -646,7 +666,12 @@ public class LayoutEditor extends PositionAwareJFrame
         // by name.
         this.formPane = getContentPane();
 
-        this.ExtLayoutPanel.setLayout(new FlowLayout());
+        // CENTRED, WITH GAPS THIS CLASS KNOWS THE SIZE OF (OB-172's sibling, Adam 2026-09-04).
+        //
+        // `new FlowLayout()` is CENTER with a five-pixel gap on each side, and those five pixels are
+        // the whole of why the diagram could not be scrolled to its left edge - see `drawGrid`, which
+        // sizes the panel and now adds them.  Named here rather than assumed there.
+        this.ExtLayoutPanel.setLayout(new FlowLayout(FlowLayout.CENTER, DIAGRAM_GAP, DIAGRAM_GAP));
         this.parent = ui;
         this.size = size;
         this.layout = l;
@@ -5060,8 +5085,20 @@ public class LayoutEditor extends PositionAwareJFrame
             // user should have to work out.
             //
             // A row rather than a fixed number of pixels, because the tile size is a setting.
+            // AND THE GAPS THE LAYOUT WILL ADD, which this used to leave out (Adam, 2026-09-04).
+            //
+            // `FlowLayout` lays the diagram out as a row of `maxWidth + 2 * DIAGRAM_GAP`, and the
+            // panel was told its preferred width was `maxWidth` exactly.  A CENTRE layout given a row
+            // wider than its container places it at a NEGATIVE x - so the left edge of the diagram sat
+            // outside the panel, where no scrolling can reach it.  It only showed on a narrow window,
+            // because a wide one gives the panel more than its preferred width and the arithmetic
+            // stops biting.
+            //
+            // The horizontal slack is the same thing the row of slack below has always been, in the
+            // other direction, and he asked for it in the same breath.
             this.ExtLayoutPanel.setPreferredSize(new Dimension(
-                grid.maxWidth, grid.maxHeight + size));
+                grid.maxWidth + 2 * DIAGRAM_GAP + DIAGRAM_SLACK_COLUMNS * size,
+                grid.maxHeight + size + 2 * DIAGRAM_GAP));
 
             grid.getContainer().revalidate();
             this.ExtLayoutPanel.revalidate();

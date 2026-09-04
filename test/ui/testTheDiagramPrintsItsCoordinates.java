@@ -531,4 +531,36 @@ public class testTheDiagramPrintsItsCoordinates
 
         return true;
     }
+    /**
+     * The diagram container tells Swing its children overlap, so a repaint goes through the parent
+     * (OB-172).
+     *
+     * Adam, on the third report of vanishing numbers: *"it must be the drawing order, because
+     * minimizing and then maximizing the window fixes it."*
+     *
+     * A full repaint goes through the container's `paint`, which redraws the ruler last and is right.
+     * An ordinary repaint did not: `isOptimizedDrawingEnabled` defaults to TRUE, promising Swing that
+     * no two children overlap, so a dirty child is repainted DIRECTLY without its parent - and a
+     * caption reaching into the gutter painted over the numbers with nothing to put them back.
+     *
+     * The promise was false. A `StationCaption` is 38 pixels tall and up to 55 wide against a
+     * 30-pixel cell, measured on Adam's own page. Overlapping is what this container is for.
+     *
+     * Asserted rather than left to the paint test above, because the two answer different questions:
+     * that one proves the ruler is drawn last WHEN the container paints, and this proves the container
+     * is what paints.
+     *
+     * MUTATION: removing the override - so the default true comes back - fails this.
+     */
+    @Test
+    public void testTheDiagramContainerSaysItsChildrenOverlap()
+    {
+        javax.swing.JPanel container = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        assertFalse(container.isOptimizedDrawingEnabled(),
+            "the diagram container promises Swing that its children do not overlap, which is false - "
+            + "captions are wider and taller than their cells.  On that promise Swing repaints a "
+            + "dirty child without its parent, so a caption over the gutter rubs out an axis number "
+            + "and nothing redraws it until the whole window repaints (OB-172)");
+    }
 }
