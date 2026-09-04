@@ -239,7 +239,7 @@ than live defects, and should be fixed as such.
 
 | | |
 |---|---|
-| **Disposition** | open. The refusal itself is Adam's 2026-08-25 ruling; what is raised is the guard/affordance mismatch and the measurement the ruling was decided against |
+| **Disposition** | **fixed by MT-165 without this document saying so**, verified 2026-09-04 at HEAD.  The mismatch was real and is gone from the other side: the loader no longer drops a split-square home.  `errorHomeSquareIsSeveralPoints` exists nowhere in `src/`, `claimHome` carries "A SPLIT SQUARE MAY HOLD A POSITIONAL HOME, and only a positional one (MT-165)", and `parseAuto`'s own comment says it plainly - "Both are gone: the home is the square".  So the button and the guard agree, and `homeCopy`'s careful work is no longer discarded |
 | **Confidence** | the mismatch and the contradiction are both confirmed by reading; which count describes HEAD's graph needs execution |
 | **Where** | `src/org/traincontrol/gui/AutonomyEditorPanel.java:3367` and `:3402`, `src/org/traincontrol/automationui/AutonomySession.java:3521`, against `src/org/traincontrol/automation/Layout.java:7035` |
 
@@ -406,7 +406,7 @@ catch, so a manual dispatch failure says what actually happened.
 
 | | |
 |---|---|
-| **Disposition** | open - the comment, not the code |
+| **Disposition** | fixed, verified 2026-09-04 - both sites carry the correction and cite this finding: `Edge.java:458` ("this javadoc used to endorse that") and `Layout.java:2962` ("the rest of this sentence used to claim") |
 | **Confidence** | confirmed by reading; not reachable today |
 | **Where** | `src/org/traincontrol/automation/Layout.java:2754-2761`, against `src/org/traincontrol/automation/Edge.java:466-475` |
 
@@ -432,7 +432,7 @@ into a place it does not hold.
 
 | | |
 |---|---|
-| **Disposition** | open. **Out of this pass's range** - the asymmetry dates from `37009269` (2026-08-22), not from the day reviewed. Recorded because I could find no review or MT covering it |
+| **Disposition** | fixed by VD10-B2, verified 2026-09-04 - `nameEverything()` now ends at `setupChanged()` under a comment that says why: "OB-034 AGAIN, IN BULK", naming sixty squares at once being that failure sixty times over |
 | **Confidence** | the asymmetry is confirmed by reading; the blank-caption symptom needs execution |
 | **Where** | `src/org/traincontrol/gui/AutonomyEditorPanel.java:6386`, against `:3949` |
 

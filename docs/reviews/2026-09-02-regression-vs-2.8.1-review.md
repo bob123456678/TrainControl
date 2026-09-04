@@ -423,7 +423,7 @@ submenu can be live at that moment.
 
 | | |
 |---|---|
-| **Disposition** | open - Adam's to answer, and the question is his own: MT-257 item 5, carried in MT-260's tail.  Not a code change until he picks the shape |
+| **Disposition** | **declined on Adam's answer, 2026-09-04** - the same question as `RG3-C4`, which he answered: *"Don't we already do this via 'Why isn't it moving'?  I am OK with the current setup unless I am missing something."*  He was told the one gap - the Why tool needs a train standing on the square, so it cannot answer on an empty railway - and left it there |
 
 **Put to him, and he asked the better question back**: "why can't it keep working without a train, between stations?"  The answer is a choice of shape - two clicks to name both ends of the run to test, or one click that answers everything it can about the square it is on - and it is his to make rather than mine to guess.  Carried in [MT-260](../manual-tests/tests.md#mt-260)'s tail as the one MT-257 question still outstanding.
 | **Confidence** | confirmed by reading both tools |
