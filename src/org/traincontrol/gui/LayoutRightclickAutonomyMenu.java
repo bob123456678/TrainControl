@@ -487,6 +487,26 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // still lands under this train's own name when there is one.
                         if (paths.isEmpty() && possible > otherPaths.size())
                         {
+                            // AND ITS OWN HEADING WHEN NOTHING ELSE ADDED ONE (FR3-C5).
+                            //
+                            // Both heading gates are skipped in exactly this case: the top-level
+                            // separator and name need a non-empty base list, and the submenu's need a
+                            // non-empty More Destinations.  With BOTH empty - which is the case this
+                            // escape exists for - it was added straight under the menu's action items,
+                            // with no separator and no locomotive name.  That is the presentation
+                            // `OPV-C4` was filed about, arriving at the fourth placement of this item.
+                            if (otherPaths.isEmpty())
+                            {
+                                addSeparator();
+
+                                javax.swing.JMenuItem whose =
+                                    new javax.swing.JMenuItem(locomotive.getName());
+
+                                whose.setEnabled(false);
+
+                                add(whose);
+                            }
+
                             JMenuItem wayOut = new JMenuItem("...");
 
                             wayOut.addActionListener(event ->

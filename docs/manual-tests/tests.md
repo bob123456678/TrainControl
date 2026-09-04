@@ -44,6 +44,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-268](#mt-268) | 2026-09-04 | The axis numbers, and the editor coming forward | needs test | OB-172, OB-173 |
 | [MT-269](#mt-269) | 2026-09-04 | Three from the acceptance review, and one ruling | needs test | ACC-B1, ACC-B2, ACC-B3 |
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
+| [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -553,6 +554,35 @@ and then the route editor refuses every route that mentions it.
 
 I have deliberately done neither. I could not show that any locomotive of yours has a bracket in its
 name, so this may be entirely theoretical - **if none does, say so and I will close it.**
+
+*Run against the next release candidate.*
+
+---
+
+<a id="mt-271"></a>
+
+### MT-271 - 2026-09-04 - Two messages only a real failure can show you
+
+**Disposition:** needs test
+**From:** FR3-C2, DAY-C3
+
+**Written:** 2026-09-04
+
+**Both of these are sentences you will only ever see when something has gone wrong**, which is why
+they need you: reaching them from a test means making a dispatch fail on purpose, and the two paths
+that produce them are not the same one a test can inject.
+
+**1. A hand dispatch that fails, with autonomy stopped.** Send a train somewhere from the track
+diagram's right-click menu or the commands panel, with autonomy NOT running, and arrange for it to
+fail - the likeliest way is an accessory that has gone missing or a decoder that does not answer.
+
+The log used to say *"Autonomy has stopped itself so the railway can be parked and started again"*,
+which sent you to press Start over something that was never running. It should now say autonomy was
+not running and there is nothing to restart, and tell you to check where that locomotive is standing.
+
+**2. The same failure with autonomy running** should still say the old sentence - the run really has
+stopped itself and Start really is what puts it back. If both cases say the same thing, the flag that
+chooses between them is being read after the stop has already cleared it.
 
 *Run against the next release candidate.*
 

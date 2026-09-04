@@ -2981,29 +2981,55 @@ public class testEditorSurfaceRules
     {
         java.util.List<String> silent = new java.util.ArrayList<>();
 
-        for (java.io.File source : new java.io.File[]{
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java"),
-            new java.io.File("src/org/traincontrol/gui/LayoutEditor.java"),
-            new java.io.File("src/org/traincontrol/gui/AutonomyEditorPanel.java"),
-            new java.io.File("src/org/traincontrol/gui/AutonomyViewerPanel.java")})
-        {
-            if (!source.isFile()) continue;
+        // EVERY FILE UNDER src/, not a list of four (FR3-C3).
+        //
+        // The first version named four files.  All three callers happened to be inside them, so it
+        // held the tree it was written for - and a fourth door added anywhere else would have been
+        // outside the sweep entirely, which is the failure this rule exists to prevent, arriving at
+        // the rule itself.
+        java.util.List<java.io.File> sources = new java.util.ArrayList<>();
 
+        collectJava(new java.io.File("src"), sources);
+
+        assertTrue(sources.size() > 50,
+            "only " + sources.size() + " source files were found, so this rule is scanning almost "
+            + "nothing and would pass whatever the code did");
+
+        // THE ANSWER HAS TO GO SOMEWHERE, which is a different question from "is there a `!` nearby".
+        //
+        // Two wrong versions before this one.  Asking whether the statement contained `!` anywhere is
+        // satisfied by `if (this.model != null) session.saveQuietly();`, which discards the answer -
+        // the `!=` supplies the character.  Asking that a `!` APPLIES to the call was worse: it
+        // flagged `saveQuietly() != true`, which consults the answer perfectly well, and an
+        // over-strict guard is one Adam has ruled is worse than no guard.
+        //
+        // What actually separates them is whether the value is used at all.  A discarded call is
+        // written `saveQuietly();` and nothing else; every use - negated, compared, assigned,
+        // returned - puts something other than a semicolon after it.
+        java.util.regex.Pattern discarded =
+            java.util.regex.Pattern.compile("saveQuietly\\(\\)\\s*;");
+
+        for (java.io.File source : sources)
+        {
             String body = withoutComments(new String(
                 java.nio.file.Files.readAllBytes(source.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8));
 
+            // The declaration itself, not a call.
+            if (source.getName().equals("AutonomySession.java")) continue;
+
             for (int at = body.indexOf("saveQuietly()"); at >= 0;
                 at = body.indexOf("saveQuietly()", at + 1))
             {
-                // The statement this call sits in, back to the previous one.
                 int from = Math.max(0, body.lastIndexOf(';', at) + 1);
 
-                String statement = body.substring(from, at);
+                // A little past the call, so the semicolon after it is in view.
+                String around = body.substring(from,
+                    Math.min(body.length(), at + "saveQuietly()".length() + 4));
 
-                if (!statement.contains("!"))
+                if (discarded.matcher(around).find())
                 {
-                    silent.add(source.getName() + ": " + statement.trim() + "saveQuietly()");
+                    silent.add(source.getName() + ": " + around.trim());
                 }
             }
         }
@@ -3013,5 +3039,23 @@ public class testEditorSurfaceRules
             + "instead of throwing, and disk is authoritative after the session rebuild - so a failed "
             + "write there is silent, and what comes back next load is the state the write was meant "
             + "to replace (ACC-C6, OV2-C3): " + silent);
+    }
+    /**
+     * Every `.java` under a directory, so a rule can say "every" and mean it (FR3-C3).
+     *
+     * @param where the directory to walk
+     * @param into the list to fill
+     */
+    private void collectJava(java.io.File where, java.util.List<java.io.File> into)
+    {
+        java.io.File[] here = where.listFiles();
+
+        if (here == null) return;
+
+        for (java.io.File each : here)
+        {
+            if (each.isDirectory()) collectJava(each, into);
+            else if (each.getName().endsWith(".java")) into.add(each);
+        }
     }
 }

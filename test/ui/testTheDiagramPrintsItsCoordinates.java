@@ -261,8 +261,14 @@ public class testTheDiagramPrintsItsCoordinates
      * and up to 55 wide against a 30-pixel cell - which is why one of them takes out two rows' numbers,
      * and why the top-left one takes the `0` off the column axis as well.
      *
-     * `LayoutGrid.newDiagramContainer` now paints the ruler again at the end of its `paintChildren`
-     * override - the same hook that already draws trains over captions.
+     * `LayoutGrid.newDiagramContainer` now paints the ruler again at the end of its `paint()`
+     * override, which is unambiguously after background, border and children.
+     *
+     * It was first put at the end of `paintChildren` - the hook that already draws trains over
+     * captions - and that did not work: the override ran, the border was the ruler and the clip was
+     * the whole component, and the numbers were still rubbed out.  Swing hands each child its own
+     * graphics inside `paintChildren`.  This sentence described that first attempt for a while after
+     * it was reverted (FR3-C4).
      *
      * MUTATION: removing that block fails this. The first assertion is what stops the mutation passing
      * by painting nothing at all.

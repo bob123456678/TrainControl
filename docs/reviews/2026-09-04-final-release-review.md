@@ -130,7 +130,7 @@ row 0's floor above its own depth) plus the fixture that pins it.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the precondition now also asserts `isPathClear` is NOT in the stack, which is what separates the lock loop from the preview; `configureEdge` alone is true of both, and that is the distinction the second fixture got wrong |
 | **Confidence** | The strong-window claim is **executed, not argued**: `core.testAutoLayout` ran 26/0/0 here and the caught exception's stack was read out of the run log - `configureEdge(Layout.java:2635)` <- `configureAndLockPath(:2991)` <- `executePathInternal(:5408)` <- `executePath(:5069)`, with `handleMisconfiguredPath` genuinely running (its `errorPathMisconfigured` line and its guarded name-collection's own logged secondary NPE both appear in the log). The gap below is derived by reading `isPathClear` and `configureEdge`; no mutation was executed - this pass edits nothing but this file. |
 
 The re-aimed `testALockPhaseFailureLeavesTheTrainWhereItStands` (`2d7a9d5f`,
@@ -169,7 +169,7 @@ detect the nearest drift.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | **accepted, not fixed** - the branch chooses a message key by `wasRunning`, and reaching it needs a RuntimeException out of a real dispatch with autonomy stopped.  Named in MT-271 rather than pretended into a unit test |
 | **Confidence** | `grep -rn errorHandDispatchFailed test/` returns nothing; the branch was read, not executed. The key exists in all eight bundles (measured: one hit per file) and `testMessageBundles` ran 13/0/0 here, so the format side is pinned; only the branch choice is not. |
 
 `3f4d7396` added `wasRunning` and the two-way message in `executePath`'s failure handler
@@ -195,7 +195,7 @@ the headline, and the branch's whole point is which sentence an operator is sent
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed, after two wrong attempts of its own - the rule scans every .java under src/ and asks whether the answer GOES ANYWHERE (`saveQuietly();` and nothing else) rather than whether a `!` is nearby.  Asking that a `!` apply to the call was worse: it flagged `saveQuietly() != true`, which consults the answer.  Both directions checked by mutation - a discard is caught, a non-`!` use is accepted |
 | **Confidence** | The rule was read and its acceptance derived; it ran green here (`testEditorSurfaceRules` 38/0/0), and all three current call sites were re-grepped - every one consults the answer, and all live inside the four scanned files, so the rule holds the tree it was written for. Not executed against a counter-example - that would mean editing source. |
 
 `testEverySaveOfTheSetupReadsWhetherItWorked` (`testEditorSurfaceRules.java:2978-3017`, from
@@ -222,7 +222,7 @@ that reads wider than it is, which is this folder's stated reason such things ge
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - the javadoc names `paint()`, and records that `paintChildren` was the first attempt and why it failed |
 | **Confidence** | Both sites read at HEAD. The test itself is honest: `container.paint(g)` exercises the real `paint()` override, its first assertion stops the pass-by-painting-nothing, and the with/without-intruder comparison pins the redraw. Not run headfully here. |
 
 `testAChildInTheGutterDoesNotRubOutTheNumbers` (`testTheDiagramPrintsItsCoordinates.java:264-265`)
@@ -239,7 +239,7 @@ not a wrong test. One sentence.
 | | |
 |---|---|
 | **Severity** | C |
-| **Disposition** | open |
+| **Disposition** | fixed - when both lists are empty the escape adds its own separator and locomotive name, the same two lines `VD11-C3` uses, so it is never bare |
 | **Confidence** | Derived from the `add`/`addSeparator` sequence at `LayoutRightclickAutonomyMenu.java:366-374, 445-505`, not observed on screen; there is still no test at the menu-assembly layer (ACC-D8, OV2-D10 both say so). |
 
 `OV2-C1`'s fix (`2d7a9d5f`) lifted the escape out of the `otherPaths` branch, so with **both** lists

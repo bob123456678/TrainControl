@@ -1802,9 +1802,22 @@ public class testAutoLayout
 
         caught.printStackTrace(new java.io.PrintWriter(trace));
 
+        // `configureEdge` ALONE DOES NOT SAY WHICH (FR3-C1).
+        //
+        // `configureAndLockPath` calls `configureEdge` twice over: once through `isPathClear`, which
+        // previews the configuration, and once directly in the lock loop.  A stack carrying
+        // `configureEdge` is therefore true of both the strong window and the weak one - the very
+        // distinction the previous fixture got wrong.  `isPathClear` is what tells them apart: it is
+        // in the preview stack and not in the lock loop’s.
         assertTrue(trace.toString().contains("configureEdge"),
-            "the failure did not come out of the lock loop, so this is a weaker window than ACC-A1 is "
-            + "about and the assertions below prove less than they say.  Stack was:" + trace);
+            "the failure did not come out of configureEdge at all, so this is not the window ACC-A1 "
+            + "is about.  Stack was:" + trace);
+
+        assertFalse(trace.toString().contains("isPathClear"),
+            "the failure came out of the PREVIEW rather than the lock loop - isPathClear is in the "
+            + "stack, so nothing had been locked and handleMisconfiguredPath had nothing to recover. "
+            + "That is the strictly weaker window the second fixture was rejected for.  Stack was:"
+            + trace);
 
         assertFalse(layout.isRunning(),
             "the run did not stop itself, so this is not the state the handler leaves behind");
