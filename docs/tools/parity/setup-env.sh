@@ -123,6 +123,13 @@ do
         -d "$TARGET/$ENGINE/classes" \
         "$REPO/docs/tools/parity/ParityDriver.java"
 
+    "$JAVAC" -nowarn -encoding UTF-8 \
+        -cp "$TARGET/$ENGINE/TrainControl.jar" \
+        -d "$TARGET/$ENGINE/classes" \
+        "$REPO/docs/tools/parity/ConditionParityDriver.java"
+
+    echo "compiled ConditionParityDriver against $ENGINE"
+
     echo "compiled ParityDriver against $ENGINE"
 done
 

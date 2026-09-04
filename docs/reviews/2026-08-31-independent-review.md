@@ -423,9 +423,36 @@ two alternations in a row down the left spine, each bumped by `writeChild`, both
 outer joiner. One alternation is safe; two is not. A `NodeGroup` is one way to arrive there and was
 never the requirement.
 
-**Which means both earlier screens of Adam's routes asked the wrong question.** Screened for the real
-shape - walking all 39 conditions in `routes.json` for two consecutive left-spine alternations -
-**zero match**. The conclusion is unchanged and is now founded on the property that matters.
+**Which means both earlier screens of Adam's routes asked the wrong question - and so did the third**
+(`VD9-C2`, then Adam, 2026-09-03).
+
+He asked the question that settles it: *"we would want to parse the JSON into a NodeExpression in the
+old one, and see if 3.0.0 has logically equivalent expressions in those routes."* Every screen before
+that - including my corrected one - walked the **file**, and the file is not what either engine holds:
+`NodeExpression.fromJSON` runs `normalize`, which **inserts** a `NodeGroup` around a cross-operator
+left child. A structural reading of `routes.json` is answering about a tree that no engine builds.
+
+So it is measured now, under both jars, and it is part of the parity harness rather than a thing done
+once: `ConditionParityDriver` runs under each engine and re-emits what that engine's `fromJSON`
+actually built, and `compare-conditions.py` compares the two **by truth table** - because two trees
+that bracket differently and mean the same thing must not read as a difference, which is the entire
+reason the question is worth asking.
+
+```
+conditions compared:      39
+logically equivalent:     39
+  of which byte-identical:39
+  of which reshaped:      0
+NOT equivalent:           0
+```
+
+**All 39 of his conditions come out of 2.8.1 and 3.0.0 identical, not merely equivalent** - so
+`normalize` finds nothing to reshape in his file, which is the same conclusion the structural screens
+reached, now reached by the right road.
+
+The comparison was checked against three constructed pairs before it was believed: a reshaped-but-
+equivalent pair reads as equivalent, an identical pair reads as byte-identical, and the actual
+`IPR-B2` corruption reads as **not equivalent**. A comparison that cannot fail is not evidence.
 
 ### B3 - two bracketed groups at the same indent are flagged red and the save is refused, for an outline the reader parses correctly
 

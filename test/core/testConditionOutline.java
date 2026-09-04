@@ -601,4 +601,82 @@ public class testConditionOutline
         return new org.traincontrol.base.NodeRouteCommand(
             RouteCommand.RouteCommandFeedback(address, true));
     }
+
+    /**
+     * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it.
+     *
+     * **Adam's question, 2026-09-03:** *"are you comparing if the old routes from my 2.8.1 files match
+     * those parsed in 3.0.0?"* The screens behind `IPR-B2` were not. They walked the structure of
+     * `routes.json`, and that structure is **not** what the editor is handed:
+     * `NodeExpression.fromJSON` runs `normalize`, which inserts a `NodeGroup` around any cross-operator
+     * left child. A file with no brackets in it can therefore produce a bracketed tree, and a screen of
+     * the file is answering about a tree that no longer exists.
+     *
+     * So this parses instead of reading. Every condition in the frozen copy of his layout goes through
+     * `fromJSON` - the same call `MarklinRoute.fromJSON` makes - and then through `of()` and
+     * `toExpression()`, and the meanings are compared. That is the whole of what the editor does to a
+     * stored route between opening it and saving it.
+     *
+     * **The frozen copy, not the live folder.** `test/operator_layout` is a snapshot of his railway
+     * taken for exactly this kind of question; `cs2_sample_layout` is the live one and moves under a
+     * test's feet. If his routes ever grow the shape, this fails on the snapshot the day it is
+     * refreshed, which is soon enough.
+     *
+     * MUTATION: reading a deeper run at `row.getDepth()` leaves this green today - his routes have no
+     * two-alternation condition - which is the honest result and is why the two constructed cases
+     * above exist. This test is the reachability half, not the mechanism half.
+     */
+    @Test
+    public void testEveryConditionInTheOperatorsRoutesSurvivesTheOutline() throws Exception
+    {
+        java.io.File file = new java.io.File("test/operator_layout/config/gleisbilder/routes.json");
+
+        if (!file.isFile())
+        {
+            throw new org.testng.SkipException("no frozen copy of the operator's routes at " + file);
+        }
+
+        String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        // The file is an object with a "routes" array in it, which is the shape MarklinRoute writes.
+        org.json.JSONArray routes = new org.json.JSONObject(text).getJSONArray("routes");
+
+        int withConditions = 0;
+
+        java.util.List<String> changed = new java.util.ArrayList<>();
+
+        for (int i = 0; i < routes.length(); i++)
+        {
+            org.json.JSONObject route = routes.getJSONObject(i);
+
+            if (!route.has("conditions")) continue;
+
+            withConditions++;
+
+            // THE SAME CALL MarklinRoute.fromJSON MAKES, which is where normalize runs.
+            NodeExpression parsed = NodeExpression.fromJSON(route.getJSONObject("conditions"));
+
+            List<ConditionOutline.Row> shown = ConditionOutline.of(parsed);
+
+            NodeExpression back = ConditionOutline.toExpression(shown);
+
+            if (!meaning(parsed).equals(meaning(back)))
+            {
+                changed.add(route.optString("name", "route " + i)
+                    + ": " + meaning(parsed) + "  ->  " + meaning(back));
+            }
+        }
+
+        assertTrue(withConditions >= 20,
+            "only " + withConditions + " conditions were found in the operator's routes, which is "
+            + "fewer than his railway is known to carry - so this read the wrong file or the format "
+            + "has moved, and a green result here would mean nothing");
+
+        assertEquals(changed, new java.util.ArrayList<String>(),
+            changed.size() + " of the operator's own route conditions mean something different after "
+            + "being opened in the route editor and saved.  Opening a route and pressing Save is "
+            + "enough to do this; nothing is flagged and the reading under the table shows the new "
+            + "sentence (IPR-B2)");
+    }
 }

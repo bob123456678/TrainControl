@@ -91,6 +91,49 @@ echo "probing the routing-logic preference..."
 
 tail -1 "$TARGET/out/pathpref.log"
 
+# ==================================================================== the route conditions
+#
+# Adam, 2026-09-03: "we would want to parse the JSON into a NodeExpression in the old one, and see if
+# 3.0.0 has logically equivalent expressions in those routes."
+#
+# Separate from the sections above because it asks about ROUTES rather than about autonomy, and
+# because it needs neither a model nor a layout: NodeExpression.fromJSON is a static function of a
+# JSONObject, so this binds no port and opens no window.  That is also why it can read the operator's
+# own routes.json where it lies - nothing here writes to that folder.
+#
+# It is worth its own section because a structural reading of that file answers the wrong question:
+# fromJSON runs normalize, which INSERTS a NodeGroup around a cross-operator left child, so the tree
+# each engine holds is not the tree in the file.  compare-conditions.py compares by truth table for
+# the same reason - two trees that bracket differently and mean the same thing are not a difference.
+ROUTES="${TC_ROUTES:-$REPO/cs2_sample_layout/config/gleisbilder/routes.json}"
+
+CONDITION_STATUS=0
+
+if [ -f "$ROUTES" ]
+then
+    for ENGINE in v2_8_1 v3_0_0
+    do
+        (cd "$TARGET/$ENGINE" && "$JAVA" -cp "classes;TrainControl.jar" ConditionParityDriver \
+            "$ROUTES" "$TARGET/out/conditions-$ENGINE.tsv" "$ENGINE")
+    done
+
+    echo ""
+    echo "route conditions, 2.8.1 against 3.0.0:"
+
+    set +e
+
+    python "$REPO/docs/tools/parity/compare-conditions.py" \
+        "$TARGET/out/conditions-v2_8_1.tsv" "$TARGET/out/conditions-v3_0_0.tsv"
+
+    CONDITION_STATUS=$?
+
+    set -e
+else
+    echo "*** no routes.json at $ROUTES - the condition comparison was skipped ***"
+fi
+
+echo ""
+
 cd "$REPO"
 
 # compare.py exits non-zero when the superset claim fails, which is a result rather than an error.
@@ -100,6 +143,12 @@ python docs/tools/parity/compare.py "$TARGET/out/v2_8_1.tsv" "$TARGET/out/v3_0_0
     "$TARGET/out/report.md"
 
 STATUS=$?
+
+# A condition that changed meaning between the two engines is a parity failure like any other.
+if [ "${CONDITION_STATUS:-0}" -ne 0 ]
+then
+    STATUS=1
+fi
 
 set -e
 
