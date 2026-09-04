@@ -62,7 +62,7 @@ findings did not survive that and are not here.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 against the code - `AutonomySession:795` carries the fix and names this finding: "maxTrainLength is CARRIED, not converted (IPR-A1)" |
 | **Confidence** | confirmed by reading, and confirmed against the real railway |
 
 `AutonomySession.importLegacy`, `src/org/traincontrol/automationui/AutonomySession.java:751-753`:
@@ -188,7 +188,7 @@ were built inside a method whose only observable effect is a modal dialog.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - `AutonomyReport:131-139` reads `getDroppedTileProperties()` and says so in its own comment: it "had no reader in `src/` before this" |
 | **Confidence** | confirmed by reading |
 
 `AutonomyCompanionStore.Reconciliation` carries three lists. `isClean()` (`:3217`) is
@@ -254,7 +254,7 @@ command answering `hasAddress()` false and `getAddress()` throwing, and the gap 
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - `RouteEditorFrame:2407` and `:2418` both ask `hasAddress()` before `getAddress()`, with a comment naming the omission |
 | **Confidence** | confirmed by reading |
 
 `RouteEditorFrame.highlightOnDiagram`, `src/org/traincontrol/gui/RouteEditorFrame.java:2399-2402`:
@@ -464,7 +464,7 @@ equivalent pair reads as equivalent, an identical pair reads as byte-identical, 
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `ConditionOutline:156-167` still keys `settled` on depth alone across the whole list, so the check remains stricter than `read`.  This wants Adam's ruling more than a patch, and it has not had one |
 | **Confidence** | confirmed by reading |
 
 `ConditionOutline.problems` (`:147-170`) keys its `settled` map on **depth alone, across the whole
@@ -579,7 +579,7 @@ cheap branch.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(...)` directly, bypassing `AutonomySession.setCaption` at `:1278`, so it is still the fourth door |
 | **Confidence** | mechanism confirmed by reading; the provenance of the sample entry is inference |
 
 `AutonomySession.setCaption` (`:1092-1106`) carries the rule and its own comment names the doors:
@@ -654,7 +654,7 @@ difference between the two.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five numbers and none of them is the panel size, so the restored rectangle still depends on it |
 | **Confidence** | the dependency is confirmed by reading; the magnitude is not re-derived by me |
 
 The five saved numbers are `centerX, centerY, zoomFraction, frameAspect, frameSize`
@@ -693,7 +693,7 @@ bearing - the mechanism does not depend on the numbers.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unconditionally, whatever ink it was given |
 | **Confidence** | confirmed by reading |
 
 `RowIcons.java:117-118`, inside the `copy(int, Color)` overload:
@@ -728,7 +728,7 @@ cell against the delete and add marks on the same row.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = min(24, min(w,h)/3) / scale`, so the guarantee is still expressed in panel pixels.  Still a pointer rather than an established finding: the rounding was never re-derived |
 | **Confidence** | **reported to me and NOT re-derived by me** - treat as a pointer, not an established finding |
 
 `clampCenter` (`:1141-1156`) keeps `keep = min(24, min(Wpx,Hpx)/3) / scale` source pixels of the
@@ -752,7 +752,7 @@ so it is narrow either way.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, and now confirmed rather than suspected - `startAtCover()` calls `clampCenter()` (`:1000`), which calls `getScale()` (`:1135`).  The comment's stated reason - "startAtCover asks cropWindow and getMinScale, and neither of those asks this" - is false |
 | **Confidence** | confirmed by reading |
 
 `LocIconCropDialog.java:956-957`:

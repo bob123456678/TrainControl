@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
  * fromLine, and still be the same list of commands.
  *
  * That round trip is not a theoretical concern - it is what the route editor does every time it is
- * opened and saved (TrainControlUI populates the editor from toCSV, and RouteEditor's save path parses
+ * opened and saved (TrainControlUI populates the editor from toCSV, and RouteEditorFrame's save path parses
  * each line with fromLine).  It was broken for feedback commands: toLine ended every branch with a
  * newline except that one, and toCSV concatenates without a separator, so a feedback command was glued
  * to whatever followed it:

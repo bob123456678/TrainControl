@@ -64,15 +64,89 @@ In `2026-09-03-c-sweep-report.md` under "What needs Adam", repeated here only so
 
 1. Should the editor's "reaches nothing" warning match the runtime's rule? (`V36-C4`)
 
-Elaborate
+**Elaborated 2026-09-04.  The question is narrower than I first put it, and part of it cannot be
+answered the way it was asked.**
+
+Here are the two predicates side by side, from the code rather than from memory.
+
+The editor, in `AutonomyChecks:481-492`: a reversing point is fine if any tile it can reach is in
+`stationTiles`. That is the whole test - **is it a station**.
+
+The runtime, in `Layout:3576-3578`:
+
+```java
+if (!end.isReversing() && end.isAutoDestination()
+        && (!end.isTerminus() || loc.isReversible())
+        && !end.getExcludedLocs().contains(loc)
+        && !this.reversesAlongTheWay(path))
+```
+
+**Two of those four clauses are about a TRAIN, not a square** - the terminus clause and the exclusion
+clause both take `loc`. The editor's warning is drawn on a square with no locomotive in the question,
+so it cannot ask them. It would have to pick a train, or quantify over every train you own and warn
+only when *none* of them could go - and "no locomotive on the railway can reach a station from here"
+is a different and much weaker claim than the one the warning makes.
+
+That is the same distinction that bit us on `FR-058` yesterday, arriving from the other side: I made a
+square-level menu ask a per-train question and it moved `BottomMainB` and `BottomMainC` on you.
+
+**So the real question is only about the two square-level clauses**: should a reversing point warn when
+everything it reaches is either a square you have marked as not an automatic destination, or itself a
+reversing point?
+
+**The trade, in your own numbers.** 20 of your 71 squares carry `autoDestination: false` and 5 more can
+reverse. `MT-253` records that this warning fires on exactly one square today - RampDown southbound. I
+have not measured how many it would fire on tightened, because that needs the reachable set of every
+reversing point rather than a count of flags; say the word and I will run it before you decide, which
+is the honest order.
+
+**My recommendation**, for what it is worth: tighten it to those two clauses and leave the per-train
+ones out, with the warning's wording changed from "reaches nothing" to something like "reaches nothing
+autonomy would choose" - because a warning that means something different from what it says is the
+thing that keeps costing us findings.
 
 2. What shape should "Test Connection" come back in? (`RG3-C4`, MT-257 item 5) — your question back.
 
-elaborate
+**Elaborated 2026-09-04.  The good news first: the primitive you need already exists and takes no
+locomotive.**
+
+`Layout.bfs(Point start, Point end, List<List<Edge>> excludePaths)` answers "is there a legal path from
+here to there" with no train in the question at all. What is missing is a door to it. The Why tool
+cannot be that door: it starts from `explainDestinations(Locomotive)` and `explainCannotStart(loc)`,
+both of which need a train standing somewhere - which is exactly why the question cannot be asked while
+the railway is empty, which is when you ask it.
+
+**Two shapes, concretely.**
+
+**(a) Two clicks, both ends named.** Right-click a station, "Test connection from here", then click a
+second station. Answers one question exactly - *can a train get from A to B* - and can show the path it
+found on the diagram, which is the part that makes it worth building rather than a yes/no dialog. It is
+the closest thing to what 2.8.1 had. Cost: a two-stage gesture, which means a mode, which means a way
+out of the mode - and modes on that menu are the thing you have pushed back on before.
+
+**(b) One click, everything about this square.** Right-click a station, "What can this reach?", and get
+a list: every station reachable from here, and for each one that is not, the reason - which is
+`explainDestinations`' own output with the locomotive taken out of it. No mode, no second click, and it
+answers the question you were actually asking when you asked A-to-B, plus the ones you would have asked
+next. Cost: it is a longer answer to read, and on a railway your size the reachable list is most of the
+stations, so the useful half is the *unreachable* list and it should probably lead with that.
+
+**My recommendation: (b).** It reuses the grouping work `FR-017` already did, it has no mode, and the
+reason it is better is the same reason the Why tool is better than a yes/no: you are almost never
+asking "can A reach B" out of curiosity - you are asking because something did not work, and the
+reason is what you want. (a) makes you guess which pair to test.
+
+Either way it wants a name that is not "Test Connection", which meant something else.
 
 3. Should a route-command deletion say what it removed? (`FV2-C9`, `R28-A1`)
 
-put it in the log, popup on count.
+**Your ruling: "put it in the log, popup on count."**
+
+Half of it is already there - `MarklinControlStation:3010` logs
+`route.warnCommandsRemovedForDeletedLocomotive` with the route's name and the locomotive's, and the
+condition case beside it has logged since `FV2-C9`. What is not there is the popup. Building it as: on
+deleting a locomotive, count the route commands that name it across every route, and if that count is
+non-zero say so in a dialog before the delete goes through, with the count and the route names.
 
 4. `DY3-C8` — already answered on MT-260; a pointer only.
 

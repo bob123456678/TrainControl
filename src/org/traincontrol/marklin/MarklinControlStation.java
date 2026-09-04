@@ -1746,7 +1746,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // refuses a name that already belongs to another route - so a rename onto an existing name
         // used to delete the original and then decline to add it back, losing the route entirely.
         //
-        // The only caller that can rename already checks this (RouteEditor), which is exactly why the
+        // The only caller that can rename already checks this (RouteEditorFrame), which is exactly why the
         // check belongs here too: the model should not depend on one dialog to protect its data.
         if (!name.equals(trimmedNewName) && this.routeDB.hasName(trimmedNewName))
         {

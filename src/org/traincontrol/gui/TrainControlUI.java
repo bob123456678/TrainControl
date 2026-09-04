@@ -5455,6 +5455,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void rebuildRunningLayoutFromSetup()
     {
+        rebuildRunningLayoutFromSetup(false);
+    }
+
+    /**
+     * The same rebuild, saying so when it declines one the operator has not been warned about
+     * (VD11-C8).
+     *
+     * `VD10-C2` coalesced the rebuild into one per gesture, which posts it an event later than the
+     * write that asked for it. A run starting inside that event finds this gate shut and the edit is
+     * thrown away - correctly, because rebuilding underneath a moving railway is what
+     * `prepareAutonomyReload` exists to refuse. What was wrong is that nothing said so.
+     *
+     * **The rebuild is NOT deferred to when the run ends**, which is the obvious fix and is worse
+     * than the defect. "The setup is the newer of the two" is true only because every caller reaches
+     * this BECAUSE the setup just changed, with the running layout captured upstream when the editor
+     * opened - see the paragraph below. A run invalidates that: it moves locomotives, `currentLoc` is
+     * the only place that lives, and nothing folds it back. Applying the rebuild afterwards would
+     * regenerate every placement from a setup that is now stale about where the trains are, and put
+     * each one back where it started. That is `OB-144`, which was fixed here once already.
+     *
+     * The remedy is in the sentence, because a message about a fault the reader cannot act on is not
+     * a message: stop the run and make the edit again, or let the next ordinary load pick it up off
+     * disk, which it will - the edit reached the file before this was ever called.
+     *
+     * @param sayIfDeclined true where the caller has not already warned about editing during a run
+     */
+    public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined)
+    {
+        if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
+            && getAutonomyViewerPanel() != null)
+        {
+            this.model.log("A setup edit could not be applied to the running railway, because"
+                + " autonomy started between the edit and the moment it was to be applied.  The edit"
+                + " IS saved - stop autonomy and make it again to have it take effect now, or it will"
+                + " be picked up the next time the setup is loaded.");
+        }
+
         if (activeDiagramConfiguration != null && !isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {

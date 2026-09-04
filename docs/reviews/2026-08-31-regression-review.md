@@ -36,11 +36,11 @@ almost nothing (see `RGN-D7`); everything below came from sweeps 1 and 4.
 
 | | |
 |---|---|
-| **A1** | open - legacy `autonomy.json` import silently drops every run-wide setting, the whole timetable, and all 90 authored edge lengths |
-| **A2** | open - the Auto tab is disabled for every user whose autonomy comes from `autonomy.json`, so nothing on it can be reached after upgrading |
-| **B1** | open - `Point:` station captions are stripped out of the user's own `.cs2` page files, one way, with no changelog line |
-| **B2** | open - an s88-fired route with a conflict does not "stop": it drops its accessories and runs everything else |
-| **B3** | open - the v2.7.4 changelog section was rewritten so that two 3.0.0 changes read as things the user already has |
+| **A1** | fixed - legacy `autonomy.json` import silently drops every run-wide setting, the whole timetable, and all 90 authored edge lengths |
+| **A2** | fixed - the Auto tab is disabled for every user whose autonomy comes from `autonomy.json`, so nothing on it can be reached after upgrading |
+| **B1** | fixed - `Point:` station captions are stripped out of the user's own `.cs2` page files, one way, with no changelog line |
+| **B2** | closed - an s88-fired route with a conflict does not "stop": it drops its accessories and runs everything else |
+| **B3** | fixed - the v2.7.4 changelog section was rewritten so that two 3.0.0 changes read as things the user already has |
 | **C1** | open - auto-save on exit is forced on and its checkbox hidden, so `autonomy.json` is rewritten for somebody who turned that off |
 | **C2** | open - CS2 route delays are parsed differently: `sekunde=2.3` was 2000 ms and is now 2300 ms |
 | **C3** | open - a locomotive whose name contains a bracket can no longer be used in any route command, and neither door that creates a locomotive knows the rule |
@@ -55,7 +55,7 @@ almost nothing (see `RGN-D7`); everything below came from sweeps 1 and 4.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - `importLegacy` now reads `edges` (`:925`), `timetable` (`:946`), `activateRoutes` (`:952`) and walks every key (`:829`), where the finding's evidence was that it read only `points`.  `MT-243` carries the check |
 | **Confidence** | confirmed by reading, and measured against Adam's own file |
 
 `AutonomySession.importLegacy` reads exactly one key out of the file it is given:
@@ -139,7 +139,7 @@ MT-244 can be run against this; the automated half is done.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - the gate reads `valid && loaded && isLocalLayout()`, and `loaded` now carries the comment "A setup with NO configurations is the JSON path, and it is loaded by definition".  `MT-244` carries the check |
 | **Confidence** | confirmed by reading; the visible symptom needs execution |
 
 `refreshAutonomyTabState` decides whether the "Auto" tab is usable:
@@ -441,7 +441,7 @@ would assert over the part that was never in doubt.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSelected(true); autosave.setVisible(false);` |
 | **Confidence** | confirmed by reading |
 
     src/org/traincontrol/gui/TrainControlUI.java:870-871
@@ -470,7 +470,7 @@ exit, and compare the file's bytes before and after.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, so 2.3 is 2300 ms where 2.8.1 gave 2000.  **This is a question rather than a defect**: the new reading is the more literal one, and which is wanted is Adam's |
 | **Confidence** | confirmed by reading |
 
     src/org/traincontrol/marklin/file/CS2File.java:827   (HEAD)
@@ -494,7 +494,7 @@ revisions; print `rc.getDelay()` for every command.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `RouteCommand.isNameUsable:600` still refuses `,`, `(` and `)`.  Note the finding cites `RouteEditor.java`, which has since been deleted; the surviving door is `RouteEditorFrame` |
 | **Confidence** | confirmed by reading; whether any real locomotive is affected needs Adam's own database |
 
 `RouteEditorFrame.java:2227` refuses to save a route any of whose commands names a locomotive failing
@@ -524,7 +524,7 @@ the gap is real - then put a speed command for it in a route and press Save.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is inside 2.7.4c, which this release cannot change.  The only choices are to write a file shape the old version reads or to document the downgrade, and that is a decision rather than a fix |
 | **Confidence** | confirmed by reading |
 
 `v2_7_4c` restores the trailing page-names map only when `saveStates.size() > NUM_LOC_MAPPINGS`, with

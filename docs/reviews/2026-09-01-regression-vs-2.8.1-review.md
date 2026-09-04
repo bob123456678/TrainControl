@@ -38,14 +38,14 @@ are **not** re-filed here. `RGN-A1`'s globals half has since been fixed - see `R
 
 | | |
 |---|---|
-| **A1** | open - deleting a locomotive now silently deletes every route command that names it; 2.8.1 kept them |
-| **B1** | open - a legacy `autonomy.json`'s per-edge accessory commands are dropped on import and cannot be authored anywhere in 3.0.0 |
-| **B2** | open - "Export Current Graph" is unreachable in every configuration; its only replacement needs a command-line debug launch |
-| **C1** | open - "Clear All Home Locomotives" is gone, and its two API methods are dead |
-| **C2** | open - "Copy Outgoing Edge..." is gone with no equivalent |
-| **C3** | open - `SHOW_HOME_LOCOMOTIVES` and `HIDE_REVERSING_EDGES_PREF` survive as dead constants; the home assignment is no longer drawn |
-| **C4** | open - `route.ui.errorUnusableLocName`, added *for* 2.8.1, is an orphan key in all eight bundles |
-| **C5** | open - the graph window's keyboard routes to s88 address and home locomotive have mouse-only successors |
+| **A1** | half fixed - deleting a locomotive now silently deletes every route command that names it; 2.8.1 kept them |
+| **B1** | half fixed - a legacy `autonomy.json`'s per-edge accessory commands are dropped on import and cannot be authored anywhere in 3.0.0 |
+| **B2** | withdrawn - "Export Current Graph" is unreachable in every configuration; its only replacement needs a command-line debug launch |
+| **C1** | fixed - "Clear All Home Locomotives" is gone, and its two API methods are dead |
+| **C2** | declined - "Copy Outgoing Edge..." is gone with no equivalent |
+| **C3** | fixed - `SHOW_HOME_LOCOMOTIVES` and `HIDE_REVERSING_EDGES_PREF` survive as dead constants; the home assignment is no longer drawn |
+| **C4** | fixed - `route.ui.errorUnusableLocName`, added *for* 2.8.1, is an orphan key in all eight bundles |
+| **C5** | one restored, one declined - the graph window's keyboard routes to s88 address and home locomotive have mouse-only successors |
 | **D1-D12** | checks that came back clean |
 
 ---
@@ -58,7 +58,7 @@ are **not** re-filed here. `RGN-A1`'s globals half has since been fixed - see `R
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **half fixed**, verified 2026-09-04 - the silence is gone: `MarklinControlStation:3010` logs `route.warnCommandsRemovedForDeletedLocomotive`.  Adam's ruling of 2026-09-04 - *"put it in the log, popup on count"* - asks for a second half that is not built: a dialog when the count is non-zero |
 | **Confidence** | confirmed by reading both revisions; the removal is deliberate, the silence is not |
 | **Also** | DEFERRED - needs Adam, on the one question stated at the end |
 
@@ -148,7 +148,7 @@ line to be gone, with nothing in the log about it.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **half fixed**, verified 2026-09-04 - the loss is now reported: `AutonomySession:920-944` counts edges carrying `commands` and `length` and raises `autosetup.ui.leftEdgeCommands` and `leftEdgeLengths`.  The commands are still not imported, and the finding's second half - that nothing in 3.0.0 can author them - is untouched |
 | **Confidence** | confirmed by reading, and measured against the graph in the repository |
 
 At 2.8.1 an edge could carry an arbitrary list of accessory commands, authored by hand:

@@ -32,7 +32,7 @@ fine.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - `Layout:1148` and `:1276` name this finding, the assignment door now applies `claimHome`'s rule, and `testHomeStaging:3410` covers it |
 | **Confidence** | confirmed by reading; the reachability trace is step-by-step below and needs no runtime state |
 | **Where** | `src/org/traincontrol/automation/Layout.java:1080`, against `src/org/traincontrol/automation/HomeStaging.java:1589` |
 
@@ -150,7 +150,7 @@ call out of the second door.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - `TrainControlUI:17225` and `:23223` both repaint the timetable and name this finding; `testLocomotiveIdentityPropagates:808` covers it |
 | **Confidence** | confirmed by reading |
 | **Where** | `src/org/traincontrol/gui/TrainControlUI.java:3908`, against `:3838`, `:3860`, `:16528` and `:22212` |
 
@@ -192,7 +192,7 @@ both rename doors (and in `deleteLoc` - see C2), rather than inside the setup-fi
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | fixed, verified 2026-09-04 - both launch-pad comparisons use it now: `HomeStaging:202` computes `standingOnIt` for the one at `:204`, and `:877` asks `atHome(ownHome, at)` directly |
 | **Confidence** | confirmed by reading that the comparisons were not converted; reachability needs execution |
 | **Where** | `src/org/traincontrol/automation/HomeStaging.java:199` and `:839` |
 
@@ -310,7 +310,7 @@ question the ruling settles, on ten of Adam's squares rather than one.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` still defines it |
 | **Confidence** | confirmed by reading that the lift no longer serves its purpose; the residual harm is stated by the code's own comment |
 | **Where** | `src/org/traincontrol/gui/LayoutLabel.java:1018` and `:1081`, against `src/org/traincontrol/gui/LayoutGrid.java:675` |
 
@@ -345,7 +345,7 @@ the method's reason to exist.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `clearCopyTarget`, `repaintLoc`, `repaintMappings` and `refreshLocSelectorList`, and still neither `refreshRouteList()` nor `repaintTimetable()`.  Both rename doors have them |
 | **Confidence** | confirmed by reading |
 | **Where** | `src/org/traincontrol/gui/TrainControlUI.java:17338-17345`, against `:16504`/`:16528` and `:22199`/`:22212` |
 
@@ -375,7 +375,7 @@ style of `testARenameReachesTheTimetableOnScreen`.
 
 | | |
 |---|---|
-| **Disposition** | open |
+| **Disposition** | **still open**, re-checked 2026-09-04 - `Layout:5126-5128` still calls `stopLocomotives()` and logs "Autonomy has stopped itself..." with no test of whether a run was ever going |
 | **Confidence** | confirmed by reading |
 | **Where** | `src/org/traincontrol/automation/Layout.java:4828`, reached from `src/org/traincontrol/gui/AutoLocomotiveStatus.java:1027` and `src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java:313` |
 

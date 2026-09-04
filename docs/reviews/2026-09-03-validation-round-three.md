@@ -51,7 +51,7 @@ eight message bundles were decoded and read. The full battery was **not** run, o
 | **C5** | The rename to `...WiderSweep` left a stale reference in `docs/manual-tests/tests.md:13493`, which is `VD9-C15`/`VD10-C8` a third time | fixed |
 | **C6** | The new `FR-058` test's last assertion cannot fail: it asserts the setter it called two lines above | fixed |
 | **C7** | `VD10-B1`'s hunk lost its paragraph breaks - the `VD10-A1` paragraph runs straight into the `VD10-B1` heading - and left a double blank line where the old block was | fixed |
-| **C8** | What `VD10-C2`'s coalescing costs, which is small but is not nothing: `onChanged`'s two cache refreshes now run against the pre-rebuild layout, and the `isAutonomyBusy` gate is asked one event after the edit | recorded |
+| **C8** | What `VD10-C2`'s coalescing costs, which is small but is not nothing: `onChanged`'s two cache refreshes now run against the pre-rebuild layout, and the `isAutonomyBusy` gate is asked one event after the edit | fixed |
 | **C9** | *More Destinations* is uncapped by argument rather than by measurement; ~25 items are reachable on the operator's layout | fixed |
 | **C10** | `FR-058` changes a menu that dispatches trains and no manual test was written for it; `issues.md` carries "fixed unvalidated" with no `MT` tag beside it | fixed |
 | **D1** | All eight `autolayout.errorRunStoppedByFailure` values decode to correct, idiomatic text, are pure ASCII, carry `{0}`, and use no straight apostrophe. Same for the new `autolayout.ui.menuMoreDestinations` | closed |
@@ -530,7 +530,7 @@ same evening, at a severity nobody would otherwise write down.
 
 | | |
 |---|---|
-| **Disposition** | **recorded, not fixed** - two of the three do not bite and the third is a one-event window whose proper fix needs a bound on re-posting; deliberately left for after the release - see below |
+| **Disposition** | fixed, on Adam's instruction - the loss is now reported with its remedy rather than deferred; deferring the rebuild would reintroduce OB-144 - see below |
 | **Confidence** | confirmed by reading the call chain and both wrappers; the ordering questions traced to their event posts |
 
 `VD10-C2`'s change is right and the reasoning for coalescing rather than pushing the exit back onto the
@@ -554,15 +554,22 @@ callers is right. Three things move with it, none large enough on its own to gra
   could not construct a path to it, so it is recorded as a hazard the synchronous version did not have
   rather than as a defect.
 
-**Left for after the release, and written down rather than decided quietly.**  The first bullet
-self-corrects, which `D5` establishes independently, and the third could not be reached even by
-construction.  The second is real: an autonomy run starting between the write and the drain discards
-the rebuild silently.  The window is one EDT event long - Start would have to be pressed in the same
-instant the edit lands - and closing it means re-posting a declined rebuild, which needs a bound so it
-cannot spin for the length of a run.  That is not an hour-before-release change.
+**Fixed on 2026-09-04, and not the way this said it would be.**  The first bullet self-corrects, which
+`D5` establishes independently, and the third could not be reached even by construction.  The second is
+real: an autonomy run starting between the write and the drain discards the rebuild silently.
 
-What makes it worth the paragraph is that the synchronous version had no window at all.  This is a cost
-the coalescing introduced, and it should be paid rather than forgotten.
+I proposed re-posting the declined rebuild when the run ends.  **That is worse than the defect.**
+`rebuildRunningLayoutFromSetup`'s own comment says "the setup is the newer of the two" holds because
+every caller reaches it BECAUSE the setup just changed, with the running layout captured upstream when
+the editor opened.  A run breaks exactly that: it moves locomotives, `currentLoc` is the only place
+that lives, and nothing folds it back.  Applying the rebuild afterwards regenerates every placement
+from a setup that is now stale about where the trains are - which is `OB-144`, already fixed once in
+this method.  The proposal would have paid a silent lost edit for a silent teleport.
+
+So the loss is made loud instead, with the remedy in the sentence, and only at the door where a decline
+is a surprise - `TrainControlUI:5566` has already warned about editing during a run.  `MT-267` carries
+the check, because nothing in the suite can build the window, hold a configuration open and start a run
+inside one event.
 ### C9 — the submenu is uncapped by argument rather than by measurement
 
 | | |

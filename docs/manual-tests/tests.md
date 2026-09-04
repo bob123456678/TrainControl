@@ -39,7 +39,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
 | [MT-265](#mt-265) | 2026-09-03 | Four gestures behind today's fixes | needs test | SVN-B8, SVN-B11, IPR-B2, IPR-B4 |
-| [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3 |
+| [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
+| [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -240,6 +241,45 @@ would look exactly the same.
    off the screen, say so - it wants a scroller rather than a second "...".
 
 *Run against the next release candidate.*
+
+---
+
+<a id="mt-267"></a>
+
+### MT-267 - 2026-09-04 - A setup edit made the instant autonomy starts
+
+**Disposition:** needs test
+**From:** VD11-C8
+
+**Written:** 2026-09-04
+
+**One check, and it is a narrow one.** Editing the setup tells the running railway about the change;
+that message is now sent once per gesture rather than once per write, which means it arrives a moment
+after the edit rather than during it. If autonomy starts inside that moment, the change cannot be
+applied - rebuilding the railway underneath moving trains is refused, and rightly.
+
+**What was wrong is that nothing said so.** The edit looked as though it had been made and had not
+taken effect, with no message anywhere.
+
+**Why it is not simply applied later.** It would put every train back where it started. The setup only
+knows where the trains are because that is captured when the editor opens; once a run has moved them,
+regenerating from the setup undoes the run. That was a real defect here once and is not worth
+reintroducing to save a message.
+
+**What to do.**
+
+1. **Open the autonomy setup editor with nothing running.** Make any small edit - a station flag, a
+   home, a length.
+2. **Start autonomy in the same instant.** This is deliberately hard to hit and you may not manage it;
+   if you cannot, say so and this step is done, because the message costs nothing when it never fires.
+3. **If you do hit it, the log should carry one sentence** saying the edit could not be applied, that
+   it IS saved, and that stopping autonomy and making it again will apply it now. Check that following
+   that instruction actually works.
+4. **The ordinary case must not have changed.** Edit the setup with autonomy running normally - you
+   are already warned about that when you start - and confirm you do **not** get a second message on
+   top of the warning.
+
+*Run against v3_0_0_rc12 or later.*
 
 ---
 
@@ -13705,6 +13745,12 @@ blamed the track.
    a terminus with no reversing point anywhere on the way, should still be reported as impossible.
 
 *Run against a build after commit 9f1b80c8.*
+
+**Adam, 2026-09-04 (triage).** Does not work.
+
+In the current setup, I can't get EN57-203 back to its home of TunnelLongPark
+
+*Run against commit 409d4ce8, build\classes, compiled 04 Sep 01:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
