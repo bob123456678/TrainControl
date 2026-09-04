@@ -1386,6 +1386,42 @@ public class RouteEditorFrame extends JFrame
         else throw new IllegalArgumentException("no such mark: " + mark);
     }
 
+    /**
+     * For tests: the condition outline as the table holds it (FR3-B1).
+     *
+     * The command table has had `commandRowForTest` and `clickCommandMarkForTest` since it was
+     * written; the condition table had nothing, and `FR3-B1` - a silent change to when a route fires -
+     * lived in it undetected because of that.
+     *
+     * @return the live list, so a caller can read what an edit left behind
+     */
+    public java.util.List<ConditionOutline.Row> conditionRowsForTest()
+    {
+        return conditions.rows;
+    }
+
+    /**
+     * For tests: put an outline into the condition table, as loading a route does.
+     *
+     * @param rows the outline
+     */
+    public void setConditionRowsForTest(java.util.List<ConditionOutline.Row> rows)
+    {
+        conditions.rows.clear();
+        conditions.rows.addAll(rows);
+        conditions.fireTableDataChanged();
+    }
+
+    /**
+     * For tests: delete one condition row, through the same door the trash can uses.
+     *
+     * @param row which row
+     */
+    public void deleteConditionForTest(int row)
+    {
+        conditions.removeAt(row);
+    }
+
     /** The marks, so a test names them the way the table does */
     public static String markMoveUp() { return MOVE_UP; }
 
@@ -3761,7 +3797,27 @@ public class RouteEditorFrame extends JFrame
         {
             for (int at = 0; at < rows.size(); at++)
             {
-                int most = at == 0 ? 0 : rows.get(at - 1).getDepth() + 1;
+                // ROW 0 KEEPS ITS OWN DEPTH (FR3-B1).
+                //
+                // This read `at == 0 ? 0`, forcing the first row flat - and a condition that begins
+                // with a bracketed group legitimately starts one level in.  `ConditionOutline.write`
+                // emits `(A or B) and C` as `[A(1), or(1), B(1), and(0), C(0)]`, because `writeChild`
+                // bumps a cross-operator left child a level; `toExpression`'s own comment says such a
+                // condition "opens as an outline whose first row is one level in".
+                //
+                // So deleting the UNRELATED `C` left `[A(1), or(1), B(1)]`, this line flattened it to
+                // `[A(0), or(1), B(1)]`, and the outline then read back as `A and B`: the `or` was
+                // alone in a one-item sub-run with nothing to join, and the level-0 word defaulted to
+                // AND.  `problems()` flags nothing - one joiner alone at its depth is not a
+                // disagreement - so no row went red and Save wrote the changed meaning.
+                //
+                // What that alters is when a route FIRES, which is the hazard `everythingWrong`'s own
+                // comment names two lines above its gate.
+                //
+                // The floor for row 0 is its own depth: `tidy` exists to stop a row being indented
+                // more than one level past the row above it, and row 0 has no row above it to be
+                // measured against.
+                int most = at == 0 ? rows.get(0).getDepth() : rows.get(at - 1).getDepth() + 1;
 
                 if (rows.get(at).getDepth() > most)
                 {

@@ -144,4 +144,118 @@ public class testRouteEditorValidation
             throw new SkipException("the route editor is a window - this needs a display");
         }
     }
+    /**
+     * Deleting an unrelated condition does not turn a leading "or" into "and" (FR3-B1).
+     *
+     * **A silent change to when a route fires**, in the route editor that is a headline 3.0.0 feature,
+     * over a path no test covered.
+     *
+     * `(A or B) and C` loads as `[A(1), or(1), B(1), and(0), C(0)]` - `ConditionOutline.write` bumps a
+     * cross-operator left child a level, and `toExpression`'s own comment says such a condition *"opens
+     * as an outline whose first row is one level in"*.
+     *
+     * Delete `C`, which has nothing to do with the group, and the table is left with
+     * `[A(1), or(1), B(1)]`. `tidy()` then forced row 0 flat - `at == 0 ? 0` - giving
+     * `[A(0), or(1), B(1)]`, which reads back as **`A and B`**: the `or` is alone in a one-item
+     * sub-run with nothing to join, so the level-0 word defaults to AND.
+     *
+     * **And nothing objected.** `problems()` does not flag it - one joiner alone at its depth is not a
+     * disagreement - so no row went red, and `everythingWrong`'s only condition-shape gate is
+     * `hasProblems()`. Save wrote the changed meaning, which is the hazard the comment two lines above
+     * that gate names: *"the route would then fire at times nobody asked for."*
+     *
+     * MUTATION: restoring `at == 0 ? 0` fails the second assertion.
+     */
+    @Test
+    public void testDeletingAConditionDoesNotChangeTheGroupAboveIt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            java.util.List<org.traincontrol.base.ConditionOutline.Row> outline = new java.util.ArrayList<>();
+
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(1)));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.joining(1, org.traincontrol.base.ConditionOutline.Joiner.OR));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(2)));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(3)));
+
+            javax.swing.SwingUtilities.invokeAndWait(
+                () -> frame.setConditionRowsForTest(outline));
+
+            // THE PRECONDITION: it really does mean `(A or B) and C` before the edit.
+            assertTrue(reads(frame).equals("And(Group(Or(x,x)),x)"),
+                "the fixture does not start as an OR group inside an AND, so the assertion below "
+                + "pass against an outline that never had one: " + reads(frame));
+
+            // The LAST condition, which has nothing to do with the group.
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(4));
+
+            assertTrue(reads(frame).contains("Or("),
+                "deleting an unrelated condition turned the group's OR into an AND.  tidy() forced "
+                + "row 0 flat, and a condition beginning with a bracketed group legitimately starts "
+                + "one level in - so the outline read back as `A and B`, nothing was flagged, and "
+                + "Save would write a route that fires at times nobody asked for (FR3-B1).  Now: "
+                + reads(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * The SHAPE of the expression the outline currently means - "And(Or(x,x),x)".
+     *
+     * The class name of the top node alone is not enough: `(A or B) and C` is a NodeAnd whichever way
+     * the group inside it reads, which is what made the first version of this helper unable to tell
+     * the defect from the fix.
+     */
+    private static String reads(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        return shape(org.traincontrol.base.ConditionOutline.toExpression(
+            frame.conditionRowsForTest()));
+    }
+
+    /** One expression as a bracketed shape, so two trees can be compared by reading. */
+    private static String shape(org.traincontrol.base.NodeExpression node)
+    {
+        if (node == null) return "(nothing)";
+
+        if (node instanceof org.traincontrol.base.NodeAnd)
+        {
+            return "And(" + shape(((org.traincontrol.base.NodeAnd) node).getLeft()) + ","
+                + shape(((org.traincontrol.base.NodeAnd) node).getRight()) + ")";
+        }
+
+        if (node instanceof org.traincontrol.base.NodeOr)
+        {
+            return "Or(" + shape(((org.traincontrol.base.NodeOr) node).getLeft()) + ","
+                + shape(((org.traincontrol.base.NodeOr) node).getRight()) + ")";
+        }
+
+        if (node instanceof org.traincontrol.base.NodeGroup)
+        {
+            StringBuilder out = new StringBuilder("Group(");
+
+            for (org.traincontrol.base.NodeExpression inside
+                : ((org.traincontrol.base.NodeGroup) node).getExpressions())
+            {
+                out.append(shape(inside));
+            }
+
+            return out.append(")").toString();
+        }
+
+        return "x";
+    }
+
+    /** A feedback condition on one sensor. */
+    private static org.traincontrol.base.RouteCommand feedback(int address)
+    {
+        return org.traincontrol.base.RouteCommand.RouteCommandFeedback(address, true);
+    }
 }
