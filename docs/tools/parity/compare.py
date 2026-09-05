@@ -362,6 +362,51 @@ def main():
 
     add('')
 
+    # -------------------------------------------------------------- and the other direction
+    #
+    # THE ONE WITH THE SAFETY CONSEQUENCE, which this section did not compute (RG4-C2).
+    #
+    # Above: pairs 2.8.1 allowed that 3.0.0 forbids - over-eager locking, which costs throughput.
+    # Below: pairs the 2.8.1 lock data FORBADE that 3.0.0 permits - a lock that was dropped, which
+    # costs two trains converging.  The report printed a headline for the harmless direction and was
+    # silent about the other one.
+    #
+    # The asymmetry was already known: the import warns about hand-written locks precisely because
+    # geometry cannot reproduce a lock between edges that share no square.  The harness that could
+    # check it structurally simply did not.
+    #
+    # Same judgeability rule, for the same reason: a pair whose route is new cannot be compared
+    # against a file that never had it, and the gained routes are already reported in section 2.
+    judgeable_new = set(p for p in new_pairs
+        if p[0] in old_routes and p[1] in old_routes)
+
+    gained_pairs = sorted(judgeable_new - old_pairs)
+
+    if not gained_pairs:
+        add('**No pair that 2.8.1 forbade, and whose routes both existed then, has been freed.**')
+    else:
+        add('**%d pair(s) can now run concurrently** that the 2.8.1 lock data forbade -' %
+            len(gained_pairs))
+        add('a dropped lock.  This is the direction that matters: an over-eager lock above costs')
+        add('throughput, a dropped one here permits two trains to move where the old file did not.')
+        add('')
+        add('Each row is a question rather than a defect.  Most hand-written locks are reproduced by')
+        add('the geometry, and a pair listed here may simply be one the old file locked more')
+        add('conservatively than the track requires - which is the operator\'s call, not the')
+        add('harness\'s.  What the harness can do is refuse to let the question go unasked.')
+        add('')
+        add('| Train A | Route A | Train B | Route B |')
+        add('|---|---|---|---|')
+
+        for a, b in gained_pairs[:60]:
+            add('| %s | %s to %s | %s | %s to %s |' % (a[0], a[1], a[2], b[0], b[1], b[2]))
+
+        if len(gained_pairs) > 60:
+            add('')
+            add('...and %d more.' % (len(gained_pairs) - 60))
+
+    add('')
+
     # ==================================================================== 4. the timed run
     add('## 4. The timed run')
     add('')

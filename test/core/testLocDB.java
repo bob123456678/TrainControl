@@ -24,6 +24,60 @@ public class testLocDB
 {   
     public static MarklinControlStation model;
     
+    /**
+     * The locomotive CSV is produced without a window (AC2-C3).
+     *
+     * **A method that needed the one thing a headless session does not have.** Nine of its ten
+     * columns come from the locomotive; the tenth, button mappings, is a fact about the main window,
+     * and it was read through `this.view` with no check. `view` is null whenever the model was built
+     * with `showUI` false - which is exactly how the documented programmatic API starts, and how this
+     * very test class starts. So an API user asking for the CSV got a bare NullPointerException
+     * instead of the nine columns that were never in doubt.
+     *
+     * Every neighbouring method in that class already asks whether there is a view. This one did not,
+     * which is this codebase's recurring shape rather than an isolated slip.
+     *
+     * **Empty, not refused.** A button mapping is a fact about a window; a session with no window has
+     * none. That is the answer, not an error.
+     *
+     * MUTATION: take the null check out and this throws rather than failing an assertion - which is
+     * the defect exactly, so the throw is the evidence.
+     */
+    @Test
+    public void testTheLocomotiveCsvNeedsNoWindow()
+    {
+        assertNull(model.getGUI(),
+            "precondition: this class starts the model with showUI false, so there must be no view - "
+            + "if that ever changes this test stops asking anything");
+
+        String csv = model.exportLocsToCSV();
+
+        assertNotNull(csv, "no CSV came back at all");
+
+        // THE HEADER, which is the part that proves the method ran rather than that a locomotive
+        // happened to be present.
+        assertTrue(csv.startsWith("Name,ButtonMappings"),
+            "the CSV does not begin with its own header row: " + csv.substring(0,
+                Math.min(80, csv.length())));
+
+        // AND A NAMED LOCOMOTIVE IN IT, so the row loop is actually reached - a header-only CSV
+        // would pass the assertion above without ever touching the line that used to throw.
+        //
+        // By name rather than by counting lines: `escapeCsv` quotes a notes field that contains a
+        // newline, and a quoted newline is a legal CSV row that spans two lines.  Counting them said
+        // 197 rows for 173 locomotives, and the twenty-four extra were notes, not a
+        // defect - the count was the wrong question, asked confidently.
+        assertFalse(model.getLocList().isEmpty(),
+            "precondition: the database has to hold a locomotive, or the row loop never runs and "
+            + "the line that used to throw is never reached");
+
+        final String first = model.getLocList().get(0);
+
+        assertTrue(csv.contains(org.traincontrol.util.Util.escapeCsv(first)),
+            "the CSV does not contain \"" + first + "\", so the per-locomotive loop - which is "
+            + "where the view was read - was never reached");
+    }
+
     public testLocDB()
     {
     }

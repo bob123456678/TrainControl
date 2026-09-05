@@ -876,7 +876,15 @@ public class LayoutGrid
         // Create layout                      
         // JPanel container; // no longer needed - included as class field for caching
         
-        parent.removeAll();
+        // NOT EMPTIED YET - see the swap below (Adam, 2026-09-04: "less flickering").
+        //
+        // This used to empty the panel HERE, eight hundred lines before the replacement is added to
+        // it, and everything between is the build: every tile, every image decode, every caption.  So
+        // the panel stood EMPTY for the whole rebuild, and any paint landing in that window - and
+        // there are many, because decoding pumps the event queue - drew a blank page.
+        //
+        // That is the flicker on a re-render: not the diagram being redrawn, but nothing being drawn
+        // in its place first.  The old diagram stays up until the new one is ready.
         
         // We need a non scaling panel for small layouts
         // if (width * size < parent.getWidth() || height * size < parent.getHeight() || popup)
@@ -1753,6 +1761,10 @@ public class LayoutGrid
         
         if (!container.equals(parent))
         {
+            // ONE PASS: the old diagram comes off and the new one goes on with no layout between
+            // them, so the panel is never painted empty.
+            parent.removeAll();
+
             parent.add(container);
 
             showWhenTilesAreReady(parent, ui);

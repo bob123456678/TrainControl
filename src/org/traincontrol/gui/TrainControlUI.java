@@ -16988,13 +16988,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new Thread(() ->
             {
                 Integer r = this.syncWithCS2();
-                refreshRouteList();
-                this.selector.refreshLocSelectorList();
+
+                // ONE PASS for everything cheap enough to share one (Adam, "single pass").
+                //
+                // This was four refreshes and two menu calls, each arriving in its own event: the
+                // route list, then the locomotive list, then the menus coming back, one visible step
+                // at a time after the hourglass went away.
+                //
+                // The two setEnabled calls were also being made from THIS thread, which is not the
+                // event thread - a Swing component touched off it.  They have been inside the
+                // hourglass this whole time, so nothing showed; being in the pass fixes that as well
+                // as making them land with the lists.
+                singlePass(() ->
+                {
+                    refreshRouteList();
+                    this.selector.refreshLocSelectorList();
+
+                    this.syncMenuItem.setEnabled(true);
+                    this.functionsMenu.setEnabled(true);
+                });
+
+                // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
                 this.repaintLayout();
-
-                this.syncMenuItem.setEnabled(true);
-                this.functionsMenu.setEnabled(true);
 
                 if (c != null)
                 {
@@ -26090,9 +26106,48 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return autoLocScroll;
     }
     
+    /**
+     * Runs a refresh on the event thread in ONE pass, rather than posting a new one for it.
+     *
+     * Adam, 2026-09-04: "the main UI when the hourglass expires - it seems that some components
+     * appear faster than others.  Best to do a single pass."
+     *
+     * He is describing what several `invokeLater` calls in a row actually look like.  Each one is a
+     * separate event, each event is a separate layout and paint, and the window is shown between
+     * them - so the route list arrives, then the locomotive list, then the menus come back, in three
+     * visible steps.  Nothing was slow; it was simply done in installments.
+     *
+     * `invokeLater` posts unconditionally, so a caller ALREADY on the event thread cannot collect
+     * several refreshes into one pass by wrapping them - the wrapper is one event and each refresh
+     * inside it posts another.  This runs inline when there is already a pass to join, which is what
+     * makes the wrapping work.
+     *
+     * WHAT THIS CANNOT COLLECT, and deliberately: `repaintLayout` and `repaintLoc` go through their
+     * own single-thread renderers before they reach the event thread, because building the grid is
+     * the slow part of a sync and must not be done on it.  Folding those in would mean the menus and
+     * the lists waiting for the diagram, which is a worse window than the one being fixed.  The
+     * diagram arriving last is the design.
+     *
+     * @param body the refresh work
+     */
+    public static void singlePass(Runnable body)
+    {
+        if (body == null) return;
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            body.run();
+        }
+        else
+        {
+            javax.swing.SwingUtilities.invokeLater(body);
+        }
+    }
+
     public void refreshRouteList()
     {   
-        javax.swing.SwingUtilities.invokeLater(() ->
+        // singlePass, not invokeLater: joins a pass already running rather than asking for another.
+        singlePass(() ->
         {
             DefaultTableModel tableModel = new DefaultTableModel()
             {

@@ -64,6 +64,124 @@ public class testParseCS2Layout
     }
     
     /**
+     * A page edit keeps the parts of the index TrainControl does not model (AC2-C1).
+     *
+     * **Silent modification of a file the user did not ask to change.** The page exporter was given
+     * a rule - *"what TrainControl does not understand it is not entitled to throw away"* - and the
+     * INDEX never got it. `writeLayoutIndex` regenerates the whole header from four hardcoded lines,
+     * so any block a Central Station put there that this program has no name for is deleted by the
+     * first page add, rename, delete or duplicate.
+     *
+     * The genuine CS2 export this repository ships carries exactly one such block: `zuletztBenutzt`,
+     * the station remembering which page you were last looking at. Adam never sees this because his
+     * files are already TrainControl-normalised; a new user who downloads their layout from the
+     * station and then names one station gets an index the station never wrote.
+     *
+     * **And the latent half.** `readLayoutIndexIds` walked the file for `.name=` lines and called
+     * every one of them a page - so `zuletztBenutzt`'s own name was read as a page at position 0.
+     * Harmless only because the same name always reappears further down as a real `seite` and the map
+     * overwrites it. Preserving the block is what makes that luck expire, so both halves are here.
+     *
+     * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
+     * assertion fails; remove the `inPage` guard from the id reader and the third does.
+     */
+    @Test
+    public void testAPageEditKeepsWhatTheStationWroteInTheIndex() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // An index in the shape the shipped CS2 export has: the station's own last-used-page
+            // memory first, then the pages.  `.id=` deliberately does NOT start at 1, so an id that
+            // is merely a position cannot pass for one that was kept.
+            // The block names a page that is NOT in the list below, on purpose.  Named after one
+            // that is, the buggy reader puts it in at position 0 and the real page overwrites it a
+            // few lines later - so the assertion passes either way and proves nothing.  That is what
+            // "benign by luck" means, and it is also what makes it untestable if copied literally.
+            String original = "[gleisbild]\n"
+                + "version\n .major=1\n"
+                + "zuletztBenutzt\n .name=Retired Page\n"
+                + "groesse\n"
+                + "seite\n .id=7\n .name=Page One\n"
+                + "seite\n .id=9\n .name=Page Two\n";
+
+            java.io.File index = new java.io.File(config, "gleisbild.cs2");
+
+            java.nio.file.Files.write(index.toPath(),
+                original.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            // THE CONTROL, asked before anything is written: the ids are read as the file states
+            // them, and the station's block is not among the pages.
+            java.util.Map<String, Integer> read =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(read.get("Page One"), Integer.valueOf(7),
+                "precondition: the first page's stated id must be read, or nothing below is about "
+                + "ids at all");
+
+            assertEquals(read.get("Page Two"), Integer.valueOf(9),
+                "precondition: the second page's stated id must be read too");
+
+            assertNull(read.get("Retired Page"),
+                "the last-used-page block carries a `.name=` of its own, and the reader called every "
+                + "`.name=` in the file a page - so the station's memory of a page that no longer "
+                + "exists entered the id map at position 0.  A real page later given that name then "
+                + "resolves to id 0, and every setting keyed by its id attaches to the wrong track "
+                + "(AC2-C1).  Map was: " + read);
+
+            // A page edit: the same two pages, written back.
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(java.nio.file.Files.readAllBytes(index.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains("zuletztBenutzt"),
+                "writing the index deleted the station's own block.  The page exporter keeps what it "
+                + "does not model and the index did not, so a layout downloaded from a Central "
+                + "Station comes back changed after the first rename (AC2-C1).  File was:\n" + after);
+
+            assertTrue(after.contains(".name=Retired Page"),
+                "the block survived but its contents did not: " + after);
+
+            // AND EXACTLY ONCE, which is the failure the other direction: a block both carried over
+            // and regenerated leaves the file with two of it.
+            assertEquals(after.split("zuletztBenutzt", -1).length - 1, 1,
+                "the block appears more than once - carried over AND regenerated:\n" + after);
+
+            // The ids still stand, so the preservation did not cost what the writer is actually for.
+            java.util.Map<String, Integer> back =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(back.get("Page One"), Integer.valueOf(7), "the first page's id changed");
+            assertEquals(back.get("Page Two"), Integer.valueOf(9), "the second page's id changed");
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * Removes a temporary folder and everything in it.
+     */
+    private static void deleteTree(java.io.File file)
+    {
+        java.io.File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (java.io.File child : children) deleteTree(child);
+        }
+
+        file.delete();
+    }
+    /**
      * The page id from gleisbild.cs2 reaches the parsed layout.
      *
      * Autonomy stores its setup against this id rather than the page name, because a name is what a user

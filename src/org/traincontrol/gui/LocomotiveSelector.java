@@ -81,7 +81,9 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
     public synchronized void refreshLocSelectorList()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        // singlePass, not invokeLater: see TrainControlUI.singlePass.  A caller that refreshes this
+        // and the route list together now gets both in one pass instead of two.
+        TrainControlUI.singlePass(() -> 
         {
             this.MainLocList.removeAll();
 

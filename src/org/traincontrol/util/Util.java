@@ -652,16 +652,23 @@ public class Util
     {
         String apiUrl = "https://api.github.com/repos/" + repo + "/releases/latest";
 
-        BufferedReader in = CS2File.fetchURL(apiUrl);
         StringBuilder content = new StringBuilder();
-        String inputLine;
 
-        while ((inputLine = in.readLine()) != null)
+        // TRY-WITH-RESOURCES, so a bad response does not keep the connection (AC2-C4).
+        //
+        // The plain close() at the end was skipped by anything thrown from readLine, which leaked the
+        // reader and the HTTPS connection under it.  Every other fetch in this project was converted
+        // for exactly this reason - CS2File.parseFile, parseJSONArray, ping and isCS3 each carry the
+        // note - and this one was missed because it is the only fetch outside CS2File.
+        try (BufferedReader in = CS2File.fetchURL(apiUrl))
         {
-            content.append(inputLine);
-        }
+            String inputLine;
 
-        in.close();
+            while ((inputLine = in.readLine()) != null)
+            {
+                content.append(inputLine);
+            }
+        }
 
         // Parse the JSON response to get the tag_name
         return new JSONObject(content.toString());

@@ -3603,7 +3603,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (Locomotive l : this.getLocomotives())
         {
             String name = escapeCsv(l.getName());
-            List<String> mappings = this.view.getAllLocButtonMappings(l);
+            // THE ONE FIELD THAT NEEDS A WINDOW, in a method whose other nine do not (AC2-C3).
+            //
+            // `view` is null whenever the model was built with showUI false, which is exactly how the
+            // documented programmatic API starts - see AutomationAPI.md and the examples package.  So
+            // an API user asking for the CSV got a bare NullPointerException rather than the nine
+            // columns that were never in doubt.  Every neighbouring method in this class already asks.
+            //
+            // Empty rather than refusing: a button mapping is a fact about a window, and a session
+            // with no window has none - which is not an error, it is the answer.
+            List<String> mappings = this.view != null
+                ? this.view.getAllLocButtonMappings(l)
+                : new ArrayList<>();
             String mappingStr = escapeCsv(String.join(";", mappings)); // Semicolon to avoid comma collision
             String decoder = escapeCsv(l.getDecoderTypeLabel());
             int address = l.getAddress();

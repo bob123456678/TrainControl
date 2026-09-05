@@ -887,20 +887,37 @@ public class LayoutDiagram
             int position = 0;
             String idText = null;
 
+            boolean inPage = false;
+
             for (String line : readIndexLines(index))
             {
                 String trimmed = line.trim();
 
-                if ("seite".equals(trimmed))
+                // WHICH BLOCK WE ARE IN, not just whether this line looks like a page (AC2-C1).
+                //
+                // This walked the file for `.name=` lines and called every one of them a page.  The
+                // genuine CS2 export this repository ships opens with `zuletztBenutzt` - the station
+                // remembering which page you were last looking at - and that block carries a `.name=`
+                // of its own.  So the last-used page was read as a page at position 0.
+                //
+                // Benign until now only by luck: the same name always reappears as a real `seite`
+                // further down and the map overwrites it.  Preserving the block below is exactly what
+                // makes that luck expire, so the rule is written down before it is relied on.
+                if (trimmed.length() > 0 && !trimmed.startsWith(".") && !trimmed.startsWith("["))
                 {
-                    position++;
-                    idText = null;
+                    inPage = "seite".equals(trimmed);
+
+                    if (inPage)
+                    {
+                        position++;
+                        idText = null;
+                    }
                 }
-                else if (trimmed.startsWith(".id="))
+                else if (inPage && trimmed.startsWith(".id="))
                 {
                     idText = trimmed.substring(4);
                 }
-                else if (trimmed.startsWith(".name="))
+                else if (inPage && trimmed.startsWith(".name="))
                 {
                     // Through the shared rule rather than inline (DR-B4).
                     out.put(trimmed.substring(6), pageIdOrPosition(idText, position));
@@ -928,6 +945,90 @@ public class LayoutDiagram
         return out;
     }
 
+    /**
+     * The blocks in `gleisbild.cs2` that TrainControl does not model, kept so a page edit does not
+     * delete them (AC2-C1).
+     *
+     * The page exporter was given this treatment already, under the rule written at
+     * `LayoutDiagramComponent`: *"What TrainControl does not understand it is not entitled to throw
+     * away."*  The INDEX was not - it is regenerated from a hardcoded header every time, so anything
+     * the Central Station put there that this program has no name for is deleted by the first page
+     * add, rename, delete or duplicate.
+     *
+     * The genuine CS2 export this repository ships carries exactly such a block: `zuletztBenutzt`,
+     * the station remembering which page you were last looking at.  A user who downloads their layout
+     * from the station and then renames a page gets an index the station never wrote.
+     *
+     * **What is NOT kept, and why that is not an omission.**  `[gleisbild]`, `version`, `groesse` and
+     * `seite` are the modelled parts: the writer emits them itself, from what the layout actually is
+     * now, and keeping a stale copy of any of them would be worse than regenerating it.  Everything
+     * else is passed through untouched.
+     *
+     * Best-effort by design.  An index that cannot be read is already handled - and loudly - by
+     * `readLayoutIndexIds`; this returns nothing rather than adding a second way to fail a save over
+     * a block nobody has ever needed.
+     *
+     * @param path the layout folder
+     * @return the unmodelled blocks, each as its lines in file order, outermost first
+     */
+    public static List<List<String>> readLayoutIndexExtras(String path)
+    {
+        List<List<String>> out = new ArrayList<>();
+
+        File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
+
+        if (!index.exists()) return out;
+
+        // The four names this file writes for itself.  A block whose name is one of these is
+        // regenerated below and must not also be carried over, or the file gains a second copy.
+        final java.util.Set<String> modelled = new java.util.HashSet<>(
+            java.util.Arrays.asList("version", "groesse", "seite"));
+
+        try
+        {
+            List<String> current = null;
+
+            for (String line : readIndexLines(index))
+            {
+                String trimmed = line.trim();
+
+                if (trimmed.isEmpty()) continue;
+
+                // The file's own opening line, which the writer emits itself.
+                if (trimmed.startsWith("[")) { current = null; continue; }
+
+                // A block NAME - anything at the left margin that is not a key.
+                if (!trimmed.startsWith("."))
+                {
+                    if (modelled.contains(trimmed))
+                    {
+                        current = null;
+                    }
+                    else
+                    {
+                        current = new ArrayList<>();
+                        current.add(trimmed);
+                        out.add(current);
+                    }
+
+                    continue;
+                }
+
+                // A key, kept with the block it belongs to and dropped when that block is modelled.
+                if (current != null) current.add(" " + trimmed);
+            }
+        }
+        catch (IOException e)
+        {
+            // Nothing, deliberately.  readLayoutIndexIds reports an unreadable index through
+            // getUnreadableIndex and writeLayoutIndex refuses to write on it, so by the time this
+            // matters the save has already stopped.  Reporting it twice would only add a second
+            // reason to fail a save.
+            return new ArrayList<>();
+        }
+
+        return out;
+    }
     /**
      * The index file's lines, decoded by something that will not refuse them.
      *
@@ -1126,6 +1227,26 @@ public class LayoutDiagram
         contents.append("version\n");
         contents.append(" .major=1\n");
         contents.append("groesse\n");
+
+        // AND WHATEVER ELSE THE STATION PUT HERE (AC2-C1).
+        //
+        // The header above is regenerated from scratch on every write, which is right for the parts
+        // this program models and wrong for the parts it does not.  A genuine CS2 export opens with
+        // `zuletztBenutzt` - the page you were last looking at - and that block was deleted by the
+        // first rename, with nothing said.
+        //
+        // The page exporter already keeps its unmodelled blocks under the rule "what TrainControl
+        // does not understand it is not entitled to throw away"; this is the same rule one level up,
+        // where the index lives.
+        //
+        // AFTER the modelled header and BEFORE the pages, which is where the sample file has it.
+        for (List<String> block : readLayoutIndexExtras(path))
+        {
+            for (String line : block)
+            {
+                contents.append(line).append("\n");
+            }
+        }
 
         // Write layout details, keeping the id each page already had.
         //

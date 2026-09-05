@@ -64,7 +64,7 @@ objection to shipping.
 | | |
 |---|---|
 | **Severity** | A - a user setting is silently destroyed in the stored configuration, and the visible consequence (an s88 route that no longer fires) surfaces sessions later, disconnected from its cause |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | Every layer traced by reading, each quoted below; the globals round trip confirmed through all four hops (toJSON -> capture -> builder -> fromJSON).  NOT verified by execution: no new test could be compiled in this environment, and none of the 22 existing `core.testRoutes` tests pins this (they pin the adjacent immutable-list defect only).  The one link I did not step through is the UI list repaint after an edit; I claim only what the model does. |
 
 ### The defect
@@ -185,7 +185,7 @@ current tree.
 | | |
 |---|---|
 | **Severity** | C - silent modification of user files, with no functional consequence demonstrated |
-| **Disposition** | open |
+| **Disposition** | part fixed (1 and the `readLayoutIndexIds` note); 2 and 3 deliberately deferred - see below |
 | **Confidence** | Verified against the shipped `sample_layout` (a genuine CS2-format export) and against Adam's own `cs2_sample_layout` (read-only).  What the Central Station itself does with the rewritten files was NOT tested - no CS2 was harmed or consulted. |
 
 The page exporter went to great lengths to preserve what TrainControl does not model - unmodelled
@@ -220,6 +220,26 @@ Also noted while tracing: `readLayoutIndexIds` (`LayoutDiagram.java:890-908`) tr
 always reappears as a real `seite` and the map overwrites, but it is the kind of luck that
 expires.
 
+**What was done, 2026-09-04.** Item 1 is fixed: `readLayoutIndexExtras` reads the blocks the index
+does not model and `writeLayoutIndex` emits them between the modelled header and the pages - the same
+rule the page exporter already had, one level up. The `readLayoutIndexIds` note above is fixed with
+it, and deliberately at the same time: preserving the block is exactly what makes its luck expire, so
+the reader now tracks which block it is in rather than calling every `.name=` a page. Both halves are
+covered by `testAPageEditKeepsWhatTheStationWroteInTheIndex` and both were mutation-confirmed - the
+reader's assertion did not discriminate on the first attempt, because a block named after a real page
+is overwritten by it, which is the same luck restated as a test that cannot fail.
+
+**Items 2 and 3 are deferred, and this is the reason rather than an oversight.** Both live in
+`parseFileContents`, which is the parser for routes, locomotives, accessories and pages alike -
+widening its two regexes is a change to a shared primitive on a release candidate, and the half that
+matters is not the parse but the WRITE-BACK: a bare `page=1` that entered the model would then need
+every page exporter to emit it in the right place, which is where a mistake damages the file rather
+than merely failing to improve it. The benefit is also the least certain thing in this finding - what
+a Central Station does with an index missing `page=1` is unknown, and cannot be established here.
+
+So this stays as the review filed it: worth one manual test by somebody with a real CS2 before GA.
+The test is in the manual list, and it is the only part of AC2-C1 that needs Adam's hardware.
+
 ---
 
 ## AC2-C2 - One malformed accessory record aborts the entire Central Station sync
@@ -227,7 +247,7 @@ expires.
 | | |
 |---|---|
 | **Severity** | C - structurally real; no genuine station file demonstrated to trigger it |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | Code path read; the "does this happen" half checked only against the two `magnetartikel.cs2` files in this repository, both clean. |
 
 `parseMags` (`CS2File.java:697-731`) guards missing `id`/`typ` keys but calls
@@ -249,7 +269,7 @@ propagates to `syncWithCS2`'s outer catch, the whole sync returns -1, and at sta
 | | |
 |---|---|
 | **Severity** | C - unreachable from the shipped UI; reachable through the programmatic API |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | Caller census done (the only in-tree caller is the UI menu at `TrainControlUI.java:23403`); not executed. |
 
 `MarklinControlStation.exportLocsToCSV` (`MarklinControlStation.java:3548`) calls
@@ -266,7 +286,7 @@ a bare NPE instead of a CSV without button-mapping data.
 | | |
 |---|---|
 | **Severity** | C - one leaked handle per failed update check |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | Read only. |
 
 `Util.getLatestReleaseInfo` (`Util.java:655-664`) reads its `BufferedReader` with a plain

@@ -872,10 +872,17 @@ public class AutonomySession
                 // parseAuto - which is a diagram edit or a locomotive being placed, not only a load.
                 // An import that brings station names across must not switch the railway's routes off.
                 //
-                // NOT REPORTED YET, and that is a gap worth naming rather than papering over: the
-                // import dialog counts what it matched and what it skipped, and says nothing about
-                // these.  A user who really did have route activations keeps them in autonomy.json,
-                // which is untouched and readable, but nothing tells them to look.
+                // REPORTED, since ACC-B2 - and this comment used to say it was not (RG4-C3).
+                //
+                // It read "a gap worth naming rather than papering over: the import dialog counts
+                // what it matched and what it skipped, and says nothing about these".  True when it
+                // was written, made false by the fix for the very finding it describes:
+                // whatALegacyImportLeaves raises `autosetup.ui.leftRouteActivations`, the import
+                // path logs the list, and the dialog points the user at it.
+                //
+                // Corrected rather than deleted, because this is the first place the next reader of
+                // the skip will look, and left as it stood it invited rebuilding reporting that
+                // already exists.
                 if ("activateRoutes".equals(key) || "activateRouteIDs".equals(key)) continue;
 
                 // NOT THE TIMETABLE EITHER, for the reason the edge lengths are left out: it cannot
@@ -927,6 +934,42 @@ public class AutonomySession
         rebuild();
 
         return result;
+    }
+
+    /**
+     * The address in a legacy command's accessory name, when that accessory is a signal (RG4-B1).
+     *
+     * A 2.8.1 command names its accessory as a display string - "Signal 116", "Switch 68" - because
+     * that is what the old editor put in front of the user.  Only the signals are wanted here: a
+     * switch position is reproduced from the track diagram and needs no attention, and a signal is
+     * driven only where the operator pairs it.
+     *
+     * Anything that is not a signal, and anything whose number does not parse, is simply not a signal
+     * address - this is a report, and a report that throws on a malformed old file is worse than one
+     * that leaves a line out of it.
+     *
+     * @param accessory the legacy command's `acc` value, which may be null
+     * @return the address, or null when this is not a signal
+     */
+    public static Integer legacySignalAddress(String accessory)
+    {
+        if (accessory == null) return null;
+
+        final String trimmed = accessory.trim();
+
+        // Case-insensitively, because the name is a display string and nothing ever guaranteed its
+        // case; the space is required so that a user-named accessory beginning "Signalbox" is not
+        // read as a signal.
+        if (trimmed.length() < 8 || !trimmed.substring(0, 7).equalsIgnoreCase("Signal ")) return null;
+
+        try
+        {
+            return Integer.valueOf(trimmed.substring(7).trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
     }
 
     /**
@@ -997,6 +1040,69 @@ public class AutonomySession
         if (withLength > 0) out.add(I18n.f("autosetup.ui.leftEdgeLengths", withLength));
 
         if (withLocks > 0) out.add(I18n.f("autosetup.ui.leftEdgeLocks", withLocks));
+
+        // AND THE SIGNALS BY NAME, not just inside the command count (RG4-B1).
+        //
+        // The count above says "69 connections carried commands" and stops there.  Most of those are
+        // switch positions, which the derivation reproduces from the track diagram and which nobody
+        // needs to think about.  A SIGNAL is different: the new model drives one only where it is
+        // paired with a station, and pairing is a gesture the operator has to make - by address, from
+        // the station's own menu.
+        //
+        // Measured on Adam's own file, which is why this exists: twelve signals were driven red by
+        // hand, he paired seven of them from memory, and the remaining five stay green after every
+        // arrival with nothing anywhere telling him which five.  The aggregate count cannot: it says
+        // sixty-nine and means three.
+        //
+        // NAMED, NOT COMPARED, and it errs on the side of naming too many.  Deciding which of these
+        // is already paired means resolving each signal's address to a square through the reduction,
+        // and this method is called on a file that has not been imported yet - the reduction it would
+        // need is the one the import is about to change.  A list that includes signals the operator
+        // has already paired costs them a glance at a menu; a list that quietly omits one costs them
+        // a signal that lies about occupancy for as long as the railway runs.
+        //
+        // Sorted by address, because the operator will be working down it with the Pair Signal item
+        // open, and an arbitrary order in a list of twelve is a list they lose their place in.
+        java.util.SortedSet<Integer> signalAddresses = new java.util.TreeSet<>();
+
+        if (legacy.has("edges"))
+        {
+            org.json.JSONArray edges = legacy.getJSONArray("edges");
+
+            for (int i = 0; i < edges.length(); i++)
+            {
+                org.json.JSONObject e = edges.optJSONObject(i);
+
+                if (e == null || !e.has("commands") || e.isNull("commands")) continue;
+
+                org.json.JSONArray commands = e.getJSONArray("commands");
+
+                for (int c = 0; c < commands.length(); c++)
+                {
+                    org.json.JSONObject command = commands.optJSONObject(c);
+
+                    if (command == null) continue;
+
+                    Integer address = legacySignalAddress(command.optString("acc", null));
+
+                    if (address != null) signalAddresses.add(address);
+                }
+            }
+        }
+
+        if (!signalAddresses.isEmpty())
+        {
+            StringBuilder names = new StringBuilder();
+
+            for (Integer address : signalAddresses)
+            {
+                if (names.length() > 0) names.append(", ");
+
+                names.append(address);
+            }
+
+            out.add(I18n.f("autosetup.ui.leftSignalAuthors", signalAddresses.size(), names.toString()));
+        }
 
         // AND A FILE THAT IS NOT ACTUALLY A 2.8.1 ONE (ACC-C7).
         //

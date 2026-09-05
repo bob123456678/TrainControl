@@ -103,7 +103,7 @@ successor-covered, or Adam-ruled (`RG4-D3`-`D16`).
 
 | | |
 |---|---|
-| **Disposition** | open - needs Adam: five pairings (or a ruling that these signals no longer matter) |
+| **Disposition** | code half fixed; data half still needs Adam - five pairings, or a ruling that these signals are decorative |
 | **Confidence** | the accessory/state comparison is measured, not read, over the harness-emitted derivation of his real configuration (2026-09-03) - script output quoted below. NOT verified: whether Adam deliberately left these five unpaired; whether any of the five signals switches a stop-section rather than a lamp; and the derivation artefact is one day older than rc13 (the derivation code is unchanged since - `AutonomyBuilder`/`GraphReducer` checked commit-by-commit) |
 
 At 2.8.1, twelve signals were driven to **red** by hand-authored edge commands - arrivals set the
@@ -160,7 +160,7 @@ current count rightly avoids.
 
 | | |
 |---|---|
-| **Disposition** | open - needs Adam: do `BottomInner -> Tunnel` and the `* -> BottomSecondary` approach share physical track (or a clearance/electrical constraint the tiles cannot see)? |
+| **Disposition** | closed - not a regression.  Adam, 2026-09-04: **"These are all valid."**  All three pairs may run together; the 2.8.1 locks were more conservative than the track requires. |
 | **Confidence** | measured from the parity harness's own lock sets (both engines executed 2026-09-03, `../traincontrol-parity/out/*.tsv`), using `compare.py`'s own readers and normalisation so the vocabulary matches the shipped report. NOT verified: the physical layout - the whole finding is that only Adam can |
 
 `compare.py` asks whether any pair 2.8.1 allowed has *stopped* being concurrent
@@ -255,7 +255,7 @@ deliberate, say so and this closes as tuning.
 
 | | |
 |---|---|
-| **Disposition** | open - a ~15-line addition to `compare.py`, plus one paragraph in its report |
+| **Disposition** | fixed |
 | **Confidence** | the gap is read from `compare.py:331-349` and demonstrated by `RG4-B2`'s three rows, which the shipped report does not contain |
 
 Section 3 of the parity report computes `judgeable - new_pairs` - "over-eager locking", routes 3.0.0
@@ -273,7 +273,7 @@ re-run (which `ACC-C2`'s disposition already anticipates) would then carry both 
 
 | | |
 |---|---|
-| **Disposition** | open - delete or past-tense four lines |
+| **Disposition** | fixed |
 | **Confidence** | both sites read at HEAD (`git show HEAD:`); the reporting path traced from the dialog to the bundle key in all eight languages |
 
 `AutonomySession.java:875-878`:

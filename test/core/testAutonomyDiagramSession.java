@@ -5727,6 +5727,111 @@ public class testAutonomyDiagramSession
             + "choice was made on their behalf");
     }
     /**
+     * The import NAMES the signals it will no longer drive, rather than counting them (RG4-B1).
+     *
+     * **An aggregate that cannot say the thing the operator needs.** A legacy file's edge commands
+     * are mostly switch positions, which the derivation reproduces from the track diagram and which
+     * nobody has to think about. A signal is the exception: the new model drives one only where the
+     * operator pairs it with a station, by address, from that station's own menu.
+     *
+     * Measured on Adam's own file, which is where this came from. Twelve signals were driven red by
+     * hand; he paired seven from memory; the other five stay green after every arrival. The report he
+     * saw said "69 connections with commands" - true, useless, and it means three of the twelve. The
+     * model does not obey signals, so no train is misrouted, but four stations show an aspect that
+     * lies about occupancy until five specific pairings are made.
+     *
+     * **Named, not compared, and on purpose.** Deciding which of these is already paired means
+     * resolving each address to a square through the reduction - and this report runs on a file that
+     * has not been imported yet, so the reduction it would need is the one the import is about to
+     * replace. Naming a signal the operator has already paired costs them a glance; omitting one
+     * costs them a signal that lies for as long as the railway runs.
+     *
+     * MUTATION: removing the signal block fails the second assertion; the first is the control that
+     * stops it passing by reporting nothing at all.
+     */
+    @Test
+    public void testALegacyImportNamesTheSignalsItStopsDriving() throws Exception
+    {
+        org.json.JSONObject switchesOnly = new org.json.JSONObject("{'points':[],'edges':["
+            + "{'start':'A','end':'B','commands':[{'acc':'Switch 68','state':'straight'}]}"
+            + "]}".replace('\'', '\"'));
+
+        java.util.List<String> without = session.whatALegacyImportLeaves(switchesOnly);
+
+        // THE CONTROL, twice over: the report works at all, and a file whose commands are only switch
+        // positions gets NO signal line - which is what stops the assertion below being satisfied by
+        // a report that names something on every file.
+        assertEquals(without.size(), 1,
+            "expected exactly the edge-command line for a file whose only extra is a switch "
+            + "position, and got: " + without);
+
+        org.json.JSONObject withSignals = new org.json.JSONObject("{'points':[],'edges':["
+            + "{'start':'A','end':'B','commands':[{'acc':'Switch 68','state':'straight'},"
+            + "{'acc':'Signal 116','state':'red'}]},"
+            + "{'start':'C','end':'D','commands':[{'acc':'Signal 37','state':'red'},"
+            + "{'acc':'Signal 116','state':'green'}]}"
+            + "]}".replace('\'', '\"'));
+
+        java.util.List<String> named = session.whatALegacyImportLeaves(withSignals);
+
+        assertEquals(named.size(), without.size() + 1,
+            "the import said nothing about the signals it will stop driving.  The aggregate command "
+            + "count cannot name them, and a signal nobody pairs shows an aspect that lies about "
+            + "occupancy for as long as the railway runs (RG4-B1).  Report was: " + named);
+
+        String line = null;
+
+        for (String candidate : named)
+        {
+            if (candidate.contains("37") && candidate.contains("116")) line = candidate;
+        }
+
+        assertNotNull(line,
+            "the signal line does not name both addresses, which is the whole of what it is for - "
+            + "the operator works down it with Pair Signal open: " + named);
+
+        // TWO, not three: Signal 116 is authored on both edges and is one signal to pair.
+        assertTrue(line.contains("2"),
+            "the line should count two distinct signals - 116 appears on two edges and is still one "
+            + "signal to pair.  Line was: " + line);
+
+        // AND IN ADDRESS ORDER, because it is a work list somebody reads down.
+        assertTrue(line.indexOf("37") < line.indexOf("116"),
+            "the addresses are not in order, and an arbitrary order in a list of twelve is a list "
+            + "the operator loses their place in: " + line);
+    }
+
+    /**
+     * The signal-name parser takes signals and leaves everything else alone (RG4-B1).
+     *
+     * A legacy command names its accessory as a display string, so this is string work on data the
+     * user could have typed. Each row below is a way that has gone wrong somewhere in this tree: a
+     * switch that must not be read as a signal, a name that merely BEGINS with the word, a number
+     * that does not parse, and the null that arrives from a command with no `acc` at all.
+     */
+    @Test
+    public void testTheSignalNameParserIsNotFooled() throws Exception
+    {
+        assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116"),
+            Integer.valueOf(116), "the ordinary case");
+
+        assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("signal 37"),
+            Integer.valueOf(37), "the name is a display string and its case was never guaranteed");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Switch 68"),
+            "a switch position is reproduced from the track diagram and needs no attention - naming "
+            + "one here would bury the signals in a list of sixty");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signalbox 4"),
+            "a user-named accessory that merely begins with the word is not a signal");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal east"),
+            "a report that throws on a malformed old file is worse than one that leaves a line out");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress(null),
+            "a command with no acc at all");
+    }
+    /**
      * A legacy import says it is leaving hand-written locks behind (ACC-B1).
      *
      * A 2.8.1 edge could carry `lockedges` - *"when this edge is taken, these others are locked
