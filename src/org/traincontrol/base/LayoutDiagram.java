@@ -979,8 +979,16 @@ public class LayoutDiagram
 
         if (!index.exists()) return out;
 
-        // The four names this file writes for itself.  A block whose name is one of these is
-        // regenerated below and must not also be carried over, or the file gains a second copy.
+        // The three block names this method writes for itself, matched WITHOUT REGARD TO CASE
+        // (VLD-B2).  `[gleisbild]` is the fourth thing regenerated and is handled by its own branch
+        // below, since it is not a block.
+        //
+        // A block whose name is one of these is regenerated and must not also be carried over, or the
+        // file gains a second copy - which is exactly what a case-sensitive match did.  The genuine
+        // CS2 export this repository ships, and that AC2-C1 was written from, spells it `Version`
+        // with a capital V.  So the fix for a finding about deleting part of a user's file wrote a
+        // duplicate into it instead, and the test could not see it because the fixture spelled the
+        // block the way the writer does.
         final java.util.Set<String> modelled = new java.util.HashSet<>(
             java.util.Arrays.asList("version", "groesse", "seite"));
 
@@ -1000,7 +1008,7 @@ public class LayoutDiagram
                 // A block NAME - anything at the left margin that is not a key.
                 if (!trimmed.startsWith("."))
                 {
-                    if (modelled.contains(trimmed))
+                    if (modelled.contains(trimmed.toLowerCase()))
                     {
                         current = null;
                     }

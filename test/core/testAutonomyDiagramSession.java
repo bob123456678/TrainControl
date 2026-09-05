@@ -5791,9 +5791,13 @@ public class testAutonomyDiagramSession
             + "the operator works down it with Pair Signal open: " + named);
 
         // TWO, not three: Signal 116 is authored on both edges and is one signal to pair.
-        assertTrue(line.contains("2"),
-            "the line should count two distinct signals - 116 appears on two edges and is still one "
-            + "signal to pair.  Line was: " + line);
+        //
+        // Asserted as the RENDERED COUNT rather than `line.contains("2")` (VLD-C5).  The addresses
+        // are in the same sentence, so a substring check passes on a wrong count of 3 as soon as any
+        // address in the list contains a digit 2 - which is the ordinary case for a real file.
+        assertTrue(line.startsWith("2 "),
+            "the line should begin with the number of distinct signals, and say two - 116 appears on "
+            + "two edges and is still one signal to pair.  Line was: " + line);
 
         // AND IN ADDRESS ORDER, because it is a work list somebody reads down.
         assertTrue(line.indexOf("37") < line.indexOf("116"),
@@ -5825,8 +5829,33 @@ public class testAutonomyDiagramSession
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signalbox 4"),
             "a user-named accessory that merely begins with the word is not a signal");
 
+        // THE NAME THIS PROGRAM ACTUALLY GENERATES for anything that is not the implicit protocol
+        // (VLD-B1).  `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
+        // "Signal 116 DCC" - and parsing the whole remainder as a number returned null for every one
+        // of them.  The address set stayed empty and the report written to stop a signal being
+        // silently left out was silent about an entire protocol.
+        //
+        // Adam's own five signals are MM2, which is exactly why a fixture built from his file could
+        // not see this.
+        assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116 DCC"),
+            Integer.valueOf(116), "a DCC signal is a signal");
+
+        assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 5 MFX"),
+            Integer.valueOf(5), "and any other protocol suffix");
+
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal east"),
             "a report that throws on a malformed old file is worse than one that leaves a line out");
+
+        // NOT AN ADDRESS, though Integer.valueOf takes both (VLD-C5).  Rendering "-5" into the
+        // operator's work list sends them looking for a signal that cannot exist.
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal -5"),
+            "a negative number is not an accessory address");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal +116"),
+            "nor a signed one");
+
+        assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116red"),
+            "digits running straight into something else is not a name this program writes");
 
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress(null),
             "a command with no acc at all");

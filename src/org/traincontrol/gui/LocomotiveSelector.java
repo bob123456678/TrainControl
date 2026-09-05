@@ -110,7 +110,17 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     synchronized private void filterLocList()
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
+        // singlePass, not invokeLater - the other half of the refresh (VLD-B3).
+        //
+        // `refreshLocSelectorList` was converted and this, its last statement, was not.  So every
+        // refresh was still two events: one that adds every locomotive, and one that hides the ones
+        // the filter excludes.  The filter box is deliberately not cleared on refresh, so with a
+        // filter typed the intermediate pass showed the whole roster and the next took most of it
+        // away - a flicker introduced BY the refresh, in the window the conversion was meant to make
+        // arrive in one piece.
+        //
+        // Its two other callers are event handlers already on the event thread, so they collapse too.
+        TrainControlUI.singlePass(() ->
         {
             String filter = this.LocFilterBox.getText().toLowerCase();
         

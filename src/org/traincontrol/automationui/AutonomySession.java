@@ -962,11 +962,37 @@ public class AutonomySession
         // read as a signal.
         if (trimmed.length() < 8 || !trimmed.substring(0, 7).equalsIgnoreCase("Signal ")) return null;
 
+        final String rest = trimmed.substring(7).trim();
+
+        // THE DIGITS, AND WHATEVER THE PROTOCOL ADDS AFTER THEM (VLD-B1).
+        //
+        // This parsed the whole remainder as a number, which is right for exactly one protocol.  The
+        // standardized name this program generates is `Accessory.getNameWithProtocol`, and for any
+        // decoder that is not the implicit default it appends the protocol: "Signal 116 DCC".  So a
+        // DCC railway got null for every signal, the address set stayed empty, and the report written
+        // to stop a signal being silently left out was silent about an entire protocol.
+        //
+        // Adam's own five are MM2, which is why his file exercised the one case that worked - and is
+        // exactly the reason a fixture built from his data cannot be the only fixture.
+        int end = 0;
+
+        while (end < rest.length() && Character.isDigit(rest.charAt(end))) end++;
+
+        if (end == 0) return null;
+
+        // DIGITS ONLY, so a sign is not an address (VLD-C5).  `Integer.valueOf` accepts "+116" and
+        // "-5"; neither is a real accessory, and rendering "-5" into the operator's work list sends
+        // them looking for a signal that cannot exist.
+        //
+        // What may follow the digits is a protocol token and nothing else: anything the number runs
+        // straight into - "Signal 1 2", "Signal 116red" - is not a name this program writes.
+        if (end < rest.length() && !Character.isWhitespace(rest.charAt(end))) return null;
+
         try
         {
-            return Integer.valueOf(trimmed.substring(7).trim());
+            return Integer.valueOf(rest.substring(0, end));
         }
-        catch (NumberFormatException e)
+        catch (NumberFormatException tooLongForAnInt)
         {
             return null;
         }
@@ -996,6 +1022,10 @@ public class AutonomySession
         int withLength = 0;
         int withLocks = 0;
 
+        // Sorted by address, because the operator works down this list with the Pair Signal item
+        // open, and an arbitrary order in a list of twelve is a list they lose their place in.
+        java.util.SortedSet<Integer> signalAddresses = new java.util.TreeSet<>();
+
         if (legacy.has("edges"))
         {
             org.json.JSONArray edges = legacy.getJSONArray("edges");
@@ -1007,7 +1037,41 @@ public class AutonomySession
                 if (e == null) continue;
 
                 if (e.has("commands") && !e.isNull("commands")
-                    && e.getJSONArray("commands").length() > 0) withCommands++;
+                    && e.getJSONArray("commands").length() > 0)
+                {
+                    withCommands++;
+
+                    // AND THE SIGNALS BY NAME, not just inside that count (RG4-B1).
+                    //
+                    // Most commands are switch positions, which the derivation reproduces from the
+                    // track diagram and which nobody needs to think about.  A SIGNAL is different:
+                    // the new model drives one only where it is paired with a station, and pairing is
+                    // a gesture the operator has to make, by address, from the station's own menu.
+                    //
+                    // Measured on Adam's own file, which is why this exists: twelve signals were
+                    // driven red by hand, seven were paired from memory, and the remaining five stay
+                    // green after every arrival with nothing telling him which five.  The aggregate
+                    // count cannot say it: it reads sixty-nine and means three.
+                    //
+                    // NAMED, NOT COMPARED, and it errs on the side of naming too many.  Deciding
+                    // which are already paired means resolving each address to a square through the
+                    // reduction - and this runs on a file that has not been imported yet, so the
+                    // reduction it would need is the one the import is about to replace.  Naming a
+                    // signal already paired costs a glance at a menu; omitting one costs a signal
+                    // that lies about occupancy for as long as the railway runs.
+                    org.json.JSONArray commands = e.getJSONArray("commands");
+
+                    for (int c = 0; c < commands.length(); c++)
+                    {
+                        org.json.JSONObject command = commands.optJSONObject(c);
+
+                        if (command == null) continue;
+
+                        Integer address = legacySignalAddress(command.optString("acc", null));
+
+                        if (address != null) signalAddresses.add(address);
+                    }
+                }
 
                 if (e.optInt("length", 0) > 0) withLength++;
 
@@ -1063,33 +1127,11 @@ public class AutonomySession
         //
         // Sorted by address, because the operator will be working down it with the Pair Signal item
         // open, and an arbitrary order in a list of twelve is a list they lose their place in.
-        java.util.SortedSet<Integer> signalAddresses = new java.util.TreeSet<>();
-
-        if (legacy.has("edges"))
-        {
-            org.json.JSONArray edges = legacy.getJSONArray("edges");
-
-            for (int i = 0; i < edges.length(); i++)
-            {
-                org.json.JSONObject e = edges.optJSONObject(i);
-
-                if (e == null || !e.has("commands") || e.isNull("commands")) continue;
-
-                org.json.JSONArray commands = e.getJSONArray("commands");
-
-                for (int c = 0; c < commands.length(); c++)
-                {
-                    org.json.JSONObject command = commands.optJSONObject(c);
-
-                    if (command == null) continue;
-
-                    Integer address = legacySignalAddress(command.optString("acc", null));
-
-                    if (address != null) signalAddresses.add(address);
-                }
-            }
-        }
-
+        // Collected in the loop above rather than in a second walk of the same array (VLD-C7).
+        //
+        // It was written as its own loop over `legacy.getJSONArray("edges")`, with its own copy of
+        // the same null and isNull guards - two loops over one array, which is the drift shape this
+        // codebase keeps finding: a guard added to one and not the other.
         if (!signalAddresses.isEmpty())
         {
             StringBuilder names = new StringBuilder();

@@ -46,6 +46,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 | [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 | [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
+| [MT-273](#mt-273) | 2026-09-05 | Everything arrives at once | needs test | VLD-C6 |
 
 Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -15217,5 +15218,43 @@ And the viewer no longer draws them.  The preference was asked and the WINDOW wa
 4. **Turn the grey grid on and off** with the numbers showing, and check they stay over their squares
    both ways - that is the case that was broken, and the one an eye can check in a second.
 5. **Look at the running diagram.**  No numbers there.
+
+---
+
+
+<a id="mt-273"></a>
+
+### MT-273 - 2026-09-05 - Everything arrives at once
+
+**Disposition:** needs test
+**From:** VLD-C6
+
+**Written:** 2026-09-05
+
+**This is the one you reported, and it is the one nothing automated can see.** You said the diagrams
+flickered when they re-rendered, and that after the hourglass some parts of the main window turned up
+before others. Both are fixed, and both fixes are covered by tests - but the tests check the
+*mechanism*, not the thing your eye caught. A test cannot watch a window.
+
+**What was wrong.** Neither was slowness. The diagram builder emptied the panel at the start of the
+build and put the new diagram in at the end, so the page was blank for the whole rebuild. And the
+main window's refreshes were asked for one at a time, so the window was laid out and painted between
+each - the route list, then the locomotive list, then the menus coming back.
+
+**What to do.**
+
+1. **Switch pages on the track diagram**, several times, and in the editor too. The old page should
+   stay up until the new one appears. No blank frame in between.
+2. **Open the pop-out diagram window** and change its size and page. Same thing - this window was
+   missed by the first attempt and fixed after, so it is the one most worth a second look.
+3. **Type something in the locomotive selector's filter**, then do anything that refreshes the list
+   (a sync, adding a locomotive). You should not see the full roster flash up before the filter takes
+   effect.
+4. **Sync with the Central Station** and watch the moment the hourglass goes. The route list, the
+   locomotive list and the Locomotives and Functions menus should all come back together.
+5. **The diagram is still allowed to arrive last** - it is built on its own schedule so the rest of
+   the window does not wait for it. That part is by design; everything else should be one step.
+
+*Run against the next release candidate.*
 
 ---

@@ -159,19 +159,48 @@ public class testTheRebuildIsOnePass
         int emptied = -1;
         int added = -1;
 
+        // COUNTED, not just located (VLD-C1).
+        //
+        // These were assignments, so the LAST match won - and a build that empties the panel at the
+        // top AND swaps at the bottom left `emptied` pointing at the bottom copy, with the defect
+        // fully present and this test green.  That is the shape a partial revert or a merge produces,
+        // and it is the shape a regression test exists for.
+        int emptiedCount = 0;
+        int addedCount = 0;
+
         for (int i = 0; i < lines.length; i++)
         {
             final String line = lines[i].trim();
 
             // The statement, not a mention of it in a comment.
-            if (line.equals("parent.removeAll();")) emptied = i;
-            if (line.equals("parent.add(container);")) added = i;
+            if (line.equals("parent.removeAll();"))
+            {
+                if (emptied < 0) emptied = i;
+
+                emptiedCount++;
+            }
+
+            if (line.equals("parent.add(container);"))
+            {
+                if (added < 0) added = i;
+
+                addedCount++;
+            }
         }
 
         assertTrue(emptied >= 0, "no `parent.removeAll();` statement in LayoutGrid - if the panel is "
             + "now emptied some other way, this test needs to be pointed at it rather than deleted");
 
         assertTrue(added >= 0, "no `parent.add(container);` statement in LayoutGrid");
+
+        assertEquals(emptiedCount, 1,
+            "LayoutGrid empties the diagram panel in " + emptiedCount + " places.  The distance check "
+            + "below reads the FIRST of each, so a second copy left at the top of the build would "
+            + "otherwise pass while doing exactly the thing this test exists to stop (VLD-C1)");
+
+        assertEquals(addedCount, 1,
+            "LayoutGrid adds the container in " + addedCount + " places, so the pairing this test "
+            + "asserts is not the only one");
 
         assertTrue(added - emptied >= 0 && added - emptied <= 4,
             "LayoutGrid empties the diagram panel at line " + (emptied + 1) + " and puts the "

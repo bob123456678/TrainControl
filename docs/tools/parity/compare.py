@@ -387,8 +387,15 @@ def main():
     else:
         add('**%d pair(s) can now run concurrently** that the 2.8.1 lock data forbade -' %
             len(gained_pairs))
-        add('a dropped lock.  This is the direction that matters: an over-eager lock above costs')
-        add('throughput, a dropped one here permits two trains to move where the old file did not.')
+        add('a dropped lock.  This is the direction with the safety consequence: an over-eager lock')
+        add('above costs throughput, a dropped one here permits two trains to move where the old')
+        add('file did not.')
+        add('')
+        add('**This section does not affect the exit code**, deliberately.  The gate is the superset')
+        add('claim - a route or a destination that has gone - because that is a question with one')
+        add('right answer.  Whether a lock the old file carried is still needed is the operator\'s')
+        add('call: Adam ruled all three of the pairs this first found valid, and a gate that fails on')
+        add('a correct answer is a gate somebody turns off.')
         add('')
         add('Each row is a question rather than a defect.  Most hand-written locks are reproduced by')
         add('the geometry, and a pair listed here may simply be one the old file locked more')

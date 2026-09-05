@@ -16679,6 +16679,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // the round trip - the whole database, behind a modal spinner, and twice the connect
                 // timeout when the station is off - can bring back nothing about it.
                 if (!wasLocal) this.syncWithCS2();
+
+                // AND AGAIN AFTER THE SYNC, which is what duplicateRoute does (VLD-C3).
+                //
+                // The sync deletes and re-adds routes, and the table model holds live Route OBJECTS
+                // rather than names - so the refresh above can leave the table pointing at instances
+                // the sync has since replaced, and neither repaint below rebuilds that table.
+                //
+                // `duplicateRoute` is the same shape and already refreshes twice, with the reason
+                // written out: "The list first, and again after the sync."  This door had one.
+                if (!wasLocal) refreshRouteList();
+
                 this.repaintLayout();
                 this.repaintLoc();
             }
@@ -26122,11 +26133,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * inside it posts another.  This runs inline when there is already a pass to join, which is what
      * makes the wrapping work.
      *
-     * WHAT THIS CANNOT COLLECT, and deliberately: `repaintLayout` and `repaintLoc` go through their
-     * own single-thread renderers before they reach the event thread, because building the grid is
-     * the slow part of a sync and must not be done on it.  Folding those in would mean the menus and
-     * the lists waiting for the diagram, which is a worse window than the one being fixed.  The
-     * diagram arriving last is the design.
+     * WHAT THIS DOES NOT COLLECT, and deliberately: `repaintLayout` and `repaintLoc` go through their
+     * own single-thread renderers before they reach the event thread, so they arrive in a later pass
+     * whatever this does.
+     *
+     * The reason is SERIALISATION, not thread separation, and the first version of this javadoc said
+     * otherwise - "because building the grid is the slow part of a sync and must not be done on it".
+     * That is not true of this source: the whole body submitted to `LayoutGridRenderer` is a single
+     * `invokeLater`, `new LayoutGrid(...)` included, so the grid IS built on the event thread and the
+     * renderer thread does nothing but post.  What the renderer buys is that two rebuilds cannot
+     * interleave.  Anyone widening this pass has to preserve that property - and would be reasoning
+     * from a false one if this had been left as written.
      *
      * @param body the refresh work
      */

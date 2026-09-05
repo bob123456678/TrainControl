@@ -556,6 +556,41 @@ public class LayoutGrid
     private JPanel container;
 
     /**
+     * The spinner this grid put into the panel, and the panel it went into (VLD-C2).
+     *
+     * Held so that `discard()` can take it out again.  The spinner is added by the grace timer and
+     * removed by the reveal, and discarding cancels the reveal - so a grid discarded between those two
+     * moments left its spinner mounted in a panel it no longer owns.
+     *
+     * That was survivable while the panel was emptied a statement later.  It stopped being survivable
+     * when the emptying moved to the end of the build: the outgoing spinner now sits beside the
+     * outgoing diagram for the whole rebuild, and `parent` is a FlowLayout, so it sits beside it
+     * rather than behind it.  `LayoutEditor.drawGrid`'s own comment names that artefact as the reason
+     * `discard()` exists - "a FlowLayout with an extra component in it pushes the tiles along" - so
+     * the fix belongs here rather than in a second removeAll.
+     */
+    private LoadingSpinner mountedSpinner;
+
+    /**
+     * Whether this grid's container ever reached the panel (VLD-C2).
+     *
+     * The panel is emptied and the new container added at the very end of the build, so anything that
+     * throws before then leaves the panel holding the OLD container - visible, its timers stopped by
+     * `discard()`, its captions handed back.  `LayoutEditor.drawGrid` catches and logs, so the window
+     * stays up showing a diagram that looks live and is not.
+     *
+     * That is a worse failure than the one it replaced.  Emptying the panel first meant a throw left
+     * it obviously blank; this leaves it convincingly wrong, which is the fault `OB-128` was filed
+     * about - *"the grid stayed mounted, so anything that reached this tab showed the railway that
+     * had just been unloaded, looking entirely live"*.
+     *
+     * No throw is known on this path.  "Nothing known" is the same reason the reveal has a failsafe.
+     */
+    private boolean swapped = false;
+
+    private JPanel spinnerPanel;
+
+    /**
      * Whether this grid has been replaced by another on the same panel.
      *
      * A grid hides itself until its tiles have finished decoding, and shows a spinner in the meantime
@@ -695,6 +730,34 @@ public class LayoutGrid
 
         if (failsafe != null) failsafe.stop();
         if (grace != null) grace.stop();
+
+        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out (VLD-C2).
+        //
+        // Stopping the timers stops a spinner being added; it does nothing about one already there.
+        // The panel is no longer emptied a statement after this call, so an outgoing spinner would
+        // otherwise stand beside the outgoing diagram for the length of a whole rebuild.
+        if (mountedSpinner != null && spinnerPanel != null)
+        {
+            spinnerPanel.remove(mountedSpinner);
+
+            mountedSpinner = null;
+        }
+
+        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED (VLD-C2).
+        //
+        // Reached when a build threw before the swap: the panel still holds the container of the grid
+        // BEFORE that one, whose timers are stopped and whose captions are gone.  Emptying it here
+        // makes the failure look like a failure, which is what it was before the swap moved.
+        //
+        // At discard rather than in a catch, because there are three callers that build a grid over
+        // an existing panel and only one of them catches - and this is the one place all three go
+        // through on the way to the next attempt.
+        if (!swapped && owner != null)
+        {
+            owner.removeAll();
+            owner.revalidate();
+            owner.repaint();
+        }
     }
     
     private boolean cacheable = false;
@@ -1767,6 +1830,8 @@ public class LayoutGrid
 
             parent.add(container);
 
+            swapped = true;
+
             showWhenTilesAreReady(parent, ui);
         } 
     }
@@ -1846,6 +1911,8 @@ public class LayoutGrid
 
             parent.remove(spinner);
 
+            mountedSpinner = null;
+
             container.setVisible(true);
 
             parent.revalidate();
@@ -1875,6 +1942,10 @@ public class LayoutGrid
             container.setVisible(false);
 
             parent.add(spinner);
+
+            // Remembered so discard() can take it out - see the field.
+            mountedSpinner = spinner;
+            spinnerPanel = parent;
 
             parent.revalidate();
             parent.repaint();

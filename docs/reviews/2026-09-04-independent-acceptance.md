@@ -238,10 +238,18 @@ covered by `testAPageEditKeepsWhatTheStationWroteInTheIndex` and both were mutat
 reader's assertion did not discriminate on the first attempt, because a block named after a real page
 is overwritten by it, which is the same luck restated as a test that cannot fail.
 
-**Items 2 and 3 are closed as not defects.** A bare `page=1` and a capital-`Version` block are
-dropped by the first save, and nothing is worse for it: the file's only reader is TrainControl, which
-has no use for either. There is no manual test to run and no hardware needed - the question the
-deferral was waiting on has no consumer to ask.
+**Items 2 and 3 are closed as not defects.** A bare `page=1` is dropped by the first save, and
+nothing is worse for it: the file's only reader is TrainControl, which has no use for it. There is no
+manual test to run and no hardware needed - the question the deferral was waiting on has no consumer
+to ask.
+
+**Correction, 2026-09-05 (`VLD-B2`).** This paragraph originally said the capital-`Version` block was
+*"dropped by the first save"* as well. That was already false when it was written: the item 1 fix in
+the same commit matched block names case-sensitively, so `Version` was carried over AND regenerated,
+and the file gained a second version block. Not dropped - duplicated. The closure reasoning survives
+unchanged, because TrainControl ignores the block either way; the sentence describing the behaviour
+did not. The match is case-insensitive as of `VLD-B2`, and the test fixture now spells the block the
+way the shipped CS2 export spells it rather than the way the writer does - which is what let it pass.
 
 **Item 1 is fixed anyway, and the reason is now different from the one that found it.** The index
 keeps its unmodelled blocks because this codebase already decided that question for the page exporter
