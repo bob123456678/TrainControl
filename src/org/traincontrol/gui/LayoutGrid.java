@@ -684,6 +684,22 @@ public class LayoutGrid
      */
     private boolean replacing = false;
 
+    /**
+     * The tile size this grid was built at, and whether the grid it replaced was built at the same
+     * one (MT-273).
+     *
+     * A REBUILD AT THE SAME SIZE IS NOT AN ARRIVAL.  Every tile it draws is already in the cache at
+     * that key, so the page it puts up is complete the moment it is mounted - and the one or two
+     * squares that are not (a tile type newly placed) arrive within a frame or two.
+     *
+     * A rebuild at a DIFFERENT size is an arrival wearing a rebuild's clothes: changing the size
+     * re-keys every image, so nothing is cached and the page really does come in square by square.
+     * That is the case the hold-back and the spinner were written for, and it keeps them.
+     */
+    private final int tileSize;
+
+    private boolean sameSizeRebuild = false;
+
     private javax.swing.Timer failsafe;
 
     private javax.swing.Timer grace;
@@ -891,6 +907,7 @@ public class LayoutGrid
         // replaced grid with timers still armed fires into a panel that is no longer its own.
         this.owner = parent;
         this.window = ui;
+        this.tileSize = size;
 
         if (parent != null)
         {
@@ -900,6 +917,10 @@ public class LayoutGrid
             LayoutGrid outgoing = was == null ? null : was.get();
 
             replacing = outgoing != null && outgoing != this;
+
+            // Asked BEFORE the discard, because it is a question about the grid being replaced and
+            // the discard is what finishes with it.
+            sameSizeRebuild = replacing && outgoing.tileSize == size;
 
             if (replacing) outgoing.discard();
         }
@@ -1886,6 +1907,27 @@ public class LayoutGrid
         // with the spinner instead. If the rebuild is quick - which every placement is - the reveal
         // gets there first and nothing is ever hidden; if it is slow, the diagram goes behind the
         // spinner 120ms in, exactly as a cold page does.
+        // A REBUILD AT THE SAME SIZE IS LEFT ALONE ENTIRELY (MT-273).
+        //
+        // Adam, 2026-09-04, testing MT-273: "Track diagram viewer works.  The editor and autonomy
+        // still has the flicker."
+        //
+        // `replacing` already stopped the page being hidden HERE - that was OB-109 - and the grace
+        // timer below was never told.  So a rebuild with one decode outstanding stayed up for 120ms
+        // and was then taken away and put behind a spinner anyway.  The editor rebuilds the whole
+        // grid after every placement, and the tile just placed is exactly the decode that keeps the
+        // count above zero, so this fired on the commonest action in the editor.
+        //
+        // Measured rather than reasoned: a probe built a grid, let the tiles settle, held one decode
+        // open and rebuilt over the same panel at the same size.  Visible immediately, one child;
+        // 400ms later invisible, two children.  The page had been taken off the screen and a spinner
+        // put over it.
+        //
+        // Half a fix is what made it hard to see.  OB-109 fixed the hide and left the timer, so the
+        // symptom moved from "instant blink" to "blink 120ms later" - still there, and no longer
+        // matching the description of the bug that had been closed.
+        if (sameSizeRebuild) return;
+
         if (!replacing) container.setVisible(false);
 
         final LoadingSpinner spinner = new LoadingSpinner();

@@ -870,6 +870,89 @@ public class testAutoLayout
     }
 
     /**
+     * One signal protecting TWO platforms stays red while either of them is claimed (RG5-C1).
+     *
+     * **Adam's repair depends on exactly this.** His 2.8.1 file reds Signals 63 and 64 on the edge
+     * `TopMainR0 -> TopMainPost`, and the reason is not the junction:
+     *
+     * > "The route set them red to guarantee that the locked stations (TopMainR1 and TopMainR2)
+     * > cannot accidentally have a train cross them.  In this case, we would want to set a guard for
+     * > topmainR0 of each of those signals, too."
+     *
+     * So both signals get a second owner. 63 protects R1 **and** R0; 64 protects R2 **and** R0. The
+     * model allows it, the pairing UI allows it - its only guard is "already on THIS station's list"
+     * - and `refreshOneSignal` says it handles it. Nothing checked.
+     *
+     * **The failure this exists to catch is the release, not the claim.** A signal shows one aspect,
+     * so two owners have to agree: the moment one platform empties, the obvious code sets the signal
+     * green - and if the other is still occupied, the signal now lies about an occupied platform.
+     * That is worse than never having paired it, because it reads as protection.
+     *
+     * The test that already stands next door is the other direction - two signals on one platform -
+     * and it cannot see this.
+     *
+     * MUTATION: make `refreshOneSignal` ask only the point it was called for, rather than every point
+     * that lists the signal, and the third assertion fails.
+     */
+    @Test
+    public void testOneSignalProtectingTwoPlatforms() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback first = model.newFeedback(105, null);
+        MarklinFeedback second = model.newFeedback(106, null);
+
+        model.setFeedbackState(first.getName(), false);
+        model.setFeedbackState(second.getName(), false);
+
+        MarklinAccessory shared = borrowedAccessory(0);
+
+        layout.createPoint("PLATFORM_ONE", true, first.getName());
+        layout.createPoint("PLATFORM_TWO", true, second.getName());
+
+        running(layout);
+
+        // The same signal on both, which is what pairing 63 to R1 and to R0 produces.
+        layout.getPoint("PLATFORM_ONE").setProtectingSignals(Arrays.asList(shared.getName()));
+        layout.getPoint("PLATFORM_TWO").setProtectingSignals(Arrays.asList(shared.getName()));
+
+        MarklinLocomotive one = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive two = model.getLocByName(model.getLocList().get(1));
+
+        assertNotSame(one, two, "precondition: two different locomotives are needed, or both "
+            + "platforms are claimed by the same one and the release below is not a release");
+
+        // THE CONTROL: green while both stand empty, so the assertions below are about occupancy
+        // and not about a signal that was red from the start.
+        assertTrue(shared.isGreen(),
+            "precondition: the signal must start green, or nothing here shows it turning red");
+
+        layout.getPoint("PLATFORM_ONE").setLocomotive(one);
+
+        assertTrue(shared.isRed(),
+            "a shared signal stayed green with a train in the first platform it protects");
+
+        layout.getPoint("PLATFORM_TWO").setLocomotive(two);
+
+        assertTrue(shared.isRed(), "and with both claimed");
+
+        // THE RELEASE, which is the whole test.
+        layout.getPoint("PLATFORM_ONE").setLocomotive(null);
+
+        assertTrue(shared.isRed(),
+            "one platform emptied and the shared signal went green while the OTHER platform it "
+            + "protects still holds a train.  A signal shows one aspect, so two owners have to agree "
+            + "- and this is worse than never pairing it, because a green signal in front of an "
+            + "occupied platform reads as protection (RG5-C1).  Adam is pairing 63 and 64 to "
+            + "TopMainR0 on top of R1 and R2, which is exactly this shape");
+
+        // And only when the last of them lets go.
+        layout.getPoint("PLATFORM_TWO").setLocomotive(null);
+
+        assertTrue(shared.isGreen(),
+            "both platforms are empty and the shared signal was left red, so it never comes back");
+    }
+    /**
      * A configuration carrying a list of signals is read back as that list.
      *
      * parseAuto has always taken a bare string, and a file written before this feature still holds one.

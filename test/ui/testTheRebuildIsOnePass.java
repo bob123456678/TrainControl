@@ -168,6 +168,18 @@ public class testTheRebuildIsOnePass
         int emptiedCount = 0;
         int addedCount = 0;
 
+        // AND THE PANEL'S OTHER NAME (RG5-C2).
+        //
+        // This class calls the same panel `parent` inside the constructor and `owner` in the field it
+        // keeps it in, and a scan that lists only one spelling reports clean about the other.  It was
+        // already blind on the day it was written: `owner.removeAll()` was added to `discard()` in
+        // the same commit as this test, and the "exactly one emptying" assertion below did not see
+        // it - so a re-introduced emptying spelled that way would pass too.
+        //
+        // Both are expected, and both are pinned: one at the swap, one in discard for a build that
+        // threw before reaching it.  A third of either is what this now refuses.
+        int ownerEmptiedCount = 0;
+
         for (int i = 0; i < lines.length; i++)
         {
             final String line = lines[i].trim();
@@ -186,6 +198,8 @@ public class testTheRebuildIsOnePass
 
                 addedCount++;
             }
+
+            if (line.equals("owner.removeAll();")) ownerEmptiedCount++;
         }
 
         assertTrue(emptied >= 0, "no `parent.removeAll();` statement in LayoutGrid - if the panel is "
@@ -201,6 +215,11 @@ public class testTheRebuildIsOnePass
         assertEquals(addedCount, 1,
             "LayoutGrid adds the container in " + addedCount + " places, so the pairing this test "
             + "asserts is not the only one");
+
+        assertEquals(ownerEmptiedCount, 1,
+            "LayoutGrid empties the panel through its other name, `owner`, in " + ownerEmptiedCount
+            + " places.  Exactly one is expected - inside discard(), for a build that threw before it reached the swap.  A second would be an emptying this test's distance check cannot see, because "
+            + "that check only knows the spelling `parent` (RG5-C2)");
 
         assertTrue(added - emptied >= 0 && added - emptied <= 4,
             "LayoutGrid empties the diagram panel at line " + (emptied + 1) + " and puts the "

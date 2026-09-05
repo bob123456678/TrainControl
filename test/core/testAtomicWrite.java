@@ -64,6 +64,90 @@ public class testAtomicWrite
     }
 
     /**
+     * A wrapper that throws in its constructor does not leak the stream underneath it (AC3-B1).
+     *
+     * **The protection was defeated by the code that triggered it.** `restoreState` opened the
+     * database as `new ObjectInputStream(new FileInputStream(file))` in one try-with-resources, under
+     * a comment promising no handle is leaked. `ObjectInputStream`'s constructor reads the stream
+     * header and THROWS on a corrupt file - so the resource variable is never assigned,
+     * try-with-resources closes nothing, and the anonymous `FileInputStream` stays open.
+     *
+     * The comment was true for every file that loads, and for a failure after construction. It was
+     * false for precisely the case the surrounding protection exists for.
+     *
+     * **What it cost, measured by an acceptance pass rather than argued.** The keep-aside-and-write-
+     * fresh recovery then fails, because `writeAtomically` finishes with `Files.move(REPLACE_EXISTING)`
+     * and Windows will not replace a file somebody holds open. The session's changes are lost with
+     * one log line, the corrupt file is still there, and the next run repeats it - each time adding
+     * another copy to `tc_backup` - until somebody deletes the file by hand, which nothing tells them
+     * to do. A full window survives by accident (building the UI makes enough garbage that a GC
+     * finalizes the stream first); a short programmatic session failed 2 of 2.
+     *
+     * **Why it is tested here rather than through `restoreState`.** The defect is the resource shape,
+     * and the consequence is a move that cannot replace a held file. Both are exercised directly: a
+     * wrapper that throws mid-construction, then the same `writeAtomically` the recovery uses. Driving
+     * the real database would need a corrupt `LocDB.data` in the working directory, which is the
+     * operator's own file.
+     *
+     * MUTATION: put the stream back inside the wrapper's argument list - one resource instead of two
+     * - and the write fails with "being used by another process".
+     */
+    @Test
+    public void testAThrowingWrapperDoesNotHoldTheFileOpen() throws Exception
+    {
+        final java.io.File folder = java.nio.file.Files.createTempDirectory("tc-leak").toFile();
+
+        try
+        {
+            final java.io.File target = new java.io.File(folder, "LocDB.data");
+
+            // Not a serialized stream, so ObjectInputStream throws while reading the header - which is
+            // exactly what a corrupt database does.
+            java.nio.file.Files.write(target.toPath(),
+                "this is not a serialized object stream".getBytes("UTF-8"));
+
+            boolean threw = false;
+
+            // THE SHAPE THE FIX INTRODUCED: the stream in its own resource, so it closes even though
+            // the wrapper never came into existence.
+            try (java.io.FileInputStream in = new java.io.FileInputStream(target);
+                java.io.ObjectInputStream obj = new java.io.ObjectInputStream(in))
+            {
+                obj.readObject();
+            }
+            catch (java.io.IOException expected)
+            {
+                threw = true;
+            }
+
+            assertTrue(threw,
+                "precondition: reading a corrupt file has to fail, or nothing below is about the "
+                + "failure path at all");
+
+            // AND THE CONSEQUENCE, through the very method the recovery uses.  A leaked handle does
+            // not announce itself; what it does is stop this.
+            org.traincontrol.util.Util.writeAtomically(target,
+                out -> out.write("recovered".getBytes("UTF-8")));
+
+            assertEquals(new String(java.nio.file.Files.readAllBytes(target.toPath()), "UTF-8"),
+                "recovered",
+                "the file could not be replaced after a failed read.  That is the leaked handle: the "
+                + "keep-aside-and-write-fresh recovery ends in Files.move(REPLACE_EXISTING), Windows "
+                + "will not replace a file somebody has open, and the session's database changes are "
+                + "lost with one log line while the corrupt file stays put for the next run (AC3-B1)");
+
+            // AND NO STAGING FILE LEFT BESIDE IT (AC3-C1), which the same probe found.
+            assertFalse(new java.io.File(folder, "LocDB.data.part").exists(),
+                "the staging file was left behind beside the target");
+        }
+        finally
+        {
+            for (java.io.File f : folder.listFiles()) f.delete();
+
+            folder.delete();
+        }
+    }
+    /**
      * The ordinary case: a write that completes replaces the file.
      *
      * First, so that a helper which never wrote anything at all could not pass the failure tests below

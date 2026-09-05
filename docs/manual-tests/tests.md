@@ -46,9 +46,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 | [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 | [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
-| [MT-273](#mt-273) | 2026-09-05 | Everything arrives at once | needs test | VLD-C6 |
 
-Everything else - 233 of 261 - is **fixed validated** and needs nothing from you unless the
+Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
 
 ---
@@ -15226,7 +15225,7 @@ And the viewer no longer draws them.  The preference was asked and the WINDOW wa
 
 ### MT-273 - 2026-09-05 - Everything arrives at once
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** VLD-C6
 
 **Written:** 2026-09-05
@@ -15256,5 +15255,54 @@ each - the route list, then the locomotive list, then the menus coming back.
    the window does not wait for it. That part is by design; everything else should be one step.
 
 *Run against the next release candidate.*
+
+**Adam, 2026-09-04 (triage).** Works.
+
+Track diagram viewer works.  The editor and autonomy still has the flicker.
+
+**Found and fixed, 2026-09-05.** You were right, and the provenance line below is misleading: it
+names a commit from 2 September, but the classes you ran were compiled at 18:40 and the last fix
+landed at 18:24 - so you were testing the fixed code, and the editor really did still flicker.
+
+**A different cause, and half of it had been fixed before.** A grid holds itself back while its tiles
+decode, and arms a timer that puts a spinner up 120ms later if they are still not ready. `OB-109`
+stopped a REBUILD hiding the page it was replacing - and never told that timer. So the page stayed up
+for 120ms and was then taken away and put behind a spinner anyway.
+
+That is why it survived a fix, a validation round and four review passes: the symptom moved from an
+instant blink to a blink a moment later, and no longer matched the description of the bug that had
+been closed.
+
+**And why the editor and not the viewer.** The editor rebuilds the whole grid after every placement,
+and the tile you just placed is exactly the decode that keeps the count above zero. So it fired on
+the commonest action in the editor and almost never in the viewer.
+
+Measured rather than reasoned: a probe built a grid, let it settle, held one decode open, and rebuilt
+over the same panel at the same size. Visible immediately with one child; 400ms later invisible with
+two. The page had been taken off the screen and a spinner put over it.
+
+A rebuild at the same tile size is now left alone entirely. A rebuild at a different size still waits
+behind the spinner, because the size is part of the image cache key - nothing is cached, and the page
+really does arrive square by square. Both halves are pinned by
+`testARebuiltDiagramIsNotTakenAwayAMomentLater`.
+
+**Please re-test 1 and 2 in the editor and the autonomy editor specifically.**
+
+**Adam, 2026-09-05 (re-test).** "There is still a small amount of flicker (things take a while to
+load on busy diagrams), but it looks much better than before."
+
+**Accepted, and the residue is the trade rather than a leftover.** A busy page really does take a
+while to build, and a same-size rebuild now shows the page while its tiles arrive instead of hiding
+the whole thing behind a spinner. So on a busy diagram some squares land a moment after the rest.
+
+That is the better of the two, and it is what he is seeing - but it is worth writing down, because it
+reads like a bug to anybody who finds it later. **Putting the spinner back for a slow same-size
+rebuild would restore exactly the fault this test was opened for.** If the residue is ever worth
+attacking, the thing to attack is the build itself - how long a busy page takes - not what is shown
+while it happens.
+
+**Disposition: fixed validated**, with that noted.
+
+*Run against commit 409d4ce8, build\classes, compiled 04 Sep 18:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

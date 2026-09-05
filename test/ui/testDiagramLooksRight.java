@@ -1914,6 +1914,113 @@ public class testDiagramLooksRight
     }
 
     /**
+     * And it is not taken away 120ms later either, which is the half OB-109 left behind (MT-273).
+     *
+     * Adam, testing MT-273: **"Track diagram viewer works.  The editor and autonomy still has the
+     * flicker."**
+     *
+     * `OB-109` stopped a rebuild HIDING the page it was replacing - the test above pins that - and
+     * said nothing to the grace timer that runs 120ms later. So the page stayed up, and was then
+     * taken away and put behind a spinner anyway. The symptom moved rather than went: from an instant
+     * blink to a blink a moment later, which no longer matched the description of the bug that had
+     * been closed. That is why it survived a fix, a validation round and four review passes.
+     *
+     * **Why the editor and not the viewer.** The editor rebuilds the whole grid after every
+     * placement, and the tile just placed is precisely the decode that keeps the outstanding count
+     * above zero. So the timer fired on the commonest action there, and almost never in the viewer.
+     *
+     * **What the rule is now.** A rebuild at the SAME tile size is not an arrival: every square is a
+     * cache hit at that key, so the page is complete when it is mounted. A rebuild at a DIFFERENT
+     * size is an arrival wearing a rebuild's clothes - the size is part of the cache key, so nothing
+     * is cached and the page really does come in square by square. The second half of this test is
+     * the control that keeps that distinction alive.
+     *
+     * MUTATION: remove the `sameSizeRebuild` early return and the first assertion fails; make it
+     * unconditional on `replacing` and the control fails instead.
+     */
+    @Test
+    public void testARebuiltDiagramIsNotTakenAwayAMomentLater() throws Exception
+    {
+        final LayoutDiagram layout = model.getLayout(model.getLayoutList().get(0));
+
+        final javax.swing.JPanel panel = new javax.swing.JPanel();
+
+        // A first grid, so that everything after it is a replacement over a panel that has a diagram.
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            new org.traincontrol.gui.LayoutGrid(layout, 30, panel, null, true, ui));
+
+        final java.util.concurrent.CountDownLatch settled =
+            new java.util.concurrent.CountDownLatch(1);
+
+        javax.swing.SwingUtilities.invokeLater(() -> ui.whenTilesSettled(settled::countDown));
+
+        assertTrue(settled.await(30, java.util.concurrent.TimeUnit.SECONDS),
+            "the tiles never finished decoding, so nothing below is a check");
+
+        // Held open for the whole of both halves: this is what a placement does - one tile of a type
+        // not yet drawn at this size - and it is what keeps the timer armed.
+        ui.tileDecodeStarted();
+
+        final boolean[] sameSize = {false};
+        final int[] sameSizeChildren = {0};
+        final boolean[] newSize = {true};
+
+        try
+        {
+            final org.traincontrol.gui.LayoutGrid[] built = new org.traincontrol.gui.LayoutGrid[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                built[0] = new org.traincontrol.gui.LayoutGrid(layout, 30, panel, null, true, ui));
+
+            // PAST THE GRACE TIMER, which is the whole point - the assertion above this one in the
+            // class reads visibility in the same pass that built the grid, and so cannot see this.
+            Thread.sleep(400);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                sameSize[0] = built[0].getContainer().isVisible();
+                sameSizeChildren[0] = panel.getComponentCount();
+            });
+
+            // THE CONTROL: a different size IS an arrival, and must still be held back.  Without
+            // this, "never hide anything, ever" passes the assertion above.
+            final javax.swing.JPanel resized = new javax.swing.JPanel();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                new org.traincontrol.gui.LayoutGrid(layout, 30, resized, null, true, ui));
+
+            final org.traincontrol.gui.LayoutGrid[] bigger = new org.traincontrol.gui.LayoutGrid[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                bigger[0] = new org.traincontrol.gui.LayoutGrid(layout, 37, resized, null, true, ui));
+
+            Thread.sleep(400);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                newSize[0] = bigger[0].getContainer().isVisible());
+        }
+        finally
+        {
+            ui.tileDecodeFinished();
+        }
+
+        assertTrue(sameSize[0],
+            "a rebuild at the same tile size was taken off the screen 120ms after it went up.  "
+            + "OB-109 stopped the immediate hide and never told the grace timer, so the blink moved "
+            + "rather than went - and it fires on every tile placement in the editor, which is where "
+            + "Adam still saw it after the fix (MT-273)");
+
+        assertEquals(sameSizeChildren[0], 1,
+            "the panel holds " + sameSizeChildren[0] + " children.  A spinner was mounted over a page "
+            + "that was already complete - and `parent` is a FlowLayout, so it does not sit behind "
+            + "the diagram, it sits beside it and pushes the tiles along");
+
+        assertFalse(newSize[0],
+            "a rebuild at a DIFFERENT tile size was left up.  The size is part of the image cache "
+            + "key, so nothing is cached and the page really does arrive square by square - that is "
+            + "the case the hold-back exists for, and it must keep it");
+    }
+    /**
      * A diagram that is already drawn is not taken off the screen to be rebuilt.
      *
      * OB-109. Adam: "when placing new tiles in the track diagram editor, the diagram sometimes

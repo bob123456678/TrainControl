@@ -2561,8 +2561,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
         
-        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
-        try (ObjectInputStream obj_in = new ObjectInputStream(new FileInputStream(TrainControlUI.DATA_FILE_NAME)))
+        // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists
+        // (AC3-B1).
+        //
+        // This was `new CustomObjectInputStream(new FileInputStream(UIState))` in a single resource,
+        // under a comment promising no handle is leaked.  That promise held for every file that
+        // loads, and for a failure AFTER construction - and was false for precisely the case the
+        // protection around it exists for.  ObjectInputStream's constructor reads the stream header
+        // and throws on a corrupt file, so the resource variable is never assigned, try-with-resources
+        // closes nothing, and the anonymous FileInputStream stays open.
+        //
+        // What that costs, measured rather than argued: the keep-aside-and-write-fresh recovery then
+        // fails, because `writeAtomically` finishes with Files.move(REPLACE_EXISTING) and Windows
+        // will not replace a file somebody has open.  The session's changes are lost with one log
+        // line, the corrupt file is still there, and the next run repeats it - forever, until
+        // somebody deletes the file by hand, which nothing tells them to do.
+        //
+        // A full window survives it by accident: building the UI makes enough garbage that a minor GC
+        // finalizes the leaked stream before the exit save.  A short programmatic session does not,
+        // and that was 2 of 2.
+        try (java.io.FileInputStream file_in =
+                new java.io.FileInputStream(TrainControlUI.DATA_FILE_NAME);
+            ObjectInputStream obj_in = new ObjectInputStream(file_in))
         {
             // Read an object
             Object obj = obj_in.readObject();
@@ -7380,6 +7400,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.openLegacyTrackDiagramEditor.setVisible(false);
         }
         
+        // WHICH BUILD THIS IS, before the debug marker (Adam, 2026-09-05).
+        //
+        // The generated block sets the title from RAW_VERSION, and that block is the GUI builder's -
+        // so the build is appended here, exactly as the debug marker below has always been.  Rebuilt
+        // from versionForDisplay rather than pasted together a second time, so the title and the log
+        // line cannot say different things.
+        //
+        // Every release candidate says "3.0.0", so a tester reporting against one had no way to say
+        // which - and an MT-273 result nearly closed as tested-too-early over exactly that.
+        if (org.traincontrol.marklin.MarklinControlStation.IS_PRE_RELEASE)
+        {
+            setTitle(I18n.f("app.uititle", I18n.f("app.title",
+                org.traincontrol.marklin.MarklinControlStation.versionForDisplay())));
+        }
+
         // Debug mode indicator
         if (this.model.isDebug())
         {
@@ -7865,6 +7900,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Whether anybody is there to answer a question.
+     *
+     * Adam, 2026-09-05: **"in the tests you're running, at startup there is a prompt about
+     * initializing a new track diagram.  I have been clicking on those windows."**
+     *
+     * An automated run that opens a modal dialog does not fail - it STOPS, on the event thread, until
+     * a person notices and clicks it. Every test class that stands a window up went through the
+     * offer to create a track diagram, because that offer is skipped only on a first launch and the
+     * databases it looks for are in the working directory whatever a test does with its layout.
+     *
+     * So the run was not slow, it was waiting for him - and any timing anything measured included
+     * however long it took him to look.
+     *
+     * **Set only by the test sandbox, and only around a run.** It is deliberately not a way to make
+     * the application quieter: the one thing it may do is answer a question the way a fresh
+     * installation already answers it, which is what an empty sandbox is. Anything that needs a real
+     * decision must not consult this - it would be deciding on the operator's behalf and telling them
+     * nothing.
+     */
+    private static volatile boolean unattended = false;
+
+    /**
+     * Declares that no person is present to answer a dialog.
+     *
+     * @param value true while an automated run is in progress
+     */
+    public static void setUnattended(boolean value)
+    {
+        unattended = value;
+    }
+
+    /**
+     * Whether an automated run has declared that nobody is present.
+     *
+     * @return true when dialogs must take a default rather than wait
+     */
+    public static boolean isUnattended()
+    {
+        return unattended;
+    }
+    /**
      * Self-contained method to initialize a blank layout
      * @param folderName
      * @param verify
@@ -7873,7 +7949,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         boolean proceed;
 
-        if (!verify)
+        // NOBODY TO ASK IS NOT THE SAME AS AN ANSWER OF NO.
+        //
+        // An automated run reaching this dialog stops dead on the event thread until a person clicks
+        // it, which is what Adam had been doing for every test class that stands a window up.  The
+        // answer taken is the one a first launch already takes without asking - make the diagram -
+        // because a sandbox with no layout is exactly a fresh installation.
+        if (!verify || isUnattended())
         {
             proceed = true;
         }

@@ -538,7 +538,34 @@ public class Util
             throw e;
         }
 
-        Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        // AND THE STAGING FILE GOES EITHER WAY (AC3-C1).
+        //
+        // The catch above deletes it when the WRITE fails, with a comment about a half-written file
+        // accumulating beside the target.  The move was outside that, so the Windows failure - a
+        // target somebody holds open - left the staging file behind, which is how AC3-B1's probe
+        // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
+        //
+        // Deleted rather than kept as a recovery artefact.  It holds the GOOD data, which is an
+        // argument for keeping it - but a file nothing reads, nothing mentions, and nothing cleans
+        // up is litter whatever it contains, and the caller is told the save failed.
+        try
+        {
+            Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException moveFailed)
+        {
+            try
+            {
+                staging.delete();
+            }
+            catch (RuntimeException cannotTidy)
+            {
+                // Nothing.  The move's failure is what the caller needs to hear about, and losing it
+                // behind a failure to tidy up after it would be the worse trade.
+            }
+
+            throw moveFailed;
+        }
     }
 
     /**

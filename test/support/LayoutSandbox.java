@@ -85,6 +85,17 @@ public final class LayoutSandbox
 
         prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, to.toFile().getAbsolutePath());
 
+        // AND NOBODY IS WATCHING, which the window has no other way to know.
+        //
+        // Adam, 2026-09-05: "in the tests you're running, at startup there is a prompt about
+        // initializing a new track diagram.  I have been clicking on those windows."  A modal dialog
+        // in an automated run does not fail it - it stops it, until somebody notices.
+        //
+        // Set here rather than in each test class because this is the one thing every test that
+        // stands a window up already calls, and a flag that has to be remembered per class is a flag
+        // that will be forgotten by the next class written.
+        TrainControlUI.setUnattended(true);
+
         return new LayoutSandbox(to, was);
     }
 
@@ -97,6 +108,11 @@ public final class LayoutSandbox
      */
     public void close()
     {
+        // Put back first, so that an exception below cannot leave the application believing nobody is
+        // there - which would silently answer a real operator's dialogs on the next launch of a
+        // session that shares this JVM.
+        TrainControlUI.setUnattended(false);
+
         if (was == null || was.isEmpty())
         {
             prefs.remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);

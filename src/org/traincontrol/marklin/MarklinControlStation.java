@@ -79,6 +79,92 @@ public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
     public static final String RAW_VERSION = "3.0.0";
+
+    /**
+     * Whether this is a build on the way to a release rather than a release.
+     *
+     * Adam, 2026-09-05: "add a flag after RAW_VERSION that says IS_PRE_RELEASE True/False.  If true,
+     * put the build ID in the log at startup and main UI title."
+     *
+     * The version number alone cannot tell two release candidates apart - every rc says 3.0.0 - and a
+     * tester reporting against one has no way to say which.  That cost something already: an MT-273
+     * result carried a provenance line naming a commit three days older than the code actually run,
+     * and the report nearly read as evidence the fix had been tested too early.
+     *
+     * **Set to false when 3.0.0 ships.**  Nothing derives it - a constant somebody changes on purpose
+     * is the point, because a build that guesses whether it is a release will guess wrong on the one
+     * day it matters.
+     */
+    public static final boolean IS_PRE_RELEASE = true;
+
+    /**
+     * Which build this is, for a pre-release: when the code being run was built.
+     *
+     * Taken from the code source this class was loaded from - the jar's timestamp, or the class file's
+     * when running from a build directory in an IDE - so it describes what is actually running rather
+     * than what a build script recorded about its own inputs.  That distinction is the whole reason
+     * this exists: the misleading provenance line above came from a stamp that named a commit rather
+     * than the artefact.
+     *
+     * Best-effort, and quiet about failing.  A security manager, an unusual class loader or a URL that
+     * is not a file all end here, and a version string is not worth an exception on the way up.
+     *
+     * @return the build stamp, or null when it cannot be established
+     */
+    public static String buildId()
+    {
+        try
+        {
+            java.security.CodeSource source =
+                MarklinControlStation.class.getProtectionDomain().getCodeSource();
+
+            if (source == null || source.getLocation() == null) return null;
+
+            java.io.File at = new java.io.File(source.getLocation().toURI());
+
+            // A directory is an IDE run, and its own timestamp is when it was created rather than when
+            // anything in it was last compiled - so the class file is asked instead.
+            if (at.isDirectory())
+            {
+                java.io.File cls = new java.io.File(at,
+                    MarklinControlStation.class.getName().replace('.', '/') + ".class");
+
+                if (cls.exists()) at = cls;
+            }
+
+            long stamp = at.lastModified();
+
+            if (stamp <= 0) return null;
+
+            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(stamp));
+        }
+        catch (Exception | Error cannotTell)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * The version as a person should see it, with the build appended on a pre-release.
+     *
+     * One method rather than a suffix pasted on at each of the places that shows a version, so the log
+     * line and the window title cannot drift - which is what happens to every fact this codebase keeps
+     * in two places.
+     *
+     * @return "3.0.0", or "3.0.0 (build 2026-09-05 18:40)" before a release
+     */
+    public static String versionForDisplay()
+    {
+        if (!IS_PRE_RELEASE) return RAW_VERSION;
+
+        String build = buildId();
+
+        // The word PRE-RELEASE even when the build cannot be established, because that is the fact the
+        // flag exists to publish and a missing timestamp does not make it a release.
+        return build == null
+            ? RAW_VERSION + " (pre-release)"
+            : RAW_VERSION + " (pre-release build " + build + ")";
+    }
         
     //// Settings
     
@@ -323,7 +409,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set debug mode
         this.debug(debug);
         
-        this.logf("app.uititle", I18n.f("app.title", MarklinControlStation.RAW_VERSION));
+        this.logf("app.uititle", I18n.f("app.title", MarklinControlStation.versionForDisplay()));
         
         this.logf("log.restoring");
 
@@ -1684,8 +1770,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // first one that did not
         this.databaseLoadFailed = false;
 
-        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
-        try (ObjectInputStream obj_in = new CustomObjectInputStream(new FileInputStream(dataFile)))
+        // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists
+        // (AC3-B1).
+        //
+        // This was `new CustomObjectInputStream(new FileInputStream(dataFile))` in a single resource,
+        // under a comment promising no handle is leaked.  That promise held for every file that
+        // loads, and for a failure AFTER construction - and was false for precisely the case the
+        // protection around it exists for.  ObjectInputStream's constructor reads the stream header
+        // and throws on a corrupt file, so the resource variable is never assigned, try-with-resources
+        // closes nothing, and the anonymous FileInputStream stays open.
+        //
+        // What that costs, measured rather than argued: the keep-aside-and-write-fresh recovery then
+        // fails, because `writeAtomically` finishes with Files.move(REPLACE_EXISTING) and Windows
+        // will not replace a file somebody has open.  The session's changes are lost with one log
+        // line, the corrupt file is still there, and the next run repeats it - forever, until
+        // somebody deletes the file by hand, which nothing tells them to do.
+        //
+        // A full window survives it by accident: building the UI makes enough garbage that a minor GC
+        // finalizes the leaked stream before the exit save.  A short programmatic session does not,
+        // and that was 2 of 2.
+        try (FileInputStream file_in = new FileInputStream(dataFile);
+            ObjectInputStream obj_in = new CustomObjectInputStream(file_in))
         {
             // Read an object
             Object obj = obj_in.readObject();
@@ -3549,8 +3654,34 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public List<MarklinRoute> parseRoutesFromJson(String json)
     {
         List<MarklinRoute> routes = new ArrayList<>();
-        JSONObject jsonObject = new JSONObject(json);
-        JSONArray dataArray = jsonObject.getJSONArray("routes");
+
+        // SAID IN THE SIGNATURE, rather than thrown out of it unannounced (AC3-C2).
+        //
+        // `new JSONObject(garbage)` throws an unchecked JSONException, and this method declared
+        // nothing - so a programmatic caller got a raw org.json type out of a TrainControl API with
+        // no hint from the signature that it could happen.  Its neighbours all behave differently:
+        // `exportRoutes` declares `throws Exception`, `execRoute` logs and returns, `parseAuto`
+        // degrades.  An acceptance sweep of 25 API surfaces found this the only one that answered
+        // with an undeclared unchecked throw.
+        //
+        // Wrapped rather than swallowed.  The caller asked for routes and there are none to give, so
+        // returning an empty list would say "your file has no routes" about a file that is simply not
+        // readable - and `importRoutes` would then delete every route the user has and add nothing.
+        // The ORDER is what makes that safe today and it stays that way; this only changes what the
+        // caller is told.
+        JSONObject jsonObject;
+        JSONArray dataArray;
+
+        try
+        {
+            jsonObject = new JSONObject(json);
+            dataArray = jsonObject.getJSONArray("routes");
+        }
+        catch (org.json.JSONException notRouteJson)
+        {
+            throw new IllegalArgumentException(
+                I18n.t("route.errorNotAValidRouteFile"), notRouteJson);
+        }
 
         for (int i = 0; i < dataArray.length(); i++)
         {
@@ -3647,7 +3778,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public static MarklinControlStation init(String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug) throws UnknownHostException, IOException, InterruptedException
     {        
-        System.out.println(I18n.f("app.starting", I18n.f("app.title", MarklinControlStation.RAW_VERSION)));
+        System.out.println(I18n.f("app.starting", I18n.f("app.title", MarklinControlStation.versionForDisplay())));
         
         // User interface - only initialize if needed
         TrainControlUI ui = null;

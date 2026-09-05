@@ -166,6 +166,7 @@
         <test-one-class class="testSidebarIcons"/>
         <test-one-class class="testTheWaitMarkIsAnHourglass"/>
         <test-one-class class="testTheRebuildIsOnePass"/>
+        <test-one-class class="testTheBuildSaysWhatItIs"/>
         <test-one-class class="testLocIconCrop"/>
         <test-one-class class="testLocMappingPages"/>
         <test-one-class class="testCentralStationDetection"/>
