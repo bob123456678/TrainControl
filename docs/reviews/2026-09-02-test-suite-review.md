@@ -84,6 +84,10 @@ Where I stand on the still-open `TCX` findings is a section of its own at the en
 
 *The original finding:*
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading and by `git log`. Severity: this is the guard that keeps a run's
 own leftover test JVMs off the machine, and a second set of test JVMs is the mechanism by which the
 operator's railway was damaged on 2026-08-30. The failure is silent by construction.
@@ -178,6 +182,10 @@ because `TS3-A1` is about a guard that has not run for four days over exactly th
 
 ### TS3-B1 — `testAShutPlainSquareReachesTheRunningGraph`'s control cannot fail
 
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `test/core/testAutonomyDiagramSession.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. Added on 2026-09-02 in `1cfdf370` to protect the D24-B5 fix.
 
 `test/core/testAutonomyDiagramSession.java:971-973`:
@@ -238,6 +246,10 @@ the fix is not unprotected — what is unprotected is the test's own soundness. 
 ---
 
 ### TS3-B2 — the audit test leaves `HS alpha` 40 units long and reversible for the other 84 tests
+
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `test/core/testHomeStaging.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. Added on 2026-09-02 in `975f157d`.
 
@@ -304,6 +316,10 @@ rule is precisely the feature this round added.
 ---
 
 ### TS3-B3 — `testSwitchingAnAccessoryByHandAsksAboutProtectingSignals` survives its own stated mutation
+
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `test/regression/testEditorSurfaceRules.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. Added on 2026-09-02 in `87b6c10a`.
 
@@ -372,6 +388,10 @@ train standing at it, for a two-address signal. That is SVN-B16 half-reverted. B
 ---
 
 ### TS3-B4 — `testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning`'s third assertion is an unguarded negative
+
+**Disposition: fixed, confirmed 2026-09-05** - fixed under a different tag - `testEditorSurfaceRules.java:605` now guards the negative with `assertFalse(door.isEmpty(), ...)`, citing `V33-C7`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. Added on 2026-09-02 in `87b6c10a`.
 
@@ -488,6 +508,10 @@ line is silent.
 
 ### TS3-B6 — the widened start guard has no test, and the test named for the invariant no longer reads it
 
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `src/org/traincontrol/gui/TrainControlUI.java` and `test/regression/testErrorsStopTheSetupRunning.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Missing test. Verified by reading.
 
 `87b6c10a` (SVN-B10) changed what the start guard asks. `src/org/traincontrol/gui/TrainControlUI.java:5183`:
@@ -566,6 +590,10 @@ the divergence is structural and its reachability is unsettled.
 ---
 
 ### TS3-B7 — the planner's "a longer approach is more room" rule has no test
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - no test names `measuredRoomToReverseInto` in a staging context; the three matches are in `testAutonomyDiagramReducer` and `testNonReversibleTrains`, which measure the rule rather than the planner's `continue`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Missing test. The rule was added on 2026-09-02 in `975f157d`.
 

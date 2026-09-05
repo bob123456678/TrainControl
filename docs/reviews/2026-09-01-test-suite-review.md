@@ -99,6 +99,10 @@ TCX-A4 answers neither question. It is what `git status` showed while I was work
 
 **CLOSED by `FX2-3`.** Accepted as-is.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** This is a missing test for a case the guard does not cover. Severity is that of the defect it would
 catch: a train backed over a switch it does not fit behind, which is the hazard Adam raised on 2026-09-01.
 
@@ -163,6 +167,10 @@ selection (`Layout.java:3477`).
 
 **FIXED 2026-09-02 (`975f157d`).** The rule is pure, so it lifted to `Layout.measuredRoomToReverseInto` and both sides ask it - into `firstClearRoute`, which is the search, and deliberately not into `connected`, which is the proof and has to stay looser. The test this finding asked for exists and is mutation-confirmed; it took three attempts to become a test, and the two false passes are recorded in the commit.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Missing test. Severity: the planner produces a plan the runtime then refuses on its first move — which
 is the exact failure mode the file's own javadoc describes for the previous rule that went missing.
 
@@ -200,6 +208,10 @@ second form is better: it tests the invariant rather than the design choice.
 ---
 
 ### TCX-A3 — `testTheClearingLoopAsksTheRule`'s second assertion went vacuous this round
+
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `test/core/testTrainTailClearsEdges.java`, which anchors the assertion on the whole call.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. This is a test that no longer tests what it claims, and it stopped doing so
 *because of this release's own change*.
@@ -240,6 +252,10 @@ file is a check on the file, not on the method. Every one of them in this suite 
 ### TCX-A4 — `cs2_sample_layout` is modified in the working tree, and nothing can say by whom
 
 **CLOSED by `FX2-1`.** Same finding, reached by a different pass.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open — look at this first.** I have not touched it. I am reporting what `git status` showed while I was
 establishing which commit I was reviewing.
@@ -295,6 +311,10 @@ answer. Neither `testTheGoldenLayoutHoldsTogether`'s `@AfterClass` fingerprint (
 ## B — medium
 
 ### TCX-B1 — `validateTrainLength` is never tested at the door that uses it
+
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `test/core/testLayoutPickPath.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Missing test.
 
@@ -385,6 +405,10 @@ notice absent and the test green.
 
 ### TCX-B3 — The guard's reach on the real railway is never measured, and on his data it is nearly zero
 
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - the six `tileLengths` this measured are gone - the setup carries **zero** as of the 2026-09-04 clean-up, so the guard's reach on his railway is now exactly nil rather than nearly nil.  The finding stands and its numbers are worse.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Missing test. This is the "distinguish *could* happen from *does* happen" check applied to the new
 feature, and it is checkable against the data in the repository.
 
@@ -416,6 +440,10 @@ belongs.
 ---
 
 ### TCX-B4 — The release-before-throw ordering of accessory commands is untested
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - `Layout.configureEdge`'s release-before-throw sort still has no test.  The two matches for "released before thrown" are in `testParseCS2Layout` and `testParseCS3Routes`, which test the PARSER, not the ordering the runtime issues.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Missing test. Severity: a turnout commanded into a combination that routes nowhere, on real hardware.
 
@@ -455,6 +483,10 @@ station is already available — `test/core/testMockCentralStation.java` and the
 
 **FIXED 2026-09-02 (`1cfdf370`).** The control was added: marking a real tile must change the configuration, or the assertion that marking nothing changes nothing is satisfied by a builder that ignores the set.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. The test cannot fail for the reason it states.
 
 `test/core/testAutonomyDiagramReversal.java:349-367`:
@@ -486,6 +518,10 @@ tested, because "before" is not present in the comparison. Testing it needs a pi
 
 **FIXED 2026-09-02 (`1cfdf370`).** `badgeAt` takes parking and shut separately, and one assertion now tells them apart. They share a colour, so no existing ink count moved.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. Two tests pass under a wrong rule.
 
 `test/core/testAutonomyDiagramMonitor.java:1204-1205`:
@@ -512,6 +548,10 @@ written and then not applied to `badgeAt`.
 ---
 
 ### TCX-B7 — `testAutonomySimulationSanity`'s headline assertion cannot fire in simulate mode
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `testAutonomySimulationSanity` still asserts `getPathValidationFailureCount() == 0` at :205 and :257, and simulate mode still returns before the validation that would increment it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading.
 
@@ -545,6 +585,10 @@ twice when it covers it once. `testSimulatedAutonomyRaisesNoWarning` is at `:171
 
 **FIXED 2026-09-02 (`1cfdf370`).** The sequential flag is asserted, which is what the guard actually decides; mutation-confirmed by deleting the guard.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading.
 
 `test/core/testHomeStaging.java:799-813`. The javadoc says the point is *"so a stale plan cannot be left sitting in the
@@ -576,6 +620,10 @@ plan *is* possible.
 ### TCX-B9 — `testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot` asserts a floor of one where it needs two
 
 **FIXED 2026-09-02 (`1cfdf370`).** Moved onto a fixture whose station has two arrival copies, with a floor of two so the loop cannot compare a name with itself.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading.
 
@@ -611,6 +659,10 @@ to `pageWithATwoEndedStation()`; this one was not. The floor should be `assertTr
 
 ### TCX-B10 — `testRoutes` has three unseeded `Random`s, and its property test's only assertion carries no message
 
+**Disposition: fixed 2026-09-05, during the audit that confirmed it** - all three were still unseeded.  One `SEED` constant now feeds the class `Random`, and the other two draw from it, so a failing run can be repeated whole by changing one line.  Run twice: identical, 23/0/0 both times.  The missing assertion message in `testExpressions` is NOT fixed and stays open under this finding - a reproducible failure that still names no expression is only half of what was asked.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. This is the suite's one violation of the fixed-seed rule in
 `docs/reviews/README.md`.
 
@@ -645,6 +697,10 @@ Minimum fix: `Long.getLong("routes.seed", <literal>)` with the seed appended to 
 
 ### TCX-B11 — `testTheGoldenLayoutHoldsTogether` reads Adam's real railway in place
 
+**Disposition: fixed 2026-09-05, during the audit that confirmed it** - it was still true: `GOLDEN = new File("cs2_sample_layout")` at :63, `LayoutSandbox` nowhere in the file, and a model built with no sandbox at all.  The fingerprint check was the whole of the protection, and a fingerprint is an alarm rather than a guard - it tells you afterwards.  The class now copies the folder through `LayoutSandbox.open(GOLDEN)` BEFORE `init` (OB-111) and reads the copy, so the same bytes answer the same question and being wrong about a write is no longer expensive.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 `test/regression/testTheGoldenLayoutHoldsTogether.java:63`:
@@ -675,6 +731,10 @@ and it is now false as written.
 
 ### TCX-B12 — Three of `testTheGoldenLayoutHoldsTogether`'s four tests have no floor
 
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - the class still carries two floor-ish assertions for four tests.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 | Test | Loop | Terminal assertion | Floor |
@@ -697,6 +757,10 @@ The floors are one line each and the numbers are knowable from the data — the 
 ### TCX-B13 — `testFullAutonomyDoesNotDriveThroughAReversingPoint` has no control
 
 **FIXED 2026-09-02 (`1cfdf370`).** The control runs first, as its own sibling forty lines above already did.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.**
 

@@ -48,6 +48,10 @@ The reaper-path correction itself (`TS3-A1`) is sound and complete - see **D1**.
 
 ### A1 - `one.sh` cannot see a teardown that threw
 
+**Disposition: fixed, confirmed 2026-09-05** - fixed - `one.sh:470` reads `Configuration Failures` and counts it as a failure, citing this finding.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 `docs/tools/one.sh:174` decides what a class's run meant by grepping five patterns:
@@ -93,6 +97,10 @@ one omission.
 
 **FIXED 2026-09-02 (`3c014e77`).**  `one.sh` counts skips and zero-test classes separately and says so, with `battery.sh`'s own sentence: a class that reported no failures because it ran nothing is not a green class.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 `one.sh:176-180` has exactly one verdict: a class that printed no summary "did not run". Everything
@@ -125,6 +133,10 @@ any of the *reporting* corrections reached it either. They did not: none of the 
 
 **FIXED 2026-09-02.**  The reap runs once more after the loop.  The finding's own point is what makes it worth fixing rather than shrugging at: the class most likely to leave a JVM behind is simply the last one alphabetically, so it is not a symptom of anything being wrong - and the JVM it leaves trips the NEXT run's probe with a message saying the check clears itself, which it does not.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 The reaper call is at the top of the loop body (`battery.sh:367-381`), before the `java` invocation
@@ -150,6 +162,10 @@ warning only visible in the part that has scrolled away is the same shape.
 
 **FIXED 2026-09-02.**  `one.sh` names its run `one-$$`, passes `-Dtraincontrol.batteryRun` to every JVM it starts, resolves `reap.ps1` from its own directory the way `TS3-A1` made `battery.sh` do, and reaps before each class.  Proven by running: a JVM tagged `one-99991` was started and `reap.ps1 -RunId one-99991` killed it, leaving nothing else on the machine touched.  `one-` and `battery-` cannot collide because the id is matched whole.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 `one.sh` starts a JVM per class (`one.sh:171-172`) with `-Dtraincontrol.anyReceivePort=true` and
@@ -170,6 +186,10 @@ between classes and after the loop, resolved the way `battery.sh:295` now resolv
 
 **FIXED 2026-09-02.**  `javac`'s status is tested, not `head`'s.  A tree that does not compile now prints *THE WORKING TREE DOES NOT COMPILE - nothing was run*, lists the errors and exits 2 - proven by putting a broken file in `test/regression/` and watching it refuse, exit code and all.  This also closes `TS3-C5`, which is the same line read through the `| grep | head` hazard this file's own comment forty lines down warns about.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 ```sh
@@ -189,6 +209,10 @@ It was left on the compile line.
 ### C4 - `one.sh` always exits 0
 
 **FIXED 2026-09-02 (`3c014e77`).**  A `BAD` counter, and a non-zero exit when anything in the run was not clean.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.**
 

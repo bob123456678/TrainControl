@@ -427,6 +427,10 @@ Neither commit dispositioned anything. All seven documents from this morning sti
 status line - for example `docs/reviews/2026-09-02-week-of-commits-review.md:86`:
 
 ```
+**Disposition: closed 2026-09-05** - this audit is the disposition pass it asked for.  Its own subject - a record that says nothing is fixed - is what has just been corrected across all eight documents.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open. Introduced by `87b6c10a` (2026-09-02 03:27), unreviewed.**
 ```
 

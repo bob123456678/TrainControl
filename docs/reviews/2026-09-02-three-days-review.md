@@ -65,6 +65,10 @@ mutation-confirmed by moving the check back below the `seen` write.
 
 *The original finding, kept because it is the clearest statement of what was wrong:*
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Structurally real at HEAD; narrow on the operator's data today, and it widens with
 every track length he records. Introduced by `975f157d` (TCX-A2), 2026-09-02 03:37.
 
@@ -249,6 +253,10 @@ spent three findings eliminating, plus three comments a reader will now be misle
 **FIXED 2026-09-02 (`e6791631`).**  Three passes found this - `WK3-B1`, `DY3-B1` and `D3F-C4` are one finding - and the fix is one line at the lifted rule: `aboutToClearProtection` returns false when the accessory `isStraight()`, because a click on a straight signal is about to turn it to danger, which is the protective act and is exactly what the route door does not refuse.  Covered by `testEditorSurfaceRules`, which reads for the precondition at the tile door and for both call sites.
 
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.**
 
 The rule `87b6c10a` unified has an aspect condition at one door and not the other. The route door,
@@ -302,6 +310,10 @@ because references like this get followed.
 ### D3F-C6 - `check()` now builds the configuration three times per call, on call paths already documented as expensive
 
 **FIXED 2026-09-02.**  `check()` builds the configuration once and hands it, with the builder's name map, to all three copy checks.  The public entry points still build their own, because a caller asking one question should not have to know that.  Three builds and three name maps per `check()` become one of each; the pre-existing four walks the finding quotes are untouched and remain on the deferred list.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open, unmeasured.** Filed as a cost observation for the deferred-optimizations list, not as
 a defect with a demonstrated symptom.

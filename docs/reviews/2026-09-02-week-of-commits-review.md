@@ -361,6 +361,10 @@ it belongs at the guard, because the comment currently states the opposite of wh
 
 ### `WK3-C1` — `SVN-B10` widened the Start guard and not the affordance, and left a javadoc saying the two read the same number
 
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `src/org/traincontrol/gui/TrainControlUI.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open. Introduced by `87b6c10a`.**
 
 The guard now asks `hasErrors()`:
@@ -418,6 +422,10 @@ to ask" says — or change the sentence.
 ---
 
 ### `WK3-C2` — `SVN-B7`'s premise is already covered by `Route.setExecuting()`, and its new guard fires for 600 ms after the route has finished
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `routesExecuting` is still consulted at `TrainControlUI.java:16920`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open. Introduced by `87b6c10a`.**
 
@@ -491,6 +499,10 @@ is probably to say "was started a moment ago" rather than to unpick the floor.
 ---
 
 ### `WK3-C3` — a third copy of "which squares carry a home"
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `homeTiles()` (:3824), `homesElsewhere()` (:4603) and `tilesWithAHome()` are still three walks of the same property.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open. Introduced by `1cfdf370`.**
 

@@ -46,7 +46,21 @@ public class testRoutes
     public static MarklinControlStation model;
         
     private static final int MAX_NUM_COMMANDS = 10;
-    private static final Random RANDOM = new Random();
+
+    /**
+     * The seed every `Random` in this class is built from (TCX-B10).
+     *
+     * Three of them were unseeded, so a failure here named no inputs and could not be reproduced -
+     * the suite's one violation of the fixed-seed rule in `docs/reviews/README.md`.  The worst was
+     * `testExpressions`, a property test over twenty generated boolean expressions whose only
+     * assertion carried no message: a failure gave neither the expression nor a way back to it.
+     *
+     * One constant rather than a seed at each site, so a run that fails can be repeated whole by
+     * changing this line - which is the only reason a fixed seed is worth having.
+     */
+    private static final long SEED = 20260905L;
+
+    private static final Random RANDOM = new Random(SEED);
     
     public testRoutes()
     {
@@ -55,7 +69,7 @@ public class testRoutes
     public static MarklinRoute generateRandomRoute()
     {
         // Generate random values for parameters
-        Random random = new Random();
+        Random random = new Random(RANDOM.nextLong());
         String name = "Route: " + random.nextInt(1000);
         int id = random.nextInt(1000);
         int s88 = random.nextInt(10000);
@@ -929,7 +943,7 @@ public class testRoutes
         
         List<MarklinRoute> newRoutes = new ArrayList();
         
-        while (newRoutes.size() < (new Random()).nextInt(40) + 1) 
+        while (newRoutes.size() < RANDOM.nextInt(40) + 1) 
         {
             MarklinRoute newRouteCandidate = generateRandomRoute();
             

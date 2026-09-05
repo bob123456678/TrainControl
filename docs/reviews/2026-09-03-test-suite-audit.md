@@ -108,6 +108,10 @@ INSIDE the `try` whose `finally` closes it, with the class's own rule quoted whe
 guard that runs after the thing it guards is not a guard.  Its teardown is null-guarded so a set-up that
 never completed cannot throw a second time on the way out.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. Severity: the operator's machine-global layout preference is left
 pointing at a temporary folder, so the next time he starts TrainControl it opens the fixture railway - or
 nothing - instead of his own.
@@ -224,6 +228,10 @@ making exactly that mutation: 1 test, 1 failure.
 The finding's framing is the right one and is worth keeping: the rule was lifted out, tested, and the
 call site left uncovered, which is this repository's most repeated shape.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. This is the repository's signature shape: the rule is lifted out,
 tested, and the call site left uncovered.
 
@@ -296,6 +304,10 @@ held it and removes it afterwards if it did not.
 
 The rule this finding names, stated in the sweep that produced it, is now true of every site the sweep
 was about.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading.
 
@@ -383,6 +395,10 @@ Mutation-confirmed by swapping the two tooltip arms.
 The `local` half is not driven, and that is recorded rather than claimed: reaching it needs a model
 holding a Central Station layout, which this class has no fixture for.  What is pinned is the shape and
 the first reason; `canUseAutonomy`'s own behaviour is `RGN-A2`'s ground and is Adam's to rule on.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Missing test.
 
@@ -878,6 +894,10 @@ left the suite green, and now does not.  The finding's framing is worth keeping:
 test on 2026-08-31 and `roomAtTheEnd` did not, which is the sibling drift this repository keeps paying
 for.
 
+**Disposition: fixed, confirmed 2026-09-05** - fixed - `one.sh:470` reads `Configuration Failures` and counts it as a failure, citing this finding.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Missing test. Verified by reading and by `grep`. Severity: the defect that would go
 unnoticed is a train backed into a berth it does not fit, standing across the points behind it, which is
 the hazard Adam raised on 2026-09-01 and the reason `Layout.measuredRoomToReverseInto` was narrowed on
@@ -999,6 +1019,10 @@ switch are asked for, and the square in front of it and the switch tile are not.
 Mutation-confirmed by deleting the switch stop, which makes the answer the whole edge.  That is also the
 flood `OB-171` was about, arriving from the other end: asking for numbers nothing will read.
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading. This is `A1`'s sibling: the *other* half of Adam's 2026-09-02
 ruling, tested by a fixture that cannot tell the ruling from what it replaced.
 
@@ -1065,6 +1089,10 @@ enough.
 **FIXED 2026-09-03.**  The newest of the three scans has the floor the two older ones carry, with the
 same reason written out - `javaSources` answers empty rather than failing when run from the wrong
 directory, which is indistinguishable from finding no offenders.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. This is what is left of `TST-B16`, and the site that is left is
 the one added after the finding.
@@ -1577,6 +1605,10 @@ The finding is right about the cause as well as the fault: `one.sh` was RESTRUCT
 was patched in place, so "the two takes are now word for word the same" was not true - and the file that
 missed the restructure is the one that broke.  Verified by running `battery.sh` with no lock present: it
 now gets past the guard and into the compile, where it was exiting 1 before touching anything.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading. Introduced today, by `REL-C10`'s fix. Severity: on a machine
 with no lock file - which is every machine after any run that exited normally, because both traps

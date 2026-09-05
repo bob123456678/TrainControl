@@ -71,6 +71,27 @@ public class testTheGoldenLayoutHoldsTogether
     /** What every file under the layout folder hashed to before anything read it. */
     private static Map<String, String> before;
 
+    /**
+     * A COPY of the golden layout, which is what everything below actually reads (TCX-B11).
+     *
+     * This class read `cs2_sample_layout` in place - Adam's real railway, the one folder in this
+     * repository that is not recoverable - and built a model with no sandbox at all.  The fingerprint
+     * check below was the whole of its protection, and a fingerprint is an alarm rather than a guard:
+     * it tells you afterwards that something was written.
+     *
+     * `init` reads the layout preference too, which is why the sandbox has to be open BEFORE it and
+     * not merely before the window (OB-111).  With the preference pointed at the copy, nothing
+     * downstream can reach the original even by mistake.
+     *
+     * The test is unchanged in what it asks: the copy is byte-for-byte his railway, so "does the
+     * golden layout hold together" is answered by exactly the same data.  What changes is that being
+     * wrong about a write is no longer expensive.
+     */
+    private static support.LayoutSandbox sandbox;
+
+    /** The copy's folder - GOLDEN is only ever read to make it. */
+    private static File working;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -83,16 +104,24 @@ public class testTheGoldenLayoutHoldsTogether
 
         assertFalse(before.isEmpty(), "the golden layout folder is empty, so nothing below is a check");
 
+        // COPIED FIRST, AND BEFORE THE MODEL (TCX-B11, OB-111).  See the sandbox field.
+        sandbox = support.LayoutSandbox.open(GOLDEN);
+
+        working = sandbox.getFolder();
+
+        assertFalse(fingerprint(working).isEmpty(),
+            "the copy is empty, so every test below would read nothing and pass");
+
         model = init(null, true, false, false, true);
 
-        String path = "file:///" + GOLDEN.getAbsolutePath().replace('\\', '/') + "/";
+        String path = "file:///" + working.getAbsolutePath().replace('\\', '/') + "/";
 
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
         pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
 
-        store = new AutonomyCompanionStore(GOLDEN);
+        store = new AutonomyCompanionStore(working);
 
         store.setPageIds(pageIds());
         store.load();
@@ -102,6 +131,11 @@ public class testTheGoldenLayoutHoldsTogether
     public static void tearDownClass()
     {
         if (model != null) model.stop();
+
+        // alwaysRun on this method already; the sandbox goes back whatever happened above, because a
+        // preference left pointing at a temporary folder changes which layout the application opens
+        // the next time Adam starts it.
+        if (sandbox != null) sandbox.close();
     }
 
     /**

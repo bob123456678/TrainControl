@@ -53,6 +53,10 @@ Nothing rises to A. Nothing found here can drive a train onto the wrong track or
 
 ### V31-B1 — the diagram strip still decides on `errorCount()`, and the rule that exists to catch that now enforces it
 
+**Disposition: fixed, confirmed 2026-09-05** - cited by the fix at `src/org/traincontrol/gui/AutonomyOverlayToggle.java` and `test/regression/testErrorsStopTheSetupRunning.java`.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open.** Verified by reading, and by reading the regression test that is supposed to prevent
 it.
 
@@ -131,6 +135,10 @@ does, rather than naming a method.
 ---
 
 ### V31-B2 — `SVN-B7` is marked FIXED, and the double-run it names could not happen; the guard that was added is a 600 ms debounce
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.** Verified by reading, including the pre-fix tree.
 
@@ -247,6 +255,10 @@ Neither is a DECISION site — `LayoutRightclickAutonomyMenu` decides on `canSta
 
 **FIXED 2026-09-02.**  See `SVN-B17` for the fix; this finding is what got it built, because it put the number on it - three surfaces, one unguarded, and the invariant `87b6c10a` stated was "one rule, asked by both doors".
 
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
+
 **Status: open. Pre-existing, not introduced by these fixes** — filed because `87b6c10a`'s stated
 invariant is "one rule, asked by both doors", and there are three surfaces that command an accessory
 by hand.
@@ -272,6 +284,10 @@ I checked the remaining `execSwitching` call site (`LayoutLabel.java:296`) and i
 branch, which toggles a sensor rather than an accessory: not a fourth door.
 
 ### V31-C3 — the editor's checks are blind to `active`, and `D24-B5` gave that teeth
+
+**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `AutonomyChecks` contains no reference to `active` at all.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.**
 
@@ -304,6 +320,10 @@ import path, which is documented at `AutonomySession.java:519-525` — see `V31-
 ### V31-C4 — the new loader rule keys on the block, the harm it names keys on the sensor
 
 **FIXED 2026-09-02, as the finding asked - the comment rather than the rule.**  The rule matches `claimHome` exactly and that is right; what was wrong was the sentence above it claiming to prevent a state it only partly prevents.  It now says what the block catches, what the sensor case is, and why widening this to the sensor would settle the open MT-187 question by the back door and settle it wrongly - by refusing homes on squares that are not one square.  Both smaller notes are in too: the search `break`s at the first copy so the message names a stable one, and the iteration-order property is written down rather than left to be noticed.
+
+**Disposition: fixed** - see the closure line above this one, which is where it was recorded; this audit confirms it.
+
+**Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
 **Status: open.**
 
