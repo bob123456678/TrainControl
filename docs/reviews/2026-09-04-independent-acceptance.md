@@ -185,7 +185,7 @@ current tree.
 | | |
 |---|---|
 | **Severity** | C - silent modification of user files, with no functional consequence demonstrated |
-| **Disposition** | part fixed (1 and the `readLayoutIndexIds` note); 2 and 3 deliberately deferred - see below |
+| **Disposition** | 2 and 3 closed - not defects.  Adam, 2026-09-04: **"there is no loading back to the station, it is one-way from CS to traincontrol."**  1 and the `readLayoutIndexIds` note are fixed anyway; see the correction below. |
 | **Confidence** | Verified against the shipped `sample_layout` (a genuine CS2-format export) and against Adam's own `cs2_sample_layout` (read-only).  What the Central Station itself does with the rewritten files was NOT tested - no CS2 was harmed or consulted. |
 
 The page exporter went to great lengths to preserve what TrainControl does not model - unmodelled
@@ -211,9 +211,18 @@ repository ships (`sample_layout/config/`):
 Adam's own files are already TrainControl-normalised (lowercase `version`, no `zuletztBenutzt`,
 no `page=`), which is why his railway never shows this.  A new user who downloads their CS2
 layout (`downloadCS2Layout` copies the station's bytes verbatim) and then names one station gets
-files the station never wrote.  Whether a CS2 re-reading them cares is unknown; the cost if it
-does is a diagram that will not load back onto the station.  Worth one manual test by somebody
-with a real CS2 before GA - not worth blocking rc13.
+files the station never wrote.  ~~Whether a CS2 re-reading them cares is unknown; the cost if it does is a diagram that will not load
+back onto the station.  Worth one manual test by somebody with a real CS2 before GA - not worth
+blocking rc13.~~
+
+**That cost is not reachable, and the finding overstated itself.** Adam, 2026-09-04: *"there is no
+loading back to the station, it is one-way from CS to traincontrol."*  Confirmed in the tree:
+`downloadCS2Layout` is the only transfer, it fetches, and nothing anywhere writes a `.cs2` file back
+to the station.  So the only program that ever reads these rewritten files is TrainControl itself,
+and TrainControl is exactly what does not model the dropped keys.
+
+This should have been checked before the finding was graded rather than left as "unknown" - the
+census is one grep, and it is the census that decides whether the whole finding has a consequence.
 
 Also noted while tracing: `readLayoutIndexIds` (`LayoutDiagram.java:890-908`) treats
 `zuletztBenutzt`'s ` .name=` line as a page at position 0; benign today only because the same name
@@ -229,16 +238,22 @@ covered by `testAPageEditKeepsWhatTheStationWroteInTheIndex` and both were mutat
 reader's assertion did not discriminate on the first attempt, because a block named after a real page
 is overwritten by it, which is the same luck restated as a test that cannot fail.
 
-**Items 2 and 3 are deferred, and this is the reason rather than an oversight.** Both live in
-`parseFileContents`, which is the parser for routes, locomotives, accessories and pages alike -
-widening its two regexes is a change to a shared primitive on a release candidate, and the half that
-matters is not the parse but the WRITE-BACK: a bare `page=1` that entered the model would then need
-every page exporter to emit it in the right place, which is where a mistake damages the file rather
-than merely failing to improve it. The benefit is also the least certain thing in this finding - what
-a Central Station does with an index missing `page=1` is unknown, and cannot be established here.
+**Items 2 and 3 are closed as not defects.** A bare `page=1` and a capital-`Version` block are
+dropped by the first save, and nothing is worse for it: the file's only reader is TrainControl, which
+has no use for either. There is no manual test to run and no hardware needed - the question the
+deferral was waiting on has no consumer to ask.
 
-So this stays as the review filed it: worth one manual test by somebody with a real CS2 before GA.
-The test is in the manual list, and it is the only part of AC2-C1 that needs Adam's hardware.
+**Item 1 is fixed anyway, and the reason is now different from the one that found it.** The index
+keeps its unmodelled blocks because this codebase already decided that question for the page exporter
+- *"what TrainControl does not understand it is not entitled to throw away"* - and having one level
+of the same file format obey that rule and the other not is the drift that produces findings like
+this one. It costs forty lines and no behaviour.
+
+**The `readLayoutIndexIds` half stands on its own merits and is the part actually worth having.**
+Reading every `.name=` in the file as a page put the station's memory of a page at position 0 in the
+id map. A real page later given that name resolves to id 0, and every setting keyed by its id
+attaches to the wrong track - which is the misattachment class this project has already lost data to
+twice, with no rename in sight. That has nothing to do with what a Central Station reads.
 
 ---
 

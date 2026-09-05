@@ -226,7 +226,7 @@ future re-runs.
 
 | | |
 |---|---|
-| **Disposition** | question for Adam - data, not code; nothing to fix in the tree |
+| **Disposition** | closed - tuning.  Adam, 2026-09-04: **"c1 pacing is my testing."**  The three values are deliberate, not import residue. |
 | **Confidence** | the values are read from his live `configuration-Main.json` working tree (globals block) and his frozen fixture copy, both on 2026-09-04; the 2.8.1 values from `autonomy_legacy/autonomy.json`. NOT verified: whether these are his own tuning - he was actively testing (simulate=true in the same block) while this pass ran |
 
 His 2.8.1 file says trains pause 3-13 seconds at stations, rotate a locomotive idle for more than
@@ -250,6 +250,9 @@ pre-fix import, and two of those three match what stands today.
 Listed with the two `setup.json` residuals already waiting on him
 (`2026-09-03-questions-for-adam.md` item 3); this is the third of that kind. If the pacing is
 deliberate, say so and this closes as tuning.
+
+**Closed, 2026-09-04.** He said so: the pacing is his testing. Nothing to change, and the two
+`setup.json` residuals it was listed alongside are unaffected by this - they are still open.
 
 ### C2 - the parity harness's concurrency check is one-directional
 
