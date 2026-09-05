@@ -441,6 +441,15 @@ when clicking edit, the autonomy editor appears below other windows, so I might 
 
 add the paused autonomy locomotive indicator (and the ability to toggle whether it's paused) to the right-click menu on the track diagram. maintain parity with the autonomous locomotive commands panel. likely for 3.1.0
 
+### OB-174 - 2026-09-04 - checkbox in autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-04 19:27  
+**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 19:13 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+If checked, "Show parked trains" should auto check "text labels" if "text labels" is unchecked.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
