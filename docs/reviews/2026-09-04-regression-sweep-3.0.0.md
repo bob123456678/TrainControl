@@ -103,7 +103,7 @@ successor-covered, or Adam-ruled (`RG4-D3`-`D16`).
 
 | | |
 |---|---|
-| **Disposition** | code half fixed; data half still needs Adam - five pairings, or a ruling that these signals are decorative |
+| **Disposition** | closed.  Code half fixed.  Adam, 2026-09-04: **"I haven't finished the other signals yet, so that gap makes sense."**  The five unpaired signals are work in progress, not a defect - and the import now names them. |
 | **Confidence** | the accessory/state comparison is measured, not read, over the harness-emitted derivation of his real configuration (2026-09-03) - script output quoted below. NOT verified: whether Adam deliberately left these five unpaired; whether any of the five signals switches a stop-section rather than a lamp; and the derivation artefact is one day older than rc13 (the derivation code is unchanged since - `AutonomyBuilder`/`GraphReducer` checked commit-by-commit) |
 
 At 2.8.1, twelve signals were driven to **red** by hand-authored edge commands - arrivals set the
