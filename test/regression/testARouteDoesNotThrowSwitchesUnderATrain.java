@@ -90,6 +90,77 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * What a route does about a conflicting accessory command depends on who is there (MT-247).
+     *
+     * Adam, 2026-09-06: **"1. cancel should cancel everything.  OK should fire everything.  2. if the
+     * route is auto triggered: popup, just a notification in the log.  don't run the conflicting
+     * switch commands, but do run the power off and others.  make test cases for this."**
+     *
+     * **Each answer is whole rather than partial, and that is the change.** Declining used to skip the
+     * ironwork and run the route's speeds, functions and chained routes anyway - so a person who said
+     * no watched most of the route happen. It now cancels the route.
+     *
+     * The s88 door is unchanged and must stay unchanged: nobody is there, so the conflicting ironwork
+     * is left alone and everything else runs, which is how a route that cuts the power still cuts it.
+     * `testTheStopInARefusedRouteStillRuns` below is the other half of that and would fail if this
+     * branch ever started cancelling.
+     *
+     * **The emergency-stop carve-out is gone.** A route carrying a stop used to be excused the
+     * question entirely; now the auto door does not ask at all, and a person cancelling a route that
+     * would have cut the power has the Stop button in front of them.
+     *
+     * Run as the rule, because reaching the manual branch through the route itself needs a `View` -
+     * sixteen methods of stub for one boolean - and the call site is pinned separately below.
+     */
+    @Test
+    public void testWhatAConflictDoesDependsOnWhoIsThere()
+    {
+        assertEquals(MarklinRoute.respondToConflict(true, true),
+            MarklinRoute.ConflictResponse.RUN_EVERYTHING,
+            "the operator said yes and the route did not run everything.  OK means the ironwork is "
+            + "set and so is the rest (MT-247)");
+
+        assertEquals(MarklinRoute.respondToConflict(true, false),
+            MarklinRoute.ConflictResponse.CANCEL_ROUTE,
+            "the operator said no and the route went on running its speeds, functions and chained "
+            + "routes.  Somebody looking at the railway said no to THIS ROUTE; running most of it is "
+            + "not what they said (MT-247)");
+
+        // THE AUTO DOOR, unchanged and load-bearing: no dialog, the ironwork left alone, everything
+        // else still run - which is how a route that cuts the power still cuts it.
+        assertEquals(MarklinRoute.respondToConflict(false, false),
+            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            "an s88-fired route cancelled itself over a conflict.  Nobody is there to be asked, and "
+            + "the emergency stop it may carry has to run (MT-247)");
+
+        // AND THE ANSWER IS IGNORED WHEN THERE IS NOBODY TO GIVE IT, so a stray true cannot make the
+        // unattended door behave like the attended one.
+        assertEquals(MarklinRoute.respondToConflict(false, true),
+            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            "with nobody to ask, an answer of yes was acted on anyway");
+    }
+
+    /**
+     * And `execRoute` actually asks that rule (MT-247).
+     *
+     * Naming a rule moves the defect to the call site, which is this repository's recurring shape.
+     */
+    @Test
+    public void testTheRouteAsksThatRule() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/marklin/MarklinRoute.java")),
+            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+        assertTrue(source.contains("final ConflictResponse response = respondToConflict(askable,"),
+            "execRoute no longer decides through respondToConflict, so the ruling is tested here and "
+            + "something else decides what the railway does");
+
+        assertTrue(source.contains("if (response == ConflictResponse.CANCEL_ROUTE) {")
+                || source.contains("else if (response == ConflictResponse.CANCEL_ROUTE) {"),
+            "execRoute no longer acts on CANCEL_ROUTE, so declining cancels nothing");
+    }
+    /**
      * The accessory on a locked path stays where the path put it.
      *
      * The control at the end matters as much as the assertion: with autonomy not running, the same

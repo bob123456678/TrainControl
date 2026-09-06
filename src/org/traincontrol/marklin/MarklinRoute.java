@@ -497,6 +497,56 @@ public class MarklinRoute extends Route
     }
 
     /**
+     * What a route does when one of its accessory commands conflicts with a train (MT-247).
+     */
+    public enum ConflictResponse
+    {
+        /** The operator said yes: set the ironwork and everything else. */
+        RUN_EVERYTHING,
+
+        /** The operator said no: nothing in this route happens. */
+        CANCEL_ROUTE,
+
+        /** Nobody was there to ask: leave the ironwork alone, run the rest. */
+        SKIP_ACCESSORIES
+    }
+
+    /**
+     * Adam's ruling of 2026-09-06, as a function of who is there and what they said (MT-247).
+     *
+     * **"1. cancel should cancel everything.  OK should fire everything.  2. if the route is auto
+     * triggered: popup, just a notification in the log.  don't run the conflicting switch commands,
+     * but do run the power off and others."**
+     *
+     * The two doors answer differently on purpose, and each answer is WHOLE rather than partial:
+     *
+     * A person asked and saying no means the route does not happen - not its speeds, not its
+     * functions, not the route it chains to. Somebody looking at the railway said no to this route;
+     * running most of it is not what they said.
+     *
+     * Nobody there - the s88 door - means the conflicting ironwork is left alone and everything else
+     * still runs, which is how a route that cuts the power still cuts it. The log line is the whole
+     * record, because there is no one to show a dialog to.
+     *
+     * **The emergency-stop carve-out is gone**, and nothing is lost by it. A route carrying a stop
+     * used to be excused the question; now the auto door does not ask at all, and the manual door
+     * asking is what Adam wants. A person who cancels a route that would have cut the power has the
+     * Stop button in front of them.
+     *
+     * Named rather than left inline so the ruling can be run: reaching the manual branch through the
+     * route itself needs a View, which is sixteen methods of stub for one boolean.
+     *
+     * @param askable whether there is somebody to ask - a person's door, with a window attached
+     * @param saidYes what they answered, meaningless when askable is false
+     * @return what the route should do
+     */
+    public static ConflictResponse respondToConflict(boolean askable, boolean saidYes)
+    {
+        if (!askable) return ConflictResponse.SKIP_ACCESSORIES;
+
+        return saidYes ? ConflictResponse.RUN_EVERYTHING : ConflictResponse.CANCEL_ROUTE;
+    }
+    /**
      * Executes the route
      * @param auto - was the route triggered automatically?
      * @param recursionLimit - the maximum number of other routes that can be triggered from this route
@@ -691,12 +741,51 @@ public class MarklinRoute extends Route
                                     // The one command that must never wait on a person does not reach
                                     // here: `hasEmergencyStop()` is the whole route's stop, tested
                                     // before the question, on Adam's ruling (`FX2-2`, `SVN-A4`).
-                                    if (!auto && !this.hasEmergencyStop()
-                                        && this.network.getGUI() != null
-                                        && this.network.getGUI().confirmRouteConflictMidway(
-                                            this, now[0], now[1]))
+                                    // ADAM'S RULING, 2026-09-06 (MT-247):
+                                    //
+                                    // **"1. cancel should cancel everything.  OK should fire
+                                    // everything.  2. if the route is auto triggered: popup, just a
+                                    // notification in the log.  don't run the conflicting switch
+                                    // commands, but do run the power off and others."**
+                                    //
+                                    // So the two doors now answer differently on purpose, and each
+                                    // answer is whole rather than partial:
+                                    //
+                                    // A PERSON asked and saying no means the route does not happen -
+                                    // not its speeds, not its functions, not the route it chains to.
+                                    // Somebody looking at the railway said no to this route; running
+                                    // most of it is not what they said.
+                                    //
+                                    // NOBODY THERE - the s88 door - means the conflicting ironwork is
+                                    // left alone and everything else in the route still runs, which is
+                                    // how a route that cuts the power still cuts it.  The log line is
+                                    // the whole record, because there is no one to show a dialog to.
+                                    //
+                                    // The emergency-stop carve-out that used to sit in this condition
+                                    // is gone, and nothing is lost by it: a route carrying a stop is
+                                    // no longer a special case of "do not ask", because the auto door
+                                    // does not ask at all and the manual door asking is what Adam
+                                    // wants.  A person who cancels a route that would have cut the
+                                    // power has the Stop button in front of them.
+                                    final boolean askable = !auto && this.network.getGUI() != null;
+
+                                    final ConflictResponse response = respondToConflict(askable,
+                                        askable && this.network.getGUI().confirmRouteConflictMidway(
+                                            this, now[0], now[1]));
+
+                                    if (response == ConflictResponse.RUN_EVERYTHING)
                                     {
                                         override = true;
+                                    }
+                                    else if (response == ConflictResponse.CANCEL_ROUTE)
+                                    {
+                                        // CANCELLED WHOLE.  The log line first, so the record of why
+                                        // exists before the route stops being anything.
+                                        this.network.logf(now[1], this.getName(), now[0]);
+
+                                        this.network.logf("route.cancelledByOperator", this.getName());
+
+                                        return;
                                     }
                                     else
                                     {
