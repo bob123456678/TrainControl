@@ -3923,11 +3923,31 @@ public class AutonomyEditorPanel extends JPanel
 
             if (answer != JOptionPane.OK_OPTION) return;
 
+            // BEFORE THE COMMIT, because committing is what takes the train off the square that
+            // knows which way it was pointing (REG6-B5).
+            org.traincontrol.automationui.TilePorts.Side heading =
+                point.getCurrentLocomotive() == null ? null
+                    : session.facingOf(point.getCurrentLocomotive().getName());
+
             edit.commitChanges();
 
             // And into the setup, so the next build puts the train where it now is
             session.placeLocomotive(target,
                 point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
+
+            // AND WHICH WAY, which this door did not record (REG6-B5).
+            //
+            // `fix-one-site-sweep-the-siblings`: `TrainControlUI.rememberPlacement` was given this
+            // three commits ago and this one was left, which is the shape every placement defect in
+            // this panel has had - the comment four lines below says the same thing about
+            // `placementChanged` and VD11-A1.  A square is several Points, and a placement with no
+            // recorded facing leaves `placementCopy` to fall through to copy 0.
+            if (point.getCurrentLocomotive() != null)
+            {
+                session.setFacing(target,
+                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                        session.facingsFor(target), heading, point.getName()));
+            }
 
             // AND THE RAILWAY IS TOLD (VD11-A1).  This door moves a train, which is the one thing the
             // running layout most needs to hear about - and it is the sibling of `placementChanged`,

@@ -407,7 +407,6 @@ Tab icons provided by Freepik.
         - Interface
             - The seven sidebar icons have been redrawn as plain, flat marks in dark grey.  The autonomy tab is now a play symbol rather than a diagram of the old autonomy graph, and the routes tab shows a path with an arrow on it rather than a set of points.  The locomotive is drawn larger so that the keyboard page number sitting on top of it can be read.
             - Local locomotive icons can be cropped and panned when you pick them.  There is a tick box in the file chooser - off until you turn it on - the crop is written as a new file beside the locomotive database rather than over your own picture, and re-cropping an icon reopens at the framing and zoom it was taken with.
-            - A splash screen appears while TrainControl is reaching the Central Station, before there is a window to show progress in.
             - Locomotive keyboard pages are now capped at fifty.  Add New Page is greyed out with the limit in its tooltip once you get there, and an installation that already holds more than fifty still loads all of them.
             - The autonomy setup is translated into all eight languages.
     - Bug Fixes

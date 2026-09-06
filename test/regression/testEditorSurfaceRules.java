@@ -246,10 +246,25 @@ public class testEditorSurfaceRules
             + PANEL.getName() + " under any session.setFacing( write - it may have been reformatted "
             + "or renamed, and without this the assertion about its rebuild silently never runs");
 
-        assertEquals(writes, 1,
-            "the facing MENU writes to the setup from " + writes + " places in AutonomyEditorPanel. Two "
-            + "copies of this menu is how OB-039 survived being fixed: the redraw goes on the copy "
-            + "somebody is looking at, and the other one keeps the bug");
+        // TWO, AND THE SECOND IS NOT A MENU (REG6-B5).
+        //
+        // This counts `session.setFacing(` in the whole file, so it cannot tell a second copy of the
+        // facing menu - the thing it exists to catch - from a placement door that records a heading.
+        // The second write is the latter: the "edit or assign locomotive" item, which was writing WHO
+        // was placed and not WHICH WAY, and so left `placementCopy` to fall through to copy 0.  It was
+        // the sibling of `TrainControlUI.rememberPlacement`, fixed three commits earlier and not
+        // swept - the shape every placement defect in this panel has had.
+        //
+        // Raised with the second one named rather than the check loosened, which is this file's own
+        // convention twenty lines down: "adding a writer means saying here which file it is in and why
+        // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
+        // ask about it.
+        assertEquals(writes, 2,
+            "the facing is written from " + writes + " places in AutonomyEditorPanel. Two are known: "
+            + "the facing menu, and the edit-or-assign-locomotive placement door that records a "
+            + "heading (REG6-B5). A third is either a second copy of the menu - which is how OB-039 "
+            + "survived being fixed, the redraw going on the copy somebody is looking at while the "
+            + "other keeps the bug - or a placement door that needs the same sweep this one needed");
 
         // And project-wide, which is the half this used to claim without checking (NR-4).
         //

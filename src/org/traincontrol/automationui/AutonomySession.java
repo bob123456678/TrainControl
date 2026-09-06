@@ -1499,11 +1499,45 @@ public class AutonomySession
     {
         if (locomotive == null) return null;
 
+        // WHERE THE TRAIN IS, THEN WHERE THE SETUP THINKS IT IS (REG6-A2).
+        //
+        // This used to read `placedLocomotives()` alone - the SETUP - which names the square a train
+        // set off from until the next `captureFromLayout` writes the arrival back.  That was harmless
+        // while a direction change was followed the moment it arrived.  It stopped being harmless when
+        // `ca0265f4` began deferring a reversal made DURING a run until the run ends: by then the
+        // train is at the far end of its journey, the flip was aimed at the platform it left,
+        // `moveOntoFacingCopy` found no train there and bailed, and `infoFacingFollowedDirection`
+        // logged a correction that had not happened.
+        //
+        // The running layout is asked first because it is the one that knows.  The setup is still
+        // walked afterwards, and still walked in full: DIR-C3 is the rule that a locomotive recorded
+        // on two squares gets a follow on the square that CAN be decided rather than no follow at all,
+        // and narrowing this to one square would give that back.
+        java.util.List<TileKey> candidates = new java.util.ArrayList<>();
+
+        if (running != null && getStationIndex() != null)
+        {
+            for (org.traincontrol.automation.Point point : running.getPoints())
+            {
+                if (point.getCurrentLocomotive() == null) continue;
+
+                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
+
+                TileKey where = getStationIndex().squareOf(point.getName());
+
+                if (where != null && !candidates.contains(where)) candidates.add(where);
+            }
+        }
+
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
             if (!locomotive.equals(placed.getValue())) continue;
 
-            final TileKey tile = placed.getKey();
+            if (!candidates.contains(placed.getKey())) candidates.add(placed.getKey());
+        }
+
+        for (final TileKey tile : candidates)
+        {
 
             Side recorded = getFacing(tile);
 
