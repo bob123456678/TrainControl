@@ -14577,6 +14577,21 @@ removed exactly that over-strictness from the route door.
 
 create a test case for this- it requires activating an autonomy path and creating a route that touches its signal.
 
+**Done, 2026-09-06.** `testSwitchingAProtectingSignalByHandAsksOnlyOneWay` in `core.testAutoLayout`.
+
+It needs neither a running railway nor a route: `clearsProtection` is the one rule all three doors
+consult - the diagram tile, the switch keyboard and the route - and each supplies the direction
+itself, because a tile TOGGLES, the keyboard SETS, and a route knows from the command it holds. So
+the question the fix is about is asked of that rule directly.
+
+Steps 2, 3 and 4 are covered: green with a train standing there is asked, red is not, and neither is
+asked with the platform empty. Step 5 - a route setting the same signal green is still refused - goes
+through `heldReason`, which asks the same method, and `testARouteDoesNotThrowSwitchesUnderATrain`
+covers that door.
+
+Both halves mutation-confirmed: dropping the direction fails one assertion, dropping the occupancy
+fails another.
+
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

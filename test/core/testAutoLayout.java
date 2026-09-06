@@ -870,6 +870,93 @@ public class testAutoLayout
     }
 
     /**
+     * Switching a protecting signal by hand asks only in the direction that removes protection
+     * (MT-256).
+     *
+     * Adam, 2026-09-05: **"Could not run this.  create a test case for this - it requires activating
+     * an autonomy path and creating a route that touches its signal."**
+     *
+     * The manual steps needed a running railway, a train standing at a protected platform, and a route
+     * built to fight it. None of that is needed to ask the question the fix is about: `clearsProtection`
+     * is the one rule all three doors consult - the diagram tile, the switch keyboard and the route -
+     * and the direction is supplied by the caller because each knows it differently.
+     *
+     * **The aspect is half the rule, and leaving it out was `WK3-B1`.** Turning protection ON is doing
+     * what the protection mechanism would do anyway, and refusing that was over-strictness the route
+     * door had already had removed. So:
+     *
+     * - green, with a train standing there: asked;
+     * - red, with a train standing there: never asked;
+     * - either way with the platform empty: never asked.
+     *
+     * Those are steps 2, 3 and 4 of the manual test. Step 5 - a route setting the same signal green is
+     * still refused - is `heldReason`, which asks the same method, and
+     * `testARouteDoesNotThrowSwitchesUnderATrain` covers that door.
+     *
+     * MUTATION: drop `commandingGreen` from `clearsProtection` and the second assertion fails; drop
+     * the occupancy half and the third does.
+     */
+    @Test
+    public void testSwitchingAProtectingSignalByHandAsksOnlyOneWay() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback platform = model.newFeedback(210, null);
+
+        model.setFeedbackState(platform.getName(), false);
+
+        MarklinAccessory signal = borrowedAccessory(0);
+
+        layout.createPoint("MT256_PLATFORM", true, platform.getName());
+
+        running(layout);
+
+        layout.getPoint("MT256_PLATFORM").setProtectingSignals(
+            java.util.Arrays.asList(signal.getName()));
+
+        MarklinLocomotive train = model.getLocByName(model.getLocList().get(0));
+
+        // THE CONTROL, and step 4 of the manual test: with the platform EMPTY, neither direction is a
+        // question.  Without this, "asked when green" passes on a rule that asks about everything.
+        assertFalse(layout.clearsProtection(signal, true),
+            "control: with no train at the platform, turning its signal green was still a question - "
+            + "so the rule is not about occupancy at all");
+
+        assertFalse(layout.clearsProtection(signal, false),
+            "control: with no train at the platform, turning its signal red was a question");
+
+        layout.getPoint("MT256_PLATFORM").setLocomotive(train);
+
+        try
+        {
+            // Step 3: green, with a train standing there.
+            assertTrue(layout.clearsProtection(signal, true),
+                "turning a protecting signal GREEN with a train standing at the platform it protects "
+                + "was not a question.  That is the command that takes protection off, and it is the "
+                + "one the operator has to be asked about (MT-256)");
+
+            // Step 2: red, with the same train standing there.
+            assertFalse(layout.clearsProtection(signal, false),
+                "turning a protecting signal RED was a question.  That is doing what the protection "
+                + "mechanism would do anyway - the over-strictness WK3-B1 removed from the route door "
+                + "and this rule must not put back");
+
+            // AND AN ACCESSORY THAT PROTECTS NOTHING is never a question, whichever way it is sent.
+            assertFalse(layout.clearsProtection(borrowedAccessory(1), true),
+                "an accessory that protects no platform was treated as one, so every hand-switched "
+                + "turnout on the railway would raise a dialog");
+        }
+        finally
+        {
+            layout.getPoint("MT256_PLATFORM").setLocomotive(null);
+        }
+
+        // And it stops asking the moment the train leaves.
+        assertFalse(layout.clearsProtection(signal, true),
+            "the train left and the signal is still protected, so the question outlives the train it "
+            + "was about");
+    }
+    /**
      * One signal protecting TWO platforms stays red while either of them is claimed (RG5-C1).
      *
      * **Adam's repair depends on exactly this.** His 2.8.1 file reds Signals 63 and 64 on the edge
