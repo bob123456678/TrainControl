@@ -5049,7 +5049,98 @@ public class Layout
      * @param ttp - null if not running a timetable route
      * @return  
      */
+    /**
+     * Asked before a train is turned round at a point it MAY reverse at (Adam, 2026-09-06).
+     *
+     * **Intent cannot be inferred, so it is asked for.** A reversing point turns whatever passes it,
+     * and the reason for the turn lives in the leg after this one: a train may be going there to back
+     * into a berth next time, or may simply be passing through.  Adam: *"in manual mode, the system
+     * has no way of knowing that the intention is to reverse into a berth on the next turn.  So we
+     * can't possibly both allow that and disallow it based on train."*
+     *
+     * So the caller decides.  Autonomy answers yes without asking anybody - it chose the path, and
+     * `pickPath` already refuses any path that reverses along the way, so the only reversal it can
+     * reach is one it meant.  A hand-driven send puts the question to the operator.
+     *
+     * A TRUE TERMINUS IS NOT ASKED ABOUT, at either door.  There the turn is not a choice: the train
+     * has run out of track and the next move is back the way it came.  Adam: *"no unprompted
+     * reversals in manual mode unless going to a true terminus (must reverse)".*
+     */
+    public interface ReversalPolicy
+    {
+        /**
+         * @param loc the train
+         * @param at the point it has just reached
+         * @return whether to turn it round here
+         */
+        boolean shouldReverse(Locomotive loc, Point at);
+    }
+
+    /**
+     * What autonomy uses, and what every caller used before there was a choice.
+     */
+    /**
+     * Whether a train reaching this point is turned round here (Adam, 2026-09-06).
+     *
+     * **Three answers, and only one of them is a question.**
+     *
+     * A point trains do not reverse at: no.  A journey whose DESTINATION is a terminus: yes, and
+     * nobody is asked.  Anywhere else the caller's policy decides, which is how a hand-driven send
+     * comes to ask the operator while autonomy does not.
+     *
+     * **The terminus is the destination, not this point** - and that correction came from the model
+     * refusing the first version's fixture: *"Terminus stations cannot be set as reversing."*  The two
+     * flags are mutually exclusive, so a rule asking whether THIS point is both could never fire.
+     *
+     * A train backs into a terminus by turning at the reversing point BEFORE it - which is exactly
+     * `testATrainThatCannotReverseMayBackIntoATerminus`, and Adam's own ruling on MT-245: *"trains
+     * should be allowed to back into terminuses if they are not reversible (that's why we have the
+     * reversing point at feedback 2013)."*  So on a journey that ENDS at a terminus the turn on the
+     * way is not a choice; it is how the train gets there.  That is what *"no unprompted reversals in
+     * manual mode unless going to a true terminus (must reverse)"* means.
+     *
+     * A null policy means yes, so every caller that has no opinion behaves as this method did before
+     * there was one.
+     *
+     * Named rather than left inline so it can be run: the alternative was a test that drives a train
+     * along a path, which on this fixture hung waiting for an arrival rather than failing.  The call
+     * site is pinned separately - naming a rule moves the defect to the call.
+     *
+     * @param current the point the train has reached
+     * @param destination where this journey ends
+     * @param loc the train
+     * @param reversals the caller's policy, or null for "always"
+     * @return whether to turn it round
+     */
+    public static boolean shouldReverseAt(Point current, Point destination, Locomotive loc,
+        ReversalPolicy reversals)
+    {
+        if (current == null || !current.isReversing()) return false;
+
+        if (destination != null && destination.isTerminus()) return true;
+
+        return reversals == null || reversals.shouldReverse(loc, current);
+    }
+
+    public static final ReversalPolicy ALWAYS_REVERSE = (loc, at) -> true;
+
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
+    {
+        return executePath(path, loc, speed, ttp, ALWAYS_REVERSE);
+    }
+
+    /**
+     * The same, with a say in whether an intermediate reversal happens (Adam, 2026-09-06).
+     *
+     * @param path the route
+     * @param loc the train
+     * @param speed how fast
+     * @param ttp the timetable entry, or null
+     * @param reversals asked at each may-reverse point on the way; see ReversalPolicy
+     * @return whether the train got there
+     */
+    public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
+        ReversalPolicy reversals)
     {
         // A dispatch is a train under way, however it was asked for.
         //
@@ -5089,7 +5180,7 @@ public class Layout
         {
             try
             {
-                return executePathInternal(path, loc, speed, ttp);
+                return executePathInternal(path, loc, speed, ttp, reversals);
             }
             catch (RuntimeException e)
             {
@@ -5296,7 +5387,8 @@ public class Layout
      * @param ttp
      * @return 
      */
-    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
+    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
+        ReversalPolicy reversals)
     {    
         // Sanity check
         if (!this.isValid())
@@ -5578,8 +5670,13 @@ public class Layout
                     }
                 }    
                 
-                // Reverse the locomotive if this is a reversing station
-                if (current.isReversing() && isCurrentLayout())
+                // Reverse the locomotive if this is a reversing station - IF THE CALLER SAYS SO.
+                //
+                // A terminus is not a question: the train has run out of track, so it turns whatever
+                // the policy thinks.  Everywhere else the policy decides, which is how a hand-driven
+                // send comes to ask the operator and autonomy does not (Adam, 2026-09-06).
+                if (isCurrentLayout() && shouldReverseAt(current,
+                    path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
                         this.control.logf(
                             "autolayout.infoIntermediateReversingForLocomotive",

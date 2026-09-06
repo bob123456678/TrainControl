@@ -1002,6 +1002,22 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
 
     /**
+     * Asks whether a train reaching a may-reverse point should be turned round (Adam, 2026-09-06).
+     *
+     * Shared with the Locomotive commands tab through `ManualReversalPrompt`, because two spellings of
+     * this question would eventually be two different questions - and one of the two doors would be
+     * the one that stopped asking.
+     *
+     * @param train the locomotive
+     * @param where the point it has reached
+     * @return whether to turn it
+     */
+    private boolean askAboutReversing(org.traincontrol.base.Locomotive train,
+        org.traincontrol.automation.Point where)
+    {
+        return org.traincontrol.gui.ManualReversalPrompt.ask(this, train, where);
+    }
+    /**
      * One "-> somewhere" item, dispatching this locomotive along this path.
      *
      * Lifted out of the loop when `FR-058` split the list in two (`More Destinations`). Two copies of
@@ -1033,8 +1049,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     else
                     {
                         boolean success = ui.getModel().getAutoLayout().executePath(
-                            path, locomotive, locomotive.getPreferredSpeed(), null
-                        );
+                            path, locomotive, locomotive.getPreferredSpeed(), null,
+                        // ASKED, not assumed (Adam, 2026-09-06).
+                        //
+                        // "In manual mode, if the user decides to send a train to a 'may reverse'
+                        // point, explicitly ask the user if the train should change direction."
+                        //
+                        // The intent lives in the leg AFTER this one - the train may be going there to
+                        // back into a berth next time, or may simply be passing - so nothing here can
+                        // work it out.  A true terminus is not asked about: the train has run out of
+                        // track and the policy is never consulted there.
+                        (train, where) -> askAboutReversing(train, where));
 
                         if (!success)
                         {

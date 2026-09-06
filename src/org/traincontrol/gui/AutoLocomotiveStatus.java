@@ -1038,7 +1038,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     new Thread(() ->
                     {
 
-                        boolean success = this.layout.executePath(chosen, locomotive, locomotive.getPreferredSpeed(), null);
+                        // ASKED HERE TOO (Adam, 2026-09-06): "make sure this gets asked both in the
+                        // locomotive commands tab, and when fired from the track."
+                        boolean success = this.layout.executePath(chosen, locomotive,
+                            locomotive.getPreferredSpeed(), null,
+                            (train, where) ->
+                                org.traincontrol.gui.ManualReversalPrompt.ask(this, train, where));
 
                         if (!success)
                         {

@@ -9790,6 +9790,76 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Which way each locomotive was running the last time this window looked (Adam, 2026-09-06).
+     *
+     * The graph's facing and the decoder's direction are not the same kind of fact and nothing maps
+     * one to the other - "forward" is not north.  What IS knowable is that a direction command
+     * reverses whatever was true before, so noticing the CHANGE is what makes the two relatable, and
+     * it needs nothing stored in the setup and no migration.
+     *
+     * By name, because that is what the setup records a placement as.
+     */
+    private final java.util.Map<String, Boolean> lastSeenDirection =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Turns a placed locomotive round on the graph when the railway has turned it (Adam, 2026-09-06).
+     *
+     * Adam: **"a locomotive direction command WILL update the direction on the graph if it does not
+     * match."**
+     *
+     * Called from `repaintLoc`, which the model already fires after every locomotive message it parses
+     * - including the direction echo - so this follows what the track actually did rather than what
+     * this program asked for.  A command sent from here and a command somebody sent from the Central
+     * Station arrive the same way, which is the point.
+     *
+     * **Not while autonomy is running.** A run turns its own trains at reversing points and knows what
+     * it did; the setup is reconciled from the run's own capture.  Following the echo as well would
+     * have two writers for one fact, and the loser would be whichever finished second.
+     *
+     * **The first sighting of a locomotive teaches rather than acts.** Otherwise every start-up would
+     * flip half the railway, because there is nothing to compare against yet.
+     *
+     * @param updated the locomotives whose state has just been parsed, or null
+     */
+    private void followDirectionChanges(List<Locomotive> updated)
+    {
+        if (updated == null || updated.isEmpty()) return;
+
+        for (Locomotive loc : updated)
+        {
+            if (loc == null || loc.getName() == null) continue;
+
+            final boolean forward = loc.goingForward();
+
+            Boolean was = lastSeenDirection.put(loc.getName(), forward);
+
+            // Never seen, or unchanged: nothing to follow.
+            if (was == null || was == forward) continue;
+
+            if (this.model == null || !this.model.hasAutoLayout()) continue;
+
+            if (this.model.getAutoLayout().isRunning()) continue;
+
+            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+            if (session == null) continue;
+
+            final org.traincontrol.automationui.TileGraph.TileKey moved =
+                session.flipFacing(loc.getName());
+
+            if (moved == null) continue;
+
+            // Said out loud: the setup has been changed by something the operator did to a train, and
+            // a silent edit to a stored configuration is the thing this project keeps filing against
+            // itself.
+            this.model.logf("autosetup.infoFacingFollowedDirection", loc.getName(),
+                String.valueOf(moved));
+
+            autonomySetupChanged();
+        }
+    }
+    /**
      * Gets the locomotive name to display in pop-up window titles
      * @return 
      */
@@ -9811,6 +9881,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
     {     
+        // BEFORE the concurrency guard below, which returns early while a repaint is in flight - the
+        // graph has to follow every direction change, not only the ones that arrive when the renderer
+        // happens to be idle (Adam, 2026-09-06).
+        followDirectionChanges(updatedLocs);
+
         // Prevent concurrent calls
         for (Future<?> f : this.locFutures)
         {

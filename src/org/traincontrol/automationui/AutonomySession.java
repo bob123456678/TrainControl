@@ -1386,6 +1386,61 @@ public class AutonomySession
     }
 
     /**
+     * Turns a placed locomotive round on the graph, because the railway turned it (Adam, 2026-09-06).
+     *
+     * Adam: **"changing the direction on the graph itself does not emit a locomotive direction
+     * command.  But a locomotive direction command WILL update the direction on the graph if it does
+     * not match."**
+     *
+     * **One way only, and that is the design.** The decoder is what the railway actually does; the
+     * setup is a record of it. A record that argued back would drive trains because somebody opened a
+     * menu - so `setFacing` writes nothing to the track, and this follows the track.
+     *
+     * **The caller decides that something changed**, not this method. A facing is a Side and a
+     * direction is forwards-or-backwards; nothing maps one to the other, because "forward" is not
+     * north - it is whichever way the decoder drives, and which way that points depends on how the
+     * model sits on the rails. The one thing that IS knowable is that a direction command reverses
+     * whatever was true before, so the window watches for the change and this performs the
+     * consequence. That needs nothing stored, and so needs no migration: a railway upgraded to this
+     * version behaves correctly from its first direction command.
+     *
+     * **What flipping means on a curve.** Not the compass opposite: a train on a curve joining north
+     * to east faces one of those two, and turning it round makes it face the other. That is exactly
+     * `facingChoices`, which already knows the geometry - so the new facing is "the other choice",
+     * never a direction this square has no track in.
+     *
+     * **Left alone where the answer is not obvious**: a locomotive that is not placed, a square with no
+     * recorded facing, and a square offering other than two facings - where "the other one" does not
+     * mean anything. Those are reported by returning null rather than guessed at.
+     *
+     * @param locomotive the locomotive that has just been turned
+     * @return the square whose facing changed, or null when nothing did
+     */
+    public TileKey flipFacing(String locomotive)
+    {
+        if (locomotive == null) return null;
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            if (!locomotive.equals(placed.getValue())) continue;
+
+            final TileKey tile = placed.getKey();
+
+            Side recorded = getFacing(tile);
+
+            List<Side> choices = facingChoices(tile);
+
+            // Two, because "the other one" has to mean something.
+            if (recorded == null || choices.size() != 2 || !choices.contains(recorded)) return null;
+
+            setFacing(tile, choices.get(0) == recorded ? choices.get(1) : choices.get(0));
+
+            return tile;
+        }
+
+        return null;
+    }
+    /**
      * Which locomotive the active configuration records standing on each square.
      *
      * Read from the configuration rather than from the running layout on purpose: the configuration is

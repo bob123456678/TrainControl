@@ -189,6 +189,95 @@ public class testNonReversibleTrains
     }
 
     /**
+     * A hand-driven send does not turn a train at a may-reverse point unless somebody says so
+     * (Adam, 2026-09-06).
+     *
+     * **The intent lives in the leg that has not happened yet.** A reversing point turns whatever
+     * passes it, and the reason may be "back into that berth next time" or may be nothing at all.
+     * Adam: *"in manual mode, the system has no way of knowing that the intention is to reverse into a
+     * berth on the next turn.  So we can't possibly both allow that and disallow it based on train."*
+     * So it is asked, and `executePath` takes the answer as a policy.
+     *
+     * **A true terminus is never asked about** - the other half of the ruling: *"no unprompted
+     * reversals in manual mode unless going to a true terminus (must reverse)."* There the train has
+     * run out of track and the turn is not a choice.
+     *
+     * **Run as the rule rather than as a journey.** The first version of this drove a train along a
+     * path; it hung waiting for an arrival that the fixture cannot produce, which is a test that has
+     * to be killed rather than one that fails. The rule is what encodes the ruling, so the rule is
+     * what is run - and the call site is pinned by the test below, because naming a rule moves the
+     * defect to the call.
+     */
+    @Test
+    public void testAManualSendDoesNotTurnATrainUnasked() throws Exception
+    {
+        Layout layout = backingInLayout();
+
+        Point ordinary = layout.getPoint("BACK_mid");
+        Point terminus = layout.getPoint("BACK_end");
+        Point plain = layout.getPoint("BACK_start");
+
+        // THE TWO FLAGS ARE MUTUALLY EXCLUSIVE, which is what the first version of this test got
+        // wrong: it set the terminus reversing and the model refused - "Terminus stations cannot be
+        // set as reversing".  So a rule asking whether THIS point is both could never fire, and the
+        // terminus that matters is the journey's DESTINATION.
+        assertTrue(ordinary.isReversing() && !ordinary.isTerminus(),
+            "precondition: the middle point must be one trains MAY turn at and not a terminus");
+
+        assertTrue(terminus.isTerminus() && !terminus.isReversing(),
+            "precondition: the far point must be a terminus, and the model does not let it also be "
+            + "a reversing point");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // THE ANSWER THAT MATTERS: no means no, at a point that is only a may-reverse.
+        assertFalse(Layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> false),
+            "a hand-driven send would turn the train round at a point it MAY reverse at, against an "
+            + "answer of no.  The reason for such a turn lives in the leg after this one, so nothing "
+            + "in the path can decide it and the operator is asked (Adam, 2026-09-06)");
+
+        // THE CONTROL, without which "it did not turn" is satisfied by a rule that never turns.
+        assertTrue(Layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> true),
+            "yes did not turn the train either, so the rule is refusing rather than asking");
+
+        // A JOURNEY TO A TERMINUS IS NOT A QUESTION, whatever the answer: the turn on the way is how
+        // the train gets there at all, which is Adam's MT-245 ruling.
+        assertTrue(Layout.shouldReverseAt(ordinary, terminus, loc, (train, where) -> false),
+            "a train bound for a terminus was left unturned at the reversing point on the way, "
+            + "because the policy said no.  That turn is not a choice - it is how a train backs into "
+            + "a terminus, and refusing it strands the journey");
+
+        // And a point nobody turns at is never turned at.
+        assertFalse(Layout.shouldReverseAt(plain, terminus, loc, (t, w) -> true),
+            "a point that is not a reversing point was turned at - and on a journey to a terminus, "
+            + "which is the branch most likely to say yes to everything");
+
+        // A caller with no opinion behaves as everything did before there was a policy.
+        assertTrue(Layout.shouldReverseAt(ordinary, plain, loc, null),
+            "a null policy stopped meaning \"always\", so every caller that has no opinion has "
+            + "quietly changed behaviour");
+    }
+
+    /**
+     * And `executePathInternal` actually asks it (Adam, 2026-09-06).
+     *
+     * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
+     * repository's recurring shape - so the call is checked too.
+     */
+    @Test
+    public void testTheRunAsksThatRule() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(source.replaceAll("\\s+", " ").contains(
+            "if (isCurrentLayout() && shouldReverseAt(current, "
+            + "path.get(path.size() - 1).getEnd(), loc, reversals))"),
+            "executePathInternal no longer decides reversals through shouldReverseAt, so the rule is "
+            + "tested here and something else decides what the railway actually does");
+    }
+    /**
      * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).
      *
      * His words, on MT-245: "trains should be allowed to back into terminuses if they are not
