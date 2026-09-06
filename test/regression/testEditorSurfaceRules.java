@@ -263,12 +263,25 @@ public class testEditorSurfaceRules
         // is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java",
-                "LayoutRightclickAutonomyMenu.java"),
+                "LayoutRightclickAutonomyMenu.java", "TrainControlUI.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
             + "the three known ones redraws in its own way - the menu through placementChanged(), the "
             + "diagram's right-click through updateVisiblePoints() as part of MOVING a locomotive, and "
             + "the session's own migration before anything is on screen - so a fourth has to say which "
             + "of those it is, or it is a copy of a menu that will keep the bug the others had fixed");
+
+        // THE FOURTH, SAYING WHICH OF THOSE IT IS (Adam, 2026-09-06).
+        //
+        // `TrainControlUI.rememberPlacement` is the second half of the third one.  The rule already
+        // knows about the track diagram's right-click menu; this is the same diagram's DRAG, which
+        // moves a locomotive by hand and lands in a different class because the drop is handled by the
+        // window rather than by the popup.  It redraws the same way - `updateVisiblePoints()` is
+        // called three lines above the write - so it is the third case, not a fourth kind.
+        //
+        // It was added because it was the only placement door that recorded WHO without recording
+        // WHICH WAY: a pasted train had no facing, `placementCopy` fell through to copy 0, and the
+        // next capture wrote that arbitrary side back as though somebody had chosen it. Adam reported
+        // it three times before it was found.
 
         assertTrue(redrawn,
             "the facing is recorded but nothing redraws (OB-039). The caption carries the arrow saying "

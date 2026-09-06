@@ -286,6 +286,18 @@ public class AutonomyEditorPanel extends JPanel
 
     private TileKey testFrom;
 
+    /**
+     * Which tier the routing check answers for, and the label that names the pair.
+     *
+     * Auto is the default because it is the question that gets asked: somebody opens this panel
+     * because autonomy is not doing something, not because they cannot drive a train by hand.
+     */
+    private JLabel pathTypeLabel;
+
+    private javax.swing.JRadioButton pathTypeAuto;
+
+    private javax.swing.JRadioButton pathTypeManual;
+
     /** The one-way run tool, since OB-006 moved it off the right-click menu */
     private JToggleButton oneWayButton;
 
@@ -475,6 +487,42 @@ public class AutonomyEditorPanel extends JPanel
         // The hint line below already speaks, and it speaks about whatever was last clicked.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
+        // WHICH TIER THE CHECK ANSWERS FOR (Adam, 2026-09-05).
+        //
+        // **"Add a radio button below the button, with a label above it, called Path Type.  Radio
+        // button Auto or Manual dictates what is in scope for the routing check."**
+        //
+        // The check used to answer one question and be read as answering two.  Autonomy and a hand
+        // dispatch do not agree about where a train may be SENT - autonomy will not choose a station
+        // it is told to leave alone, and a person may send a train to one deliberately - so a route
+        // the check drew was true for one of them and silent about the other.  Somebody testing why
+        // autonomy never visits a platform got a green line, because a person could go there.
+        //
+        // They agree about everything else, which is why this is two options rather than a filter:
+        // an inactive square stops both ("inactive really means nothing can pass"), a barred arrival
+        // stops both, a must-turn square turns both.  The only delta is what counts as somewhere to
+        // GO, so the radio changes the destination test and nothing about how the track is walked.
+        pathTypeLabel = new JLabel(I18n.t("autosetup.ui.labelPathType"));
+        pathTypeLabel.setFont(FONT_CONTROL);
+
+        pathTypeAuto = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
+        pathTypeManual = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
+
+        javax.swing.ButtonGroup pathType = new javax.swing.ButtonGroup();
+        pathType.add(pathTypeAuto);
+        pathType.add(pathTypeManual);
+
+        // On the LABEL and both radios, because a tooltip on one of a pair is found by whoever happens
+        // to hover the right half. The sentence is the same either way: it says what the pair means.
+        String pathTypeTip = wrapped(I18n.t("autosetup.ui.tooltipPathType"));
+
+        pathTypeLabel.setToolTipText(pathTypeTip);
+        pathTypeAuto.setToolTipText(pathTypeTip);
+        pathTypeManual.setToolTipText(pathTypeTip);
+
+        pathTypeAuto.setFont(FONT_CONTROL);
+        pathTypeManual.setFont(FONT_CONTROL);
+
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
         whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
@@ -509,6 +557,16 @@ public class AutonomyEditorPanel extends JPanel
         fillWidth(oneWayButton, nameAll);
 
         panel.add(row(testButton));
+
+        // Directly under the button it governs, and above nothing else - MT-098 is two comments down
+        // and is the same panel forgetting to add a control it had finished building. The label goes
+        // in its own row above the pair, as Adam asked: two radios and a caption on one line set this
+        // column's width from their combined length, which is what the comment above testButton says
+        // about stacking rather than sitting side by side.
+        panel.add(row(pathTypeLabel));
+        panel.add(row(pathTypeAuto));
+        panel.add(row(pathTypeManual));
+
         panel.add(row(whyButton));
 
         // MT-098: this was built, given a tooltip, wired into the Tool enum and into the disarm path,
@@ -5954,13 +6012,35 @@ public class AutonomyEditorPanel extends JPanel
         trace(there, testFrom, true);
         trace(back, tile, false);
 
+        // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
+        //
+        // A path existing and a train being sent along it are different facts, and the check reported
+        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's own rule asked of the
+        // diagram - `Layout:3576` refuses a destination that is reversing or not an auto destination
+        // before it is a candidate at all - so on Auto a station in that set is somewhere autonomy can
+        // reach and will never pick, which is exactly the state somebody opens this panel to explain.
+        //
+        // Said as well as the route rather than instead of it.  The track is passable and that is
+        // worth knowing; what is added is that autonomy will not use it.  Reporting "no path" here
+        // would be a lie about the railway to make a point about the settings.
+        //
+        // Nothing is said on Manual, where every station is somewhere a person may send a train.
+        String tierNote = "";
+
+        if (pathTypeAuto != null && pathTypeAuto.isSelected() && session != null
+            && session.stationsAutonomyWillNotChoose().contains(tile))
+        {
+            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testNotAnAutoDestination",
+                describeTile(tile)));
+        }
+
         // Named, not just counted.  "3 runs" says a route exists and nothing about which one, so a
         // route the user believes impossible cannot be argued with - and the squares it crosses are
         // spread over a page too big to follow a line across.  The sensors it calls at are the short
         // way to say where it went.
         sayRich(hint, I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
-            leg(there), escape(via(there)), leg(back)));
+            leg(there), escape(via(there)), leg(back)) + tierNote);
 
         testFrom = null;
     }
