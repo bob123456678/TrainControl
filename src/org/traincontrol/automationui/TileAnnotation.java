@@ -836,6 +836,74 @@ public class TileAnnotation
     }
 
     /**
+     * Whether nudging an arrival arrow this way puts it over the tile's own track (OB-175).
+     *
+     * An arrow on one side is pushed along that side, clear of the direction mark in the middle.  Which
+     * WAY along it was a fixed rotation, so it always landed on the same corner - and on a curve that
+     * corner is where the track is.
+     *
+     * The side the nudge points toward is worked out from the vector rather than from a table, so this
+     * cannot fall out of step with the geometry above it.  Then: does this tile's run touch that side?
+     *
+     * @param arriving the side the arrow is on
+     * @param px the nudge's x component, across the edge
+     * @param py its y component
+     * @return true when the far end of the nudge is a side this tile's track uses
+     */
+    private boolean offsetCollidesWithTrack(Side arriving, double px, double py)
+    {
+        if (arriving == null || marks.isEmpty()) return false;
+
+        // Screen coordinates: y grows downward, so a negative y points NORTH.
+        Side toward;
+
+        if (Math.abs(px) > Math.abs(py))
+        {
+            toward = px > 0 ? Side.E : Side.W;
+        }
+        else
+        {
+            toward = py > 0 ? Side.S : Side.N;
+        }
+
+        // The side the arrow is ON is not a collision - every arrow sits on one.
+        if (toward == arriving) return false;
+
+        boolean used = false;
+        boolean opposite = false;
+
+        for (Mark mark : marks)
+        {
+            if (mark.getA() == toward || mark.getB() == toward) used = true;
+
+            if (mark.getA() == opposite(toward) || mark.getB() == opposite(toward)) opposite = true;
+        }
+
+        // BOTH USED IS NOT A REASON TO MOVE, which is what makes this safe on straight track: a run
+        // from N to S touches both corners of an E arrow equally, and flipping would trade one overlap
+        // for another while moving a mark somebody is used to.
+        return used && !opposite;
+    }
+
+    /**
+     * The side facing this one.
+     *
+     * @param side any side
+     * @return its opposite, or null for null
+     */
+    private static Side opposite(Side side)
+    {
+        if (side == null) return null;
+
+        switch (side)
+        {
+            case N: return Side.S;
+            case S: return Side.N;
+            case E: return Side.W;
+            default: return Side.E;
+        }
+    }
+    /**
      * Where a train may pull in, and where it may not.
      *
      * A chevron at the edge pointing INTO the square, which is the gesture the thing itself makes: a
@@ -888,6 +956,27 @@ public class TileAnnotation
             // Across the edge, at right angles to inward
             double px = -dy;
             double py = dx;
+
+            // AND AWAY FROM THIS TILE'S OWN TRACK (OB-175).
+            //
+            // Adam: "curved sensor tiles going from n to e have an incoming from e arrow that
+            // overlaps with the track.  move the arrow to the lower-right corner of the tile, instead
+            // of the upper-right."
+            //
+            // The offset was a fixed rotation, so an arrow on a given side always landed on the same
+            // corner whatever the tile underneath it looked like.  On straight track that is fine -
+            // the run is down the middle and both corners are clear.  On a CURVE the run occupies one
+            // of them, and the arrow was drawn over it.
+            //
+            // Asked of the tile's own marks rather than of its art: a mark names the two sides its run
+            // joins, so the corner to avoid is the one toward a side this tile's track already uses.
+            // A straight or a junction leaves both corners equally used or equally free, and then
+            // nothing changes - the default rotation stands, so no existing tile moves.
+            if (offsetCollidesWithTrack(arrival.getSide(), px, py))
+            {
+                px = -px;
+                py = -py;
+            }
 
             // Pulled off the edge itself, which is shared with the neighbouring square, and along
             // it, clear of the direction arrow in the middle

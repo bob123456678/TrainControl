@@ -4839,6 +4839,23 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
+     * Turns the diagram's text labels on, leaving them on if they already are (OB-174).
+     *
+     * `toggleText` flips, which is the wrong verb for a caller that needs them ON: the autonomy
+     * editor's caption switches decide what a caption SAYS, and with the text hidden they change
+     * nothing the operator can see.  A flip there would turn the text OFF for somebody who already
+     * had it on.
+     *
+     * Idempotent, and it does not touch the flag when nothing needs to change - so it costs no grid
+     * rebuild in the ordinary case.
+     */
+    public void showTextLabels()
+    {
+        if (!this.layout.getEditHideText()) return;
+
+        toggleText();
+    }
+    /**
      * Toggles the display of text
      */
     public void toggleText()

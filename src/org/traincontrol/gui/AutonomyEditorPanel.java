@@ -563,6 +563,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putBoolean(PREF_CAPTION_HOMES, showHomeLocomotives.isSelected());
 
+            // The same as its neighbour, and swept at the same time (OB-174).  This also changes what
+            // a caption says, so it is equally invisible with the text switched off - and a fix
+            // applied to one of a pair is how this codebase acquires its next finding.
+            if (showHomeLocomotives.isSelected()) turnTextLabelsOn();
+
             // The GRID, for the reason the neighbour below gives: a caption's text is decided when the
             // diagram is built.
             if (onDiagramChanged != null) onDiagramChanged.run();
@@ -571,6 +576,19 @@ public class AutonomyEditorPanel extends JPanel
         showParkedTrains.addActionListener(e ->
         {
             VIEW_PREFS.putBoolean(PREF_CAPTION_TRAINS, showParkedTrains.isSelected());
+
+            // AND THE TEXT HAS TO BE ON, or ticking this does nothing anybody can see (OB-174).
+            //
+            // Adam: "if checked, 'Show parked trains' should auto check 'text labels' if 'text
+            // labels' is unchecked."
+            //
+            // This switch changes what a caption SAYS; the other one decides whether captions are
+            // drawn at all.  With text off, ticking this is a setting that takes effect at some
+            // unrelated moment in the future - which is indistinguishable from a broken switch.
+            //
+            // Only ON, and only upwards: unticking this must not take the text away again, because by
+            // then the operator may be reading it for its own sake.
+            if (showParkedTrains.isSelected()) turnTextLabelsOn();
 
             // The GRID, not a repaint.  A caption's text is decided when the grid is built - it is
             // part of the tile art, as the note on setOnDiagramChanged says - so this switch changes
@@ -4914,6 +4932,23 @@ public class AutonomyEditorPanel extends JPanel
         return field;
     }
 
+    /**
+     * Turns the diagram's text labels on, if this panel is in an editor that has them (OB-174).
+     *
+     * The caption switches in this column decide what a caption SAYS.  Whether captions are drawn at
+     * all is the editor's own "text labels" box, and with that off these are settings whose effect
+     * arrives at some unrelated moment - which reads as a switch that does not work.
+     *
+     * Quiet when there is no editor: this panel is also built with no window at all, only to make
+     * menus from, and a null there is not a fault.
+     */
+    private void turnTextLabelsOn()
+    {
+        java.awt.Component where = owner();
+
+        if (where instanceof LayoutEditor) ((LayoutEditor) where).showTextLabels();
+    }
+
     /** 0 to 999: three digits is every length anybody means, and 100000 is not one (OB-048) */
     private static final int MAX_LENGTH_DIGITS = 3;
 
@@ -4931,6 +4966,34 @@ public class AutonomyEditorPanel extends JPanel
         // is kinder than accepting it and then throwing it away with an error box.
         final javax.swing.JTextField field = digitsOnly(
             String.valueOf(session.getStore().getTileLength(sample)));
+
+        // SELECTED, so the number can be typed over rather than cleared first (OB-176).
+        //
+        // Adam: "when setting track length in the autonomy editor, the text box should be selected
+        // when the popup opens."  The field is prefilled with what the square measures now, and the
+        // gesture is almost always to replace it.
+        //
+        // On the event thread AFTER the dialog is up, because a component that is not showing cannot
+        // take focus - requesting it here and now would be dropped and the caret would land wherever
+        // the dialog put it.
+        field.addAncestorListener(new javax.swing.event.AncestorListener()
+        {
+            @Override
+            public void ancestorAdded(javax.swing.event.AncestorEvent event)
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    field.requestFocusInWindow();
+                    field.selectAll();
+                });
+            }
+
+            @Override
+            public void ancestorMoved(javax.swing.event.AncestorEvent event) { }
+
+            @Override
+            public void ancestorRemoved(javax.swing.event.AncestorEvent event) { }
+        });
 
         int chose = JOptionPane.showConfirmDialog(owner(),
             new Object[] {I18n.t("autosetup.ui.promptTileLength"), field},

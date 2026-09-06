@@ -1321,6 +1321,35 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * Puts text in the sensor field, for a test about what the editor accepts (OB-178).
+     *
+     * @param text what the user typed, empty for a cleared field
+     */
+    public void setS88TextForTest(String text)
+    {
+        s88Field.setText(text);
+    }
+
+    /**
+     * Whether auto-fire is ticked, for the same test.
+     *
+     * @param on whether the route fires itself
+     */
+    public void setAutoFireForTest(boolean on)
+    {
+        enabledBox.setSelected(on);
+    }
+
+    /**
+     * Everything this editor would refuse to save, as message keys resolved to text (OB-178).
+     *
+     * @return the problems, empty when the route would save
+     */
+    public java.util.List<String> problemsForTest()
+    {
+        return everythingWrong();
+    }
+    /**
      * How many conditions the list holds, so a test can see that a capture arrived.
      */
     /**
@@ -2127,6 +2156,46 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * The s88 the user typed, with an empty field meaning none (OB-178).
+     *
+     * Adam: *"if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will
+     * still fail asking the user to input an integer.  just treat this as 0."*
+     *
+     * **Blank is an answer, and it is the answer a manual route gives.** A route with no sensor cannot
+     * fire itself and does not want to - the field is only meaningful with auto-fire on, which has its
+     * own rule below.  Refusing the empty field made a perfectly good manual route unsaveable, and the
+     * message asked for an integer as though the user had typed something wrong.
+     *
+     * ONE READER for the check and the save, which is the other half of the defect: they parsed the
+     * same field separately, so relaxing one without the other would have moved the failure from a
+     * refusal to an exception.
+     *
+     * Still -1 for genuine rubbish - letters, a stray sign - because that IS somebody typing something
+     * wrong, and it keeps the message it deserves.
+     *
+     * @return the sensor address, 0 for none, or -1 when what is there is not a number
+     */
+    private int enteredS88()
+    {
+        String typed = s88Field.getText() == null ? "" : s88Field.getText().trim();
+
+        if (typed.isEmpty()) return 0;
+
+        try
+        {
+            int value = Integer.parseInt(typed);
+
+            // Not abs().  A typed minus sign was silently turned into the positive address, so a route
+            // triggered off a sensor the user never named - and there is no way to tell from the saved
+            // route that it happened.
+            return value < 0 ? -1 : value;
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return -1;
+        }
+    }
+    /**
      * Everything wrong with the window, in the order a reader would work through it.
      *
      * Gathered rather than reported one at a time.  Save used to stop at the first problem, so a
@@ -2148,21 +2217,7 @@ public class RouteEditorFrame extends JFrame
 
         if (nameField.getText().trim().isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsAName"));
 
-        int s88;
-
-        try
-        {
-            s88 = Integer.parseInt(s88Field.getText().trim());
-
-            // Not abs().  A typed minus sign was silently turned into the positive address, so a
-            // route triggered off a sensor the user never named - and there is no way to tell from
-            // the saved route that it happened.
-            if (s88 < 0) s88 = -1;
-        }
-        catch (NumberFormatException e)
-        {
-            s88 = -1;
-        }
+        int s88 = enteredS88();
 
         if (s88 < 0) wrong.add(I18n.t("route.ui.frameS88NotANumber"));
 
@@ -2173,6 +2228,7 @@ public class RouteEditorFrame extends JFrame
         {
             wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
         }
+
 
         if (commands.rows.isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsACommand"));
 
@@ -2541,7 +2597,9 @@ public class RouteEditorFrame extends JFrame
 
         String name = nameField.getText().trim();
 
-        int s88 = Integer.parseInt(s88Field.getText().trim());
+        // Through the same reader the validation used, so the two cannot disagree about a blank
+        // field - which is how OB-178 happened: the check said a blank was fine and this threw.
+        int s88 = enteredS88();
 
         List<RouteCommand> built = commandsAsSaved();
 

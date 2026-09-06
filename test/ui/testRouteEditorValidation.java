@@ -26,6 +26,99 @@ import org.traincontrol.base.ThreeWaySwitch;
 public class testRouteEditorValidation
 {
     /**
+     * A manual route saves with the sensor field left blank (OB-178).
+     *
+     * Adam: *"if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will
+     * still fail asking the user to input an integer.  just treat this as 0."*
+     *
+     * **Blank is the answer a manual route gives.** The field only means anything with auto-fire on,
+     * which has its own rule; without it the route is fired by hand and has no sensor. Refusing the
+     * empty field made a perfectly good route unsaveable, and the message asked for an integer as
+     * though something wrong had been typed.
+     *
+     * **And the two halves parsed it separately**, which is the other half of the defect: relaxing the
+     * check without the save would have turned a refusal into an exception. One reader now.
+     *
+     * **What is NOT asserted, and why.** The field is digits-only, so letters cannot be typed into it
+     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defence rather than
+     * removed - the field could gain another door - but a test for it would be a check that cannot
+     * fail, so this says so instead of pretending.
+     *
+     * MUTATION: make `enteredS88` return -1 for an empty field and the first assertion fails; drop
+     * the auto-fire rule and the second does.
+     */
+    @Test
+    public void testAManualRouteNeedsNoSensor() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame editor = open();
+
+        try
+        {
+        final java.util.List<String> blank = new java.util.ArrayList<>();
+        final java.util.List<String> automatic = new java.util.ArrayList<>();
+        final java.util.List<String> rubbish = new java.util.ArrayList<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor.setAutoFireForTest(false);
+            editor.setS88TextForTest("");
+
+            blank.addAll(editor.problemsForTest());
+
+            // THE OTHER HALF, which must keep refusing: a route that fires ITSELF has nothing to fire
+            // it without a sensor, and would sit in the list marked automatic doing nothing.
+            editor.setAutoFireForTest(true);
+
+            automatic.addAll(editor.problemsForTest());
+
+            // A SPACE, not letters.  The field is digits-only (`digitsOnlyField`), so "east" cannot
+            // be typed into it at all - asserting that it is refused would be testing a state the UI
+            // cannot reach, which is a check that can never fail.  A field holding only whitespace is
+            // reachable and must read as none, like an empty one.
+            editor.setAutoFireForTest(false);
+            editor.setS88TextForTest("   ");
+
+            rubbish.addAll(editor.problemsForTest());
+        });
+
+        assertFalse(named(blank, "S88"),
+            "a manual route with the sensor field left blank was refused as not-a-number.  Blank is "
+            + "the answer a manual route gives - the field only means anything with auto-fire on "
+            + "(OB-178).  Problems: " + blank);
+
+        assertTrue(automatic.size() > blank.size(),
+            "auto-fire with no sensor was accepted.  That route can never fire itself, and saved it "
+            + "sits in the list marked automatic doing nothing: " + automatic);
+
+        assertFalse(named(rubbish, "S88"),
+            "a sensor field holding only spaces was refused as not-a-number.  It is trimmed and it "
+            + "is empty, which is the same answer a cleared field gives: " + rubbish);
+        }
+        finally
+        {
+            close(editor);
+        }
+    }
+
+    /**
+     * Whether any problem mentions a thing.
+     *
+     * @param problems what the editor refused
+     * @param what a word from the message
+     * @return true when one of them mentions it
+     */
+    private static boolean named(java.util.List<String> problems, String what)
+    {
+        for (String problem : problems)
+        {
+            if (problem != null && problem.toLowerCase().contains(what.toLowerCase())) return true;
+        }
+
+        return false;
+    }
+    /**
      * Changing the kind does not leave the old target behind.
      *
      * The one Adam found.  Tested through the table model, which is the thing that was wrong - the

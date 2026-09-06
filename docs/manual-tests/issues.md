@@ -459,6 +459,33 @@ If checked, "Show parked trains" should auto check "text labels" if "text labels
 
 curved sensor tiles going from n to e have an incoming from e arrow that overlaps with the track.  move the arrow to the lower-right corner of the tile, instead of the upper-right.
 
+### OB-176 - 2026-09-05 - popup textbox not selected
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-05 23:42  
+**Build:** commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when setting track length in the autonomy editor, the text box should be selected when the popup opens
+
+### OB-177 - 2026-09-05 - locomotive is facing error
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-05 23:44  
+**Build:** commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the "<locomotive> is facing" menu doesn't always correctly reflect the facing of the train there
+
+### OB-178 - 2026-09-06 - can't re-save manual route
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-06 00:10  
+**Build:** commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will still fail asking the user to input an integer.  just treat this as 0
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

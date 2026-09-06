@@ -92,6 +92,16 @@ empty while the guard still judges nothing is worse than a long list.
 
 *Run against v3_0_0_rc8 or later.*
 
+**Adam, 2026-09-05 (triage).** Does not work.
+
+in the current setup, "75 407 DB" (length 4) is allowed to manually be sent from bottommainpost to bottomlongpark, even though track segments between the current position and there are 1+1 = 2
+
+and there is no notice that can help state/ debug this.  
+
+also, that path is not shown in the "why not moving" view.  We should draw arrows to manual-only destinations in a different color, like orange.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-263"></a>
@@ -156,6 +166,12 @@ have seen once and which is worth one deliberate pass.
 5. **Press a locomotive letter** as soon as the application appears, without touching the mouse.
 
 *Run against v3_0_0_rc8 or later.*
+
+**Adam, 2026-09-06 (triage).** Works, with notes.
+
+Looks good, but when the loading finishes, the menu options ungrey at different times.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -627,6 +643,12 @@ the text form survives. Nothing parses those back, so it is a cosmetic quirk - s
 
 *Run against the next release candidate.*
 
+**Adam, 2026-09-06 (triage).** Does not work.
+
+I added a locomotive named a,P[)(] and it went trough.  So, make sure this doesn't blow things up elsewhere.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-271"></a>
@@ -695,6 +717,10 @@ deselected.
    list in the first place, and it must keep doing it.
 
 *Run against the next release candidate.*
+
+**Adam, 2026-09-06 (triage).** Works.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7410,6 +7436,10 @@ the requirements are too long.  I can't cleanly view the testing requirements fo
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-06 (triage).** Works.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-142"></a>
@@ -14053,6 +14083,13 @@ first, I will make both doors skip the accessories and run the rest, matching th
 layer, and reword the dialog to say so. If the second, the s88 door is the odd one out and I will say so
 in its comment instead.
 
+**Adam, 2026-09-06 (triage).** Does not work.
+
+1. cancel should cancel everything.  OK should fire everything.
+2. if the route is auto triggered: popup, just a notification in the log.  don't run the conflicting switch commends, but do run the power off and others.  make test cases for this.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-248"></a>
@@ -14107,6 +14144,13 @@ of real room under the first reading. I have not changed the rule; the guard now
 saying it is unsound until you rule.
 
 **The rule these steps describe changed on 2026-09-02 (`3f829ced`).**  Adam ruled that the room is measured between the last SWITCH and the station rather than over the whole run in, and that the notice should ask for that stretch.  So any step here that says "sum the segments leading up to it" is describing the old arithmetic: a train can now be refused on a route whose total is ample, and the notice asks about more squares than it did.  Run it against the new rule, or ignore it in favour of MT-260's steps 1-4, which were written for it.
+
+**Adam, 2026-09-05 (triage).** Does not work.
+
+1. 2-8-4 3505 is reversed at BottomMainB, even though it's not reversible.
+2. EN57-203 is allowed to go from TunnelLeftPark to BottomMainC, even though 2-8-4 3505 stretches past the switch (segment before the switch has length 1, train has length 4).
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -14528,6 +14572,12 @@ removed exactly that over-strictness from the route door.
 5. **And check a route** that sets the same signal green is still refused as before.
 
 *Run against a build after commit e6791631.*
+
+**Adam, 2026-09-05 (triage).** Could not run this.
+
+create a test case for this- it requires activating an autonomy path and creating a route that touches its signal.
+
+*Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
