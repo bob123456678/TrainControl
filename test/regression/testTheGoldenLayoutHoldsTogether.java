@@ -245,6 +245,11 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
+        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
+        assertFalse(store.getNamedTiles().isEmpty(),
+            "the setup names no squares at all, so this walked nothing");
+
         assertTrue(missing.isEmpty(),
             "the setup names squares the diagram does not draw.  Either a page failed to read, or "
             + "settings are keyed to a page that has moved under them: " + missing);
@@ -304,6 +309,15 @@ public class testTheGoldenLayoutHoldsTogether
             if (already != null) clashes.add(page.getValue() + " is both " + already + " and "
                 + page.getKey());
         }
+
+        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        //
+        // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
+        // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
+        // a file, so "nothing to walk" is a reading failure rather than a clean railway.  The fourth
+        // test in this class already had its floor; these three did not.
+        assertFalse(LayoutDiagram.readLayoutIndexIds(GOLDEN.getAbsolutePath()).isEmpty(),
+            "the layout index names no pages, so this walked nothing");
 
         assertTrue(clashes.isEmpty(), "two pages answer to one id: " + clashes);
     }
@@ -371,6 +385,16 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
+        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        //
+        // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
+        // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
+        // a file, so "nothing to walk" is a reading failure rather than a clean railway.  The fourth
+        // test in this class already had its floor; these three did not.
+        assertFalse(store.getConfigurationNames().isEmpty(),
+            "the setup holds no configurations at all, so this walked nothing and would pass on a "
+            + "file it could not read");
+
         assertTrue(missing.isEmpty(),
             "a configuration holds settings for squares the diagram does not draw.  Placements, "
             + "homes, facings and lengths live there, and they are keyed by page NAME rather than by "
@@ -398,6 +422,10 @@ public class testTheGoldenLayoutHoldsTogether
         {
             if (!loaded.contains(named)) absent.add(named);
         }
+
+        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
+        assertFalse(pages.isEmpty(), "no page loaded at all, so this walked nothing");
 
         assertTrue(absent.isEmpty(),
             "the layout index lists pages that did not load.  Their settings are held rather than "

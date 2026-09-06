@@ -202,8 +202,25 @@ public class testAutonomySimulationSanity
                 sawActivity = true;
             }
 
+            // WHAT THIS CAN AND CANNOT CATCH (TCX-B7).
+            //
+            // It reads as a check on the path-integrity guard and is not one.  That guard compares
+            // each accessory against the state it was commanded to, and in simulate mode no accessory
+            // is actuated at all - so `configureAndLockPath` returns before it
+            // (`Layout.java:3043-3046`) and no regression in it can ever move this counter.
+            //
+            // **It cannot be made to, either, and that is the finding's real answer.** Validating
+            // actuation means reading back real hardware; a simulated railway has none. The guard is
+            // reachable only with a Central Station attached, so no automated test can reach it -
+            // stated here rather than left looking covered.
+            //
+            // What the counter DOES see here is `handleMisconfiguredPath` reached the other two ways
+            // - a configure that failed, or a lock that threw - and those happen in simulate.  That
+            // is worth asserting and is what this now says.
             assertTrue(layout.getPathValidationFailureCount() == 0,
-                "No path validation warning must occur during a simulated run (failures="
+                "a path was abandoned as misconfigured during the run - a configure that failed or a "
+                    + "lock that threw, since the actuation guard itself is skipped in simulate "
+                    + "(failures="
                     + layout.getPathValidationFailureCount() + ")");
 
             Thread.sleep(POLL_MS);
@@ -253,9 +270,11 @@ public class testAutonomySimulationSanity
                     + " times (was " + changes + ")");
         }
 
-        // And of course - no warning across the whole run.
+        // And no path abandoned as misconfigured across the whole run.  See the same assertion
+        // earlier in this class for what that does and does not cover (TCX-B7).
         assertTrue(layout.getPathValidationFailureCount() == 0,
-            "No path validation warning must occur during a simulated run");
+            "a path was abandoned as misconfigured during the run - a configure that failed or a lock "
+            + "that threw; the actuation guard itself is skipped in simulate and cannot be covered here");
     }
 
     /**

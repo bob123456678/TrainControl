@@ -549,7 +549,7 @@ written and then not applied to `badgeAt`.
 
 ### TCX-B7 — `testAutonomySimulationSanity`'s headline assertion cannot fire in simulate mode
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `testAutonomySimulationSanity` still asserts `getPathValidationFailureCount() == 0` at :205 and :257, and simulate mode still returns before the validation that would increment it.
+**Disposition: fixed 2026-09-05, by stating the limit rather than pretending to close it** - the skip is CORRECT: in simulate no accessory is actuated, so there is nothing to validate, and the guard cannot be exercised without a Central Station.  What was wrong was the assertion claiming to cover it.  Both sites now say what they do check - a path abandoned as misconfigured, which `configureFailed` and a lock that throws still reach in simulate - and say in the code that the actuation guard needs hardware.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
@@ -731,7 +731,7 @@ and it is now false as written.
 
 ### TCX-B12 — Three of `testTheGoldenLayoutHoldsTogether`'s four tests have no floor
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - the class still carries two floor-ish assertions for four tests.
+**Disposition: fixed 2026-09-05** - all four tests now have a floor.  Each collects what is wrong and asserts the collection is empty, which an empty walk satisfies perfectly - and everything they walk comes out of a file, so "nothing to walk" is a reading failure rather than a clean railway.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

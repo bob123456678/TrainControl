@@ -5727,6 +5727,61 @@ public class testAutonomyDiagramSession
             + "choice was made on their behalf");
     }
     /**
+     * The bulk clear touches exactly the squares the findings call homes (WK3-C3).
+     *
+     * **Four walks of one map, and nothing made them agree.** `homeTiles()` fed the findings the
+     * diagram shows; `tilesWithAHome()` decided what the Clear All Home Locomotives button touches;
+     * `homesElsewhere()` added one filter; `shutTiles()` made a fourth. Each carried its own copy of
+     * "is there an active configuration, does it have points, is this an object, parse the key".
+     *
+     * The cost of drift is specific: if either of the first two gains a qualification the other has
+     * not - homes on excluded pages, squares the diagram no longer draws - the button acts on a set
+     * the findings never mentioned, and the operator finds out afterwards.
+     *
+     * They are one walk now. This is what says so, because a shared helper that two callers stop
+     * using is the same defect with an extra step.
+     *
+     * MUTATION: give either method a filter the other does not have and the first assertion fails.
+     */
+    @Test
+    public void testTheHomeWalksAgree() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+
+        session.getStore().createConfiguration("Homes", null);
+        session.getStore().setActiveConfiguration("Homes");
+
+        final TileKey one = new TileKey("main", 1, 1);
+        final TileKey two = new TileKey("main", 7, 1);
+
+        session.setPointProperty(one, "home", "Loc A");
+        session.setPointProperty(two, "home", "Loc B");
+
+        // A THIRD SQUARE WITH NO HOME, so "every square" would fail this rather than pass it.
+        session.setPointProperty(new TileKey("main", 4, 1), "home", "");
+
+        java.util.List<TileKey> bulk = session.tilesWithAHome();
+
+        assertEquals(new java.util.LinkedHashSet<>(bulk), session.homesForFindings(),
+            "the squares the bulk clear would touch and the squares the findings call homes are not "
+            + "the same set.  They are the same question asked twice, and when they drift the button "
+            + "acts on track the diagram never warned about (WK3-C3).  Bulk: " + bulk);
+
+        assertEquals(bulk.size(), 2,
+            "expected exactly the two squares carrying a home - a blank home is not a home, and a "
+            + "walk that counts it would agree with itself while being wrong: " + bulk);
+
+        // AND THE FILTERED ONE comes from the same walk: asked about `one`, it must name `two` and
+        // not `one` itself.
+        session.setPointProperty(two, "home", "Loc A");
+
+        java.util.List<TileKey> elsewhere = session.homesElsewhereForTest(one, "Loc A");
+
+        assertEquals(elsewhere, java.util.Arrays.asList(two),
+            "the same locomotive is homed on two squares and the check that finds the OTHER one "
+            + "answered: " + elsewhere);
+    }
+    /**
      * And the CHECKS are actually given it, which is a separate question (V31-C3).
      *
      * **The first attempt at this was a test of the rule, and it could not fail.** It pinned a helper

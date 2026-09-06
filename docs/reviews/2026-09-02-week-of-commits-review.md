@@ -500,7 +500,7 @@ is probably to say "was started a moment ago" rather than to unpick the floor.
 
 ### `WK3-C3` — a third copy of "which squares carry a home"
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `homeTiles()` (:3824), `homesElsewhere()` (:4603) and `tilesWithAHome()` are still three walks of the same property.
+**Disposition: fixed 2026-09-05** - and there were FOUR by then: `shutTiles()`, added the same day for `V31-C3`, made a fourth copy of the same six lines.  One `tilesWhere` walk now serves all of them, and `testTheHomeWalksAgree` pins the two that must give the same answer - the findings' set and the bulk clear's - because a shared helper two callers stop using is the same defect with an extra step.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

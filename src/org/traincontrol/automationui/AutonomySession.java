@@ -2755,40 +2755,10 @@ public class AutonomySession
      */
     public java.util.Set<TileKey> shutTiles()
     {
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
-
-        // THE CONFIGURATION'S OWN POINTS, which is where the property lives.
-        //
-        // The first version of this walked `store.getNamedTiles()` - the squares given a NAME - and a
-        // square can carry point properties without one, so it found nothing on a fixture that had
-        // switched a square off.  `getPointProperty` reads `points` in the active configuration, and
-        // this has to read the same map or the two disagree about what a point is.
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return out;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return out;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        for (String id : points.keySet())
-        {
-            org.json.JSONObject point = points.optJSONObject(id);
-
-            if (point == null || !point.has("active")) continue;
-
-            // FALSE.equals rather than a negation: absent means in service, and so does a value that
-            // is not a boolean at all.
-            if (!Boolean.FALSE.equals(point.opt("active"))) continue;
-
-            TileKey tile = AutonomyCompanionStore.parseTileKey(id);
-
-            if (tile != null) out.add(tile);
-        }
-
-        return out;
+        // FALSE.equals rather than a negation: the property is absent on almost every square, and
+        // absent means in service - as does a value that is not a boolean at all.
+        return new LinkedHashSet<>(
+            tilesWhere((key, point) -> Boolean.FALSE.equals(point.opt("active"))));
     }
     /**
      * Which ACCESSORIES protect each station, by name.
@@ -3867,36 +3837,92 @@ public class AutonomySession
     /**
      * The squares an authored home locomotive lives at.
      */
-    private java.util.Set<TileKey> homeTiles()
+    /**
+     * The squares of the active configuration whose stored point satisfies a test (WK3-C3).
+     *
+     * **Four methods were walking this map with four copies of the same six lines**: is there an
+     * active configuration, does it have `points`, is this entry an object, does it match, parse the
+     * key, keep it if it parsed.  `homeTiles` fed the findings the diagram shows, `tilesWithAHome`
+     * decided what the bulk clear touches, `homesElsewhere` added one filter, and `shutTiles` - added
+     * on 2026-09-05 - made a fourth.
+     *
+     * They have to agree.  If one gains a qualification - homes on excluded pages, squares the diagram
+     * no longer draws - the others will not have it, and the button will act on a set the findings
+     * never mentioned.  That is this repository's commonest defect and it had four sites here.
+     *
+     * The parse splits on the LAST colon, because a page name may hold one; that rule lives on the
+     * store and is now called from one place rather than four.
+     *
+     * @param wanted asked of each square's key and its stored point
+     * @return the squares that matched, in the file's own order
+     */
+    private java.util.List<TileKey> tilesWhere(
+        java.util.function.BiPredicate<String, org.json.JSONObject> wanted)
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
 
         String active = store.getActiveConfiguration();
 
-        if (active == null) return out;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
 
         if (configuration == null || !configuration.has("points")) return out;
 
         org.json.JSONObject points = configuration.getJSONObject("points");
 
-        for (String id : points.keySet())
+        for (String key : points.keySet())
         {
-            org.json.JSONObject stored = points.optJSONObject(id);
+            org.json.JSONObject point = points.optJSONObject(key);
 
-            if (stored == null) continue;
+            if (point == null || !wanted.test(key, point)) continue;
 
-            String home = stored.optString("home", "");
-
-            if (home.trim().isEmpty()) continue;
-
-            TileKey tile = AutonomyCompanionStore.parseTileKey(id);
+            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
 
             if (tile != null) out.add(tile);
         }
 
         return out;
+    }
+
+    /**
+     * What `homeTiles()` answers, for the test that keeps the home walks in step (WK3-C3).
+     *
+     * `homeTiles()` is private and feeds `check()`; this is the same answer, named so a test can ask
+     * whether it matches `tilesWithAHome()` - the two that must agree, and the two that were
+     * separate walks.
+     *
+     * @return the squares the findings treat as carrying a home
+     */
+    public java.util.Set<TileKey> homesForFindings()
+    {
+        return homeTiles();
+    }
+
+    /**
+     * `homesElsewhere` under a name a test can call (WK3-C3).
+     *
+     * @param tile the square being asked about
+     * @param locomotive the home locomotive
+     * @return the other squares homing it
+     */
+    public java.util.List<TileKey> homesElsewhereForTest(TileKey tile, String locomotive)
+    {
+        return homesElsewhere(tile, locomotive);
+    }
+    /**
+     * Whether a stored point records a home locomotive.
+     *
+     * One spelling of "carries a home", so the three callers cannot drift about what a blank means.
+     *
+     * @param point the stored point
+     * @return true when it names one
+     */
+    private static boolean carriesAHome(org.json.JSONObject point)
+    {
+        return !point.optString("home", "").trim().isEmpty();
+    }
+    private java.util.Set<TileKey> homeTiles()
+    {
+        return new LinkedHashSet<>(tilesWithAHome());
     }
 
     /**
@@ -4652,34 +4678,13 @@ public class AutonomySession
      */
     private java.util.List<TileKey> homesElsewhere(TileKey tile, String locomotive)
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        if (locomotive == null) return new java.util.ArrayList<>();
 
-        if (locomotive == null) return out;
-
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return out;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        for (String key : points.keySet())
-        {
-            if (tile != null && tile.toString().equals(key)) continue;
-
-            org.json.JSONObject point = points.optJSONObject(key);
-
-            if (point == null || !locomotive.equals(point.optString("home", null))) continue;
-
-            // Package-private on the store, and this is the same package - the parse splits on the LAST
-            // colon, because a page name may hold one.
-            TileKey other = AutonomyCompanionStore.parseTileKey(key);
-
-            if (other != null) out.add(other);
-        }
-
-        return out;
+        // The same walk, with this method's own two extra questions: not the square being asked
+        // about, and homed to this locomotive rather than to any.
+        return tilesWhere((key, point) ->
+            (tile == null || !tile.toString().equals(key))
+                && locomotive.equals(point.optString("home", null)));
     }
 
     /**
@@ -4698,32 +4703,7 @@ public class AutonomySession
      */
     public java.util.List<TileKey> tilesWithAHome()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
-
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return out;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        for (String key : points.keySet())
-        {
-            org.json.JSONObject point = points.optJSONObject(key);
-
-            if (point == null) continue;
-
-            String home = point.optString("home", "");
-
-            if (home.trim().isEmpty()) continue;
-
-            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
-
-            if (tile != null) out.add(tile);
-        }
-
-        return out;
+        return tilesWhere((key, point) -> carriesAHome(point));
     }
 
     /**
