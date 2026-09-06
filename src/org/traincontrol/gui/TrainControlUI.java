@@ -6020,6 +6020,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         session.placeLocomotive(tile,
             point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
 
+        // AND WHICH WAY IT IS POINTING, which this door has never written (Adam, 2026-09-06).
+        //
+        // **"When pasting the train from bottommainpost to bottommainb, its direction in the dropdown
+        // was wrong"** - and three fixes before this one missed, because all three looked at the
+        // moment the direction CHANGES rather than the moment it stops being recorded.
+        //
+        // A square is several Points, one per side a train can arrive by, and `placementCopy` picks
+        // between them by the stored facing.  This door wrote the locomotive and left the facing
+        // alone, so a pasted train had no recorded direction at all - and `placementCopy` falls
+        // through to COPY 0 when nothing matches.  Copy 0 is whichever the builder happened to emit
+        // first, which is not a direction anybody chose.  The next `captureFromLayout` then wrote that
+        // copy's side back into the configuration as though the operator had picked it, which is why
+        // the dropdown disagreed with the train and why the change survived a reload.
+        //
+        // A probe on the real layout showed each step: a facing of `S` carried into a square whose
+        // only built copy was `{BottomMainPost=N}`, and `afterCapture facingAtTo=N`.
+        //
+        // Taken from the copy the LAYOUT put it on, not from where it came from.  The layout has
+        // already chosen a Point by the time this runs, and that Point's side is the heading the train
+        // actually has; reading the origin instead would be a second opinion about a question already
+        // answered, and the two could disagree.  At a terminus that side is the only one there is,
+        // which is the reversal a train pasted onto the end of a line has to make.
+        //
+        // Nothing is written when the square has no named copies, which is every square that is not a
+        // station: there is no direction to record and a guessed one would be worse than none.
+        if (point.getCurrentLocomotive() != null)
+        {
+            org.traincontrol.automationui.TilePorts.Side side =
+                session.facingsFor(tile).get(point.getName());
+
+            if (side != null) session.setFacing(tile, side);
+        }
+
         try
         {
             // Logged rather than shown, for the reason given at the other placement door (DR-B10).
