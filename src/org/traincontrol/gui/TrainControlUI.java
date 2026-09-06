@@ -9882,16 +9882,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             final boolean forward = loc.goingForward();
 
+            // THE GUARDS COME BEFORE THE RECORDING, WHICH IS THE WHOLE FIX (Adam, 2026-09-06:
+            // **"when the route finishes, the reversal isn't painted/visible"**).
+            //
+            // They used to come after, and the order was the defect.  A reversal made DURING a
+            // journey was written into `lastSeenDirection` and then dropped by the `isRunning` guard
+            // one line later - so the graph was not updated, but the window had already recorded the
+            // new direction as the one it had seen.  When the run ended and the next echo arrived it
+            // matched what was recorded, `was == forward` was true, and there was nothing left to
+            // follow.  The change was not deferred; it was swallowed, and the only way back to a
+            // correct diagram was another reversal by hand.
+            //
+            // Declining to act and claiming to have acted are different things, and this map is the
+            // record of the second.
+            if (this.model == null || !this.model.hasAutoLayout()
+                || this.model.getAutoLayout().isRunning()
+                || getAutonomySession() == null)
+            {
+                // A BASELINE for a train never seen before, and nothing more.  Without this a
+                // locomotive first met mid-journey has no recorded direction at all, and the first
+                // echo after the run reads as "never seen" and is skipped too.  `putIfAbsent` because
+                // overwriting an existing baseline here is exactly what was swallowing the change.
+                lastSeenDirection.putIfAbsent(loc.getName(), forward);
+
+                continue;
+            }
+
             Boolean was = lastSeenDirection.put(loc.getName(), forward);
 
             // Never seen, or unchanged: nothing to follow.
             if (was == null || was == forward) continue;
-
-            if (this.model == null || !this.model.hasAutoLayout()) continue;
-
-            if (this.model.getAutoLayout().isRunning()) continue;
-
-            if (getAutonomySession() == null) continue;
 
             // THE CHEAP HALF HERE, THE REST ON THE EVENT THREAD (DIR-B4).
             //
