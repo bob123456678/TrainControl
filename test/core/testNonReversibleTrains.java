@@ -189,6 +189,217 @@ public class testNonReversibleTrains
     }
 
     /**
+     * Nobody is prompted unless a MANUAL send reaches a may-reverse point (Adam, 2026-09-06).
+     *
+     * **"Be sure to add tests that confirm no prompting unless manual is sending to a 'may reverse'",
+     * point.  This means no prompting in return home or auto, and prompting in all types of manual."**
+     *
+     * **That request found a defect.** `ALWAYS_REVERSE` is what the four-argument overload hands to
+     * autonomy's own loop and to the timetable, which is what Return Home runs. It is not null, so it
+     * fell through to the manual branch, answered yes to everything, and would have turned staged
+     * trains at every plain copy they passed - the "may" promoted to "must" that `AutonomyBuilder`
+     * refuses to emit. It counts as nobody now.
+     *
+     * The behaviour is asserted here and the WIRING by the census below, because a rule that behaves
+     * correctly and a door that hands it the wrong policy are two different defects.
+     */
+    @Test
+    public void testOnlyAManualSendIsEverPrompted() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(232, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        layout.createPoint("ASK_plain", true, sensor.getName());
+        layout.createPoint("ASK_turning", true, sensor.getName());
+
+        layout.getPoint("ASK_plain").setBlock("ASK");
+        layout.getPoint("ASK_turning").setBlock("ASK");
+        layout.getPoint("ASK_turning").setReversing(true);
+
+        Point plain = layout.getPoint("ASK_plain");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // A policy that RECORDS being asked, so "was anybody prompted" is measured rather than
+        // inferred from the answer.
+        final int[] asked = {0};
+
+        Layout.ReversalPolicy counting = (train, where) ->
+        {
+            asked[0]++;
+
+            return false;
+        };
+
+        // AUTONOMY: no policy at all.
+        layout.shouldReverseAt(plain, plain, loc, null);
+
+        // RETURN HOME and autonomy's own loop: the four-argument overload's policy.
+        layout.shouldReverseAt(plain, plain, loc, Layout.ALWAYS_REVERSE);
+
+        assertEquals(asked[0], 0,
+            "precondition: neither of those hands over the counting policy, so this must still be 0");
+
+        assertFalse(layout.shouldReverseAt(plain, plain, loc, Layout.ALWAYS_REVERSE),
+            "a Return Home or autonomy run would turn a train at the PLAIN copy of a may-reverse "
+            + "square.  ALWAYS_REVERSE is not null, so it fell through to the manual branch and "
+            + "answered yes to everything - the promotion of \"may\" to \"must\" the build refuses "
+            + "to emit");
+
+        // MANUAL: a policy that is somebody.
+        layout.shouldReverseAt(plain, plain, loc, counting);
+
+        assertEquals(asked[0], 1,
+            "a manual send to the plain copy of a may-reverse square asked nobody.  The flag lives on "
+            + "the turning copy, so asking isReversing() asked nothing on exactly the squares this is "
+            + "for");
+
+        // And an ordinary square is not asked about even in manual.
+        org.traincontrol.marklin.MarklinFeedback plainSensor = model.newFeedback(233, null);
+
+        model.setFeedbackState(plainSensor.getName(), false);
+
+        layout.createPoint("ASK_ordinary", true, plainSensor.getName());
+
+        layout.shouldReverseAt(layout.getPoint("ASK_ordinary"), plain, loc, counting);
+
+        assertEquals(asked[0], 1,
+            "an ordinary square raised the question, so every manual send on the railway would stop "
+            + "the train and open a dialog");
+    }
+
+    /**
+     * Every door into `executePath` either asks a person or is one that has nobody to ask.
+     *
+     * Adam: *"prompting in all types of manual."*  The rule above is right and says nothing about
+     * which doors hand it a person - and a new door written with four arguments inherits
+     * `ALWAYS_REVERSE` silently, which is how it would come to be the one that never asks.
+     *
+     * Counted rather than located: the two hand-driven doors pass a prompt, and the two unattended
+     * ones take the shorter overload.
+     */
+    @Test
+    public void testEveryManualDoorHandsOverAPrompt() throws Exception
+    {
+        final String[][] doors =
+        {
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "the track diagram"},
+            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "the Locomotive commands tab"},
+        };
+
+        for (String[] door : doors)
+        {
+            java.io.File file = new java.io.File(door[0]);
+
+            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this test "
+                + "reports every door as silent and means nothing");
+
+            String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+            assertTrue(source.contains("ManualReversalPrompt.ask("),
+                door[1] + " (" + door[0] + ") dispatches trains without handing executePath a "
+                + "prompt, so a may-reverse point on that route turns the train with nobody asked");
+        }
+
+        // AND THE UNATTENDED ONES DO NOT, which is the other half: the timetable is what Return Home
+        // runs, and asking a dialog about a turn the planner chose would be asking about a decision
+        // the operator already made.
+        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertFalse(layout.contains("ManualReversalPrompt"),
+            "the automation layer now reaches into the window for a dialog, so an unattended run can "
+            + "block on one");
+    }
+    /**
+     * A square trains MAY turn at is asked about on every copy, not only the turning one
+     * (Adam, 2026-09-06).
+     *
+     * **"May reverse should always prompt in manual mode."**
+     *
+     * `reversing` is emitted for a MUST-reverse square and for a turning COPY. A may-reverse square
+     * carries no flag at all - the build expresses it by SPLITTING the square, and `AutonomyBuilder`
+     * explains why it must not do otherwise: putting the flag on a may-turn square "silently promoted
+     * the user's choice to the other one, and made a through station one no path could be routed
+     * through".
+     *
+     * So asking `isReversing()` asked nothing on exactly the squares Adam was testing: whether the
+     * question appeared depended on which copy a path happened to end at, which is not something
+     * anybody can see from the menu. The question is about the PLACE, and the copies of a place are
+     * the Points sharing its block.
+     *
+     * **Autonomy is deliberately not widened.** It turns where the flag says and nowhere else - the
+     * promotion of "may" to "must" is the thing the build refuses to emit.
+     *
+     * MUTATION: ask `isReversing()` instead of `mayReverseAt` and the second assertion fails; widen
+     * the autonomy branch too and the third does.
+     */
+    @Test
+    public void testEveryCopyOfAMayReverseSquareIsAskedAbout() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(230, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        // The two copies a split makes: one plain, one turning, both the same piece of track.
+        layout.createPoint("SPLIT_plain", true, sensor.getName());
+        layout.createPoint("SPLIT_turning", true, sensor.getName());
+
+        layout.getPoint("SPLIT_plain").setBlock("SPLIT");
+        layout.getPoint("SPLIT_turning").setBlock("SPLIT");
+
+        layout.getPoint("SPLIT_turning").setReversing(true);
+
+        Point plain = layout.getPoint("SPLIT_plain");
+        Point turning = layout.getPoint("SPLIT_turning");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // THE CONTROL: the plain copy carries no flag, which is the whole reason the old rule missed
+        // it.  If this ever becomes true the fixture has stopped modelling a split.
+        assertFalse(plain.isReversing(),
+            "control: the plain copy of a split must NOT be marked reversing, or this test is about "
+            + "a must-reverse square and says nothing about may-reverse");
+
+        assertTrue(layout.mayReverseAt(plain),
+            "the plain copy of a may-reverse square is not recognised as somewhere trains may turn.  "
+            + "The flag lives on the turning copy and the question is about the place, so a manual "
+            + "send that ends here asked nobody anything");
+
+        assertTrue(layout.shouldReverseAt(plain, plain, loc, (t, w) -> true),
+            "a manual send to the plain copy did not act on an answer of yes");
+
+        assertFalse(layout.shouldReverseAt(plain, plain, loc, (t, w) -> false),
+            "a manual send to the plain copy turned the train against an answer of no");
+
+        // AUTONOMY IS NOT WIDENED: no policy means it turns only where the flag says.
+        assertFalse(layout.shouldReverseAt(plain, plain, loc, null),
+            "autonomy turned a train at the plain copy of a may-reverse square.  That is the "
+            + "promotion of \"may\" to \"must\" the build refuses to emit, and it makes a through "
+            + "station one no path can be routed through");
+
+        assertTrue(layout.shouldReverseAt(turning, turning, loc, null),
+            "autonomy stopped turning at the turning copy, which is where the flag is");
+
+        // AND A SQUARE WITH NO SPLIT AT ALL is still not a question.
+        org.traincontrol.marklin.MarklinFeedback lone = model.newFeedback(231, null);
+
+        model.setFeedbackState(lone.getName(), false);
+
+        layout.createPoint("SPLIT_none", true, lone.getName());
+
+        assertFalse(layout.mayReverseAt(layout.getPoint("SPLIT_none")),
+            "an ordinary square with one copy was treated as somewhere trains may turn, so every "
+            + "manual send on the railway would raise a dialog");
+    }
+    /**
      * A hand-driven send does not turn a train at a may-reverse point unless somebody says so
      * (Adam, 2026-09-06).
      *
@@ -231,29 +442,29 @@ public class testNonReversibleTrains
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
         // THE ANSWER THAT MATTERS: no means no, at a point that is only a may-reverse.
-        assertFalse(Layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> false),
+        assertFalse(layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> false),
             "a hand-driven send would turn the train round at a point it MAY reverse at, against an "
             + "answer of no.  The reason for such a turn lives in the leg after this one, so nothing "
             + "in the path can decide it and the operator is asked (Adam, 2026-09-06)");
 
         // THE CONTROL, without which "it did not turn" is satisfied by a rule that never turns.
-        assertTrue(Layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> true),
+        assertTrue(layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> true),
             "yes did not turn the train either, so the rule is refusing rather than asking");
 
         // A JOURNEY TO A TERMINUS IS NOT A QUESTION, whatever the answer: the turn on the way is how
         // the train gets there at all, which is Adam's MT-245 ruling.
-        assertTrue(Layout.shouldReverseAt(ordinary, terminus, loc, (train, where) -> false),
+        assertTrue(layout.shouldReverseAt(ordinary, terminus, loc, (train, where) -> false),
             "a train bound for a terminus was left unturned at the reversing point on the way, "
             + "because the policy said no.  That turn is not a choice - it is how a train backs into "
             + "a terminus, and refusing it strands the journey");
 
         // And a point nobody turns at is never turned at.
-        assertFalse(Layout.shouldReverseAt(plain, terminus, loc, (t, w) -> true),
+        assertFalse(layout.shouldReverseAt(plain, terminus, loc, (t, w) -> true),
             "a point that is not a reversing point was turned at - and on a journey to a terminus, "
             + "which is the branch most likely to say yes to everything");
 
         // A caller with no opinion behaves as everything did before there was a policy.
-        assertTrue(Layout.shouldReverseAt(ordinary, plain, loc, null),
+        assertTrue(layout.shouldReverseAt(ordinary, plain, loc, null),
             "a null policy stopped meaning \"always\", so every caller that has no opinion has "
             + "quietly changed behaviour");
     }
@@ -285,8 +496,8 @@ public class testNonReversibleTrains
         // forty lines below the loop by a different statement. So a hand-driven send whose
         // DESTINATION is a may-reverse point turned the train without a word - the literal case the
         // feature was built for. A call-site check that knew about one site reported clean about that.
-        assertTrue(flat.contains("|| (arrived.isReversing() && (reversals == null "
-            + "|| reversals.shouldReverse(loc, arrived)))"),
+        assertTrue(flat.contains(
+            "if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))"),
             "the arrival does not consult the policy, so a journey that ENDS at a may-reverse point "
             + "turns the train without asking (DIR-A2)");
 
@@ -295,7 +506,7 @@ public class testNonReversibleTrains
         // The dialog is modal and has no time limit, and everything that stopped the train used to be
         // inside the branch the answer decides: measured at line speed when the question was put, and
         // still at line speed five seconds later.
-        assertTrue(flat.contains("if (isCurrentLayout() && current.isReversing()) "
+        assertTrue(flat.contains("if (isCurrentLayout() && mayReverseAt(current)) "
             + "{ loc.setSpeed(0).waitForSpeedBelow(1);"),
             "the train is no longer stopped before the reversal question is asked, so it runs past a "
             + "headshunt for as long as it takes somebody to answer a dialog (DIR-A1)");

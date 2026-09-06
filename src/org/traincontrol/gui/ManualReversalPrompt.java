@@ -51,7 +51,7 @@ public final class ManualReversalPrompt
      * comfortable version of what the code does is how that survived being written and reviewed.
      * `executePathInternal` now stops at any reversing point before deciding anything.
      *
-     * **Defaults to NOT turning.** An interruption, a headless run or anything that goes wrong here
+     * **Defaults to KEEPING the direction**, which is Yes and which changes nothing. An interruption, a headless run or anything that goes wrong here
      * leaves the train pointing the way it already points, which is the answer that changes nothing on
      * the railway. Turning a train because a dialog failed is the worse of the two mistakes.
      *
@@ -83,11 +83,18 @@ public final class ManualReversalPrompt
                     I18n.f("autolayout.ui.confirmManualReversal", train.getName(), where.getName()),
                     I18n.t("autolayout.ui.confirmManualReversalTitle"),
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                    TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
+                    TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0]);
 
-                // Index 0 is Yes.  The DEFAULT is index 1 - No - so dismissing the dialog with the
-                // keyboard leaves the train pointing the way it already points.
-                answer[0] = chose == 0;
+                // "KEEP DIRECTION?" - so YES means do NOT reverse (Adam, 2026-09-06).
+                //
+                // **"It should be a yes/no keep direction, with no meaning change, and yes being
+                // default."**  The question used to be "should it change direction here?", which put
+                // the action on Yes and the safe answer on No - and a dialog whose default is the
+                // one that does something is the wrong way round for a train standing on a headshunt.
+                //
+                // Index 0 is Yes, and it is the default: keeping the direction changes nothing on the
+                // railway, so dismissing this dialog with the keyboard is safe.
+                answer[0] = chose != 0;
             };
 
             if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();

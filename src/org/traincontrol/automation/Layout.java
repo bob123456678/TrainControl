@@ -5116,14 +5116,70 @@ public class Layout
      * @param reversals the caller's policy, or null for "always"
      * @return whether to turn it round
      */
-    public static boolean shouldReverseAt(Point current, Point destination, Locomotive loc,
+    public boolean shouldReverseAt(Point current, Point destination, Locomotive loc,
         ReversalPolicy reversals)
     {
-        if (current == null || !current.isReversing()) return false;
+        if (current == null) return false;
 
-        if (destination != null && destination.isTerminus()) return true;
+        // NOBODY TO ASK MEANS AUTONOMY, and autonomy turns exactly where the flag says.
+        //
+        // Widening this branch would turn trains at plain copies of a may-reverse square, which is
+        // the promotion of "may" to "must" that `AutonomyBuilder` refuses to emit and says so: it
+        // "made a through station one no path could be routed through".
+        //
+        // ALWAYS_REVERSE COUNTS AS NOBODY, and leaving it out was a defect this rule introduced.
+        // The four-argument overload hands it to autonomy's own loop AND to the timetable, which is
+        // what Return Home runs - and being non-null, it fell through to the manual branch, answered
+        // yes to everything, and would have turned staged trains at every plain copy they passed.
+        // Adam, 2026-09-06: "no prompting in return home or auto."
+        if (reversals == null || reversals == ALWAYS_REVERSE) return current.isReversing();
 
-        return reversals == null || reversals.shouldReverse(loc, current);
+        // A journey to a terminus is not a question either way - the turn on the way is how the train
+        // gets there.
+        if (destination != null && destination.isTerminus()) return current.isReversing();
+
+        // AND IN MANUAL MODE, EVERY MAY-REVERSE SQUARE IS ASKED ABOUT (Adam, 2026-09-06).
+        //
+        // **"May reverse should always prompt in manual mode."**
+        //
+        // `reversing` is emitted for a MUST-reverse square and for a turning COPY; a may-reverse
+        // square is expressed by the split itself, so the plain copy carries no flag at all.  Asking
+        // only `isReversing()` therefore asked nothing on exactly the squares he was testing - the
+        // question appeared or not depending on which copy a path happened to end at, which is not
+        // something anybody can see from the menu.
+        if (!mayReverseAt(current)) return false;
+
+        return reversals.shouldReverse(loc, current);
+    }
+
+    /**
+     * Whether trains may turn round at this piece of track, on any of its copies.
+     *
+     * A square that trains MAY turn at is not marked: the build expresses it by splitting the square
+     * into a plain copy and a turning one, and only the turning copy carries `reversing`.  So the
+     * question "may a train turn here" is about the PLACE rather than about the copy, and the copies
+     * of one place are the Points that share its block.
+     *
+     * @param point any copy
+     * @return whether trains may turn round at that place
+     */
+    public boolean mayReverseAt(Point point)
+    {
+        if (point == null) return false;
+
+        if (point.isReversing()) return true;
+
+        final String place = point.getBlock();
+
+        // No block is a square with one copy, and one copy cannot be the plain half of a split.
+        if (place == null) return false;
+
+        for (Point other : this.points.values())
+        {
+            if (other != point && place.equals(other.getBlock()) && other.isReversing()) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -5715,7 +5771,7 @@ public class Layout
                 // right: turning it needs it stopped, and carrying on from a stand is a delay rather
                 // than a hazard.  Autonomy is unaffected in substance - it stopped here anyway as the
                 // first act of turning.
-                if (isCurrentLayout() && current.isReversing())
+                if (isCurrentLayout() && mayReverseAt(current))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
@@ -6021,9 +6077,9 @@ public class Layout
         // regardless.
         final Point arrived = path.get(path.size() - 1).getEnd();
 
-        if (arrived.isTerminus()
-            || (arrived.isReversing()
-                && (reversals == null || reversals.shouldReverse(loc, arrived))))
+        // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
+        // may-reverse ruling of 2026-09-06).
+        if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))
         {
             this.control.logf(
                 "autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation",
