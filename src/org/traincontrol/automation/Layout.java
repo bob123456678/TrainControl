@@ -5042,14 +5042,6 @@ public class Layout
     }
     
     /**
-     * Locks a path and runs the locomotive from the start to the end
-     * @param path
-     * @param loc
-     * @param speed 
-     * @param ttp - null if not running a timetable route
-     * @return  
-     */
-    /**
      * Asked before a train is turned round at a point it MAY reverse at (Adam, 2026-09-06).
      *
      * **Intent cannot be inferred, so it is asked for.** A reversing point turns whatever passes it,
@@ -5076,9 +5068,6 @@ public class Layout
         boolean shouldReverse(Locomotive loc, Point at);
     }
 
-    /**
-     * What autonomy uses, and what every caller used before there was a choice.
-     */
     /**
      * Whether a train reaching this point is turned round here (Adam, 2026-09-06).
      *
@@ -5122,8 +5111,19 @@ public class Layout
         return reversals == null || reversals.shouldReverse(loc, current);
     }
 
+    /**
+     * What autonomy uses, and what every caller used before there was a choice.
+     */
     public static final ReversalPolicy ALWAYS_REVERSE = (loc, at) -> true;
 
+    /**
+     * Locks a path and runs the locomotive from the start to the end
+     * @param path
+     * @param loc
+     * @param speed 
+     * @param ttp - null if not running a timetable route
+     * @return  
+     */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
     {
         return executePath(path, loc, speed, ttp, ALWAYS_REVERSE);
