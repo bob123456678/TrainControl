@@ -57,6 +57,66 @@ public class testEditorSurfaceRules
         new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
 
     /**
+     * Every door that gives a locomotive a name asks whether the name is usable (MT-270).
+     *
+     * Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So, make sure this
+     * doesn't blow things up elsewhere."**
+     *
+     * `RouteCommand.isNameUsable`'s own rule is that the doors setting a locomotive's name have to
+     * agree, and four did: the rename dialog, both route-editor doors, and the one applying a name the
+     * Central Station proposes. Every one of those RENAMES. Nothing asked about the name a locomotive
+     * is BORN with, so the character the other four exist to keep out could be typed in there instead.
+     *
+     * **What it costs is not that locomotive.** Routes store locomotives by name in a comma-separated
+     * format, so a comma in a name re-parses as two commands - and the route naming it was legal when
+     * it was written. Brackets are allowed by Adam's own ruling; the comma is what `a,P[)(]` was
+     * refused for.
+     *
+     * Checked as a door census rather than by driving the dialog, because the defect is a door that
+     * does not ask - and a test that drives the four that do would have passed throughout.
+     *
+     * MUTATION: remove the call from any listed door and this fails, naming it.
+     */
+    @Test
+    public void testEveryDoorThatNamesALocomotiveChecksTheName() throws Exception
+    {
+        final String[][] doors =
+        {
+            {"src/org/traincontrol/gui/AddLocomotive.java", "the Add Locomotive dialog"},
+            {"src/org/traincontrol/gui/TrainControlUI.java", "the rename and Central Station doors"},
+            {"src/org/traincontrol/gui/RouteEditorFrame.java", "the route editor"},
+        };
+
+        final java.util.List<String> silent = new java.util.ArrayList<>();
+
+        for (String[] door : doors)
+        {
+            java.io.File file = new java.io.File(door[0]);
+
+            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this "
+                + "test reports every door as silent and means nothing");
+
+            String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            if (!source.contains("isNameUsable(")) silent.add(door[1] + " (" + door[0] + ")");
+        }
+
+        assertTrue(silent.isEmpty(),
+            "a door that gives a locomotive a name never asks whether the name is usable: " + silent
+            + ".  Routes store locomotives by name in a comma-separated format, so a comma in one "
+            + "re-parses every route that mentions it into something else - and those routes were "
+            + "legal when they were written (MT-270)");
+
+        // AND THE RULE ITSELF still refuses what it is for, so the doors above are asking something
+        // that answers.  Brackets are allowed on Adam's ruling; the comma is the refusal.
+        assertFalse(org.traincontrol.base.RouteCommand.isNameUsable("a,P[)(]"),
+            "the name Adam typed is accepted by the rule the doors ask, so asking it changes nothing");
+
+        assertTrue(org.traincontrol.base.RouteCommand.isNameUsable("SBB 460 (2)"),
+            "brackets are refused, and Adam ruled they should just be allowed");
+    }
+    /**
      * One writer, and it repaints.
      *
      * The window is generous - a dozen lines - because the call sits inside a lambda with a comment

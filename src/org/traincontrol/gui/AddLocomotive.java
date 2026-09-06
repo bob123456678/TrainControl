@@ -256,6 +256,33 @@ public class AddLocomotive extends javax.swing.JFrame
                     return;
                 }
 
+                // THE FIFTH DOOR, and the only one that never asked (MT-270).
+                //
+                // Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So,
+                // make sure this doesn't blow things up elsewhere."**
+                //
+                // `RouteCommand.isNameUsable`'s own rule is that the doors which set a locomotive's
+                // name have to agree, and four of them do: the rename dialog, both route-editor doors,
+                // and the one that applies a name the Central Station proposes.  Every one of those
+                // RENAMES.  Nothing checked the name a locomotive is BORN with - so the character the
+                // other four exist to keep out could simply be typed in here instead.
+                //
+                // What it costs is not this locomotive: it is every route that later mentions it.
+                // Routes store locomotives by name in a comma-separated format, so a name containing a
+                // comma re-parses as two commands - and the route that names it was legal when it was
+                // written.
+                //
+                // Brackets are Adam's own ruling and are allowed: "bracketed loc names should just be
+                // allowed."  A comma is not, and `a,P[)(]` is refused for the comma alone.
+                if (!org.traincontrol.base.RouteCommand.isNameUsable(locName))
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.ui.errorLocomotiveNameUnusable")
+                    ));
+                    return;
+                }
+
                 decoderType type;
                 
                 if (this.LocTypeMFX.isSelected())
