@@ -5984,19 +5984,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             java.util.List<org.traincontrol.automation.Edge> away =
                 this.model.getAutoLayout().getNeighbors(point);
 
-            if (away == null || away.isEmpty())
+            // ASKED OF THE SQUARE, NOT OF ONE COPY (SPEC-B5).
+            //
+            // `away` is the neighbours of whichever copy getAutonomyPointForTile handed back, and
+            // StationIndex.speakerAt says that on an empty square "any copy will do" - so this refused
+            // a perfectly good platform whenever the arbitrary copy happened to be the dead one, and
+            // accepted a dead square whenever it happened to be the live one.  The paste itself now
+            // walks to a copy that can depart, so the guard has to permit whatever the walk can find.
+            boolean anyWayOut = getAutonomySession() == null
+                ? (away != null && !away.isEmpty())
+                : getAutonomySession().canDepartFrom(this.model.getAutoLayout(), aimed);
+
+            if (!anyWayOut)
             {
                 this.model.logf("autolayout.warnNoWayOutOfPoint", point.getName());
 
                 return true;
             }
 
-            // BEFORE THE MOVE, because the move is what takes the train off the square that knows
-            // which way it was pointing (SPEC-A1).  Read afterwards this is always null, which is how
-            // the fourth attempt came to record the landing copy's arbitrary side instead.
-            headingBeforeTheMove = getAutonomySession() == null ? null
-                : getAutonomySession().facingOf(placing.getName(),
-                    this.model == null ? null : this.model.getAutoLayout());
+            // WHERE IT WOULD END UP IF IT DROVE THERE (Adam, 2026-09-06).
+            //
+            // Read before the move, because the walk starts from where the train is standing NOW and
+            // `moveLocomotive` is what takes it off that copy.
+            facingAtTheLanding = getAutonomySession() == null ? null
+                : getAutonomySession().facingByPath(this.model == null ? null
+                    : this.model.getAutoLayout(), placing.getName(), aimed);
 
             this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
 
@@ -6010,7 +6022,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND THE HEADING FROM THE LAST DRAG GOES WITH IT (CONF-C3).  This branch clears a square
             // rather than filling one, so it leaves no heading behind - and a value left over from a
             // previous placement would be read as this one as by whatever comes next.
-            headingBeforeTheMove = null;
+            facingAtTheLanding = null;
 
             this.model.getAutoLayout().moveLocomotive(null, point.getName(), true);
         }
@@ -6029,12 +6041,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The heading a train had before the drag that is placing it, read before the move clears it.
+     * Which way the train being placed will face once it is on the square it was dropped on.
+     *
+     * Worked out by walking the railway from where it is standing, BEFORE the drag moves it: the walk
+     * starts from the copy it is on, and the move is what takes it off that copy.
      *
      * A field rather than an argument because the read and the use sit either side of a call that
      * returns in three places; threading it through would have meant touching each of them.
      */
-    private org.traincontrol.automationui.TilePorts.Side headingBeforeTheMove;
+    private org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
 
     /**
      * Writes a square's occupant into the autonomy setup, after the layout has been changed.
@@ -6081,9 +6096,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
             // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a
             // direction nobody had picked.  The heading is read before the move instead, in
-            // `headingBeforeTheMove`, and handed to the rule.
+            // `facingAtTheLanding`, and handed to the rule.
             session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                session.facingsFor(tile), headingBeforeTheMove, point.getName()));
+                session.facingsFor(tile), facingAtTheLanding, point.getName()));
         }
 
         try

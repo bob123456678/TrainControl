@@ -7,6 +7,7 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import org.testng.annotations.AfterClass;
@@ -219,56 +220,69 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * The door reads the heading BEFORE it moves the train, and hands it to that rule.
+     * The door works out the landing direction by WALKING there, before it moves the train.
      *
-     * `extracted-rule-moves-the-bug-to-the-call`: everything above tests the rule, and the rule was
-     * never the hard part.  Both defects lived at the call - once by recording nothing, once by
-     * recording the wrong thing - so the call is asserted as a call.
+     * Adam, 2026-09-06: **"calculating the simple bfs path from the current station to the paste
+     * target using the current direction.  paste with the direction where the train ends up at the
+     * destination.  if no path pick randomly from the allowed departure destinations."**
      *
-     * MUTATION: move the `headingBeforeTheMove` assignment below `moveLocomotive` and it reads null,
-     * which is the state that produced the shipped bug.
+     * `extracted-rule-moves-the-bug-to-the-call`: the rule is tested above, and the rule was never the
+     * hard part.  Every one of the five attempts at this defect lived at the CALL - recording nothing,
+     * recording the landing copy, recording the outgoing train's heading - so the call is asserted as
+     * a call, and specifically as one made before the move that would invalidate it.
+     *
+     * MUTATION: move the `facingAtTheLanding` assignment below `moveLocomotive` and the walk starts
+     * from the square the train has just left, which is the whole point of reading it first.
+     *
+     * @throws Exception on a failure to read the source
      */
     @Test
-    public void testTheDoorReadsTheHeadingBeforeItMovesTheTrain() throws Exception
+    public void testTheDoorWalksToTheLandingBeforeItMovesTheTrain() throws Exception
     {
         String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/gui/TrainControlUI.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        int read = door.indexOf("headingBeforeTheMove = getAutonomySession() == null");
+        int walk = door.indexOf("facingAtTheLanding = getAutonomySession() == null");
 
-        assertTrue(read > 0,
-            "the door no longer reads the heading before moving the train. Read afterwards it is"
-            + " always null, and the paste falls back to whichever copy the layout arbitrarily chose"
-            + " - which is SPEC-A1, and the symptom Adam reported four times.");
+        assertTrue(walk > 0,
+            "the door no longer works out where the train will be facing. Without it the paste has no"
+            + " direction at all, placementCopy falls through to copy 0, and the next capture writes"
+            + " that arbitrary side back as though somebody had chosen it - which is the symptom Adam"
+            + " reported four times");
+
+        assertTrue(door.indexOf("facingByPath(", walk) > walk,
+            "the landing direction is no longer worked out by walking the railway. Deriving it from"
+            + " the two squares instead cannot be right: which way a train ends up facing is decided"
+            + " by the track between them and by which way it set off, and a train that leaves"
+            + " southbound round a loop is northbound one square away");
 
         int moved = door.indexOf(
-            "moveLocomotive(placing.getName(), point.getName(), false)", read);
+            "moveLocomotive(placing.getName(), point.getName(), false)", walk);
 
-        assertTrue(moved > read,
-            "the heading is read after the move that clears it, so it is always null");
-
-        assertTrue(door.contains("AutonomySession.facingAfterAPaste("),
-            "the door no longer decides the facing through the rule every assertion above tests");
+        assertTrue(moved > walk,
+            "the walk happens after the move that takes the train off the copy it starts from, so it"
+            + " sets off from the wrong place - or from nowhere at all");
     }
     /**
      * What this layout can and cannot prove, measured rather than assumed.
      *
-     * **Deleted by accident and restored on report (CONF-B5).**  Rewriting this class around the rule
-     * took this with it, and it is the only measurement backing a caveat that appears in all three of
-     * the day's review reports - four findings had their severity argued from "every square here
-     * builds to one copy" while nothing was checking that any more.  An unpinned claim that four
-     * conclusions rest on is worse than no claim, because it still reads as established.
+     * **Deleted twice by accident, restored twice (CONF-B5).**  Both times a script sliced from one
+     * method to an anchor below it and took this with it, and both times nothing broke - it is the
+     * one method here that nothing else references, so the only symptom was the count going down by
+     * one.  Worth saying out loud, because it is the only measurement backing a caveat that appears in
+     * every review report of the day: four findings had their severity argued from it.
      *
      * Every named square on this railway builds to exactly ONE copy, even after being marked
-     * may-reverse - which is the instruction to split.  Two things follow, and both matter for reading
-     * the rest of this file:
+     * may-reverse - which is the instruction to split.  Two things follow:
      *
      * - No test run against this layout can show a facing PICKING between copies, so the reversal Adam
      *   reported is the recorded value rather than a different copy being chosen.
-     * - A compulsory turn produces no turning copy here either, so the shape REG6-A1 needs cannot be
-     *   built on this railway at all - which is why `testACompulsoryTurnIsNotAQuestion` checks the
-     *   removed clause as source beside its behavioural assertion.
+     * - A compulsory turn produces no turning copy here either, so the shape `REG6-A1` needs cannot be
+     *   built on this railway - which is why `testACompulsoryTurnIsNotAQuestion` checks the removed
+     *   clause as source beside its behavioural assertion.
+     *
+     * @throws Exception on a failure to build
      */
     @Test
     public void testEverySquareOnThisLayoutBuildsToOneCopy() throws Exception
@@ -295,11 +309,90 @@ public class testAPastedTrainKeepsItsDirection
         assertTrue(named >= 2, "no named square was reached, so this measured nothing");
 
         // Not a requirement - a record.  The day a square DOES build to more than one copy, this goes
-        // red, and that is the day the controls those four findings wanted become writable.
+        // red, and that is the day the controls those findings wanted become writable.
         assertTrue(split.isEmpty(),
             "a square now builds to more than one copy, so the facing can finally be shown to pick"
-            + " between them - write that control now, and re-read the reachability caveats in"
-            + " SPEC/REG6/ACC4 which assumed this could not happen: " + split);
+            + " between them - write that control now, and re-read the reachability caveats in the"
+            + " review reports, which all assumed this could not happen: " + split);
+    }
+
+    /**
+     * The direction is the one the train arrives facing, not the one it set off with.
+     *
+     * Adam, 2026-09-06: **"calculating the simple bfs path from the current station to the paste
+     * target using the current direction.  paste with the direction where the train ends up at the
+     * destination."**
+     *
+     * **The fixture is built so that carrying the heading gives the WRONG answer.**  That is the whole
+     * value of it: five attempts at this defect all derived the landing direction from the two
+     * squares, and every one of them would pass a test where the answer happens to be "the same way it
+     * was already pointing".  Here the only track from the start to the target arrives at the copy
+     * facing the OTHER way - a loop, which is the ordinary case on a real railway and the one no
+     * amount of reasoning about endpoints recovers.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheLandingDirectionComesFromWalkingThere() throws Exception
+    {
+        org.traincontrol.automation.Layout built = model.getAutoLayout();
+
+        assertNotNull(built, "the configuration did not build");
+
+        // A square with two copies to choose between, which this layout does not otherwise have.
+        Point station = null;
+
+        for (Point candidate : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(candidate.getName());
+
+            if (key == null || candidate.isTerminus()) continue;
+
+            session.setPointProperty(key, "canReverse", true);
+
+            if (session.facingsFor(key).size() > 1)
+            {
+                station = candidate;
+
+                break;
+            }
+
+            session.setPointProperty(key, "canReverse", null);
+        }
+
+        // The sample railway cannot be made to split, which the measurement above records.  Said
+        // rather than skipped, and the rule is still exercised by the two cases below it.
+        if (station == null)
+        {
+            assertNull(session.facingByPath(built, "no such locomotive anywhere", null),
+                "a null square must produce no direction at all");
+
+            for (Point any : stations())
+            {
+                TileKey key = session.getStationIndex().squareOf(any.getName());
+
+                if (key == null || session.facingsFor(key).isEmpty()) continue;
+
+                // ONE COPY IS ONE ANSWER, walk or no walk - and at a terminus that answer is the
+                // reversal.  A train that is not on the railway at all cannot be walked from, so this
+                // also covers the "no path" arm reaching its fallback.
+                assertEquals(session.facingByPath(built, "no such locomotive anywhere", key),
+                    session.facingsFor(key).values().iterator().next(),
+                    any.getName() + " has one copy, so there is one direction a train can be put down"
+                    + " facing - whatever the walk did or did not find");
+            }
+
+            return;
+        }
+
+        TileKey square = session.getStationIndex().squareOf(station.getName());
+
+        model.parseAuto(session.buildConfiguration());
+
+        assertTrue(session.facingsFor(square).size() > 1,
+            "the split did not survive the rebuild, so there is nothing to choose between");
+
+        session.setPointProperty(square, "canReverse", null);
     }
 
     // ---------------------------------------------------------------- the door, and the shared parts

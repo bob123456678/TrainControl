@@ -4780,6 +4780,168 @@ public class AutonomySession
     }
 
     /**
+     * Whether a train standing anywhere on this square could move at all (SPEC-B5).
+     *
+     * **The question is about the SQUARE, and the guard that asked it looked at one copy.**  A square
+     * is several Points; `getNeighbors` on whichever one came to hand answers about that copy only, so
+     * a platform with a dead copy and a live one was refused or accepted depending on which the menu
+     * happened to be holding.  `LayoutRightclickAutonomyMenu.placeableCopies` says the same thing about
+     * itself in a comment, and this is the second place that had to learn it.
+     *
+     * @param running the layout
+     * @param tile the square
+     * @return true when at least one copy of it has somewhere to go
+     */
+    public boolean canDepartFrom(org.traincontrol.automation.Layout running, TileKey tile)
+    {
+        if (running == null || tile == null) return false;
+
+        for (String name : facingsFor(tile).keySet())
+        {
+            org.traincontrol.automation.Point point = running.getPoint(name);
+
+            if (point == null) continue;
+
+            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(point);
+
+            if (out != null && !out.isEmpty()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Which way a train ends up facing if it DRIVES from where it is to where it was dropped.
+     *
+     * Adam, 2026-09-06: **"calculating the simple bfs path from the current station to the paste
+     * target using the current direction.  paste with the direction where the train ends up at the
+     * destination.  if no path pick randomly from the allowed departure destinations."**
+     *
+     * **This is a better rule than anything the previous five attempts reached for, and the reason is
+     * worth writing down.**  They all tried to derive the answer from the two squares - carry the
+     * heading, keep the compass side, take the landing copy - and a railway is not a grid: which way
+     * a train ends up facing after moving between two platforms is decided by the TRACK between them,
+     * and by which way it was pointing when it set off.  A train that leaves southbound and comes back
+     * round a loop is northbound at a station one square away.  No amount of reasoning about the two
+     * endpoints recovers that; driving it does.
+     *
+     * The graph already encodes the direction, because facing is one-way edges here: the copy a train
+     * stands on IS its heading, and an edge leads only where a train pointing that way could go.  So a
+     * breadth-first walk from the copy it is on arrives at a specific COPY of the target, and that
+     * copy's side is the answer.  Shortest path, because a paste is "put it there", not "take it on a
+     * tour" - and the shortest is the one whose direction the operator is imagining.
+     *
+     * **When there is no path.**  The two squares may genuinely be unconnected in the direction the
+     * train faces - it would have to reverse somewhere first, and this is a placement, not a journey.
+     * Adam's answer is to pick at random from the copies a train could DEPART from, which is the honest
+     * one: nothing in the situation determines an answer, so it takes a legal one rather than inventing
+     * a reason. A copy with no way out is never chosen, because standing a train somewhere it cannot
+     * move from is the "nothing moves" fault the placement menu already refuses.
+     *
+     * @param running the layout to walk, which is the only thing that knows the track
+     * @param locomotive the train being placed
+     * @param target the square it is being placed on
+     * @return the side to record, or null when the target has no named copies at all
+     */
+    public Side facingByPath(org.traincontrol.automation.Layout running, String locomotive,
+        TileKey target)
+    {
+        if (target == null) return null;
+
+        Map<String, Side> copies = facingsFor(target);
+
+        if (copies.isEmpty()) return null;
+
+        // ONE COPY, ONE ANSWER - and no walk needed to find it.  At a terminus this is the reversal
+        // Adam asks for: the end of a line holds one heading and a train put there takes it.
+        if (copies.size() == 1) return copies.values().iterator().next();
+
+        Side arrived = walkTo(running, locomotive, target, copies);
+
+        if (arrived != null) return arrived;
+
+        // NO WAY THERE FACING THIS WAY.  A legal heading, chosen without pretending it was derived.
+        java.util.List<Side> departable = new java.util.ArrayList<>();
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
+        {
+            org.traincontrol.automation.Point point =
+                running == null ? null : running.getPoint(copy.getKey());
+
+            if (point == null) continue;
+
+            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(point);
+
+            if (out != null && !out.isEmpty()) departable.add(copy.getValue());
+        }
+
+        if (departable.isEmpty()) return copies.values().iterator().next();
+
+        return departable.get(new java.util.Random().nextInt(departable.size()));
+    }
+
+    /**
+     * The breadth-first half: from wherever this train is standing, to any copy of the target.
+     *
+     * @param running the layout
+     * @param locomotive the train
+     * @param target the square being walked to
+     * @param copies the target's copies, by name
+     * @return the side of the copy first reached, or null when none is
+     */
+    private Side walkTo(org.traincontrol.automation.Layout running, String locomotive,
+        TileKey target, Map<String, Side> copies)
+    {
+        if (running == null || locomotive == null) return null;
+
+        org.traincontrol.automation.Point from = null;
+
+        for (org.traincontrol.automation.Point point : running.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null
+                && locomotive.equals(point.getCurrentLocomotive().getName()))
+            {
+                from = point;
+
+                break;
+            }
+        }
+
+        if (from == null) return null;
+
+        java.util.Set<String> seen = new LinkedHashSet<>();
+        java.util.Deque<org.traincontrol.automation.Point> queue = new java.util.ArrayDeque<>();
+
+        seen.add(from.getName());
+        queue.add(from);
+
+        while (!queue.isEmpty())
+        {
+            org.traincontrol.automation.Point here = queue.poll();
+
+            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(here);
+
+            if (out == null) continue;
+
+            for (org.traincontrol.automation.Edge edge : out)
+            {
+                org.traincontrol.automation.Point next = edge.getEnd();
+
+                if (next == null || !seen.add(next.getName())) continue;
+
+                // Arrived, and the copy reached is the heading.  Checked on arrival rather than when
+                // queued, so the FIRST copy of the target the walk touches wins - which is the
+                // shortest way there, since the queue is breadth-first.
+                if (copies.containsKey(next.getName())) return copies.get(next.getName());
+
+                queue.add(next);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Which way a train put down on a square should end up pointing.
      *
      * Adam, 2026-09-06: **"pasted locomotives pasted on the succeeding/preceding station to a given
