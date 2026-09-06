@@ -1002,26 +1002,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
 
     /**
-     * Asks whether a train reaching a may-reverse point should be turned round (Adam, 2026-09-06).
-     *
-     * Shared with the Locomotive commands tab through `ManualReversalPrompt`, because two spellings of
-     * this question would eventually be two different questions - and one of the two doors would be
-     * the one that stopped asking.
-     *
-     * @param train the locomotive
-     * @param where the point it has reached
-     * @return whether to turn it
-     */
-    private org.traincontrol.automation.Layout.ReversalPolicy reversalPolicy()
-    {
-        // THE WINDOW, NOT THIS MENU (DIR-C8): the click that dispatched the train dismissed the popup,
-        // and the question can arrive minutes later.
-        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
-
-        return org.traincontrol.gui.ManualReversalPrompt.forOperator(session,
-            window != null ? window : this);
-    }
-    /**
      * One "-> somewhere" item, dispatching this locomotive along this path.
      *
      * Lifted out of the loop when `FR-058` split the list in two (`More Destinations`). Two copies of

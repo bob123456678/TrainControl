@@ -4735,12 +4735,6 @@ public class AutonomySession
     }
 
     /**
-     * Which way the locomotive on this square is pointing, as recorded.
-     *
-     * @param tile
-     * @return the side its front faces, or null when nobody has said and nothing has run
-     */
-    /**
      * Which way a train put down on a square should end up pointing.
      *
      * Adam, 2026-09-06: **"pasted locomotives pasted on the succeeding/preceding station to a given
@@ -4813,7 +4807,12 @@ public class AutonomySession
         return null;
     }
 
-    public Side getFacing(TileKey tile)
+    /**
+     * Which way the locomotive on this square is pointing, as recorded.
+     *
+     * @param tile
+     * @return the side its front faces, or null when nobody has said and nothing has run
+     */    public Side getFacing(TileKey tile)
     {
         Object value = getPointProperty(tile, AutonomyBuilder.FACING);
 

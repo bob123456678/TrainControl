@@ -6014,15 +6014,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes a square's occupant into the autonomy setup, after the layout has been changed.
-     */
-    /**
      * The heading a train had before the drag that is placing it, read before the move clears it.
      *
      * A field rather than an argument because the read and the use sit either side of a call that
      * returns in three places; threading it through would have meant touching each of them.
      */
     private org.traincontrol.automationui.TilePorts.Side headingBeforeTheMove;
+
+    /**
+     * Writes a square's occupant into the autonomy setup, after the layout has been changed.
+     */
 
     private void rememberPlacement(org.traincontrol.automation.Point point,
         org.traincontrol.automationui.TileGraph.TileKey tile)
