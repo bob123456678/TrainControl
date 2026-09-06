@@ -3923,12 +3923,21 @@ public class AutonomyEditorPanel extends JPanel
 
             if (answer != JOptionPane.OK_OPTION) return;
 
-            // BEFORE THE COMMIT, because committing is what takes the train off the square that
-            // knows which way it was pointing (REG6-B5).
+            // BEFORE THE COMMIT, because the commit is what takes the train off the square that knows
+            // which way it was pointing (REG6-B5) - and about the INCOMING train, not the outgoing
+            // one (CONF-B3).
+            //
+            // This read `point.getCurrentLocomotive()`, which before the commit is whoever was
+            // standing here ALREADY.  So the heading preserved for the arriving train was the
+            // departing train's, taken from a different part of the railway - a paste that carefully
+            // preserved the wrong thing, which is worse than one that preserved nothing.
+            //
+            // `edit.getLoc()` is the choice the dialog has already been dismissed with, so the right
+            // train is knowable here without waiting for the commit that loses the answer.
+            String arriving = edit.getLoc();
+
             org.traincontrol.automationui.TilePorts.Side heading =
-                point.getCurrentLocomotive() == null ? null
-                    : session.facingOf(point.getCurrentLocomotive().getName(),
-                        layout);
+                arriving == null ? null : session.facingOf(arriving, layout);
 
             edit.commitChanges();
 
@@ -3943,6 +3952,8 @@ public class AutonomyEditorPanel extends JPanel
             // this panel has had - the comment four lines below says the same thing about
             // `placementChanged` and VD11-A1.  A square is several Points, and a placement with no
             // recorded facing leaves `placementCopy` to fall through to copy 0.
+            // After the commit this IS the arriving train, which is why the guard reads the point
+            // rather than `arriving`: an assignment that did not take should not write a facing.
             if (point.getCurrentLocomotive() != null)
             {
                 session.setFacing(target,
@@ -4094,7 +4105,17 @@ public class AutonomyEditorPanel extends JPanel
         // the reduction omits excluded pages, so a train standing on one of those was not lifted, and
         // the build then emitted it at two Points and invalidated the whole layout. The session works
         // over the configuration, which is complete.
+        // THE HEADING THIS TRAIN ALREADY HAS, read before the placement moves it (CONF-B2).
+        //
+        // The fourth placement door, and the last one still recording WHO without WHICH WAY.  Worse
+        // than the others: `placeLocomotive` does not clear the facing on the non-null path, so this
+        // left the PREVIOUS occupant's direction standing and attached it to the arriving train.
+        org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
+
         session.placeLocomotive(tile, name);
+
+        session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+            session.facingsFor(tile), heading, null));
 
         placementChanged();
     }

@@ -259,12 +259,15 @@ public class testEditorSurfaceRules
         // convention twenty lines down: "adding a writer means saying here which file it is in and why
         // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
         // ask about it.
-        assertEquals(writes, 2,
-            "the facing is written from " + writes + " places in AutonomyEditorPanel. Two are known: "
-            + "the facing menu, and the edit-or-assign-locomotive placement door that records a "
-            + "heading (REG6-B5). A third is either a second copy of the menu - which is how OB-039 "
+        assertEquals(writes, 3,
+            "the facing is written from " + writes + " places in AutonomyEditorPanel. Three are known: "
+            + "the facing menu, the edit-or-assign-locomotive door (REG6-B5), and placeLocomotive - "
+            + "the add-to-autonomy door, which was the LAST one recording who without which way "
+            + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
+            + "the non-null path and so left the previous occupant's direction attached to the "
+            + "arriving train. A fourth is either a second copy of the menu - which is how OB-039 "
             + "survived being fixed, the redraw going on the copy somebody is looking at while the "
-            + "other keeps the bug - or a placement door that needs the same sweep this one needed");
+            + "other keeps the bug - or a placement door nobody has swept yet");
 
         // And project-wide, which is the half this used to claim without checking (NR-4).
         //

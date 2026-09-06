@@ -5083,11 +5083,27 @@ public class Layout
         boolean shouldReverse(Locomotive loc, Point at);
 
         /**
-         * Whether this point is one the operator should be asked about at all.
+         * Whether this point is one the operator has a say over at all.
          *
-         * **Asked BEFORE the train is stopped, and it must not block.**  `shouldReverse` puts a modal
-         * dialog up; this decides whether there is anything to put up, so it runs at every point on
-         * the path and has to be cheap and silent.
+         * **It must be cheap, silent, and independent of the ANSWER.**  It runs at every point on
+         * every path, and `shouldReverseAt` reads it to tell a compulsory turn from a choice: a
+         * reversing copy nobody is asked about is one the railway turns every train at.  So it
+         * describes the RAILWAY - which squares anybody could have an opinion about - and never what
+         * the opinion was.
+         *
+         * Letting the answer leak in here cost a day.  `forJourney` briefly answered
+         * `turn && asking.asksAbout(at)`, to avoid braking at may-turn squares on a journey nobody
+         * was turning; "keep direction" then made every may-reverse turning copy look compulsory, and
+         * the train turned against the operator's explicit no with `shouldReverse` never consulted.
+         * `testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer` is the guard.
+         *
+         * **`shouldReverse` MAY NOW BE CALLED WHILE THE TRAIN IS MOVING (CONF2-B1).**  It used to be
+         * asked only after `executePathInternal` had brought the train to a stand, and this paragraph
+         * used to say so.  The stop is now the rule's own answer - a train is stopped exactly when it
+         * is about to be turned - which means the rule is evaluated first, at line speed.  Nothing
+         * reachable today blocks in it, because both doors answer at departure and hand over a
+         * constant.  A `shouldReverse` that puts a dialog up would reintroduce `DIR-A1` exactly: the
+         * train runs past the point for as long as the dialog stands open.
          *
          * **It exists because the runtime cannot answer it.**  `canReverse` - the operator's "trains
          * may turn round here" - never reaches `parseAuto` at all: `AutonomyBuilder` skips it with
@@ -5101,7 +5117,7 @@ public class Layout
          * points it always did.
          *
          * @param at the point
-         * @return whether to stop and ask there
+         * @return whether the operator has a say about turning here
          */
         default boolean asksAbout(Point at)
         {

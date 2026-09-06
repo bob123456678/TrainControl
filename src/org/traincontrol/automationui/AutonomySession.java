@@ -4798,7 +4798,10 @@ public class AutonomySession
      *
      * @param held every copy the landing square builds to, by name, with the side each one faces
      * @param keep the heading the train had before it was moved, or null when that is not known
-     * @param landedOn the copy the running layout chose, used only when nothing better is known
+     * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
+     *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
+     *        and evidence of nothing.  Recording it was SPEC-A1.  Kept in the signature so that a
+     *        caller reaching for it finds this sentence rather than the idea (CONF-C2)
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)

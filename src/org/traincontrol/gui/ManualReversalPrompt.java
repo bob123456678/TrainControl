@@ -259,12 +259,23 @@ public final class ManualReversalPrompt
      * dialog has to be shown on it. `invokeAndWait` is what makes the answer available to the caller
      * that needs it.
      *
-     * **The train is stopped before this is called**, and that was NOT true when this sentence first
-     * claimed it.  Everything that stopped the train was inside the branch the answer decides, so it
-     * ran past the point at line speed for as long as the dialog stood there - measured at 30 when
-     * the question was put and still 30 five seconds later (`DIR-A1`).  A comment asserting the
-     * comfortable version of what the code does is how that survived being written and reviewed.
-     * `executePathInternal` now stops at any reversing point before deciding anything.
+     * **NOTHING STOPS THE TRAIN BEFORE THIS IS CALLED ANY MORE, so it must not be reached from inside
+     * a run.**  This sentence has now been wrong twice, in opposite directions, which is the reason it
+     * is written out rather than trimmed.
+     *
+     * It first claimed the train was stopped when it was not: everything that stopped it was inside
+     * the branch the answer decides, so it ran past the point at line speed for as long as the dialog
+     * stood there - measured at 30 when the question was put and still 30 five seconds later
+     * (`DIR-A1`).  Then `executePathInternal` was made to stop at any reversing point first, and the
+     * sentence became true.  Then the stop was collapsed into the rule itself - a train is stopped
+     * exactly when it is about to be turned - and the rule is evaluated BEFORE the stop, so it is
+     * false again (`CONF2-B1`).
+     *
+     * It is safe today only because nothing calls this from inside a run: both doors ask at departure
+     * and hand `executePath` a constant answer.  `forOperator` is public, and a future caller that
+     * hands it straight to `executePath` gets `DIR-A1` back in full.  A comment asserting the
+     * comfortable version of what the code does is how the first one survived being written and
+     * reviewed.
      *
      * **Defaults to KEEPING the direction**, which is Yes and which changes nothing. An interruption, a headless run or anything that goes wrong here
      * leaves the train pointing the way it already points, which is the answer that changes nothing on

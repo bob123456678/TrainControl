@@ -5998,6 +5998,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Remembered BEFORE the move, because moveLocomotive is what clears the square
             this.cutLocomotive = cut ? point.getCurrentLocomotive() : null;
 
+            // AND THE HEADING FROM THE LAST DRAG GOES WITH IT (CONF-C3).  This branch clears a square
+            // rather than filling one, so it leaves no heading behind - and a value left over from a
+            // previous placement would be read as this one as by whatever comes next.
+            headingBeforeTheMove = null;
+
             this.model.getAutoLayout().moveLocomotive(null, point.getName(), true);
         }
 

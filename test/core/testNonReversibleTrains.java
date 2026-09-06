@@ -374,6 +374,161 @@ public class testNonReversibleTrains
             + "block on one");
     }
     /**
+     * A policy that overrides `asksAbout` is what the doors actually hand over - and until now, what
+     * nothing had ever run (CONF2-B2).
+     *
+     * **This is the gap that let one defect survive a fix, a review and a confirming pass.**  Every
+     * behavioural case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
+     * lambda takes the interface DEFAULT `asksAbout`, which answers `at.isReversing()`.  The doors do
+     * not: `ManualReversalPrompt` overrides it, and that override is the input `shouldReverseAt` uses
+     * to tell a compulsory turn from a may-reverse one.  So the branch the railway runs had no test at
+     * all, and a change to it read as covered by twelve passing ones.
+     *
+     * The defect it hid: `forJourney` briefly answered `asksAbout` as `turn && asking.asksAbout(at)`,
+     * to avoid braking at may-turn squares on a journey nobody was turning.  That let the ANSWER
+     * change the QUESTION - "keep direction" made `asksAbout` false everywhere, every may-reverse
+     * turning copy then looked compulsory, and the train turned against the operator's explicit no,
+     * with `shouldReverse` never consulted.  The clause was added and removed twice in one day,
+     * silently both times.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheDoorsOwnAsksAboutDecidesWhichTurnsAreCompulsory() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(231, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        layout.createPoint("ASK_plain", true, sensor.getName());
+        layout.createPoint("ASK_turning", true, sensor.getName());
+
+        layout.getPoint("ASK_plain").setBlock("ASK");
+        layout.getPoint("ASK_turning").setBlock("ASK");
+
+        layout.getPoint("ASK_turning").setReversing(true);
+
+        Point turning = layout.getPoint("ASK_turning");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // A door that says "this square is one the operator has a say over" - a MAY-reverse square.
+        // Its answer is no, and the answer must stand.
+        Layout.ReversalPolicy asksAndSaysNo = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return true;
+            }
+        };
+
+        assertFalse(layout.shouldReverseAt(turning, turning, loc, asksAndSaysNo),
+            "the operator said keep direction at a may-reverse square and the train turned anyway. "
+            + "That is CONF-A1 as it actually shipped: asksAbout is how this rule tells a compulsory "
+            + "turn from a choice, so a policy that answers false about a may-reverse square makes it "
+            + "look compulsory - which is exactly what forJourney did when the answer was no");
+
+        // The same square, the same shape of policy, the opposite answer.
+        Layout.ReversalPolicy asksAndSaysYes = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return true;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return true;
+            }
+        };
+
+        assertTrue(layout.shouldReverseAt(turning, turning, loc, asksAndSaysYes),
+            "the operator said turn at a may-reverse square and nothing turned");
+
+        // AND A COMPULSORY TURN: the door does not ask about it, so the answer is irrelevant and the
+        // turn happens regardless.  Same policy answer as the first case, opposite outcome - which is
+        // the whole distinction, and it is carried entirely by asksAbout.
+        Layout.ReversalPolicy doesNotAsk = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return false;
+            }
+        };
+
+        assertTrue(layout.shouldReverseAt(turning, turning, loc, doesNotAsk),
+            "a compulsory turn was skipped because a manual policy answered \"keep direction\". A "
+            + "turning copy leaves only by the side the train arrived from, so the train is driven "
+            + "forward off its reserved path (CONF-A1)");
+    }
+
+    /**
+     * And the door's answer to `asksAbout` does not depend on what the operator said.
+     *
+     * The clause that broke this was `turn && asking.asksAbout(at)`, and it was added and removed twice
+     * in one day.  `asksAbout` describes the RAILWAY - which squares anybody has a say over - and
+     * `shouldReverse` carries the say.  Letting the second leak into the first is what made a "no"
+     * read as "this turn is not a choice".
+     *
+     * Checked as source because `forJourney` puts a modal dialog up before it returns anything, and a
+     * test that shows a dialog cannot run here.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer() throws Exception
+    {
+        String prompt = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/ManualReversalPrompt.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int journey = prompt.indexOf("forJourney(");
+
+        assertTrue(journey > 0, "forJourney has been renamed and this check now guards nothing");
+
+        int asks = prompt.indexOf("public boolean asksAbout(Point at)", journey);
+
+        assertTrue(asks > 0, "the journey policy no longer answers asksAbout");
+
+        StringBuilder code = new StringBuilder();
+
+        // Comments stripped: the paragraph above this method explains the defect by name, and a guard
+        // that reads its own explanation as code reports on prose rather than on the program.
+        for (String line : prompt.substring(asks,
+            prompt.indexOf("            }", asks)).split("\\r?\\n"))
+        {
+            String trimmed = line.trim();
+
+            if (!trimmed.startsWith("//")) code.append(trimmed).append(" ");
+        }
+
+        // A WORD, not a substring: the first version of this check searched for "turn" and found it
+        // inside "return", so it failed on the correct code it was written to protect.
+        assertFalse(code.toString().matches(".*\\bturn\\b.*"),
+            "the journey policy answers asksAbout using the operator's answer. That lets a \"keep "
+            + "direction\" make every may-reverse turning copy look compulsory to shouldReverseAt, "
+            + "which turns the train against the explicit no (CONF2-B2). The answer belongs in "
+            + "shouldReverse; asksAbout is about the railway");
+    }
+    /**
      * A square trains MAY turn at is asked about on every copy, not only the turning one
      * (Adam, 2026-09-06).
      *

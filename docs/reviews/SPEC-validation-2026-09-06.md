@@ -54,19 +54,19 @@ its own javadoc while asserting something that cannot fail.
 
 | | Finding | Severity | Disposition | Confidence |
 |---|---|---|---|---|
-| SPEC-A1 | A pasted train's heading is never read; the paste records the destination copy's facing | A | Open | High on the mechanism, high on the spec gap |
-| SPEC-A2 | Autonomy and Return Home now stop at every plain copy of a may-reverse square | A | Open | High on the logic, **unmeasured** on reachability |
-| SPEC-B1 | A journey to a terminus asks the reversal question and then discards the answer | B | Open | High |
-| SPEC-B2 | The Path Type tooltip puts Return Home on the Auto side, which is the opposite of ruling 7 | B | Open | High |
+| SPEC-A1 | A pasted train's heading is never read; the paste records the destination copy's facing | A | Fixed | High on the mechanism, high on the spec gap |
+| SPEC-A2 | Autonomy and Return Home now stop at every plain copy of a may-reverse square | A | Fixed | High on the logic, **unmeasured** on reachability |
+| SPEC-B1 | A journey to a terminus asks the reversal question and then discards the answer | B | Fixed | High |
+| SPEC-B2 | The Path Type tooltip puts Return Home on the Auto side, which is the opposite of ruling 7 | B | Fixed | High |
 | SPEC-B3 | Return Home refuses an inactive START; manual allows it | B | Open | High |
 | SPEC-B4 | The diagram's "is facing" radio writes the setup only - `DIR-B3`'s sibling | B | Open | High |
 | SPEC-B5 | The paste guard and the menu that offers the same action ask different predicates | B | Open | High on the code, unmeasured on reachability |
-| SPEC-C1 | The prompt still says the train "has reached" the square, after the move to departure | C | Open | High |
+| SPEC-C1 | The prompt still says the train "has reached" the square, after the move to departure | C | Fixed | High |
 | SPEC-C2 | `tooltip.Active` still scopes the inactive rule to "autonomous operation" | C | Open | High |
-| SPEC-C3 | `LayoutRightclickAutonomyMenu.reversalPolicy()` is dead, and is the old ask-on-arrival policy | C | Open | High |
+| SPEC-C3 | `LayoutRightclickAutonomyMenu.reversalPolicy()` is dead, and is the old ask-on-arrival policy | C | Fixed | High |
 | SPEC-C4 | One door asks the reversal question before the power check, the other after | C | Open | High |
 | SPEC-C5 | The Auto tier note lists one of the three reasons autonomy will not choose a station | C | Open | High |
-| SPEC-D1 | Rulings 2, 3, 4, 5, 6 and 9: checked, correct | D | Open | See each |
+| SPEC-D1 | Rulings 2, 3, 4, 5, 6 and 9: checked, correct | D | Verified | See each |
 
 ---
 
