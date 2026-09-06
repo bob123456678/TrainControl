@@ -3927,7 +3927,8 @@ public class AutonomyEditorPanel extends JPanel
             // knows which way it was pointing (REG6-B5).
             org.traincontrol.automationui.TilePorts.Side heading =
                 point.getCurrentLocomotive() == null ? null
-                    : session.facingOf(point.getCurrentLocomotive().getName());
+                    : session.facingOf(point.getCurrentLocomotive().getName(),
+                        layout);
 
             edit.commitChanges();
 

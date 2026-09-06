@@ -251,6 +251,57 @@ public class testAPastedTrainKeepsItsDirection
         assertTrue(door.contains("AutonomySession.facingAfterAPaste("),
             "the door no longer decides the facing through the rule every assertion above tests");
     }
+    /**
+     * What this layout can and cannot prove, measured rather than assumed.
+     *
+     * **Deleted by accident and restored on report (CONF-B5).**  Rewriting this class around the rule
+     * took this with it, and it is the only measurement backing a caveat that appears in all three of
+     * the day's review reports - four findings had their severity argued from "every square here
+     * builds to one copy" while nothing was checking that any more.  An unpinned claim that four
+     * conclusions rest on is worse than no claim, because it still reads as established.
+     *
+     * Every named square on this railway builds to exactly ONE copy, even after being marked
+     * may-reverse - which is the instruction to split.  Two things follow, and both matter for reading
+     * the rest of this file:
+     *
+     * - No test run against this layout can show a facing PICKING between copies, so the reversal Adam
+     *   reported is the recorded value rather than a different copy being chosen.
+     * - A compulsory turn produces no turning copy here either, so the shape REG6-A1 needs cannot be
+     *   built on this railway at all - which is why `testACompulsoryTurnIsNotAQuestion` checks the
+     *   removed clause as source beside its behavioural assertion.
+     */
+    @Test
+    public void testEverySquareOnThisLayoutBuildsToOneCopy() throws Exception
+    {
+        java.util.List<String> split = new LinkedList<>();
+
+        int named = 0;
+
+        for (Point station : stations())
+        {
+            TileKey square = session.getStationIndex().squareOf(station.getName());
+
+            if (square == null) continue;
+
+            Map<String, Side> copies = session.facingsFor(square);
+
+            if (copies.isEmpty()) continue;
+
+            named++;
+
+            if (copies.size() > 1) split.add(station.getName() + copies);
+        }
+
+        assertTrue(named >= 2, "no named square was reached, so this measured nothing");
+
+        // Not a requirement - a record.  The day a square DOES build to more than one copy, this goes
+        // red, and that is the day the controls those four findings wanted become writable.
+        assertTrue(split.isEmpty(),
+            "a square now builds to more than one copy, so the facing can finally be shown to pick"
+            + " between them - write that control now, and re-read the reachability caveats in"
+            + " SPEC/REG6/ACC4 which assumed this could not happen: " + split);
+    }
+
     // ---------------------------------------------------------------- the door, and the shared parts
 
     /**

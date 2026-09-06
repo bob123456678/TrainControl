@@ -4831,8 +4831,45 @@ public class AutonomySession
      */
     public Side facingOf(String locomotive)
     {
+        return facingOf(locomotive, null);
+    }
+
+    /**
+     * The same, asking the running layout first (CONF-B1).
+     *
+     * **The setup names the square a train SET OFF FROM until `captureFromLayout` writes the arrival
+     * back.**  `flipFacing` was fixed for exactly this an hour before this method was written, four
+     * hundred lines further up the same file, and this shipped with the defect anyway - which is
+     * `fix-one-site-sweep-the-siblings` almost verbatim.
+     *
+     * It bites when a train is run and then placed by hand: the heading read "before the move" is the
+     * heading it had at the platform it left, not the one it is standing on, and the paste then
+     * preserves a direction from a different part of the railway.
+     *
+     * @param locomotive the train
+     * @param running the layout, or null when there is none to ask
+     * @return its heading, or null when nothing knows
+     */
+    public Side facingOf(String locomotive, org.traincontrol.automation.Layout running)
+    {
         if (locomotive == null) return null;
 
+        // WHERE IT IS, from the thing that knows.
+        if (running != null && getStationIndex() != null)
+        {
+            for (org.traincontrol.automation.Point point : running.getPoints())
+            {
+                if (point.getCurrentLocomotive() == null) continue;
+
+                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
+
+                TileKey where = getStationIndex().squareOf(point.getName());
+
+                if (where != null && getFacing(where) != null) return getFacing(where);
+            }
+        }
+
+        // And the setup, which is right whenever nothing has run since the last capture.
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
             if (locomotive.equals(placed.getValue())) return getFacing(placed.getKey());

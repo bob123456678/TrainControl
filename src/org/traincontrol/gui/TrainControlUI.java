@@ -5986,7 +5986,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // which way it was pointing (SPEC-A1).  Read afterwards this is always null, which is how
             // the fourth attempt came to record the landing copy's arbitrary side instead.
             headingBeforeTheMove = getAutonomySession() == null ? null
-                : getAutonomySession().facingOf(placing.getName());
+                : getAutonomySession().facingOf(placing.getName(),
+                    this.model == null ? null : this.model.getAutoLayout());
 
             this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
 

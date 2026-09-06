@@ -577,12 +577,48 @@ public class testNonReversibleTrains
         //
         // Pinned as source because there is no way to observe a stop that does not happen without
         // driving a train, and a test that drives one through `executePath` hangs this suite.
-        assertTrue(flat.contains("if (isCurrentLayout() && (current.isReversing() "
-            + "|| (reversals != null && reversals != ALWAYS_REVERSE "
-            + "&& reversals.asksAbout(current)))) { loc.setSpeed(0).waitForSpeedBelow(1);"),
-            "the train is no longer stopped where it is about to be turned, or the stop has gone back "
-            + "to the square-wide mayReverseAt that made autonomy brake at every plain copy of a "
-            + "split square (SPEC-A2, REG6-B3)");
+        assertTrue(flat.contains(
+            "if (isCurrentLayout() && stopsToDecideAt(current, reversals)) "
+            + "{ loc.setSpeed(0).waitForSpeedBelow(1);"),
+            "the train is no longer stopped where it is about to be turned");
+
+        // AND THE STOP AND THE GATE ARE ONE PREDICATE (CONF-A2).
+        //
+        // They were two expressions meant to agree, and they did not: the stop asked `asksAbout` alone
+        // while `shouldReverseAt` also accepted `mayReverseAt`, so a train could be turned at a plain
+        // copy the door does not ask about WITHOUT being stopped first - DIR-A1 arrived at from the
+        // other side, while the comment above the stop claimed the two asked the same question.
+        //
+        // Pinned as the CALL rather than as the condition, which is the point of extracting it: an
+        // inline condition can drift from the gate one character at a time and nothing notices.
+        assertTrue(flat.contains("public boolean stopsToDecideAt(Point current, ReversalPolicy "
+            + "reversals)"),
+            "the shared stop predicate has gone, so the stop and the gate are two expressions again "
+            + "(CONF-A2)");
+
+        // Autonomy stays narrow inside it: `mayReverseAt` is square-wide, so admitting it here is what
+        // made autonomy brake and re-accelerate at plain copies it used to pass (SPEC-A2, REG6-B3).
+        assertTrue(flat.contains("public boolean stopsToDecideAt(Point current, ReversalPolicy "
+            + "reversals) { if (current == null) return false; if (reversals == null || reversals == "
+            + "ALWAYS_REVERSE) return current.isReversing();"),
+            "the stop predicate no longer answers autonomy with isReversing() alone, so autonomy is "
+            + "braking at plain copies of split squares again (SPEC-A2, REG6-B3)");
+
+        // AND A COMPULSORY TURN NEVER REACHES A POLICY (CONF-A1).
+        //
+        // Removing REG6-A1's prompt left the OUTCOME behind: the rule fell through to shouldReverse,
+        // which for a manual policy answers "keep direction", so the turn was skipped unconditionally
+        // and the hazard went from "if the operator presses the default" to "always".
+        //
+        // The door is asked because it is the only thing that can tell a compulsory turn from a
+        // may-reverse one: `asksAbout` comes from mayTurnTiles(), which is the reversible squares
+        // MINUS the compulsory ones.  Inferring it from the graph is right about a split square and
+        // wrong about every square with one copy, which is all of Adam's.
+        assertTrue(flat.contains(
+            "if (current.isReversing() && !reversals.asksAbout(current)) return true;"),
+            "a compulsory turn can now reach a reversal policy, which answers \"keep direction\" - so "
+            + "the train is driven forward off a turning copy whose only edges leave by the side it "
+            + "came in at (CONF-A1)");
 
         // AND IT LEAVES AT THE SPEED THIS POINT ALLOWS, not the speed the journey asked for.
         //

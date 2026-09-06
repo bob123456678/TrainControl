@@ -5184,18 +5184,72 @@ public class Layout
         //
         // **"May reverse should always prompt in manual mode."**
         //
-        // Two earlier attempts looked for the answer in this class and could not find it.  `reversing`
-        // is emitted for a MUST-reverse square and for a turning COPY; `canReverse` is not emitted at
-        // all.  So on a square that cannot be split - which is where Adam met this - the operator's
-        // instruction leaves no trace the runtime can read, and no rule here can ever fire.
+        // A COMPULSORY TURN TURNS, in every mode (CONF-A1).
         //
-        // `asksAbout` is the door's answer to that, taken from the setup, and `mayReverseAt` remains
-        // the runtime's own half for the split squares it CAN see.
+        // Removing the question at compulsory turns left the OUTCOME behind, and that was worse than
+        // the defect it repaired.  `REG6-A1` was that the operator got asked about a square the
+        // railway turns every train at, and would derail a train by pressing the default; the repair
+        // stopped the asking - and then this rule fell through to `shouldReverse`, which for a manual
+        // policy answers "keep direction".  So the turn was not merely defaulted away, it was skipped
+        // unconditionally, and the hazard went from "if the operator presses the default" to
+        // "always".  `fix-for-a-defect-can-be-worse` in one commit.
+        //
+        // A copy of a COMPULSORY turn leaves only by the side the train arrived from, so not turning
+        // is not an available outcome - it drives the train forward off its reserved path.  There is
+        // nothing for anybody to have an opinion about, which is why it must not reach a policy.
+        //
+        // `current.isReversing()` alone is NOT that test, and asserting it here failed three of Adam's
+        // rules within the minute.  A may-reverse square that the build DID split also has a turning
+        // copy, and reaching it is a real question: "the reason for such a turn lives in the leg after
+        // this one, so nothing in the path can decide it and the operator is asked".
+        //
+        // Nor can the two be told apart from the graph.  An attempt to infer it - are all the copies
+        // sharing this block reversing? - is right about a split square and wrong about a square with
+        // one copy, which is most of them, and every square on Adam's railway.
+        //
+        // **So the DOOR is asked, because the door is the only thing that knows.**  `asksAbout` comes
+        // from `mayTurnTiles()`, which is the reversible squares MINUS the compulsory ones - the
+        // distinction stated where it is actually recorded.  A reversing copy the door does not ask
+        // about is therefore a compulsory turn, and turning is not a preference about it.
+        if (current.isReversing() && !reversals.asksAbout(current)) return true;
+
+        // `mayReverseAt` stays beside `asksAbout`, and removing it broke two more rules.  It is the
+        // runtime's own coverage of the plain copy of a split square, and it is what a policy that
+        // does not override `asksAbout` relies on - the default answers `isReversing()`, which is
+        // false at exactly that copy.  Only the DOOR's policy can answer from the setup.
         if (!mayReverseAt(current) && !reversals.asksAbout(current)) return false;
 
         return reversals.shouldReverse(loc, current);
     }
 
+    /**
+     * Whether a train must be brought to a stand here so that the reversal question can be settled.
+     *
+     * **One predicate, because the gate and the stop are one question (CONF-A2).**  They were written
+     * as two expressions that were meant to agree, and they did not: the stop asked `asksAbout` alone
+     * while `shouldReverseAt` also accepted `mayReverseAt`, so a train could be turned at a plain copy
+     * the door does not ask about WITHOUT being stopped first - which is DIR-A1 again, arrived at from
+     * the other side.  `guard-and-affordance-same-question`: where this application has asked one
+     * question in two places, the answers have differed.
+     *
+     * Autonomy is deliberately narrower.  It reaches this through `ALWAYS_REVERSE`, whose gate is
+     * `current.isReversing()` and nothing else, so its stop is that too - and `mayReverseAt` must not
+     * appear in it.  Blocks are per-square, so `mayReverseAt` is true at the plain copy as well, and
+     * putting it here is what made autonomy brake and re-accelerate at copies it used to pass at line
+     * speed (SPEC-A2, REG6-B3).
+     *
+     * @param current where the train is
+     * @param reversals the policy in force, or null for autonomy
+     * @return whether to stop
+     */
+    public boolean stopsToDecideAt(Point current, ReversalPolicy reversals)
+    {
+        if (current == null) return false;
+
+        if (reversals == null || reversals == ALWAYS_REVERSE) return current.isReversing();
+
+        return current.isReversing() || mayReverseAt(current) || reversals.asksAbout(current);
+    }
     /**
      * Whether trains may turn round at this piece of track, on any of its copies.
      *
@@ -5831,9 +5885,7 @@ public class Layout
                 // operator half is the second clause, and it is asked of the DOOR - which is the only
                 // thing that knows a square is may-reverse, since `canReverse` never reaches
                 // `parseAuto` at all.
-                if (isCurrentLayout() && (current.isReversing()
-                    || (reversals != null && reversals != ALWAYS_REVERSE
-                        && reversals.asksAbout(current))))
+                if (isCurrentLayout() && stopsToDecideAt(current, reversals))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
