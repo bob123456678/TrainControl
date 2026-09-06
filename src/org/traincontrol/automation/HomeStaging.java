@@ -440,6 +440,22 @@ public final class HomeStaging
             // is a through road it could stand on perfectly well, after the editor had accepted the
             // home. A terminus turns a train round as it ARRIVES, so it is only the copies that turn
             // that this locomotive cannot use.
+            // THE INACTIVE START IS REFUSED HERE, AND THAT IS DELIBERATE (SPEC-B3).
+            //
+            // A hand-driven send allows one: Adam's rule is that "inactive really means nothing can
+            // pass", with the square a train is ALREADY standing on exempted, because switching a
+            // square off around a train is how you take it out of service and then drive it off by
+            // hand.  Return Home does not get that exemption.
+            //
+            // Asked and answered, 2026-09-06: **deliberate.**  The exemption exists for a person who
+            // has looked at the railway and decided to move that train now; Return Home is a plan
+            // made for every staged locomotive at once, and a square switched off is a square its
+            // author has said to leave alone.  Quietly driving out of one because a plan wanted the
+            // platform is the opposite of what turning it off meant.
+            //
+            // So this is the one surviving difference between Return Home and a manual send, and the
+            // Path Type tooltip does not mention it: that control is about where a train may be SENT,
+            // and this is about where a run may BEGIN.
             if (!locationOf(this.start, l).isActive()
                 || !locationOf(this.start, l).isDestination()
                 || !canGetHome(l, locationOf(this.start, l), home)) unreachable.add(l);

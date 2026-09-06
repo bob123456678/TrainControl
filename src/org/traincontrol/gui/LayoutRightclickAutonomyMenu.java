@@ -1022,6 +1022,24 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             try
             {
+                // THE POWER FIRST, THEN THE QUESTION (SPEC-C4).
+                //
+                // These were the other way round, so the operator was asked which way the train
+                // should face and only then told the track is dead.  A question about a journey that
+                // is already going to be refused is worse than a slow refusal: it reads as though the
+                // answer was taken and acted on.  Its sibling in the Locomotive commands tab checked
+                // first and this one did not - `guard-and-affordance-same-question` again, one door of
+                // two.
+                //
+                // Cheap and non-blocking, so it belongs on the event thread beside the dialog rather
+                // than inside the worker.
+                if (!ui.getModel().getPowerState())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+
+                    return;
+                }
+
                 // ASKED HERE, ON THE EVENT THREAD, BEFORE ANYTHING IS DISPATCHED (Adam,
                 // 2026-09-06): "make it be on departure itself, that way there is no dispatch prior
                 // to user input."
@@ -1035,12 +1053,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // TODO there is commonality with AutoLocomotiveStatus - reuse code
                 new Thread(() ->
                 {
-                    if (!ui.getModel().getPowerState())
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this, I18n.t("autolayout.ui.powerOnToStart")));
-                    }
-                    else
                     {
                         boolean success = ui.getModel().getAutoLayout().executePath(
                             path, locomotive, locomotive.getPreferredSpeed(), null,

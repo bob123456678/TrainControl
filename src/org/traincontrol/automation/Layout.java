@@ -2338,7 +2338,7 @@ public class Layout
                 loc,
                 path,
                 logFailures,
-                I18n.f("autolayout.errorInactiveStationInAutoRun", path.get(path.size() - 1).getEnd().getName())
+                I18n.f("autolayout.errorInactiveStation", path.get(path.size() - 1).getEnd().getName())
             );
             return false;
         }
@@ -5113,8 +5113,17 @@ public class Layout
          * can find one.  Adam met exactly that: he marked a square may-reverse, sent a train to it,
          * and nothing asked - twice, because the first fix looked for a flag that is never written.
          *
-         * The default is the old behaviour, so a policy that does not care answers about the same
-         * points it always did.
+         * **The default answers `at.isReversing()`, and a real door must NOT inherit it (CONF-C1).**
+         * It is the pre-policy behaviour, kept so that autonomy and the four-argument overload answer
+         * about the same points they always did - and it is the exact expression that was removed from
+         * `ManualReversalPrompt` as `REG6-A1`, because `reversing` is true for every copy of a
+         * COMPULSORY turn as well as for a may-reverse one.  A policy that inherits it therefore
+         * offers the operator a question about a turn the railway has no choice about, and "keep
+         * direction" then drives the train forward off a copy whose only edges leave by the side it
+         * came in at.
+         *
+         * Anything built from the setup must override this.  `mayTurnTiles()` is the reversible
+         * squares minus the compulsory ones, and it is the only place that distinction is recorded.
          *
          * @param at the point
          * @return whether the operator has a say about turning here

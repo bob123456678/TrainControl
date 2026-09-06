@@ -369,7 +369,13 @@ public class testNonReversibleTrains
             "src/org/traincontrol/automation/Layout.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertFalse(layout.contains("ManualReversalPrompt"),
+        // COMMENTS STRIPPED FIRST.  This read the whole file and failed on a javadoc that names
+        // `ManualReversalPrompt` while explaining why the automation layer must not call it - a guard
+        // that cannot tell an explanation from an instruction reports on prose rather than on the
+        // program, and this is the third one in this repository to do it.
+        String code = layout.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+
+        assertFalse(code.contains("ManualReversalPrompt"),
             "the automation layer now reaches into the window for a dialog, so an unattended run can "
             + "block on one");
     }
