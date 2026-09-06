@@ -1938,6 +1938,38 @@ public class AutonomySession
         // an AutonomyBuilder naming run, twice.  Nothing between them could have changed.
         touched();
 
+        // AND A FACING ITS LANDING CANNOT HOLD IS DROPPED (Adam, 2026-09-06).
+        //
+        // **"When pasting the train from bottommainpost to bottommainb, its direction in the dropdown
+        // was wrong."**
+        //
+        // A cut is a move and its setup follows the track, which is right for a station's name, its
+        // length, its home.  A FACING is different: it is a compass side, and it means something only
+        // against the geometry of the square it sits on.  Carried to a square whose track runs another
+        // way it is not stale - it is meaningless, and the dropdown showed it as though somebody had
+        // chosen it.
+        //
+        // AFTER `touched()`, because the answer depends on the rebuilt graph: `facingChoices` asks the
+        // reduction what the landing can hold, and before the rebuild that is still the old one.
+        //
+        // Dropped rather than translated.  Turning "north at the old square" into a side at the new
+        // one needs to know how the operator meant the model to sit on the rails, which only they can
+        // say - and the menu asks exactly that, once the value stops claiming to be an answer already
+        // given.
+        if (moves != null)
+        {
+            for (TileKey landing : moves.values())
+            {
+                if (landing == null) continue;
+
+                Side carried = getFacing(landing);
+
+                if (carried == null || facingChoices(landing).contains(carried)) continue;
+
+                setFacing(landing, null);
+            }
+        }
+
         return true;
     }
 

@@ -2830,7 +2830,21 @@ public class AutonomyEditorPanel extends JPanel
         // resolves both.
         if (recorded != null && !facings.contains(recorded)) facings.add(recorded);
 
-        if (facings.size() <= 1) return null;
+        // SHOWN EVEN WITH ONE ANSWER, so the menu explains itself instead of vanishing
+        // (Adam, 2026-09-06).
+        //
+        // **"I also can't manually change 75 407 DB's direction when at bottommainpost."**
+        //
+        // The menu returned null below two choices, so on a square holding one facing the question
+        // was simply not there - and "no menu" reads as a fault rather than as an answer.
+        //
+        // It IS an answer, and not one this menu may override: a facing has to be one the BUILD can
+        // hold, because `placementCopy` matches it against the copies the split made and anything else
+        // falls through to the first copy and quietly turns the train round.  Offering a second facing
+        // where the railway holds one would be `facingsThatCannotBeHeld` manufactured on purpose.
+        //
+        // So the one facing is shown, ticked, with a line saying why there is nothing to choose.
+        if (facings.isEmpty()) return null;
 
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
@@ -2848,6 +2862,17 @@ public class AutonomyEditorPanel extends JPanel
                 // answers gets it. OB-039 fixed it here, on the one radio that had been reported, and
                 // left the station and turning radios beside it still telling nobody.
                 () -> session.setFacing(target, facing)));
+        }
+
+        if (facings.size() == 1)
+        {
+            javax.swing.JMenuItem only = new javax.swing.JMenuItem(
+                I18n.t("autosetup.ui.facingOnlyOne"));
+
+            only.setEnabled(false);
+            only.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacingOnlyOne")));
+
+            facingMenu.add(only);
         }
 
         return facingMenu;

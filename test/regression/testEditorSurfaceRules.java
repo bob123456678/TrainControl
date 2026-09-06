@@ -57,6 +57,41 @@ public class testEditorSurfaceRules
         new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
 
     /**
+     * The facing menu appears even when the square holds one facing (Adam, 2026-09-06).
+     *
+     * **"I also can't manually change 75 407 DB's direction when at bottommainpost."**
+     *
+     * `buildFacingMenu` returned null below two choices, so on a square holding one facing the
+     * question was simply absent - and "no menu" reads as a fault rather than as an answer.
+     *
+     * **It is an answer, and not one the menu may override.** A facing has to be one the BUILD can
+     * hold: `placementCopy` matches it against the copies the split made, and anything else falls
+     * through to the first copy and quietly turns the train round. Offering a second facing where the
+     * railway holds one would be `facingsThatCannotBeHeld` manufactured on purpose - so the menu shows
+     * the one facing, ticked, and a disabled line saying why there is nothing to choose.
+     *
+     * Checked as the gate rather than by opening the menu, which needs a window and a session.
+     */
+    @Test
+    public void testTheFacingMenuAppearsWithASingleChoice() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+        assertFalse(source.contains("if (facings.size() <= 1) return null;"),
+            "the facing menu still vanishes when a square holds one facing, so the operator is given "
+            + "no answer at all rather than the answer that there is nothing to choose");
+
+        assertTrue(source.contains("if (facings.isEmpty()) return null;"),
+            "the menu no longer refuses a square with NO facing, which is a menu with nothing in it");
+
+        assertTrue(source.contains("if (facings.size() == 1)")
+                && source.contains("autosetup.ui.facingOnlyOne"),
+            "the single-choice case has no line explaining itself, so the menu shows one radio and "
+            + "no reason - which is the same silence in a different shape");
+    }
+    /**
      * Every door that gives a locomotive a name asks whether the name is usable (MT-270).
      *
      * Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So, make sure this
