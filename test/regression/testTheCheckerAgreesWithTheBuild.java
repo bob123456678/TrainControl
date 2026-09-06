@@ -680,6 +680,17 @@ public class testTheCheckerAgreesWithTheBuild
 
             for (Edge edge : built.getNeighbors(point))
             {
+                // AND THE CLOSURES, so both sides answer one question (Adam, 2026-09-06).
+                //
+                // This walk is pure topology and the checker's no longer is: *"inactive really means
+                // nothing can pass"*, so `reachableTiles` refuses a closed square and `isPathClear`
+                // refuses it as a destination at every door.  Left as raw neighbours, this helper
+                // became the third walk of the same railway with its own rules - which is the exact
+                // shape the test it serves exists to catch.
+                TileKey beyond = index().squareOf(edge.getEnd().getName());
+
+                if (beyond != null && session.shutTiles().contains(beyond)) continue;
+
                 if (seen.add(edge.getEnd().getName())) queue.add(edge.getEnd());
             }
         }

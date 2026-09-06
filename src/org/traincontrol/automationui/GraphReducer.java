@@ -614,6 +614,11 @@ public class GraphReducer
                 //
                 // The search continues through this square below either way; what is refused is
                 // stopping here by this side.
+                // NOT A DESTINATION EITHER (Adam, 2026-09-06): "inactive really means nothing can
+                // pass".  Asked before the arrival test, not after it - after, the square is accepted
+                // as the destination and the search returns before the closure is ever consulted.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
+
                 if (edge.getEnd().equals(to)
                     && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
@@ -626,13 +631,6 @@ public class GraphReducer
 
                     return path;
                 }
-
-                // REACHED BUT NOT WALKED THROUGH, exactly as reachableTiles has it (DIR-B1).
-                //
-                // The arrival test above has already run, so a closed square is still a destination -
-                // which is what `isPathClear` allows, and how a route to a berth that has been parked
-                // up is picked.  What is refused is going ONWARD from it.
-                if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 frontier.add(next);
             }
@@ -794,25 +792,23 @@ public class GraphReducer
                 // more restricted railway than the one that exists: a station whose only route ran
                 // through a barred side was reported as reaching nothing, and Adam acts on those
                 // warnings by editing his diagram.
+                // NEITHER REACHED NOR ENTERED (Adam, 2026-09-06).
+                //
+                // **"Inactive really means nothing can pass."**  An earlier version of this let a
+                // closed square be a DESTINATION, on the strength of `isPathClear` refusing it only
+                // as an intermediate - and that fence has been taken off the destination rule, so the
+                // walk follows.
+                //
+                // The START is still exempt, and needs no clause: `from` is seeded before this loop
+                // and never tested here.  That is the one case Adam kept - a train standing on a
+                // square that has been switched off is driven out by hand.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
+
                 if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     reached.add(edge.getEnd());
                 }
 
-                // REACHED BUT NOT WALKED THROUGH, which is exactly what a closure is (V31-C3).
-                //
-                // `Layout.isPathClear` refuses a closed square as an INTERMEDIATE and says why it does
-                // not refuse it at either end: *"a manually chosen route may still START from a
-                // deactivated point, which is how a train held in place is driven out by hand, and may
-                // still FINISH on one, which is how a route to a parked-up berth is picked.  Passage is
-                // the absolute case."*
-                //
-                // The first version of this dropped the square entirely - not reached, not entered -
-                // and that made the checker disagree with the built graph about ten stations on Adam's
-                // railway, which `testTheCheckerAgreesWithTheBuild` caught.  A destination the checker
-                // calls unreachable and the railway will happily route to is a warning nobody can act
-                // on, and it is the same fault in the other direction.
-                if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 

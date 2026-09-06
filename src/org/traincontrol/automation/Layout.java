@@ -2317,7 +2317,22 @@ public class Layout
             return false;
         }
 
-        if (!path.get(path.size() - 1).getEnd().isActive() && this.isAutoRunning())
+        // AT EVERY DOOR, not only while autonomy is running (Adam, 2026-09-06).
+        //
+        // **"In manual mode, inactive endpoints and intermediates should be refused as well.  Just not
+        // inactive start points.  Inactive really means nothing can pass."**
+        //
+        // The intermediate rule above was already unfenced and says why - a train crossing a point the
+        // operator switched off is the one place nobody chose that point at all.  The DESTINATION was
+        // fenced behind `isAutoRunning`, so a hand-driven send could finish on a closed square while a
+        // Return Home run could not, and the cross drawn on that square meant two different things
+        // depending on who asked.
+        //
+        // THE START STAYS EXEMPT, which is the whole of the exception: a train standing on a square
+        // that has been switched off is driven out by hand, and that is what closing a square around a
+        // train is for.  `:2243`'s stricter form - any edge with an inactive endpoint - keeps its
+        // `isAutoRunning` fence, because it refuses the start too.
+        if (!path.get(path.size() - 1).getEnd().isActive())
         {
             logPathError(
                 loc,

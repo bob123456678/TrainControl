@@ -100,14 +100,23 @@ public class testAutonomyDiagramReducer
             + "it offers a route the runtime refuses - and the findings panel beside it says the "
             + "opposite (DIR-B1)");
 
-        // AND THE CLOSED SQUARE IS STILL A DESTINATION IN BOTH, which is what the runtime allows: a
-        // route may finish on one, it may just not pass through.
-        assertTrue(reducer.reachableTiles(a, none, none, noBars, closed).contains(b),
-            "a closed square stopped being reachable AS a destination");
+        // AND IT IS NOT A DESTINATION IN EITHER (Adam, 2026-09-06).
+        //
+        // Both assertions said the opposite until his ruling: *"inactive really means nothing can
+        // pass."*  `isPathClear` lost the `isAutoRunning` fence on its destination rule at the same
+        // time, so a closed square the walks offered would be a destination the railway refuses.
+        assertFalse(reducer.reachableTiles(a, none, none, noBars, closed).contains(b),
+            "a closed square is still reachable AS a destination, so the findings offer somewhere the "
+            + "runtime will refuse");
 
-        assertNotNull(reducer.findPath(a, b, none, none, noBars, closed),
-            "a closed square stopped being routable AS a destination, so a route to a berth that has "
-            + "been parked up cannot be picked");
+        assertNull(reducer.findPath(a, b, none, none, noBars, closed),
+            "the editor's path test still routes to a closed square");
+
+        // THE START IS THE EXCEPTION, and it is the whole of the exception: a train standing on a
+        // square that has been switched off is driven out by hand.
+        assertTrue(reducer.reachableTiles(b, none, none, noBars, closed).contains(c),
+            "a train standing on a closed square can no longer be driven off it, which is the one "
+            + "case Adam kept: closing a square around a train is how it is held in place");
     }
     /**
      * A red arrow stops a train LANDING, not passing through (corrected 2026-08-28).

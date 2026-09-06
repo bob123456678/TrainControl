@@ -957,6 +957,96 @@ public class testAutoLayout
             + "was about");
     }
     /**
+     * A square switched out of service refuses trains at every door but its own (Adam, 2026-09-06).
+     *
+     * **"In manual mode, inactive endpoints and intermediates should be refused as well.  Just not
+     * inactive start points.  Inactive really means nothing can pass."**
+     *
+     * The intermediate rule was already unfenced and says why - a train crossing a point the operator
+     * switched off is the one place nobody chose that point at all. The DESTINATION rule was fenced
+     * behind `isAutoRunning`, so a hand-driven send could finish on a closed square while a Return
+     * Home run could not, and the cross on that square meant two different things depending on who
+     * asked.
+     *
+     * **The start stays exempt, and that is the whole exception:** a train standing on a square that
+     * has been switched off is driven out by hand, which is what closing a square around a train is
+     * for.
+     *
+     * **This test exists because the change had none.** Re-fencing the rule behind `isAutoRunning`
+     * broke nothing across four classes and 242 tests - the walks were covered and the runtime rule,
+     * which is the one that actually stops a train, was not.
+     *
+     * MUTATION: put `&& this.isAutoRunning()` back on the destination rule and the second assertion
+     * fails; refuse the start too and the third does.
+     */
+    @Test
+    public void testAClosedSquareRefusesTrainsExceptAsAStart() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback one = model.newFeedback(220, null);
+        MarklinFeedback two = model.newFeedback(221, null);
+        MarklinFeedback three = model.newFeedback(222, null);
+
+        for (MarklinFeedback sensor : new MarklinFeedback[] {one, two, three})
+        {
+            model.setFeedbackState(sensor.getName(), false);
+        }
+
+        layout.createPoint("SHUT_A", true, one.getName());
+        layout.createPoint("SHUT_B", true, two.getName());
+        layout.createPoint("SHUT_C", true, three.getName());
+
+        layout.createEdge("SHUT_A", "SHUT_B");
+        layout.createEdge("SHUT_B", "SHUT_C");
+
+        MarklinLocomotive train = model.getLocByName(model.getLocList().get(0));
+
+        java.util.List<Edge> toB = new java.util.ArrayList<>();
+        toB.add(layout.getEdge("SHUT_A", "SHUT_B"));
+
+        java.util.List<Edge> toC = new java.util.ArrayList<>();
+        toC.add(layout.getEdge("SHUT_A", "SHUT_B"));
+        toC.add(layout.getEdge("SHUT_B", "SHUT_C"));
+
+        layout.getPoint("SHUT_A").setLocomotive(train);
+
+        // NOT running: this is the manual tier, which is exactly what the ruling is about.
+        assertFalse(layout.isAutoRunning(),
+            "precondition: autonomy must NOT be running, or every rule below is the autonomy one and "
+            + "the test says nothing about the manual tier");
+
+        // THE CONTROL: with everything in service the path is clear, so a refusal below is about the
+        // closure and not about a fixture that never worked.
+        assertTrue(layout.isPathClear(toC, train, false),
+            "control: the path must be clear with every square in service, or nothing below is "
+            + "measuring what closing one does");
+
+        layout.getPoint("SHUT_C").setActive(false);
+
+        assertFalse(layout.isPathClear(toC, train, false),
+            "a hand-driven send was allowed to FINISH on a square switched out of service.  Inactive "
+            + "means nothing can pass, and the destination rule was fenced behind isAutoRunning so "
+            + "the same square refused a Return Home run and accepted this one");
+
+        layout.getPoint("SHUT_C").setActive(true);
+        layout.getPoint("SHUT_B").setActive(false);
+
+        assertFalse(layout.isPathClear(toC, train, false),
+            "a hand-driven send was allowed to pass THROUGH a square switched out of service");
+
+        // AND THE START, which is the one case Adam kept.
+        layout.getPoint("SHUT_B").setActive(true);
+        layout.getPoint("SHUT_A").setActive(false);
+
+        assertTrue(layout.isPathClear(toB, train, false),
+            "a train standing on a square that has been switched off can no longer be driven off it.  "
+            + "That is how a train is held in place, and it is the whole of the exception: \"just not "
+            + "inactive start points\"");
+
+        layout.getPoint("SHUT_A").setActive(true);
+    }
+    /**
      * One signal protecting TWO platforms stays red while either of them is claimed (RG5-C1).
      *
      * **Adam's repair depends on exactly this.** His 2.8.1 file reds Signals 63 and 64 on the edge
