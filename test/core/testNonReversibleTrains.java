@@ -351,7 +351,12 @@ public class testNonReversibleTrains
 
             // Either door may hand over the shared policy or call the prompt itself; what the census
             // refuses is a door that hands over neither.
-            assertTrue(source.contains("ManualReversalPrompt.forOperator(")
+            // Any of the three shapes counts as handing over a prompt.  `forJourney` is the one both
+            // doors use since Adam asked for the question to be put BEFORE dispatch rather than from
+            // inside the run: "make it be on departure itself, that way there is no dispatch prior to
+            // user input."
+            assertTrue(source.contains("ManualReversalPrompt.forJourney(")
+                    || source.contains("ManualReversalPrompt.forOperator(")
                     || source.contains("ManualReversalPrompt.ask("),
                 door[1] + " (" + door[0] + ") dispatches trains without handing executePath a "
                 + "prompt, so a may-reverse point on that route turns the train with nobody asked");

@@ -1042,6 +1042,16 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             try
             {
+                // ASKED HERE, ON THE EVENT THREAD, BEFORE ANYTHING IS DISPATCHED (Adam,
+                // 2026-09-06): "make it be on departure itself, that way there is no dispatch prior
+                // to user input."
+                //
+                // The train is standing where the operator left it, so there is nothing to stop and
+                // nothing already reserved.  The answer is then carried into the run.
+                final org.traincontrol.automation.Layout.ReversalPolicy answered =
+                    org.traincontrol.gui.ManualReversalPrompt.forJourney(session,
+                        javax.swing.SwingUtilities.getWindowAncestor(this), path, locomotive);
+
                 // TODO there is commonality with AutoLocomotiveStatus - reuse code
                 new Thread(() ->
                 {
@@ -1063,7 +1073,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // back into a berth next time, or may simply be passing - so nothing here can
                         // work it out.  A true terminus is not asked about: the train has run out of
                         // track and the policy is never consulted there.
-                        reversalPolicy());
+                        answered);
 
                         if (!success)
                         {

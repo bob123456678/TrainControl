@@ -37,6 +37,102 @@ public final class ManualReversalPrompt
     }
 
     /**
+     * Asks about the whole journey BEFORE it starts, and answers for every point on it.
+     *
+     * Adam, 2026-09-06: **"I see the prompt now, but it is shown on arrival... make it be on
+     * departure itself, that way there is no dispatch prior to user input."**
+     *
+     * **The question was right and its moment was wrong.**  Asked from inside the run, the train has
+     * already been dispatched, already reserved its path and already travelled - and `DIR-A1` had to
+     * stop it mid-journey so the dialog was not answered by somebody watching a moving train.  Asked
+     * before departure there is nothing to stop: the train is standing where the operator left it, and
+     * the answer is carried into the run.
+     *
+     * **Once for the journey, not once per point.**  A path may pass several squares trains may turn
+     * at; being asked at each is unusable, and would let one journey end up half in each state.  The
+     * answer given at departure is the answer everywhere on that path - which is also what makes it
+     * answerable, since the operator is choosing what this MOVE is for.
+     *
+     * Nothing is asked when the path reaches no such square, so an ordinary send is unchanged.
+     *
+     * @param session the setup, which knows what the operator marked
+     * @param parent what to centre the dialog on
+     * @param path the journey about to be run
+     * @param loc the train
+     * @return the policy to hand to executePath
+     */
+    public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(
+        final org.traincontrol.automationui.AutonomySession session, final Component parent,
+        final java.util.List<org.traincontrol.automation.Edge> path, final Locomotive loc)
+    {
+        final org.traincontrol.automation.Layout.ReversalPolicy asking = forOperator(session, parent);
+
+        Point first = null;
+
+        if (path != null)
+        {
+            for (org.traincontrol.automation.Edge edge : path)
+            {
+                if (edge == null || edge.getEnd() == null) continue;
+
+                // A TERMINUS IS NOT ASKED ABOUT, here as inside the run: the train has run out of
+                // track and the turn is how it gets there at all.
+                if (edge.getEnd().isTerminus()) continue;
+
+                if (asking.asksAbout(edge.getEnd()))
+                {
+                    first = edge.getEnd();
+
+                    break;
+                }
+            }
+        }
+
+        // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.
+        if (first == null) return KEEP_DIRECTION;
+
+        final boolean turn = ask(parent, loc, first);
+
+        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return turn;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                // The same squares, so the run still STOPS at them - a train that is about to be
+                // turned has to be standing still whether or not anybody is asked at that moment.
+                return asking.asksAbout(at);
+            }
+        };
+    }
+
+    /**
+     * The answer for a journey that passes nothing anybody would be asked about.
+     *
+     * Keeps the direction and asks about nothing, so an ordinary send neither stops nor prompts.
+     */
+    public static final org.traincontrol.automation.Layout.ReversalPolicy KEEP_DIRECTION =
+        new org.traincontrol.automation.Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive loc, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return false;
+            }
+        };
+
+    /**
      * The policy both hand-driven doors hand to `executePath`.
      *
      * **`asksAbout` is answered from the SETUP, because the runtime cannot answer it.**  The

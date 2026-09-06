@@ -1035,15 +1035,21 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                     final List<Edge> chosen = this.paths.get(index);
 
+                    // ASKED HERE, ON THE EVENT THREAD, BEFORE THE THREAD BELOW STARTS (Adam,
+                    // 2026-09-06): "make it be on departure itself, that way there is no dispatch
+                    // prior to user input."
+                    //
+                    // Both hand-driven doors ask, and both ask now rather than from inside the run.
+                    final org.traincontrol.automation.Layout.ReversalPolicy answered =
+                        org.traincontrol.gui.ManualReversalPrompt.forJourney(
+                            this.parent == null ? null : this.parent.getAutonomySession(),
+                            this, chosen, locomotive);
+
                     new Thread(() ->
                     {
-
-                        // ASKED HERE TOO (Adam, 2026-09-06): "make sure this gets asked both in the
-                        // locomotive commands tab, and when fired from the track."
                         boolean success = this.layout.executePath(chosen, locomotive,
                             locomotive.getPreferredSpeed(), null,
-                            org.traincontrol.gui.ManualReversalPrompt.forOperator(
-                                this.parent == null ? null : this.parent.getAutonomySession(), this));
+                            answered);
 
                         if (!success)
                         {
