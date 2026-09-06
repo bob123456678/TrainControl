@@ -285,7 +285,7 @@ branch, which toggles a sensor rather than an accessory: not a fourth door.
 
 ### V31-C3 — the editor's checks are blind to `active`, and `D24-B5` gave that teeth
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `AutonomyChecks` contains no reference to `active` at all.
+**Disposition: fixed 2026-09-05** - Adam: *"we just need to show how inactive points would affect the routes."*  `reachableTiles` gained a `closed` set that stops the walk, and the session hands it `shutTiles()`, so a station cut off by a closure now raises the unreachable finding that already existed - no new check.  **The first attempt was wrong and the test caught it**: barring every side of a closed square looked equivalent and is not, because a barred side is passed THROUGH and merely not stopped at (`OB-120`).  The rule-only test passed with the call site reverted; only asking the findings caught either fault.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

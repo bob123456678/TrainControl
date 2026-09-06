@@ -276,6 +276,7 @@ public class AutonomyChecks
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> closed,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
@@ -310,11 +311,11 @@ public class AutonomyChecks
         findings.addAll(checkNames(reducer));
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
 
-        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred,
+        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred, closed,
             notAutoDestinations));
         findings.addAll(checkTrappedArrivals(reducer, trapped));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
-        findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred));
+        findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred, closed));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
@@ -449,7 +450,7 @@ public class AutonomyChecks
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
         Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
-        Set<TileKey> notAutoDestinations)
+        Set<TileKey> closed, Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -507,7 +508,7 @@ public class AutonomyChecks
             //
             // This asked the barred-less form, so the findings saw runs no train can take: bars only
             // ever remove them, and a station reachable ONLY by a barred side counted as reachable.
-            Set<TileKey> reachable = reducer.reachableTiles(tile, mayTurn, mustTurn, barred);
+            Set<TileKey> reachable = reducer.reachableTiles(tile, mayTurn, mustTurn, barred, closed);
 
             boolean reachesAStation = false;
 
@@ -1044,7 +1045,8 @@ public class AutonomyChecks
     }
 
     private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred)
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> closed)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -1089,7 +1091,7 @@ public class AutonomyChecks
         {
             reach.put(station.getTile(),
                 // WITH the red arrows, which is what the comment above has always claimed (OB-120).
-                reducer.reachableTiles(station.getTile(), mayTurn, mustTurn, barred));
+                reducer.reachableTiles(station.getTile(), mayTurn, mustTurn, barred, closed));
         }
 
         for (ReducedPoint station : stations)

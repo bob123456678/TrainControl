@@ -5727,6 +5727,76 @@ public class testAutonomyDiagramSession
             + "choice was made on their behalf");
     }
     /**
+     * And the CHECKS are actually given it, which is a separate question (V31-C3).
+     *
+     * **The first attempt at this was a test of the rule, and it could not fail.** It pinned a helper
+     * that barred every side of a closed square, and reverting the call site left it green -
+     * extracting a rule moves the defect to the call. Worse, the rule itself was wrong: a barred
+     * side is passed THROUGH and merely not stopped at (OB-120), so the walk went straight on and
+     * the station beyond stayed reachable. Only asking the findings caught either.
+     *
+     * So this asks the question Adam actually asked - *"show how inactive points would affect the
+     * routes"* - of the findings themselves: close the middle of a run and the station beyond it
+     * becomes unreachable.
+     *
+     * MUTATION: hand `barredArrivals()` to `AutonomyChecks.run` again and the second assertion fails.
+     */
+    @Test
+    public void testClosingASquareCutsOffWhatIsBeyondIt() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+
+        session.getStore().createConfiguration("CutOff", null);
+        session.getStore().setActiveConfiguration("CutOff");
+
+        final TileKey near = new TileKey("main", 1, 1);
+        final TileKey middle = new TileKey("main", 4, 1);
+        final TileKey far = new TileKey("main", 7, 1);
+
+        session.setStation(near, true);
+        session.setStation(far, true);
+
+        session.rebuild();
+
+        // THE CONTROL: with everything in service the far station is reachable, so the assertion
+        // below cannot be satisfied by a railway that was broken to begin with.
+        assertFalse(unreachable(session.check()).contains(far),
+            "control: the far station is already unreachable with every square in service, so this "
+            + "fixture cannot show what closing one does.  Findings: " + session.check());
+
+        session.setPointProperty(middle, "active", Boolean.FALSE);
+
+        session.rebuild();
+
+        assertTrue(unreachable(session.check()).contains(far),
+            "the middle of the run was switched out of service and the station beyond it is still "
+            + "reported as reachable.  The runtime blocks every path through a closed square - "
+            + "manual routes included - and the cross on the diagram says so, but the checks walked "
+            + "straight through it (V31-C3).  Findings: " + session.check());
+    }
+
+    /**
+     * The squares the findings say nothing can reach.
+     *
+     * @param findings what check() returned
+     * @return the tiles carrying an unreachable-station finding
+     */
+    private static java.util.Set<TileKey> unreachable(
+        java.util.List<org.traincontrol.automationui.AutonomyChecks.Finding> findings)
+    {
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding f : findings)
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.STATION_UNREACHABLE.equals(f.getMessageKey()))
+            {
+                out.add(f.getTile());
+            }
+        }
+
+        return out;
+    }
+    /**
      * The import NAMES the signals it will no longer drive, rather than counting them (RG4-B1).
      *
      * **An aggregate that cannot say the thing the operator needs.** A legacy file's edge commands

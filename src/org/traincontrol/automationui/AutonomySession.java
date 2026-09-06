@@ -2745,6 +2745,52 @@ public class AutonomySession
     }
 
     /**
+     * Every square switched out of service (V31-C3).
+     *
+     * The same question `pointBadges` asks one square at a time - `Boolean.FALSE.equals` of the
+     * `active` property - asked of the whole configuration. `FALSE.equals` rather than a negation
+     * because the property is absent on almost every square, and absent means in service.
+     *
+     * @return the closed squares, empty when none is
+     */
+    public java.util.Set<TileKey> shutTiles()
+    {
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        // THE CONFIGURATION'S OWN POINTS, which is where the property lives.
+        //
+        // The first version of this walked `store.getNamedTiles()` - the squares given a NAME - and a
+        // square can carry point properties without one, so it found nothing on a fixture that had
+        // switched a square off.  `getPointProperty` reads `points` in the active configuration, and
+        // this has to read the same map or the two disagree about what a point is.
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return out;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String id : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(id);
+
+            if (point == null || !point.has("active")) continue;
+
+            // FALSE.equals rather than a negation: absent means in service, and so does a value that
+            // is not a boolean at all.
+            if (!Boolean.FALSE.equals(point.opt("active"))) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(id);
+
+            if (tile != null) out.add(tile);
+        }
+
+        return out;
+    }
+    /**
      * Which ACCESSORIES protect each station, by name.
      *
      * The store pairs squares, because a square survives everything; the running layout commands
@@ -3979,6 +4025,10 @@ public class AutonomySession
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
             // The red arrows, so the findings walk the railway a train can actually use (OB-120).
             barredArrivals(),
+            // And the squares switched out of service, which is a different claim: a barred side is
+            // passed through and not stopped at, a closed square is not passed through at all
+            // (V31-C3).
+            shutTiles(),
             // The two halves of the length rule (FR-046).
             placedTrainsWithoutLength(), stationsWithoutMaxLength(),
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).

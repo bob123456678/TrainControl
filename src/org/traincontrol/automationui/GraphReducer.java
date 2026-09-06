@@ -649,9 +649,40 @@ public class GraphReducer
     public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         java.util.Map<TileKey, Set<Side>> barred)
     {
+        return reachableTiles(from, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * The same, with squares that are CLOSED rather than merely barred (V31-C3).
+     *
+     * **The two are different claims and this walk already made one of them.** A barred side says
+     * "trains may pass through here but not stop", which is why the loop below reaches past it - that
+     * is `OB-120`, and it is right. A square switched out of service says "nothing may pass here" -
+     * the cross drawn on it says exactly that, and `Layout.isPathClear` enforces it for every path,
+     * manual routes included.
+     *
+     * Barring every side of a closed square does NOT express that, which is what the first attempt at
+     * this finding did: the square stopped counting as reachable and the walk went straight on through
+     * it, so the station beyond stayed reachable and the finding never fired. The test written for the
+     * rule passed; the one written for the behaviour is what caught it.
+     *
+     * @param from where the train is
+     * @param mayTurn squares where turning round is allowed
+     * @param mustTurn squares where it is compulsory
+     * @param barred arrival sides closed off - passed through, not stopped at
+     * @param closed squares nothing may enter at all
+     * @return the squares a train could be sent to
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+    {
         Set<TileKey> reached = new java.util.LinkedHashSet<>();
 
         if (from == null || !points.containsKey(from)) return reached;
+
+        // A train standing on a closed square is not a journey anybody planned, and nothing can leave
+        // it either - the closure is on the square, not on a direction.
+        if (closed != null && closed.contains(from)) return reached;
 
         // The starting Point has no arrival side - the train is already standing there, and the
         // question is whether the TRACK allows the journey onward.  Same as findPath's start state.
@@ -713,6 +744,10 @@ public class GraphReducer
                 // more restricted railway than the one that exists: a station whose only route ran
                 // through a barred side was reported as reaching nothing, and Adam acts on those
                 // warnings by editing his diagram.
+                // CLOSED IS NOT BARRED: neither reached NOR walked through (V31-C3).  See the
+                // javadoc above - the difference between the two is the whole of this finding.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
+
                 if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     reached.add(edge.getEnd());

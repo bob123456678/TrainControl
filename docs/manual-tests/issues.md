@@ -450,6 +450,15 @@ add the paused autonomy locomotive indicator (and the ability to toggle whether 
 
 If checked, "Show parked trains" should auto check "text labels" if "text labels" is unchecked.
 
+### OB-175 - 2026-09-04 - curved sensor tiles with incoming arrows
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-04 20:12  
+**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 19:13 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+curved sensor tiles going from n to e have an incoming from e arrow that overlaps with the track.  move the arrow to the lower-right corner of the tile, instead of the upper-right.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
