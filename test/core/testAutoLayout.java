@@ -1045,6 +1045,43 @@ public class testAutoLayout
             + "inactive start points\"");
 
         layout.getPoint("SHUT_A").setActive(true);
+
+        // AND THE DOOR, not only the rule.
+        //
+        // `isPathClear` is what refuses; `getPossiblePaths` is what the right-click menu and the
+        // Locomotive commands tab OFFER.  It filters through `isPathClear`, so this should follow -
+        // but "should follow" is how a rule comes to be tested while its call site is not, which has
+        // produced two defects in this tree today alone.
+        assertTrue(offers(layout, train, "SHUT_C"),
+            "control: SHUT_C must be offered with every square in service, or the assertion below "
+            + "passes on a door that offers nothing at all");
+
+        layout.getPoint("SHUT_C").setActive(false);
+
+        assertFalse(offers(layout, train, "SHUT_C"),
+            "a square switched out of service is still offered as somewhere to send a train by hand.  "
+            + "isPathClear refuses it now, so the operator is offered a destination the railway will "
+            + "refuse - which is the shape testTheCheckerAgreesWithTheBuild exists to stop");
+
+        layout.getPoint("SHUT_C").setActive(true);
+    }
+
+    /**
+     * Whether the manual destination doors would offer this point for this locomotive.
+     *
+     * @param layout the railway
+     * @param loc the train
+     * @param point the destination
+     * @return true when a path to it is offered
+     */
+    private static boolean offers(Layout layout, MarklinLocomotive loc, String point)
+    {
+        for (java.util.List<Edge> path : layout.getPossiblePaths(loc, false))
+        {
+            if (path.get(path.size() - 1).getEnd().getName().equals(point)) return true;
+        }
+
+        return false;
     }
     /**
      * One signal protecting TWO platforms stays red while either of them is claimed (RG5-C1).
