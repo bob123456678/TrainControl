@@ -9882,7 +9882,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (session == null) return;
 
-                final org.traincontrol.automationui.TileGraph.TileKey moved = session.flipFacing(name);
+                // The running layout too, on Adam's ruling (DIR-B3): the setup and the layout are two
+                // records of one fact, and captureFromLayout writes the layout's answer back over the
+                // setup at the next editor open.
+                final org.traincontrol.automationui.TileGraph.TileKey moved =
+                    session.flipFacing(name, this.model.getAutoLayout());
 
                 if (moved == null) return;
 

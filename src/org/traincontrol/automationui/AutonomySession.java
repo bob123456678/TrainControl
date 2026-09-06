@@ -1386,6 +1386,70 @@ public class AutonomySession
     }
 
     /**
+     * Stands a locomotive on the copy of its square that faces a given way (`DIR-B3`).
+     *
+     * A square is several Points once it is split - one per facing a train can hold there - and the
+     * copy a locomotive is on is what the runtime uses to decide where it can go next.  `facingsFor`
+     * is the map from each copy's NAME to the side its train faces, which is the same map
+     * `captureFromLayout` reads in the other direction.
+     *
+     * **Not `moveLocomotive`.** That is the placement gesture: it refuses while anything is running,
+     * requires the target to be a destination - which a split copy need not be - and adds the
+     * locomotive to the run list.  None of that applies here.  This locomotive is already placed and
+     * already in the list; what changes is which copy of one square it stands on.
+     *
+     * Quiet about everything it cannot do.  A layout that was never handed over, a square whose copies
+     * the running layout does not carry, a locomotive the layout does not know: each leaves the setup
+     * write standing on its own, which is what happened before this existed.
+     *
+     * @param running the layout, or null
+     * @param locomotive the locomotive's name
+     * @param tile the square it stands on
+     * @param facing the way it now faces
+     */
+    private void moveOntoFacingCopy(org.traincontrol.automation.Layout running, String locomotive,
+        TileKey tile, Side facing)
+    {
+        if (running == null || locomotive == null || facing == null) return;
+
+        org.traincontrol.base.Locomotive train = null;
+
+        org.traincontrol.automation.Point onto = null;
+
+        java.util.List<org.traincontrol.automation.Point> here = new java.util.ArrayList<>();
+
+        for (Map.Entry<String, Side> copy : facingsFor(tile).entrySet())
+        {
+            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+
+            if (point == null) continue;
+
+            here.add(point);
+
+            if (facing == copy.getValue() && onto == null) onto = point;
+
+            if (point.getCurrentLocomotive() != null
+                && locomotive.equals(point.getCurrentLocomotive().getName()))
+            {
+                train = point.getCurrentLocomotive();
+            }
+        }
+
+        // Nowhere to put it, or it is not standing on this square in the running layout at all.
+        if (onto == null || train == null) return;
+
+        if (onto.getCurrentLocomotive() == train) return;
+
+        // CLEARED FIRST, so the train is never on two copies of one square at once - which is the
+        // state `DIR-C3` is about and which the checks report.
+        for (org.traincontrol.automation.Point point : here)
+        {
+            if (point.getCurrentLocomotive() == train) point.setLocomotive(null);
+        }
+
+        onto.setLocomotive(train);
+    }
+    /**
      * Turns a placed locomotive round on the graph, because the railway turned it (Adam, 2026-09-06).
      *
      * Adam: **"changing the direction on the graph itself does not emit a locomotive direction
@@ -1413,10 +1477,25 @@ public class AutonomySession
      * recorded facing, and a square offering other than two facings - where "the other one" does not
      * mean anything. Those are reported by returning null rather than guessed at.
      *
+     * **AND THE RUNNING LAYOUT, on Adam's ruling of 2026-09-06** (`DIR-B3`): *"flipFacing should also
+     * update the running layout."*
+     *
+     * Writing only the setup left two records of one fact with no arbiter.  A square is several
+     * Points once it is split, and which copy a locomotive stands on is what decides where it can go
+     * next - so the diagram's arrow flipped at once while `getPossiblePaths`, the right-click
+     * destination list and `explainDestinations` all went on answering for the OLD facing, until
+     * something rebuilt the layout.  Worse, `captureFromLayout` derives the facing from the copy the
+     * locomotive is actually on and writes it back: opening an editor was enough to undo this
+     * silently.
+     *
+     * Both writes are here, in one method, because that is the only arrangement in which they cannot
+     * drift - which is the defect this repository keeps finding in itself.
+     *
      * @param locomotive the locomotive that has just been turned
+     * @param running the layout to move it on, or null to write the setup only
      * @return the square whose facing changed, or null when nothing did
      */
-    public TileKey flipFacing(String locomotive)
+    public TileKey flipFacing(String locomotive, org.traincontrol.automation.Layout running)
     {
         if (locomotive == null) return null;
 
@@ -1452,7 +1531,11 @@ public class AutonomySession
             // turning the train on the track - is the one gesture that will not take.
             if (!choices.contains(recorded)) continue;
 
-            setFacing(tile, choices.get(0) == recorded ? choices.get(1) : choices.get(0));
+            final Side now = choices.get(0) == recorded ? choices.get(1) : choices.get(0);
+
+            setFacing(tile, now);
+
+            moveOntoFacingCopy(running, locomotive, tile, now);
 
             return tile;
         }

@@ -5782,6 +5782,92 @@ public class testAutonomyDiagramSession
             + "answered: " + elsewhere);
     }
     /**
+     * A facing that follows the track moves the locomotive on the running layout too (DIR-B3).
+     *
+     * Adam, 2026-09-06: **"flipFacing should also update the running layout."**
+     *
+     * **Two records of one fact, and they were kept by different hands.** A square is several Points
+     * once it is split, and the copy a locomotive stands on is what decides where it can go next.
+     * Writing only the setup flipped the diagram's arrow at once while `getPossiblePaths`, the
+     * right-click destination list and `explainDestinations` all went on answering for the OLD facing.
+     *
+     * And it did not merely lag: `captureFromLayout` derives the facing from the copy the locomotive is
+     * actually on and writes it back over the setup. Opening an editor was enough to undo the flip,
+     * silently.
+     *
+     * **Asserted as both, in one call.** Either alone passes while the other is wrong, which is the
+     * state the ruling exists to end.
+     *
+     * MUTATION: drop the `moveOntoFacingCopy` call and the layout half fails; drop the `setFacing`
+     * and the setup half does.
+     */
+    @Test
+    public void testTheFlipMovesTheLocomotiveOnTheLayoutToo() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+
+        session.getStore().createConfiguration("Facing", null);
+        session.getStore().setActiveConfiguration("Facing");
+
+        final TileKey tile = new TileKey("main", 4, 1);
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
+            session.facingChoices(tile);
+
+        assertEquals(choices.size(), 2,
+            "precondition: the square has to offer exactly two facings, or \"the other one\" means "
+            + "nothing and flipFacing declines by design.  Offered: " + choices);
+
+        session.setFacing(tile, choices.get(0));
+
+        // The running layout, built from this very setup, so the copies it carries are the ones
+        // facingsFor names.
+        assertFalse(session.facingsFor(tile).isEmpty(),
+            "precondition: the square has no copies in the station index, so there is nothing to "
+            + "move a locomotive between");
+
+        final TileKey moved = session.flipFacing("no such locomotive", null);
+
+        assertNull(moved,
+            "a locomotive that is not placed anywhere was followed, so the walk is matching on "
+            + "something other than the name");
+
+        // THE SETUP HALF, with no layout handed over - which must still work, because that is what a
+        // session with no running railway does.
+        session.setPointProperty(tile, "loc",
+            new org.json.JSONObject().put("name", "Facing Test Loc"));
+
+        final TileKey flipped = session.flipFacing("Facing Test Loc", null);
+
+        assertEquals(flipped, tile,
+            "the placed locomotive was not followed at all");
+
+        assertEquals(session.getFacing(tile), choices.get(1),
+            "the setup was not turned round: the recorded facing is still " + session.getFacing(tile)
+            + " and the square offers " + choices);
+
+        // AND THE CALL SITE HANDS THE LAYOUT OVER, which is the half a session-only test cannot see.
+        //
+        // Standing the whole window up to watch a Point change hands needs a model and a display; the
+        // wiring is what was missing, and the wiring is what this checks.
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+        assertTrue(source.contains("session.flipFacing(name, this.model.getAutoLayout())"),
+            "the window no longer hands the running layout to flipFacing, so the setup moves and the "
+            + "layout does not - and captureFromLayout will write the layout's answer back over it "
+            + "at the next editor open (DIR-B3)");
+
+        String session_ = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automationui/AutonomySession.java")),
+            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+        assertTrue(session_.contains("moveOntoFacingCopy(running, locomotive, tile, now);"),
+            "flipFacing no longer moves the locomotive on the running layout, so the two records of "
+            + "one fact are kept by different hands again (DIR-B3)");
+    }
+    /**
      * And the CHECKS are actually given it, which is a separate question (V31-C3).
      *
      * **The first attempt at this was a test of the rule, and it could not fail.** It pinned a helper
