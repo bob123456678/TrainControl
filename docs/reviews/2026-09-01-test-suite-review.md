@@ -405,7 +405,7 @@ notice absent and the test green.
 
 ### TCX-B3 — The guard's reach on the real railway is never measured, and on his data it is nearly zero
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - the six `tileLengths` this measured are gone - the setup carries **zero** as of the 2026-09-04 clean-up, so the guard's reach on his railway is now exactly nil rather than nearly nil.  The finding stands and its numbers are worse.
+**Disposition: fixed 2026-09-05** - `testWhatTheReversalGuardCanJudgeHere` measures the reach on the golden layout and puts the count in its message either way, so a passing run shows it.  It refuses the state the finding names - armed and unable to answer anything - rather than demanding a floor: how much of his railway Adam has measured is his business and changes as he works, and a floor would fail on a Tuesday for no defect.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 
@@ -441,7 +441,7 @@ belongs.
 
 ### TCX-B4 — The release-before-throw ordering of accessory commands is untested
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - `Layout.configureEdge`'s release-before-throw sort still has no test.  The two matches for "released before thrown" are in `testParseCS2Layout` and `testParseCS3Routes`, which test the PARSER, not the ordering the runtime issues.
+**Disposition: fixed 2026-09-05** - the inline comparator is now `Layout.releasesBeforeThrows`, pinned by `testReleasesAreOrderedBeforeThrows`, and `testTheEdgeConfigurationUsesThatOrdering` checks that `configureEdge` still calls it - naming a rule moves the defect to the call site, which is this repository's recurring shape.  Both mutations go red.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

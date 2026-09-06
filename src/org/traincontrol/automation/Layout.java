@@ -2549,6 +2549,29 @@ public class Layout
     }
       
     /**
+     * Releases first, throws after, and alphabetically within each (TCX-B4).
+     *
+     * **The reason is mechanical.** A three-way turnout is two drives on consecutive addresses:
+     * commanding the diverging one before the other has been released puts the ironwork into a
+     * combination that routes nowhere, and on real hardware that is a turnout a train then runs
+     * through.
+     *
+     * It was an inline comparator inside `configureEdge` and nothing tested it - the only tests that
+     * mention releasing before throwing are in the CS2 and CS3 route parsers, which is a different
+     * question about a different file.  Named here so the rule can be run, with a source check on the
+     * call site so that testing the rule cannot quietly leave the call uncovered.
+     *
+     * @param aThrows whether the first command throws its accessory
+     * @param bThrows whether the second does
+     * @param a the first accessory's name
+     * @param b the second's
+     * @return the comparison, releases sorting before throws
+     */
+    public static int releasesBeforeThrows(boolean aThrows, boolean bThrows, String a, String b)
+    {
+        return aThrows == bThrows ? a.compareTo(b) : (aThrows ? 1 : -1);
+    }
+    /**
      * Function to configure an accessory.  This is called from the edge configuration lambda (instead of calling control directly) as defined in layout.createEdge 
      * so that the graph can keep track of conflicting configuration commands, and invalidate those paths accordingly
      * @param e - the edge
@@ -2581,7 +2604,7 @@ public class Layout
             boolean aThrows = Accessory.isThrow(e.getConfigCommands().get(a));
             boolean bThrows = Accessory.isThrow(e.getConfigCommands().get(b));
 
-            return aThrows == bThrows ? a.compareTo(b) : (aThrows ? 1 : -1);
+            return releasesBeforeThrows(aThrows, bThrows, a, b);
         });
 
         for (String name : names)

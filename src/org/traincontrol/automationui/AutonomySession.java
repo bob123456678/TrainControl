@@ -3835,9 +3835,6 @@ public class AutonomySession
     }
 
     /**
-     * The squares an authored home locomotive lives at.
-     */
-    /**
      * The squares of the active configuration whose stored point satisfies a test (WK3-C3).
      *
      * **Four methods were walking this map with four copies of the same six lines**: is there an
@@ -3920,6 +3917,15 @@ public class AutonomySession
     {
         return !point.optString("home", "").trim().isEmpty();
     }
+    /**
+     * The squares an authored home locomotive lives at.
+     *
+     * The same answer `tilesWithAHome` gives, as a set, because this is what `check()` compares
+     * against.  Delegating rather than walking again is the whole of WK3-C3: when these two drifted,
+     * the bulk clear acted on track the findings never mentioned.
+     *
+     * @return the squares carrying a home
+     */
     private java.util.Set<TileKey> homeTiles()
     {
         return new LinkedHashSet<>(tilesWithAHome());

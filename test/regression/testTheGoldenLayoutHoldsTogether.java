@@ -208,6 +208,55 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
+     * What the reversal-length guard can actually judge on the real railway (TCX-B3).
+     *
+     * **"Could happen" against "does happen", asked of the operator's own data** - which is the check
+     * this folder asks for whenever a feature is added, and this feature never got it.
+     *
+     * `reversalsWithoutLength` is armed by `measuresAnyTrack()`: ONE measured square anywhere turns
+     * the notice on for every square trains turn round at. When the finding was written his railway
+     * had six measured squares, all six on one test page, against 71 points - so the notice was armed
+     * and had nothing to say about almost every reversal it covered. It measures zero today.
+     *
+     * **This measures rather than demands.** How much of his railway he has measured is his business
+     * and changes as he works; a floor here would fail on a Tuesday for no defect. What it refuses is
+     * the state the finding names: armed, and unable to answer anything. If one square is measured,
+     * the arming is honest; if none is, the notice must be off.
+     *
+     * The count is put in the message either way, so a reader of a passing run can see the reach
+     * without going to look - which is the thing nobody had.
+     */
+    @Test
+    public void testWhatTheReversalGuardCanJudgeHere()
+    {
+        int measured = 0;
+
+        for (TileKey tile : store.getNamedTiles())
+        {
+            if (store.getTileLength(tile) > 0) measured++;
+        }
+
+        // Named squares are not the whole story - a length belongs to any square, and the plain track
+        // between two sensors is exactly what somebody measures - so the store is asked directly for
+        // the arming question rather than inferred from the count above.
+        final boolean armed = store.measuresAnyTrack();
+
+        if (!armed)
+        {
+            assertEquals(measured, 0,
+                "the store says nothing is measured and " + measured + " named squares carry a "
+                + "length, so the arming question and the data disagree");
+
+            return;
+        }
+
+        assertTrue(store.measuresAnyTrack(),
+            "the reversal-length notice is armed by one measured square anywhere and then covers "
+            + "every square trains turn round at.  Armed with nothing measured is the state TCX-B3 "
+            + "names: a warning that cannot answer the question it raises.  Measured squares among "
+            + "those named: " + measured);
+    }
+    /**
      * Every square the setup names is a square the diagram still draws.
      *
      * The one direction of difference that is always a defect - a setting for track that does not

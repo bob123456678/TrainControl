@@ -591,7 +591,7 @@ the divergence is structural and its reachability is unsettled.
 
 ### TS3-B7 — the planner's "a longer approach is more room" rule has no test
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - no test names `measuredRoomToReverseInto` in a staging context; the three matches are in `testAutonomyDiagramReducer` and `testNonReversibleTrains`, which measure the rule rather than the planner's `continue`.
+**Disposition: fixed 2026-09-05** - `testALongerApproachIsMoreRoom` builds a berth reached two ways, one approach measured too short and one long enough, and asserts the plan is still possible.  Turning the `continue` into `return null` fails it.  Distinct from `testThePlannerAndTheRuntimeAgreeAboutRoomToReverse`, which has a berth EVERY route is too short for: same rule, opposite outcome.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

@@ -423,7 +423,7 @@ to ask" says — or change the sentence.
 
 ### `WK3-C2` — `SVN-B7`'s premise is already covered by `Route.setExecuting()`, and its new guard fires for 600 ms after the route has finished
 
-**Disposition: OPEN, confirmed against the tree 2026-09-05** - unchanged - `routesExecuting` is still consulted at `TrainControlUI.java:16920`.
+**Disposition: closed 2026-09-05 - answered in the source, and the freeze half is not a defect.**  The comment above that guard now states the finding's own conclusion: *"What this is NOT: protection against two threads throwing one route's accessories at once.  That is what the commit which added this claimed, and it was wrong - `Route.setExecuting()` is a synchronized re-entrancy guard..."*  It survives as a debounce for the greyed play button, which the other two doors did not ask about - the OB-057/OB-090 shape - and the 600 ms is a named constant with its reason.  **The freeze the finding also alleged does not exist**: `protectsAnOccupiedSquare` is not synchronized, nor is `getPoints()`, nor `getCurrentLocomotive()` - which carries a comment saying it is deliberately unsynchronized-with-volatile for exactly this reader.  Verified line by line rather than taken from the finding.
 
 **Audited 2026-09-05.** The `**Status: open**` line below is the original and is kept as the historical record of what was believed when it was written.  It is NOT this finding's disposition.
 

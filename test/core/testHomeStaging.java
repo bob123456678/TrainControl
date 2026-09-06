@@ -387,6 +387,91 @@ public class testHomeStaging
     }
 
     /**
+     * A berth reached two ways: the direct approach is too short, the way round is long enough.
+     *
+     * The shape `TS3-B7` is about. `HS D` is a terminus homed to a train 40 long. Arriving straight
+     * from `HS A` measures 5 - not enough, and the train would stand across the switch behind it.
+     * Coming round through `HS B` and `HS C` measures 60, which is.
+     *
+     * Every edge is measured, for the reason `shortBerth` gives: an unmeasured segment makes the rule
+     * decline to judge, and the planner then routes the long way for a reason that has nothing to do
+     * with room.
+     */
+    private static String twoApproaches()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + station("HS C", 2, null) + ","
+            + "{'name': 'HS D', 'station': true, 's88': " + (S88_BASE + 3)
+            + ", 'terminus': true, 'home': '" + LOC_A + "'}"
+            + "],'edges': ["
+            + "{'start': 'HS A', 'end': 'HS B', 'length': 60},"
+            + "{'start': 'HS B', 'end': 'HS A', 'length': 60},"
+            + "{'start': 'HS B', 'end': 'HS C', 'length': 60},"
+            + "{'start': 'HS C', 'end': 'HS B', 'length': 60},"
+            // THE WAY ROUND, long enough for the train.
+            + "{'start': 'HS C', 'end': 'HS D', 'length': 60},"
+            + "{'start': 'HS D', 'end': 'HS C', 'length': 60},"
+            // AND THE DIRECT ONE, which is not.
+            + "{'start': 'HS A', 'end': 'HS D', 'length': 5},"
+            + "{'start': 'HS D', 'end': 'HS A', 'length': 5}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * An approach too short for the train is not a berth refused (TS3-B7).
+     *
+     * **`continue` and `return null` are the whole difference** between "this approach is too short,
+     * keep looking" and "this berth is refused" - and the rule that decides it had no test. The
+     * commit that added it says the distinction was *observed* while the test was being written, which
+     * is exactly the kind of knowledge that leaves with the person who had it.
+     *
+     * The fixture is the smallest thing with that shape: `HS D` is homed to a train 40 long, the
+     * direct approach measures 5 and the way round measures 60.
+     *
+     * **Why this is not `testThePlannerAndTheRuntimeAgreeAboutRoomToReverse` again.** That one has a
+     * berth every route is too short for, and asks that the planner and the runtime do not disagree.
+     * This has a berth ONE route is too short for, and asks that the planner finds the other - the
+     * opposite outcome, from the same rule.
+     *
+     * MUTATION: turn the `continue` into `return null` and the plan becomes impossible.
+     */
+    @Test
+    public void testALongerApproachIsMoreRoom() throws Exception
+    {
+        Layout layout = load(twoApproaches());
+
+        Locomotive train = loc(LOC_A);
+
+        // PUT BACK AFTERWARDS (TS3-B2): these locomotives are shared with eighty-odd other tests.
+        Integer lengthWas = train.getTrainLength();
+        boolean reversibleWas = train.isReversible();
+
+        try
+        {
+            train.setTrainLength(40);
+            train.setReversible(true);
+
+            assertEquals(train.getTrainLength(), Integer.valueOf(40),
+                "precondition: the train has to be longer than the direct approach, or nothing here "
+                + "is about room at all");
+
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            assertTrue(plan.isPossible(),
+                "the berth was refused because ONE approach to it is too short.  The rule is a "
+                + "`continue` - another route to the same berth may be longer, and a longer approach "
+                + "is more room - and a `return null` there gives up on the berth entirely.  Outcome "
+                + "was " + plan.getOutcome() + " (TS3-B7)");
+        }
+        finally
+        {
+            train.setTrainLength(lengthWas);
+            train.setReversible(reversibleWas);
+        }
+    }
+    /**
      * The ring, with HS D a terminus reached over a short measured edge.
      *
      * @return the configuration

@@ -28,6 +28,64 @@ public class testAccessory
     }
 
     /**
+     * An edge releases its accessories before it throws any (TCX-B4).
+     *
+     * **A three-way turnout is two drives on consecutive addresses.** Commanding the diverging one
+     * before the other has been released puts the ironwork into a combination that routes nowhere -
+     * and on real hardware that is a turnout a train then runs through. `configureEdge` sorts an
+     * edge's commands so releases go first, and nothing tested it.
+     *
+     * The two tests that mention releasing before throwing are in the CS2 and CS3 route parsers,
+     * which is a different question about a different file - so the count of matches looked like
+     * coverage and was not.
+     *
+     * MUTATION: return the plain name comparison, or invert the sign, and this fails.
+     */
+    @Test
+    public void testReleasesAreOrderedBeforeThrows()
+    {
+        // A throw sorts AFTER a release, whatever the names say.
+        assertTrue(org.traincontrol.automation.Layout.releasesBeforeThrows(true, false, "A", "Z") > 0,
+            "a throw sorted before a release, so a three-way could be driven into its diverging "
+            + "position before the other half was released - a combination that routes nowhere");
+
+        assertTrue(org.traincontrol.automation.Layout.releasesBeforeThrows(false, true, "Z", "A") < 0,
+            "a release sorted after a throw even with the names reversed, so the ordering is "
+            + "following the name rather than the command");
+
+        // WITHIN a group the name decides, so the order is stable rather than whatever the map
+        // happened to iterate - two runs of the same path must issue the same commands in the same
+        // sequence or a fault is reproducible only sometimes.
+        assertTrue(org.traincontrol.automation.Layout.releasesBeforeThrows(true, true, "A", "Z") < 0,
+            "two throws are not ordered by name, so the sequence is not stable");
+
+        assertTrue(org.traincontrol.automation.Layout.releasesBeforeThrows(false, false, "Z", "A") > 0,
+            "two releases are not ordered by name");
+
+        assertEquals(org.traincontrol.automation.Layout.releasesBeforeThrows(true, true, "A", "A"), 0,
+            "the same accessory does not compare equal to itself");
+    }
+
+    /**
+     * And `configureEdge` actually uses it (TCX-B4).
+     *
+     * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
+     * repository's recurring shape and cost it two defects in one method earlier this year - so the
+     * call is checked too, the way the editor-surface rules are.
+     */
+    @Test
+    public void testTheEdgeConfigurationUsesThatOrdering() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(source.replaceAll("\\s+", " ").contains(
+            "return releasesBeforeThrows(aThrows, bThrows, a, b);"),
+            "configureEdge no longer sorts its commands through releasesBeforeThrows, so the rule is "
+            + "tested here and something else decides what the railway is actually sent");
+    }
+    /**
      * Test accessory class functionality
      */
     @Test
