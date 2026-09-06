@@ -4882,6 +4882,61 @@ public class AutonomySession
     }
 
     /**
+     * Where to find the running layout, when there is one.
+     *
+     * A supplier rather than a reference, because the layout is rebuilt - `parseAuto` replaces the
+     * object - and a field captured once would go stale at the first rebuild and then quietly move
+     * trains on a graph nobody is looking at.
+     *
+     * Null until the window sets it, which is right for every headless use: a session opened by a
+     * test or a migration has no railway to move anything on.
+     */
+    private java.util.function.Supplier<org.traincontrol.automation.Layout> runningLayout;
+
+    /**
+     * Tells this session where the running layout is, so that setup changes can reach it.
+     *
+     * @param source how to fetch the current layout, or null when there is none
+     */
+    public void setRunningLayoutSource(
+        java.util.function.Supplier<org.traincontrol.automation.Layout> source)
+    {
+        this.runningLayout = source;
+    }
+
+    /**
+     * Records a facing AND stands the train on the copy that faces that way (SPEC-B4).
+     *
+     * **The setup and the railway are two places, and the facing menu only ever wrote one.**  Adam's
+     * ruling of 2026-09-06 was that `flipFacing` should also update the running layout; this is the
+     * same statement from the other end - the operator choosing a direction by hand - and it was the
+     * one `setFacing` writer left telling nobody.  Until the next build the diagram showed the new
+     * direction while the train stood on the copy facing the old one.
+     *
+     * Silently a plain `setFacing` when no layout is running, which is every headless use.
+     *
+     * @param tile the square
+     * @param facing the side its front faces
+     */
+    public void setFacingAndMove(TileKey tile, Side facing)
+    {
+        setFacing(tile, facing);
+
+        org.traincontrol.automation.Layout running =
+            runningLayout == null ? null : runningLayout.get();
+
+        if (running == null || facing == null) return;
+
+        Object standing = getPointProperty(tile, "loc");
+
+        if (!(standing instanceof org.json.JSONObject)) return;
+
+        String name = ((org.json.JSONObject) standing).optString("name", null);
+
+        if (name != null) moveOntoFacingCopy(running, name, tile, facing);
+    }
+
+    /**
      * Which way the locomotive on this square is pointing, as recorded.
      *
      * @param tile

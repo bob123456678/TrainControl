@@ -188,7 +188,12 @@ public class testEditorSurfaceRules
 
         for (int i = 0; i < lines.size(); i++)
         {
-            if (!lines.get(i).contains("session.setFacing(")) continue;
+            // A PREFIX, so a writer cannot escape this count by spelling (SPEC-B4).
+            //
+            // The facing menu now calls setFacingAndMove, which writes a facing and stands the train
+            // on the copy that faces that way - and an exact match for "setFacing(" stopped seeing it
+            // the moment it was renamed. A guard that a rename walks out of is not guarding.
+            if (!lines.get(i).contains("session.setFacing")) continue;
 
             writes++;
 
@@ -261,7 +266,8 @@ public class testEditorSurfaceRules
         // ask about it.
         assertEquals(writes, 3,
             "the facing is written from " + writes + " places in AutonomyEditorPanel. Three are known: "
-            + "the facing menu, the edit-or-assign-locomotive door (REG6-B5), and placeLocomotive - "
+            + "the facing menu (which moves the railway too, SPEC-B4), the edit-or-assign "
+            + "locomotive door (REG6-B5), and placeLocomotive - "
             + "the add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
             + "the non-null path and so left the previous occupant's direction attached to the "

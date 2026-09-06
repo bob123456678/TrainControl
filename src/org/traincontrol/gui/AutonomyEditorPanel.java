@@ -2919,7 +2919,13 @@ public class AutonomyEditorPanel extends JPanel
                 // The redraw is in radio() itself now (TD-1), which is where every one of these
                 // answers gets it. OB-039 fixed it here, on the one radio that had been reported, and
                 // left the station and turning radios beside it still telling nobody.
-                () -> session.setFacing(target, facing)));
+                //
+                // AND THE RAILWAY, NOT ONLY THE SETUP (SPEC-B4).  This was the last `setFacing`
+                // writer that changed what the diagram says without standing the train on the copy
+                // that says it - so until the next build the caption showed one direction and the
+                // train was on the Point facing the other.  Adam ruled the same thing about
+                // `flipFacing`; this is that ruling from the operator's end.
+                () -> session.setFacingAndMove(target, facing)));
         }
 
         if (facings.size() == 1)

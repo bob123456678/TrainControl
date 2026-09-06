@@ -92,8 +92,31 @@ public final class ManualReversalPrompt
 
         if (path != null)
         {
+            // THE DESTINATION FIRST, BECAUSE THAT IS THE SQUARE THE OPERATOR MEANT (REG6-B2).
+            //
+            // This used to name the first may-turn square ON THE WAY, and apply the answer to all of
+            // them.  Adam's ruling is about the other end: **"if the user decides to send a train to
+            // a 'may reverse' point, explicitly ask the user if the train should change direction"** -
+            // and `DIR-A2` was raised because a send whose DESTINATION is a may-reverse point turned
+            // the train without a word.  So the one case the feature exists for was the one case the
+            // dialog never named: it asked about a platform halfway along the route and then acted on
+            // the answer at the place the operator had actually clicked.
+            //
+            // Still one question for the journey, which is what makes it answerable - the operator is
+            // deciding what this MOVE is for, not annotating each square.  What changes is which
+            // square the sentence names, and it now names the one they chose.
+            org.traincontrol.automation.Point arrival = path.isEmpty() ? null
+                : path.get(path.size() - 1).getEnd();
+
+            if (arrival != null && !arrival.isTerminus() && asking.asksAbout(arrival))
+            {
+                first = arrival;
+            }
+
             for (org.traincontrol.automation.Edge edge : path)
             {
+                if (first != null) break;
+
                 if (edge == null || edge.getEnd() == null) continue;
 
                 // A TERMINUS IS NOT ASKED ABOUT, here as inside the run: the train has run out of

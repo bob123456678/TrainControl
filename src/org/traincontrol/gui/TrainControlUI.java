@@ -4227,6 +4227,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Through the same door, so the panel exists and is wired to the current session
         if (buildAutonomyTileMenu(tile) == null) return null;
 
+        // The session is told where the railway is before it is asked to change anything on it
+        // (SPEC-B4).  Set here rather than once at start-up because the session is replaced whenever
+        // a configuration is loaded, and a supplier set on the wrong instance is set on nothing.
+        if (getAutonomySession() != null)
+        {
+            getAutonomySession().setRunningLayoutSource(
+                () -> this.model == null ? null : this.model.getAutoLayout());
+        }
+
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
     }
 
