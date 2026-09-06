@@ -42,7 +42,14 @@ public final class ManualReversalPrompt
      * **On the event thread, from a thread that is not it.** Both callers dispatch on a worker -
      * `executePath` blocks until the train arrives, so it cannot run on the event thread - and a modal
      * dialog has to be shown on it. `invokeAndWait` is what makes the answer available to the caller
-     * that needs it, and the train is standing still at the point while this is asked.
+     * that needs it.
+     *
+     * **The train is stopped before this is called**, and that was NOT true when this sentence first
+     * claimed it.  Everything that stopped the train was inside the branch the answer decides, so it
+     * ran past the point at line speed for as long as the dialog stood there - measured at 30 when
+     * the question was put and still 30 five seconds later (`DIR-A1`).  A comment asserting the
+     * comfortable version of what the code does is how that survived being written and reviewed.
+     * `executePathInternal` now stops at any reversing point before deciding anything.
      *
      * **Defaults to NOT turning.** An interruption, a headless run or anything that goes wrong here
      * leaves the train pointing the way it already points, which is the answer that changes nothing on
