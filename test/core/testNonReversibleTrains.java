@@ -543,7 +543,7 @@ public class testNonReversibleTrains
 
         // THE INTERMEDIATE POINTS.
         assertTrue(flat.contains(
-            "if (shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))"),
+            "shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals)"),
             "executePathInternal no longer decides an intermediate reversal through shouldReverseAt, "
             + "so the rule is tested here and something else decides what the railway does");
 
@@ -577,32 +577,20 @@ public class testNonReversibleTrains
         //
         // Pinned as source because there is no way to observe a stop that does not happen without
         // driving a train, and a test that drives one through `executePath` hangs this suite.
+        // THE STOP IS THE GATE'S OWN ANSWER, so the two cannot disagree (CONF-A2).
+        //
+        // Three versions of this: two expressions meant to agree and which did not; then one shared
+        // predicate, which agreed by construction but still had to be kept in step by hand as the gate
+        // grew clauses; and now the stop simply asks `shouldReverseAt`.  A train is brought to a stand
+        // exactly when it is about to be turned.
+        //
+        // Only safe because `df584d0b` moved the question to departure - while the policy could put a
+        // modal dialog up from inside the run, asking before stopping was the whole of DIR-A1.
         assertTrue(flat.contains(
-            "if (isCurrentLayout() && stopsToDecideAt(current, reversals)) "
-            + "{ loc.setSpeed(0).waitForSpeedBelow(1);"),
-            "the train is no longer stopped where it is about to be turned");
-
-        // AND THE STOP AND THE GATE ARE ONE PREDICATE (CONF-A2).
-        //
-        // They were two expressions meant to agree, and they did not: the stop asked `asksAbout` alone
-        // while `shouldReverseAt` also accepted `mayReverseAt`, so a train could be turned at a plain
-        // copy the door does not ask about WITHOUT being stopped first - DIR-A1 arrived at from the
-        // other side, while the comment above the stop claimed the two asked the same question.
-        //
-        // Pinned as the CALL rather than as the condition, which is the point of extracting it: an
-        // inline condition can drift from the gate one character at a time and nothing notices.
-        assertTrue(flat.contains("public boolean stopsToDecideAt(Point current, ReversalPolicy "
-            + "reversals)"),
-            "the shared stop predicate has gone, so the stop and the gate are two expressions again "
-            + "(CONF-A2)");
-
-        // Autonomy stays narrow inside it: `mayReverseAt` is square-wide, so admitting it here is what
-        // made autonomy brake and re-accelerate at plain copies it used to pass (SPEC-A2, REG6-B3).
-        assertTrue(flat.contains("public boolean stopsToDecideAt(Point current, ReversalPolicy "
-            + "reversals) { if (current == null) return false; if (reversals == null || reversals == "
-            + "ALWAYS_REVERSE) return current.isReversing();"),
-            "the stop predicate no longer answers autonomy with isReversing() alone, so autonomy is "
-            + "braking at plain copies of split squares again (SPEC-A2, REG6-B3)");
+            "if (isCurrentLayout() && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), "
+            + "loc, reversals)) { loc.setSpeed(0).waitForSpeedBelow(1);"),
+            "the stop and the gate are two expressions again, so a train can be turned somewhere it "
+            + "was not stopped, or stopped somewhere it will not be turned (CONF-A2, REG6-B4)");
 
         // AND A COMPULSORY TURN NEVER REACHES A POLICY (CONF-A1).
         //
@@ -611,9 +599,10 @@ public class testNonReversibleTrains
         // and the hazard went from "if the operator presses the default" to "always".
         //
         // The door is asked because it is the only thing that can tell a compulsory turn from a
-        // may-reverse one: `asksAbout` comes from mayTurnTiles(), which is the reversible squares
-        // MINUS the compulsory ones.  Inferring it from the graph is right about a split square and
-        // wrong about every square with one copy, which is all of Adam's.
+        // may-reverse one: `asksAbout` comes from mayTurnTiles(), the reversible squares MINUS the
+        // compulsory ones.  That is also why `asksAbout` must not depend on the ANSWER - when it
+        // briefly returned `turn && ...`, "keep direction" made every may-reverse turning copy look
+        // compulsory and turned the train against an explicit no.
         assertTrue(flat.contains(
             "if (current.isReversing() && !reversals.asksAbout(current)) return true;"),
             "a compulsory turn can now reach a reversal policy, which answers \"keep direction\" - so "

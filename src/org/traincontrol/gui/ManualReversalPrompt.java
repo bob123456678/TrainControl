@@ -125,17 +125,19 @@ public final class ManualReversalPrompt
             @Override
             public boolean asksAbout(Point at)
             {
-                // REG6-B4: ONLY WHERE SOMETHING IS ACTUALLY GOING TO HAPPEN.
+                // WHICH SQUARES THE OPERATOR HAS A SAY OVER - not which ones the answer acts on.
                 //
-                // This used to return the same squares whatever the answer had been, so a journey the
-                // operator had said "keep direction" to still came to a full stop at every may-turn
-                // square on the way, waited for the speed to fall below one, turned nothing, and
-                // accelerated again.  The reason given was that a train about to be turned must be
-                // standing still - which is true, and is about the squares where a turn is coming.
+                // This briefly returned `turn && asking.asksAbout(at)`, to stop a journey nobody was
+                // turning from braking at every may-turn square on it (REG6-B4).  That made the
+                // answer change the QUESTION, and `Layout.shouldReverseAt` reads this to tell a
+                // compulsory turn from a may-reverse one: a reversing copy nobody is asked about is a
+                // compulsory turn.  So "keep direction" made every may-reverse turning copy look
+                // compulsory, and the train turned against the operator's explicit no.
                 //
-                // A turning COPY still stops, because the stop asks `current.isReversing()` on its own
-                // account.  This clause only adds the stops the operator's answer makes necessary.
-                return turn && asking.asksAbout(at);
+                // REG6-B4 is fixed where it belongs instead: the stop now asks `shouldReverseAt`
+                // itself, so no stop happens where no turn happens, and this answer can go back to
+                // being about the railway rather than about what was said.
+                return asking.asksAbout(at);
             }
         };
     }

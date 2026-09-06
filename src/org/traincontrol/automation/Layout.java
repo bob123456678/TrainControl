@@ -5223,34 +5223,6 @@ public class Layout
     }
 
     /**
-     * Whether a train must be brought to a stand here so that the reversal question can be settled.
-     *
-     * **One predicate, because the gate and the stop are one question (CONF-A2).**  They were written
-     * as two expressions that were meant to agree, and they did not: the stop asked `asksAbout` alone
-     * while `shouldReverseAt` also accepted `mayReverseAt`, so a train could be turned at a plain copy
-     * the door does not ask about WITHOUT being stopped first - which is DIR-A1 again, arrived at from
-     * the other side.  `guard-and-affordance-same-question`: where this application has asked one
-     * question in two places, the answers have differed.
-     *
-     * Autonomy is deliberately narrower.  It reaches this through `ALWAYS_REVERSE`, whose gate is
-     * `current.isReversing()` and nothing else, so its stop is that too - and `mayReverseAt` must not
-     * appear in it.  Blocks are per-square, so `mayReverseAt` is true at the plain copy as well, and
-     * putting it here is what made autonomy brake and re-accelerate at copies it used to pass at line
-     * speed (SPEC-A2, REG6-B3).
-     *
-     * @param current where the train is
-     * @param reversals the policy in force, or null for autonomy
-     * @return whether to stop
-     */
-    public boolean stopsToDecideAt(Point current, ReversalPolicy reversals)
-    {
-        if (current == null) return false;
-
-        if (reversals == null || reversals == ALWAYS_REVERSE) return current.isReversing();
-
-        return current.isReversing() || mayReverseAt(current) || reversals.asksAbout(current);
-    }
-    /**
      * Whether trains may turn round at this piece of track, on any of its copies.
      *
      * A square that trains MAY turn at is not marked: the build expresses it by splitting the square
@@ -5885,20 +5857,34 @@ public class Layout
                 // operator half is the second clause, and it is asked of the DOOR - which is the only
                 // thing that knows a square is may-reverse, since `canReverse` never reaches
                 // `parseAuto` at all.
-                if (isCurrentLayout() && stopsToDecideAt(current, reversals))
+                // ONE QUESTION, ASKED ONCE (CONF-A2).
+                //
+                // The stop and the gate were two expressions meant to agree.  They were then one
+                // shared predicate, `stopsToDecideAt`, which agreed by construction but still had to
+                // be kept in step by hand as the gate grew clauses.  This is the version that cannot
+                // drift: the stop IS the gate's answer.  A train is brought to a stand exactly when it
+                // is about to be turned, and never otherwise.
+                //
+                // Safe to evaluate before stopping only because `df584d0b` moved the question to
+                // departure.  While the policy could put a modal dialog up from in here, asking first
+                // was what DIR-A1 forbade - the train ran past the headshunt for as long as the dialog
+                // stood open.  Nothing in this call blocks now.
+                //
+                // It also settles REG6-B4 without the trick that caused CONF-A1: a journey nobody is
+                // turning simply never enters the branch, so `asksAbout` does not have to lie about
+                // which squares are may-reverse in order to skip the stop.
+                if (isCurrentLayout()
+                    && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
-                    if (shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
-                    {
-                        this.control.logf(
-                            "autolayout.infoIntermediateReversingForLocomotive",
-                            loc.getName()
-                        );
+                    this.control.logf(
+                        "autolayout.infoIntermediateReversingForLocomotive",
+                        loc.getName()
+                    );
 
-                        loc.switchDirection()
-                        .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
-                    }
+                    loc.switchDirection()
+                    .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
 
                     // AT THIS POINT'S OWN SPEED, not the journey's (REG6-B3).
                     //
