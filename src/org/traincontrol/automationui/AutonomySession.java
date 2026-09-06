@@ -1938,49 +1938,6 @@ public class AutonomySession
         // an AutonomyBuilder naming run, twice.  Nothing between them could have changed.
         touched();
 
-        // AND A FACING ITS LANDING CANNOT HOLD IS DROPPED (Adam, 2026-09-06).
-        //
-        // **"When pasting the train from bottommainpost to bottommainb, its direction in the dropdown
-        // was wrong."**
-        //
-        // A cut is a move and its setup follows the track, which is right for a station's name, its
-        // length, its home.  A FACING is different: it is a compass side, and it means something only
-        // against the geometry of the square it sits on.  Carried to a square whose track runs another
-        // way it is not stale - it is meaningless, and the dropdown showed it as though somebody had
-        // chosen it.
-        //
-        // AFTER `touched()`, because the answer depends on the rebuilt graph: `facingChoices` asks the
-        // reduction what the landing can hold, and before the rebuild that is still the old one.
-        //
-        // DROPPED WHENEVER IT MOVES, not only when the landing cannot hold it.
-        //
-        // The first attempt kept a carried facing that happened to be legal at the landing, and Adam
-        // saw the same wrong direction again.  "Legal there" is a coincidence, not a translation: the
-        // value still describes how the model sat on a DIFFERENT piece of track.
-        //
-        // He also suspected the direction had actually CHANGED rather than merely being displayed
-        // wrong, and that is the mechanism: `placementCopy` matches the carried facing against the
-        // copies the new square was split into, falls through to the FIRST copy when nothing matches,
-        // and the next `captureFromLayout` - which an editor open is enough to trigger - writes that
-        // copy's facing back as though the operator had chosen it.  A carried value that is merely
-        // plausible is enough to start that.
-        //
-        // Dropped rather than translated.  Turning "north at the old square" into a side at the new
-        // one needs to know how the operator meant the model to sit on the rails, which only they can
-        // say - and the menu asks exactly that, once the value stops claiming to be an answer already
-        // given.
-        if (moves != null)
-        {
-            for (TileKey landing : moves.values())
-            {
-                if (landing == null) continue;
-
-                if (getFacing(landing) == null) continue;
-
-                setFacing(landing, null);
-            }
-        }
-
         return true;
     }
 
