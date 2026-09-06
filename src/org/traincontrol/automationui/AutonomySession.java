@@ -3355,7 +3355,18 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            if (store.isStation(tile) && !isAutoDestination(tile)) out.add(tile);
+            // BOTH HALVES OF THE RUNTIME RULE (CONF-B6).  `Layout:3576` refuses a destination that
+            // is reversing OR is not an auto destination, and this had only the second half - so a
+            // station the railway turns every train at was reported as somewhere autonomy would
+            // happily go.  It passed unnoticed because no station on the sample layout is a
+            // compulsory turn; the Path Type check reads this, and would have said the opposite of
+            // what autonomy does on any railway that has one.
+            //
+            // `isMustTurnAround`, not `isTurnAround`: a MAY-reverse square keeps a plain copy, and
+            // autonomy can choose that one perfectly well.  Only a square where every copy turns is
+            // one it can never pick.
+            if (store.isStation(tile)
+                && (!isAutoDestination(tile) || isMustTurnAround(tile))) out.add(tile);
         }
 
         return out;

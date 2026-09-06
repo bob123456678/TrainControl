@@ -88,6 +88,18 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
         int stations = 0;
 
+        // PER SQUARE, NOT PER POINT (CONF-B6).
+        //
+        // The first version of this compared each Point against the diagram's answer about its
+        // SQUARE, and those are different questions once a square is split.  A may-reverse station
+        // has a turning copy the railway refuses and a plain copy it accepts; the diagram has one
+        // answer for the square, and the honest one is "can autonomy choose ANY copy of this".
+        //
+        // It passed anyway, because no square on this layout is split - which is exactly the kind of
+        // agreement that means nothing, and `testEverySquareOnThisLayoutBuildsToOneCopy` is the
+        // record of why.
+        java.util.Map<TileKey, Boolean> railwayWillChoose = new java.util.LinkedHashMap<>();
+
         for (Point point : built.getPoints())
         {
             if (!point.isDestination()) continue;
@@ -96,16 +108,25 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
             if (square == null) continue;
 
-            stations++;
+            // The railway's own rule, quoted rather than paraphrased: `Layout:3576` refuses a
+            // destination that is reversing or is not an auto destination.
+            boolean thisCopy = !point.isReversing() && point.isAutoDestination();
 
-            // The railway's own rule, quoted rather than paraphrased.
-            boolean railwayRefuses = point.isReversing() || !point.isAutoDestination();
+            railwayWillChoose.put(square,
+                Boolean.TRUE.equals(railwayWillChoose.get(square)) || thisCopy);
+        }
 
-            boolean diagramRefuses = excludedByTheDiagram.contains(square);
+        stations = railwayWillChoose.size();
+
+        for (java.util.Map.Entry<TileKey, Boolean> square : railwayWillChoose.entrySet())
+        {
+            boolean railwayRefuses = !square.getValue();
+
+            boolean diagramRefuses = excludedByTheDiagram.contains(square.getKey());
 
             if (railwayRefuses != diagramRefuses)
             {
-                disagreements.add(point.getName() + ": the railway "
+                disagreements.add(square.getKey() + ": the railway "
                     + (railwayRefuses ? "will not" : "will") + " choose it, the diagram says it "
                     + (diagramRefuses ? "will not" : "will"));
             }
