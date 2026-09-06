@@ -5675,19 +5675,33 @@ public class Layout
                 // A terminus is not a question: the train has run out of track, so it turns whatever
                 // the policy thinks.  Everywhere else the policy decides, which is how a hand-driven
                 // send comes to ask the operator and autonomy does not (Adam, 2026-09-06).
-                if (isCurrentLayout() && shouldReverseAt(current,
-                    path.get(path.size() - 1).getEnd(), loc, reversals))
+                // STOPPED FIRST, THEN ASKED (DIR-A1).
+                //
+                // The question is put to a person through a modal dialog with no time limit, and
+                // everything that stopped the train used to be INSIDE the branch that answer decides.
+                // Measured: `speedAtTheMomentTheOperatorIsAsked=30`, and still 30 five seconds later -
+                // the train ran past a headshunt for as long as it took somebody to notice a window.
+                //
+                // A train standing at the point is also the only state in which either answer is
+                // right: turning it needs it stopped, and carrying on from a stand is a delay rather
+                // than a hazard.  Autonomy is unaffected in substance - it stopped here anyway as the
+                // first act of turning.
+                if (isCurrentLayout() && current.isReversing())
                 {
+                    loc.setSpeed(0).waitForSpeedBelow(1);
+
+                    if (shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
+                    {
                         this.control.logf(
                             "autolayout.infoIntermediateReversingForLocomotive",
                             loc.getName()
                         );
-                        loc.setSpeed(0)
-                        .switchDirection()
-                        .waitForSpeedBelow(1)
-                        .delay(this.getMinDelay(), this.getMaxDelay()) // Pause for a more realistic appearance
-                        .setSpeed(speed)
-                        .waitForSpeedAtOrAbove(speed);
+
+                        loc.switchDirection()
+                        .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
+                    }
+
+                    loc.setSpeed(speed).waitForSpeedAtOrAbove(speed);
                 }
                 
                 // We can also clear the edges dynamically 
@@ -5960,8 +5974,27 @@ public class Layout
         this.lastArrival.put(recencyKeyOf(path.get(path.size() - 1).getEnd()),
             System.currentTimeMillis());
 
-        // Reverse at terminus station
-        if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
+        // Reverse at terminus station - AND ASK FIRST WHEN IT IS ONLY A MAY-REVERSE (DIR-A2).
+        //
+        // The policy was consulted from one place, and that place is inside `if (i != path.size() -
+        // 1)`.  The last point is turned here instead, and this statement asked nobody - so a
+        // hand-driven send whose DESTINATION is a reversing point turned the train without a word,
+        // which is the literal case Adam described: *"if the user decides to send a train to a 'may
+        // reverse' point, explicitly ask the user if the train should change direction."*
+        //
+        // Measured before the fix: destination IS the may-reverse point gave `policyAsked=0
+        // turned=true`, while the same policy at an intermediate point gave `policyAsked=1
+        // turned=false`.  The mechanism worked exactly where it was wired and was not wired to the
+        // case it was built for.
+        //
+        // A TERMINUS IS STILL NOT A QUESTION.  The message key has named both cases all along -
+        // `...TerminusOrFinalReversingStation` - so the code knew the difference and turned both
+        // regardless.
+        final Point arrived = path.get(path.size() - 1).getEnd();
+
+        if (arrived.isTerminus()
+            || (arrived.isReversing()
+                && (reversals == null || reversals.shouldReverse(loc, arrived))))
         {
             this.control.logf(
                 "autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation",

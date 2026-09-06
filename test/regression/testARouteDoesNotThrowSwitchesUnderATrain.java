@@ -90,6 +90,55 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A route that cuts the power is never asked about, at EITHER door (DIR-A3).
+     *
+     * Adam, 2026-09-01: **"emergency stop should never conflict or prompt."**
+     *
+     * **Two places decide whether a conflict is a question, and MT-247 changed one of them.**
+     * `conflictingAccessoryAndReason` screens a route BEFORE it runs and opens with
+     * `if (this.hasEmergencyStop()) return null;`. The per-accessory check inside the loop had the
+     * same clause in its condition, and MT-247 removed it.
+     *
+     * So the two halves of one gesture disagreed. A stop-carrying route was waved past the pre-route
+     * screen - it answers "nothing to confirm" - and met the question mid-loop instead, where Cancel
+     * now returns out of the whole route. Measured by the review that found it:
+     * `preRouteConflict=null midwayAsked=2 powerStillOn=true`. The operator was asked about a turnout
+     * and, by answering it, silently declined a power cut the dialog never mentioned.
+     *
+     * **The two rulings do not actually conflict once the order is right.** The 2026-09-01 one is
+     * narrower: a route carrying a stop is not asked, at either door. MT-247 then governs every route
+     * that IS asked - cancel cancels everything, OK fires everything.
+     *
+     * Checked as the agreement between the two doors rather than by driving a route, because what
+     * went wrong is precisely that they stopped agreeing - and a test of either one alone passed
+     * throughout.
+     *
+     * MUTATION: take `!this.hasEmergencyStop()` out of the midway condition again and this fails.
+     */
+    @Test
+    public void testBothDoorsCarveOutTheEmergencyStop() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/marklin/MarklinRoute.java")),
+            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+
+        assertTrue(source.contains("if (this.hasEmergencyStop()) return null;"),
+            "the PRE-ROUTE screen no longer excuses a route that cuts the power, so such a route is "
+            + "now screened before it starts - which is a change to Adam's 2026-09-01 ruling made "
+            + "without saying so");
+
+        assertTrue(source.contains("final boolean askable = !auto && !this.hasEmergencyStop()"),
+            "the MIDWAY question no longer excuses a route that cuts the power.  The pre-route screen "
+            + "still does, so such a route is waved past it and asked here instead - and a Cancel "
+            + "then discards a power cut the dialog never mentioned (DIR-A3)");
+
+        // AND THE CONTROL: the s88 door is not what changed, and must not become a question.
+        assertEquals(MarklinRoute.respondToConflict(false, false),
+            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            "the unattended door started cancelling, so an s88 route that cuts the power would stop "
+            + "cutting it");
+    }
+    /**
      * What a route does about a conflicting accessory command depends on who is there (MT-247).
      *
      * Adam, 2026-09-06: **"1. cancel should cancel everything.  OK should fire everything.  2. if the

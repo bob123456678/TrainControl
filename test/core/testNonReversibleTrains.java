@@ -271,11 +271,34 @@ public class testNonReversibleTrains
             "src/org/traincontrol/automation/Layout.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(source.replaceAll("\\s+", " ").contains(
-            "if (isCurrentLayout() && shouldReverseAt(current, "
-            + "path.get(path.size() - 1).getEnd(), loc, reversals))"),
-            "executePathInternal no longer decides reversals through shouldReverseAt, so the rule is "
-            + "tested here and something else decides what the railway actually does");
+        String flat = source.replaceAll("\\s+", " ");
+
+        // THE INTERMEDIATE POINTS.
+        assertTrue(flat.contains(
+            "if (shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))"),
+            "executePathInternal no longer decides an intermediate reversal through shouldReverseAt, "
+            + "so the rule is tested here and something else decides what the railway does");
+
+        // AND THE ARRIVAL, which is a SECOND site and was asking nobody (DIR-A2).
+        //
+        // The policy is consulted from inside `if (i != path.size() - 1)`; the last point is turned
+        // forty lines below the loop by a different statement. So a hand-driven send whose
+        // DESTINATION is a may-reverse point turned the train without a word - the literal case the
+        // feature was built for. A call-site check that knew about one site reported clean about that.
+        assertTrue(flat.contains("|| (arrived.isReversing() && (reversals == null "
+            + "|| reversals.shouldReverse(loc, arrived)))"),
+            "the arrival does not consult the policy, so a journey that ENDS at a may-reverse point "
+            + "turns the train without asking (DIR-A2)");
+
+        // AND THE TRAIN IS STOPPED BEFORE ANYBODY IS ASKED (DIR-A1).
+        //
+        // The dialog is modal and has no time limit, and everything that stopped the train used to be
+        // inside the branch the answer decides: measured at line speed when the question was put, and
+        // still at line speed five seconds later.
+        assertTrue(flat.contains("if (isCurrentLayout() && current.isReversing()) "
+            + "{ loc.setSpeed(0).waitForSpeedBelow(1);"),
+            "the train is no longer stopped before the reversal question is asked, so it runs past a "
+            + "headshunt for as long as it takes somebody to answer a dialog (DIR-A1)");
     }
     /**
      * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).

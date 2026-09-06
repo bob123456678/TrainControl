@@ -767,7 +767,27 @@ public class MarklinRoute extends Route
                                     // does not ask at all and the manual door asking is what Adam
                                     // wants.  A person who cancels a route that would have cut the
                                     // power has the Stop button in front of them.
-                                    final boolean askable = !auto && this.network.getGUI() != null;
+                                    // AND A ROUTE THAT CUTS THE POWER IS NEVER ASKED, at this door as
+                                    // well as the one before the route starts (DIR-A3).
+                                    //
+                                    // MT-247 took `!this.hasEmergencyStop()` out of this condition and
+                                    // left the identical clause standing in
+                                    // `conflictingAccessoryAndReason`, which is what screens a route
+                                    // BEFORE it runs.  So the two halves of one gesture disagreed: a
+                                    // stop-carrying route was waved past the pre-route screen - it
+                                    // answers "nothing to confirm" - and then met the question here
+                                    // instead, where Cancel now returns out of the whole route.
+                                    //
+                                    // Measured: `preRouteConflict=null midwayAsked=2
+                                    // powerStillOn=true`.  The operator was asked about a turnout and,
+                                    // by answering it, silently declined a power cut the dialog never
+                                    // mentioned.  Adam's ruling of 2026-09-01 is the older and the
+                                    // narrower one - *"emergency stop should never conflict or
+                                    // prompt"* - and MT-247 is about what happens WHEN somebody is
+                                    // asked.  A route carrying a stop is not asked, at either door,
+                                    // and then MT-247 governs every route that is.
+                                    final boolean askable = !auto && !this.hasEmergencyStop()
+                                        && this.network.getGUI() != null;
 
                                     final ConflictResponse response = respondToConflict(askable,
                                         askable && this.network.getGUI().confirmRouteConflictMidway(
