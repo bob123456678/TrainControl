@@ -5828,6 +5828,23 @@ public class testAutonomyDiagramSession
             + "reported as reachable.  The runtime blocks every path through a closed square - "
             + "manual routes included - and the cross on the diagram says so, but the checks walked "
             + "straight through it (V31-C3).  Findings: " + session.check());
+
+        // AND THE CLOSED SQUARE ITSELF IS STILL A DESTINATION, which is the half the first attempt
+        // got wrong.
+        //
+        // `isPathClear` refuses a closed square as an INTERMEDIATE and says why it does not refuse it
+        // at either end: a manual route may still start from one - that is how a train held in place
+        // is driven out - and may still finish on one, which is how a route to a parked-up berth is
+        // picked.  Dropping it from the walk entirely made the checker disagree with the built graph
+        // about ten of Adam's stations, and `testTheCheckerAgreesWithTheBuild` is what caught it.
+        session.setStation(middle, true);
+
+        session.rebuild();
+
+        assertFalse(unreachable(session.check()).contains(middle),
+            "a station that is switched out of service was reported as unreachable.  Closing a square "
+            + "stops trains PASSING through it; a route may still finish there, which is how a berth "
+            + "that has been parked up is picked.  Findings: " + session.check());
     }
 
     /**

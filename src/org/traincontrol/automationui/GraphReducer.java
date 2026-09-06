@@ -680,9 +680,6 @@ public class GraphReducer
 
         if (from == null || !points.containsKey(from)) return reached;
 
-        // A train standing on a closed square is not a journey anybody planned, and nothing can leave
-        // it either - the closure is on the square, not on a direction.
-        if (closed != null && closed.contains(from)) return reached;
 
         // The starting Point has no arrival side - the train is already standing there, and the
         // question is whether the TRACK allows the journey onward.  Same as findPath's start state.
@@ -744,14 +741,25 @@ public class GraphReducer
                 // more restricted railway than the one that exists: a station whose only route ran
                 // through a barred side was reported as reaching nothing, and Adam acts on those
                 // warnings by editing his diagram.
-                // CLOSED IS NOT BARRED: neither reached NOR walked through (V31-C3).  See the
-                // javadoc above - the difference between the two is the whole of this finding.
-                if (closed != null && closed.contains(edge.getEnd())) continue;
-
                 if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     reached.add(edge.getEnd());
                 }
+
+                // REACHED BUT NOT WALKED THROUGH, which is exactly what a closure is (V31-C3).
+                //
+                // `Layout.isPathClear` refuses a closed square as an INTERMEDIATE and says why it does
+                // not refuse it at either end: *"a manually chosen route may still START from a
+                // deactivated point, which is how a train held in place is driven out by hand, and may
+                // still FINISH on one, which is how a route to a parked-up berth is picked.  Passage is
+                // the absolute case."*
+                //
+                // The first version of this dropped the square entirely - not reached, not entered -
+                // and that made the checker disagree with the built graph about ten stations on Adam's
+                // railway, which `testTheCheckerAgreesWithTheBuild` caught.  A destination the checker
+                // calls unreachable and the railway will happily route to is a warning nobody can act
+                // on, and it is the same fault in the other direction.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 

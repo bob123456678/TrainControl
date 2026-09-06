@@ -2809,7 +2809,26 @@ public class AutonomyEditorPanel extends JPanel
         if (standing == null) return null;
 
         final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
-            session.facingChoices(target);
+            new java.util.ArrayList<>(session.facingChoices(target));
+
+        final org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
+
+        // AND WHATEVER IS ACTUALLY RECORDED, even when this square cannot hold it (OB-177).
+        //
+        // Adam: "the '<locomotive> is facing' menu doesn't always correctly reflect the facing of the
+        // train there."
+        //
+        // The radios are a ButtonGroup, and the tick was `facing == recorded`.  A recorded facing that
+        // is not among the offered ones therefore ticked NOTHING - the menu opened with every choice
+        // blank, which reads as "this train has no facing" when in fact it has one this square cannot
+        // hold.  That state is real and already has a name: `facingsThatCannotBeHeld` reports it, so
+        // the setup knew and the menu was the one place that did not say.
+        //
+        // It gets an entry rather than being silently corrected, because which of the two is wrong -
+        // the record or the track under it - is not this menu's to decide.  The finding says the
+        // square cannot hold it; the menu says what the train is down as; clicking any other entry
+        // resolves both.
+        if (recorded != null && !facings.contains(recorded)) facings.add(recorded);
 
         if (facings.size() <= 1) return null;
 
@@ -2819,8 +2838,6 @@ public class AutonomyEditorPanel extends JPanel
         facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
 
         javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
-
-        org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
 
         for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
         {
