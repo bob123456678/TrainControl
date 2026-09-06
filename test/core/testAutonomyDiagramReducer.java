@@ -43,6 +43,73 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class testAutonomyDiagramReducer
 {
     /**
+     * `findPath` and `reachableTiles` agree about a square switched out of service (DIR-B1).
+     *
+     * **A rule given to one of a pair.** `reachableTiles` gained a `closed` set so the findings panel
+     * would stop routing through squares the runtime refuses; `findPath` - the editor's *test a path*
+     * tool, called three lines away in the same file on the same turn sets - was left walking the old
+     * railway. Measured before the fix: `reachableWithClosed=[A, B]` while `findPathAtoC=FOUND`,
+     * through the closed square.
+     *
+     * Two comments in the tree state the invariant that broke - `AutonomyEditorPanel`'s *"the path
+     * test and the findings panel cannot disagree about which way a train may go"* and
+     * `AutonomyChecks`'s *"the same one Layout.bfs and the editor's path test ask"*. Both were true
+     * when written and neither was after that change.
+     *
+     * **Asserted as agreement between the two**, not as either one's answer, because agreement is what
+     * was lost and a test of either alone passed throughout.
+     *
+     * MUTATION: remove the `closed` continue from `findPath` and the second assertion fails; remove it
+     * from `reachableTiles` and the first does.
+     */
+    @Test
+    public void testBothWalksAgreeAboutAClosedSquare() throws IOException
+    {
+        // The same A - B - C run the barred-arrival test in this class uses.
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        TileKey a = key("main", 1, 1);
+        TileKey b = key("main", 3, 1);
+        TileKey c = key("main", 5, 1);
+
+        Set<TileKey> none = Collections.emptySet();
+        Map<TileKey, Set<Side>> noBars = new java.util.LinkedHashMap<>();
+
+        // THE CONTROL: with nothing closed, C is both reachable and routable.  Without it, a fixture
+        // whose run does not join up satisfies everything below.
+        assertTrue(reducer.reachableTiles(a, none, none, noBars).contains(c),
+            "control: C must be reachable from A with nothing closed, or this fixture shows nothing");
+
+        assertNotNull(reducer.findPath(a, c, none, none, noBars),
+            "control: there must be a path from A to C with nothing closed");
+
+        Set<TileKey> closed = new java.util.LinkedHashSet<>(java.util.Arrays.asList(b));
+
+        assertFalse(reducer.reachableTiles(a, none, none, noBars, closed).contains(c),
+            "the reachability walk still reaches C through a closed square");
+
+        assertNull(reducer.findPath(a, c, none, none, noBars, closed),
+            "the editor's path test still draws a route through a square switched out of service, so "
+            + "it offers a route the runtime refuses - and the findings panel beside it says the "
+            + "opposite (DIR-B1)");
+
+        // AND THE CLOSED SQUARE IS STILL A DESTINATION IN BOTH, which is what the runtime allows: a
+        // route may finish on one, it may just not pass through.
+        assertTrue(reducer.reachableTiles(a, none, none, noBars, closed).contains(b),
+            "a closed square stopped being reachable AS a destination");
+
+        assertNotNull(reducer.findPath(a, b, none, none, noBars, closed),
+            "a closed square stopped being routable AS a destination, so a route to a berth that has "
+            + "been parked up cannot be picked");
+    }
+    /**
      * A red arrow stops a train LANDING, not passing through (corrected 2026-08-28).
      *
      * The case the two tests beside this one could not see, and the one an independent reviewer found.

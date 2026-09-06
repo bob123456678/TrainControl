@@ -475,6 +475,52 @@ public class GraphReducer
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
     {
+        return findPath(from, to, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * The same, with squares that are CLOSED rather than merely barred (DIR-B1).
+     *
+     * **The sibling learned this and this did not.** `reachableTiles` gained a `closed` set on
+     * 2026-09-06 so the findings panel would stop routing through squares switched out of service.
+     * This method is the editor's *test a path* tool, called three lines away in the same file on the
+     * same turn sets - and it was left walking the old railway.
+     *
+     * Two comments in this tree state the invariant that broke.  `AutonomyEditorPanel`: *"The same
+     * turn sets the reachability check uses, from the one place that computes them, so the path test
+     * and the findings panel cannot disagree about which way a train may go."*  `AutonomyChecks`:
+     * *"reachableTiles answers the split-aware question instead, which is the same one Layout.bfs and
+     * the editor's path test ask."*  Both were true when written; neither was after that change.
+     *
+     * Measured before the fix: a three-sensor run A-B-C with B closed gave `reachableWithClosed=[A,
+     * B]` and `findPathAtoC=FOUND (through the closed square)` - the tool drew a route the runtime
+     * refuses.
+     *
+     * Same semantics as the sibling, for the same reason: `isPathClear` refuses a closed square as an
+     * INTERMEDIATE and not at either end, so it is a valid destination and never a way through.
+     *
+     * **That is the MANUAL tier's rule, and both callers ask an autonomy question (DIR-C10).**
+     * `isPathClear` refuses a closed FINAL point too, but only `if (this.isAutoRunning())` - and while
+     * autonomy runs it additionally refuses any edge with a closed endpoint.  So for the checks, which
+     * ask what autonomy can do, treating a closed square as a valid destination overstates what is
+     * reachable.
+     *
+     * Left as it is deliberately: the overstatement is in the safe direction - the findings may call a
+     * closed station reachable when autonomy would never route there, which hides nothing that was not
+     * hidden before - and the alternative is a second walk with a second rule, which is how the two
+     * walks came to disagree in the first place.
+     *
+     * @param from where the train is
+     * @param to where it should go
+     * @param mayTurn squares where turning round is allowed
+     * @param mustTurn squares where it is compulsory
+     * @param barred arrival sides closed off - passed through, not stopped at
+     * @param closed squares nothing may pass through
+     * @return the path, or null when there is none
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+    {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
 
         if (from.equals(to)) return new ArrayList<ReducedEdge>();
@@ -580,6 +626,13 @@ public class GraphReducer
 
                     return path;
                 }
+
+                // REACHED BUT NOT WALKED THROUGH, exactly as reachableTiles has it (DIR-B1).
+                //
+                // The arrival test above has already run, so a closed square is still a destination -
+                // which is what `isPathClear` allows, and how a route to a berth that has been parked
+                // up is picked.  What is refused is going ONWARD from it.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 frontier.add(next);
             }

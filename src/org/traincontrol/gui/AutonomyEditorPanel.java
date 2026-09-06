@@ -5691,7 +5691,10 @@ public class AutonomyEditorPanel extends JPanel
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && session.getReducer() != null)
                 {
-                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred), tile, true);
+                    // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
+                    // (DIR-B1).
+                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
+                        session.shutTiles()), tile, true);
                 }
             }
             else
@@ -5910,11 +5913,13 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null
-                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred);
+                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred,
+                    session.shutTiles());
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
             session.getReducer() == null ? null
-                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred);
+                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred,
+                    session.shutTiles());
 
         traces.clear();
 

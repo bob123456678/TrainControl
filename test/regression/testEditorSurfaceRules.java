@@ -75,23 +75,35 @@ public class testEditorSurfaceRules
      * Checked as a door census rather than by driving the dialog, because the defect is a door that
      * does not ask - and a test that drives the four that do would have passed throughout.
      *
-     * MUTATION: remove the call from any listed door and this fails, naming it.
+     * MUTATION: remove the call from any listed door and this fails, naming the file and how many of
+     * its doors still ask.
      */
     @Test
     public void testEveryDoorThatNamesALocomotiveChecksTheName() throws Exception
     {
-        final String[][] doors =
+        // COUNTED PER FILE, not merely present (DIR-C7).
+        //
+        // The first version asserted `source.contains("isNameUsable(")` per FILE, and
+        // `TrainControlUI` holds TWO independent doors - the rename dialog and the one that applies a
+        // name the Central Station proposes.  Removing the call from either left the other`s
+        // occurrence satisfying the check, so the javadoc`s "remove the call from any listed door and
+        // this fails" was untrue of exactly the file with more than one.
+        //
+        // A count is cruder than locating each door and cannot say WHICH one went - but it cannot
+        // report clean when one of a pair is removed, which is the failure that mattered.
+        final Object[][] doors =
         {
-            {"src/org/traincontrol/gui/AddLocomotive.java", "the Add Locomotive dialog"},
-            {"src/org/traincontrol/gui/TrainControlUI.java", "the rename and Central Station doors"},
-            {"src/org/traincontrol/gui/RouteEditorFrame.java", "the route editor"},
+            {"src/org/traincontrol/gui/AddLocomotive.java", "the Add Locomotive dialog", 1},
+            {"src/org/traincontrol/gui/TrainControlUI.java",
+                "the rename dialog and the Central Station name", 2},
+            {"src/org/traincontrol/gui/RouteEditorFrame.java", "the route editor", 1},
         };
 
         final java.util.List<String> silent = new java.util.ArrayList<>();
 
-        for (String[] door : doors)
+        for (Object[] door : doors)
         {
-            java.io.File file = new java.io.File(door[0]);
+            java.io.File file = new java.io.File((String) door[0]);
 
             assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this "
                 + "test reports every door as silent and means nothing");
@@ -99,7 +111,12 @@ public class testEditorSurfaceRules
             String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 
-            if (!source.contains("isNameUsable(")) silent.add(door[1] + " (" + door[0] + ")");
+            int asked = source.split("isNameUsable\\(", -1).length - 1;
+
+            if (asked < (Integer) door[2])
+            {
+                silent.add(door[1] + " (" + door[0] + ": " + asked + " of " + door[2] + ")");
+            }
         }
 
         assertTrue(silent.isEmpty(),
@@ -1380,7 +1397,24 @@ public class testEditorSurfaceRules
 
         assertTrue(asks > 0, "nothing in MarklinRoute asks the mid-route question any more");
 
-        String around = route.substring(Math.max(0, asks - 220), asks);
+        // FOLLOW THE GUARD, NOT THE DISTANCE (DIR-C7 sweep, 2026-09-06).
+        //
+        // This read the 220 characters before the call and looked for `!auto` in them.  That held
+        // while the gate was written inline; `DIR-A3` gave it a name - `askable` - and the gate moved
+        // out of the window while remaining exactly as strong.  A proximity check reports on where the
+        // code is written rather than on what it says.
+        //
+        // The guard is now followed by name: whatever `askable` is defined as has to contain `!auto`,
+        // and the call has to be behind it.
+        String around = route.contains("askable")
+            ? route.substring(route.indexOf("askable ="),
+                Math.min(route.length(), route.indexOf("askable =") + 220))
+            : route.substring(Math.max(0, asks - 220), asks);
+
+        assertTrue(route.substring(Math.max(0, asks - 220), asks).contains("askable")
+                || route.substring(Math.max(0, asks - 220), asks).contains("!auto"),
+            "the mid-route question is no longer behind the gate at all - neither `askable` nor "
+            + "`!auto` appears anywhere near the call");
 
         assertTrue(around.contains("!auto"),
             "the mid-route confirmation is no longer gated on !auto, so a route fired by an s88 "

@@ -5113,6 +5113,20 @@ public class Layout
 
     /**
      * What autonomy uses, and what every caller used before there was a choice.
+     *
+     * **Which callers get it, and why that was decided rather than defaulted (DIR-C9).**  Four places
+     * call `executePath`.  The two hand-driven doors pass a prompt.  The other two take the
+     * four-argument overload and land here:
+     *
+     * - autonomy's own dispatch loop, which chose the path itself and whose `pickPath` already refuses
+     *   any path that reverses along the way, so the only reversal it can reach is one it meant;
+     * - the timetable, which `Return Home` loads.  `executeTimetableInternal` sets `running`, so a
+     *   staging run IS an autonomous run by every other test in this file, and `HomeStaging` plans the
+     *   reversals it needs - `connected` reasons about them explicitly.  Asking the operator about a
+     *   turn the planner chose on their behalf would be asking about a decision they already made.
+     *
+     * A new caller inherits this by writing four arguments, which is easy to do without meaning it -
+     * hence this list.
      */
     public static final ReversalPolicy ALWAYS_REVERSE = (loc, at) -> true;
 

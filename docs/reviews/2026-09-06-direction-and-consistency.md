@@ -234,7 +234,7 @@ both and `heldReason`'s caller re-acquires it. What cannot stand is one of each,
 | | |
 |---|---|
 | **Severity** | B - the editor's "test a path" tool exists so a route can be read off the track rather than out of a sentence, and it now draws routes the runtime refuses. Not A: it misleads rather than moves anything, and `isPathClear` still refuses the path when a train is actually sent |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **Measured by execution.** A probe built a three-sensor run A-B-C, closed B, and asked both walks: `reachableWithClosed=[A, B]`, `containsC=false`, and `findPathAtoC=FOUND (through the closed square)`. The closed square is still a valid destination in both (`closedDestinationReachable=true`), which is the half the correction got right. What I did NOT reach: how many squares on Adam's own railway are closed, so how visible this is in practice |
 
 `GraphReducer.reachableTiles` gained a fifth argument and a `continue` that stops the walk entering a
@@ -264,7 +264,7 @@ the same edit that was made to `AutonomyChecks`, applied to the sibling that was
 | | |
 |---|---|
 | **Severity** | B - a false claim in the log about what a route did to the railway, in all eight languages, in the one record the operator has of a route they cancelled. Not A: nothing acts on it |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **Measured by execution.** A probe built a route whose commands are `[stop, accessory]` with the accessory on a locked path and the operator answering no. The log came back with the two lines two hundred milliseconds apart: `Route PC route power turned off due to condition` then `Route PC route was cancelled: you declined its conflicting accessory command, so nothing in the route ran.` The probe's own oracle agreed: `powerStillOn=false` |
 
 `execRoute` walks `this.route` in order and the cancel is a `return` from inside the loop. Everything
@@ -285,7 +285,7 @@ is what the two neighbouring refusal messages were corrected to say for the same
 | | |
 |---|---|
 | **Severity** | B - the arrow the operator reads and the list of destinations the operator is offered are now two answers to one question, and they can differ for as long as it takes to open an editor. Before the change both were stale together, which is wrong but consistent |
-| **Disposition** | open |
+| **Disposition** | open - needs Adam.  `flipFacing` writes the setup and nothing rebuilds the running layout, so the diagram's arrow and the destination list answer for different facings until the next build - and `captureFromLayout` will then overwrite the setup from the running copy, undoing it.  Which of the two wins is a decision about the railway, and guessing at it is what produced `DIR-A2` and the reverted reversal rule earlier today. |
 | **Confidence** | **By reading**, with the mechanism confirmed by execution in the flipFacing probe (`setFacing` writes the setup and `getFacing` reads it back; the running Layout is never touched). `flipFacing` calls only `placedLocomotives`, `getFacing`, `facingChoices` and `setFacing`, and `setPointProperty` derives the station index without rebuilding. What I did NOT reach: running the whole window with a real session and a real layout to see the two side by side - that needs the application, not a probe |
 
 A square is several Points, one per side a train can arrive by, and which copy a locomotive stands on
@@ -316,7 +316,7 @@ unchanged to this.
 | | |
 |---|---|
 | **Severity** | B - `autonomySetupChanged()` is the heaviest refresh in the window (findings recompute, locomotive panels, grid rebuild) and every other caller reaches it from the event thread; one of them wraps it in `invokeLater` explicitly. This one reaches it from `locMessageProcessor`, holding the `TrainControlUI` monitor |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** The call chain is `MarklinControlStation:2429` (inside `this.locMessageProcessor.submit`) -> `repaintLoc(false, locList)` (declared `synchronized`) -> `followDirectionChanges` -> `flipFacing` -> `setPointProperty` -> `deriveStationIndex()` -> back in the UI, `autonomySetupChanged()` -> `refreshAutonomyTabState` + `refreshStaticAutonomyLayer` (which runs `refreshAutonomyFindings`) + `repaintAutoLocList` + `repaintLayout`. What I did NOT reach: whether this actually deadlocks or throws in practice - reproducing it needs a window and a Central Station, and this pass ran headless |
 
 Three separate things follow from the placement:
@@ -345,7 +345,7 @@ where it is, and marshal the expensive half onto the event thread.
 | | |
 |---|---|
 | **Severity** | C - documentation, but the kind a reader checks against. `View.java`'s is the contract every implementer of the interface reads |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading**, with both underlying behaviours measured (see `DIR-A3`) |
 
 `View.confirmRouteConflictMidway` (`:113-126`) now says two things that are not true:
@@ -366,7 +366,7 @@ happens to exercise.
 | | |
 |---|---|
 | **Severity** | C - the operator declines a route at the pre-route dialog and nothing anywhere says the route did not run; they decline the same route at the midway dialog and get two lines |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** `askAboutRouteConflict` returning `REFUSED` is handled at `TrainControlUI:17044` (`refreshRouteList(); return;`) and `LayoutLabel:624` (`return;`); neither logs. The midway branch logs `now[1]` and then `route.cancelledByOperator` |
 
 MT-247's ruling - *"cancel should cancel everything"* - was already the behaviour at the pre-route door,
@@ -382,7 +382,7 @@ own - the operator confirmed a dialog and is owed a reason why nothing happened.
 | | |
 |---|---|
 | **Severity** | C - the state is real (the checks report it, and `captureFromLayout` and a hand-edited file can both produce it), and the failure is silent: `flipFacing` returns null, so `followDirectionChanges` `continue`s and not even the log line is written |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **Measured by execution.** A probe wrote the same locomotive onto two squares, gave a facing to the second only, and called `flipFacing`: `moved=null facingAafter=null facingBafter=E`. Neither square moved, including the one that could have |
 
 The loop is:
@@ -410,7 +410,7 @@ order the file happens to be in.
 | | |
 |---|---|
 | **Severity** | C - two features went in on 2026-09-06 about the same state and only one of them knows it exists |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **Measured by execution.** A probe recorded facing `N` on a square whose choices are `[W, E]` - the `facingsThatCannotBeHeld` state - and called `flipFacing`: `moved=null after=N` |
 
 OB-177 taught the facing menu to show a recorded facing the square cannot hold, because *"That state
@@ -431,7 +431,7 @@ facing - and no finding.
 | | |
 |---|---|
 | **Severity** | C - one direction change is silently swallowed after every rename, and a name that comes back on a different locomotive inherits the old one's remembered direction |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** `grep -rn "lastSeenDirection"` returns exactly two lines, both inside `followDirectionChanges`. `autonomyLocomotiveRenamed` calls only `repairAutonomyLocomotive`, and `autonomyLocomotiveDeleted` does not touch the map |
 
 This is the by-name state pattern the repository has already paid for: a rename door and a delete door
@@ -454,7 +454,7 @@ which flips a facing nobody asked to flip.
 | | |
 |---|---|
 | **Severity** | C - `tilesWhere`'s javadoc names the exact danger and `placedLocomotives()` already embodies it |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** `placedLocomotives()` (`:1463`) walks `configuration.getJSONObject("points")` with its own copy of the six lines `tilesWhere` was extracted from, plus `if (store.getExcludedPages().contains(tile.getPage())) continue;` |
 
 WK3-C3 folded four walks into `tilesWhere` and says why: *"If one gains a qualification - homes on
@@ -478,7 +478,7 @@ confirmed the consequence: a placement written as `" Loc A"` is not matched by `
 | | |
 |---|---|
 | **Severity** | C - a guard that reports clean about cases it never heard of, and the guard's own MUTATION note claims otherwise |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** `testEveryDoorThatNamesALocomotiveChecksTheName` lists three FILES and asserts `source.contains("isNameUsable(")` for each. `TrainControlUI.java` holds two independent doors (`:17478` the rename dialog, `:23507` the Central Station name), so removing the call from either leaves the other's occurrence satisfying the test |
 
 The javadoc says *"MUTATION: remove the call from any listed door and this fails, naming it."* For the
@@ -505,7 +505,7 @@ already gets two lines above) but it is a door, and it is the one the operator c
 | | |
 |---|---|
 | **Severity** | C - a modal question that stops a journey, owned by no window. Not B: `LayoutRightclickAutonomyMenu` already parents its two existing dialogs the same way, so this is inherited rather than introduced - but those fire within a second of the click, and this one can fire minutes later |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** `askAboutReversing` passes `this`, and `this` is the `JPopupMenu` - the class is `final class LayoutRightclickAutonomyMenu extends JPopupMenu`. The item's listener starts a thread and the popup is dismissed by the click; `executePath` then blocks until the train reaches the reversing point. What I did NOT reach: showing that `JOptionPane` actually falls back to the shared root frame for a dismissed popup - that needs a display, and this pass ran headless |
 
 The sibling door is better behaved by accident: `AutoLocomotiveStatus` passes `this`, a panel that is
@@ -521,7 +521,7 @@ what the question should be centred on.
 | | |
 |---|---|
 | **Severity** | C - the answer is probably right for both; what is missing is the sentence saying so, which is what the next person to add a caller will look for |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading.** There are four call sites. `Layout:3686` (autonomy's own loop) and `Layout:4785` (the timetable, which Return Home loads) take the 4-argument overload and so get `ALWAYS_REVERSE`; the two hand-driven doors pass a prompt |
 
 The timetable case is defensible and worth writing down: `executeTimetableInternal` sets `running`, so
@@ -545,7 +545,7 @@ takes a policy, and the distinction is exactly what `DIR-A2` is about.
 | | |
 |---|---|
 | **Severity** | C - an overstatement in the safe direction (the findings will say a closed station is reachable when autonomy will never route there), so nothing is hidden that was not hidden before. Worth stating because the correction was made ON the strength of the manual rule and both readers are autonomy checks |
-| **Disposition** | open |
+| **Disposition** | fixed |
 | **Confidence** | **By reading**, with the walk's behaviour measured (`closedDestinationReachable=true`). `isPathClear` refuses an intermediate closed square unconditionally (`:2299`) and refuses a closed final point only `if (this.isAutoRunning())` (`:2320`); `:2243` additionally refuses any edge with a closed endpoint while auto is running |
 
 `reachableTiles`'s new comment quotes `isPathClear` correctly: a closed square may start a manual route

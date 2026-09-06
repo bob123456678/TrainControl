@@ -1430,8 +1430,27 @@ public class AutonomySession
 
             List<Side> choices = facingChoices(tile);
 
-            // Two, because "the other one" has to mean something.
-            if (recorded == null || choices.size() != 2 || !choices.contains(recorded)) return null;
+            // CARRY ON RATHER THAN GIVE UP (DIR-C3).
+            //
+            // This used to `return null` on the first square that could not be decided.  A locomotive
+            // recorded on TWO squares - which the checks report, and which `captureFromLayout` and a
+            // hand-edited file can both produce - therefore got no follow at all, including on the
+            // square that could have been decided.  Measured: `moved=null facingAafter=null
+            // facingBafter=E`, with neither square moved.
+            if (recorded == null || choices.size() != 2) continue;
+
+            // A RECORDED FACING THIS SQUARE CANNOT HOLD, which is exactly the state `OB-177` taught
+            // the menu to show and this gave up on in silence (DIR-C4).  Two features shipped the same
+            // day about one state, and only one of them knew it existed.
+            //
+            // Not flipped, because "the other one" means nothing when the recorded value is neither
+            // of them - and not logged from here either: this class has no control station to log
+            // through, and inventing a channel for one line would be the larger change.  The state is
+            // NOT invisible: `facingsThatCannotBeHeld` reports it in the findings panel and the menu
+            // shows it since `OB-177`.  What is worth knowing, and is why this is written down rather
+            // than left implicit, is that the correction such a square most naturally gets - somebody
+            // turning the train on the track - is the one gesture that will not take.
+            if (!choices.contains(recorded)) continue;
 
             setFacing(tile, choices.get(0) == recorded ? choices.get(1) : choices.get(0));
 
@@ -1439,6 +1458,42 @@ public class AutonomySession
         }
 
         return null;
+    }
+    /**
+     * The locomotive standing on a stored point, or null when none is (DIR-C6).
+     *
+     * One spelling of "a locomotive is here", so the walk that finds them and the walk that reads
+     * them cannot disagree about what a blank name means.
+     *
+     * @param point the stored point
+     * @return the name, or null
+     */
+    private static String namedLocomotiveOn(org.json.JSONObject point)
+    {
+        org.json.JSONObject standing = point == null ? null : point.optJSONObject("loc");
+
+        if (standing == null) return null;
+
+        String name = standing.optString("name", "");
+
+        return name.trim().isEmpty() ? null : name;
+    }
+
+    /**
+     * A square's stored point in the active configuration, or null.
+     *
+     * @param tile the square
+     * @return the stored point
+     */
+    private org.json.JSONObject pointOf(TileKey tile)
+    {
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return null;
+
+        return configuration.getJSONObject("points").optJSONObject(tile.toString());
     }
     /**
      * Which locomotive the active configuration records standing on each square.
@@ -1464,38 +1519,24 @@ public class AutonomySession
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
 
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return out;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return out;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        for (String key : points.keySet())
+        // THROUGH THE SHARED WALK, which is what it was extracted for (DIR-C6).
+        //
+        // `WK3-C3` folded four copies of these six lines into `tilesWhere` and said why: *"If one
+        // gains a qualification - homes on excluded pages, squares the diagram no longer draws - the
+        // others will not have it, and the button will act on a set the findings never mentioned."*
+        // This was a fifth copy, left outside the helper written to stop there being five.
+        //
+        // Its own extra filter - an excluded page is not in play - stays here, because it belongs to
+        // this question rather than to every walk of the map.
+        for (TileKey tile : tilesWhere((key, point) -> namedLocomotiveOn(point) != null))
         {
-            org.json.JSONObject extras = points.optJSONObject(key);
-
-            if (extras == null) continue;
-
-            org.json.JSONObject standing = extras.optJSONObject("loc");
-
-            if (standing == null) continue;
-
-            String name = standing.optString("name", "");
-
-            if (name.trim().isEmpty()) continue;
-
-            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
-
-            if (tile == null) continue;
-
-            // Not in play, so not worth reporting - see above.
             if (store.getExcludedPages().contains(tile.getPage())) continue;
 
-            out.put(tile, name);
+            org.json.JSONObject point = pointOf(tile);
+
+            if (point == null) continue;
+
+            out.put(tile, namedLocomotiveOn(point));
         }
 
         return out;

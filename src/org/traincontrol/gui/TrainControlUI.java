@@ -4024,6 +4024,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void autonomyLocomotiveRenamed(String from, String to)
     {
         repairAutonomyLocomotive(from, to);
+
+        // AND THE DIRECTION THIS WINDOW REMEMBERS, which is also keyed by name (DIR-C5).
+        //
+        // This is the by-name state pattern the repository has already paid for, and the reason this
+        // door and the delete door exist on `View` at all.  Left unrepaired, the map holds the OLD
+        // name and has no entry for the new one, so the first direction command after a rename finds
+        // nothing to compare against, teaches, and does not act - one change silently swallowed.
+        Boolean was = lastSeenDirection.remove(from);
+
+        if (was != null && to != null) lastSeenDirection.put(to, was);
     }
 
     /**
@@ -4033,6 +4043,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void autonomyLocomotiveDeleted(String name)
     {
         repairAutonomyLocomotive(name, null);
+
+        // EVICTED, and this is the half worth guarding (DIR-C5).
+        //
+        // Delete a locomotive and create a new one with the same name at a different address, and a
+        // stale entry makes its FIRST direction message read as a change rather than a first sighting
+        // - which flips a facing nobody asked to flip.
+        lastSeenDirection.remove(name);
     }
 
     private void repairAutonomyLocomotive(String from, String to)
@@ -9841,22 +9858,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (this.model.getAutoLayout().isRunning()) continue;
 
-            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+            if (getAutonomySession() == null) continue;
 
-            if (session == null) continue;
+            // THE CHEAP HALF HERE, THE REST ON THE EVENT THREAD (DIR-B4).
+            //
+            // This runs on `locMessageProcessor` - the Central Station's message thread - inside a
+            // `synchronized` method of this window.  What follows is the heaviest refresh the window
+            // has: `flipFacing` writes the store and rebuilds the station index, and
+            // `autonomySetupChanged` recomputes every finding, the locomotive panels and the grid.
+            //
+            // `AutonomySession` had exactly two writers of `setFacing` before this, both on the event
+            // thread, and the store is a JSON tree the event thread reads elsewhere.  Another caller
+            // of `autonomySetupChanged` already wraps it in `invokeLater` for the same reason.
+            //
+            // The DECISION stays up there, above the renderer's concurrency guard, because the graph
+            // has to follow every direction change and not only the ones that arrive while the
+            // renderer is idle.  What moves is the work.
+            final String name = loc.getName();
 
-            final org.traincontrol.automationui.TileGraph.TileKey moved =
-                session.flipFacing(loc.getName());
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-            if (moved == null) continue;
+                if (session == null) return;
 
-            // Said out loud: the setup has been changed by something the operator did to a train, and
-            // a silent edit to a stored configuration is the thing this project keeps filing against
-            // itself.
-            this.model.logf("autosetup.infoFacingFollowedDirection", loc.getName(),
-                String.valueOf(moved));
+                final org.traincontrol.automationui.TileGraph.TileKey moved = session.flipFacing(name);
 
-            autonomySetupChanged();
+                if (moved == null) return;
+
+                // Said out loud: the setup has been changed by something the operator did to a train,
+                // and a silent edit to a stored configuration is the thing this project keeps filing
+                // against itself.
+                this.model.logf("autosetup.infoFacingFollowedDirection", name, String.valueOf(moved));
+
+                autonomySetupChanged();
+            });
         }
     }
     /**
@@ -17036,6 +17072,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         refreshRouteList();
 
                         return;
+                    }
+
+                    // SAID OUT LOUD, as the midway door says it (DIR-C2).
+                    //
+                    // MT-247 made the two doors agree about the ACT - both now cancel the whole route
+                    // - and left them disagreeing about the RECORD: this one returned in silence while
+                    // the midway one logs two lines.  `executeRoute`'s own comment states the
+                    // principle: "unlike the greyed button these two doors say nothing on their own -
+                    // the operator confirmed a dialog and is owed a reason why nothing happened."
+                    if (answer == RouteConflict.REFUSED)
+                    {
+                        this.model.logf("route.cancelledByOperator", picked.getName());
                     }
 
                     if (answer == RouteConflict.REFUSED)

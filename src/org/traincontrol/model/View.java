@@ -116,13 +116,20 @@ public interface View
      * never conflict or prompt" (`FX2-2`, `SVN-A4`) - so the one command that must not wait on a
      * person does not.
      *
+     * That was briefly untrue: `MT-247` took the clause out of the midway condition on 2026-09-06 and
+     * left the identical one standing in the pre-route screen, so a stop-carrying route was waved past
+     * the screen and asked here instead (`DIR-A3`).  Both doors carve it out again.
+     *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
      * @param reason the message key the route would have logged for this refusal, so the question
      *  names the right one of the two: a turnout on a locked path, or a signal protecting a
      *  platform with a train parked at it
-     * @return true to set it anyway and finish the route, false to skip this accessory and every
-     *  later one; in both cases the rest of the route runs once this returns
+     * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE -
+     *  nothing further of it runs, which is Adam's ruling of 2026-09-06 (`MT-247`): "cancel should
+     *  cancel everything.  OK should fire everything."  What has already gone out before the
+     *  conflicting command - earlier accessories, speeds, functions - has gone out; the cancel is
+     *  about the rest
      */
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 

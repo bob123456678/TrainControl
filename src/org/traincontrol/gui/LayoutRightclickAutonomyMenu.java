@@ -1015,7 +1015,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     private boolean askAboutReversing(org.traincontrol.base.Locomotive train,
         org.traincontrol.automation.Point where)
     {
-        return org.traincontrol.gui.ManualReversalPrompt.ask(this, train, where);
+        // THE WINDOW, NOT THIS MENU (DIR-C8).
+        //
+        // `this` is a JPopupMenu, and the click that dispatched the train dismissed it.  The question
+        // can arrive minutes later, when the train reaches the reversing point - so it would be a
+        // modal dialog owned by a component that is no longer showing.  The two dialogs this class
+        // already parents on itself fire within a second of the click, which is why they get away with
+        // it; this one cannot.
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+        return org.traincontrol.gui.ManualReversalPrompt.ask(
+            window != null ? window : this, train, where);
     }
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path.
