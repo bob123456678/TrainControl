@@ -105,13 +105,20 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * Every station that is not a terminus, put a train down on each copy and see it stay there.
+     * The heading survives the paste, at every station the rule can be asked about.
+     *
+     * SPEC-A1: the version of this test that shipped this morning could not fail.  Its `putDown`
+     * helper re-implemented the door rather than calling it, and then handed in the same `Side` it
+     * went on to assert - so it agreed with itself whatever the program did.  The file's own javadoc
+     * said as much and it still read as covering the defect.  `assert-the-variable-not-the-control`,
+     * in its purest form.
+     *
+     * This asks the rule instead, which is where the decision actually is.
      */
     @Test
-    public void testEveryNonTerminusStationKeepsTheDirectionItWasGiven() throws Exception
+    public void testTheHeadingSurvivesWhereTheLandingCanHoldIt() throws Exception
     {
-        List<String> covered = new LinkedList<>();
-        List<String> wrong = new LinkedList<>();
+        java.util.List<String> checked = new LinkedList<>();
 
         for (Point station : stations())
         {
@@ -121,101 +128,35 @@ public class testAPastedTrainKeepsItsDirection
 
             if (square == null) continue;
 
-            Map<String, Side> copies = session.facingsFor(square);
+            Map<String, Side> held = session.facingsFor(square);
 
-            Side side = copies.get(station.getName());
+            if (held.isEmpty()) continue;
 
-            // A square with no named copies records no direction, deliberately: there is nothing to
-            // record and a guessed heading is worse than none.
-            if (side == null) continue;
-
-            putDown(square, station.getName(), side);
-
-            covered.add(station.getName());
-
-            // What the door writes.
-            if (!side.equals(session.getFacing(square)))
+            for (Side heading : held.values())
             {
-                wrong.add(station.getName() + " recorded " + session.getFacing(square)
-                    + " for a train standing on the " + side + " copy");
-
-                continue;
+                // A train arriving with a heading this square CAN hold keeps it.
+                assertEquals(AutonomySession.facingAfterAPaste(held, heading, station.getName()),
+                    heading,
+                    station.getName() + " turned a train that could have kept its heading " + heading
+                    + " - the square holds " + held);
             }
 
-            // And whether it survives a build, which is the half that was actually broken: the
-            // recorded facing is what picks the copy back out next time.
-            String after = whereTheTrainIsAfterARebuild();
-
-            if (!station.getName().equals(after))
-            {
-                wrong.add(station.getName() + " became " + after + " on rebuild");
-            }
-
-            lift(square);
+            checked.add(station.getName());
         }
 
-        assertTrue(covered.size() >= 2,
-            "this test asserts nothing unless it covered some stations; it covered " + covered);
-
-        assertTrue(wrong.isEmpty(), "a train was turned by being put down: " + wrong);
+        assertTrue(checked.size() >= 2,
+            "no station was checked, so this asserted nothing: " + checked);
     }
 
     /**
-     * What this layout can and cannot prove, measured rather than assumed.
+     * A terminus turns the train, whichever way it arrived.
      *
-     * `assert-the-variable-not-the-control`: the loop above asserts that a placement lands on the
-     * expected copy, and a placement can land there for a reason that has nothing to do with the
-     * recorded facing.  So this asks the question the loop cannot: is there any square where the
-     * facing changes the answer?
-     *
-     * **On the sample layout there is not, and that is the finding.**  Every named square builds to
-     * exactly ONE copy - even after being marked may-reverse, which is the instruction to split - so
-     * `placementCopy` reaches the same Point whatever is recorded, and no test run against this layout
-     * can show the facing picking between copies.  Saying so here is the point of the method: the loop
-     * above would otherwise read as proof of something it never tested, which is how the previous
-     * three attempts at this defect each came to look finished.
-     *
-     * What follows from it is that the reversal Adam saw is NOT the build choosing a different copy.
-     * It is the recorded VALUE - the direction the dropdown shows and the direction a later command
-     * would use - and on a one-copy square that value is forced to that copy's side regardless of
-     * which way the train was actually pointing when it was put down.
+     * Adam: **"for terminuses, they must reverse on paste"**.
      */
     @Test
-    public void testEverySquareOnThisLayoutBuildsToOneCopy() throws Exception
+    public void testATerminusTurnsWhateverArrives() throws Exception
     {
-        List<String> split = new LinkedList<>();
-        int named = 0;
-
-        for (Point station : stations())
-        {
-            TileKey square = session.getStationIndex().squareOf(station.getName());
-
-            if (square == null) continue;
-
-            Map<String, Side> copies = session.facingsFor(square);
-
-            if (copies.isEmpty()) continue;
-
-            named++;
-
-            if (copies.size() > 1) split.add(station.getName() + copies);
-        }
-
-        assertTrue(named >= 2, "no named square was reached, so this asserted nothing");
-
-        // Not a requirement - a record.  If a future layout or a future builder DOES split a square,
-        // this goes red and the control above becomes runnable, which is the moment to write it.
-        assertTrue(split.isEmpty(),
-            "a square now builds to more than one copy, so the facing can finally be shown to pick"
-            + " between them - write that control now: " + split);
-    }
-    /**
-     * A terminus has one direction, so a train put down there takes it - which is the reversal.
-     */
-    @Test
-    public void testATrainPutDownAtATerminusTakesTheOneDirectionThereIs() throws Exception
-    {
-        List<String> covered = new LinkedList<>();
+        java.util.List<String> checked = new LinkedList<>();
 
         for (Point station : stations())
         {
@@ -225,36 +166,91 @@ public class testAPastedTrainKeepsItsDirection
 
             if (square == null) continue;
 
-            Map<String, Side> copies = session.facingsFor(square);
+            Map<String, Side> held = session.facingsFor(square);
 
-            if (copies.isEmpty()) continue;
+            if (held.isEmpty()) continue;
 
-            assertEquals(copies.size(), 1,
-                station.getName() + " is a terminus, so there is one way to stand there, not "
-                + copies);
+            assertEquals(held.size(), 1,
+                station.getName() + " is a terminus, so there is one way to stand there: " + held);
 
-            Side only = copies.values().iterator().next();
+            Side only = held.values().iterator().next();
 
-            // Arriving the other way round, which is what makes this a reversal rather than a
+            // Arriving the other way round - which is what makes this a reversal rather than a
             // placement that happened to agree.
-            session.setFacing(square, opposite(only));
+            assertEquals(AutonomySession.facingAfterAPaste(held, opposite(only), station.getName()),
+                only,
+                station.getName() + " did not turn a train that arrived facing " + opposite(only));
 
-            putDown(square, station.getName(), only);
-
-            assertEquals(session.getFacing(square), only,
-                station.getName() + " must reverse a train put down on it");
-
-            assertEquals(whereTheTrainIsAfterARebuild(), station.getName(),
-                station.getName() + " must hold the train it reversed");
-
-            covered.add(station.getName());
-
-            lift(square);
+            checked.add(station.getName());
         }
 
-        assertFalse(covered.isEmpty(), "no terminus was reached, so this asserted nothing");
+        assertFalse(checked.isEmpty(), "no terminus was reached, so this asserted nothing");
     }
 
+    /**
+     * And an unholdable heading is cleared rather than replaced with an arbitrary one.
+     *
+     * This is SPEC-A1 itself: the shipped version recorded the copy the running layout had landed on,
+     * and `StationIndex.speakerAt` says that on an empty square "any copy will do".  Recording copy 0
+     * presents a direction nobody chose as one somebody did - and it survives a reload, which is why
+     * Adam saw the dropdown disagree with the train.
+     */
+    @Test
+    public void testAnUnholdableHeadingIsClearedNotInvented() throws Exception
+    {
+        java.util.Map<String, Side> twoWays = new java.util.LinkedHashMap<>();
+        twoWays.put("copyN", Side.N);
+        twoWays.put("copyS", Side.S);
+
+        assertEquals(AutonomySession.facingAfterAPaste(twoWays, Side.N, "copyS"), Side.N,
+            "a holdable heading must be kept even when the layout landed the train on the other copy -"
+            + " which copy it landed on is not evidence of anything, and was the SPEC-A1 defect");
+
+        assertEquals(AutonomySession.facingAfterAPaste(twoWays, Side.E, "copyS"), null,
+            "a heading the square cannot hold must clear the value so the menu asks, not be replaced"
+            + " by the copy the layout happened to pick");
+
+        assertEquals(AutonomySession.facingAfterAPaste(twoWays, null, "copyS"), null,
+            "with no known heading there is nothing to preserve and nothing to invent");
+
+        assertEquals(AutonomySession.facingAfterAPaste(
+            new java.util.LinkedHashMap<String, Side>(), Side.N, "anything"), null,
+            "a square with no copies has no direction to record");
+    }
+
+    /**
+     * The door reads the heading BEFORE it moves the train, and hands it to that rule.
+     *
+     * `extracted-rule-moves-the-bug-to-the-call`: everything above tests the rule, and the rule was
+     * never the hard part.  Both defects lived at the call - once by recording nothing, once by
+     * recording the wrong thing - so the call is asserted as a call.
+     *
+     * MUTATION: move the `headingBeforeTheMove` assignment below `moveLocomotive` and it reads null,
+     * which is the state that produced the shipped bug.
+     */
+    @Test
+    public void testTheDoorReadsTheHeadingBeforeItMovesTheTrain() throws Exception
+    {
+        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int read = door.indexOf("headingBeforeTheMove = getAutonomySession() == null");
+
+        assertTrue(read > 0,
+            "the door no longer reads the heading before moving the train. Read afterwards it is"
+            + " always null, and the paste falls back to whichever copy the layout arbitrarily chose"
+            + " - which is SPEC-A1, and the symptom Adam reported four times.");
+
+        int moved = door.indexOf(
+            "moveLocomotive(placing.getName(), point.getName(), false)", read);
+
+        assertTrue(moved > read,
+            "the heading is read after the move that clears it, so it is always null");
+
+        assertTrue(door.contains("AutonomySession.facingAfterAPaste("),
+            "the door no longer decides the facing through the rule every assertion above tests");
+    }
     // ---------------------------------------------------------------- the door, and the shared parts
 
     /**

@@ -4740,6 +4740,79 @@ public class AutonomySession
      * @param tile
      * @return the side its front faces, or null when nobody has said and nothing has run
      */
+    /**
+     * Which way a train put down on a square should end up pointing.
+     *
+     * Adam, 2026-09-06: **"pasted locomotives pasted on the succeeding/preceding station to a given
+     * station on the same line face into the station and away from that station, respectively"**, and
+     * **"for terminuses, they must reverse on paste"**.
+     *
+     * **Both halves of the first sentence are one rule: the heading survives.**  A train standing at
+     * the station after a reference station and pointing back down the line faces INTO it; the same
+     * train with the same heading one station earlier faces AWAY from it.  Nothing about the train
+     * changed between those two descriptions - only which square it stands on - so putting it down
+     * must not turn it.
+     *
+     * **And a terminus has one direction, so a train put down there takes it.**  That is not a special
+     * case bolted on; it falls out of asking what the landing can hold.  The end of a line holds one
+     * heading, so the answer is that heading whatever the train was doing before, which is the
+     * reversal Adam asks for.
+     *
+     * **Four attempts got here.**  The first three each changed the moment the direction CHANGES; the
+     * defect was the moment it stops being RECORDED.  The fourth recorded the landing copy's own side,
+     * which is not the train's heading at all - `StationIndex.speakerAt` says that on an empty square
+     * "any copy will do", so it was copy 0, chosen arbitrarily (SPEC-A1).  The heading has to be read
+     * BEFORE the move, from where the train was standing, and handed in here.
+     *
+     * Separated from the door so that it can be run: the door needs a window, a Central Station and a
+     * drag. `testAPastedTrainKeepsItsDirection` asserts the call site is a call site, so
+     * `extracted-rule-moves-the-bug-to-the-call` does not get another turn.
+     *
+     * @param held every copy the landing square builds to, by name, with the side each one faces
+     * @param keep the heading the train had before it was moved, or null when that is not known
+     * @param landedOn the copy the running layout chose, used only when nothing better is known
+     * @return the side to record, or null to record nothing
+     */
+    public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
+    {
+        // Nothing is known about this square - no copies, so no direction to record.  A guessed
+        // heading is worse than none: an absent facing at least makes the menu ask.
+        if (held == null || held.isEmpty()) return null;
+
+        // ONE COPY MEANS ONE ANSWER.  At a terminus that answer IS the reversal; everywhere else it
+        // is the only heading a train can have on that square, so it is right for the same reason.
+        if (held.size() == 1) return held.values().iterator().next();
+
+        // THE HEADING SURVIVES where the landing can hold it, which is Adam's rule proper.
+        if (keep != null && held.containsValue(keep)) return keep;
+
+        // Several copies, and the heading did not survive the move.  Nothing here knows which the
+        // operator meant, and the copy the layout picked was picked arbitrarily - so the value is
+        // cleared rather than invented, and the facing menu asks instead of showing an answer nobody
+        // gave.  Recording the arbitrary copy is what SPEC-A1 was about.
+        return null;
+    }
+
+    /**
+     * Which way the train of this name is currently recorded as pointing, wherever it is standing.
+     *
+     * Read BEFORE a move, because the move is what takes it off the square that knows.
+     *
+     * @param locomotive the train
+     * @return its recorded heading, or null if it is not placed or has none
+     */
+    public Side facingOf(String locomotive)
+    {
+        if (locomotive == null) return null;
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            if (locomotive.equals(placed.getValue())) return getFacing(placed.getKey());
+        }
+
+        return null;
+    }
+
     public Side getFacing(TileKey tile)
     {
         Object value = getPointProperty(tile, AutonomyBuilder.FACING);
