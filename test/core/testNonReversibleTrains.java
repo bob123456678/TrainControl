@@ -269,6 +269,55 @@ public class testNonReversibleTrains
         assertEquals(asked[0], 1,
             "an ordinary square raised the question, so every manual send on the railway would stop "
             + "the train and open a dialog");
+
+        // AND THE DOOR CAN SAY THAT A SQUARE IS ASKED ABOUT, which is the half the runtime cannot
+        // answer at all.
+        //
+        // `canReverse` never reaches `parseAuto` - `AutonomyBuilder` skips it with "it is the
+        // instruction to split, not something parseAuto knows" - so on a square that cannot be split,
+        // the operator's marking leaves NO trace here.  Adam met that twice: he marked a square
+        // may-reverse, sent a train to it, and nothing asked, because both earlier fixes looked for a
+        // flag in the running layout.
+        final int[] askedByDoor = {0};
+
+        Layout.ReversalPolicy fromTheSetup = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point where)
+            {
+                askedByDoor[0]++;
+
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point where)
+            {
+                return true;
+            }
+        };
+
+        layout.shouldReverseAt(layout.getPoint("ASK_ordinary"), plain, loc, fromTheSetup);
+
+        assertEquals(askedByDoor[0], 1,
+            "a door that says this square IS one the operator marked may-reverse was not consulted.  "
+            + "The runtime cannot know that - canReverse is never emitted - so a square the build "
+            + "could not split leaves no trace, and the question never appears (Adam, twice)");
+
+        // And the default answer is still the runtime's own, so a policy that does not care behaves
+        // exactly as it did.
+        final int[] lambdaAsked = {0};
+
+        layout.shouldReverseAt(layout.getPoint("ASK_ordinary"), plain, loc, (t, w) ->
+        {
+            lambdaAsked[0]++;
+
+            return false;
+        });
+
+        assertEquals(lambdaAsked[0], 0,
+            "a policy that says nothing about which squares to ask over is now consulted everywhere, "
+            + "so every manual send stops at every point");
     }
 
     /**
@@ -300,7 +349,10 @@ public class testNonReversibleTrains
             String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
 
-            assertTrue(source.contains("ManualReversalPrompt.ask("),
+            // Either door may hand over the shared policy or call the prompt itself; what the census
+            // refuses is a door that hands over neither.
+            assertTrue(source.contains("ManualReversalPrompt.forOperator(")
+                    || source.contains("ManualReversalPrompt.ask("),
                 door[1] + " (" + door[0] + ") dispatches trains without handing executePath a "
                 + "prompt, so a may-reverse point on that route turns the train with nobody asked");
         }
@@ -506,8 +558,9 @@ public class testNonReversibleTrains
         // The dialog is modal and has no time limit, and everything that stopped the train used to be
         // inside the branch the answer decides: measured at line speed when the question was put, and
         // still at line speed five seconds later.
-        assertTrue(flat.contains("if (isCurrentLayout() && mayReverseAt(current)) "
-            + "{ loc.setSpeed(0).waitForSpeedBelow(1);"),
+        assertTrue(flat.contains("if (isCurrentLayout() && (mayReverseAt(current) "
+            + "|| (reversals != null && reversals != ALWAYS_REVERSE "
+            + "&& reversals.asksAbout(current)))) { loc.setSpeed(0).waitForSpeedBelow(1);"),
             "the train is no longer stopped before the reversal question is asked, so it runs past a "
             + "headshunt for as long as it takes somebody to answer a dialog (DIR-A1)");
     }

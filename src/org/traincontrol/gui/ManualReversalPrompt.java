@@ -37,6 +37,55 @@ public final class ManualReversalPrompt
     }
 
     /**
+     * The policy both hand-driven doors hand to `executePath`.
+     *
+     * **`asksAbout` is answered from the SETUP, because the runtime cannot answer it.**  The
+     * operator's "trains may turn round here" is `canReverse`, and `AutonomyBuilder` never emits it:
+     * *"it is the instruction to split, not something parseAuto knows"*.  It is expressed by
+     * splitting the square, and where a square cannot be split the instruction leaves no trace at all.
+     *
+     * Adam met exactly that - he marked a square may-reverse, sent a train to it, and nothing asked.
+     * Twice, because the first two fixes both looked for a flag in the running layout.
+     *
+     * @param session the setup, which knows what the operator marked
+     * @param parent what to centre the dialog on
+     * @return the policy
+     */
+    public static org.traincontrol.automation.Layout.ReversalPolicy forOperator(
+        final org.traincontrol.automationui.AutonomySession session, final Component parent)
+    {
+        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive loc, Point at)
+            {
+                return ask(parent, loc, at);
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                if (at == null) return false;
+
+                // The runtime's own half first - a square the build DID split carries the flag on its
+                // turning copy, and that is knowable here without the setup.
+                if (at.isReversing()) return true;
+
+                if (session == null) return false;
+
+                // And the operator's own marking, for every square including the ones the build could
+                // not express.  By NAME, because that is what a Point carries and what the station
+                // index maps back to a square.
+                org.traincontrol.automationui.TileGraph.TileKey square =
+                    session.getStationIndex() == null ? null
+                        : session.getStationIndex().squareOf(at.getName());
+
+                return square != null && session.mayTurnTiles().contains(square);
+            }
+        };
+    }
+
+    /**
      * Puts the question to the operator and waits for the answer.
      *
      * **On the event thread, from a thread that is not it.** Both callers dispatch on a worker -

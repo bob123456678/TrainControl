@@ -1012,20 +1012,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * @param where the point it has reached
      * @return whether to turn it
      */
-    private boolean askAboutReversing(org.traincontrol.base.Locomotive train,
-        org.traincontrol.automation.Point where)
+    private org.traincontrol.automation.Layout.ReversalPolicy reversalPolicy()
     {
-        // THE WINDOW, NOT THIS MENU (DIR-C8).
-        //
-        // `this` is a JPopupMenu, and the click that dispatched the train dismissed it.  The question
-        // can arrive minutes later, when the train reaches the reversing point - so it would be a
-        // modal dialog owned by a component that is no longer showing.  The two dialogs this class
-        // already parents on itself fire within a second of the click, which is why they get away with
-        // it; this one cannot.
+        // THE WINDOW, NOT THIS MENU (DIR-C8): the click that dispatched the train dismissed the popup,
+        // and the question can arrive minutes later.
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
-        return org.traincontrol.gui.ManualReversalPrompt.ask(
-            window != null ? window : this, train, where);
+        return org.traincontrol.gui.ManualReversalPrompt.forOperator(session,
+            window != null ? window : this);
     }
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path.
@@ -1069,7 +1063,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // back into a berth next time, or may simply be passing - so nothing here can
                         // work it out.  A true terminus is not asked about: the train has run out of
                         // track and the policy is never consulted there.
-                        (train, where) -> askAboutReversing(train, where));
+                        reversalPolicy());
 
                         if (!success)
                         {

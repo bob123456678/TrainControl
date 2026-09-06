@@ -5081,6 +5081,32 @@ public class Layout
          * @return whether to turn it round here
          */
         boolean shouldReverse(Locomotive loc, Point at);
+
+        /**
+         * Whether this point is one the operator should be asked about at all.
+         *
+         * **Asked BEFORE the train is stopped, and it must not block.**  `shouldReverse` puts a modal
+         * dialog up; this decides whether there is anything to put up, so it runs at every point on
+         * the path and has to be cheap and silent.
+         *
+         * **It exists because the runtime cannot answer it.**  `canReverse` - the operator's "trains
+         * may turn round here" - never reaches `parseAuto` at all: `AutonomyBuilder` skips it with
+         * *"it is the instruction to split, not something parseAuto knows"*, and expresses it by
+         * splitting the square into a plain copy and a turning one.  Where the square CANNOT be split
+         * the instruction cannot be expressed, so no flag exists anywhere and no rule in this class
+         * can find one.  Adam met exactly that: he marked a square may-reverse, sent a train to it,
+         * and nothing asked - twice, because the first fix looked for a flag that is never written.
+         *
+         * The default is the old behaviour, so a policy that does not care answers about the same
+         * points it always did.
+         *
+         * @param at the point
+         * @return whether to stop and ask there
+         */
+        default boolean asksAbout(Point at)
+        {
+            return at != null && at.isReversing();
+        }
     }
 
     /**
@@ -5138,16 +5164,18 @@ public class Layout
         // gets there.
         if (destination != null && destination.isTerminus()) return current.isReversing();
 
-        // AND IN MANUAL MODE, EVERY MAY-REVERSE SQUARE IS ASKED ABOUT (Adam, 2026-09-06).
+        // AND IN MANUAL MODE, THE DOOR DECIDES WHICH SQUARES ARE ASKED ABOUT (Adam, 2026-09-06).
         //
         // **"May reverse should always prompt in manual mode."**
         //
-        // `reversing` is emitted for a MUST-reverse square and for a turning COPY; a may-reverse
-        // square is expressed by the split itself, so the plain copy carries no flag at all.  Asking
-        // only `isReversing()` therefore asked nothing on exactly the squares he was testing - the
-        // question appeared or not depending on which copy a path happened to end at, which is not
-        // something anybody can see from the menu.
-        if (!mayReverseAt(current)) return false;
+        // Two earlier attempts looked for the answer in this class and could not find it.  `reversing`
+        // is emitted for a MUST-reverse square and for a turning COPY; `canReverse` is not emitted at
+        // all.  So on a square that cannot be split - which is where Adam met this - the operator's
+        // instruction leaves no trace the runtime can read, and no rule here can ever fire.
+        //
+        // `asksAbout` is the door's answer to that, taken from the setup, and `mayReverseAt` remains
+        // the runtime's own half for the split squares it CAN see.
+        if (!mayReverseAt(current) && !reversals.asksAbout(current)) return false;
 
         return reversals.shouldReverse(loc, current);
     }
@@ -5771,7 +5799,11 @@ public class Layout
                 // right: turning it needs it stopped, and carrying on from a stand is a delay rather
                 // than a hazard.  Autonomy is unaffected in substance - it stopped here anyway as the
                 // first act of turning.
-                if (isCurrentLayout() && mayReverseAt(current))
+                // The same question the rule asks, so the train is stopped exactly where somebody may
+                // be asked something - and nowhere else (DIR-A1).
+                if (isCurrentLayout() && (mayReverseAt(current)
+                    || (reversals != null && reversals != ALWAYS_REVERSE
+                        && reversals.asksAbout(current))))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
 

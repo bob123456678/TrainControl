@@ -1042,8 +1042,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                         // locomotive commands tab, and when fired from the track."
                         boolean success = this.layout.executePath(chosen, locomotive,
                             locomotive.getPreferredSpeed(), null,
-                            (train, where) ->
-                                org.traincontrol.gui.ManualReversalPrompt.ask(this, train, where));
+                            org.traincontrol.gui.ManualReversalPrompt.forOperator(
+                                this.parent == null ? null : this.parent.getAutonomySession(), this));
 
                         if (!success)
                         {
