@@ -5160,8 +5160,24 @@ public class Layout
         // Adam, 2026-09-06: "no prompting in return home or auto."
         if (reversals == null || reversals == ALWAYS_REVERSE) return current.isReversing();
 
-        // A journey to a terminus is not a question either way - the turn on the way is how the train
-        // gets there.
+        // ARRIVING at a terminus is not a question either way - the turn is how the train gets there,
+        // and MT-245 turns on it: "a train that cannot reverse may back into a terminus".
+        //
+        // SPEC-B1 / REG6-B1: THIS USED TO ASK ONLY WHETHER THE JOURNEY ENDED AT ONE, which threw away
+        // the operator's answer about every may-reverse square ON THE WAY there.  The prompt was
+        // still shown - `forJourney` scans the path and asks - and then this line answered the
+        // question itself and ignored what had been said.  A dialog whose answer is discarded is
+        // worse than no dialog: it reports a decision that was never taken.
+        //
+        // NARROWING THIS TO THE ARRIVAL WAS WRONG, and `testATrainThatCannotReverseMayBackIntoATer
+        // minus` said so within the minute: "that turn is not a choice - it is how a train backs into
+        // a terminus, and refusing it strands the journey".  The reversal ON THE WAY to a terminus is
+        // part of getting there, not a preference about it.
+        //
+        // So SPEC-B1 / REG6-B1 - a prompt whose answer this line then discards - is real, and the
+        // half to fix is the PROMPT.  `forJourney` no longer asks about a journey that ends at a
+        // terminus, because there is no answer it could give that this rule would honour.  Asking
+        // less is the repair; honouring more would strand trains.
         if (destination != null && destination.isTerminus()) return current.isReversing();
 
         // AND IN MANUAL MODE, THE DOOR DECIDES WHICH SQUARES ARE ASKED ABOUT (Adam, 2026-09-06).
@@ -5801,7 +5817,21 @@ public class Layout
                 // first act of turning.
                 // The same question the rule asks, so the train is stopped exactly where somebody may
                 // be asked something - and nowhere else (DIR-A1).
-                if (isCurrentLayout() && (mayReverseAt(current)
+                //
+                // SPEC-A2 / REG6-B3: THIS ASKED `mayReverseAt` AND THAT IS A SQUARE-WIDE TEST.
+                // `AutonomyBuilder:844` gives every copy of a multi-copy square the same block, so
+                // `mayReverseAt` is true at the PLAIN copy as well as the turning one - and autonomy,
+                // which reaches this line through `ALWAYS_REVERSE`, began stopping dead and
+                // re-accelerating at plain copies it used to pass at line speed.  The comment above
+                // said "autonomy is unaffected in substance"; it was false for exactly the copy
+                // `mayReverseAt` had been widened to cover.
+                //
+                // `current.isReversing()` is what it said before, and it is the right question for
+                // the runtime half: a turning copy stops because turning is what it is for.  The
+                // operator half is the second clause, and it is asked of the DOOR - which is the only
+                // thing that knows a square is may-reverse, since `canReverse` never reaches
+                // `parseAuto` at all.
+                if (isCurrentLayout() && (current.isReversing()
                     || (reversals != null && reversals != ALWAYS_REVERSE
                         && reversals.asksAbout(current))))
                 {

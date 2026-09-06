@@ -558,16 +558,31 @@ public class testNonReversibleTrains
             "the arrival does not consult the policy, so a journey that ENDS at a may-reverse point "
             + "turns the train without asking (DIR-A2)");
 
-        // AND THE TRAIN IS STOPPED BEFORE ANYBODY IS ASKED (DIR-A1).
+        // AND THE TRAIN IS STOPPED WHERE IT IS GOING TO BE TURNED.
         //
-        // The dialog is modal and has no time limit, and everything that stopped the train used to be
-        // inside the branch the answer decides: measured at line speed when the question was put, and
-        // still at line speed five seconds later.
-        assertTrue(flat.contains("if (isCurrentLayout() && (mayReverseAt(current) "
+        // This began as DIR-A1 - "stopped before anybody is asked" - because the dialog was modal, had
+        // no time limit, and everything that stopped the train sat inside the branch the answer
+        // decides: measured at line speed when the question was put, and still at line speed five
+        // seconds later.
+        //
+        // **That rationale is spent, and the condition changed with it.**  `df584d0b` moved the
+        // question to departure, so nobody is asked mid-journey any more and there is no dialog to
+        // outrun.  What is left is the turn itself, which still needs the train standing.
+        //
+        // `mayReverseAt` is the wrong test for that and was reported twice (SPEC-A2, REG6-B3): blocks
+        // are per-square, so it is true at the PLAIN copy of a split square as well as the turning
+        // one, and autonomy - which reaches this line through ALWAYS_REVERSE - stopped dead and
+        // re-accelerated at plain copies it used to pass at line speed.  `current.isReversing()` is
+        // the per-copy question, and the operator half is asked of the door beside it.
+        //
+        // Pinned as source because there is no way to observe a stop that does not happen without
+        // driving a train, and a test that drives one through `executePath` hangs this suite.
+        assertTrue(flat.contains("if (isCurrentLayout() && (current.isReversing() "
             + "|| (reversals != null && reversals != ALWAYS_REVERSE "
             + "&& reversals.asksAbout(current)))) { loc.setSpeed(0).waitForSpeedBelow(1);"),
-            "the train is no longer stopped before the reversal question is asked, so it runs past a "
-            + "headshunt for as long as it takes somebody to answer a dialog (DIR-A1)");
+            "the train is no longer stopped where it is about to be turned, or the stop has gone back "
+            + "to the square-wide mayReverseAt that made autonomy brake at every plain copy of a "
+            + "split square (SPEC-A2, REG6-B3)");
     }
     /**
      * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).

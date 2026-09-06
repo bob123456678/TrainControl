@@ -69,6 +69,27 @@ public final class ManualReversalPrompt
 
         Point first = null;
 
+        // A JOURNEY THAT ENDS AT A TERMINUS IS NOT ASKED ABOUT AT ALL (SPEC-B1 / REG6-B1).
+        //
+        // `Layout.shouldReverseAt` answers a journey to a terminus from the flag and ignores any
+        // policy - and it is right to: the reversal on the way is how a train backs into a terminus,
+        // and `testATrainThatCannotReverseMayBackIntoATerminus` fails the moment that becomes a
+        // preference.  MT-245 is Adam's own ruling on it.
+        //
+        // So the dialog that used to be shown for these journeys was reporting a decision that was
+        // never taken: the operator was asked, answered, and the answer was thrown away.  A question
+        // nobody acts on is worse than no question, because it teaches the operator that the setting
+        // does something.
+        if (path != null && !path.isEmpty())
+        {
+            org.traincontrol.automation.Edge last = path.get(path.size() - 1);
+
+            if (last != null && last.getEnd() != null && last.getEnd().isTerminus())
+            {
+                return KEEP_DIRECTION;
+            }
+        }
+
         if (path != null)
         {
             for (org.traincontrol.automation.Edge edge : path)
@@ -104,9 +125,17 @@ public final class ManualReversalPrompt
             @Override
             public boolean asksAbout(Point at)
             {
-                // The same squares, so the run still STOPS at them - a train that is about to be
-                // turned has to be standing still whether or not anybody is asked at that moment.
-                return asking.asksAbout(at);
+                // REG6-B4: ONLY WHERE SOMETHING IS ACTUALLY GOING TO HAPPEN.
+                //
+                // This used to return the same squares whatever the answer had been, so a journey the
+                // operator had said "keep direction" to still came to a full stop at every may-turn
+                // square on the way, waited for the speed to fall below one, turned nothing, and
+                // accelerated again.  The reason given was that a train about to be turned must be
+                // standing still - which is true, and is about the squares where a turn is coming.
+                //
+                // A turning COPY still stops, because the stop asks `current.isReversing()` on its own
+                // account.  This clause only adds the stops the operator's answer makes necessary.
+                return turn && asking.asksAbout(at);
             }
         };
     }
@@ -163,10 +192,22 @@ public final class ManualReversalPrompt
             {
                 if (at == null) return false;
 
-                // The runtime's own half first - a square the build DID split carries the flag on its
-                // turning copy, and that is knowable here without the setup.
-                if (at.isReversing()) return true;
-
+                // REG6-A1: THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
+                // COMPULSORY TURNS, AND DECLINING ONE DRIVES A TRAIN OFF ITS PATH.
+                //
+                // For a must-reverse square `AutonomyBuilder` emits ONLY turning copies and flags
+                // every one of them `reversing`, so "is this copy reversing" cannot tell a square the
+                // operator marked may-turn from one the railway turns every train at.  The clause
+                // below carefully excludes `mandatoryTurnTiles()`; that one put them straight back.
+                //
+                // What made it dangerous rather than merely wrong is the default.  A turning copy's
+                // only outgoing edges leave by the side the train came in at, so "keep direction" -
+                // which is the default answer, the Escape answer and the cannot-ask answer - sends a
+                // train forward onto track its path does not hold.
+                //
+                // So the setup is the only source, which is right for a second reason: `canReverse`
+                // is never emitted to `parseAuto` at all, so the runtime cannot answer this question
+                // and anything here that appears to answer it is answering a different one.
                 if (session == null) return false;
 
                 // And the operator's own marking, for every square including the ones the build could
@@ -179,6 +220,33 @@ public final class ManualReversalPrompt
                 return square != null && session.mayTurnTiles().contains(square);
             }
         };
+    }
+
+    /**
+     * The index of "No" in `TrainControlUI.YES_NO_OPTS`, which is the only answer that turns a train.
+     *
+     * Named rather than written as 1 at the point of use, because what went wrong here was a bare
+     * integer comparison quietly changing meaning when the question was reworded.
+     */
+    public static final int NO = 1;
+
+    /**
+     * What a dialog answer means, kept where it can be run.
+     *
+     * `showOptionDialog` returns an index into the options array, or `JOptionPane.CLOSED_OPTION` (-1)
+     * when the operator pressed Escape or used the X.  Three inputs, and only one of them may move a
+     * train.
+     *
+     * Separated from the dialog because the dialog cannot be shown in a test and this can - and the
+     * one line left behind at the call site is asserted as a call site by `testTheDialogAnswerIsRead
+     * ThroughThisRule`, so `extracted-rule-moves-the-bug-to-the-call` does not get a second go.
+     *
+     * @param chose what showOptionDialog returned
+     * @return whether to turn the train round
+     */
+    public static boolean reverseFor(int chose)
+    {
+        return chose == NO;
     }
 
     /**
@@ -239,7 +307,22 @@ public final class ManualReversalPrompt
                 //
                 // Index 0 is Yes, and it is the default: keeping the direction changes nothing on the
                 // railway, so dismissing this dialog with the keyboard is safe.
-                answer[0] = chose != 0;
+                //
+                // ACC4-1: AND IT WAS NOT, FOR HALF A DAY.  The line below read `chose != 0`, and
+                // `showOptionDialog` answers -1 for a dialog closed with Escape or the X - so -1 was
+                // not 0, and dismissing this turned the train at every asking square on the journey.
+                // The comment three lines up promised the opposite in the same commit that broke it.
+                //
+                // The polarity flip is where it came from.  While the question was "should it change
+                // direction here?", the action sat on Yes and `chose == 0` was dismiss-safe by
+                // accident.  Turning it into "keep direction?" moved the action to No and the
+                // negation went with it, which quietly promoted every non-Yes answer - including the
+                // one that means "I did not answer" - to the one that moves a train.
+                //
+                // So the test is for the ANSWER, not against its opposite: only an explicit No
+                // reverses.  Anything else - Yes, Escape, the X, a dialog that could not be shown -
+                // leaves the train pointing the way it already points.
+                answer[0] = reverseFor(chose);
             };
 
             if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
