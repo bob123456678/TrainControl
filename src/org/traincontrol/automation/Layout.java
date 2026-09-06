@@ -5848,7 +5848,17 @@ public class Layout
                         .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
                     }
 
-                    loc.setSpeed(speed).waitForSpeedAtOrAbove(speed);
+                    // AT THIS POINT'S OWN SPEED, not the journey's (REG6-B3).
+                    //
+                    // This restored the raw `speed`, discarding the multiplier that the block forty
+                    // lines above applies for exactly this square - so a train that stopped to turn
+                    // resumed at full line speed on a stretch its owner had set to run slow, and
+                    // stayed there until the next point recalculated.  The stop was added for the
+                    // reversal question; giving back a speed limit was not part of the bargain.
+                    int resume = Math.min((int) Math.ceil(
+                        (double) speed * current.getSpeedMultiplier()), 100);
+
+                    loc.setSpeed(resume).waitForSpeedAtOrAbove(resume);
                 }
                 
                 // We can also clear the edges dynamically 

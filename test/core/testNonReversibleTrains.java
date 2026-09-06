@@ -583,6 +583,20 @@ public class testNonReversibleTrains
             "the train is no longer stopped where it is about to be turned, or the stop has gone back "
             + "to the square-wide mayReverseAt that made autonomy brake at every plain copy of a "
             + "split square (SPEC-A2, REG6-B3)");
+
+        // AND IT LEAVES AT THE SPEED THIS POINT ALLOWS, not the speed the journey asked for.
+        //
+        // The exit restored the raw `speed`, discarding the multiplier applied for this same square
+        // forty lines above - so a train that stopped to turn resumed at full line speed on a stretch
+        // its owner had set to run slow, and stayed there until the next point recalculated.  The stop
+        // was added for the reversal question; handing back a speed limit was not part of it.
+        assertTrue(flat.contains("loc.setSpeed(resume).waitForSpeedAtOrAbove(resume);"),
+            "the reversal stop gives the point speed multiplier back when it accelerates again "
+            + "(REG6-B3)");
+
+        assertTrue(flat.contains("(double) speed * current.getSpeedMultiplier()), 100);"),
+            "the resume speed is no longer computed from this point multiplier, so whatever it now "
+            + "uses is not the limit the operator set for this square");
     }
     /**
      * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).
