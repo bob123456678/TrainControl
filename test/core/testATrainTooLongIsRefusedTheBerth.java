@@ -125,6 +125,58 @@ public class testATrainTooLongIsRefusedTheBerth
             + " berth it does not fit");
     }
 
+    /**
+     * Measured track still refuses, even when there is unmeasured track further back.
+     *
+     * Adam, 2026-09-06, ruling on what an unmeasured run-in should do: **"Generally, allow it.  But:
+     * the example I gave you from bottommainpost to tunnellongpark has measured segments before (that
+     * prevent it), but none after (which would allow it had that prevention not been there).  Make
+     * sure you are actually enforcing this."**
+     *
+     * **Two rules, and the second is the one that was missing.**  Generally: a run-in nobody has
+     * measured is not judged, so the train is allowed - the railway does not refuse what it cannot
+     * work out.  But an unmeasured segment must not WIPE OUT a refusal the measured ones have already
+     * established.  The walk returned `null` the moment it met unmeasured track, discarding everything
+     * it had already counted, and that is what let his case through.
+     *
+     * The doctrine is the same one he gave for the protrusion walk on the same day: *"only segments
+     * with a positive length are determinate."*  Unmeasured track contributes no room.  It just does
+     * not follow that it contributes no ANSWER.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testMeasuredTrackStillRefusesWhenTheRestIsUnmeasured() throws Exception
+    {
+        assertFalse(admittedWithUnmeasuredApproach(4, 2),
+            "a train of 4 was let into 2 units of measured berth because the track FURTHER BACK is"
+            + " unmeasured. The two units already prove it does not fit, and an unmeasured segment"
+            + " behind them cannot unprove it - that is Adam's BottomMainPost case exactly");
+    }
+
+    /**
+     * And it still admits what the measured part does allow.
+     */
+    @Test
+    public void testMeasuredTrackStillAdmitsWhatFits() throws Exception
+    {
+        assertTrue(admittedWithUnmeasuredApproach(2, 2),
+            "a train of 2 was refused 2 measured units because of unmeasured track behind them, so"
+            + " this rule now refuses on absence of information rather than on evidence");
+    }
+
+    /**
+     * A run-in with nothing measured at all is not judged - "generally, allow it".
+     */
+    @Test
+    public void testAnEntirelyUnmeasuredRunInIsNotJudged() throws Exception
+    {
+        assertTrue(admittedWithUnmeasuredApproach(9, 0),
+            "a long train was refused a berth nobody has measured. There is no evidence either way"
+            + " here, and refusing on no evidence would make every unmeasured layout unusable -"
+            + " Adam: \"generally, allow it\"");
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /**
@@ -174,6 +226,63 @@ public class testATrainTooLongIsRefusedTheBerth
 
         return fixture.layout.isPathClear(fixture.path, fixture.loc, false);
     }
+
+    /**
+     * A run-in whose last segment is measured and whose approach is NOT, with no switch between.
+     *
+     * @param trainLength how long the train is
+     * @param measuredAtTheBerth the measured units immediately in front of the berth, 0 for none
+     * @return whether isPathClear allowed it
+     * @throws Exception on a failure to build
+     */
+    private boolean admittedWithUnmeasuredApproach(int trainLength, int measuredAtTheBerth)
+        throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_u" + trainLength + "_" + measuredAtTheBerth;
+
+        org.traincontrol.marklin.MarklinFeedback a = model.newFeedback(600 + addresses++, null);
+        org.traincontrol.marklin.MarklinFeedback b = model.newFeedback(600 + addresses++, null);
+        org.traincontrol.marklin.MarklinFeedback c = model.newFeedback(600 + addresses++, null);
+
+        model.setFeedbackState(a.getName(), false);
+        model.setFeedbackState(b.getName(), false);
+        model.setFeedbackState(c.getName(), false);
+
+        layout.createPoint("USTART" + tag, true, a.getName());
+        layout.createPoint("UMID" + tag, false, b.getName());
+        layout.createPoint("UBERTH" + tag, true, c.getName());
+
+        Point start = layout.getPoint("USTART" + tag);
+        Point mid = layout.getPoint("UMID" + tag);
+        Point berth = layout.getPoint("UBERTH" + tag);
+
+        berth.setTerminus(true);
+
+        Edge approach = layout.createEdge(start.getName(), mid.getName());
+        Edge run = layout.createEdge(mid.getName(), berth.getName());
+
+        // UNMEASURED, which is the whole point of this fixture.
+        approach.setLength(0);
+
+        run.setLength(measuredAtTheBerth);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        loc.setTrainLength(trainLength);
+
+        start.setLocomotive(loc);
+
+        List<Edge> path = new ArrayList<>();
+
+        path.add(approach);
+        path.add(run);
+
+        return layout.isPathClear(path, loc, false);
+    }
+
+    private static int addresses = 900;
 
     private Fixture build(int trainLength, int roomAfterTheSwitch) throws Exception
     {

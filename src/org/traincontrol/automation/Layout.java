@@ -6966,12 +6966,30 @@ public class Layout
             if (segment.crossesASwitch())
             {
                 // -1 is bounded-but-unmeasured, which is the same answer as an unmeasured edge.
-                if (segment.getRoomAtTheEnd() < 0) return null;
+                // BOUNDED BUT UNMEASURED, and what has already been counted still stands.
+                //
+                // Adam, 2026-09-06: **"Generally, allow it.  But: the example I gave you from
+                // bottommainpost to tunnellongpark has measured segments before (that prevent it),
+                // but none after (which would allow it had that prevention not been there).  Make
+                // sure you are actually enforcing this."**
+                //
+                // This returned null - "I cannot judge" - and threw away every measured unit counted
+                // on the way here.  Two units of measured berth already prove a four-unit train does
+                // not fit; an unmeasured stretch behind them cannot unprove it.
+                //
+                // `room > 0` is the difference between the two halves of his ruling.  Nothing
+                // measured at all means no evidence either way, and that is still not judged, because
+                // refusing on absence of information would make every unmeasured layout unusable.
+                if (segment.getRoomAtTheEnd() < 0) return room > 0 ? room : null;
 
                 return room + segment.getRoomAtTheEnd();
             }
 
-            if (segment.getLength() <= 0) return null;
+            // AN UNMEASURED SEGMENT ENDS THE COUNT, it does not cancel it - the same ruling as the
+            // switch case above, and the same doctrine Adam gave for the protrusion walk on the same
+            // day: "only segments with a positive length are determinate".  Unmeasured track
+            // contributes no room.  It does not follow that it contributes no answer.
+            if (segment.getLength() <= 0) return room > 0 ? room : null;
 
             room += segment.getLength();
         }
