@@ -7512,6 +7512,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     JSONObject updateInfo = Util.getLatestReleaseInfo(GITHUB_REPO);
                     LATEST_VERSION = Util.parseReleaseVersion(updateInfo);
+
+                    // A RELEASE WHOSE NAME CARRIES NO VERSION (C5).  Reported rather than compared:
+                    // compareVersions against null is a second, less legible failure, and the whole
+                    // point of this branch is that the check went quiet before anyone could see it.
+                    if (LATEST_VERSION == null)
+                    {
+                        this.model.logf("ui.errorFetchLatestUpdateInfo");
+
+                        return;
+                    }
+
                     LATEST_DOWNLOAD_URL = Util.parseDownloadURL(updateInfo);
                     
                     if (Util.parseReleaseURL(updateInfo) != null)
@@ -8859,7 +8870,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JToggleButton key = this.switchMapping.get(address - offset);
 
-                if (this.model.getAccessoryState(address, getKeyboardProtocol()))
+                // PAINTING IS LOOKING (C13).  See the sweep below - the same call in the full repaint
+                // registered a switch for every key on the page.
+                if (this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol()))
                 {
                     key.setSelected(true);
                     key.setBackground(COLOR_SWITCH_RED);        
@@ -9000,7 +9013,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 if (key != null)
                 {           
-                    if (this.model.getAccessoryState(i + offset, getKeyboardProtocol()))
+                    // PAINTING IS LOOKING (C13).  getAccessoryState creates a switch on a miss, and
+                    // this loop runs over all 64 keys - so opening a keyboard page REGISTERED all 64
+                    // of its addresses as switches, whether or not anything is wired to them, and they
+                    // persisted.  A blank page of a keyboard is not a statement that those accessories
+                    // exist; it is the absence of one.
+                    //
+                    // Clicking a key still creates: setAccessoryState makes the switch it is about to
+                    // command.  Creation belongs on the path that commands, not on the one that draws.
+                    if (this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol()))
                     {
                         key.setSelected(true);
                         key.setBackground(COLOR_SWITCH_RED);        
@@ -17507,7 +17528,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             new Thread(() ->
             {
-                Integer r = this.syncWithCS2();
+                // THE MENUS COME BACK EVEN WHEN THE SYNC DOES NOT (C23).
+                //
+                // Both menu items were greyed above and are re-enabled in the pass below.  With no
+                // catch here, a RuntimeException out of syncWithCS2 killed this thread before that
+                // pass ran, and Sync and the functions menu stayed greyed for the rest of the session
+                // with nothing on screen saying why - the only way back was to restart.
+                //
+                // Reported as -1 rather than swallowed, because -1 is already the failure code this
+                // method knows how to tell the user about: "sync failed, see log".  And the log is
+                // where the reason now is, which is what makes that message a remedy rather than a
+                // dead end.
+                Integer syncResult;
+
+                try
+                {
+                    syncResult = this.syncWithCS2();
+                }
+                catch (RuntimeException e)
+                {
+                    this.model.log(e);
+
+                    syncResult = -1;
+                }
+
+                // Final so the reporting lambdas below can read it; the assignment above is the whole
+                // reason it could not simply be one.
+                final Integer r = syncResult;
 
                 // ONE PASS for everything cheap enough to share one (Adam, "single pass").
                 //

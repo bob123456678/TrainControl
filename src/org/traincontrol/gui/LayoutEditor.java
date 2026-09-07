@@ -3659,7 +3659,15 @@ public class LayoutEditor extends PositionAwareJFrame
             try
             {
                 layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
-                this.resetClipboard();
+
+                // ONLY WHEN SOMETHING WAS ACTUALLY EDITED (C24).  Both statements ran whether the
+                // dialog was accepted or cancelled, so cancelling a label edit disarmed whatever tool
+                // the user had picked up - a gesture that changes nothing must leave everything alone.
+                //
+                // The re-add above stays unconditional: it puts the tile back where it was, and on a
+                // cancel that is a no-op.  Skipping it as well would risk a blank square to fix a
+                // clipboard, which is a worse trade than the defect.
+                if (newText != null) this.resetClipboard();
             }
             catch (IOException ex)
             {

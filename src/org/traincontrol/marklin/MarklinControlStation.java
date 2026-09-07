@@ -3464,8 +3464,30 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Returns an accessory based on its numerical address.  If the address does not exist, a new
-     * switch is created.
+     * Whether the accessory at this address is switched, WITHOUT creating one that is not there.
+     *
+     * One rule, three callers: a route condition and the two keyboard paints all only look.  Written
+     * once because inlining "null means not switched" at each of them is how two of them would come to
+     * disagree - the shape this project has hit repeatedly.
+     *
+     * @param address
+     * @param decoderType
+     * @return whether it is switched; false when there is no such accessory
+     */
+    @Override
+    public boolean getAccessoryStateIfPresent(int address, Accessory.accessoryDecoderType decoderType)
+    {
+        Accessory a = this.getAccessoryByAddressIfPresent(address, decoderType);
+
+        return a != null && a.isSwitched();
+    }
+
+    /**
+     * Returns an accessory based on its numerical address, or null when there is none.
+     *
+     * The read-only lookup.  Its javadoc used to be a copy of getAccessoryByAddress’s, saying a new
+     * switch is created - the opposite of what it does, on the one method whose entire purpose is not
+     * to do that, which would send the next reader looking for a phantom source straight past it.
      * @param address greater than 1
      * @param decoderType
      * @return 

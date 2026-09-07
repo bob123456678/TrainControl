@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.NodeExpression;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -174,6 +175,75 @@ public class testAdvancedRoutes
     // The autoloc condition driving a function command
     // ---------------------------------------------------------------------------------------------
 
+    /**
+     * Asking about an accessory must not create one (C13).
+     *
+     * `Route.evaluate` reads an accessory condition through `getAccessoryState`, whose miss branch
+     * calls `newSwitch` - so merely EVALUATING a condition against an address the Central Station has
+     * never mentioned registers that address as a switch, and it persists into the database and onto
+     * the keyboard.  Conditions are evaluated on a timer while a route waits, so one condition naming
+     * a typo’d address invents an accessory the operator never made and cannot account for.
+     *
+     * The same fault was found and fixed in `NodeExpression`, whose comment says the fix was for
+     * "this display path" - the evaluate path was beside it and was not swept.  That is this
+     * project’s most reliable defect shape: one site fixed, the sibling left, with a comment on the
+     * fixed one describing what is still wrong next door.
+     *
+     * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then
+     * returns false, so an unknown address has always read as "not switched" and routes have always
+     * fired on that.  Removing the side effect must not also flip when a route fires, which is why
+     * this asserts the answer as well as the absence.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testEvaluatingAConditionDoesNotInventTheAccessory() throws Exception
+    {
+        final Accessory.accessoryDecoderType proto = Accessory.accessoryDecoderType.MM2;
+
+        // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory
+        // database is open, and it holds every MM2 address from 1 to 320 and every DCC address from 1
+        // to 2048.  Nobody made 2048 switches by hand: that IS this defect, already realised, and it
+        // means the whole of both address spaces is taken and a guessed address would make every
+        // assertion below vacuous rather than red.
+        //
+        // So the search runs past 320.  An address above the protocol’s range is still an address a
+        // route condition can carry and still one getAccessoryState would register, which is the
+        // mechanism under test; being unreachable by a real decoder is what makes it safe to ask about.
+        int free = -1;
+
+        for (int candidate = 1; candidate <= 4096 && free < 0; candidate++)
+        {
+            if (model.getAccessoryByAddressIfPresent(candidate, proto) == null) free = candidate;
+        }
+
+        assertTrue(free > 0,
+            "there is no address at all, up to 4096, that is not already registered - so there is"
+            + " nothing left to ask about whose answer would not come from an accessory that exists."
+            + " That is itself the finding (C13)");
+
+        final int address = free;
+
+        boolean unswitched = Route.evaluate(
+            RouteCommand.RouteCommandAccessory(address, proto, false), model);
+
+        assertTrue(unswitched,
+            "an accessory nobody has ever reported reads as not switched, and a condition asking for"
+            + " not-switched is therefore satisfied. That has always been the answer - the point of"
+            + " C13 is the side effect, not the verdict");
+
+        assertNull(model.getAccessoryByAddressIfPresent(address, proto),
+            "evaluating a condition REGISTERED accessory " + address + ". The route never commanded"
+            + " anything - it only looked - and the invented switch now persists in the database and"
+            + " appears on the keyboard (C13)");
+
+        assertFalse(Route.evaluate(
+            RouteCommand.RouteCommandAccessory(address, proto, true), model),
+            "and the other way round, which also must not have changed");
+
+        assertNull(model.getAccessoryByAddressIfPresent(address, proto),
+            "the second evaluation registered it, so the guard is on one branch only");
+    }
     /**
      * The arrangement this file exists for: fire a function when a particular locomotive reaches a
      * particular sensor.

@@ -1,80 +1,88 @@
-# The four package sweeps, adjudicated
+# The four package sweeps, closed
 
 `C1-C29` from [`2026-08-17-whole-project-review.md`](../reviews/2026-08-17-whole-project-review.md).
 They were filed as four bundle rows - `automation/`, `marklin/`, `base/`, `gui/` - and never triaged,
-so "four open items" was really twenty-nine. Every one has now been read against the code as it
-stands.
+so "four open items" was really twenty-nine. **All twenty-nine have now been read against the code and
+ruled on**, and every live one worth fixing is fixed.
 
 **Method.** Each finding's stated mechanism was looked for in today's source. A finding is Cancelled
 only when the mechanism is *demonstrably* gone - the guard is there, the call is the non-creating one,
-the two statements are inside one monitor - and not merely when I could not find it. Where the fix
-carries a comment naming the same defect the sweep found, that is said so.
+the two statements are inside one monitor - and not merely when I could not find it. Every behavioural
+fix below was proved by a test seen failing first.
 
-**What the sweep was worth.** Twelve of twenty-nine are closed, and eleven of those twelve closed
-because someone fixed them in the five weeks since - mostly without knowing the finding existed. Six
-are live and cheap. Seven still need a read. That ratio is the argument for triaging a bundle row
-rather than carrying it: a third of it was already done.
+**What the sweep was worth.** Twelve were already gone, eleven of them fixed in the five weeks since by
+people who did not know the finding existed. Thirteen are now fixed. Seven are ruled and left, with
+reasons. **And the largest one was much bigger than filed.**
 
-## Closed - the mechanism is gone (12)
+## The one that mattered - C13
 
-| | Why it is closed |
+Filed as "evaluating a route condition registers a phantom accessory". True, and the same call sits in
+the window's two keyboard paint paths, the second of them in a loop over all sixty-four keys - so
+**opening a keyboard page registered sixty-four switches**, whether or not anything was wired to them.
+
+Adam's real database currently holds **`Switch 1` through `Switch 2048` in DCC, contiguous** - the
+entire DCC address space - plus 257 of the 320 MM2 addresses. Nobody makes 2048 switches by hand. That
+is this defect, already realised, and it is why the new test in `testAdvancedRoutes` has to search past
+the protocol range to find an address free enough to ask about.
+
+The fix stops it recurring: a new `getAccessoryStateIfPresent` gives the same answer and creates
+nothing, and all three read sites use it. Clicking a key still creates the switch it is about to
+command - creation belongs on the path that commands, not on the one that draws.
+
+**It does not clean up the 2048 already there, and there is no delete-accessory API to do it with.**
+That is a decision for Adam, not a side effect of a bug fix.
+
+## Fixed (13)
+
+| | What it was |
 |---|---|
-| **C2** | `configureAndLockPath` now calls `isPathClear` and `takingPath.put` inside one `synchronized (this)`, and `trainsUnderway()` counts `takingPath` as well as `activeLocomotives`. The check-then-insert window the finding described is closed. |
-| **C6** | Fixed 2026-09-07 - `AtomicInteger`. |
-| **C7** | Fixed 2026-09-07 - `Math.round(speed / 10.0)`. |
-| **C8** | `CS2Message.getSubCommand` now tests `length`, with a comment naming the exact fault: `data.length` was always eight, so the guard could not fire, and a short system frame read as `CMD_SYSSUB_STOP`. |
-| **C9** | The MFX branch of the UID fallback has the base correction, commented as "the same correction the DCC branch below has carried all along". |
-| **C11** | `exportLocsToCSV` guards the null view, commented for the headless case. |
-| **C12** | The headless IP prompt is deliberately not try-with-resources, with a comment naming the `NoSuchElementException` on retry. |
-| **C14** | The interrupt is captured and re-asserted once on the way out, not re-asserted inside the loop. The spin shape is gone. |
-| **C20** | No `Pattern` or regex construction in `LocomotiveStats` today. |
-| **C21** | The mapping rework removed the per-page clear. |
-| **C22** | Fixed 2026-09-07 - the active locomotive is only let go if it was on the cleared page. |
-| **C29** | No matching `getSelectedItem()` in `RouteEditor`. |
+| **C3** | `deletePoint` and `deleteEdge` now refuse while the railway is running or being planned - the guard `renamePoint` already carried. The menu greying is not this guard: items grey when the popup opens and fire when it is clicked. |
+| **C5** | `parseReleaseVersion` finds the version by its digits. `split("v")[1]` threw on a name with no "v" and, worse, returned "iew " for "TrainControl Preview v3.0.0" - which compares as older, so a real release would be hidden with nothing logged. |
+| **C6** | `Point`'s id allocator is atomic. |
+| **C7** | A received speed is rounded, not truncated. |
+| **C13** | Above. |
+| **C16** | A group closes its own bracket instead of leaving it to the last child, so an empty one no longer opens a bracket it never closes. |
+| **C18** | The comment claiming the four shift methods are unused is corrected; all four are on the editor's right-click menu. A comment saying a method has no callers reads as permission to change it freely. |
+| **C19a** | `urls != null && urls instanceof Map` - one thing said twice, neither clause saying it. |
+| **C19b** | A "ran today" record is no longer written for a locomotive commanded with the track power off. Its sibling branch already asked; this one did not. |
+| **C19c** | `convertSecondsToHMmSs` takes milliseconds. Documented rather than renamed - the method is public, and a silent rename is a worse trap than a name carrying a correction. |
+| **C22** | Clearing a page only releases the active locomotive if it was on that page. |
+| **C23** | A throwing sync no longer leaves Sync and the functions menu greyed for the session. Reported as the failure code the method already knows how to explain. |
+| **C24** | Cancelling a label edit no longer resets the clipboard and disarms the active tool. The re-add stays unconditional - skipping it too would risk a blank square to fix a clipboard. |
 
-## Live, and worth fixing (6)
+## Cancelled - the mechanism is gone (12)
 
-Ranked by what a user would actually meet.
+**C2** (check and insert share one monitor, and the count includes `takingPath`), **C8**, **C9**,
+**C11**, **C12** - all fixed since the sweep, three carrying comments naming the exact fault - **C14**
+(the interrupt is re-asserted once on the way out, not inside the loop), **C17** (every method of
+`RemoteDeviceCollection` is synchronised and every getter returns a copy; the class comment says so),
+**C20**, **C21**, **C25** (no unresolvable-ID rebind; `RouteEditorFrame` checks the route list before
+binding), **C28**, **C29**.
 
-| | What happens | Cost |
-|---|---|---|
-| **C28** | `GraphLocAssign.updateValues` calls `arrivalFunc.setSelectedIndex(loc.getArrivalFunc() + 1)` against a combo built from `getNumF()`. A stored function number at or above the locomotive's current function count throws `IllegalArgumentException` and the assignment dialog fails to open. **Confirmed, not suspected** - and the `trainLength` combo four lines below already has the clamp these two lack, which is this codebase's most reliable tell. | Two lines |
-| **C13** | `Route.evaluate` still calls `getAccessoryState`, whose miss branch calls `newSwitch`. Evaluating a route condition against an address that is not in the database **creates** that accessory, and it persists. `NodeExpression` was fixed for the same fault and its comment says "this display path" - the evaluate path was not swept. | Small |
-| **C3** | `deletePoint` and `deleteEdge` still lack the `isRunning() || isStagingInProgress()` guard. `renamePoint` has it, and carries a comment explaining precisely why a second caller would inherit graph corruption. One site fixed, two siblings missed. | Small |
-| **C23** | The off-EDT half is fixed - both `setEnabled` calls are inside `singlePass` now, commented. The **no-`finally`** half is not: if `syncWithCS2` throws, the worker thread dies and Sync and the functions menu stay greyed for the rest of the session, with nothing on screen to say why. | Small |
-| **C5** | `Util.parseReleaseVersion` does `split("v")[1]`. The caller catches `Exception`, so a release named without a "v" degrades to "could not fetch update info" rather than crashing - but it degrades silently and permanently, and the trigger is a naming choice, not a fault. | One line |
-| **C17** | `RemoteDeviceCollection`'s two `HashMap`s are plain and read cross-thread by the automation wait loops. Self-healing on the next notify, which is why it graded C. | Small, if done at all |
+**C28 needs a correction to what I said in the first pass.** I called it a confirmed crash on the
+strength of reading the dialog. It was found independently as **UC-B1** and fixed at the model layer:
+all three writers of `numF` - both constructors and `setAddress` - clamp the stored function numbers,
+with tests. The dialog needs no guard of its own, and adding one would be a second rule to drift from
+the first.
 
-## Live, and deliberately left (3)
+## Live, and deliberately left (7)
 
 | | Ruling |
 |---|---|
-| **C1** | `runLocomotive` has no pacing floor. Real, but it needs `minDelay = maxDelay = 0` *and* a locomotive with no available path, and the symptom is heat rather than a wrong railway. Worth doing inside a session that is already in that loop; not worth opening one. |
-| **C4** | `HomeStaging.blockedSensors(Map state)` ignores its parameter - the body reads `this.start`. The behaviour is **correct**: unknown occupancy is a start-state fact and no move of ours clears it. The defect is the signature promising something the body does not do, which will mislead the next reader. Cosmetic until it isn't. |
-| **C15** | The feedback waits retry by recursion. It needs a sensor flapping within every `minDuration` window for long enough to exhaust a stack, which is a broken sensor and would be reported as one. |
-| **C10** | The CS2 flat-file importer's three-way pause placement. Real per the CS3 importer's own comment, but it only bites layouts with three-way turnouts imported from a CS2 flat file, and Adam's does not have one to test against. |
+| **C1** | `runLocomotive` has no pacing floor. Needs `minDelay = maxDelay = 0` *and* a locomotive with no available path, and the symptom is heat rather than a wrong railway. |
+| **C4** | `HomeStaging.blockedSensors(Map state)` ignores its parameter. The behaviour is **correct** - unknown occupancy is a start-state fact and no move of ours clears it - so the defect is a signature promising something the body does not do. |
+| **C10** | The CS2 flat-file importer's three-way pause placement. Real per the CS3 importer's own comment, but it needs a three-way turnout imported from a CS2 flat file, and there is none to test against. |
+| **C15** | The feedback waits retry by recursion. It needs a sensor flapping within every `minDuration` window for long enough to exhaust a stack - a broken sensor, which would be reported as one. |
+| **C19e** | `LayoutDiagramComponent` rotates about `img.getWidth(null)/2` on an image that may have come from `getScaledInstance`, whose width can read -1 until it loads. Real, and **not something to change without looking at the result** - a wrong fix here is a visibly broken diagram, which is worse than an intermittent one. |
+| **C26** | `setCopyTarget` writes the locomotive's name to the system clipboard. Plausibly deliberate - copy the name, paste it elsewhere - and removing a convenience on suspicion is not mine to do. **Adam's call.** |
+| **C27** | `saveState` iterates `locMapping` off the EDT. Compensated by the handler's `RuntimeException` catch, which the finding itself concluded; the item is reported as unsaved and the backup completes. |
 
-## Not yet read (7)
+## What is left for you
 
-`C16` (NodeGroup rendering for hand-written JSON), `C18` (a stale comment about the shift methods),
-`C19` (six assorted small ones - an always-true `instanceof`, a runtime date stamped with power off, a
-mis-named `Conversion` method, case-sensitive prefixes, `getWidth(null)` on an async image, an orphaned
-javadoc), `C24` (cancelling a text edit re-adds the component and resets the clipboard), `C25` (a route
-tile with an unresolvable ID silently rebinding to the first route), `C26` (drag writing to the system
-clipboard; Delete destroying a pending copy target), `C27` (`saveState` iterating `locMapping` off the
-EDT - compensated, per the finding).
-
-These are the ones whose mechanism I could not locate quickly enough to be sure whether "not found"
-meant fixed or meant renamed. **Saying they are stale without that check is the failure mode this
-document exists to avoid**, so they stay open and unadjudicated rather than closed on a guess.
-
-## What is yours to rule on
-
-1. **The six live ones - do them, or leave them?** All six are under an hour together. C28 is a
-   crash the user meets by opening a dialog; C13 writes junk into the accessory database. I would do
-   those two whatever you decide about the rest.
-2. **The seven unread ones - worth a pass?** Half a session, and on this sample it will close more
-   than it opens.
+1. **The 2048 phantom accessories.** They are in the database now, nothing removes them, and there is
+   no API that could. Worth deciding whether they should be cleaned out and how.
+2. **C26** - is writing the locomotive name to the system clipboard on a drag something you put there
+   on purpose?
 
 ## On the structural items
 

@@ -198,16 +198,23 @@ public abstract class NodeExpression implements Serializable
         }
         else if (node instanceof NodeGroup)
         {
+            // THE CLOSING BRACKET BELONGS TO THE GROUP, NOT TO ITS LAST CHILD (C16).
+            //
+            // It used to be appended from inside the loop on the last iteration, so a group with no
+            // children never wrote it: the bracket was opened and left open, and every bracket after
+            // it in the rendered condition was read against the wrong opener.
+            //
+            // No path in the application builds an empty group today - every construction site passes
+            // at least one expression - which is why this was graded low.  That is about how it is
+            // reached, not about whether it is right, and the correction costs nothing.
             sb.append("(");
-            List<NodeExpression> expressions = ((NodeGroup) node).getExpressions();
-            for (int i = 0; i < expressions.size(); i++)
+
+            for (NodeExpression child : ((NodeGroup) node).getExpressions())
             {
-                toTextRepresentationHelper(expressions.get(i), sb, network);
-                if (i == expressions.size() - 1)
-                {
-                    sb.append(")");
-                }
+                toTextRepresentationHelper(child, sb, network);
             }
+
+            sb.append(")");
         }
     }
 

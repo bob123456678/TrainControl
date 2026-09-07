@@ -41,6 +41,22 @@ public interface ViewListener
     public void execRoute(String name);
     public void deleteRoute(String name);
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType);
+
+    /**
+     * The same state, WITHOUT registering an accessory that is not there (C13).
+     *
+     * `getAccessoryState` creates a switch on a miss.  That is deliberate on a command path and wrong
+     * on every path that is only looking: evaluating a route condition, or painting a keyboard key,
+     * registered every address it asked about and the invented accessories persisted.
+     *
+     * The ANSWER is identical - `getAccessoryState` creates the switch unswitched and then returns
+     * false, so an absent accessory has always read as not switched.  Only the side effect differs.
+     *
+     * @param address
+     * @param decoderType
+     * @return whether the accessory is switched; false when there is no such accessory
+     */
+    public boolean getAccessoryStateIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public Accessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType);
 
     /**

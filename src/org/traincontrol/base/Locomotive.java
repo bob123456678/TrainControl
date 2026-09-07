@@ -455,7 +455,16 @@ public abstract class Locomotive
             if (speed >= 0 && speed <= 100)
             {
                 // Update total runtime stat
-                if (speed > 0 && this.speed == 0)
+                // AND ONLY WHEN THE TRACK IS LIVE (C19).  The branch below already asks this before it
+                // adds any time; this one did not, so commanding a speed with the power off wrote a
+                // "ran today" record for a locomotive that had not moved and could not.  One of a pair
+                // asking the question and the other not is what made it visible.
+                //
+                // Left alone deliberately: power going off DURING a run still counts the whole stretch
+                // as running time, because lastStartTime is stamped once and nothing revisits it. That
+                // is a different question - what the stat should mean - and not one to settle inside a
+                // guard.
+                if (speed > 0 && this.speed == 0 && powerState)
                 {
                     this.lastStartTime = System.currentTimeMillis();
 
@@ -1497,7 +1506,9 @@ public abstract class Locomotive
     
     public void setLocalFunctionImageURLs(Map<Integer, String> urls)
     {
-        if (urls != null && urls instanceof Map)
+        // The instanceof half was always true - the parameter is declared a Map - and instanceof is
+        // already null-safe, so the two clauses together said one thing twice and neither said it.
+        if (urls != null)
         {
             this.localFunctionImageURLs = urls;
         }

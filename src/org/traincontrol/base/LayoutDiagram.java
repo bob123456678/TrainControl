@@ -685,7 +685,11 @@ public class LayoutDiagram
         this.showAddress = showAddress;
     }
     
-    // We don't use these methods in the UI becuase we would also need shiftLeft and shiftDown for completeness
+    // ALL FOUR ARE WIRED (C18).  This used to say they were unused in the UI and that shiftLeft and
+    // shiftDown would be needed for completeness.  Both were written, all four are on the editor's
+    // right-click menu, and LayoutEditor asks shiftUp and shiftLeft whether they would do anything
+    // before offering them.  A comment saying a method has no callers is read as permission to change
+    // it freely, which is what makes a stale one worse than none.
     
     /**
      * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.

@@ -8,6 +8,8 @@ import org.traincontrol.base.ConditionOutline;
 import org.traincontrol.base.NodeAnd;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.NodeOr;
+import org.traincontrol.base.NodeGroup;
+import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCommand;
 
 /**
@@ -33,6 +35,67 @@ import org.traincontrol.base.RouteCommand;
  */
 public class testConditionOutline
 {
+    /**
+     * A group closes the bracket it opened, even when there is nothing in it (C16).
+     *
+     * toTextRepresentationHelper appends "(" for a group and then appends ")" from INSIDE the loop over
+     * its children, on the last iteration. A group with no children never iterates, so the closing
+     * bracket is never written and the rendered condition is malformed from that point on - every
+     * bracket after it is read against the wrong opener.
+     *
+     * The finding graded this low because no code path in the application builds an empty group: every
+     * construction site passes at least one expression, so it takes hand-written JSON to reach. That is
+     * an argument about how it is reached, not about whether it is wrong, and the correction is to stop
+     * making the closing bracket a property of the last child.
+     *
+     * The one-child and two-child cases are here as the CONTROL - moving the append out of the loop
+     * must not start emitting a bracket per child.
+     */
+    @Test
+    public void testAnEmptyGroupStillClosesItsBracket()
+    {
+        String empty = NodeExpression.toTextRepresentation(
+            new NodeGroup(new ArrayList<NodeExpression>()), null);
+
+        assertEquals(count(empty, '('), count(empty, ')'),
+            "the rendered group has " + count(empty, '(') + " opening brackets and "
+            + count(empty, ')') + " closing ones: " + empty + " - a group with no children opens a"
+            + " bracket it never closes, and everything rendered after it is read against the wrong"
+            + " opener (C16)");
+
+        // THE CONTROL.  Taking the append out of the loop must not give a bracket per child.
+        List<NodeExpression> two = new ArrayList<>();
+
+        two.add(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(1, true)));
+        two.add(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(2, false)));
+
+        String filled = NodeExpression.toTextRepresentation(new NodeGroup(two), null);
+
+        assertEquals(count(filled, '('), 1,
+            "a group renders one opening bracket, whatever it holds: " + filled);
+
+        assertEquals(count(filled, ')'), 1,
+            "a group renders one closing bracket, not one per child: " + filled);
+    }
+
+    /**
+     * How many times a character appears.
+     *
+     * @param text the rendered condition
+     * @param c the character
+     * @return the count
+     */
+    private static int count(String text, char c)
+    {
+        int n = 0;
+
+        for (int i = 0; i < text.length(); i++)
+        {
+            if (text.charAt(i) == c) n++;
+        }
+
+        return n;
+    }
     /**
      * An indented word joins the indented things, and the outer word joins what is left.
      */

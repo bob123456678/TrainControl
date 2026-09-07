@@ -640,13 +640,29 @@ public class Util
     }
     
     /**
-     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0)
+     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0).
+     *
+     * FOUND BY THE NUMBER, NOT BY THE LETTER (C5).  This was split("v")[1], which assumes the name
+     * carries exactly one "v" and that it is the one in front of the version.  Neither holds: a name
+     * with no "v" threw, and a name with any other "v" - "TrainControl Preview v3.0.0" - handed back a
+     * piece of the name itself, which is the worse of the two.  A throw at least reaches the caller's
+     * catch and is logged; "iew " compares as older than the running version, so the update check
+     * decides there is nothing new and says nothing at all.
+     *
+     * Release names are typed by hand at tag time, which is what makes this reachable.
+     *
      * @param gitHubReleaseInfo
-     * @return 
+     * @return the version, or null when the name carries no number
      */
     public static String parseReleaseVersion(JSONObject gitHubReleaseInfo)
     {
-        return gitHubReleaseInfo.getString("name").split("v")[1];
+        java.util.regex.Matcher version = java.util.regex.Pattern
+            .compile("[0-9]+(?:[.][0-9]+)*")
+            .matcher(gitHubReleaseInfo.getString("name"));
+
+        // Null rather than a guess.  A name with no number in it has no version to report, and the
+        // caller can say so; handing back part of the name is how this went silent.
+        return version.find() ? version.group() : null;
     }
     
     /**

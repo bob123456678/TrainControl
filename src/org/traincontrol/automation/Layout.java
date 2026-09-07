@@ -2750,6 +2750,24 @@ public class Layout
             );
         }
 
+        // NOT WHILE THE RAILWAY IS USING THE GRAPH (C3).
+        //
+        // The same guard renamePoint carries, and for a stronger reason: a rename mutates a point
+        // under live visited sets, this removes it from under them.  One site had the rule and its two
+        // siblings did not, which is this project’s most common defect shape.
+        //
+        // The greying on the menu item is not this guard.  Items are greyed when the popup OPENS and
+        // the action fires when it is CLICKED, so starting autonomy from another window in between
+        // leaves a live item over a running railway - the affordance and the guard have to ask the
+        // same question, and this is the one that actually holds.
+        //
+        // isRunning rather than the bare flag, and staging as well: the planner walks these structures
+        // with nothing dispatched at all.
+        if (this.isRunning() || this.isStagingInProgress())
+        {
+            throw new Exception(I18n.f("autolayout.errorCannotEditWhileRunning"));
+        }
+
         if (!this.getNeighbors(p).isEmpty())
         {
             throw new Exception(
@@ -2870,6 +2888,24 @@ public class Layout
         if (e == null)
         {
             throw new Exception(I18n.f("autolayout.errorEdgeDoesNotExist", start, end));                    
+        }
+
+        // NOT WHILE THE RAILWAY IS USING THE GRAPH (C3).
+        //
+        // The same guard renamePoint carries, and for a stronger reason: a rename mutates a point
+        // under live visited sets, this removes it from under them.  One site had the rule and its two
+        // siblings did not, which is this project’s most common defect shape.
+        //
+        // The greying on the menu item is not this guard.  Items are greyed when the popup OPENS and
+        // the action fires when it is CLICKED, so starting autonomy from another window in between
+        // leaves a live item over a running railway - the affordance and the guard have to ask the
+        // same question, and this is the one that actually holds.
+        //
+        // isRunning rather than the bare flag, and staging as well: the planner walks these structures
+        // with nothing dispatched at all.
+        if (this.isRunning() || this.isStagingInProgress())
+        {
+            throw new Exception(I18n.f("autolayout.errorCannotEditWhileRunning"));
         }
         
         // Remove from adjacency list

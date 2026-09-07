@@ -1778,6 +1778,113 @@ public class testHomeStaging
 
 
     /**
+     * Nothing edits the graph while the railway is using it - deletes included (C3).
+     *
+     * `renamePoint` refuses while `isRunning() || isStagingInProgress()`, and its comment explains
+     * why: a rename mid-run mutates `Point.hashCode` under live visited sets. `deletePoint` and
+     * `deleteEdge` do strictly more damage - they remove the objects those sets and paths hold - and
+     * had no such guard.
+     *
+     * The sweep filed it as reachable rather than theoretical: the menu items are greyed when the
+     * popup OPENS, and the action fires when it is CLICKED. Starting autonomy from another window in
+     * between leaves a live item over a running railway. That is the same two-moment gap as OB-057 and
+     * OB-090 - a guard and the affordance that offers it must ask the same question, and the guard has
+     * to be the one that actually holds.
+     *
+     * Staging rather than running as the busy state, because the planner walks these same structures
+     * with nothing dispatched at all - the window a bare `isAutoRunning` flag waves through - and
+     * because it can be entered from a test without moving a train.
+     *
+     * `renamePoint` is here as the CONTROL. It has the guard already, so if it ever stops refusing,
+     * the two deletes below are passing for some reason other than the one this is about.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTheGraphCannotBeEditedWhileTheRailwayIsUsingIt() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(layout.isRunning() || layout.isStagingInProgress(),
+            "precondition: the layout must start idle, or every refusal below is the wrong refusal");
+
+        List<Edge> edges = new ArrayList<>(layout.getEdges());
+
+        assertFalse(edges.isEmpty(), "precondition: the ring has edges to try to delete");
+
+        Edge victim = edges.get(0);
+        String from = victim.getStart().getName();
+        String to = victim.getEnd().getName();
+        String point = layout.getPoints().iterator().next().getName();
+
+        layout.setStagingInProgress(true);
+
+        try
+        {
+            // THE CONTROL, and it is the one that already works.
+            try
+            {
+                layout.renamePoint(point, point + " renamed");
+                fail("renamePoint let a rename through while staging was in progress. That guard has"
+                    + " been there and is what the two below are modelled on, so this failing means"
+                    + " the busy state itself is not being seen");
+            }
+            catch (Exception expected)
+            {
+            }
+
+            try
+            {
+                layout.deleteEdge(from, to);
+                fail("deleteEdge removed " + from + " -> " + to + " while the staging planner was"
+                    + " walking the graph. Paths already handed out hold that edge (C3)");
+            }
+            catch (Exception expected)
+            {
+            }
+
+            try
+            {
+                layout.deletePoint(point);
+                fail("deletePoint removed " + point + " while the staging planner was walking the"
+                    + " graph. renamePoint refuses this and only mutates the point; this removes it"
+                    + " from under live visited sets (C3)");
+            }
+            catch (Exception expected)
+            {
+            }
+        }
+        finally
+        {
+            layout.setStagingInProgress(false);
+        }
+
+        // AND THE WAY PAST IS REAL.  A guard with no way past would be worse than the defect: once
+        // the railway is idle the same three edits have to go through.
+        assertNotNull(layout.getPoint(point),
+            "the point was deleted after all, so the refusals above did not refuse");
+
+        layout.deleteEdge(from, to);
+
+        assertNull(layout.getEdge(from, to),
+            "the guard is refusing an idle layout too, which makes the graph uneditable");
+
+        // A point still wired to something refuses on its own account - "delete edges first" - which
+        // is a different refusal and would pass this for the wrong reason.  So the wiring goes first.
+        for (Edge e : new ArrayList<>(layout.getEdges()))
+        {
+            if (point.equals(e.getStart().getName()) || point.equals(e.getEnd().getName()))
+            {
+                layout.deleteEdge(e.getStart().getName(), e.getEnd().getName());
+            }
+        }
+
+        layout.deletePoint(point);
+
+        assertNull(layout.getPoint(point),
+            "an idle layout refused to delete a point with nothing left attached to it");
+    }
+    /**
      * The model can see a staging flow, not merely a dispatched run.
      *
      * Six guards ask the *model* whether autonomy is busy - locomotive delete, rename, address change,

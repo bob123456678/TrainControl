@@ -1338,6 +1338,96 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The Sync menu comes back even when the sync does not (C23).
+     *
+     * doSync greys Sync and the functions menu, hands off to a worker thread, and re-enables them when
+     * the worker finishes. There is no finally: a RuntimeException out of syncWithCS2 kills the worker,
+     * and **both menus stay greyed for the rest of the session** with nothing on screen saying why. The
+     * only route back is to restart the application.
+     *
+     * The off-EDT half of this finding was already fixed - both setEnabled calls moved inside
+     * singlePass, commented - and the finally half was left. Half a finding fixed is how a row gets
+     * marked done while the part that strands the user survives.
+     *
+     * Source-level because the fault is the absence of a catch around a call that only throws when the
+     * Central Station misbehaves, which a test cannot arrange.
+     *
+     * MUTATION: removing the catch around syncWithCS2 fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testAFailedSyncGivesTheMenusBack() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        String sync = bodyOf(ui, "public void doSync(Component c)");
+
+        assertNotEquals(sync, "",
+            "doSync is not declared that way any more, so this checked nothing");
+
+        int call = sync.indexOf("syncWithCS2()");
+        int back = sync.indexOf("syncMenuItem.setEnabled(true)");
+
+        assertTrue(call >= 0 && back >= 0,
+            "doSync no longer both runs the sync and re-enables the menu, so the ordering below is"
+            + " comparing this test to itself");
+
+        assertTrue(sync.substring(0, call).contains("try"),
+            "the call to syncWithCS2 is not inside a try. If it throws, the worker thread dies and"
+            + " Sync and the functions menu stay greyed until the application is restarted (C23)");
+
+        assertTrue(sync.substring(call, back).contains("catch"),
+            "nothing between the sync and the re-enable catches a failure, so the re-enable is only"
+            + " reached when the sync succeeds - which is the half of C23 that was left");
+    }
+    /**
+     * Nothing that only draws an accessory may create one (C13).
+     *
+     * `getAccessoryState` registers a switch when the address is unknown. That is right on a path that
+     * is about to command the thing and wrong everywhere else - and the window’s two keyboard paints
+     * called it, the second in a loop over all sixty-four keys. **Opening a keyboard page registered
+     * sixty-four switches**, whether or not anything was wired to them, and they persisted.
+     *
+     * Source-level because the fault is which of two near-identical methods a paint routine calls, and
+     * because the phantom appears in a database this test cannot safely write to.
+     *
+     * Asserted as an ABSENCE across the whole window rather than at the two known sites: a third paint
+     * path added later would be the same defect, and a check that lists the two it knows about would
+     * report clean about it. That failure mode is why the sweep this came from existed at all.
+     *
+     * MUTATION: restoring either call to getAccessoryState fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testDrawingAnAccessoryDoesNotCreateOne() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        assertFalse(ui.contains("getAccessoryState("),
+            "the window calls getAccessoryState, which REGISTERS a switch when the address is unknown."
+            + " Every use here is a paint - use getAccessoryStateIfPresent, which gives the same"
+            + " answer and invents nothing (C13)");
+
+        assertTrue(ui.contains("getAccessoryStateIfPresent("),
+            "the window no longer reads accessory state at all, so the check above passes for the"
+            + " wrong reason - it is now asserting that a call that is not there is not there");
+
+        String route = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/base/Route.java")),
+            StandardCharsets.UTF_8));
+
+        assertFalse(route.contains("getAccessoryState("),
+            "evaluating a route condition registers the accessory it asks about. Conditions are"
+            + " evaluated on a timer while a route waits, so one condition on a mistyped address makes"
+            + " a permanent switch nobody created (C13)");
+    }
+    /**
      * A dismissed arrival-side question leaves the railway exactly as it was (Adam, 2026-09-07).
      *
      * **"Simply don't place the train, leave it on the clipboard as if no paste had been done."**

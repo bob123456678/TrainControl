@@ -321,7 +321,20 @@ abstract public class Route
         if (rc.isAccessory())
         {
             // TODO rc should maintain the accessory type
-            return control.getAccessoryState(rc.getAddress(), rc.getProtocol()) == rc.getSetting();
+
+            // ASKED WITHOUT REGISTERING (C13).  getAccessoryState creates a switch on a miss, so
+            // merely evaluating a condition against an address the Central Station has never mentioned
+            // invented that accessory - and conditions are evaluated on a timer while a route waits,
+            // so one typo made a permanent one.
+            //
+            // toCSV already used the non-creating lookup for exactly this reason, and NodeExpression
+            // was fixed for it with a comment naming "this display path".  This path was next door to
+            // both and was not swept.
+            //
+            // The verdict is unchanged: the created switch was created UNSWITCHED and then read back
+            // as false, which is what an absent one reads as now.
+            return control.getAccessoryStateIfPresent(rc.getAddress(), rc.getProtocol())
+                == rc.getSetting();
         }
         else if (rc.isFeedback())
         {
