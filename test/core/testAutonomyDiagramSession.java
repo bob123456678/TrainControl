@@ -528,6 +528,68 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Taking a train off a square takes its arrival side with it (IND9-A1).
+     *
+     * `arrivedFrom` describes the TRAIN that was standing here, not the square - the same thing the
+     * comment beside the facing in `placeLocomotive` says about the facing, three lines from where this
+     * was missed. Both doors that empty a square cleared `loc` and the facing and left the arrival side
+     * behind, and `parseAuto` reads it straight back onto whatever is placed there next.
+     *
+     * **What that does on the railway.** The stale side is where the PREVIOUS train’s tail lay, so the
+     * walk that blocks track behind a standing train follows it for the new one: track behind train B
+     * is greyed and refused on the strength of where train A came in. It is silent - nothing reports a
+     * side it did not ask about - and it survives a save.
+     *
+     * It is also unreachable from the menu, which now offers only the four sides and no way to say "not
+     * known" (Adam, 2026-09-07). Removing that option was right and it makes this defect permanent
+     * until the root cause is fixed, which is here: the side leaves with the train.
+     *
+     * Both doors are asserted. `clearEveryPlacement` is a separate loop that mirrors this one, and the
+     * two have drifted before - it is the reason `placeLocomotive` carries a comment telling the reader
+     * they must agree.
+     *
+     * @throws IOException on a failure to save
+     */
+    @Test
+    public void testAnArrivalSideDoesNotOutliveItsTrain() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+
+        // TRAIN A ARRIVES FROM THE WEST.
+        session.placeLocomotive(sensor, "Test Loc");
+        session.setArrivedFrom(sensor, "W");
+
+        assertEquals(session.getArrivedFrom(sensor), "W", "control: the side did not go in");
+
+        // AND IS TAKEN OFF AGAIN - a cut, or a right-click clear.
+        session.placeLocomotive(sensor, null);
+
+        assertNull(session.getArrivedFrom(sensor),
+            "the square still says a train arrived from the west after the train was taken off it."
+            + " The next locomotive placed here inherits that tail, and the track behind it is"
+            + " blocked on the strength of where a different train came in (IND9-A1)");
+
+        // AND THE OTHER DOOR, which is a separate loop over every square.
+        session.placeLocomotive(sensor, "Test Loc");
+        session.setArrivedFrom(sensor, "E");
+
+        assertEquals(session.getArrivedFrom(sensor), "E", "control: the second side did not go in");
+
+        assertTrue(session.clearEveryPlacement() > 0,
+            "clearEveryPlacement cleared nothing, so the assertion below is about a square it never"
+            + " visited");
+
+        assertNull(session.getArrivedFrom(sensor),
+            "clearEveryPlacement leaves the arrival side behind. It mirrors placeLocomotive and the"
+            + " two must agree about what taking a train off a square means (IND9-A1)");
+    }
+    /**
      * The arrival side reaches the running layout, and comes back from a save.
      *
      * `VAL8-A2` reported that `arrivedFrom` never crosses between the setup and the railway - that the

@@ -4597,6 +4597,16 @@ public class AutonomySession
             // the next locomotive placed here inherits the last one's direction without being asked.
             setPointProperty(tile, AutonomyBuilder.FACING, null);
 
+            // AND SO DID THE ARRIVAL SIDE (IND9-A1), for the same reason and more strongly: where a
+            // train's tail lies is a fact about that train and nothing else.  Left behind, parseAuto
+            // reads it back onto whatever is placed here next, and the walk that blocks track behind a
+            // standing train follows it - so track behind train B is refused on the strength of where
+            // train A came in, silently, and it survives a save.
+            //
+            // The comment three lines above said this about the facing when the facing was fixed. The
+            // sibling was not swept then; it is now.
+            setPointProperty(tile, "arrivedFrom", null);
+
             return;
         }
 
@@ -4619,6 +4629,21 @@ public class AutonomySession
         forgetPlacementsElsewhere(tile, name, loc);
 
         setPointProperty(tile, "loc", loc);
+
+        // AND A NEW OCCUPANT DOES NOT INHERIT THE OLD ONE'S TAIL (IND9-A1).
+        //
+        // `Point.setLocomotive` does exactly this on the running layout, and for the same reason: the
+        // train arriving did not arrive the way the train leaving did.  The setup had no such rule, so
+        // a square whose occupant changed through a door that does not ask - the editor's Place/Edit
+        // Locomotive item is one - kept the previous train's arrival side.
+        //
+        // Cleared rather than guessed.  The doors that CAN work the side out write it immediately
+        // after calling this, so nothing they record is lost; the doors that cannot now record nothing,
+        // which is the honest answer and the one that blocks no track.
+        if (!name.equals(nameOfPlacedLocomotive(existing)))
+        {
+            setPointProperty(tile, "arrivedFrom", null);
+        }
     }
 
     /**
@@ -4645,12 +4670,34 @@ public class AutonomySession
             // The facing described the train that was standing there, not the square - see
             // `placeLocomotive`, which is the door this mirrors.
             writePointProperty(tile, AutonomyBuilder.FACING, null);
+
+            // And the arrival side with it, for the same reason (IND9-A1).  This loop and the single
+            // -square door have drifted before, which is why each carries a note that they must agree.
+            writePointProperty(tile, "arrivedFrom", null);
         }
 
         // ONCE, at the end.  Not skipped: the split names are computed from these properties.
         deriveStationIndex();
 
         return placed.size();
+    }
+
+    /**
+     * The locomotive named by a stored placement, or null when there is none.
+     *
+     * A placement is a JSON object carrying the train's name and whatever was recorded with it. Asked
+     * here so that re-placing the SAME locomotive on a square it is already on - which happens whenever
+     * a door writes the placement back unchanged - does not read as a change of occupant and throw away
+     * an arrival side that is still true.
+     *
+     * @param placement whatever was stored under "loc"
+     * @return the name, or null
+     */
+    private static String nameOfPlacedLocomotive(Object placement)
+    {
+        if (!(placement instanceof org.json.JSONObject)) return null;
+
+        return ((org.json.JSONObject) placement).optString("name", null);
     }
 
     /**

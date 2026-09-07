@@ -8035,6 +8035,15 @@ public class Layout
         // for the same reason.
         java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
 
+        // AND THE ARRIVAL SIDES, held back for a different reason from the restrictions (REG8-A1).
+        //
+        // Applying one while the points are being created wrote it and then LOST it: the locomotives
+        // are placed in a later pass, and `Point.setLocomotive` drops the arrival side whenever the
+        // occupant changes - which on a build is always, from nobody to the train the file names.  Both
+        // rules are right on their own; the order was wrong, so the tail blocking was off after every
+        // restart, for exactly the squares the arrival-side question exists for.
+        java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
+
         // Validate basic required data
         try
         {
@@ -8333,10 +8342,13 @@ public class Layout
                 // configuration would take a whole layout out of service because one station lost the
                 // point it was paired with.
                 // WHERE THE TAIL IS, which facing cannot answer once a train has been turned.
+                //
+                // Kept and applied after the locomotives are placed, not here - see the collector
+                // where it is declared (REG8-A1).
                 if (point.has("arrivedFrom"))
                 {
-                    layout.getPoint(point.getString("name"))
-                        .setArrivedFrom(point.optString("arrivedFrom", null));
+                    arrivalSideByPoint.put(point.getString("name"),
+                        point.optString("arrivedFrom", null));
                 }
 
                 if (point.has("blockedBy"))
@@ -9136,6 +9148,23 @@ public class Layout
             }
 
             held.setBlockedBy(watching);
+        }
+
+        // THE ARRIVAL SIDES, now that every train is standing where the file says (REG8-A1).
+        //
+        // Last word to the file, which is the right order: a saved configuration describes a state
+        // that was consistent when it was written - this train, on this square, having come in from
+        // that side - so nothing it says about the tail can be stale with respect to anything else it
+        // says.  The clear in `setLocomotive` is for a change of occupant on a LIVE railway, which is
+        // not what a build is.
+        //
+        // A name matching no point is dropped in silence here, unlike the restrictions above: a point
+        // that has gone takes its own tail with it, and there is nothing an operator could do about it.
+        for (java.util.Map.Entry<String, String> entry : arrivalSideByPoint.entrySet())
+        {
+            Point landed = layout.getPoint(entry.getKey());
+
+            if (landed != null) landed.setArrivedFrom(entry.getValue());
         }
 
         // Applied only now, because an assignment may name a locomotive placed at any point, and until

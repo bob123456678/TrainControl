@@ -437,6 +437,83 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
+     * The arrival side survives the BUILD, not just the file (REG8-A1).
+     *
+     * `parseAuto` applies `arrivedFrom` while it is creating the points and places the locomotives in a
+     * later pass. `Point.setLocomotive` drops the arrival side whenever the occupant changes - right on
+     * a running railway, where a new train did not arrive the way the old one did - and on a build the
+     * occupant always "changes", from nobody to the train the file names. So the value was written and
+     * then wiped, on every build and every reload.
+     *
+     * **The tail blocking was therefore off after every restart**, for exactly the squares the arrival
+     * -side question exists for: the operator answers it, watches the track grey, restarts, and the
+     * protection is gone with nothing to say so.
+     *
+     * Two rules that were each correct collided, and the existing survival test could not see it
+     * because it asserts the built JSON and the reopened SESSION - the two layers either side of the
+     * one that decides. This asserts the railway.
+     *
+     * MUTATION: applying arrivedFrom in the point loop again fails this.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTheArrivalSideSurvivesTheBuild() throws Exception
+    {
+        // The first station the real layout offers, rather than a named one: this class runs against
+        // Adam’s own railway and a hard-coded name would be a guess.
+        // SEARCHED, not the first one.  This class runs against Adam’s own railway, and not every
+        // station has a compass-resolvable neighbour - `sideTowards` answers null for a point without
+        // coordinates and for a zero delta - so the first station may offer no side at all, and a test
+        // that recorded nothing would pass whatever the build did.
+        String pointName = null;
+        TileKey square = null;
+        String side = null;
+
+        for (Point candidate : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(candidate.getName());
+
+            if (key == null) continue;
+
+            java.util.List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(
+                model.getAutoLayout(), candidate);
+
+            if (sides.isEmpty()) continue;
+
+            pointName = candidate.getName();
+            square = key;
+            side = sides.get(0);
+
+            break;
+        }
+
+        assertNotNull(side,
+            "no station on this layout offers an arrival side, so there is nothing to record and this"
+            + " test would pass whatever the build did");
+
+        putDown(square, pointName, null);
+
+        session.setArrivedFrom(square, side);
+
+        assertEquals(session.getArrivedFrom(square), side, "control: the side did not go into the setup");
+
+        model.parseAuto(session.buildConfiguration());
+
+        Point built = model.getAutoLayout().getPoint(pointName);
+
+        assertNotNull(built, "the point did not survive the build, so nothing below is about the side");
+
+        assertNotNull(built.getCurrentLocomotive(),
+            "the train did not survive the build - and it is placing the train that wipes the side,"
+            + " so without it this test cannot fail");
+
+        assertEquals(built.getArrivedFrom(), side,
+            "the railway forgot which side the train came in by during the build. It was applied while"
+            + " the points were being created and then cleared when the locomotive was placed on top of"
+            + " it, so the tail blocking is off after every restart (REG8-A1)");
+    }
+    /**
      * Everything about where the trains are and which way they face, as one comparable value.
      *
      * @return square to "loc/facing/arrivedFrom", for every square that has any of them
