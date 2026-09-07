@@ -395,6 +395,81 @@ public class testAPastedTrainKeepsItsDirection
         session.setPointProperty(square, "canReverse", null);
     }
 
+    /**
+     * Building the railway twice from one setup gives the same answer twice.
+     *
+     * Adam, 2026-09-07: **"in all your simulations, state should never drift.  It will only drift if
+     * the direction is changed via the central station or a traincontrol command during or before
+     * operation."**
+     *
+     * That is a testable claim rather than a hope, and this is the strongest form of it available
+     * without driving a train: nothing happens between the two builds, so anything that differs
+     * differs by itself.  A build that is not a function of its input is the failure behind several of
+     * this week's defects - a facing that came back as the other side, an id that was reissued, a copy
+     * chosen by iteration order.
+     *
+     * Every locomotive placement, facing and arrival side is compared, because those are the three
+     * things a rebuild has been observed to move.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTheStateDoesNotDriftAcrossRebuilds() throws Exception
+    {
+        Map<String, String> first = snapshot();
+
+        assertFalse(first.isEmpty(),
+            "nothing was captured, so this compares two empty answers and means nothing");
+
+        // Nothing at all happens here.  The railway is asked the same question a second time.
+        Map<String, String> second = snapshot();
+
+        assertEquals(second, first,
+            "the railway answered differently the second time it was built from the same setup."
+            + " Nothing happened in between, so this is drift - and Adam's rule is that state only"
+            + " moves when a direction command arrives from the Central Station or from TrainControl");
+
+        // AND A THIRD TIME, because a difference that only appears on an odd-numbered build is the
+        // shape a toggling bug has - it would agree with itself every other run and look stable.
+        assertEquals(snapshot(), first,
+            "the railway is stable between builds one and two but not one and three, which is a"
+            + " toggle rather than a settled answer");
+    }
+
+    /**
+     * Everything about where the trains are and which way they face, as one comparable value.
+     *
+     * @return square to "loc/facing/arrivedFrom", for every square that has any of them
+     * @throws Exception on a failure to build
+     */
+    private Map<String, String> snapshot() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        Map<String, String> out = new java.util.TreeMap<>();
+
+        for (Point point : model.getAutoLayout().getPoints())
+        {
+            TileKey square = session.getStationIndex().squareOf(point.getName());
+
+            if (square == null) continue;
+
+            String loc = point.getCurrentLocomotive() == null ? "-"
+                : point.getCurrentLocomotive().getName();
+
+            if ("-".equals(loc) && session.getFacing(square) == null
+                && session.getArrivedFrom(square) == null)
+            {
+                continue;
+            }
+
+            out.put(point.getName(), loc + "/" + session.getFacing(square) + "/"
+                + session.getArrivedFrom(square));
+        }
+
+        return out;
+    }
+
     // ---------------------------------------------------------------- the door, and the shared parts
 
     /**

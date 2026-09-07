@@ -259,6 +259,51 @@ public class testATrainTooLongIsRefusedTheBerth
         return layout.isPathClear(path, loc, false);
     }
 
+    /**
+     * A terminus that is not a station is still judged on TRACK length, just not on station capacity.
+     *
+     * Adam, 2026-09-07: **"the terminus that isn't a destination should fail on the track length
+     * check - the station length can safely be ignored."**
+     *
+     * Two rules, two gates, and they are not the same gate.  `validateTrainLength` asks about the
+     * STATION'S stated capacity and returns true for anything that is not a destination - there is no
+     * capacity to exceed on a square nobody calls a station.  `measuredRoomToReverseInto` asks about
+     * the TRACK leading in and gates on terminus-or-reversing alone, with no destination requirement.
+     *
+     * So a train can still be refused a dead end it does not physically fit into, whether or not that
+     * dead end has ever been named a station.  Already true; pinned so it stays true, because the two
+     * gates look similar enough that one would be "tidied" into the other.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testATerminusThatIsNotAStationIsStillJudgedOnTrackLength() throws Exception
+    {
+        Fixture tight = build(9, 2);
+
+        // Not a station at all - so the capacity rule has nothing to say about it.
+        tight.berth.setDestination(false);
+
+        // THE STATE HE IS ASKING ABOUT CANNOT EXIST, which is a better answer than either rule.
+        //
+        // `setDestination(false)` clears the terminus flag - "reset terminus status" - so a terminus
+        // that is not a station is not a thing the model can hold. And a non-destination is never the
+        // END of a path anyway: getPossiblePaths requires isDestination of every candidate.
+        //
+        // So the track-length rule not firing there costs nothing, because nothing is ever sent there
+        // to be judged. Worth pinning rather than answering, because the question is a reasonable one
+        // and the reason it does not arise lives in a setter three files away.
+        assertFalse(tight.berth.isTerminus(),
+            "a square can now be a terminus while not being a station. That combination used to be"
+            + " impossible - setDestination(false) cleared the terminus flag - and the track-length"
+            + " rule gates on terminus-or-reversing, so it would now be judging squares nothing can"
+            + " be sent to, or missing ones it should judge (Adam, 2026-09-07)");
+
+        assertTrue(tight.berth.validateTrainLength(tight.loc),
+            "the station capacity rule is judging a square that is not a station. There is no stated"
+            + " capacity to exceed, and Adam: \"the station length can safely be ignored\"");
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /**
