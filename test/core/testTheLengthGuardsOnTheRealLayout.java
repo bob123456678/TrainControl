@@ -247,26 +247,22 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * BottomMainPost to TunnelLongPark, and WHICH tile decides it.
+     * BottomMainPost to TunnelLongPark: which tile decides it, re-measured after the bound.
      *
-     * Adam asked: **"if we change the length of 1 between BottomMainA and BottomMainPost to 4, is the
-     * path to TunnelLongPark allowed?"**
+     * **This test recorded the wrong answer for an hour, and the reason is worth keeping.**  It was
+     * written when the room rule declined to judge an unmeasured stretch, and it measured that
+     * `1 - Main:19,12` made no difference: the tile sits on the far side of the last switch, and only
+     * what lies between the switch and the berth was counted.
      *
-     * **Measured answer: that tile does not decide it either way.**  `1 - Main:19,12` is the measured
-     * tile on the BottomMainA-to-TunnelLongPark segment, and it lies on the FAR side of the last
-     * switch.  The room rule counts only what lies between the last switch and the berth - a train
-     * that fits there fits behind any earlier switch too, and one that does not comes to rest standing
-     * on the switch - so the two tiles that bind this route are `1 - Main:10,9` and `1 - Main:10,10`.
-     * Changing 19,12 from 1 to 4 leaves the route allowed at both values.
-     *
-     * Which is not the rule failing.  Nothing after that switch is measured, so there is no evidence,
-     * and "generally, allow it" is his own ruling for that case.  Measure either of the two tiles the
-     * rule does count and the refusal appears - which is the second half of this test.
+     * Then Adam reported that he could still make the run, and the fix was to bound the unmeasured
+     * stretch by the segment it lies in - a stretch inside a segment cannot be longer than it.  That
+     * bound reads the SEGMENT length, which 19,12 is part of.  So the tile that made no difference now
+     * makes all of it, and this test says so rather than being quietly deleted.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testWhichTileDecidesTheRouteToTunnelLongPark() throws Exception
+    public void testTheSegmentLengthNowDecidesTheRouteToTunnelLongPark() throws Exception
     {
         measureEverythingAs(0);
 
@@ -276,39 +272,25 @@ public class testTheLengthGuardsOnTheRealLayout
 
         train.setTrainLength(4);
 
-        // The tile Adam named, on the far side of the last switch - at 1, and then at 4.
         session.setTileLength(new TileKey(MAIN, 19, 12), 1);
 
-        boolean atOne = offers(train, "TunnelLongPark");
+        assertFalse(offers(train, "TunnelLongPark"),
+            "one unit of measured segment admitted a four-unit train. The run in cannot hold more"
+            + " than the segment it lies in, so one unit bounds it from above and four does not fit");
 
         session.setTileLength(new TileKey(MAIN, 19, 12), 4);
 
-        boolean atFour = offers(train, "TunnelLongPark");
+        assertTrue(offers(train, "TunnelLongPark"),
+            "four units of measured segment refused a four-unit train, so exactly-fits is being"
+            + " refused and every berth measured to its train becomes unusable");
 
-        assertEquals(atOne, atFour,
-            "1 - Main:19,12 changed the answer, so it is inside the room the rule measures after all"
-            + " and this test has the geometry wrong");
-
-        assertTrue(atOne,
-            "the route is refused with nothing measured after the last switch. That is a refusal on"
-            + " no evidence, and Adam ruled the other way: \"generally, allow it\"");
-
-        // AND THE TILE THAT DOES BIND IT: one unit of room between the last switch and the berth.
-        session.setTileLength(new TileKey(MAIN, 10, 9), 1);
-        session.setTileLength(new TileKey(MAIN, 10, 10), 0);
-
-        assertFalse(offers(train, "TunnelLongPark"),
-            "a four-unit train is still offered TunnelLongPark with one unit of room measured between"
-            + " the last switch and the berth. This is the refusal Adam is asking for, and 10,9 is the"
-            + " tile that has to carry it");
-
-        // Turn that same tile up past the train and it is welcome again - one tile, both answers.
-        session.setTileLength(new TileKey(MAIN, 10, 9), 9);
+        // AND WITH NOTHING MEASURED THERE IS NO EVIDENCE, which is his own ruling for that case.
+        measureEverythingAs(0);
 
         assertTrue(offers(train, "TunnelLongPark"),
-            "the same train is refused nine units of room, so the refusal above was not about length");
+            "the route is refused with nothing measured anywhere. That is a refusal on no evidence,"
+            + " and Adam ruled the other way: \"generally, allow it\"");
     }
-
     /**
      * Whether this train is offered a destination whose name starts with the given text.
      *

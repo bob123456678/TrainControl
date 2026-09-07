@@ -6980,7 +6980,28 @@ public class Layout
                 // `room > 0` is the difference between the two halves of his ruling.  Nothing
                 // measured at all means no evidence either way, and that is still not judged, because
                 // refusing on absence of information would make every unmeasured layout unusable.
-                if (segment.getRoomAtTheEnd() < 0) return room > 0 ? room : null;
+                if (segment.getRoomAtTheEnd() < 0)
+                {
+                    // THE SEGMENT BOUNDS THE STRETCH INSIDE IT.
+                    //
+                    // Adam: **"I can still send the 75 407 DB from BottomMainPost to TunnelLongPark,
+                    // the option is there and the path runs, despite [the] track lengths of 1."**  He
+                    // was right, and this is why: the room that matters is the track after the last
+                    // switch, nobody has measured it, and declining to judge let a four-unit train
+                    // into it.  Meanwhile the segment it lies in is measured at ONE.
+                    //
+                    // The stretch after the switch is part of that segment, so it cannot be longer
+                    // than it.  One unit of segment cannot contain four units of train, whatever the
+                    // unmeasured part turns out to be, and that is a proof rather than a guess.
+                    //
+                    // It only ever REFUSES more than before: the bound is an over-statement of the
+                    // real room, so a train that clears it may still not fit - which is the state
+                    // every one of these paths was already in.  Nothing new is admitted, and the
+                    // definite cases are now caught.
+                    int bound = room + segment.getLength();
+
+                    return bound > 0 ? bound : null;
+                }
 
                 return room + segment.getRoomAtTheEnd();
             }
