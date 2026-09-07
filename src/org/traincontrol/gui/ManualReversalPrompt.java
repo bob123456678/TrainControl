@@ -166,6 +166,61 @@ public final class ManualReversalPrompt
     }
 
     /**
+     * The point on this path that the train cannot get past without a turn it has not been given.
+     *
+     * Adam, 2026-09-07: **"manual only reverses if the user explicitly said it via the popup, unless
+     * you're going to a terminal."**
+     *
+     * That settles `REG7-A1`, and it settles it the way that does not touch his other rule: the
+     * answer is honoured, always.  What follows is that some journeys become unrunnable, and the
+     * railway has to say so rather than start them.
+     *
+     * **Why a journey can need a turn nobody agreed to.**  A manual path may route THROUGH the turning
+     * copy of a may-reverse square - `reversesAlongTheWay` bars that for autonomy only, and no manual
+     * door applies it.  A turning copy's only outgoing edges leave by the side the train arrived from,
+     * so a train that does not turn there does not continue along its path: it runs on at line speed
+     * onto track the path does not hold.  "Keep direction" is the default answer, the Escape answer
+     * and the answer used when no dialog can be shown, so that is the likely case rather than the
+     * exotic one.
+     *
+     * A TERMINUS is exempt, as he says and as `MT-245` already required: the turn there is how a train
+     * backs in, and `Layout.shouldReverseAt` answers a terminus journey from the flag whatever any
+     * policy says.
+     *
+     * @param path the journey about to be run
+     * @param answered the policy the operator's answer produced
+     * @param loc the train
+     * @return the first point that would strand the journey, or null when it can be run
+     */
+    public static Point whereTheJourneyWouldStrand(java.util.List<org.traincontrol.automation.Edge> path,
+        org.traincontrol.automation.Layout.ReversalPolicy answered, Locomotive loc)
+    {
+        if (path == null || path.isEmpty() || answered == null) return null;
+
+        Point destination = path.get(path.size() - 1).getEnd();
+
+        // A journey to a terminus turns wherever it must, and is never asked about.
+        if (destination != null && destination.isTerminus()) return null;
+
+        for (org.traincontrol.automation.Edge edge : path)
+        {
+            Point at = edge.getEnd();
+
+            if (at == null || !at.isReversing()) continue;
+
+            // The arrival is turned by the arrival rule rather than by the path, so it cannot strand
+            // anything: there is no leg after it to be stranded on.
+            if (at == destination) continue;
+
+            // A turning copy the operator has not agreed to turn at.  `shouldReverse` is the answer
+            // already given at departure, so this asks nothing and shows nothing.
+            if (!answered.shouldReverse(loc, at)) return at;
+        }
+
+        return null;
+    }
+
+    /**
      * The answer for a journey that passes nothing anybody would be asked about.
      *
      * Keeps the direction and asks about nothing, so an ordinary send neither stops nor prompts.

@@ -21,7 +21,7 @@ headers and prose. Of those:
 | August, test-suite quality | 30 | `TA-*`, `TS-*` |
 | August, per-package sweeps | 4 | `C1-C6`, `C7-C12`, `C13-C19`, `C20-C29` — each a bundle, not one finding |
 
-**The headline: two railway-behaviour questions are open (both reversal, both awaiting Adam), and everything else on the list is codebase or tests.** Every open row is about
+**The headline: nothing on the list is a known railway-behaviour defect.** Every open row is about the codebase or the tests. Every open row is about
 the codebase or the tests. That is worth stating plainly, because a list of ninety unread items reads
 like a railway full of bugs and it is not one.
 
@@ -35,37 +35,31 @@ otherwise be reported as bugs.
 
 ## Reversals
 
-**Open.**
+**Open:** none.
 
-- **`REG7-A1` — a manual path may route through a turning copy, and the operator can decline the
-  turn it depends on.** `reversesAlongTheWay` bars that for autonomy only; no manual door applies
-  it. "Keep direction" is the default, the Escape answer and the cannot-ask answer, and a turning
-  copy leaves only by the side the train came in at — so the answer strands the journey rather than
-  shortening it.
+**Recently closed.**
 
-  This is two of Adam's own rules colliding, not a coding error: *the answer is honoured at a
-  reversing point* is pinned by `testEveryCopyOfAMayReverseSquareIsAskedAbout`, and *a turning copy
-  exists to turn trains* is why `CONF-A1` had to keep compulsory turns away from any policy. Three
-  ways out, all of them changes to what the railway does:
+- **`REG7-A1` — FIXED 2026-09-07, on Adam's ruling.** *"Manual only reverses if the user explicitly
+  said it via the popup, unless you're going to a terminal."*
 
-  1. Honour the answer, and stop manual paths routing through turning copies as autonomy does.
-     Safest; removes routes.
-  2. Override the answer at a turning copy. Contradicts the pinned rule.
-  3. Refuse the dispatch with a reason when the answer would strand it. Neither removes routes nor
-     overrides him.
+  A manual path may route through the turning copy of a may-reverse square, and a turning copy leaves
+  only by the side the train came in at — so a train that does not turn there runs on onto track its
+  path does not hold. Both of his rules are kept: the answer is honoured everywhere, and the journey
+  that depends on a different answer is refused before it starts, naming the square. A terminus is
+  exempt.
 
-  Pinned as-is by `testAKeepAnswerAtATurningCopyIsHonouredAndThatIsTheOpenQuestion`. **Adam's call.**
+- **`REG7-A2` — FIXED 2026-09-07, and it was sharper than reported.** Not "a spurious double-follow":
+  `flipFacing` gathered candidate squares from the running layout and then **appended the setup's**,
+  and the loop below *skips* a square it cannot decide rather than stopping. After a run the arrival
+  square often has no recorded facing yet, so the loop moved past it to the next candidate — the
+  square the train had **left**, which the setup still names until the next capture and which does
+  have a facing. That empty platform had its direction flipped for a train standing elsewhere.
 
-- **`REG7-A2` — a possible spurious direction-follow after a run that turned the train.**
-  `followDirectionChanges` cannot distinguish the run's own `switchDirection` from an operator's, so
-  the first echo after the run may fire a `flipFacing` that undoes an already-correct state.
+  The setup now answers only when the railway has no opinion. `DIR-C3` is intact and pinned.
 
-  Reported as confirmed-by-trace, not measured, and it concerns the exact code Adam asked for when he
-  reported *"when the route finishes, the reversal isn't painted/visible"*. Reasoning it through: a
-  terminus square has one copy, so `flipFacing` finds no second copy and does nothing; a split
-  destination is the case where it could bite. **Not changed** — fixing it wrongly restores his
-  original symptom, and it needs a driven train to reproduce, which hangs the suite.
-
+  The reviewer's stated mechanism — that the baseline cannot tell the run's own reversal from the
+  operator's — does not hold: after a run that reverses, the train is still on the copy it arrived
+  on while its physical direction has flipped, so following it is the reconciliation Adam asked for.
 **Decided.**
 
 - *May-reverse always prompts in manual mode; yes = keep direction, and yes is the default.* Escape,

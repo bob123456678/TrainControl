@@ -1044,6 +1044,26 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                         org.traincontrol.gui.ManualReversalPrompt.forJourney(
                             this.parent == null ? null : this.parent.getAutonomySession(),
                             this, chosen, locomotive);
+                    // AND A JOURNEY THE ANSWER WOULD STRAND IS NOT STARTED (REG7-A1).
+                    //
+                    // Adam, 2026-09-07: **"manual only reverses if the user explicitly said it via the
+                    // popup, unless you are going to a terminal."**  So the answer is honoured - and a
+                    // route that cannot be run without a turn he did not agree to is a route that must
+                    // not be started, rather than one that runs and leaves the train off its path.
+                    //
+                    // Said before anything moves, with the square named, because "it did not work" about
+                    // a train already running is the report this exists to prevent.
+                    org.traincontrol.automation.Point strands =
+                        org.traincontrol.gui.ManualReversalPrompt.whereTheJourneyWouldStrand(
+                            chosen, answered, locomotive);
+
+                    if (strands != null)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            I18n.f("autolayout.ui.journeyNeedsTheTurn", strands.getName()));
+
+                        return;
+                    }
 
                     new Thread(() ->
                     {

@@ -83,6 +83,15 @@ its direction**. Three kinds of square matter:
   discarded: the turn on the way in is how a train backs into a terminus.
 - Autonomy and Return Home are never asked.
 
+> *"Manual only reverses if the user explicitly said it via the popup, unless you're going to a
+> terminal."* — Adam, 2026-09-07
+
+**A manual journey that needs a turn the operator declined is refused before it starts**, naming the
+square. A manual path may route through the turning copy of a may-reverse square, and a turning copy
+leaves only by the side the train came in at — so a train that does not turn there runs on onto track
+its path does not hold. The answer is always honoured; the journey that depends on a different answer
+is not started. A terminus is exempt.
+
 ### What the runtime cannot answer
 
 `canReverse` never reaches the running layout — `AutonomyBuilder` expresses it by splitting the
