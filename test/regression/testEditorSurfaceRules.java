@@ -1338,6 +1338,53 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Dragging a locomotive puts its name on the clipboard, and cannot fail because of it (C26).
+     *
+     * A review filed the clipboard write as an unwanted side effect of starting a drag. Adam,
+     * 2026-09-07: **"c26 is deliberate, that is the dragging functionality you implemented on the
+     * keyboard."** So it is pinned here rather than removed - the next reviewer will see the same
+     * unexplained write and reach the same wrong conclusion unless something says otherwise.
+     *
+     * The guard round it is not decoration. Windows hands the system clipboard to one process at a
+     * time and `setContents` throws `IllegalStateException` while another application holds it, which
+     * is ordinary and transient. Uncaught, that came out of the mouse handler **after** a cut had
+     * emptied the source key and **before** the paste could put the locomotive down: a moment of bad
+     * luck deleted a mapping. Four of the five tests in `ui.testTheKeyboardDrag` failed on it the
+     * first time they ran, and not one of them is about the clipboard.
+     *
+     * The behaviour of the gesture itself is in that class. This asserts only the two things that are
+     * textual: that the write is still there, and that it still cannot take the drag down with it.
+     *
+     * MUTATION: removing the try fails the second assertion; removing the write fails the first.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheDragPutsTheNameOnTheClipboardSafely() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        String drag = bodyOf(ui, "public void setCopyTarget(JButton button, boolean cut)");
+
+        assertNotEquals(drag, "",
+            "setCopyTarget is not declared that way any more, so this checked nothing");
+
+        int wrote = drag.indexOf("getSystemClipboard()");
+
+        assertTrue(wrote >= 0,
+            "starting a drag no longer puts the locomotive name on the system clipboard. That is"
+            + " deliberate - Adam, 2026-09-07: \"c26 is deliberate, that is the dragging"
+            + " functionality you implemented on the keyboard\" - so removing it is a regression,"
+            + " not a tidy-up");
+
+        assertTrue(drag.substring(0, wrote).contains("try"),
+            "the clipboard write is not inside a try. It throws whenever another application is"
+            + " holding the clipboard, and it runs AFTER a cut has emptied the source key - so a"
+            + " transient lock on somebody else's clipboard deletes a mapping here (C26)");
+    }
+    /**
      * The Sync menu comes back even when the sync does not (C23).
      *
      * doSync greys Sync and the functions menu, hands off to a worker thread, and re-enables them when

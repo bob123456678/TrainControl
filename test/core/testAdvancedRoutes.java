@@ -203,13 +203,17 @@ public class testAdvancedRoutes
 
         // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory
         // database is open, and it holds every MM2 address from 1 to 320 and every DCC address from 1
-        // to 2048.  Nobody made 2048 switches by hand: that IS this defect, already realised, and it
-        // means the whole of both address spaces is taken and a guessed address would make every
-        // assertion below vacuous rather than red.
+        // to 2048, because reading one used to register it.  Adam, 2026-09-07: **"there’s no reason to
+        // delete an accessory, since we just track their actuations.  them being in the database
+        // doesn’t otherwise harm anything."**  So those rows are not damage and nothing here is
+        // cleaning them up.
         //
-        // So the search runs past 320.  An address above the protocol’s range is still an address a
-        // route condition can carry and still one getAccessoryState would register, which is the
-        // mechanism under test; being unreachable by a real decoder is what makes it safe to ask about.
+        // They do mean every in-range address is taken, and a taken address makes every assertion
+        // below vacuous rather than red - so the search runs past 320, per Adam’s other instruction:
+        // pick one that is not on any track diagram.  An address above the protocol’s range is still
+        // an address a route condition can carry and still one getAccessoryState would register, which
+        // is the mechanism under test; being unreachable by a real decoder is what makes it certainly
+        // free.
         int free = -1;
 
         for (int candidate = 1; candidate <= 4096 && free < 0; candidate++)
@@ -219,8 +223,8 @@ public class testAdvancedRoutes
 
         assertTrue(free > 0,
             "there is no address at all, up to 4096, that is not already registered - so there is"
-            + " nothing left to ask about whose answer would not come from an accessory that exists."
-            + " That is itself the finding (C13)");
+            + " nothing left to ask about whose answer would not come from an accessory that exists,"
+            + " and this test can no longer tell a read from a write");
 
         final int address = free;
 

@@ -230,7 +230,7 @@ otherwise marshals rigorously.
 | C1-C6 | `automation/` - pacing, ceiling race, missing guards, dead parameter | Closed 2026-09-07 - C3, C5, C6 Fixed; C2 Cancelled; C1, C4 ruled and left. See [package-sweeps.md](../reference/package-sweeps.md) |
 | C7-C12 | `marklin/` - speed truncation, dead guard, MFX fallback, three-way pause, headless paths | Closed 2026-09-07 - C7 Fixed; C8, C9, C11, C12 Cancelled (all four fixed since the sweep, three with comments naming the same fault); C10 ruled and left |
 | C13-C19 | `base/` - phantom accessories, interrupt spin, recursion, stale comments | Closed 2026-09-07 - C13, C16, C18, C19a, C19b, C19c Fixed; C14, C17 Cancelled; C15, C19e ruled and left. **C13 was much larger than filed** - the same call in the keyboard paint registered 2048 accessories into the live database |
-| C20-C29 | `gui/` - regex filter, ghost mappings, off-EDT enable, silent rebind | Closed 2026-09-07 - C22, C23, C24 Fixed; C20, C21, C25, C28, C29 Cancelled (C28 was fixed at the model layer as UC-B1); C26, C27 ruled and left |
+| C20-C29 | `gui/` - regex filter, ghost mappings, off-EDT enable, silent rebind | Closed 2026-09-07 - C22, C23, C24 Fixed; C20, C21, C25, C28, C29 Cancelled (C28 was fixed at the model layer as UC-B1); C27 ruled and left. **C26 is deliberate** (Adam) - the keyboard drag - and now has the regression tests it never had, which found a clipboard lock able to delete a mapping |
 
 **`automation/`.** **C1** - `runLocomotive`'s loop has no pacing floor, so with `minDelay = maxDelay
 = 0` (explicitly supported) a locomotive with no available path spins hot: `pickPath` walks every

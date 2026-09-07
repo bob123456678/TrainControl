@@ -8483,8 +8483,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Put locomotive name in clipboard
         if (button != null && copyTarget != null)
         {
-            StringSelection selection = new StringSelection(copyTarget.getName());
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            // A LOCKED CLIPBOARD MUST NOT BREAK THE DRAG.
+            //
+            // Windows hands the clipboard to one process at a time, and setContents throws
+            // IllegalStateException whenever another application is holding it - which is ordinary,
+            // transient, and nothing to do with this railway.  Uncaught, it came out of the mouse
+            // handler AFTER a cut had already emptied the source key and BEFORE the paste could put
+            // the locomotive down, so a moment of bad luck deleted a mapping.
+            //
+            // Found by writing the regression tests Adam asked for on this gesture: four of the five
+            // failed here on the first run, and none of them was about the clipboard.
+            //
+            // The name on the clipboard is a convenience.  The drag is the feature.
+            try
+            {
+                StringSelection selection = new StringSelection(copyTarget.getName());
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            }
+            catch (IllegalStateException | java.awt.HeadlessException e)
+            {
+                if (this.model != null) this.model.log(e);
+            }
         }
     }
     

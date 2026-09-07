@@ -169,6 +169,7 @@
         <test-one-class class="testTheBuildSaysWhatItIs"/>
         <test-one-class class="testLocIconCrop"/>
         <test-one-class class="testLocMappingPages"/>
+        <test-one-class class="testTheKeyboardDrag"/>
         <test-one-class class="testCentralStationDetection"/>
         <test-one-class class="testRouteEditorShading"/>
         <test-one-class class="testStationLabelPrefill"/>

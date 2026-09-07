@@ -11,8 +11,9 @@ the two statements are inside one monitor - and not merely when I could not find
 fix below was proved by a test seen failing first.
 
 **What the sweep was worth.** Twelve were already gone, eleven of them fixed in the five weeks since by
-people who did not know the finding existed. Thirteen are now fixed. Seven are ruled and left, with
-reasons. **And the largest one was much bigger than filed.**
+people who did not know the finding existed. Fourteen are now fixed. Six are ruled and left, with
+reasons, and one - C26 - turned out to be a feature nothing had ever tested. **And the largest was much
+bigger than filed.**
 
 ## The one that mattered - C13
 
@@ -21,18 +22,23 @@ the window's two keyboard paint paths, the second of them in a loop over all six
 **opening a keyboard page registered sixty-four switches**, whether or not anything was wired to them.
 
 Adam's real database currently holds **`Switch 1` through `Switch 2048` in DCC, contiguous** - the
-entire DCC address space - plus 257 of the 320 MM2 addresses. Nobody makes 2048 switches by hand. That
-is this defect, already realised, and it is why the new test in `testAdvancedRoutes` has to search past
-the protocol range to find an address free enough to ask about.
+entire DCC address space - plus 257 of the 320 MM2 addresses. Nobody makes 2048 switches by hand; that
+is this defect, already realised.
 
 The fix stops it recurring: a new `getAccessoryStateIfPresent` gives the same answer and creates
 nothing, and all three read sites use it. Clicking a key still creates the switch it is about to
 command - creation belongs on the path that commands, not on the one that draws.
 
-**It does not clean up the 2048 already there, and there is no delete-accessory API to do it with.**
-That is a decision for Adam, not a side effect of a bug fix.
+**The rows already there stay.** Adam, 2026-09-07: *"there's no reason to delete an accessory, since we
+just track their actuations. Them being in the database doesn't otherwise harm anything."* An accessory
+record is a counter, not a claim that something is wired up, so a spurious one costs nothing. That also
+retires the question of a delete API - there is nothing to delete.
 
-## Fixed (13)
+The one consequence that survives is for tests: **every in-range address is taken**, so a test needing
+an address nobody has registered must search for one and assert it found one, past the protocol range,
+where nothing on a track diagram can be. `testAdvancedRoutes` does exactly that.
+
+## Fixed (14)
 
 | | What it was |
 |---|---|
@@ -49,6 +55,7 @@ That is a decision for Adam, not a side effect of a bug fix.
 | **C22** | Clearing a page only releases the active locomotive if it was on that page. |
 | **C23** | A throwing sync no longer leaves Sync and the functions menu greyed for the session. Reported as the failure code the method already knows how to explain. |
 | **C24** | Cancelling a label edit no longer resets the clipboard and disarms the active tool. The re-add stays unconditional - skipping it too would risk a blank square to fix a clipboard. |
+| **C26** | Not the reported defect - the clipboard write is deliberate - but the drag it belongs to could be killed by a clipboard another application was holding. See below. |
 
 ## Cancelled - the mechanism is gone (12)
 
@@ -65,7 +72,7 @@ all three writers of `numF` - both constructors and `setAddress` - clamp the sto
 with tests. The dialog needs no guard of its own, and adding one would be a second rule to drift from
 the first.
 
-## Live, and deliberately left (7)
+## Live, and deliberately left (6)
 
 | | Ruling |
 |---|---|
@@ -74,15 +81,24 @@ the first.
 | **C10** | The CS2 flat-file importer's three-way pause placement. Real per the CS3 importer's own comment, but it needs a three-way turnout imported from a CS2 flat file, and there is none to test against. |
 | **C15** | The feedback waits retry by recursion. It needs a sensor flapping within every `minDuration` window for long enough to exhaust a stack - a broken sensor, which would be reported as one. |
 | **C19e** | `LayoutDiagramComponent` rotates about `img.getWidth(null)/2` on an image that may have come from `getScaledInstance`, whose width can read -1 until it loads. Real, and **not something to change without looking at the result** - a wrong fix here is a visibly broken diagram, which is worse than an intermittent one. |
-| **C26** | `setCopyTarget` writes the locomotive's name to the system clipboard. Plausibly deliberate - copy the name, paste it elsewhere - and removing a convenience on suspicion is not mine to do. **Adam's call.** |
 | **C27** | `saveState` iterates `locMapping` off the EDT. Compensated by the handler's `RuntimeException` catch, which the finding itself concluded; the item is reported as unsaved and the backup completes. |
 
-## What is left for you
+## C26 - not a defect, and now covered
 
-1. **The 2048 phantom accessories.** They are in the database now, nothing removes them, and there is
-   no API that could. Worth deciding whether they should be cleaned out and how.
-2. **C26** - is writing the locomotive name to the system clipboard on a drag something you put there
-   on purpose?
+Adam, 2026-09-07: *"c26 is deliberate, that is the dragging functionality you implemented on the
+keyboard. There should be tests to ensure no regression there."*
+
+There were none - copy, cut, move and swap across fifty pages, and not one line covered, which is how a
+reviewer came to read a deliberate feature as a side effect. `ui.testTheKeyboardDrag` now covers all
+four gestures, and `testEditorSurfaceRules` pins the clipboard write itself so the next reviewer sees
+why it is there.
+
+**Writing them found a real one.** `setContents` throws `IllegalStateException` whenever another
+application is holding the Windows clipboard - ordinary and transient - and the write runs *after* a
+cut has emptied the source key and *before* the paste can put the locomotive down. Uncaught, a moment
+of bad luck deleted a mapping. Four of the five new tests failed on it the first time they ran, and not
+one of them is about the clipboard. The write is now guarded: the name on the clipboard is a
+convenience, the drag is the feature.
 
 ## On the structural items
 
