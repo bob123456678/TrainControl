@@ -35,9 +35,14 @@ import org.testng.annotations.Test;
  * happens to be showing. Every one of these tests that involves the source crossing a page boundary is
  * there because that is the assumption a refactor would quietly drop.
  *
- * The clipboard half of the gesture is pinned in `testEditorSurfaceRules` rather than here: asserting
- * it for real would mean overwriting whatever the person running the battery had copied, and a test
- * that costs its runner their clipboard is not worth what it proves.
+ * **These tests DO write to the system clipboard**, because they exercise the real gesture and the
+ * real gesture puts the locomotive name on it - that is C26, and it is deliberate. An earlier version
+ * of this comment claimed they avoided it; they never could. What they can do is give it back, so
+ * `build` saves whatever text was on the clipboard and restores it afterwards. A non-text clipboard -
+ * an image, a file - cannot be restored that way, and nothing here pretends otherwise.
+ *
+ * No assertion here reads the clipboard. The write itself is pinned in `testEditorSurfaceRules`, where
+ * it is a fact about the source rather than about the machine the battery happens to run on.
  *
  * @author Adam
  */
@@ -308,7 +313,69 @@ public class testTheKeyboardDrag
         f.setAccessible(true);
         f.set(built[0], model);
 
+        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it (IND9-C4).
+        //
+        // setCopyTarget writes the locomotive name to the system clipboard - deliberately, per Adam -
+        // so exercising the gesture necessarily overwrites it. Saved here and put back by
+        // `giveTheClipboardBack`, which every test calls in a finally.
+        priorClipboard = readClipboard();
+
         return built[0];
+    }
+
+    /**
+     * Whatever text was on the system clipboard before a test ran, or null.
+     */
+    private String priorClipboard;
+
+    /**
+     * The clipboard as text, or null when it holds something else or cannot be read.
+     *
+     * @return the text, or null
+     */
+    private String readClipboard()
+    {
+        try
+        {
+            java.awt.datatransfer.Transferable held = java.awt.Toolkit.getDefaultToolkit()
+                .getSystemClipboard().getContents(null);
+
+            if (held == null
+                || !held.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.stringFlavor))
+            {
+                return null;
+            }
+
+            return (String) held.getTransferData(java.awt.datatransfer.DataFlavor.stringFlavor);
+        }
+        catch (Exception cannotRead)
+        {
+            // A locked or non-text clipboard.  Nothing to give back, and nothing worth failing over.
+            return null;
+        }
+    }
+
+    /**
+     * Puts back whatever text the clipboard held before the test.
+     *
+     * Called from a finally in every test, because the gesture under test overwrites it.
+     */
+    @org.testng.annotations.AfterMethod(alwaysRun = true)
+    public void giveTheClipboardBack()
+    {
+        if (priorClipboard == null) return;
+
+        try
+        {
+            java.awt.datatransfer.StringSelection back =
+                new java.awt.datatransfer.StringSelection(priorClipboard);
+
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(back, back);
+        }
+        catch (Exception cannotRestore)
+        {
+            // The same lock the code under test now survives.  Reported by not being restored.
+        }
     }
 
     /**

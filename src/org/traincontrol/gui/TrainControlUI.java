@@ -6026,15 +6026,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // asked from `rememberPlacement`, by which point the train had already been picked up
             // and put down; there was nothing left to decline.
             //
-            // Only a may-turn square can be dismissed - everywhere else the answer is worked out
-            // rather than asked, so a null there means "nothing to record" and not "the operator
-            // said no".  Distinguishing the two is the whole of this guard.
+            // A DISMISSAL, and not the other two nulls (IND9-B5).  `forPlacement` answers null in
+            // three situations - the operator declined, the square offers no side to choose between,
+            // or the dialog could not be shown - and only the first is a refusal to place.  Reading
+            // them alike refused every paste onto a square whose copy has no compass-resolvable
+            // neighbour, silently and permanently.
+            //
+            // So `wouldAsk` is asked rather than inferred: it is the same condition under which
+            // forPlacement reaches its dialog, kept in one place with it.
             tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 facingAtTheLanding == null ? null : facingAtTheLanding.name(),
                 mayTurnHere(aimed), this);
 
-            if (tailAtTheLanding == null && mayTurnHere(aimed))
+            if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
+                this.model == null ? null : this.model.getAutoLayout(), point, mayTurnHere(aimed)))
             {
                 // Nothing moved, and the clipboard still holds it, so the next square accepts the
                 // same paste.  A dismissed question leaves the railway exactly as it was.

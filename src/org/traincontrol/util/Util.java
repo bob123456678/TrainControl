@@ -656,13 +656,34 @@ public class Util
      */
     public static String parseReleaseVersion(JSONObject gitHubReleaseInfo)
     {
-        java.util.regex.Matcher version = java.util.regex.Pattern
-            .compile("[0-9]+(?:[.][0-9]+)*")
-            .matcher(gitHubReleaseInfo.getString("name"));
+        String name = gitHubReleaseInfo.getString("name");
+
+        // THE ONE AFTER THE "v" FIRST (IND9-C2).  Matching the first number outright was the same
+        // mistake as the original, pointing the other way: "TrainControl 2026 Edition v3.0.0" gave
+        // "2026" - newer than anything, so the menu offers an update that does not exist - and
+        // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
+        // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
+        // numbers.
+        java.util.regex.Matcher tagged =
+            java.util.regex.Pattern.compile("[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
+
+        if (tagged.find()) return tagged.group(1);
+
+        // No "v" at all, which used to throw.  Then the longest version-shaped number wins, so a
+        // three-part version beats a stray year or build number beside it.
+        java.util.regex.Matcher version =
+            java.util.regex.Pattern.compile("[0-9]+(?:[.][0-9]+)*").matcher(name);
 
         // Null rather than a guess.  A name with no number in it has no version to report, and the
         // caller can say so; handing back part of the name is how this went silent.
-        return version.find() ? version.group() : null;
+        String best = null;
+
+        while (version.find())
+        {
+            if (best == null || version.group().length() > best.length()) best = version.group();
+        }
+
+        return best;
     }
     
     /**

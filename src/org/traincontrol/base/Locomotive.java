@@ -460,10 +460,11 @@ public abstract class Locomotive
                 // "ran today" record for a locomotive that had not moved and could not.  One of a pair
                 // asking the question and the other not is what made it visible.
                 //
-                // Left alone deliberately: power going off DURING a run still counts the whole stretch
-                // as running time, because lastStartTime is stamped once and nothing revisits it. That
-                // is a different question - what the stat should mean - and not one to settle inside a
-                // guard.
+                // The sibling case IS handled, sixty lines up: notifyOfPowerStateChange closes the
+                // interval and zeroes the stamp when power goes off, and re-stamps when it returns.
+                // An earlier version of this comment claimed otherwise and deferred the question - a
+                // comment asserting the comfortable version of what the code does, which is the thing
+                // this file warns about by name elsewhere.
                 if (speed > 0 && this.speed == 0 && powerState)
                 {
                     this.lastStartTime = System.currentTimeMillis();

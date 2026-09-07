@@ -1466,10 +1466,16 @@ public class testEditorSurfaceRules
             + " functionality you implemented on the keyboard\" - so removing it is a regression,"
             + " not a tidy-up");
 
-        assertTrue(drag.substring(0, wrote).contains("try"),
-            "the clipboard write is not inside a try. It throws whenever another application is"
-            + " holding the clipboard, and it runs AFTER a cut has emptied the source key - so a"
-            + " transient lock on somebody else's clipboard deletes a mapping here (C26)");
+        // THE CATCH IS AFTER THE WRITE, and names what it tolerates (IND9-C5).  "A try appears
+        // somewhere above" is satisfied by any unrelated try earlier in the method, so the guard could
+        // go permanently vacuous on an edit that has nothing to do with the clipboard.
+        int caught = drag.indexOf("catch (IllegalStateException", wrote);
+
+        assertTrue(caught > wrote,
+            "the clipboard write is not wrapped in a catch for the clipboard being unavailable. It"
+            + " throws whenever another application is holding it, and it runs AFTER a cut has emptied"
+            + " the source key - so a transient lock on somebody else's clipboard deletes a mapping"
+            + " (C26, IND9-C5)");
     }
     /**
      * The Sync menu comes back even when the sync does not (C23).
@@ -1513,9 +1519,14 @@ public class testEditorSurfaceRules
             "the call to syncWithCS2 is not inside a try. If it throws, the worker thread dies and"
             + " Sync and the functions menu stay greyed until the application is restarted (C23)");
 
-        assertTrue(sync.substring(call, back).contains("catch"),
-            "nothing between the sync and the re-enable catches a failure, so the re-enable is only"
-            + " reached when the sync succeeds - which is the half of C23 that was left");
+        // WHAT THE CATCH DOES, not that a catch exists (IND9-C5).  "There is a catch between the call
+        // and the re-enable" is satisfied by `catch (RuntimeException e) { log(e); return; }`, which
+        // is C23 fully restored - menus greyed for the session - with this test green.  The failure
+        // code is the observable thing: it is what carries the operator to the log.
+        assertTrue(sync.substring(call, back).contains("syncResult = -1"),
+            "nothing between the sync and the re-enable turns a failure into the code this method"
+            + " knows how to report. A catch that logs and returns leaves Sync and the functions menu"
+            + " greyed until the application is restarted, which is C23 unfixed (IND9-C5)");
     }
     /**
      * Nothing that only draws an accessory may create one (C13).
@@ -1626,10 +1637,14 @@ public class testEditorSurfaceRules
             "nothing between the question and the move can abandon the paste, so the answer is asked"
             + " early and then ignored - the train lands either way");
 
-        assertTrue(between.contains("mayTurnHere("),
-            "the abandon guard does not ask whether this square is one trains may turn at, so it"
-            + " cannot tell a dismissal from \"there was nothing to record\" - and every paste onto"
-            + " plain track, where no question is asked at all, would be refused");
+        // AND IT ASKS THE PROMPT'S OWN QUESTION (IND9-B5).  `mayTurnHere` alone was not enough:
+        // forPlacement answers null in three situations and only one of them is a dismissal, so a
+        // square with no compass-resolvable side was refused every paste, silently and permanently.
+        assertTrue(between.contains("ArrivalSidePrompt.wouldAsk("),
+            "the abandon guard decides for itself whether a question was asked, instead of asking the"
+            + " prompt. forPlacement returns null when it declined to ask as well as when it was"
+            + " dismissed, and treating those alike refuses pastes onto squares nobody was ever asked"
+            + " about (IND9-B5)");
 
         // AND THE OLD SITE IS GONE.  Two doors asking the same question is how the facing menu drifted
         // (OB-039), and here the second one would be the un-undoable copy.

@@ -78,6 +78,33 @@ public class ArrivalSidePrompt
     }
 
     /**
+     * Whether a placement here would actually put a question to the operator (IND9-B5).
+     *
+     * `forPlacement` returns null in three different situations and only one of them is "the operator
+     * said no": the square may have no compass-resolvable sides at all, or the dialog may have been
+     * impossible to show. The paste door was reading all three as a dismissal, so a square whose copy
+     * connects only through neighbours the grid cannot place was **silently refused every paste,
+     * forever**, with no dialog and no log line - the operator could not put a train there and nothing
+     * said why.
+     *
+     * So the door asks this instead of inferring it from a null. Same rule, one place: this is exactly
+     * the condition under which `forPlacement` reaches `ask`, and if that changes they change together.
+     * The alternative - a sentinel value threaded back through a String - would be a second spelling of
+     * the same predicate, which is what this project keeps being bitten by.
+     *
+     * @param layout the running layout
+     * @param at the point being placed on
+     * @param mayReverse whether the operator marked this square as one trains may turn at
+     * @return whether a dialog would be shown
+     */
+    public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse)
+    {
+        if (!mayReverse || layout == null || at == null) return false;
+
+        return sidesOf(layout, at).size() > 1;
+    }
+
+    /**
      * Puts the question to the operator.
      *
      * `showOptionDialog` rather than `showInputDialog`, for the reason every dialog in this

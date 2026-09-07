@@ -2453,10 +2453,15 @@ public class Layout
             return false;
         }
 
-        // AND THE TOTAL HAS TO BE COMPLETE.  An unmeasured segment used to contribute nothing while
-        // the sum went ahead without it, which is "I do not know how long this is" answered as "it is
-        // zero" - and that refuses a train that would have fitted.  A path carrying any unmeasured
-        // segment is not judged at all; it is the case the editor's notice asks him to fix.
+        // THE TOTAL OF WHAT IS MEASURED, which is not the same as all-or-nothing (REG8-C3).
+        //
+        // This paragraph used to say a path carrying any unmeasured segment is not judged at all.
+        // That was the rule when it was written and Adam overturned it on 2026-09-06: "you need to
+        // measure total distance between points, not validate that every edge has a length > 0.  It is
+        // only indeterminate if the entire logical segment has length 0."  The method below implements
+        // the new rule - an unmeasured segment ends the count without cancelling it, and a stretch is
+        // capped by the segment it lies in - and carries the reasoning in full.  The call site kept the
+        // withdrawn version, which is the first thing a reader meets.
         if (loc != null && loc.getTrainLength() != null && loc.getTrainLength() > 0
             && !path.isEmpty())
         {
