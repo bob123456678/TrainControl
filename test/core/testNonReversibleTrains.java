@@ -380,55 +380,72 @@ public class testNonReversibleTrains
             + "block on one");
     }
     /**
-     * REG7-A1, ruled: manual turns only on an explicit yes, and a journey needing more is refused.
+     * Only the destination is asked about, and an intermediate turns as the path requires.
      *
-     * Adam, 2026-09-07: **"manual only reverses if the user explicitly said it via the popup, unless
-     * you're going to a terminal."**
+     * Adam, 2026-09-07: **"It is unnecessary to prompt on intermediates.  We care about the reversal
+     * if it's the destination, since that dictates where the train can go, and where it is facing."**
      *
-     * That keeps both of his rules intact.  The answer is honoured everywhere - which
-     * `testEveryCopyOfAMayReverseSquareIsAskedAbout` requires - and the consequence is faced instead
-     * of being driven into: a manual path may route THROUGH the turning copy of a may-reverse square,
-     * a turning copy leaves only by the side the train came in at, so a train that does not turn there
-     * runs on at line speed onto track its path does not hold.
+     * **This dissolved `REG7-A1` rather than working around it.**  That finding was a journey routed
+     * through a turning copy the operator was asked about and could decline - "keep direction" being
+     * the default, the Escape answer and the cannot-ask answer.  The fix before this one refused such
+     * journeys before they started, which was correct and was a whole extra mechanism.  Asking only
+     * about the end removes the question from every square where the answer was never the operator's
+     * to give, and the refusal became dead code the same hour it was written.
      *
-     * So the journey is not started.  The operator is told which square needs the turn, before
-     * anything moves - "it did not work" about a train already running is the report this exists to
-     * prevent.
-     *
-     * A terminus is exempt, as he says and as MT-245 already required.
+     * An intermediate turning copy exists BECAUSE the path chose to turn there.  That is the route's
+     * business, and it now behaves exactly as it does for autonomy.
      *
      * @throws Exception on a failure to build the fixture
      */
     @Test
-    public void testAJourneyNeedingATurnTheOperatorDeclinedIsNotStarted() throws Exception
+    public void testOnlyTheDestinationIsAskedAboutAndIntermediatesTurnAsRequired() throws Exception
     {
         Layout layout = new Layout(model);
 
-        org.traincontrol.marklin.MarklinFeedback one = model.newFeedback(240, null);
-        org.traincontrol.marklin.MarklinFeedback two = model.newFeedback(241, null);
-        org.traincontrol.marklin.MarklinFeedback three = model.newFeedback(242, null);
+        org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(240, null);
 
-        model.setFeedbackState(one.getName(), false);
-        model.setFeedbackState(two.getName(), false);
-        model.setFeedbackState(three.getName(), false);
+        model.setFeedbackState(sensor.getName(), false);
 
-        layout.createPoint("STRAND_start", true, one.getName());
-        layout.createPoint("STRAND_turn", true, two.getName());
-        layout.createPoint("STRAND_end", true, three.getName());
+        layout.createPoint("MID_turn", true, sensor.getName());
+        layout.createPoint("MID_end", true, sensor.getName());
 
-        layout.getPoint("STRAND_turn").setReversing(true);
+        layout.getPoint("MID_turn").setReversing(true);
 
-        Edge in = layout.createEdge("STRAND_start", "STRAND_turn");
-        Edge on = layout.createEdge("STRAND_turn", "STRAND_end");
-
-        java.util.List<Edge> path = new java.util.ArrayList<>();
-
-        path.add(in);
-        path.add(on);
+        Point turning = layout.getPoint("MID_turn");
+        Point end = layout.getPoint("MID_end");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
-        Layout.ReversalPolicy keptDirection = new Layout.ReversalPolicy()
+        // The door's shape after the ruling: the DESTINATION is the only square it asks about, so
+        // that is the only square its answer speaks for.
+        final Point asked = end;
+
+        Layout.ReversalPolicy destinationOnly = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return at == asked;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == asked;
+            }
+        };
+
+        // AN INTERMEDIATE TURNING COPY TURNS, because the route needs it to and nobody was asked.
+        assertTrue(layout.shouldReverseAt(turning, end, loc, destinationOnly),
+            "an intermediate turning copy did not turn. Its only outgoing edges leave by the side the"
+            + " train arrived from, so the train runs on off its reserved path - which is REG7-A1, and"
+            + " asking only about the destination is what was supposed to end it");
+
+        // AND THE DESTINATION OBEYS THE ANSWER, which is the half that is the operator's.
+        assertTrue(layout.shouldReverseAt(end, end, loc, destinationOnly),
+            "the destination did not turn on an answer of yes");
+
+        Layout.ReversalPolicy keptAtTheEnd = new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive train, Point at)
@@ -439,47 +456,18 @@ public class testNonReversibleTrains
             @Override
             public boolean asksAbout(Point at)
             {
-                return true;
+                return at == asked;
             }
         };
 
-        Point strands = org.traincontrol.gui.ManualReversalPrompt.whereTheJourneyWouldStrand(
-            path, keptDirection, loc);
+        assertFalse(layout.shouldReverseAt(end, end, loc, keptAtTheEnd),
+            "the destination turned against an answer of no, so the one question the operator is still"
+            + " asked does not decide anything");
 
-        assertEquals(strands, layout.getPoint("STRAND_turn"),
-            "a journey routed through a turning copy the operator declined to turn at is still"
-            + " started. The train does not turn there, and a turning copy leaves only by the side it"
-            + " came in at - so it runs on off its reserved path (REG7-A1)");
-
-        // AND AN EXPLICIT YES RUNS IT, which is the whole of the ruling: the turn is available, it
-        // just has to be asked for.
-        Layout.ReversalPolicy saidTurn = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive train, Point at)
-            {
-                return true;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return true;
-            }
-        };
-
-        assertNull(org.traincontrol.gui.ManualReversalPrompt.whereTheJourneyWouldStrand(
-            path, saidTurn, loc),
-            "the operator agreed to the turn and the journey is still refused, so the only way to run"
-            + " this route has been closed off rather than gated");
-
-        // AND A TERMINUS IS EXEMPT (Adam: "unless you are going to a terminal", and MT-245).
-        layout.getPoint("STRAND_end").setTerminus(true);
-
-        assertNull(org.traincontrol.gui.ManualReversalPrompt.whereTheJourneyWouldStrand(
-            path, keptDirection, loc),
-            "a journey to a terminus was refused for want of a turn nobody is asked about. The turn"
-            + " on the way in is how a train backs into a terminus");
+        // AND THE INTERMEDIATE STILL TURNS under that same answer - the answer is about the end.
+        assertTrue(layout.shouldReverseAt(turning, end, loc, keptAtTheEnd),
+            "declining the turn at the DESTINATION also stopped an intermediate turning, so the answer"
+            + " is being applied to squares nobody was asked about");
     }
     /**
      * A policy that overrides `asksAbout` is what the doors actually hand over - and until now, what

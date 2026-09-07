@@ -90,50 +90,33 @@ public final class ManualReversalPrompt
             }
         }
 
-        if (path != null)
+        // THE DESTINATION, AND ONLY THE DESTINATION (Adam, 2026-09-07).
+        //
+        // **"It is unnecessary to prompt on intermediates.  We care about the reversal if it's the
+        // destination, since that dictates where the train can go, and where it is facing."**
+        //
+        // This used to name the destination when it qualified and fall back to the first may-turn
+        // square on the route otherwise.  That was the source of `REG7-A1`: a journey could depend on
+        // a turn at an intermediate, the operator was asked about it, and "keep direction" - the
+        // default, the Escape answer and the cannot-ask answer - stranded the train off its path.
+        //
+        // Asking only about the end removes the question from every square where the answer was not
+        // the operator's to give.  An intermediate turning copy exists BECAUSE the path chose to turn
+        // there; that is the route's business, and it now behaves exactly as it does for autonomy.
+        // The destination is different: which way a train faces when it stops decides where it can go
+        // next, and that is a decision rather than a consequence.
+        Point arrival = path == null || path.isEmpty() ? null
+            : path.get(path.size() - 1).getEnd();
+
+        if (arrival != null && !arrival.isTerminus() && asking.asksAbout(arrival))
         {
-            // THE DESTINATION FIRST, BECAUSE THAT IS THE SQUARE THE OPERATOR MEANT (REG6-B2).
-            //
-            // This used to name the first may-turn square ON THE WAY, and apply the answer to all of
-            // them.  Adam's ruling is about the other end: **"if the user decides to send a train to
-            // a 'may reverse' point, explicitly ask the user if the train should change direction"** -
-            // and `DIR-A2` was raised because a send whose DESTINATION is a may-reverse point turned
-            // the train without a word.  So the one case the feature exists for was the one case the
-            // dialog never named: it asked about a platform halfway along the route and then acted on
-            // the answer at the place the operator had actually clicked.
-            //
-            // Still one question for the journey, which is what makes it answerable - the operator is
-            // deciding what this MOVE is for, not annotating each square.  What changes is which
-            // square the sentence names, and it now names the one they chose.
-            org.traincontrol.automation.Point arrival = path.isEmpty() ? null
-                : path.get(path.size() - 1).getEnd();
-
-            if (arrival != null && !arrival.isTerminus() && asking.asksAbout(arrival))
-            {
-                first = arrival;
-            }
-
-            for (org.traincontrol.automation.Edge edge : path)
-            {
-                if (first != null) break;
-
-                if (edge == null || edge.getEnd() == null) continue;
-
-                // A TERMINUS IS NOT ASKED ABOUT, here as inside the run: the train has run out of
-                // track and the turn is how it gets there at all.
-                if (edge.getEnd().isTerminus()) continue;
-
-                if (asking.asksAbout(edge.getEnd()))
-                {
-                    first = edge.getEnd();
-
-                    break;
-                }
-            }
+            first = arrival;
         }
 
         // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.
         if (first == null) return KEEP_DIRECTION;
+
+        final Point asked = first;
 
         final boolean turn = ask(parent, loc, first);
 
@@ -142,12 +125,22 @@ public final class ManualReversalPrompt
             @Override
             public boolean shouldReverse(Locomotive train, Point at)
             {
-                return turn;
+                // THE ANSWER IS ABOUT THE SQUARE IT WAS ASKED ABOUT, and no other.
+                //
+                // It used to be returned for every point on the path, so "yes" turned the train at a
+                // plain copy it merely passed through as well as at the end.  Now the destination is
+                // the only square anybody is asked about, so it is the only square the answer speaks
+                // for.
+                return turn && at == asked;
             }
 
             @Override
             public boolean asksAbout(Point at)
             {
+                // THE DESTINATION ONLY, which is what makes an intermediate turning copy behave as it
+                // does for autonomy: `Layout.shouldReverseAt` reads this to tell a turn the operator
+                // has a say over from one the route requires, and an intermediate is now the latter.
+                //
                 // WHICH SQUARES THE OPERATOR HAS A SAY OVER - not which ones the answer acts on.
                 //
                 // This briefly returned `turn && asking.asksAbout(at)`, to stop a journey nobody was
@@ -160,64 +153,9 @@ public final class ManualReversalPrompt
                 // REG6-B4 is fixed where it belongs instead: the stop now asks `shouldReverseAt`
                 // itself, so no stop happens where no turn happens, and this answer can go back to
                 // being about the railway rather than about what was said.
-                return asking.asksAbout(at);
+                return at == asked && asking.asksAbout(at);
             }
         };
-    }
-
-    /**
-     * The point on this path that the train cannot get past without a turn it has not been given.
-     *
-     * Adam, 2026-09-07: **"manual only reverses if the user explicitly said it via the popup, unless
-     * you're going to a terminal."**
-     *
-     * That settles `REG7-A1`, and it settles it the way that does not touch his other rule: the
-     * answer is honoured, always.  What follows is that some journeys become unrunnable, and the
-     * railway has to say so rather than start them.
-     *
-     * **Why a journey can need a turn nobody agreed to.**  A manual path may route THROUGH the turning
-     * copy of a may-reverse square - `reversesAlongTheWay` bars that for autonomy only, and no manual
-     * door applies it.  A turning copy's only outgoing edges leave by the side the train arrived from,
-     * so a train that does not turn there does not continue along its path: it runs on at line speed
-     * onto track the path does not hold.  "Keep direction" is the default answer, the Escape answer
-     * and the answer used when no dialog can be shown, so that is the likely case rather than the
-     * exotic one.
-     *
-     * A TERMINUS is exempt, as he says and as `MT-245` already required: the turn there is how a train
-     * backs in, and `Layout.shouldReverseAt` answers a terminus journey from the flag whatever any
-     * policy says.
-     *
-     * @param path the journey about to be run
-     * @param answered the policy the operator's answer produced
-     * @param loc the train
-     * @return the first point that would strand the journey, or null when it can be run
-     */
-    public static Point whereTheJourneyWouldStrand(java.util.List<org.traincontrol.automation.Edge> path,
-        org.traincontrol.automation.Layout.ReversalPolicy answered, Locomotive loc)
-    {
-        if (path == null || path.isEmpty() || answered == null) return null;
-
-        Point destination = path.get(path.size() - 1).getEnd();
-
-        // A journey to a terminus turns wherever it must, and is never asked about.
-        if (destination != null && destination.isTerminus()) return null;
-
-        for (org.traincontrol.automation.Edge edge : path)
-        {
-            Point at = edge.getEnd();
-
-            if (at == null || !at.isReversing()) continue;
-
-            // The arrival is turned by the arrival rule rather than by the path, so it cannot strand
-            // anything: there is no leg after it to be stranded on.
-            if (at == destination) continue;
-
-            // A turning copy the operator has not agreed to turn at.  `shouldReverse` is the answer
-            // already given at departure, so this asks nothing and shows nothing.
-            if (!answered.shouldReverse(loc, at)) return at;
-        }
-
-        return null;
     }
 
     /**
