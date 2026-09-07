@@ -437,6 +437,110 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
+     * Everything the setup records about a square reaches the railway, and leaving takes it away.
+     *
+     * **This is the test whose absence let two A-grade defects through on one day**, found by two
+     * reviewers working on different questions, neither finding the other’s.
+     *
+     * The coverage that existed for `arrivedFrom` before today was, in full: set it on the session and
+     * read it back off the session; save, reopen, read it off the session again; and two source-shape
+     * assertions on the text of `Layout.executePathInternal`. Every one of those asks **the setup**, or
+     * asks what the writer’s source code looks like. Not one asked the **railway** - and the railway
+     * is what blocks track, which is the entire point of the property.
+     *
+     * Both defects live in exactly that gap, and they are its two halves:
+     *
+     * - **REG8-A1, the value never arrives.** `parseAuto` applied the side while creating the points
+     *   and placed the trains afterwards, and placing a train clears the side. Written, then wiped, on
+     *   every build. The setup was right the whole time, so every existing assertion passed.
+     * - **IND9-A1, a value arrives that nobody set.** Emptying a square cleared the placement and the
+     *   facing and left the side behind, so the next train inherited the last one’s tail. Again
+     *   invisible: the setup faithfully reported the stale value it had been left.
+     *
+     * So this asserts the round trip at the CONSUMER, in both directions - what is recorded reaches the
+     * railway, and what is removed stops reaching it. Either half alone would have caught one defect
+     * and not the other, which is why removal is here rather than assumed.
+     *
+     * Over several properties rather than just the arrival side, because the shape of the fault is not
+     * specific to it: any property applied in the point loop and then overwritten by a later pass would
+     * fail the same way, silently, and be reported clean by a setup-side test.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testWhatTheSetupRecordsIsWhatTheRailwayGets() throws Exception
+    {
+        String pointName = null;
+        TileKey square = null;
+        String side = null;
+
+        for (Point candidate : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(candidate.getName());
+
+            if (key == null) continue;
+
+            java.util.List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(
+                model.getAutoLayout(), candidate);
+
+            if (sides.isEmpty()) continue;
+
+            pointName = candidate.getName();
+            square = key;
+            side = sides.get(0);
+
+            break;
+        }
+
+        assertNotNull(side, "no station here offers an arrival side, so this proves nothing");
+
+        // A TRAIN IS STANDING ON IT.  Without one the wipe cannot happen - it is placing the train
+        // that clears the side - so an empty square would pass this whatever the build did.
+        putDown(square, pointName, null);
+
+        session.setArrivedFrom(square, side);
+        session.setPointProperty(square, "maxTrainLength", 7);
+        session.setPointProperty(square, "priority", 3);
+
+        // RECORDED -> BUILT -> READ OFF THE RAILWAY.
+        model.parseAuto(session.buildConfiguration());
+
+        Point built = model.getAutoLayout().getPoint(pointName);
+
+        assertNotNull(built, "the point did not survive the build");
+
+        assertNotNull(built.getCurrentLocomotive(),
+            "the train did not survive the build, so nothing below can be wiped by placing it");
+
+        assertEquals(built.getArrivedFrom(), side,
+            "the arrival side was recorded and the railway does not have it (REG8-A1)");
+
+        assertEquals(Integer.valueOf(built.getMaxTrainLength()), Integer.valueOf(7),
+            "the station capacity was recorded and the railway does not have it - the same shape as"
+            + " the arrival side, on a property that decides which trains are admitted");
+
+        assertEquals(Integer.valueOf(built.getPriority()), Integer.valueOf(3),
+            "the priority was recorded and the railway does not have it");
+
+        // AND THE OTHER DIRECTION.  Taking the train off takes its tail with it, and the next build
+        // must not hand the tail back.
+        lift(square);
+
+        assertNull(session.getArrivedFrom(square),
+            "the setup kept the arrival side of a train that is no longer there (IND9-A1)");
+
+        model.parseAuto(session.buildConfiguration());
+
+        Point after = model.getAutoLayout().getPoint(pointName);
+
+        assertNotNull(after, "the point did not survive the second build");
+
+        assertNull(after.getArrivedFrom(),
+            "the railway still says a train arrived from " + side + " at " + pointName + ", where no"
+            + " train is standing. The next locomotive placed here inherits that tail and the track"
+            + " behind it is blocked on the strength of where a different train came in (IND9-A1)");
+    }
+    /**
      * The arrival side survives the BUILD, not just the file (REG8-A1).
      *
      * `parseAuto` applies `arrivedFrom` while it is creating the points and places the locomotives in a

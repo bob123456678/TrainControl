@@ -4668,6 +4668,27 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.diagramSize.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
             layout.getSx() + " x " + layout.getSy()));
+
+        // AND THE TWO BUTTONS, whose tooltips were written and never attached (REG8-C5).
+        //
+        // `layout.ui.tooltipGrowDiagram` and `layout.ui.tooltipShrinkDiagram` exist in all eight
+        // bundles and were carefully reworded three days ago in answer to a review of their wording -
+        // for controls that were showing nothing. The form sets `plusButton` to the empty string and
+        // `minusButton` to nothing at all, and the form is generated and not mine to edit, so they go
+        // here beside the heading that had the same problem and the same answer.
+        //
+        // "+" and "-" say almost nothing on their own, and what they do is not reversible in the way a
+        // reader would assume: the shrink refuses if either the last column or the last row holds
+        // track, which is exactly what its tooltip says and what nothing was telling anyone.
+        if (this.plusButton != null)
+        {
+            this.plusButton.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
+        }
+
+        if (this.minusButton != null)
+        {
+            this.minusButton.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
+        }
     }
 
     /**
