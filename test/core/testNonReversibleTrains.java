@@ -380,6 +380,87 @@ public class testNonReversibleTrains
             + "block on one");
     }
     /**
+     * REG7-A1: two of Adam's rules meet here, and the meeting has a sharp edge.
+     *
+     * **Rule one:** *"May reverse should always prompt in manual mode"*, and the answer is honoured -
+     * `testEveryCopyOfAMayReverseSquareIsAskedAbout` and the back-into-a-terminus rule both require
+     * that a "no" is obeyed at a reversing point that is not the journey's end.
+     *
+     * **Rule two:** a turning copy exists in order to turn trains. Its only outgoing edges leave by
+     * the side the train arrived from, so declining the turn is not an available outcome - the train
+     * runs on at line speed off its reserved path. That is why `CONF-A1` had to stop a compulsory
+     * turn ever reaching a policy.
+     *
+     * **Where they collide.** A MANUAL path may route through the turning copy of a may-reverse
+     * square: `reversesAlongTheWay` bars that for autonomy only, and no manual door applies it. So a
+     * journey can depend on a turn that the operator is then asked about and may decline - and "keep
+     * direction" is the default, the Escape answer, and the cannot-ask answer.
+     *
+     * **This test pins the behaviour as it is, and does not resolve it.** Three ways out, all of them
+     * changes to what the railway does rather than to how it is written, so all of them are Adam's:
+     *
+     *   1. Honour the answer and stop manual paths routing through turning copies, as autonomy does.
+     *      Safest, and it removes routes he may use.
+     *   2. Override the answer at a turning copy. Contradicts the rule pinned twenty lines below.
+     *   3. Refuse the dispatch, with a reason, when the answer would strand the journey. Neither
+     *      removes routes nor overrides him, and it turns a hazard into a message.
+     *
+     * Reported rather than chosen, because every one of them changes behaviour he did not ask to have
+     * changed - and because two "fixes" for reviewer findings this week were worse than the defect.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAKeepAnswerAtATurningCopyIsHonouredAndThatIsTheOpenQuestion() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(240, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        layout.createPoint("TURN_plain", true, sensor.getName());
+        layout.createPoint("TURN_turning", true, sensor.getName());
+
+        layout.getPoint("TURN_plain").setBlock("TURN");
+        layout.getPoint("TURN_turning").setBlock("TURN");
+
+        layout.getPoint("TURN_turning").setReversing(true);
+
+        Point turning = layout.getPoint("TURN_turning");
+        Point plain = layout.getPoint("TURN_plain");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // The door's shape: it asks about this square, and the operator said keep.
+        Layout.ReversalPolicy saidKeep = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return true;
+            }
+        };
+
+        assertFalse(layout.shouldReverseAt(turning, plain, loc, saidKeep),
+            "the operator's answer is no longer honoured at a turning copy. That may be the right"
+            + " resolution of REG7-A1, but it is a change to what the railway does and it contradicts"
+            + " the rule pinned in testEveryCopyOfAMayReverseSquareIsAskedAbout - so it is Adam's to"
+            + " make, not a fix to be slipped in");
+
+        // AND THE CONSEQUENCE, stated so nobody has to rediscover it: a turning copy leaves only by
+        // the side the train came in at, so this answer strands the journey rather than shortening it.
+        assertTrue(turning.isReversing(),
+            "control: this fixture is not about a turning copy at all");
+    }
+
+    /**
      * A policy that overrides `asksAbout` is what the doors actually hand over - and until now, what
      * nothing had ever run (CONF2-B2).
      *
