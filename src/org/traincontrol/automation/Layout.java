@@ -5328,6 +5328,8 @@ public class Layout
 
             int remaining = loc.getTrainLength();
 
+            final Point standingHere = standing;
+
             Point here = standing;
 
             Set<String> walked = new LinkedHashSet<>();
@@ -5336,13 +5338,73 @@ public class Layout
 
             while (remaining > 0)
             {
-                List<Edge> back = this.getIncomingEdges(here);
+                // EVERY WAY IN, in both directions, because a tail is not directional.
+                //
+                // Adam, 2026-09-07, after finding the 2-8-4 blocking nothing: the graph encodes facing
+                // as one-way edges, so "incoming" means "a train travelling this way could arrive by
+                // it" - and a train that has been TURNED lies across track no incoming edge names.  He
+                // turned that one to face east having arrived from the west; its tail is on the
+                // westbound rail, which is an outgoing edge of the copy it stands on.
+                //
+                // So the candidates are every edge that touches this point, and `arrivedFrom` picks
+                // between them.  A train lying across a rail fouls it whichever way traffic runs.
+                List<Edge> back = this.getNeighborsAndIncoming(here);
 
-                // THE FORK RULE.  Exactly one way in is the deterministic case; none is the end of
-                // the line; more than one is the switch entered from the side that splits.
-                if (back == null || back.size() != 1) break;
+                if (back == null || back.isEmpty()) break;
 
-                Edge segment = back.get(0);
+                Edge segment = null;
+
+                if (here == standingHere && standingHere.getArrivedFrom() != null)
+                {
+                    // THE SIDE IT CAME IN BY, which is the whole point of recording it.  Only the
+                    // first hop can be chosen this way; past that the train is somewhere it never
+                    // stopped, and the deterministic rule below takes over.
+                    for (Edge candidate : back)
+                    {
+                        Point other = candidate.getStart() == here
+                            ? candidate.getEnd() : candidate.getStart();
+
+                        if (other == null) continue;
+
+                        if (standingHere.getArrivedFrom().equalsIgnoreCase(sideTowards(here, other)))
+                        {
+                            segment = candidate;
+
+                            break;
+                        }
+                    }
+
+                    // Recorded, but naming a side no track leaves by - a stale value after an edit.
+                    // Nothing can be said, and guessing would block the wrong rail.
+                    if (segment == null) break;
+                }
+                else
+                {
+                    // THE FORK RULE, for every hop after the first and for a train nobody has told us
+                    // about.  One way means the tail certainly lies there; several means the graph
+                    // cannot say which, and blocking either would stop a train that could have run.
+                    //
+                    // Counted over DISTINCT neighbours rather than edges: a square joined to one
+                    // other by a pair of one-way rails is still one way back.
+                    Set<String> neighbours = new LinkedHashSet<>();
+
+                    for (Edge candidate : back)
+                    {
+                        Point other = candidate.getStart() == here
+                            ? candidate.getEnd() : candidate.getStart();
+
+                        if (other == null) continue;
+
+                        // NOT THE WAY WE CAME.  Every point on a straight run has two neighbours -
+                        // the one ahead and the one behind - so counting the one just walked makes
+                        // every ordinary tile look like a fork and the tail never leaves the berth.
+                        if (walked.contains(other.getName())) continue;
+
+                        if (neighbours.add(other.getName())) segment = candidate;
+                    }
+
+                    if (neighbours.size() != 1) break;
+                }
 
                 // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
                 // how much of the train would still be left after it.
@@ -5352,7 +5414,7 @@ public class Layout
 
                 remaining -= segment.getLength();
 
-                Point next = segment.getStart();
+                Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
 
                 // A loop of track would otherwise be walked for ever by a long enough train.
                 if (next == null || !walked.add(next.getName())) break;
@@ -5362,6 +5424,37 @@ public class Layout
         }
 
         return covered;
+    }
+    /**
+     * Which compass side of `from` the point `to` lies on.
+     *
+     * The diagram is a grid, so this is the sign of the larger coordinate difference - the same way
+     * the editor names sides, and the same vocabulary `arrivedFrom` is recorded in.  A diagonal
+     * neighbour resolves to whichever axis it differs by more, and a tie to the horizontal, which is
+     * how the drawing reads: track runs along rows.
+     *
+     * Returns null when either point has no coordinates, which is a station built from something the
+     * diagram never placed - nothing can be said about where its neighbours lie.
+     *
+     * @param from the point being stood on
+     * @param to a neighbour
+     * @return "N", "S", "E", "W", or null
+     */
+    public String sideTowards(Point from, Point to)
+    {
+        if (from == null || to == null) return null;
+
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+
+        if (dx == 0 && dy == 0) return null;
+
+        if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "E" : "W";
+
+        // Y GROWS DOWNWARDS on the diagram, as it does in every grid drawn from the top left, so a
+        // larger y is SOUTH.  Getting this the wrong way round would put every tail on the wrong side
+        // of its train and block the opposite switch.
+        return dy > 0 ? "S" : "N";
     }
     /**
      * Whether trains may turn round at this piece of track, on any of its copies.
@@ -8116,6 +8209,13 @@ public class Layout
                 // dropped.  That is the tolerant direction and the deliberate one: refusing the
                 // configuration would take a whole layout out of service because one station lost the
                 // point it was paired with.
+                // WHERE THE TAIL IS, which facing cannot answer once a train has been turned.
+                if (point.has("arrivedFrom"))
+                {
+                    layout.getPoint(point.getString("name"))
+                        .setArrivedFrom(point.optString("arrivedFrom", null));
+                }
+
                 if (point.has("blockedBy"))
                 {
                     // Kept as names for now and resolved after the loop.

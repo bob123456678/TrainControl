@@ -899,16 +899,27 @@ public class AutonomyBuilder
                         ? (Object) protecting.get(0) : new JSONArray(protecting));
                 }
 
-                if (coordinatePages != null)
-                {
-                    // Roughly one tile per 60 units, which is the spacing the hand-written files use,
-                    // with each page stacked below the last so they do not overlap.  Split copies are
-                    // fanned out a little, or they would land exactly on top of one another.
-                    int page = Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
+                // COORDINATES ALWAYS, not only for the inspection copy (Adam, 2026-09-07).
+                //
+                // They used to be written only when a page list was supplied, which is the "read this
+                // against the diagram" export.  The running layout got none - and `arrivedFrom` is
+                // recorded as a compass side, which cannot be resolved to a piece of track without
+                // knowing where the neighbours lie.  Every side came back null and the tail covered
+                // nothing.
+                //
+                // Roughly one tile per 60 units, which is the spacing the hand-written files use,
+                // with each page stacked below the last so they do not overlap.  Split copies are
+                // fanned out a little, or they would land exactly on top of one another.
+                //
+                // Without a page list the stacking is dropped rather than the coordinates: two pages
+                // then overlap, which matters only for a comparison between points on DIFFERENT pages
+                // - and the only reader is `sideTowards`, which asks about immediate neighbours.  A
+                // portal neighbour is the exception and is the reason this is written down.
+                int page = coordinatePages == null ? 0
+                    : Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
 
-                    json.put("x", point.getTile().getX() * 60 + copy * 14);
-                    json.put("y", point.getTile().getY() * 60 + page * 1800 + copy * 14);
-                }
+                json.put("x", point.getTile().getX() * 60 + copy * 14);
+                json.put("y", point.getTile().getY() * 60 + page * 1800 + copy * 14);
 
                 if (extras != null)
                 {

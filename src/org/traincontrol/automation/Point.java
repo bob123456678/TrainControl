@@ -19,6 +19,25 @@ import org.traincontrol.util.I18n;
  */
 public class Point
 {
+    /**
+     * The side a train standing here came IN by, which is where its tail lies.
+     *
+     * Adam, 2026-09-07: **"we need to track an arrivedFrom property... that would capture where the
+     * physical tail of the train is."**
+     *
+     * **Facing cannot answer this, which is why it is a property of its own.**  A train faces the way
+     * it will leave; its tail is behind it, and "behind" is not recoverable from the heading once the
+     * train has been turned round.  He turned the 2-8-4 at BottomMainB to face east having arrived
+     * from the west, and at that moment facing and tail point the SAME way - so a walk that infers the
+     * tail from the heading looks up the wrong track and the switch it is fouling stays open.
+     *
+     * A compass side rather than an edge, because an edge is directional and a tail is not: the train
+     * lies across that rail whichever way the graph says traffic runs.
+     *
+     * Null when nothing has said - a train nobody has placed or run.
+     */
+    private String arrivedFrom;
+
     // volatile: setLocomotive is synchronized but getCurrentLocomotive is not, and both are called
     // across autonomy/UI threads.  volatile gives the unsynchronized reader visibility of the latest write.
     private volatile Locomotive currentLoc;
@@ -432,6 +451,24 @@ public class Point
         return this.currentLoc;
     }
     
+    /**
+     * @return the side a standing train arrived by, or null when nothing has said
+     */
+    public String getArrivedFrom()
+    {
+        return this.arrivedFrom;
+    }
+
+    /**
+     * Records which side a train came in by, so its tail can be found.
+     *
+     * @param side the compass side, or null to forget
+     */
+    public void setArrivedFrom(String side)
+    {
+        this.arrivedFrom = side;
+    }
+
     public Point setLocomotive(Locomotive l)
     {
         // One locomotive, one place - enforced HERE, because here is the only door.
@@ -1121,6 +1158,11 @@ public class Point
             for (Point blocker : this.blockedBy) named.add(blocker.getName());
 
             jsonObj.put("blockedBy", new JSONArray(named));
+        }
+
+        if (this.arrivedFrom != null)
+        {
+            jsonObj.put("arrivedFrom", this.arrivedFrom);
         }
                 
         if (this.coordinatesSet())

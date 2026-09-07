@@ -415,6 +415,90 @@ public class testTheLengthGuardsOnTheRealLayout
             + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
     }
 
+    /**
+     * BottomMainC is blocked while the 2-8-4 lies across the switch behind BottomMainB.
+     *
+     * Adam, 2026-09-07: **"I turned the 2-8-4 train around, so it is now facing east.  Assume it
+     * arrived from the west.  We set arrivedFrom for 2-8-4 at BottomMainB to west.  Now, you should be
+     * able to block the switch that leads to BottomMainC."**
+     *
+     * **Why facing could not have told us this.**  A train faces the way it will leave; its tail is
+     * behind it, and once it has been turned round the two point the same way.  Before `arrivedFrom`
+     * the walk looked up the track this train is about to depart along - which is clear - and reported
+     * nothing blocked.  The rail it is actually lying across is the one it came in by, and only the
+     * train knows that.
+     *
+     * The tail has to be longer than the run into the platform for any of this to matter, so the lead
+     * in is measured at one and the train at four: three units of it are past the switch.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testBottomMainCIsBlockedByTheTailAtBottomMainB() throws Exception
+    {
+        measureEverythingAs(0);
+
+        // One unit of platform road, so a four-unit train is three units past the switch.
+        session.setTileLength(new TileKey(MAIN, 19, 13), 1);
+
+        Layout built = rebuild();
+
+        Locomotive engine = model.getLocByName("2-8-4 3505 SP");
+
+        assertNotNull(engine, "2-8-4 3505 SP is not on this railway any more");
+
+        engine.setTrainLength(4);
+
+        Point platform = null;
+
+        for (Point p : built.getPoints())
+        {
+            if (engine.equals(p.getCurrentLocomotive())) platform = p;
+        }
+
+        assertNotNull(platform, "the 2-8-4 is not standing anywhere");
+
+        assertTrue(platform.getName().startsWith("BottomMainB"),
+            "the 2-8-4 is at " + platform.getName() + " rather than BottomMainB");
+
+        // NOTHING RECORDED YET: the walk cannot tell which way the tail lies, and says so by
+        // blocking nothing.  This is the control - without it the assertion below could pass on a
+        // rule that blocks the whole railway.
+        platform.setArrivedFrom(null);
+
+        assertTrue(built.edgesCoveredByStandingTrains().isEmpty(),
+            "track is being blocked with no arrival side recorded, so the rule is guessing which way"
+            + " the tail lies rather than being told");
+
+        // AND NOW HIS CASE: it came in from the west.
+        platform.setArrivedFrom("W");
+
+        java.util.Map<Edge, Locomotive> covered = built.edgesCoveredByStandingTrains();
+
+        StringBuilder sides = new StringBuilder();
+        for (Edge e : built.getNeighborsAndIncoming(platform))
+        {
+            Point other = e.getStart() == platform ? e.getEnd() : e.getStart();
+            sides.append(" ").append(built.sideTowards(platform, other)).append("->")
+                 .append(other.getName()).append("(len=").append(e.getLength()).append(")");
+        }
+
+        assertFalse(covered.isEmpty(),
+            "with the arrival side recorded as west, the tail covers nothing. Copy " + platform.getName()
+            + " offers:" + sides);
+
+        StringBuilder what = new StringBuilder();
+
+        for (Edge e : covered.keySet()) what.append(" ").append(e.getName());
+
+        boolean touchesTheThroat = what.toString().contains("BottomMainBCPre")
+            || what.toString().contains("BottomMainPost");
+
+        assertTrue(touchesTheThroat,
+            "the tail covers" + what + ", none of which is the track behind BottomMainB - so whatever"
+            + " it found is not the rail the 2-8-4 is lying across");
+    }
+
     // ---------------------------------------------------------------- the setups Adam asked for
 
     /**

@@ -203,11 +203,19 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * Builds APPROACH -> JUNCTION -> SIDING with a train standing at BERTH beyond the junction.
+     * A STRAIGHT run, because a junction behind the train stops the walk by design.
+     *
+     * The first version put the standing train beyond a junction and expected its tail to reach the
+     * approach.  It does not, and should not: walked backwards the junction has two ways on, the graph
+     * cannot say which the tail lies along, and Adam's ruling is to stop there.  So the fixture was
+     * asking for behaviour the spec forbids.
+     *
+     * A -> B -> C -> D, train standing at D reaching back over C -> D and B -> C.  The second train
+     * runs A -> B -> C, crossing B -> C, and C is free.
      *
      * @param standingTrainLength how far the standing train reaches back
      * @param mover the train being routed
-     * @return whether the route to the siding is clear
+     * @return whether the route is clear
      * @throws Exception on a failure to build
      */
     private boolean canRunToTheSiding(int standingTrainLength, Locomotive mover) throws Exception
@@ -216,35 +224,35 @@ public class testATrainCoversTheTrackBehindIt
 
         String tag = "_route" + (addresses++);
 
-        Point approach = point(layout, "APPROACH" + tag, true);
-        Point junction = point(layout, "JUNCTION" + tag, false);
-        Point siding = point(layout, "SIDING" + tag, true);
-        Point berth = point(layout, "BERTH" + tag, true);
+        Point a = point(layout, "RA" + tag, true);
+        Point b = point(layout, "RB" + tag, false);
+        Point c = point(layout, "RC" + tag, true);
+        Point d = point(layout, "RD" + tag, true);
 
-        Edge in = layout.createEdge(approach.getName(), junction.getName());
-        Edge toSiding = layout.createEdge(junction.getName(), siding.getName());
-        Edge toBerth = layout.createEdge(junction.getName(), berth.getName());
+        Edge ab = layout.createEdge(a.getName(), b.getName());
+        Edge bc = layout.createEdge(b.getName(), c.getName());
+        Edge cd = layout.createEdge(c.getName(), d.getName());
 
-        in.setLength(5);
-        toSiding.setLength(5);
-        toBerth.setLength(1);
+        ab.setLength(5);
+        bc.setLength(5);
+        cd.setLength(1);
 
         Locomotive standing = model.getLocByName(model.getLocList().get(0));
 
         standing.setTrainLength(standingTrainLength);
 
-        berth.setLocomotive(standing);
+        d.setLocomotive(standing);
 
-        // The mover is where its journey starts, which isPathClear expects.
-        approach.setLocomotive(mover);
+        a.setLocomotive(mover);
 
         List<Edge> route = new ArrayList<>();
 
-        route.add(in);
-        route.add(toSiding);
+        route.add(ab);
+        route.add(bc);
 
         return layout.isPathClear(route, mover, false);
     }
+
     // ---------------------------------------------------------------- fixtures
 
     /**
