@@ -589,6 +589,60 @@ public class testAutonomyDiagramSession
             "clearEveryPlacement leaves the arrival side behind. It mirrors placeLocomotive and the"
             + " two must agree about what taking a train off a square means (IND9-A1)");
     }
+
+    /**
+     * A NEW occupant does not inherit the old one's tail (VAL9-B5).
+     *
+     * The third branch of the same rule, and the one nothing exercised. Emptying a square is covered
+     * above; handing it straight from one train to another is the case where the stale value is least
+     * visible and most wrong, because the square is never empty in between and nothing looks wrong on
+     * the diagram.
+     *
+     * **Both assignment doors now depend on this branch**, since neither asks the arrival side:
+     * `GraphLocAssign.commitAndRecord` places through here and relies on the clear happening. So the
+     * one path with no test was the one two doors were built on.
+     *
+     * `Point.setLocomotive` does exactly this on the running layout, for the same reason - the train
+     * arriving did not arrive the way the train leaving did.
+     *
+     * The same locomotive re-placed is asserted first, because it is NOT a change of occupant and a
+     * clear there would throw away a side that is still true - doors write a placement back unchanged
+     * all the time.
+     *
+     * MUTATION: dropping the occupant-change clear in `placeLocomotive` fails the last assertion;
+     * clearing unconditionally fails the middle one.
+     *
+     * @throws IOException on a failure to build
+     */
+    @Test
+    public void testANewOccupantDoesNotInheritTheOldOnesTail() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+
+        session.placeLocomotive(sensor, "Test Loc");
+        session.setArrivedFrom(sensor, "W");
+
+        assertEquals(session.getArrivedFrom(sensor), "W", "control: the side did not go in");
+
+        session.placeLocomotive(sensor, "Test Loc");
+
+        assertEquals(session.getArrivedFrom(sensor), "W",
+            "re-placing the same locomotive threw away an arrival side that is still true. Every door"
+            + " that writes a placement back unchanged would silently clear it");
+
+        session.placeLocomotive(sensor, "Other Loc");
+
+        assertNull(session.getArrivedFrom(sensor),
+            "the new locomotive inherited where the old one came in from. Neither assignment door asks"
+            + " the arrival side, so this clear is the only thing standing between a handover and a"
+            + " tail that blocks the wrong rail (VAL9-B5)");
+    }
     /**
      * The arrival side reaches the running layout, and comes back from a save.
      *

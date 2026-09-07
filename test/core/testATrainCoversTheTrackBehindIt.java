@@ -55,6 +55,81 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
+     * `wouldAsk` answers exactly when the prompt would ask (VAL9-B4).
+     *
+     * The paste door abandons a placement when the arrival-side question came back null AND the prompt
+     * would have asked one. That second half has to be the same condition the prompt itself uses to
+     * decide, or the door is guessing again - which was the defect (IND9-B5): null means "declined",
+     * "no side to choose between", and "could not show the dialog", and only the first is a refusal.
+     *
+     * **`return mayReverse;` restores the whole defect with every other test green**, which is why this
+     * exists. It asserts the two halves the door depends on: a square with several sides asks, and a
+     * square with fewer does not, whatever the mark says.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testWouldAskAgreesWithWhatThePromptDoes() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_" + (addresses++);
+
+        // A THROUGH POINT with track either side - two arrival sides, so there is a real choice - and
+        // a DEAD END with one, which answers itself. Built the way the sibling tests in this class
+        // build theirs, with coordinates, because sidesOf reads the grid.
+        Point middle = point(layout, "WAMID" + tag, true);
+        Point west = point(layout, "WAW" + tag, true);
+        Point east = point(layout, "WAE" + tag, true);
+        Point buffer = point(layout, "WABUF" + tag, true);
+
+        west.setX(0);
+        west.setY(0);
+        middle.setX(10);
+        middle.setY(0);
+        east.setX(20);
+        east.setY(0);
+        buffer.setX(30);
+        buffer.setY(0);
+
+        layout.createEdge(west.getName(), middle.getName());
+        layout.createEdge(east.getName(), middle.getName());
+        layout.createEdge(east.getName(), buffer.getName());
+
+        int sidesInTheMiddle = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, middle).size();
+        int sidesAtTheBuffer = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, buffer).size();
+
+        assertTrue(sidesInTheMiddle > 1,
+            "the through point offers " + sidesInTheMiddle + " arrival sides, so there is nothing to"
+            + " choose between and the asking half below cannot be exercised");
+
+        assertTrue(sidesAtTheBuffer <= 1,
+            "the dead end offers " + sidesAtTheBuffer + " arrival sides, so the not-asking half below"
+            + " cannot be exercised");
+
+        // NOT MARKED: never asked, whatever the geometry offers.
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, false),
+            "a square the operator has not marked as one trains may turn at is never asked about - the"
+            + " side is assumed from the facing. Answering true here makes the paste door abandon"
+            + " placements onto ordinary track");
+
+        // MARKED, and there is a choice: asked.
+        assertTrue(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, true),
+            "a marked square with several arrival sides is exactly the case the question exists for,"
+            + " and wouldAsk says it would not be asked - so a dismissal there is read as \"nothing to"
+            + " record\" and the paste goes ahead against the operator (VAL9-B4)");
+
+        // MARKED, but nothing to choose between: not asked, and a null from the prompt means only
+        // that there was nothing to record.
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, buffer, true),
+            "a marked square with one way in or none has no question to put, and saying otherwise"
+            + " refuses every paste onto it - silently and permanently, which is IND9-B5 restored");
+
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, null, true),
+            "a null point must not be reported as askable");
+    }
+
+    /**
      * Adam's own example: a 4-long train, one unit of lead-in, so the tail reaches past it.
      */
     @Test

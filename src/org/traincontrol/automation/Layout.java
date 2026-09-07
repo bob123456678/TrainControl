@@ -645,7 +645,10 @@ public class Layout
     private int maxActiveTrains = 0;
 
     /**
-     * Locomotives this railway turned round at their destination, not yet written to the graph.
+     * Locomotives owed a NET facing flip, from turns this railway made at their destinations.
+     *
+     * Membership is a parity, not a count of events: a locomotive that turned twice is not in here at
+     * all, because two turns leave it facing the way it started (VAL9-A1).
      *
      * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same
      * as always."**
@@ -6574,7 +6577,22 @@ public class Layout
             // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
             // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
             // direction change can pick this one up.
-            if (loc.getName() != null) this.reversedOnArrival.add(loc.getName());
+            //
+            // TOGGLED, NOT ADDED (VAL9-A1).  This block is on the shared arrival path, so it records
+            // autonomy's reversals too - and an autonomy session is `isRunning()` from end to end,
+            // while the drain only happens once the railway is idle.  So the reversals of a whole
+            // session arrive at the drain together, and a plain set collapsed them to one name: a
+            // shuttle that turned at both ends came back facing the way it started and had its facing
+            // flipped once, which is wrong in a way the stale-graph defect this fixes was not.
+            //
+            // What is pending is a NET flip, so membership toggles.  Two turns cancel; three leave one.
+            // Set.add answers false when the name is already there, which makes the toggle one
+            // statement - and one locomotive's reversals all happen on its own driver thread, so
+            // nothing races for a given key.
+            if (loc.getName() != null && !this.reversedOnArrival.add(loc.getName()))
+            {
+                this.reversedOnArrival.remove(loc.getName());
+            }
         }
         
         if (loc.hasCallback(CB_ROUTE_END))

@@ -181,6 +181,27 @@ public class GraphLocAssign extends javax.swing.JPanel
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     session.facingsFor(tile), heading, point.getName()));
         }
+
+        // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and
+        // "the placement is gone at the next configuration load" is the symptom REG8-B2 was filed for -
+        // so extracting the door without the save would have moved the defect rather than fixed it.
+        //
+        // Every other door that writes the setup saves it: the paste door, the facing menu, placeFacing
+        // beside this one on the same menu.  This is the door for two menus, so it is the one place
+        // that has to.
+        try
+        {
+            session.save();
+        }
+        catch (java.io.IOException cannotSave)
+        {
+            // The assignment stands either way; only the memory of it is at risk.  Logged rather than
+            // shown, for the reason given at the other placement door (DR-B10).
+            if (edit.parent != null && edit.parent.getModel() != null)
+            {
+                edit.parent.getModel().log(cannotSave);
+            }
+        }
     }
     /**
      * Gets the number of locomotives selectable

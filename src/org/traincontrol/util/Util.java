@@ -664,10 +664,25 @@ public class Util
         // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
         // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
         // numbers.
-        java.util.regex.Matcher tagged =
-            java.util.regex.Pattern.compile("[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
+        // The "v" has to BE the tag marker, not the last letter of a word (VAL9-B3).  Without the left
+        // boundary "Nov2026 build - TrainControl v3.0.0" matched the v of "Nov" and invented 2026, and
+        // taking the FIRST anchored match made "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0"
+        // report 2.6, which compares older and hides the release. Longest wins among the anchored ones,
+        // for the same reason it does among the bare numbers below.
+        java.util.regex.Matcher tagged = java.util.regex.Pattern
+            .compile("(?<![A-Za-z0-9])[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
 
-        if (tagged.find()) return tagged.group(1);
+        String anchored = null;
+
+        while (tagged.find())
+        {
+            if (anchored == null || tagged.group(1).length() > anchored.length())
+            {
+                anchored = tagged.group(1);
+            }
+        }
+
+        if (anchored != null) return anchored;
 
         // No "v" at all, which used to throw.  Then the longest version-shaped number wins, so a
         // three-part version beats a stray year or build number beside it.

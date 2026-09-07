@@ -120,6 +120,148 @@ public class testAutonomySimulationSanity
     }
 
     /**
+     * Two turns in one session cancel; they do not add up to one (VAL9-A1).
+     *
+     * The record of a turn at the destination is a **net flip owed to the graph**, not a log of events,
+     * and getting that wrong made the fix worse than the defect it replaced.
+     *
+     * The arrival block is shared: it records autonomy's reversals as well as the manual ones the
+     * ruling was about, because `shouldReverseAt` answers `isReversing()` whenever there is no prompt
+     * policy. And an autonomy session is `isRunning()` from end to end, while the drain only happens
+     * once the railway is idle - so a whole session's reversals reach the drain together.
+     *
+     * A plain set collapsed them to one name. **A shuttle that turned at both ends came back facing the
+     * way it started and had its facing flipped once** - which is worse than the stale graph this was
+     * fixing, because a stale graph was at least right about a train that had turned an even number of
+     * times.
+     *
+     * So membership toggles. This runs the shuttle out and back and asserts there is nothing owed.
+     *
+     * MUTATION: `reversedOnArrival.add(name)` in place of the toggle fails this.
+     *
+     * @throws Exception on a failure to run
+     */
+    @Test
+    public void testTwoTurnsInOneSessionCancel() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinLocomotive loc = model.newMM2Locomotive("B4 shuttle", 232);
+
+        ExecutorService watchdog = Executors.newSingleThreadExecutor();
+
+        try
+        {
+            if (!model.isFeedbackSet("47421")) model.newFeedback(47421, null);
+            if (!model.isFeedbackSet("47422")) model.newFeedback(47422, null);
+
+            model.setFeedbackState("47421", false);
+            model.setFeedbackState("47422", false);
+
+            layout.setMaxDelay(0);
+            layout.setMinDelay(0);
+            layout.setSimulate(true);
+
+            layout.createPoint("B4 west", true, "47421");
+            layout.createPoint("B4 east", true, "47422");
+
+            // BOTH ENDS TURN, which is what a shuttle is.
+            layout.getPoint("B4 west").setReversing(true);
+            layout.getPoint("B4 east").setReversing(true);
+
+            Edge out = layout.createEdge("B4 west", "B4 east");
+            Edge back = layout.createEdge("B4 east", "B4 west");
+
+            out.setLength(50);
+            back.setLength(50);
+
+            loc.setTrainLength(1);
+
+            assertTrue(layout.moveLocomotive("B4 shuttle", "B4 west", false),
+                "precondition: the locomotive must be placed");
+
+            assertTrue(layout.takeReversalsOnArrival().isEmpty(),
+                "precondition: nothing is owed before the shuttle runs");
+
+            layout.runLocomotives();
+
+            run(watchdog, layout, java.util.Arrays.asList(out), loc, "out");
+
+            // ONE LEG, ONE FLIP OWED.  Read WITHOUT draining, or the second leg starts from a clean
+            // slate and the cancellation below is never exercised - the test would pass because
+            // nothing accumulated rather than because two turns cancelled.
+            assertTrue(owed(layout).contains(loc.getName()),
+                "after one turn the graph is owed a flip, and it is not. The rest of this test cannot"
+                + " tell cancellation from nothing ever being recorded");
+
+            run(watchdog, layout, java.util.Arrays.asList(back), loc, "back");
+
+            assertFalse(layout.takeReversalsOnArrival().contains(loc.getName()),
+                "the shuttle turned at both ends and came back facing the way it started, and the"
+                + " graph is still owed a flip. A record of EVENTS collapses to one name and flips the"
+                + " facing once - which is worse than the stale graph this was fixing, because a stale"
+                + " graph was right about a train that turned an even number of times (VAL9-A1)");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+            watchdog.shutdownNow();
+            model.deleteLoc("B4 shuttle");
+        }
+    }
+
+    /**
+     * What the graph is owed, without draining it.
+     *
+     * By reflection because the only public reader is the drain, and draining here would destroy the
+     * state the next leg has to cancel.
+     *
+     * @param layout the layout
+     * @return the names owed a flip
+     * @throws Exception on a reflection failure
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> owed(Layout layout) throws Exception
+    {
+        java.lang.reflect.Field f = Layout.class.getDeclaredField("reversedOnArrival");
+
+        f.setAccessible(true);
+
+        return new java.util.HashSet<>((java.util.Set<String>) f.get(layout));
+    }
+
+    /**
+     * Runs one leg and fails with a legible message rather than a timeout.
+     *
+     * @param watchdog the executor
+     * @param layout the layout
+     * @param path the leg
+     * @param loc the locomotive
+     * @param which which leg, for the message
+     * @throws Exception on a failure to run
+     */
+    private static void run(ExecutorService watchdog, Layout layout, List<Edge> path,
+        MarklinLocomotive loc, String which) throws Exception
+    {
+        assertTrue(layout.isPathClear(path, loc, true),
+            "the " + which + " leg is refused before it starts");
+
+        Future<Boolean> leg = watchdog.submit(() -> layout.executePath(path, loc, 30, null));
+
+        try
+        {
+            assertTrue(leg.get(20, TimeUnit.SECONDS),
+                "the " + which + " leg reported failure rather than completing");
+        }
+        catch (TimeoutException wedged)
+        {
+            layout.stopLocomotives();
+
+            fail("the " + which + " leg never arrived, so its reversal never happened");
+        }
+    }
+
+    /**
      * A turn the railway makes at the destination is recorded there (IND9-B4).
      *
      * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as

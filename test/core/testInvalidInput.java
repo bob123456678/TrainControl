@@ -219,6 +219,18 @@ public class testInvalidInput
         assertEquals(Util.parseReleaseVersion(release("v3.0")), "3.0",
             "a two-part version is a version");
 
+        // AND THE TWO THE FIRST TWO ATTEMPTS BOTH MISSED (VAL9-B3). A "v" has to be the tag marker
+        // rather than the last letter of a word, and among several tagged numbers the longest wins -
+        // otherwise a version mentioned in passing beats the one being released.
+        assertEquals(Util.parseReleaseVersion(
+            release("Marklin CS3 v2.6 compatibility - TrainControl v3.0.0")), "3.0.0",
+            "a version mentioned in passing was read as the release. It compares older than the"
+            + " running one, so the real release is hidden - C5's failure, third time around");
+
+        assertEquals(Util.parseReleaseVersion(release("Nov2026 build - TrainControl v3.0.0")), "3.0.0",
+            "the v of \"Nov\" was read as a tag marker, so a month name invented version 2026 - newer"
+            + " than everything, which offers an update that does not exist");
+
         assertNull(Util.parseReleaseVersion(release("TrainControl")),
             "a name with no number in it has no version to report, and saying so is the only honest"
             + " answer. The caller must not be handed a fragment of the name instead");
