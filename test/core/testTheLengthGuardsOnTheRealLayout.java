@@ -380,6 +380,41 @@ public class testTheLengthGuardsOnTheRealLayout
         return offers(train, "TunnelLongPark");
     }
 
+    /**
+     * The railway as Adam describes it: two numbered segments, both one unit - and the route refused.
+     *
+     * **"There are only two numbered track segments, both of length 1.  Direction should not matter."**
+     *
+     * His saved setup does not say that, and the difference is mine.  When his layout was damaged I
+     * restored `tileLengths` from the last commit, which put SIX older measurements back - including
+     * `1 - Main:1,10 = 4` and `1 - Main:0,11 = 4`.  Those two are the 8 the guard was reading, and
+     * they are the reason a four-unit train was admitted to a berth he had measured at one.
+     *
+     * So this clears everything and sets only the two he named.  If it refuses, the guard is correct
+     * and the disagreement was entirely stale data in his file.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTwoOneUnitSegmentsRefuseTheFourUnitTrain() throws Exception
+    {
+        measureEverythingAs(0);
+
+        // The two he named, and nothing else.
+        session.setTileLength(new TileKey(MAIN, 19, 12), 1);
+        session.setTileLength(new TileKey(MAIN, 22, 7), 1);
+
+        Locomotive train = model.getLocByName("75 407 DB");
+
+        assertNotNull(train, "75 407 DB is not on this railway any more");
+
+        train.setTrainLength(4);
+
+        assertFalse(offers(train, "TunnelLongPark"),
+            "with only the two one-unit segments he measured, a four-unit train is still offered"
+            + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
+    }
+
     // ---------------------------------------------------------------- the setups Adam asked for
 
     /**
