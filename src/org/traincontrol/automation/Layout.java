@@ -2397,6 +2397,39 @@ public class Layout
         // count rather than as an example - which is stricter than his rule on any run-in longer than
         // a berth and its approach.
         //
+        // AND NOTHING RUNS OVER TRACK A STANDING TRAIN IS LYING ACROSS (Adam, 2026-09-06).
+        //
+        // **"If a train protrudes far behind where it is standing, those edges it reaches need to be
+        // considered blocked... bottommainc should currently be blocked since a train of length 4 is
+        // standing at bottommainb, which has a length of 1 leading up to its switch."**
+        //
+        // The occupancy checks above ask whether a POINT holds a train, and on his example every one
+        // of them says no: the train is at BottomMainB, and the track it is lying across belongs to no
+        // sensor at all.  That is his ruling - *"edges, because the points are technically
+        // unoccupied"* - and it is why this is a separate question rather than a wider reading of the
+        // existing one.
+        //
+        // A train never blocks ITSELF.  Its own tail is behind it by definition, and a route that
+        // starts by pulling forward off its own tail is the ordinary way a train leaves a berth.
+        Map<Edge, Locomotive> coveredTrack = edgesCoveredByStandingTrains();
+
+        for (Edge e : path)
+        {
+            Locomotive lyingAcross = coveredTrack.get(e);
+
+            if (lyingAcross == null || lyingAcross.equals(loc)) continue;
+
+            logPathError(
+                loc,
+                path,
+                logFailures,
+                I18n.f("autolayout.errorTrackCoveredByStandingTrain", lyingAcross.getName(),
+                    e.getName())
+            );
+
+            return false;
+        }
+
         // AND THE TOTAL HAS TO BE COMPLETE.  An unmeasured segment used to contribute nothing while
         // the sum went ahead without it, which is "I do not know how long this is" answered as "it is
         // zero" - and that refuses a train that would have fitted.  A path carrying any unmeasured
@@ -5247,6 +5280,89 @@ public class Layout
         return reversals.shouldReverse(loc, current);
     }
 
+    /**
+     * The track behind every standing train, which nothing else may run over.
+     *
+     * Adam, 2026-09-06: **"if a train protrudes far behind where it is standing, those edges it
+     * reaches need to be considered blocked.  For example, bottommainc should currently be blocked
+     * since a train of length 4 is standing at bottommainb, which has a length of 1 leading up to its
+     * switch, but the length of the train is 4, so it protrudes past the switch."**
+     *
+     * **EDGES, not points**, and that is his ruling rather than an implementation convenience:
+     * *"because the points are technically unoccupied.  But the blocked edges should prevent routing
+     * to the covered points."*  A train standing on one sensor does not make the next sensor occupied;
+     * it makes the track between them impassable, and a station reachable only across that track
+     * becomes unreachable as a CONSEQUENCE rather than by a second rule that could disagree with this
+     * one.  `guard-and-affordance-same-question` is why that distinction is worth keeping.
+     *
+     * **Derived, never stored.**  This is recomputed from where the trains are, so it corrects itself
+     * the moment one moves - which is what "greyed out until the train blocking it moves" needs.  The
+     * reservation counter on `Edge` deliberately is NOT used: that counts route holds, a route release
+     * would zero it, and a train standing still holds nothing.  Two different facts about one edge.
+     *
+     * **It stops early on purpose, twice, and both are Adam's rulings.**
+     *
+     * At a FORK - *"if entering a switch from the no fork direction, keep following it.  If entering a
+     * switch from the fork direction where it splits, just end locking at the switch and call it a
+     * day."*  Walked backwards, one way in means the tail certainly lies there; several means the
+     * graph cannot say which, and blocking either would stop a train that could have run.
+     *
+     * At an UNMEASURED segment - *"if no length specified, just stop there.  Only segments with a
+     * positive length are determinate."*
+     *
+     * So this UNDER-claims, knowingly.  A tail that really does reach past a fork or across unmeasured
+     * track is not blocked here.  The alternative is blocking track on a guess, and a guess that
+     * refuses is still a refusal.
+     *
+     * @return every covered edge, with the locomotive whose tail covers it
+     */
+    synchronized public Map<Edge, Locomotive> edgesCoveredByStandingTrains()
+    {
+        Map<Edge, Locomotive> covered = new LinkedHashMap<>();
+
+        for (Point standing : this.points.values())
+        {
+            Locomotive loc = standing.getCurrentLocomotive();
+
+            if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) continue;
+
+            int remaining = loc.getTrainLength();
+
+            Point here = standing;
+
+            Set<String> walked = new LinkedHashSet<>();
+
+            walked.add(here.getName());
+
+            while (remaining > 0)
+            {
+                List<Edge> back = this.getIncomingEdges(here);
+
+                // THE FORK RULE.  Exactly one way in is the deterministic case; none is the end of
+                // the line; more than one is the switch entered from the side that splits.
+                if (back == null || back.size() != 1) break;
+
+                Edge segment = back.get(0);
+
+                // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
+                // how much of the train would still be left after it.
+                if (segment.getLength() <= 0) break;
+
+                covered.put(segment, loc);
+
+                remaining -= segment.getLength();
+
+                Point next = segment.getStart();
+
+                // A loop of track would otherwise be walked for ever by a long enough train.
+                if (next == null || !walked.add(next.getName())) break;
+
+                here = next;
+            }
+        }
+
+        return covered;
+    }
     /**
      * Whether trains may turn round at this piece of track, on any of its copies.
      *
