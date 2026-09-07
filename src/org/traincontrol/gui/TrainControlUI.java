@@ -4236,6 +4236,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 () -> this.model == null ? null : this.model.getAutoLayout());
         }
 
+        // The panel needs it too, for the arrived-from menu it now builds (Adam, 2026-09-07).
+        if (autonomyTileMenus != null)
+        {
+            autonomyTileMenus.setRunningLayoutSource(
+                () -> this.model == null ? null : this.model.getAutoLayout());
+        }
+
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
     }
 
@@ -6041,6 +6048,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether the operator marked this square as one trains may turn round at.
+     *
+     * Asked of the SETUP, because `canReverse` never reaches the running layout - the builder
+     * expresses it by splitting the square and says so.  Same reason the reversal prompt asks the
+     * setup rather than the graph.
+     *
+     * @param tile the square
+     * @return true when trains may turn there
+     */
+    private boolean mayTurnHere(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        return getAutonomySession() != null && tile != null
+            && getAutonomySession().mayTurnTiles().contains(tile);
+    }
+
+    /**
      * Which way the train being placed will face once it is on the square it was dropped on.
      *
      * Worked out by walking the railway from where it is standing, BEFORE the drag moves it: the walk
@@ -6092,6 +6115,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // station: there is no direction to record and a guessed one would be worse than none.
         if (point.getCurrentLocomotive() != null)
         {
+            // AND WHERE ITS TAIL IS (Adam, 2026-09-07).
+            //
+            // A train put down by hand has no arrival for the railway to have watched, so the side it
+            // came in by has to be worked out - and on a square trains may turn at, worked out is not
+            // good enough.  Turning round is what those squares are FOR, so the train is as likely to
+            // have backed in as driven in, and the two put its tail on opposite sides.  Asked there,
+            // assumed everywhere else, forced at a terminus.
+            //
+            // On the event thread, like every other question this door asks: the drop is handled here.
+            session.setArrivedFrom(tile, org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
+                this.model == null ? null : this.model.getAutoLayout(), point,
+                facingAtTheLanding == null ? null : facingAtTheLanding.name(),
+                mayTurnHere(tile), this));
+
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
             // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a

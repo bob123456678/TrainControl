@@ -5172,6 +5172,31 @@ public class AutonomySession
     }
 
     /**
+     * Records which side a train standing here came in by, so its tail can be found.
+     *
+     * Kept beside the placement and the facing, in the same point properties, so it travels with them
+     * through a save and a load - the round trip that had no test at all until this week.
+     *
+     * @param tile the square
+     * @param side the compass side, or null to forget
+     */
+    public void setArrivedFrom(TileKey tile, String side)
+    {
+        setPointProperty(tile, "arrivedFrom", side);
+    }
+
+    /**
+     * @param tile the square
+     * @return the recorded arrival side, or null
+     */
+    public String getArrivedFrom(TileKey tile)
+    {
+        Object value = getPointProperty(tile, "arrivedFrom");
+
+        return value == null ? null : value.toString();
+    }
+
+    /**
      * Which way the locomotive on this square is pointing, as recorded.
      *
      * @param tile

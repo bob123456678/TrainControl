@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -337,6 +338,138 @@ public class testATrainCoversTheTrackBehindIt
         assertEquals(layout.sideTowards(west, south), "S",
             "a point at y=10 is not south of one at y=0. Y grows downwards on the diagram, and getting"
             + " this the wrong way round puts every tail on the wrong side of its train");
+    }
+
+    /**
+     * A terminus forces the answer, so nothing is asked.
+     *
+     * Adam: **"if the station is a terminus, there is only one forced option."**  One way in means
+     * one way the train can have come, whatever it is doing - and a dialog with a single button is a
+     * dialog that should not have been shown.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testATerminusForcesTheArrivalSide() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_term" + (addresses++);
+
+        Point buffer = point(layout, "BUF" + tag, true);
+        Point approach = point(layout, "APP" + tag, true);
+
+        // The approach lies to the west.
+        buffer.setX(10);
+        buffer.setY(0);
+
+        approach.setX(0);
+        approach.setY(0);
+
+        layout.createEdge(approach.getName(), buffer.getName());
+
+        // Marked may-reverse, which would normally ASK - and must not here, because there is nothing
+        // to ask about.  Passing null for the parent proves it: a dialog would have to be shown on
+        // something, and this returns without one.
+        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, buffer, "E", true,
+            null), "W",
+            "a terminus with one way in did not force the arrival side, so the operator is being asked"
+            + " a question with a single possible answer");
+    }
+
+    /**
+     * An ordinary station assumes the train drove in forwards.
+     *
+     * Adam: **"otherwise, assume arrived from to be the opposite of their facing on normal
+     * stations."**  A train faces the way it will leave, so its tail is behind it.  An assumption
+     * rather than a fact, and the right one: it is what a train that has not been turned is doing.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAnOrdinaryStationAssumesTheOppositeOfFacing() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_ord" + (addresses++);
+
+        Point middle = point(layout, "MID" + tag, true);
+        Point west = point(layout, "W" + tag, true);
+        Point east = point(layout, "E" + tag, true);
+
+        west.setX(0);
+        west.setY(0);
+
+        middle.setX(10);
+        middle.setY(0);
+
+        east.setX(20);
+        east.setY(0);
+
+        layout.createEdge(west.getName(), middle.getName());
+        layout.createEdge(middle.getName(), east.getName());
+
+        // Two ways in, so the answer is not forced - and not asked either, because this square is not
+        // one trains turn at.  Facing east means it came from the west.
+        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "E", false,
+            null), "W",
+            "a train facing east on an ordinary station was not assumed to have come from the west,"
+            + " so its tail is being put in front of it");
+
+        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "W", false,
+            null), "E", "and the other way about");
+
+        // Nobody has said which way it faces, so nothing can be assumed and nothing is recorded.
+        assertNull(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, null, false,
+            null),
+            "a facing nobody has set was turned into an arrival side anyway, which blocks track on"
+            + " no evidence at all");
+    }
+
+    /**
+     * And the sides offered are the ones the railway has, not the four compass points.
+     *
+     * A question whose answer is "north" about a square with no track to the north teaches the
+     * operator that the setting does nothing.  This is also what makes the terminus case answer
+     * itself: one side in the list means no question.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testOnlyTheSidesWithTrackAreOffered() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_sides" + (addresses++);
+
+        Point middle = point(layout, "SMID" + tag, true);
+        Point west = point(layout, "SW" + tag, true);
+        Point north = point(layout, "SN" + tag, true);
+
+        middle.setX(10);
+        middle.setY(10);
+
+        west.setX(0);
+        west.setY(10);
+
+        north.setX(10);
+        north.setY(0);
+
+        // One edge in, one out - a tail is not directional, so both count.
+        layout.createEdge(west.getName(), middle.getName());
+        layout.createEdge(middle.getName(), north.getName());
+
+        List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, middle);
+
+        assertTrue(sides.contains("W"), "the westward neighbour is not offered: " + sides);
+
+        assertTrue(sides.contains("N"),
+            "the northward neighbour is not offered, so an OUTGOING edge is being ignored - and a tail"
+            + " lies across that rail whichever way traffic runs: " + sides);
+
+        assertEquals(sides.size(), 2,
+            "sides with no track at all are being offered, so the operator can record a tail on rail"
+            + " that does not exist: " + sides);
     }
 
     // ---------------------------------------------------------------- fixtures

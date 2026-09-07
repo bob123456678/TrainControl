@@ -1171,6 +1171,12 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     javax.swing.JMenu facingMenu = buildFacingMenu(target);
 
+                    // AND WHERE ITS TAIL IS, beside the facing, because they are the same question
+                    // asked about opposite ends of the train.
+                    javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);
+
+                    if (tailMenu != null) menu.add(tailMenu);
+
                     if (facingMenu != null) menu.add(facingMenu);
                 }
 
@@ -2844,6 +2850,144 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean menuOnly;
 
+    /**
+     * Where to find the running layout, when there is one.
+     *
+     * A supplier rather than a reference, for the reason the session keeps one: `parseAuto` replaces
+     * the layout object, and a field captured once goes stale at the first rebuild.
+     */
+    private java.util.function.Supplier<org.traincontrol.automation.Layout> runningLayout;
+
+    /**
+     * Tells this panel where the running layout is.
+     *
+     * @param source how to fetch it, or null when there is none
+     */
+    public void setRunningLayoutSource(
+        java.util.function.Supplier<org.traincontrol.automation.Layout> source)
+    {
+        this.runningLayout = source;
+    }
+    /**
+     * Where the tail of the train standing here lies - the "arrived from" side.
+     *
+     * Adam, 2026-09-07: **"expose this property in the right-click menu advanced settings, both for
+     * the autonomy editor and track diagram viewer."**
+     *
+     * **Built here rather than twice.**  `TrainControlUI.buildAutonomyTileMenu` serves this panel's
+     * menu to the track diagram, so one implementation reaches both surfaces - which is the whole
+     * reason the facing menu lives here too.  Two copies of a menu is how `OB-039` survived being
+     * fixed: the redraw went on the copy somebody was looking at and the other kept the bug.
+     *
+     * The sides offered are the ones the railway HAS.  A square with track only east and west should
+     * not offer north, and `ArrivalSidePrompt.sidesOf` is the same list the placement prompt uses -
+     * asked once, in one place, so the menu and the prompt cannot come to disagree about which
+     * answers exist.
+     *
+     * Null when no train is standing here: a tail belongs to a train, and a square with none has
+     * nothing to say.
+     *
+     * @param target the square
+     * @return the menu, or null when there is nothing to offer
+     */
+    public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
+    {
+        if (target == null || locomotiveAt(target) == null) return null;
+
+        org.traincontrol.automation.Layout running =
+            runningLayout == null ? null : runningLayout.get();
+
+        if (running == null) return null;
+
+        org.traincontrol.automation.Point point = pointOnTheLayout(running, target);
+
+        if (point == null) return null;
+
+        java.util.List<String> sides =
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point);
+
+        if (sides.isEmpty()) return null;
+
+        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("autosetup.ui.menuArrivedFrom"));
+
+        menu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivedFrom")));
+
+        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        final String recorded = session.getArrivedFrom(target);
+
+        for (final String side : sides)
+        {
+            menu.add(radio(group, I18n.t(sideLabel(side)), "autosetup.ui.hintArrivedFrom",
+                side.equals(recorded),
+                () ->
+                {
+                    session.setArrivedFrom(target, side);
+
+                    // SAVED AND SHOWN, like every other door that writes a point property.
+                    // A setting that changes nothing the operator can see, and is gone at the
+                    // next load, is the shape the surface rule beside this exists to catch.
+                    setupChanged();
+
+                    // THE RUNNING LAYOUT TOO, not only the setup.  What blocks track is the Point,
+                    // and a setting that changes the diagram while the railway goes on using the old
+                    // value is the shape SPEC-B4 had.
+                    org.traincontrol.automation.Layout now =
+                        runningLayout == null ? null : runningLayout.get();
+
+                    if (now != null)
+                    {
+                        org.traincontrol.automation.Point on = pointOnTheLayout(now, target);
+
+                        if (on != null) on.setArrivedFrom(side);
+                    }
+                }));
+        }
+
+        // AND A WAY TO SAY "I DO NOT KNOW", which is not the same as any of the four.  A tail nobody
+        // has placed blocks nothing; a tail placed wrongly blocks the wrong rail and reports a
+        // protection that is not there.  Clearing has to be reachable or a mistaken answer is
+        // permanent.
+        menu.addSeparator();
+
+        menu.add(radio(group, I18n.t("autosetup.ui.arrivedFromUnknown"), "autosetup.ui.hintArrivedFrom",
+            recorded == null,
+            () ->
+            {
+                session.setArrivedFrom(target, null);
+
+                setupChanged();
+
+                org.traincontrol.automation.Layout now =
+                    runningLayout == null ? null : runningLayout.get();
+
+                if (now != null)
+                {
+                    org.traincontrol.automation.Point on = pointOnTheLayout(now, target);
+
+                    if (on != null) on.setArrivedFrom(null);
+                }
+            }));
+
+        return menu;
+    }
+
+    /**
+     * The message key naming one side, written out so the bundle check can see whole keys.
+     *
+     * @param side "N", "S", "E" or "W"
+     * @return the key
+     */
+    private static String sideLabel(String side)
+    {
+        switch (side)
+        {
+            case "S": return "autolayout.ui.sideS";
+            case "E": return "autolayout.ui.sideE";
+            case "W": return "autolayout.ui.sideW";
+            default: return "autolayout.ui.sideN";
+        }
+    }
     /**
      * The "{loc} Is Facing..." submenu for a square, or null when there is nothing to ask.
      *
