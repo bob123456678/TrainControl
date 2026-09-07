@@ -108,7 +108,24 @@ public class Point
     private Locomotive homeLoc;
 
     // Unique ID for any new node
-    private static Integer id = 0;
+    /**
+     * The id allocator, atomic because `++` on a static is not (C6).
+     *
+     * `++id` is a read, an add and a write, and nothing held them together. Two Points constructed on
+     * different threads could both read the same value and both take it - and `uniqueId` is what
+     * `toString` returns, which is how a Point is named in a saved configuration and therefore what
+     * every stored setting is keyed to.
+     *
+     * Two Points sharing an id is the same shape as the page renumber that cost a layout restore this
+     * week: nothing fails at the time, and the setup silently reattaches to the wrong thing on the
+     * next load.
+     *
+     * Points are built off the event thread by the builder and on it by the editor, so the two
+     * threads exist. Whether they have ever raced is not knowable after the fact, which is most of the
+     * reason to close it rather than measure it.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger ID_ALLOCATOR =
+        new java.util.concurrent.atomic.AtomicInteger(0);
   
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
@@ -147,7 +164,7 @@ public class Point
         }
         
         // Save the immutable unique ID
-        this.uniqueId = ++id;
+        this.uniqueId = ID_ALLOCATOR.incrementAndGet();
     }
     
     /**

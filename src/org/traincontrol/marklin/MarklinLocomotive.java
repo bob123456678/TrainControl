@@ -581,7 +581,19 @@ public class MarklinLocomotive extends Locomotive
                     new byte[] {m.getData()[4], m.getData()[5]}
                 );
                 
-                speed /= 10;
+                // ROUNDED, NOT TRUNCATED (C7).
+                //
+                // The Central Station speaks 0-1000 and this model stores 0-100, so every received
+                // speed is scaled.  Integer division always rounds DOWN, so a fine step set on
+                // another controller came back as the step below it - and `syncFromState` then
+                // re-sends what it believes, which put the train back slightly slower than the
+                // operator had just set it.  A systematic bias in one direction rather than a
+                // rounding error either way.
+                //
+                // It matters more than a display detail now: the length and blocking rules reason
+                // about what the model BELIEVES a train is doing, and this is where that belief
+                // comes in from the outside world.
+                speed = (int) Math.round(speed / 10.0);
                 
                 this._setSpeed(speed);
                 

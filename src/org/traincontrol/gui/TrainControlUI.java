@@ -6017,6 +6017,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 : getAutonomySession().facingByPath(this.model == null ? null
                     : this.model.getAutoLayout(), placing.getName(), aimed);
 
+            // AND WHERE ITS TAIL IS, ASKED BEFORE ANYTHING MOVES (Adam, 2026-09-07).
+            //
+            // **"Simply don't place the train, leave it on the clipboard as if no paste had been
+            // done."** - on what a dismissed prompt should do.
+            //
+            // Which means the question has to come BEFORE the move, not after it.  It used to be
+            // asked from `rememberPlacement`, by which point the train had already been picked up
+            // and put down; there was nothing left to decline.
+            //
+            // Only a may-turn square can be dismissed - everywhere else the answer is worked out
+            // rather than asked, so a null there means "nothing to record" and not "the operator
+            // said no".  Distinguishing the two is the whole of this guard.
+            tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
+                this.model == null ? null : this.model.getAutoLayout(), point,
+                facingAtTheLanding == null ? null : facingAtTheLanding.name(),
+                mayTurnHere(aimed), this);
+
+            if (tailAtTheLanding == null && mayTurnHere(aimed))
+            {
+                // Nothing moved, and the clipboard still holds it, so the next square accepts the
+                // same paste.  A dismissed question leaves the railway exactly as it was.
+                return true;
+            }
+
             this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
 
             this.cutLocomotive = null;
@@ -6030,6 +6054,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // rather than filling one, so it leaves no heading behind - and a value left over from a
             // previous placement would be read as this one as by whatever comes next.
             facingAtTheLanding = null;
+            tailAtTheLanding = null;
 
             this.model.getAutoLayout().moveLocomotive(null, point.getName(), true);
         }
@@ -6062,6 +6087,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return getAutonomySession() != null && tile != null
             && getAutonomySession().mayTurnTiles().contains(tile);
     }
+
+    /**
+     * Which side the train being placed came in by, decided before the drop moves it.
+     *
+     * Asked before the move so a dismissed question can leave the railway untouched, which is what
+     * Adam asked for: "simply don't place the train, leave it on the clipboard as if no paste had been
+     * done."
+     */
+    private String tailAtTheLanding;
 
     /**
      * Which way the train being placed will face once it is on the square it was dropped on.
@@ -6239,10 +6273,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // assumed everywhere else, forced at a terminus.
             //
             // On the event thread, like every other question this door asks: the drop is handled here.
-            String tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
-                this.model == null ? null : this.model.getAutoLayout(), point,
-                facingAtTheLanding == null ? null : facingAtTheLanding.name(),
-                mayTurnHere(tile), this);
+            // DECIDED BEFORE THE MOVE, and only recorded here.  Asking at this point would be
+            // asking about a train that has already been put down, which is why a dismissal could not
+            // undo anything until the question moved earlier.
+            String tail = tailAtTheLanding;
 
             session.setArrivedFrom(tile, tail);
 
@@ -17613,7 +17647,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void doClearCurrentPage()
     {
-        this.activeLoc = null;
+        // THE ACTIVE LOCOMOTIVE IS ONLY LET GO IF IT WAS ON THIS PAGE (C22).
+        //
+        // This cleared it unconditionally, so clearing page 3 took the keyboard away from a train
+        // selected on page 1 - still on its button, still where the operator left it, and now
+        // unreachable until they click it again.  The gesture is "empty this page", and it was
+        // also doing "and stop driving whatever you were driving".
+        //
+        // Asked of the buttons rather than remembered: the mapping for this page IS the list of
+        // what is about to be let go, so the question is whether the active locomotive is in it.
+        boolean activeWasHere = false;
+
+        for (JButton key : this.currentLocMapping().keySet())
+        {
+            if (this.activeLoc != null
+                && this.activeLoc.equals(this.currentLocMapping().get(key)))
+            {
+                activeWasHere = true;
+            }
+        }
+
+        if (activeWasHere) this.activeLoc = null;
 
         for (JButton key : this.currentLocMapping().keySet())
         {

@@ -227,10 +227,10 @@ otherwise marshals rigorously.
 
 | | Finding | Status |
 |---|---|---|
-| C1-C6 | `automation/` - pacing, ceiling race, missing guards, dead parameter | Open |
-| C7-C12 | `marklin/` - speed truncation, dead guard, MFX fallback, three-way pause, headless paths | Open |
-| C13-C19 | `base/` - phantom accessories, interrupt spin, recursion, stale comments | Open |
-| C20-C29 | `gui/` - regex filter, ghost mappings, off-EDT enable, silent rebind | Open |
+| C1-C6 | `automation/` - pacing, ceiling race, missing guards, dead parameter | Adjudicated 2026-09-07 - C2 Cancelled (check and insert now share one monitor), C6 Fixed; C3 Open (live, cheap), C1/C4/C5 Open (ruled low). See [package-sweeps.md](../reference/package-sweeps.md) |
+| C7-C12 | `marklin/` - speed truncation, dead guard, MFX fallback, three-way pause, headless paths | Adjudicated 2026-09-07 - C7 Fixed; C8/C9/C11/C12 Cancelled (all four fixed since the sweep, three with comments naming the same fault); C10 Open (ruled low) |
+| C13-C19 | `base/` - phantom accessories, interrupt spin, recursion, stale comments | Adjudicated 2026-09-07 - C14 Cancelled; C13 Open (live, worth fixing - the evaluate path was missed when NodeExpression was fixed); C15/C17 Open (ruled low); C16/C18/C19 Open, not yet read |
+| C20-C29 | `gui/` - regex filter, ghost mappings, off-EDT enable, silent rebind | Adjudicated 2026-09-07 - C20/C21/C29 Cancelled, C22 Fixed; C23 half-fixed (no finally still), C28 Open (confirmed crash); C24/C25/C26/C27 Open, not yet read |
 
 **`automation/`.** **C1** - `runLocomotive`'s loop has no pacing floor, so with `minDelay = maxDelay
 = 0` (explicitly supported) a locomotive with no available path spins hot: `pickPath` walks every

@@ -1338,6 +1338,82 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * A dismissed arrival-side question leaves the railway exactly as it was (Adam, 2026-09-07).
+     *
+     * **"Simply don't place the train, leave it on the clipboard as if no paste had been done."**
+     *
+     * The question was asked from `rememberPlacement`, which runs AFTER the drop: by the time the
+     * operator saw it the train had already been lifted off its old square and put down on the new
+     * one, the clipboard had been emptied, and there was nothing left for a dismissal to decline. So
+     * closing the dialog placed the train anyway and merely declined to record which way round it was
+     * - the worst of the three possible outcomes, because the railway had moved and the record of it
+     * had not.
+     *
+     * Which makes this an ORDERING rule, not a value one: the answer has to be in hand before
+     * `moveLocomotive` runs, or no answer can undo anything. Source-level for that reason - the fault
+     * is the order of two statements inside a mouse handler, and a test that drives the model sees
+     * both of them already done.
+     *
+     * The null is also read in two different ways and the guard has to tell them apart. On a square
+     * trains may turn at the question is asked, so null means dismissed; everywhere else the answer is
+     * worked out rather than asked and null means only "there was nothing to record". Treating the
+     * second as a dismissal would refuse every paste onto plain track.
+     *
+     * MUTATION: moving the forPlacement call back below moveLocomotive fails the ordering assertion;
+     * dropping the mayTurnHere half of the guard fails the last one.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testADismissedArrivalQuestionPlacesNothing() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        String drop = bodyOf(ui,
+            "private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
+
+        assertNotEquals(drop, "",
+            "the drop handler is not called locomotiveGestureOnDiagram any more, so this checked"
+            + " nothing at all. Point it at whatever handles a paste onto the diagram");
+
+        int asked = drop.indexOf("ArrivalSidePrompt.forPlacement(");
+        int moved = drop.indexOf("moveLocomotive(placing.getName()");
+
+        assertTrue(asked >= 0,
+            "the drop no longer asks which side the train came in by, so a train put down on a square"
+            + " trains may turn at gets a guessed tail on a square where guessing is what fails");
+
+        assertTrue(moved >= 0,
+            "the paste no longer moves the locomotive here, so the ordering below is comparing this"
+            + " test to itself");
+
+        assertTrue(asked < moved,
+            "the arrival-side question is asked AFTER the train has been moved, which is the defect:"
+            + " a dismissal then has nothing left to decline. Adam: \"simply don't place the train,"
+            + " leave it on the clipboard as if no paste had been done\"");
+
+        // AND THE ANSWER MUST ACTUALLY STOP IT.  Asking early and moving anyway would satisfy the
+        // ordering above and still place the train.
+        String between = drop.substring(asked, moved);
+
+        assertTrue(between.contains("return"),
+            "nothing between the question and the move can abandon the paste, so the answer is asked"
+            + " early and then ignored - the train lands either way");
+
+        assertTrue(between.contains("mayTurnHere("),
+            "the abandon guard does not ask whether this square is one trains may turn at, so it"
+            + " cannot tell a dismissal from \"there was nothing to record\" - and every paste onto"
+            + " plain track, where no question is asked at all, would be refused");
+
+        // AND THE OLD SITE IS GONE.  Two doors asking the same question is how the facing menu drifted
+        // (OB-039), and here the second one would be the un-undoable copy.
+        assertFalse(bodyOf(ui, "private void rememberPlacement(").contains("forPlacement("),
+            "rememberPlacement asks the arrival-side question again. It runs after the move, so that"
+            + " copy is the one a dismissal cannot undo - which is the whole defect, kept");
+    }
+    /**
      * Both autonomy menus head themselves with a name, and it is the same name.
      *
      * OB-112. Adam, right-clicking LowerBack on the diagram with a setup loaded: "nothing at the top
