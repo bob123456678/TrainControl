@@ -177,6 +177,88 @@ public class testATrainTooLongIsRefusedTheBerth
             + " Adam: \"generally, allow it\"");
     }
 
+    /**
+     * A station refuses a train longer than it accepts - which nothing had ever checked.
+     *
+     * Adam, 2026-09-07, annotating the room rule: **"the train should be refused any destination it
+     * does not fit in, i.e. where the accepted length > train length."**
+     *
+     * **This rule already existed, and I nearly shipped a second copy of it.** `Point.validateTrainLength`
+     * has enforced it all along, called from `isPathClear`; a grep for `getMaxTrainLength()` missed it
+     * because it reads the field directly. A duplicate rule was written, tested, and only caught when
+     * the mutation that should have reddened this test did not - the refusal was coming from the copy
+     * that was already there. `DR-B3` in miniature, committed by the person who had just removed one.
+     *
+     * So this test now covers the EXISTING rule, which had no direct test of its own.
+     *
+     * A different question from the room rule beside it, as he also noted: that one measures the track
+     * LEADING IN, this one is the station's own limit. A train can clear the approach and not the
+     * platform, or the other way about, and either refuses.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAStationRefusesATrainLongerThanItAccepts() throws Exception
+    {
+        assertFalse(fitsTheStation(9, 3),
+            "a nine-unit train was accepted by a station that takes three. maxTrainLength has been"
+            + " editable and unenforced since it was added");
+
+        assertTrue(fitsTheStation(3, 3),
+            "a three-unit train was refused a station that takes three. Exactly-fits is admitted, as"
+            + " it is for the room rule - otherwise every platform measured to its train is unusable");
+
+        assertTrue(fitsTheStation(9, 0),
+            "a station with no limit recorded refused a train. Zero is how every square starts and"
+            + " what the editor writes when the field is cleared, so it is no limit rather than a"
+            + " limit of zero - refusing on it would make every unmeasured platform unusable");
+    }
+
+    /**
+     * A plain run into a station with a stated capacity.
+     *
+     * @param trainLength how long the train is
+     * @param stationTakes the station maxTrainLength, 0 for unset
+     * @return whether the path was allowed
+     * @throws Exception on a failure to build
+     */
+    private boolean fitsTheStation(int trainLength, int stationTakes) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_cap" + (addresses++);
+
+        org.traincontrol.marklin.MarklinFeedback a = model.newFeedback(800 + addresses++, null);
+        org.traincontrol.marklin.MarklinFeedback b = model.newFeedback(800 + addresses++, null);
+
+        model.setFeedbackState(a.getName(), false);
+        model.setFeedbackState(b.getName(), false);
+
+        layout.createPoint("CAPSTART" + tag, true, a.getName());
+        layout.createPoint("CAPEND" + tag, true, b.getName());
+
+        Point start = layout.getPoint("CAPSTART" + tag);
+        Point end = layout.getPoint("CAPEND" + tag);
+
+        end.setMaxTrainLength(stationTakes);
+
+        Edge run = layout.createEdge(start.getName(), end.getName());
+
+        run.setLength(50);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        loc.setTrainLength(trainLength);
+
+        start.setLocomotive(loc);
+
+        List<Edge> path = new ArrayList<>();
+
+        path.add(run);
+
+        return layout.isPathClear(path, loc, false);
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /**
