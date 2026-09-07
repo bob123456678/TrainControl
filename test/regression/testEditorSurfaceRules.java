@@ -3224,4 +3224,51 @@ public class testEditorSurfaceRules
             else if (each.getName().endsWith(".java")) into.add(each);
         }
     }
+
+    /**
+     * "Somewhere a train can be sent" is written once (DR-B3).
+     *
+     * The four clauses - destination, active, auto-destination, not a turning copy - were spelled out
+     * at three sites in `Layout`, and they had already drifted: the reachability probe was missing
+     * two of them. That one is a real difference (it takes no locomotive, so the per-train questions
+     * cannot be asked there) but nothing distinguished it from an oversight, and nothing held the
+     * other two together except somebody remembering.
+     *
+     * This counts the spellings. It does not care where they are - a fourth copy in a new method is
+     * exactly the thing that would otherwise pass review.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheSendableDestinationRuleIsWrittenOnce() throws Exception
+    {
+        String layout = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String code = layout.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+
+        String flat = code.replaceAll("\\s+", " ");
+
+        // The CONJUNCTION, not every mention: `why` asks isAutoDestination on its own to name a
+        // reason, which is a different question and a legitimate second use.  What must not be
+        // written twice is the four clauses together.
+        int conjunctions = 0;
+
+        for (String line : code.split("\\r?\\n"))
+        {
+            if (line.contains("isAutoDestination()") && line.contains("isReversing()"))
+            {
+                conjunctions++;
+            }
+        }
+
+        assertEquals(conjunctions, 1,
+            "the sendable-destination conjunction is written out " + conjunctions + " times in"
+            + " Layout. There must be one - inside isSendableDestination - because three copies"
+            + " had already drifted apart before anyone noticed (DR-B3)");
+
+        assertTrue(code.contains("public boolean isSendableDestination(Point end)"),
+            "isSendableDestination has gone, so whatever replaced it is the second spelling again");
+    }
 }

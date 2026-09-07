@@ -63,8 +63,16 @@ its direction**. Three kinds of square matter:
 - **A compulsory turn** (`mustReverse`). Every copy turns trains. Not a question in any tier: a
   turning copy's only outgoing edges leave by the side the train arrived from, so *not* turning is
   not an available outcome — it drives the train forward off its reserved path.
+
+Clarify: the first is a station, the second is not.
+
 - **A may-reverse square** (`canReverse`). The build splits it into a plain copy and a turning one.
   Autonomy turns only where the flag says. **Manual always asks.**
+
+Clarify what "the flag" is here.
+
+Having two copies seems like unnecessary complexity, I wonder if it can be done more easily by simply following the edges?
+Don't implement until evaluating.
 
 ### The question, and when it is asked
 
@@ -92,6 +100,8 @@ leaves only by the side the train came in at — so a train that does not turn t
 its path does not hold. The answer is always honoured; the journey that depends on a different answer
 is not started. A terminus is exempt.
 
+It is unnecessary to prompt on intermediates.  We care about the reversal if it's the destimation, since that dictate where the train can go, and where it is facing.
+
 ### What the runtime cannot answer
 
 `canReverse` never reaches the running layout — `AutonomyBuilder` expresses it by splitting the
@@ -106,6 +116,8 @@ mistake has been made in both directions.
 - **A direction command from the track DOES update the graph**, if it disagrees — and a reversal made
   *during* a run is followed once the run ends, not discarded.
 - A reversal at a may-reverse square emits exactly the same command a terminus does.
+
+Reversals during the run should be ignored and not queued.  Only count reversals when nothing is running.  That way, there is no backlog.
 
 ---
 
@@ -135,6 +147,8 @@ turned round the two point the same way while the carriages have not moved.
   guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
   (Corrected 2026-09-07 after `VAL8-C1` — the earlier wording claimed less than the code does.)
 
+Given the other items above, when would we not know?  Clearing should not be possible, only setting.
+
 ### Pasting a train
 
 > *"Calculate the simple BFS path from the current station to the paste target using the current
@@ -154,10 +168,14 @@ Two separate rules, both about length, both easy to mistake for each other.
 
 ### 5a. Room at the berth
 
-A train is refused a **terminus or reversing** destination it does not fit in.
+A train is refused a **terminus or reversing** destination it does not fit in.  
+^ This is true, but the train should be refused any destination it does not fit in, i.e. where the accepted length > train length.
 
 - The room is measured **from the last switch** to the berth. A train that fits there fits behind any
   earlier switch too; one that does not comes to rest standing on the switch.
+
+^ this is true, but "fit" here refers to the surrounding track, not necessarily the length of the berth, which is handled at the station level.
+
 - **Exactly-fits is admitted.** Four units of room takes a four-unit train — otherwise every berth
   measured to the train that lives in it becomes unusable.
 - **The total across the stretch is what counts**, not any single tile: 2 + 2 admits a four-unit
@@ -231,9 +249,15 @@ settings.
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it
   means, or it is asking a question the graph does not answer.
 - **`canReverse` is not in the running layout.** Only the setup knows it.
+
+Clarify this- the train, or the point?  It is known at the locomotive level.
+
 - **Facing is encoded as one-way edges.** There is no direction field on a train's route; the sparse
   and doubled edges *are* the direction.
 - **Signals and switches are the same device.** `accessoryType` is display-only.
+
+But the play very different roles in what they control.  They are just commanded via the same protocol.
+
 - **Occupancy and reservation are different facts.** A route holds track it intends to use; a
   standing train covers track it is lying on. Neither is the other.
 

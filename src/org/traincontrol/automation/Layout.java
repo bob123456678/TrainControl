@@ -3644,7 +3644,13 @@ public class Layout
             // The terminus clause with the rest, because this method's whole job is to mirror
             // pickPath's - "every clause pickPath applies to its candidates has to be mirrored here",
             // and the two have fallen out of step once already.
-            if (!end.isReversing() && end.isAutoDestination()
+            // The shared clauses through the one method (DR-B3).  A no-op here rather than a
+            // tightening: these candidates come from `getPossiblePaths`, which now asks
+            // `isSendableDestination` itself, so every end already satisfies it.  Written out anyway
+            // because this loop must mirror pickPath clause for clause - "the two have fallen out of
+            // step once already" - and mirroring a method is easier to keep true than mirroring four
+            // conditions.
+            if (isSendableDestination(end)
                     && (!end.isTerminus() || loc.isReversible())
                     && !end.getExcludedLocs().contains(loc)
                     && !this.reversesAlongTheWay(path))
@@ -3901,8 +3907,11 @@ public class Layout
                     // stranded by a terminus, so full autonomy does not choose one for it - and the
                     // operator asking for that berth by hand is no longer refused, which is what the
                     // move is for.
-                    if (!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination() && end.isActive()
-                            && !end.isReversing() && end.isAutoDestination()
+                    // The four shared clauses are `isSendableDestination`; what stays here is what
+                    // only this site can ask - the square it started on, whether anything is standing
+                    // there NOW, and the two per-locomotive questions (DR-B3).
+                    if (!end.equals(start) && end.getBlockLocomotive() == null
+                            && isSendableDestination(end)
                             && (!end.isTerminus() || loc.isReversible())
                             && !end.getExcludedLocs().contains(loc))
                     {
@@ -7266,6 +7275,31 @@ public class Layout
      * @param claiming the Point placing it, which keeps it
      */
     /**
+     * Whether this point is somewhere autonomy may send a train at all.
+     *
+     * **DR-B3: the same four clauses were written out at three sites, and they had already drifted.**
+     * `canReachAnyDestination` was missing the two the others carry, which is not a copy-paste slip -
+     * it takes no locomotive, so the terminus-and-reversible question and the excluded-locomotives
+     * question cannot be asked there. The drift was in the FOUR that should have matched, and nothing
+     * held them together but somebody remembering.
+     *
+     * So this is the part that is genuinely one question: is this a destination, is it in service, is
+     * it one autonomy is allowed to choose, and is it a plain copy rather than a turning one.
+     * Everything per-locomotive stays at the call, because it cannot be asked here.
+     *
+     * Deliberately NOT included: occupancy and locking. `canReachAnyDestination` asks what the railway
+     * allows rather than what is free this second, and folding a "right now" clause into a "can ever"
+     * question is how that method got its original fault.
+     *
+     * @param end the point being considered
+     * @return true when autonomy may end a journey there
+     */
+    public boolean isSendableDestination(Point end)
+    {
+        return end != null && end.isDestination() && end.isActive()
+            && end.isAutoDestination() && !end.isReversing();
+    }
+    /**
      * Whether a train standing here could be sent anywhere at all.
      *
      * Not "does this point have an outgoing edge" - that is the question that produced the fault this
@@ -7307,8 +7341,11 @@ public class Layout
                 if (end == null || !seen.add(end)) continue;
 
                 // Somewhere a train can actually be sent, and not the square it started on
-                if (!end.equals(from) && end.isDestination() && end.isActive()
-                    && end.isAutoDestination() && !end.isReversing())
+                // The shared clauses only: this method takes no locomotive, so the terminus and
+                // exclusion questions cannot be asked here.  That is a real difference from the
+                // candidate filter above and is why it is written down rather than left to be
+                // rediscovered as a bug (DR-B3).
+                if (!end.equals(from) && isSendableDestination(end))
                 {
                     return true;
                 }
