@@ -5410,7 +5410,31 @@ public class Layout
                 // how much of the train would still be left after it.
                 if (segment.getLength() <= 0) break;
 
+                // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
+                //
+                // Two reviewers found this independently and a test confirmed it: the graph writes one
+                // piece of rail as two `Edge` objects, one per direction, because facing IS one-way
+                // edges here.  `isPathClear` looks the covered set up by Edge identity, so covering
+                // A -> B left B -> A clear and a train routed the other way over the same metal was
+                // cleared to run into the one standing on it.
+                //
+                // `behaviour.md` 5c already says a tail fouls the rail whichever way traffic runs, and
+                // the GREYING was symmetric while the routing guard was not - the picture protected
+                // more than the railway did, which is the worst way round for the two to disagree.
+                //
+                // Every fixture in the tail tests was a one-way chain, which is why this went unseen.
                 covered.put(segment, loc);
+
+                for (Edge sameRail : this.edges.values())
+                {
+                    if (sameRail == segment) continue;
+
+                    if (sameRail.getStart() == segment.getEnd()
+                        && sameRail.getEnd() == segment.getStart())
+                    {
+                        covered.put(sameRail, loc);
+                    }
+                }
 
                 remaining -= segment.getLength();
 

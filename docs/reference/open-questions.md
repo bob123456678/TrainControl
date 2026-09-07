@@ -80,9 +80,10 @@ either.
 - The room rule measures **from the last switch**, so track measured on the far side of a switch does
   not count toward a berth. This surprised Adam once and is correct: a train that fits between the
   switch and the berth fits behind any earlier switch too.
-- **`arrivedFrom` must be set for any of the tail blocking to happen.** Autonomy fills it in on
-  arrival; a hand-placed train gets it from the placement rules. Until a railway has some, the
-  feature blocks nothing — correct, but indistinguishable from it not working.
+- **`arrivedFrom` narrows the tail walk; it does not switch it on.** Where the geometry leaves one
+  way back the walk follows it regardless, and `arrivedFrom` only picks between candidates where
+  there are several. On a railway with none recorded, blocking still happens wherever the track
+  is unambiguous — less than the feature can do, but not nothing.
 
 ## Routing tiers
 

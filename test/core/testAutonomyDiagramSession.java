@@ -528,6 +528,59 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The arrival side reaches the running layout, and comes back from a save.
+     *
+     * `VAL8-A2` reported that `arrivedFrom` never crosses between the setup and the railway - that the
+     * builder does not emit it, so an answer the operator gives blocks nothing.  It is not in the
+     * builder's skip list and not in DERIVED, so by reading it should pass through as an extra; that
+     * is exactly the kind of reading that has been wrong twice this week, so it is measured here
+     * instead.
+     *
+     * Both hops, because they fail for different reasons: the FILE hop is the store, and the BUILD hop
+     * is what `parseAuto` is handed.  A property that survives a save and never reaches the railway is
+     * a setting that does nothing, which is worse than one that is not offered.
+     *
+     * @throws IOException on a failure to save
+     */
+    @Test
+    public void testTheArrivalSideReachesTheRailwayAndSurvivesASave() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+        session.placeLocomotive(sensor, "Test Loc");
+        session.setArrivedFrom(sensor, "W");
+
+        assertEquals(session.getArrivedFrom(sensor), "W", "control: it did not go in");
+
+        // THE BUILD, which is what the railway is made from.
+        String built = session.buildConfiguration();
+
+        assertTrue(built.contains("arrivedFrom"),
+            "the built configuration carries no arrival side, so an answer the operator gives never"
+            + " reaches the railway and blocks nothing (VAL8-A2)");
+
+        assertTrue(built.contains("\"arrivedFrom\": \"W\"") || built.contains("\"arrivedFrom\":\"W\""),
+            "the arrival side is emitted but not as the side that was recorded: " 
+            + built.substring(Math.max(0, built.indexOf("arrivedFrom") - 40),
+                Math.min(built.length(), built.indexOf("arrivedFrom") + 40)));
+
+        // AND THE FILE.
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(runOfTrack()));
+
+        assertEquals(reopened.getArrivedFrom(sensor), "W",
+            "the arrival side did not survive a save and reload, so the track a train is lying across"
+            + " is forgotten every time the setup is loaded");
+    }
+
+    /**
      * The generated configuration is the ordinary format, so nothing downstream has to learn a new one.
      */
     @Test

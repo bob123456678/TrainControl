@@ -121,7 +121,10 @@ turned round the two point the same way while the carriages have not moved.
   have backed in as driven in.
 - It can be set or cleared afterwards from **Train arrived from** in the right-click menu, on both
   the editor and the track diagram.
-- Not knowing is a legitimate answer: an unrecorded tail blocks nothing.
+- Not knowing is a legitimate answer. It does **not** mean nothing is blocked: where the geometry
+  leaves only one way back, the walk still follows it, because that answer is forced rather than
+  guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
+  (Corrected 2026-09-07 after `VAL8-C1` — the earlier wording claimed less than the code does.)
 
 ### Pasting a train
 

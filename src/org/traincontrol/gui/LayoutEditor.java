@@ -1597,6 +1597,24 @@ public class LayoutEditor extends PositionAwareJFrame
             // editor - which is why every menu item needing it used to open a dialog saying "null".
             autonomyPanel.setMainWindow(parent);
 
+            // WHERE THE RAILWAY IS, so the arrived-from menu can be built here too (VAL8-B1).
+            //
+            // It was supplied only from the track diagram's door, so the editor - the surface Adam
+            // named FIRST - could never show that menu at all, and `setFacingAndMove` degraded to
+            // writing the setup until somebody happened to open the diagram's menu once.  A feature
+            // that works on one of two surfaces depending on what you opened earlier is worse than
+            // one that works on neither, because nothing tells you which you are looking at.
+            autonomyPanel.setRunningLayoutSource(
+                () -> parent == null || parent.getModel() == null
+                    ? null : parent.getModel().getAutoLayout());
+
+            if (session != null)
+            {
+                session.setRunningLayoutSource(
+                    () -> parent == null || parent.getModel() == null
+                        ? null : parent.getModel().getAutoLayout());
+            }
+
             // Asked for on every use rather than held, because loading a configuration replaces the
             // Layout wholesale and a kept reference would answer about the previous one without
             // saying so.

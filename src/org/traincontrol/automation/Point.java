@@ -471,6 +471,7 @@ public class Point
 
     public Point setLocomotive(Locomotive l)
     {
+        final Locomotive previousOccupant = this.getCurrentLocomotive();
         // One locomotive, one place - enforced HERE, because here is the only door.
         //
         // A train is a physical object and cannot be in two places, but nothing in the model said so:
@@ -504,6 +505,16 @@ public class Point
         // reservation clears the signal with it.
         if (this.layout != null) this.layout.refreshProtectingSignal(this);
 
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT (VAL8-B4).
+        //
+        // `arrivedFrom` describes which way the occupant came in.  A different occupant did not come
+        // in that way, and an empty platform has no tail at all - so leaving the old value standing
+        // makes the walk block the rail behind whoever was here BEFORE, which is now clear, while
+        // leaving the rail the new train is actually lying across open.
+        //
+        // Cleared on every change of occupant rather than only on removal: a platform handed straight
+        // from one train to another is where the stale value is least visible and most wrong.
+        if (l != previousOccupant) this.arrivedFrom = null;
         return this;
     }
 

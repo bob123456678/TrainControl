@@ -472,6 +472,57 @@ public class testATrainCoversTheTrackBehindIt
             + " that does not exist: " + sides);
     }
 
+    /**
+     * A tail blocks the rail in BOTH directions, because a tail is not directional (VAL8-A1).
+     *
+     * The graph encodes facing as one-way edges, so one piece of rail is often two `Edge` objects.
+     * A train lying across it fouls it whichever way traffic runs - `behaviour.md` 5c says so - but
+     * the covered set is keyed by Edge, and Edge identity is directional.  So covering A -> B and
+     * then routing somebody over B -> A is the case every fixture in this file misses: they are all
+     * one-way chains, which is exactly why this went unnoticed.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATailBlocksTheRailInBothDirections() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_both" + (addresses++);
+
+        Point far = point(layout, "BFAR" + tag, true);
+        Point near = point(layout, "BNEAR" + tag, true);
+        Point berth = point(layout, "BBERTH" + tag, true);
+
+        // One piece of rail between FAR and NEAR, written both ways as the reduction does.
+        Edge outward = layout.createEdge(far.getName(), near.getName());
+        Edge backward = layout.createEdge(near.getName(), far.getName());
+        Edge leadIn = layout.createEdge(near.getName(), berth.getName());
+
+        outward.setLength(5);
+        backward.setLength(5);
+        leadIn.setLength(1);
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        standing.setTrainLength(4);
+
+        berth.setLocomotive(standing);
+
+        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+
+        assertTrue(covered.containsKey(leadIn), "control: the lead in is not covered at all");
+
+        boolean either = covered.containsKey(outward) || covered.containsKey(backward);
+
+        assertTrue(either, "control: neither direction of the rail behind is covered");
+
+        assertTrue(covered.containsKey(outward) && covered.containsKey(backward),
+            "the tail covers only one direction of a rail it is lying across, so a train routed the"
+            + " other way over the same metal is cleared to run into it. A tail is not directional"
+            + " (VAL8-A1)");
+    }
+
     // ---------------------------------------------------------------- fixtures
 
     /**

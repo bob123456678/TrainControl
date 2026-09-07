@@ -6195,10 +6195,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // assumed everywhere else, forced at a terminus.
             //
             // On the event thread, like every other question this door asks: the drop is handled here.
-            session.setArrivedFrom(tile, org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
+            String tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 facingAtTheLanding == null ? null : facingAtTheLanding.name(),
-                mayTurnHere(tile), this));
+                mayTurnHere(tile), this);
+
+            session.setArrivedFrom(tile, tail);
+
+            // AND THE RAILWAY, NOT ONLY THE SETUP (VAL8-A2, REG7-B1 - found by both reviewers).
+            //
+            // The walk that blocks track reads the live Point; the setup value only reaches it at
+            // the next rebuild.  So the operator answered the question, watched nothing become
+            // blocked, and had no way to tell "the feature does not work" from "it has not been
+            // rebuilt yet".
+            //
+            // The same shape as SPEC-B4, which was the facing menu writing the setup and leaving
+            // the railway alone.  One door, both stores, every time.
+            point.setArrivedFrom(tail);
 
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
