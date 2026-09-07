@@ -88,6 +88,43 @@ public class testATrainTooLongIsRefusedTheBerth
             + " refusals above prove nothing about lengths");
     }
 
+    /**
+     * And it is not OFFERED, which is the sentence Adam actually wrote.
+     *
+     * **"BottomMainPost -> TunnelLongPark is manually selectable on the current layout.  It is a train
+     * that has been staged at BottomMainPost by the user, ready to be parked next.  It should stop
+     * being selectable while the track lengths are too short."**
+     *
+     * A rule can be right and a menu still wrong.  The four cases above ask `isPathClear` directly;
+     * this asks `getPossiblePaths`, which is what the right-click menu lists and what the staging
+     * planner reads.  They are only the same question because `getPossiblePaths` calls `isPathClear`
+     * on every candidate - and that is worth pinning, because a menu built from any other source would
+     * offer a berth the railway then refuses on the first move.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATooLongTrainIsNotEvenOfferedTheBerth() throws Exception
+    {
+        // BUILT AND ASKED ONE AT A TIME, because every fixture shares the model's single Locomotive
+        // object - so building the second one reset the first one's length, and the "fits" case was
+        // being evaluated at the "does not fit" length.  The first version of this test failed on its
+        // own control for that reason, which is the control doing its job.
+        Fixture fits = build(4, 4);
+
+        assertTrue(offersTheBerth(fits),
+            "a train that fits is not offered the berth at all, so the refusal below means only that"
+            + " this menu offers nothing to anybody");
+
+        Fixture doesNot = build(5, 4);
+
+        assertFalse(offersTheBerth(doesNot),
+            "a train too long for the berth is still listed as somewhere it can be sent. The rule"
+            + " refuses it on the first move, so the operator is offered a destination the railway"
+            + " will turn down - which is Adam's case: a train staged ready to be parked, offered a"
+            + " berth it does not fit");
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /**
@@ -98,7 +135,47 @@ public class testATrainTooLongIsRefusedTheBerth
      * @return whether isPathClear allowed it
      * @throws Exception on a failure to build
      */
+    /**
+     * One built railway, so the rule and the menu can be asked the same question about it.
+     */
+    private static final class Fixture
+    {
+        private Layout layout;
+        private Locomotive loc;
+        private List<Edge> path;
+        private Point berth;
+    }
+
+    /**
+     * Whether the menu lists the berth as somewhere this train may go.
+     *
+     * @param fixture the railway
+     * @return true when the berth is among the offered destinations
+     */
+    private boolean offersTheBerth(Fixture fixture)
+    {
+        List<List<Edge>> offered = fixture.layout.getPossiblePaths(fixture.loc, true);
+
+        if (offered == null) return false;
+
+        for (List<Edge> candidate : offered)
+        {
+            if (candidate.isEmpty()) continue;
+
+            if (fixture.berth.equals(candidate.get(candidate.size() - 1).getEnd())) return true;
+        }
+
+        return false;
+    }
+
     private boolean admitted(int trainLength, int roomAfterTheSwitch) throws Exception
+    {
+        Fixture fixture = build(trainLength, roomAfterTheSwitch);
+
+        return fixture.layout.isPathClear(fixture.path, fixture.loc, false);
+    }
+
+    private Fixture build(int trainLength, int roomAfterTheSwitch) throws Exception
     {
         Layout layout = new Layout(model);
 
@@ -147,10 +224,16 @@ public class testATrainTooLongIsRefusedTheBerth
 
         start.setLocomotive(loc);
 
-        List<Edge> path = new ArrayList<>();
-        path.add(approach);
-        path.add(run);
+        Fixture fixture = new Fixture();
 
-        return layout.isPathClear(path, loc, false);
+        fixture.layout = layout;
+        fixture.loc = loc;
+        fixture.berth = berth;
+        fixture.path = new ArrayList<>();
+
+        fixture.path.add(approach);
+        fixture.path.add(run);
+
+        return fixture;
     }
 }
