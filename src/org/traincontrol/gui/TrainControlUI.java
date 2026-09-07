@@ -6075,6 +6075,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
 
     /**
+     * Levels the direction baseline whenever the railway is idle, so nothing is followed twice.
+     *
+     * Adam, 2026-09-07: **"Reversals during the run should be ignored and not queued.  Only count
+     * reversals when nothing is running.  That way, there is no backlog."**  And on a manual command
+     * arriving mid-run: **"ignore it as this is likely corrective by the user."**
+     *
+     * Called from the refresh rather than from the automation layer, which must not reach into the
+     * window - a rule this project pins in testNonReversibleTrains, and which a first attempt at this
+     * broke by calling the GUI from executePathInternal.
+     *
+     * A comparison rather than a queue: it can run any number of times and mean the same thing, which
+     * is what makes it safe to hang off a refresh.
+     */
+    public void reconcileFacingWhenIdle()
+    {
+        try
+        {
+            if (this.model == null || !this.model.hasAutoLayout()) return;
+
+            org.traincontrol.automation.Layout built = this.model.getAutoLayout();
+
+            // ONLY WHEN NOTHING IS RUNNING, which is the whole of the rule.  A train part way through
+            // a journey is MEANT to disagree with the graph: it is between two copies.
+            if (built.isRunning()) return;
+
+            for (org.traincontrol.automation.Point point : built.getPoints())
+            {
+                org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
+
+                if (loc == null || loc.getName() == null) continue;
+
+                // The baseline is what the window last acted on.  Bringing it level here is what stops
+                // the first idle echo re-following a turn the run already made.
+                lastSeenDirection.put(loc.getName(), loc.goingForward());
+            }
+        }
+        catch (Exception cannotReconcile)
+        {
+            // A DIAGRAM SLIGHTLY OUT OF DATE rather than a broken refresh.
+            if (this.model != null) this.model.log(cannotReconcile.getMessage());
+        }
+    }
+
+    /**
      * The diagram squares a standing train is lying across, as of the last refresh.
      *
      * **Cached rather than asked per tile.**  Working it out walks every train on the railway, and the
@@ -25350,6 +25394,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // keeping.
         // The covered track first, because the diagram is greyed from it.
         refreshCoveredTrack();
+
+        // And the direction baseline, so a reversal the RUN made is never followed a second
+        // time once it is over (Adam: "only count reversals when nothing is running").
+        reconcileFacingWhenIdle();
 
         for (Point p : this.model.getAutoLayout().getPoints())
         {

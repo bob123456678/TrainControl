@@ -6488,6 +6488,7 @@ public class Layout
                 loc.getName()
             );
             loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection().delay(1000); // pause to avoid network issues
+
         }
         
         if (loc.hasCallback(CB_ROUTE_END))
