@@ -222,6 +222,37 @@ reader beside you.*
 
 ---
 
+## Comments: authoritative and self-contained
+
+Adam, 2026-09-07: **"We should make comments in the code to strive to be authoritative and
+self-contained, with the behaviour document being the documented intended functionality."**
+
+Two rules, and they divide the work between the code and
+[`behaviour.md`](../reference/behaviour.md):
+
+**A comment must stand on its own.** A reader who has never seen a review document must be able to
+understand, from the comment alone, what the code does and why it is that way. Write the rule out.
+Name the case that forced it. If the comment only makes sense once you have found `DR-B10` and read
+it, the comment has outsourced its job.
+
+**A finding id is provenance, not the explanation.** Citing `(DR-B10)` after a rule that is already
+stated in full is useful - it says where the argument was had, and lets somebody dig. Citing it
+*instead of* the rule is what makes the comment depend on a document. There are 871 such citations
+across `src/` and `test/`; they should all be the first kind.
+
+**And the behaviour document is the intended functionality, not the code.** A comment says why THIS
+code is the way it is. `behaviour.md` says what the railway is supposed to do. When the two disagree,
+one of them is a bug and Adam decides which - which only works if the document is the place the
+intent lives, rather than being reconstructed from comments.
+
+The practical test, applied when writing rather than after: **if this file were the only thing a
+reader had, would the comment be enough?** If the answer needs a second document that is not
+`behaviour.md`, write more.
+
+This also settles a question the consolidation plan left open. Self-contained comments are what make
+retiring `docs/reviews/` cheap: the citations become a trail somebody may follow rather than a
+dependency they must.
+
 ## Testing
 
 **Simulate the code, not your model of the code.** *A simulation "proved" two BFS implementations

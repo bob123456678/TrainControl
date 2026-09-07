@@ -132,26 +132,42 @@ that is not what the control is about, and the tooltip says so.
 This is where the whole real backlog lives. Grouped by what a fix would actually be, because the
 review documents grouped by reviewer and that is not useful for deciding what to do.
 
+> **Audited 2026-09-07.** This part had gone stale in two places within a day of being written: it
+> called `TA-A1` the one A-grade row still open when it had been closed, and listed `2d` as never
+> triaged when all twenty-nine of its findings are now closed. That is the third index to drift from
+> its own bodies this week - after `REG7`'s status table and the note I added while auditing it - and
+> the first two were other people's documents. **The rate is the finding**: a status line written
+> beside work in progress is stale by the end of the session that wrote it, which is the argument for
+> keeping status in as few places as possible.
+
 ## 2a. One rule written several times
 
 The recurring defect shape in this codebase, and the one that has produced the most real bugs.
 
-- **Reachability / "sendable destination"** written three ways — runtime, planner, test oracle — and
-  agreeing only because somebody keeps them agreeing. `DD-B9`, `DR-B2`, `DR-B3`.
+**Closed since this was written.** `DR-B3` — the sendable-destination conjunction is written once,
+inside `isSendableDestination`, and a surface rule fails a second copy. `DR-B10` — the absent-page rule
+is on the session and its `Reconciliation` carries the names, so the six doors report rather than
+decline in silence. `DD-B5` — one way into the right-click menu, with the comment saying so. `DD-C9` —
+the two one-letter-apart methods are gone; `sideTowardNeighbour` asks the tile grid and `sideTowards`
+asks the graph, which are different questions in different domains.
+
+**Still open.**
+
+- **Reachability / "sendable destination"** across the runtime, the planner and the test oracle:
+  `isSendableDestination` settled the runtime's copy, and whether the planner and the oracle now
+  derive from it rather than restating it has not been checked. `DD-B9`, `DR-B2`.
 - **The checker re-implements rules the builder enforces**, and has disagreed with the railway.
   `DD-A7`.
-- **The absent-page rule** enforced four ways, reported at none of its six doors. `DR-B10`.
-- **The right-click entry point** written four times, guarded on three. `DD-B5`.
 - **The arrival-sides walk and the facing rule** each gained another copy. `DR-B6`.
-- **Two `sideTowards`/`sideToward` methods**, one letter apart, one question. `DD-C9`.
 
 **Why it matters more than it looks:** every A-grade finding of the last three days was an instance
 of this — a guard and its affordance asking different questions, a rule enforced at one door of two.
 
 ## 2b. Tests that do not test what they claim
 
-- **`TA-A1`** — the encoding guard never asserts the accented page's id, so a decode-drift regression
-  would renumber every page unnoticed. **The one A-grade row still open anywhere.**
+- ~~**`TA-A1`**~~ — **closed** (`156ab1dd`). `testPageIdsAreDurable` now asserts the accented page's
+  own id, so a decoder that mangles the name is caught rather than renumbering every page unnoticed.
+  There is no open A-grade row anywhere.
 - Tests whose oracle is built from the subject (`TA-B8`, `TA-C3`), assertions that cannot fail
   (`TA-B5`, `TA-C1`), tests green because their input is absent (`TS-C3`), unseeded randomness
   (`TS-C2`).
@@ -173,22 +189,33 @@ parent five ways (`DD-C7`), dead code from unfinished de-duplications (`DD-C4`).
 
 None of these change behaviour. They are the reason behaviour changes keep being risky.
 
-## 2d. Per-package sweeps, unread
+## 2d. Per-package sweeps — CLOSED 2026-09-07
 
-`C1-C6` (automation), `C7-C12` (marklin), `C13-C19` (base), `C20-C29` (gui). Each row is a **bundle**
-of small findings, not one item. These have never been triaged and are the least-known part of the
-backlog.
+All twenty-nine findings read against the code and ruled on: **fourteen fixed, twelve cancelled, six
+left with reasons, and one reclassified as a feature that had no tests.** Full disposition in
+[`package-sweeps.md`](package-sweeps.md).
+
+It was the least-known part of the backlog and it held the largest defect of the week — `C13`, filed
+as a route condition registering a phantom accessory and actually a call in the keyboard paint loop
+that had put 2048 phantom switches into the live database. Twelve of the twenty-nine were already
+gone, eleven of those fixed by people who did not know the finding existed.
 
 ---
 
 ## What I would do next, in order
 
-1. **`TA-A1`.** The only open A. A silent page renumber is exactly the class of fault that cost a
-   layout restore this week.
-2. **`2a`, the duplicated rules.** Highest ratio of real bugs to effort, and `behaviour.md` now gives
-   each one a single written answer to converge on.
-3. **Triage `2d`.** Unknown size; could be empty, could hold the next A.
-4. **`2b` and `2c` as background.** Real, not urgent.
+Revised 2026-09-07, with the first and third items done.
+
+1. **`2a`, the duplicated rules.** Now unambiguously first. Every A-grade finding of the last four
+   days was an instance of it: a guard and its affordance asking different questions, a rule enforced
+   at one door of two, a record kept in one store and read from another. `behaviour.md` gives each one
+   a single written answer to converge on, which is what was missing when they drifted.
+2. **`2b`, the tests that do not test what they claim.** Promoted from background. Two A-grade defects
+   this week were invisible to tests written specifically for the property they broke, and the reason
+   was the same each time: the test asked the store the code had just written rather than the consumer
+   that reads it. `TS-C1` is partly answered — `testAutonomySimulationSanity` now drives real runs
+   through the reversal mechanics, which the note below said could not be done.
+3. **`2c` as background.** Real, not urgent, and each item wants a session with nothing else in it.
 
 ## What is deliberately not here
 

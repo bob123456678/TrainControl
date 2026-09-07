@@ -12,6 +12,14 @@ gets reversed again by the next person who finds it inconvenient.
 says what the railway should do. Where a rule has a known limit — something it deliberately does not
 catch — the limit is stated, because a limit nobody wrote down reads as a bug the day it is met.
 
+**How this relates to the comments in the code.** Adam, 2026-09-07: *"we should make comments in the
+code to strive to be authoritative and self-contained, with the behaviour document being the
+documented intended functionality."* The division: **this document holds the intent**, and a comment
+explains why the code in front of you implements it the way it does. A comment stands on its own - a
+reader who has never opened a review document should be able to understand it - and where it cites a
+finding id, that is provenance rather than the explanation. The full rule is in
+[`docs/reviews/README.md`](../reviews/README.md).
+
 ---
 
 ## 1. The three tiers: autonomy, manual, Return Home
