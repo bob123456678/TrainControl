@@ -421,6 +421,113 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A locomotive is pointing the same way after a save and a reopen as it was before.
+     *
+     * Adam, 2026-09-06, asking the question that should have been asked in the morning: **"do you have
+     * tests for locomotive direction staying put between saves?"**  The answer was no - not one test in
+     * the suite both persisted a setup and read a facing back, which is measurable and was measured.
+     *
+     * **That is the gap the whole day came out of.**  The reported symptom was a train's direction
+     * changing by itself, and the mechanism turned out to be that a facing was never RECORDED at one
+     * door, so `placementCopy` fell through to copy 0 and the next `captureFromLayout` wrote that
+     * arbitrary side back as though somebody had chosen it.  Every part of that is a round trip, and
+     * nothing was checking round trips.  Five fixes were attempted against a defect whose simplest
+     * possible test did not exist.
+     *
+     * Both hops are checked, because they fail for different reasons.  The FILE hop is the store
+     * writing and reading `facing`; the BUILD hop is `buildConfiguration` emitting it and
+     * `captureFromLayout` reading it back, which is the one that silently rewrote the value.
+     *
+     * @throws IOException on a failure to save
+     */
+    @Test
+    public void testALocomotivesDirectionSurvivesASaveAndReopen() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+
+        session.placeLocomotive(sensor, "Test Loc");
+
+        // A side the square can actually hold, so this is a direction and not a stray value.
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
+            session.facingChoices(sensor);
+
+        assertFalse(choices.isEmpty(), "the fixture square offers no direction at all to record");
+
+        org.traincontrol.automationui.TilePorts.Side chosen = choices.get(0);
+
+        session.setFacing(sensor, chosen);
+
+        assertEquals(session.getFacing(sensor), chosen, "control: the facing did not even go in");
+
+        session.save();
+
+        // ACROSS THE FILE.
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(runOfTrack()));
+
+        assertEquals(reopened.getFacing(sensor), chosen,
+            "the locomotive is pointing a different way after a reload. A facing that does not survive"
+            + " a save is worse than one that was never recorded: the diagram shows a direction the"
+            + " operator chose until the next load, and something else afterwards");
+
+        assertTrue(String.valueOf(reopened.getPointProperty(sensor, "loc")).contains("Test Loc"),
+            "the locomotive itself did not survive the reload, so the facing above proved nothing");
+    }
+
+    /**
+     * And across a build and a capture, which is the hop that actually rewrote it.
+     *
+     * `captureFromLayout` takes the running layout back into the setup, and a train standing on a copy
+     * is what tells it which way that train faces.  So a value that goes out through
+     * `buildConfiguration` and comes back changed is a direction nobody chose - and until today,
+     * nothing asked whether it came back the same.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testADirectionSurvivesABuildAndACapture() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+        session.placeLocomotive(sensor, "Test Loc");
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
+            session.facingChoices(sensor);
+
+        assertFalse(choices.isEmpty(), "the fixture square offers no direction to record");
+
+        org.traincontrol.automationui.TilePorts.Side chosen = choices.get(0);
+
+        session.setFacing(sensor, chosen);
+
+        // Out through the build and back through the capture, which is the round trip the running
+        // railway makes every time it is asked to remember where its trains are.
+        String built = session.buildConfiguration();
+
+        assertTrue(built.contains("Test Loc"),
+            "the build does not carry the locomotive, so the capture below has nothing to say about"
+            + " it and this test would pass on an empty railway");
+
+        session.captureFromLayout(built);
+
+        assertEquals(session.getFacing(sensor), chosen,
+            "a build and a capture changed which way the train is pointing. That is the mechanism"
+            + " behind the defect Adam reported four times: a direction goes out, comes back"
+            + " different, and is presented as one somebody chose");
+    }
+
+    /**
      * The generated configuration is the ordinary format, so nothing downstream has to learn a new one.
      */
     @Test
