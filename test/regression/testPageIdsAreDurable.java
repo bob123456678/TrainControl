@@ -635,6 +635,31 @@ public class testPageIdsAreDurable
             + after);
 
         assertNotNull(after.get("Zulu"), "the new page was not added.  Got: " + after);
+
+        // AND THE ACCENTED PAGE KEEPS ITS ID ACROSS THE WRITE, which is the half `TA-A1` found
+        // missing and the half that costs the operator something.
+        //
+        // The read is asserted twenty lines up.  A write is where the loss actually happens: if the
+        // name comes back mangled, `writeLayoutIndex`'s lookup of the existing entry misses it, the
+        // page is issued a FRESH id, and every stored setting keyed to the old one reattaches to
+        // whatever now holds that number.  That is SV-B1 - the loss this class documents at length -
+        // and it was reproducible with this guard green.
+        //
+        // WHAT IS AND IS NOT PROVEN HERE, because claiming more would be the shape TA-A1 reported.
+        //
+        // The finding's mutation - swapping the ISO-8859-1 fallback for a UTF-8 decode - now turns
+        // this class RED, which it did not when the finding was written.  But the assertion that
+        // catches it is the READ one twenty lines above: with the fallback gone the ids never come
+        // back at all, so the write is never reached.
+        //
+        // This assertion covers the write side, which no mutation currently exercises.  It is cheap
+        // and it is correct, and a reader should know it is defensive rather than load-bearing -
+        // the mutation that would prove it mangles the name only on the WRITE path, and nobody has
+        // written that one.
+        assertEquals(after.get("Bahnhof S\u00fcd"), Integer.valueOf(2),
+            "the accented page was renumbered by the write. Its settings are now keyed to an id"
+            + " nothing holds, and whatever took that number has inherited them (TA-A1 / SV-B1).  Got: "
+            + after);
     }
 
     /**

@@ -334,6 +334,15 @@
         <test-one-class class="testTracedPathIsContinuous"/>
         <test-one-class class="testUiStateIsNotLostWhenUnreadable"/>
         <test-one-class class="testWhyStuck"/>
+        <test-one-class class="testACompulsoryTurnIsNotAQuestion"/>
+        <test-one-class class="testADirectionChangeIsNotSwallowed"/>
+        <test-one-class class="testAPastedTrainKeepsItsDirection"/>
+        <test-one-class class="testATrainCoversTheTrackBehindIt"/>
+        <test-one-class class="testATrainTooLongIsRefusedTheBerth"/>
+        <test-one-class class="testDismissingTheReversalPromptKeepsTheDirection"/>
+        <test-one-class class="testLengthRulesUnderRandomLayouts"/>
+        <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
+        <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
