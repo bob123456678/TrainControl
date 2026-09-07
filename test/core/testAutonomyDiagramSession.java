@@ -581,6 +581,88 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A direction change never flips the facing of a square the train has LEFT (REG7-A2).
+     *
+     * **The mechanism, which is sharper than "it might double-follow".**  `flipFacing` builds a list
+     * of candidate squares: the ones the running layout says hold this train, then the ones the SETUP
+     * says do.  The loop skips any square it cannot decide - a square with no recorded facing is a
+     * `continue`, not a stop.
+     *
+     * After a run the arrival square frequently has no recorded facing yet, so the loop moved past it
+     * and reached the next candidate: the square the train set off from, which the setup still names
+     * until the next `captureFromLayout` and which does have a facing. That platform - now empty -
+     * had its direction flipped for a train that is not standing on it, and the log said a direction
+     * had been followed.
+     *
+     * Not an exotic interleaving: it is the ordinary state of things between a run ending and the
+     * editor next being opened.
+     *
+     * The rule now is that the setup only gets a vote when the railway has no opinion. `DIR-C3` is
+     * untouched - its case is a locomotive recorded on two SETUP squares, which is still walked in
+     * full when the running layout does not know.
+     *
+     * @throws IOException on a failure to save
+     */
+    @Test
+    public void testADirectionChangeDoesNotFlipTheSquareTheTrainLeft() throws IOException
+    {
+        // The same fixture testTheFlipMovesTheLocomotiveOnTheLayoutToo uses: flipFacing declines any
+        // square that does not offer exactly two facings, and runOfTrack offers none.
+        session.open(Arrays.asList(deadEndRun()));
+
+        session.getStore().createConfiguration("Facing", null);
+        session.getStore().setActiveConfiguration("Facing");
+
+        final TileKey departed = new TileKey("main", 4, 1);
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
+            session.facingChoices(departed);
+
+        assertEquals(choices.size(), 2,
+            "precondition: the square must offer two facings or flipFacing declines by design");
+
+        session.setPointName(departed, "Platform 1");
+        session.setStation(departed, true);
+        session.placeLocomotive(departed, "Test Loc");
+
+        session.setFacing(departed, choices.get(0));
+
+        // A RAILWAY THAT KNOWS NOTHING still lets the setup answer - DIR-C3, and the half of the old
+        // behaviour that must survive.  A train recorded in the setup and not yet running is the
+        // ordinary state before anything has moved.
+        org.traincontrol.automation.Layout knowsNothing =
+            new org.traincontrol.automation.Layout(null);
+
+        session.flipFacing("Test Loc", knowsNothing);
+
+        assertEquals(session.getFacing(departed), choices.get(1),
+            "a railway with no opinion about this train stopped the setup answering at all, which is"
+            + " DIR-C3 undone: a locomotive recorded on a square it has not left still gets a follow");
+
+        // AND THE FIX ITSELF, which needs a railway that DOES know the train - a state this fixture
+        // cannot build, because the candidate has to come back from the station index.  Asserted as
+        // the rule instead: setup squares are gathered ONLY when the running layout offered none.
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automationui/AutonomySession.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int flip = source.indexOf("public TileKey flipFacing");
+
+        assertTrue(flip > 0, "flipFacing has been renamed and this check guards nothing");
+
+        int gathers = source.indexOf("for (Map.Entry<TileKey, String> placed : placedLocomotives()",
+            flip);
+
+        int guarded = source.indexOf("if (candidates.isEmpty())", flip);
+
+        assertTrue(guarded > 0 && guarded < gathers,
+            "the setup's squares are appended to the running layout's answer again. The loop below"
+            + " SKIPS a square it cannot decide rather than stopping, so an arrival square with no"
+            + " recorded facing sends it on to the square the train LEFT - and that platform, now"
+            + " empty, has its direction flipped for a train standing somewhere else (REG7-A2)");
+    }
+
+    /**
      * The generated configuration is the ordinary format, so nothing downstream has to learn a new one.
      */
     @Test

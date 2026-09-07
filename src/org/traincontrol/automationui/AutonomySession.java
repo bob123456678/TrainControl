@@ -1529,11 +1529,31 @@ public class AutonomySession
             }
         }
 
-        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        // THE SETUP ONLY WHEN THE RAILWAY DOES NOT KNOW (REG7-A2).
+        //
+        // These used to be APPENDED to the running layout's answer, and the loop below skips any
+        // square it cannot decide - `recorded == null` is a `continue`, not a stop.  So after a run:
+        // the arrival square comes first and often has no recorded facing yet, the loop moves on, and
+        // the next candidate is the square the train LEFT, which does have one.  The empty platform
+        // it departed from then had its facing flipped, for a train that is not standing there, and
+        // the log line said a direction had been followed.
+        //
+        // The setup names the departure square until the next `captureFromLayout`, so this is not an
+        // exotic interleaving - it is the ordinary state of things between a run ending and the
+        // editor next being opened.
+        //
+        // DIR-C3 is not weakened.  Its rule is that a locomotive recorded on TWO squares still gets a
+        // follow on the one that CAN be decided rather than none at all, and that is about two SETUP
+        // squares - which is exactly the case this still walks in full, when the railway has no
+        // opinion.  What is removed is the setup overruling a railway that does.
+        if (candidates.isEmpty())
         {
-            if (!locomotive.equals(placed.getValue())) continue;
+            for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+            {
+                if (!locomotive.equals(placed.getValue())) continue;
 
-            if (!candidates.contains(placed.getKey())) candidates.add(placed.getKey());
+                if (!candidates.contains(placed.getKey())) candidates.add(placed.getKey());
+            }
         }
 
         for (final TileKey tile : candidates)
