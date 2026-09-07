@@ -6421,6 +6421,31 @@ public class Layout
         // regardless.
         final Point arrived = path.get(path.size() - 1).getEnd();
 
+        // AND THE RAILWAY REMEMBERS WHICH WAY IT CAME IN (Adam, 2026-09-07: "yes, auto write it").
+        //
+        // This is the only moment anything knows it for certain.  A train's tail lies along the track
+        // it arrived by, and once it has come to rest nothing about the train says which side that
+        // was - facing points the way it will LEAVE, and after a reversal the two agree while the tail
+        // is on the opposite side.  Written here, the answer is a fact rather than an inference.
+        //
+        // Recorded BEFORE any reversal below, deliberately.  Turning the train round at the platform
+        // does not move its tail: the carriages stay where they stopped.  Writing it after would
+        // record the side it is about to depart by, which is exactly the mistake this property was
+        // added to end.
+        //
+        // The square it came FROM is the far end of the last edge, and `sideTowards` turns that into
+        // the compass side the operator sees in the menu.
+        arrived.setArrivedFrom(sideTowards(arrived, path.get(path.size() - 1).getStart()));
+
+        // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT.  Without this the track behind an empty
+        // platform stays blocked by a train that drove away from it - which is worse than never
+        // having blocked anything, because it takes a rebuild to clear.
+        if (!path.isEmpty() && path.get(0).getStart() != null
+            && path.get(0).getStart() != arrived)
+        {
+            path.get(0).getStart().setArrivedFrom(null);
+        }
+
         // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
         // may-reverse ruling of 2026-09-06).
         if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))

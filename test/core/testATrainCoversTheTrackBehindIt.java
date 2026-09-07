@@ -253,6 +253,92 @@ public class testATrainCoversTheTrackBehindIt
         return layout.isPathClear(route, mover, false);
     }
 
+    /**
+     * The railway writes down which way a train came in, as it arrives.
+     *
+     * Adam, 2026-09-07, asked whether autonomy should set this itself: **"yes, auto write it."**
+     *
+     * The arrival is the only moment anything knows it for certain.  Afterwards the train is standing
+     * still and nothing about it says which side it came from - facing points the way it will LEAVE,
+     * and after a reversal at the platform the two agree while the tail is on the opposite side.
+     *
+     * **Checked as an ordering, not only as a value.**  `executePathInternal` turns the train round a
+     * few lines below this write, and turning it does not move its carriages - so recording the side
+     * AFTER the reversal would store the way it is about to depart, which is the exact mistake the
+     * property exists to end.  A test that only read the final value would pass either way on a run
+     * with no reversal, which is most of them.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheArrivalRecordsWhichWayTheTrainCameIn() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        String flat = source.replaceAll("\\s+", " ");
+
+        assertTrue(flat.contains(
+            "arrived.setArrivedFrom(sideTowards(arrived, path.get(path.size() - 1).getStart()));"),
+            "the arrival no longer records which way the train came in, so nothing knows where any"
+            + " tail lies until somebody sets it by hand");
+
+        int written = flat.indexOf("arrived.setArrivedFrom(");
+        int turned = flat.indexOf("loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection()");
+
+        assertTrue(turned > written,
+            "the arrival side is recorded AFTER the train is turned round. Turning it does not move"
+            + " its carriages, so that records the side it is about to depart by - which is the"
+            + " mistake arrivedFrom exists to end");
+
+        assertTrue(flat.contains("path.get(0).getStart().setArrivedFrom(null);"),
+            "the square the train left keeps its arrival side, so the track behind an empty platform"
+            + " stays blocked by a train that drove away from it - and only a rebuild clears it");
+    }
+
+    /**
+     * And the value itself, on a run the test drives by hand.
+     *
+     * The ordering above is source; this is the behaviour.  A train moved from A to B has come in from
+     * A, and `sideTowards` names that side from the coordinates - so B records the side A lies on.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTheRecordedSideIsTheOneTheTrainCameFrom() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_side" + (addresses++);
+
+        Point west = point(layout, "WEST" + tag, true);
+        Point east = point(layout, "EAST" + tag, true);
+
+        // WEST lies to the west of EAST, which is what the sides are computed from.
+        west.setX(0);
+        west.setY(0);
+
+        east.setX(10);
+        east.setY(0);
+
+        assertEquals(layout.sideTowards(east, west), "W",
+            "a point at x=0 is not west of one at x=10, so every arrival side on this railway would"
+            + " be recorded back to front");
+
+        assertEquals(layout.sideTowards(west, east), "E", "and the other way about");
+
+        // Y grows downwards on a diagram drawn from the top left, so a larger y is SOUTH.
+        Point south = point(layout, "SOUTH" + tag, true);
+
+        south.setX(0);
+        south.setY(10);
+
+        assertEquals(layout.sideTowards(west, south), "S",
+            "a point at y=10 is not south of one at y=0. Y grows downwards on the diagram, and getting"
+            + " this the wrong way round puts every tail on the wrong side of its train");
+    }
+
     // ---------------------------------------------------------------- fixtures
 
     /**

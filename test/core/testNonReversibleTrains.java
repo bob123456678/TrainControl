@@ -960,12 +960,33 @@ public class testNonReversibleTrains
             assertFalse(layout.isPathClear(longPath(layout), loc, false),
                 "a train of ten was accepted into a run in of nine, so nothing is being measured");
 
-            // A SEGMENT NOBODY HAS MEASURED makes the total unknowable, and it is not judged.
+            // A SEGMENT NOBODY HAS MEASURED NO LONGER CANCELS WHAT IS MEASURED (Adam, 2026-09-06).
+            //
+            // This required the whole path to go unjudged the moment any segment was unmeasured, on
+            // the reasoning that "an unknown length is not a zero one".  He overruled it: **"you need
+            // to measure total distance between points, not validate that every edge has a length > 0.
+             // It is only indeterminate if the entire logical segment has length 0."**
+            //
+            // What it cost him: a four-unit train admitted to a berth measured at one, because the
+            // unmeasured track behind that one unit made the whole run unjudgeable.  The measured
+            // evidence was there and was thrown away for the company it kept.
+            //
+            // So the measured segments still bind.  Nine units remain measured here and ten does not
+            // fit in nine, whatever the unmeasured piece turns out to be.
             layout.getEdge("LONG_b", "LONG_mid").setLength(0);
 
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "an unmeasured segment cancelled a refusal the measured ones had already earned. Ten "
+                + "does not fit in the nine units that ARE measured, and an unknown length behind them "
+                + "cannot unprove it (Adam, 2026-09-06)");
+
+            // AND WITH NOTHING MEASURED AT ALL there is no evidence, which is the half of the old
+            // rule that survives: refusing on no information would make an unmeasured layout unusable.
+            for (org.traincontrol.automation.Edge e : longPath(layout)) e.setLength(0);
+
             assertTrue(layout.isPathClear(longPath(layout), loc, false),
-                "a path with an unmeasured segment was refused on a total that cannot be worked out - "
-                + "an unknown length is not a zero one, and the editor's notice is what asks for it");
+                "a path where nothing at all is measured was refused. Zero measured track is no "
+                + "information rather than no room - Adam: \"generally, allow it\"");
         }
         finally
         {
@@ -1038,12 +1059,32 @@ public class testNonReversibleTrains
             assertFalse(layout.isPathClear(longPath(layout), loc, false),
                 "a train of five was accepted into four units of room");
 
-            // BOUNDED BUT UNMEASURED is not the same as unbounded, and it is not zero either.
+            // BOUNDED BUT UNMEASURED IS BOUNDED BY THE SEGMENT IT LIES IN (Adam, 2026-09-06/07).
+            //
+            // This required the route to be admitted once the stretch beyond the switch went
+            // unmeasured, on the reasoning that an unknown length is not a short one.  True in
+            // isolation, and it let a four-unit train into a berth he had measured at one - the case
+            // he reported twice.
+            //
+            // The stretch after the switch is PART OF that segment, so it cannot be longer than it.
+            // The segment here measures four; a five-unit train does not fit in four, and therefore
+            // does not fit in whatever part of the four lies past the switch.  That is a proof, and it
+            // only ever refuses more - the bound over-states the real room, so nothing new is let in.
             layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(-1);
 
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "a five-unit train was admitted because the stretch beyond the switch is unmeasured. "
+                + "That stretch lies inside a segment measured at four, and five does not fit in four "
+                + "whatever the unmeasured part turns out to be (Adam, 2026-09-07)");
+
+            // AND WITH THE SEGMENT ITSELF UNMEASURED there is nothing to bound it with, so it is not
+            // judged - the surviving half of the old rule.
+            layout.getEdge("LONG_mid", "LONG_end").setLength(0);
+
             assertTrue(layout.isPathClear(longPath(layout), loc, false),
-                "a route whose stretch beyond the switch is unmeasured was judged anyway - an unknown "
-                + "length is not a short one, and the editor's notice is what asks for it");
+                "an unmeasured stretch inside an unmeasured segment was judged anyway. There is no "
+                + "evidence at all there, and refusing on none would make every unmeasured layout "
+                + "unusable");
 
             // AND AN EARLIER UNMEASURED EDGE NO LONGER MATTERS, which is a widening rather than a
             // narrowing: the guard counts only the edges it actually uses.
