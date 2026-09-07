@@ -45,13 +45,13 @@ Two of the three reports leaned on `testEverySquareOnThisLayoutBuildsToOneCopy` 
 | CONF-B3 | The edit-or-assign door records the OUTGOING occupant's heading for the INCOMING train | B | Fixed | CONFIRMED |
 | CONF-B4 | `REG6-B3`'s second half is untouched: the exit `setSpeed(speed)` still discards the per-point multiplier | B | Fixed | CONFIRMED |
 | CONF-B5 | `ef158b98` deleted `testEverySquareOnThisLayoutBuildsToOneCopy`, the control three reviewers used to bound reachability | B | Fixed | CONFIRMED |
-| CONF-B6 | `SPEC-C5` was answered with a test that pins two rules the code does not make equal | B | Open | CONFIRMED in code; the test's own result is UNMEASURED |
-| CONF-C1 | The deleted `isReversing()` clause survives as the `ReversalPolicy` interface default, where the next policy inherits it | C | Open | CONFIRMED |
+| CONF-B6 | `SPEC-C5` was answered with a test that pins two rules the code does not make equal | B | Fixed | CONFIRMED in code; the test's own result is UNMEASURED |
+| CONF-C1 | The deleted `isReversing()` clause survives as the `ReversalPolicy` interface default, where the next policy inherits it | C | Fixed | CONFIRMED |
 | CONF-C2 | `facingAfterAPaste`'s `landedOn` parameter is never read, and its javadoc says it is | C | Fixed | CONFIRMED |
 | CONF-C3 | `headingBeforeTheMove` is not cleared on the cut/clear branch | C | Fixed | CONFIRMED; harmless on a one-copy layout |
 | CONF-C4 | `ManualReversalPrompt`'s threading and "train is stopped" javadocs are still the ones `ACC4-2` asked to be fixed with the message | C | Fixed | CONFIRMED |
 | CONF-C5 | Confirmed still open, unchanged: `REG6-B2`, `SPEC-B4`, `SPEC-B5`, `SPEC-C2`, `SPEC-C4`, `REG6-C2`, `REG6-C3`, `REG6-C4`, `REG6-C5`, `REG6-C6` | C | Open | CONFIRMED |
-| CONF-D1 | Confirmed fixed, and one thing outside the review | D | Open | see each |
+| CONF-D1 | Confirmed fixed, and one thing outside the review | D | Verified | see each |
 
 ---
 
