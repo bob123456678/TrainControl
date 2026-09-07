@@ -668,7 +668,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             if (dialogResult == JOptionPane.OK_OPTION)
                             {
-                                edit.commitChanges();
+                                // AND INTO THE SETUP, which this door never did (REG8-B2).
+                                //
+                                // It committed to the running layout and repainted, so an assignment
+                                // made from the diagram was gone the next time a configuration was
+                                // loaded - with nothing to say so.  Its twin inside Autonomy Setup had
+                                // been taught this three times over; this one was never swept.
+                                //
+                                // Through the shared door rather than a copy of the twin’s lines: a
+                                // second copy is what put these two a week apart.
+                                GraphLocAssign.commitAndRecord(edit, current,
+                                    ui.getAutonomySession(),
+                                    ui.getModel() == null ? null : ui.getModel().getAutoLayout());
+
                                 ui.updateVisiblePoints();
                                 ui.repaintAutoLocList(false);
                             }

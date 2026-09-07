@@ -4063,44 +4063,15 @@ public class AutonomyEditorPanel extends JPanel
 
             if (answer != JOptionPane.OK_OPTION) return;
 
-            // BEFORE THE COMMIT, because the commit is what takes the train off the square that knows
-            // which way it was pointing (REG6-B5) - and about the INCOMING train, not the outgoing
-            // one (CONF-B3).
+            // ONE DOOR FOR BOTH MENUS (REG8-B2, Adam: "there needs to be parity across the board").
             //
-            // This read `point.getCurrentLocomotive()`, which before the commit is whoever was
-            // standing here ALREADY.  So the heading preserved for the arriving train was the
-            // departing train's, taken from a different part of the railway - a paste that carefully
-            // preserved the wrong thing, which is worse than one that preserved nothing.
-            //
-            // `edit.getLoc()` is the choice the dialog has already been dismissed with, so the right
-            // train is knowable here without waiting for the commit that loses the answer.
-            String arriving = edit.getLoc();
-
-            org.traincontrol.automationui.TilePorts.Side heading =
-                arriving == null ? null : session.facingOf(arriving, layout);
-
-            edit.commitChanges();
-
-            // And into the setup, so the next build puts the train where it now is
-            session.placeLocomotive(target,
-                point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
-
-            // AND WHICH WAY, which this door did not record (REG6-B5).
-            //
-            // `fix-one-site-sweep-the-siblings`: `TrainControlUI.rememberPlacement` was given this
-            // three commits ago and this one was left, which is the shape every placement defect in
-            // this panel has had - the comment four lines below says the same thing about
-            // `placementChanged` and VD11-A1.  A square is several Points, and a placement with no
-            // recorded facing leaves `placementCopy` to fall through to copy 0.
-            // After the commit this IS the arriving train, which is why the guard reads the point
-            // rather than `arriving`: an assignment that did not take should not write a facing.
-            if (point.getCurrentLocomotive() != null)
-            {
-                session.setFacing(target,
-                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                        session.facingsFor(target), heading, point.getName()));
-            }
-
+            // What used to be here - read the arriving train’s heading, commit, place, record the
+            // facing - now lives in GraphLocAssign.commitAndRecord, because the track diagram’s copy
+            // of this item never had the second half and an assignment made there reverted on the next
+            // configuration load.  Copying these lines into that menu is how the two came apart; the
+            // rule sits with the dialog instead, and both call it.
+            GraphLocAssign.commitAndRecord(edit, point, session,
+                runningLayout == null ? null : runningLayout.get());
             // AND THE RAILWAY IS TOLD (VD11-A1).  This door moves a train, which is the one thing the
             // running layout most needs to hear about - and it is the sibling of `placementChanged`,
             // which every other placement door has gone through since it was written.

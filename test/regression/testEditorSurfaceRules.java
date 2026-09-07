@@ -264,16 +264,46 @@ public class testEditorSurfaceRules
         // convention twenty lines down: "adding a writer means saying here which file it is in and why
         // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
         // ask about it.
-        assertEquals(writes, 3,
-            "the facing is written from " + writes + " places in AutonomyEditorPanel. Three are known: "
-            + "the facing menu (which moves the railway too, SPEC-B4), the edit-or-assign "
-            + "locomotive door (REG6-B5), and placeLocomotive - "
-            + "the add-to-autonomy door, which was the LAST one recording who without which way "
+        // TWO, since REG8-B2 moved the third out.  The edit-or-assign door used to write the facing
+        // here; it now goes through `GraphLocAssign.commitAndRecord`, because the TRACK DIAGRAM has the
+        // same item and never had the second half at all - an assignment made there reverted on the
+        // next configuration load.  Adam: "there needs to be parity across the board."
+        //
+        // That is a reduction in writers, which is the direction this check wants.  A THIRD here still
+        // fails, and the message says what to ask about it.
+        assertEquals(writes, 2,
+            "the facing is written from " + writes + " places in AutonomyEditorPanel. Two are known: "
+            + "the facing menu (which moves the railway too, SPEC-B4) and placeLocomotive - the "
+            + "add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
             + "the non-null path and so left the previous occupant's direction attached to the "
-            + "arriving train. A fourth is either a second copy of the menu - which is how OB-039 "
+            + "arriving train. A third is either a second copy of the menu - which is how OB-039 "
             + "survived being fixed, the redraw going on the copy somebody is looking at while the "
-            + "other keeps the bug - or a placement door nobody has swept yet");
+            + "other keeps the bug - or the edit-or-assign door writing its own facing again instead "
+            + "of going through GraphLocAssign.commitAndRecord, which is how it and the diagram's "
+            + "copy of the same item came a week apart (REG8-B2)");
+
+        // AND BOTH ASSIGNMENT DOORS GO THROUGH THE ONE THAT RECORDS.
+        //
+        // `commitChanges` moves the running layout and nothing else.  A door that calls it directly
+        // has made an assignment the setup will not remember - which is exactly what the track
+        // diagram's item did, silently, for as long as it existed.
+        for (String door : new String[] {
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java" })
+        {
+            String assignDoor = codeOnly(new String(java.nio.file.Files.readAllBytes(
+                java.nio.file.Paths.get(door)), StandardCharsets.UTF_8));
+
+            assertFalse(assignDoor.contains("edit.commitChanges()"),
+                door + " commits an assignment without recording it. commitChanges moves the running"
+                + " layout only, so the placement is gone at the next configuration load - use"
+                + " GraphLocAssign.commitAndRecord, which does both (REG8-B2)");
+
+            assertTrue(assignDoor.contains("GraphLocAssign.commitAndRecord("),
+                door + " no longer commits an assignment at all, so the check above passes because"
+                + " the door has gone rather than because it was fixed");
+        }
 
         // And project-wide, which is the half this used to claim without checking (NR-4).
         //
@@ -287,7 +317,14 @@ public class testEditorSurfaceRules
         // is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java",
-                "LayoutRightclickAutonomyMenu.java", "TrainControlUI.java"),
+                // GraphLocAssign ADDED BY REG8-B2, with the reason this list asks for.  It is the
+                // DIALOG both assignment doors show, so what accepting it means - commit, place,
+                // record the facing - belongs with it rather than being written out twice.  It was
+                // written twice, and the track diagram copy never had the recording half at all: an
+                // assignment made there reverted at the next configuration load.  It redraws through
+                // its callers, both of which repaint immediately after calling it.
+                "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
+                "TrainControlUI.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
             + "the three known ones redraws in its own way - the menu through placementChanged(), the "
             + "diagram's right-click through updateVisiblePoints() as part of MOVING a locomotive, and "

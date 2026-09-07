@@ -119,6 +119,70 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
     
     /**
+     * Commits an assignment AND records it in the setup - the whole of what accepting this dialog
+     * means, in one place.
+     *
+     * Adam, 2026-09-07: **"there needs to be parity across the board.  Not sure why this would ever be
+     * at risk."**  It was at risk because there are two doors and only one of them was ever taught the
+     * second half. The editor's Place/Edit item wrote the placement and the facing into the setup; the
+     * track diagram's did neither, so an assignment made from the diagram lived in the running layout
+     * only and **reverted the next time a configuration was loaded**, silently.
+     *
+     * The fix that would have been wrong is copying the editor's eight lines into the menu. That is how
+     * these two came apart in the first place, and it is this project's most repeated defect: one rule,
+     * written twice, drifting. So the rule lives here, with the dialog it is about, and both doors call
+     * it.
+     *
+     * **The heading is read BEFORE the commit**, because committing is what takes the train off the
+     * square that knows which way it was pointing - and it is read for the train ARRIVING, from
+     * `getLoc()`, not for whoever was standing here already. Recording the departing train's heading
+     * for the arriving one is a placement that carefully preserves the wrong thing, which is worse than
+     * one that preserves nothing.
+     *
+     * The arrival side is not written and does not need to be: `placeLocomotive` clears it when the
+     * occupant changes, and neither of these doors asks. Nothing recorded is the honest answer for a
+     * train nobody watched arrive.
+     *
+     * @param edit the dialog, already dismissed with OK
+     * @param point the Point being assigned, as the running layout holds it
+     * @param session the setup, or null when there is none to record into
+     * @param layout the running layout, for working out the heading
+     */
+    public static void commitAndRecord(GraphLocAssign edit,
+        org.traincontrol.automation.Point point,
+        org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automation.Layout layout)
+    {
+        if (edit == null || point == null) return;
+
+        String arriving = edit.getLoc();
+
+        org.traincontrol.automationui.TilePorts.Side heading =
+            arriving == null || session == null ? null : session.facingOf(arriving, layout);
+
+        edit.commitChanges();
+
+        if (session == null) return;
+
+        org.traincontrol.automationui.TileGraph.TileKey tile =
+            session.getStationIndex() == null ? null
+                : session.getStationIndex().squareOf(point.getName());
+
+        if (tile == null) return;
+
+        session.placeLocomotive(tile,
+            point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
+
+        // After the commit this IS the arriving train, which is why the guard reads the point rather
+        // than `arriving`: an assignment that did not take should not write a facing.
+        if (point.getCurrentLocomotive() != null)
+        {
+            session.setFacing(tile,
+                org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                    session.facingsFor(tile), heading, point.getName()));
+        }
+    }
+    /**
      * Gets the number of locomotives selectable
      * @return 
      */
