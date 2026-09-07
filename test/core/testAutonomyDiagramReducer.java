@@ -623,16 +623,44 @@ public class testAutonomyDiagramReducer
             "an edge of plain track claims to cross a switch, so the guard would stop walking back at "
             + "it and bound the train by a stretch that nothing divides");
 
-        // BOUNDED BUT UNMEASURED, which must not read as zero room.
+        // PARTLY MEASURED IS A NUMBER, AND ADAM CHANGED THIS RULING (2026-09-06).
+        //
+        // This used to require -1 the moment ANY tile in the stretch was unmeasured, on the reasoning
+        // that "an unknown length is not a zero one".  That is true, and he has overruled it:
+        // **"you need to measure total distance between points, not validate that every edge has a
+        // length > 0.  It is only indeterminate if the entire logical segment has length 0."**
+        //
+        // What the old rule cost, on his own railway: the run into BottomMainPost is twelve tiles with
+        // one of them measured at 1.  Any-tile-unmeasured made that -1, `measuredRoomToReverseInto`
+        // declined to judge, and a four-unit train was admitted into one unit of room - the case he
+        // reported.  The measured tile was there and was discarded for the company it kept.
+        //
+        // The new answer UNDER-states the room by whatever is unmeasured, and that is the safe
+        // direction: it refuses a train that might have fitted rather than admitting one that cannot.
+        // The editor still names the unmeasured tiles, so the way to a larger number is to measure
+        // them rather than to be given the benefit of the doubt.
         Map<TileKey, Integer> gap = new HashMap<>(lengths);
         gap.remove(key("main", 4, 1));
 
         ReducedEdge unmeasured = edgesBetween(reduce(graph(page), authored(gap, null, null)),
             key("main", 1, 1), key("main", 6, 1)).get(0);
 
-        assertEquals(unmeasured.getRoomAtTheEnd(), -1,
-            "a stretch with an unmeasured tile in it came back as a number, so the guard would judge "
-            + "a train against a total that is missing a piece - an unknown length is not a zero one");
+        assertEquals(unmeasured.getRoomAtTheEnd(), 6,
+            "a stretch with one tile missing no longer reports what the rest of it measures, so the "
+            + "measured track is being thrown away for the company it keeps (Adam, 2026-09-06)");
+
+        // AND NOTHING MEASURED AT ALL IS STILL -1, which is the half of the old rule that survives:
+        // no information is not a small number, and refusing on it would make an unmeasured layout
+        // unusable.
+        Map<TileKey, Integer> nothing = new HashMap<>();
+
+        ReducedEdge blank = edgesBetween(reduce(graph(page), authored(nothing, null, null)),
+            key("main", 1, 1), key("main", 6, 1)).get(0);
+
+        assertEquals(blank.getRoomAtTheEnd(), -1,
+            "a stretch where nothing at all is measured came back as a number. Zero measured tiles is "
+            + "no information, and judging a train against it would refuse every train on every "
+            + "layout nobody has measured");
     }
 
     /**

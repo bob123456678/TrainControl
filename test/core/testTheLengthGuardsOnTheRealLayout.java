@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -243,6 +244,91 @@ public class testTheLengthGuardsOnTheRealLayout
         return new org.traincontrol.marklin.MarklinAccessory(null, logicalAddress - 1, type, protocol,
             org.traincontrol.marklin.MarklinAccessory.getNameWithProtocol(logicalAddress, type,
                 protocol), false, 0);
+    }
+
+    /**
+     * BottomMainPost to TunnelLongPark, and WHICH tile decides it.
+     *
+     * Adam asked: **"if we change the length of 1 between BottomMainA and BottomMainPost to 4, is the
+     * path to TunnelLongPark allowed?"**
+     *
+     * **Measured answer: that tile does not decide it either way.**  `1 - Main:19,12` is the measured
+     * tile on the BottomMainA-to-TunnelLongPark segment, and it lies on the FAR side of the last
+     * switch.  The room rule counts only what lies between the last switch and the berth - a train
+     * that fits there fits behind any earlier switch too, and one that does not comes to rest standing
+     * on the switch - so the two tiles that bind this route are `1 - Main:10,9` and `1 - Main:10,10`.
+     * Changing 19,12 from 1 to 4 leaves the route allowed at both values.
+     *
+     * Which is not the rule failing.  Nothing after that switch is measured, so there is no evidence,
+     * and "generally, allow it" is his own ruling for that case.  Measure either of the two tiles the
+     * rule does count and the refusal appears - which is the second half of this test.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testWhichTileDecidesTheRouteToTunnelLongPark() throws Exception
+    {
+        measureEverythingAs(0);
+
+        Locomotive train = model.getLocByName("75 407 DB");
+
+        assertNotNull(train, "75 407 DB is not on this railway any more");
+
+        train.setTrainLength(4);
+
+        // The tile Adam named, on the far side of the last switch - at 1, and then at 4.
+        session.setTileLength(new TileKey(MAIN, 19, 12), 1);
+
+        boolean atOne = offers(train, "TunnelLongPark");
+
+        session.setTileLength(new TileKey(MAIN, 19, 12), 4);
+
+        boolean atFour = offers(train, "TunnelLongPark");
+
+        assertEquals(atOne, atFour,
+            "1 - Main:19,12 changed the answer, so it is inside the room the rule measures after all"
+            + " and this test has the geometry wrong");
+
+        assertTrue(atOne,
+            "the route is refused with nothing measured after the last switch. That is a refusal on"
+            + " no evidence, and Adam ruled the other way: \"generally, allow it\"");
+
+        // AND THE TILE THAT DOES BIND IT: one unit of room between the last switch and the berth.
+        session.setTileLength(new TileKey(MAIN, 10, 9), 1);
+        session.setTileLength(new TileKey(MAIN, 10, 10), 0);
+
+        assertFalse(offers(train, "TunnelLongPark"),
+            "a four-unit train is still offered TunnelLongPark with one unit of room measured between"
+            + " the last switch and the berth. This is the refusal Adam is asking for, and 10,9 is the"
+            + " tile that has to carry it");
+
+        // Turn that same tile up past the train and it is welcome again - one tile, both answers.
+        session.setTileLength(new TileKey(MAIN, 10, 9), 9);
+
+        assertTrue(offers(train, "TunnelLongPark"),
+            "the same train is refused nine units of room, so the refusal above was not about length");
+    }
+
+    /**
+     * Whether this train is offered a destination whose name starts with the given text.
+     *
+     * @param loc the train
+     * @param destination the name to look for
+     * @return true when it is offered
+     * @throws Exception on a failure to build
+     */
+    private boolean offers(Locomotive loc, String destination) throws Exception
+    {
+        Layout built = rebuild();
+
+        for (List<Edge> path : built.getPossiblePaths(loc, true))
+        {
+            if (path.isEmpty()) continue;
+
+            if (path.get(path.size() - 1).getEnd().getName().startsWith(destination)) return true;
+        }
+
+        return false;
     }
 
     // ---------------------------------------------------------------- the setups Adam asked for
