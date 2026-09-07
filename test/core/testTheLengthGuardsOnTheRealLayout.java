@@ -331,6 +331,73 @@ public class testTheLengthGuardsOnTheRealLayout
         return false;
     }
 
+    /**
+     * Four units of room is exactly the minimum a four-unit train is admitted on.
+     *
+     * Adam: **"if we made both lengths 4, would it then be accepted?  That should be the minimum
+     * acceptable length."**  Measured on his railway, with 75 407 DB at its recorded four units:
+     *
+     * | room between the last switch and TunnelLongPark | offered |
+     * |---|---|
+     * | 3 (one tile at 3) | no |
+     * | 3 (1 + 2 across two tiles) | no |
+     * | 4 (one tile at 4) | YES |
+     * | 4 (2 + 2 across two tiles) | YES |
+     * | 8 (4 + 4) | YES |
+     *
+     * Two things worth having in one table.  Four is the boundary and it is inclusive - a train that
+     * exactly fills its berth is admitted, which is what "minimum acceptable" means.  And 2 + 2 is
+     * admitted while 1 + 2 is not, so the rule is reading the TOTAL across the stretch rather than any
+     * single tile - his ruling of the same day, checked rather than asserted.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testFourUnitsIsTheMinimumRoomAFourUnitTrainIsAdmittedOn() throws Exception
+    {
+        measureEverythingAs(0);
+
+        Locomotive train = model.getLocByName("75 407 DB");
+
+        assertNotNull(train, "75 407 DB is not on this railway any more");
+
+        train.setTrainLength(4);
+
+        assertFalse(roomOf(3, 0, train), "three units of room admitted a four-unit train");
+
+        assertFalse(roomOf(1, 2, train),
+            "1 + 2 admitted a four-unit train, so the rule is reading a single tile rather than the"
+            + " total across the stretch");
+
+        assertTrue(roomOf(4, 0, train),
+            "four units of room REFUSED a four-unit train. Exactly-fits must be admitted or every"
+            + " berth measured to the train that lives in it becomes unusable - Adam: \"that should be"
+            + " the minimum acceptable length\"");
+
+        assertTrue(roomOf(2, 2, train),
+            "2 + 2 refused a four-unit train while 4 + 0 admitted it, so the two tiles are not being"
+            + " added together");
+
+        assertTrue(roomOf(4, 4, train), "eight units of room refused a four-unit train");
+    }
+
+    /**
+     * Sets the two tiles that bind the run into TunnelLongPark and asks whether it is offered.
+     *
+     * @param first 1 - Main:10,9
+     * @param second 1 - Main:10,10
+     * @param train the locomotive
+     * @return whether TunnelLongPark is offered
+     * @throws Exception on a failure to build
+     */
+    private boolean roomOf(int first, int second, Locomotive train) throws Exception
+    {
+        session.setTileLength(new TileKey(MAIN, 10, 9), first);
+        session.setTileLength(new TileKey(MAIN, 10, 10), second);
+
+        return offers(train, "TunnelLongPark");
+    }
+
     // ---------------------------------------------------------------- the setups Adam asked for
 
     /**
