@@ -4780,6 +4780,68 @@ public class AutonomySession
     }
 
     /**
+     * The diagram tiles a standing train is lying across, for greying out (Adam, 2026-09-06).
+     *
+     * **"Locked tiles in this way should be greyed out until the train blocking it moves."**
+     *
+     * **The rule is not restated here, it is asked of the railway.**  `Layout` decides which edges a
+     * train covers - one walk, three rulings - and this only translates that answer into the squares
+     * the diagram draws.  Computing it a second time from the reducer would be quicker and would be
+     * the mistake this codebase keeps making: two statements of one question that drift, which is
+     * every second finding in the day's review reports.
+     *
+     * The join is by SQUARE.  A runtime `Edge` runs between two `Point`s, a `Point` maps back to the
+     * square it was built from, and the reducer holds the tiles that lie between two squares.  Both
+     * directions of a reduced edge are matched, because a covered edge is covered whichever way the
+     * train came: the tail is lying across that rail either way.
+     *
+     * The endpoint squares are NOT included.  A train standing at a sensor already shows as standing
+     * there, and greying the platform it is on would say the platform is blocked by something else.
+     * Adam's ruling is about the track between: *"edges, because the points are technically
+     * unoccupied"*.
+     *
+     * @param running the layout, which is what knows where the trains are
+     * @return the squares to draw as blocked, empty when nothing is
+     */
+    public Set<TileKey> tilesCoveredByStandingTrains(org.traincontrol.automation.Layout running)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (running == null || reducer == null || getStationIndex() == null) return out;
+
+        for (org.traincontrol.automation.Edge covered
+            : running.edgesCoveredByStandingTrains().keySet())
+        {
+            if (covered.getStart() == null || covered.getEnd() == null) continue;
+
+            TileKey from = getStationIndex().squareOf(covered.getStart().getName());
+            TileKey to = getStationIndex().squareOf(covered.getEnd().getName());
+
+            if (from == null || to == null) continue;
+
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                boolean sameWay = from.equals(edge.getStart()) && to.equals(edge.getEnd());
+                boolean otherWay = to.equals(edge.getStart()) && from.equals(edge.getEnd());
+
+                if (!sameWay && !otherWay) continue;
+
+                for (GraphReducer.TileStep step : edge.getPath())
+                {
+                    if (step.getTile() == null) continue;
+
+                    // The squares at either end are where trains STAND, not track lying under one.
+                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
+
+                    out.add(step.getTile());
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Whether a train standing anywhere on this square could move at all (SPEC-B5).
      *
      * **The question is about the SQUARE, and the guard that asked it looked at one copy.**  A square

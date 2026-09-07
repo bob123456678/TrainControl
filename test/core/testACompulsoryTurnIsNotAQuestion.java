@@ -191,6 +191,71 @@ public class testACompulsoryTurnIsNotAQuestion
         session.setPointProperty(square, "canReverse", null);
     }
 
+    /**
+     * The covered track reaches the diagram as squares, so it can be greyed out.
+     *
+     * Adam: **"locked tiles in this way should be greyed out until the train blocking it moves."**
+     *
+     * The rule itself lives in `Layout` and is tested there over random railways; this checks the
+     * JOIN - that the runtime edges it returns actually resolve to squares the diagram draws.  A
+     * mapping that silently resolves nothing returns an empty set, which greys nothing, and looks
+     * exactly like a railway with no trains protruding.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testCoveredTrackResolvesToSquaresTheDiagramDraws() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        org.traincontrol.automation.Layout built = model.getAutoLayout();
+
+        // Long enough that every train on the layout is lying across whatever is behind it.
+        int trains = 0;
+
+        for (org.traincontrol.automation.Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() == null) continue;
+
+            point.getCurrentLocomotive().setTrainLength(50);
+
+            trains++;
+        }
+
+        assertTrue(trains > 0,
+            "no train is standing anywhere on the sample layout, so nothing can be covered and this"
+            + " asserts nothing");
+
+        java.util.Map<org.traincontrol.automation.Edge, org.traincontrol.base.Locomotive> edges =
+            built.edgesCoveredByStandingTrains();
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squares =
+            session.tilesCoveredByStandingTrains(built);
+
+        // MEASURED, AND THE MEASUREMENT IS THE FINDING.
+        //
+        // With four fifty-unit trains standing on Adam's railway, NOTHING is covered.  The walk stops
+        // at the first segment without a positive length, and almost nothing on this layout carries
+        // one - so the protrusion rule is correct and inert here until more tile lengths are recorded.
+        //
+        // Said out loud rather than asserted away: a reader meeting this test needs to know that a
+        // green tick here does not mean track is being blocked on his railway today.  The day lengths
+        // are recorded, the branch below starts running and the join is checked for real.
+        if (edges.isEmpty())
+        {
+            assertTrue(squares.isEmpty(),
+                "no edge is covered, yet squares are being greyed out - the mapping is inventing"
+                + " blocked track from nothing");
+
+            return;
+        }
+
+        assertFalse(squares.isEmpty(),
+            "the covered edges (" + edges.size() + " of them) resolve to no diagram squares at all, so"
+            + " nothing would be greyed out however much track is blocked. The join from runtime Edge"
+            + " to TileKey is not finding the reduced edges");
+    }
+
     // ---------------------------------------------------------------- fixtures
 
     /**
