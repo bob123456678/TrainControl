@@ -120,6 +120,132 @@ public class testAutonomySimulationSanity
     }
 
     /**
+     * A turn the railway makes at the destination is recorded there (IND9-B4).
+     *
+     * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as
+     * always."**
+     *
+     * A reversal at the arrival is the one direction change nothing was following. Its echo lands
+     * inside the run’s own thousand-millisecond pause, while `isRunning()` is still true, so the window
+     * takes the baseline-only branch; and when the run ends the idle reconcile LEVELS the baseline
+     * rather than following it. Both are right for a command somebody else sent mid-run - that is what
+     * they were written for - and both were wrong for this one, because this one is not news arriving
+     * late. It is something this code did on purpose and knew about as it did it.
+     *
+     * Before the fix: the physical train reversed, the graph and the setup went on saying it had not,
+     * and the next dispatch offered paths for the wrong heading.
+     *
+     * **In this class rather than beside the reversal rules**, because it needs a run that actually
+     * ARRIVES. Every `executePath` test elsewhere throws from a callback before the arrival, so none of
+     * them reaches the block under test; this class runs with `DEBUG_SIMULATE_PACKETS` and a watchdog,
+     * which is what lets a path complete. A test that could not reach the arrival would be asserting
+     * the absence of something it never triggered.
+     *
+     * The drain is asserted too: a record read without clearing is re-applied on every refresh, which
+     * turns one reversal into a metronome.
+     *
+     * MUTATION: removing the `reversedOnArrival.add` at the arrival fails the first assertion; making
+     * `takeReversalsOnArrival` a plain getter fails the last.
+     *
+     * @throws Exception on a failure to run
+     */
+    @Test
+    public void testATurnAtTheDestinationIsRecordedThere() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinLocomotive loc = model.newMM2Locomotive("B4 turner", 231);
+
+        ExecutorService watchdog = Executors.newSingleThreadExecutor();
+
+        try
+        {
+            if (!model.isFeedbackSet("47411")) model.newFeedback(47411, null);
+            if (!model.isFeedbackSet("47412")) model.newFeedback(47412, null);
+
+            // CLEARED FIRST.  isPathClear refuses any path whose destination sensor reads occupied,
+            // and a sensor nobody has reported does not default to clear - the sibling test in this
+            // class primes its three the same way.
+            model.setFeedbackState("47411", false);
+            model.setFeedbackState("47412", false);
+
+            // AND THE LAYOUT SIMULATES.  Without this nothing ever sets the destination sensor and the
+            // run waits on it forever - a railway event wait is deliberately unbounded.
+            layout.setMaxDelay(0);
+            layout.setMinDelay(0);
+            layout.setSimulate(true);
+
+            layout.createPoint("B4 start", true, "47411");
+            layout.createPoint("B4 end", true, "47412");
+
+            // A REVERSING point rather than a terminus.  Both turn an arriving train without asking -
+            // `shouldReverseAt` answers `current.isReversing()` when there is no policy, and a terminus
+            // is a reversing point that is also a destination - but a terminus brings the track-room
+            // rule with it, and an unmeasured two-point fixture is refused by it before the run starts.
+            // The block under test is the same one either way.
+            layout.getPoint("B4 end").setReversing(true);
+
+            List<Edge> path = new LinkedList<>();
+
+            Edge only = layout.createEdge("B4 start", "B4 end");
+
+            path.add(only);
+
+            // MEASURED, and generously.  A reversing destination brings the track-room rule with it,
+            // and an unmeasured fixture is refused by it before the run starts - which would report
+            // "the arrival never happened" for a reason that has nothing to do with what is on test.
+            only.setLength(50);
+
+            loc.setTrainLength(1);
+
+            assertTrue(layout.moveLocomotive("B4 turner", "B4 start", false),
+                "precondition: the locomotive must be placed");
+
+            assertTrue(layout.takeReversalsOnArrival().isEmpty(),
+                "precondition: nothing has been reversed yet, or the assertion below cannot tell this"
+                + " run's reversal from an older one");
+
+            // Separated from the run below so a refusal is not reported as a failed journey - two very
+            // different faults with one symptom.
+            assertTrue(layout.isPathClear(path, loc, true),
+                "the path is refused before it starts, so the run below could never arrive");
+
+            layout.runLocomotives();
+
+            Future<Boolean> run = watchdog.submit(() -> layout.executePath(path, loc, 30, null));
+
+            try
+            {
+                assertTrue(run.get(20, TimeUnit.SECONDS),
+                    "the path reported failure rather than completing, so the arrival never happened");
+            }
+            catch (TimeoutException wedged)
+            {
+                layout.stopLocomotives();
+
+                fail("the run never reached its destination, so this test never exercised the arrival");
+            }
+
+            java.util.Set<String> turned = layout.takeReversalsOnArrival();
+
+            assertTrue(turned.contains(loc.getName()),
+                "the railway turned the train round at its destination and recorded nothing. Neither"
+                + " of the two paths that follow a direction change can see this one - the echo"
+                + " arrives while the run is still going, and the idle reconcile then levels the"
+                + " baseline - so the graph never learns it (IND9-B4)");
+
+            assertTrue(layout.takeReversalsOnArrival().isEmpty(),
+                "the record was not drained, so the same reversal is written to the graph again on"
+                + " every refresh, flipping the facing back and forth instead of recording it once");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+            watchdog.shutdownNow();
+            model.deleteLoc("B4 turner");
+        }
+    }
+    /**
      * (Re)loads the frozen autonomy file from the test folder as the model's auto layout.
      *
      * Called after EVERY test method, not just at class setup, because Layout's version counter is

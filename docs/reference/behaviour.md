@@ -94,12 +94,16 @@ non-reversible train may still back into a terminus (MT-245); a reversible train
 a turn at a may-reverse square, because the operator said no.
 
 **On the two copies.** Adam: *"having two copies seems like unnecessary complexity, I wonder if it can
-be done more easily by simply following the edges? Don’t implement until evaluating."* The written
-evaluation is still owed and nothing has been changed on the strength of it. The one fact already
-established: the copies **are** the edges. Facing is encoded as one-way edges (§8), so a turning copy
-exists precisely to carry a different set of outgoing edges from the plain one, and "following the
-edges" would need somewhere to hang the two sets. Whether that somewhere has to be a second `Point` is
-the open question.
+be done more easily by simply following the edges? Don’t implement until evaluating."* The evaluation
+is written, in [`two-copies-evaluation.md`](two-copies-evaluation.md), and nothing has been changed.
+
+Its headline: **on this railway the split does not fire.** Every named square builds to exactly one
+copy, may-reverse ones included, because a may-reverse square here is a dead end and the plain copy of
+a dead end is deliberately not emitted. The complexity is paid in the code and not in the graph.
+Following the edges is a real option - it moves the same state from the graph into the search - but it
+would not remove the facing property, only the specific failure of picking the wrong copy, and it
+touches everything that reads the graph. Recommendation: not now, not ruled out, and
+`testEverySquareOnThisLayoutBuildsToOneCopy` is the tripwire that says when to look again.
 
 ### The question, and when it is asked
 
@@ -134,9 +138,13 @@ for autonomy.
 
 That ruling **dissolved** the refusal described above rather than qualifying it: with nothing asked
 about intermediates there is no declined turn for a journey to depend on, and the stranding refusal,
-its helper, both door checks and its message in all eight bundles were removed the same day. A
-journey to a may-reverse **destination** is still refused if the operator declines the turn it needs,
-because that is the square the question was about.
+its helper, both door checks and its message in all eight bundles were removed the same day.
+
+**No journey is refused on the operator’s answer any more, and none can be** — a claim to the contrary
+stood here until 2026-09-07 and described a case that cannot arise. A journey ending at the *turning*
+copy of a may-reverse station ends at a terminus, and a terminus is never asked about; a journey
+ending at the *plain* copy needs no turn to complete, so there is nothing to decline. Declining leaves
+the train exactly as it drove in.
 
 ### What the runtime cannot answer
 
@@ -149,8 +157,9 @@ mistake has been made in both directions.
 ### Direction commands
 
 - **Changing the direction on the graph does not command the track.**
-- **A direction command from the track DOES update the graph**, if it disagrees — and a reversal made
-  *during* a run is followed once the run ends, not discarded.
+- **A direction command from the track DOES update the graph**, if it disagrees — while nothing is
+  running. What happens to one that arrives mid-run is the next paragraph, and it is the opposite of
+  what this bullet said until 2026-09-07.
 - A reversal at a may-reverse square emits exactly the same command a terminus does.
 
 > *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is likely
@@ -161,6 +170,17 @@ brought up to date as it arrives, so nothing is left behind to be replayed. It u
 with `putIfAbsent`, which kept the pre-run direction: the first echo after the run then read a change
 that had already been acted on and re-followed a reversal the railway had made itself. Reversals are
 counted only when nothing is running, and there is no backlog.
+
+> *"It should be recorded at the destination. Otherwise, it’s just the same as always."* — Adam,
+> 2026-09-07
+
+**A turn the railway itself makes at the destination is the exception, and it records itself.** It is
+not news arriving late — it is something this application did on purpose and knew about as it did it —
+so the arrival writes it down and the window applies it to the graph the next time the railway is
+idle. Without that the two rules above hide it between them: the echo lands inside the run’s own pause
+while it is still running, and the levelling then wipes the evidence. The physical train would be
+reversed, the graph would say otherwise, and the next dispatch would offer paths for the wrong
+heading.
 
 ---
 
@@ -183,8 +203,8 @@ turned round the two point the same way while the carriages have not moved.
   the opposite of the facing (a train that has not been turned drove in forwards); **a may-reverse
   square asks**, because turning round is what those squares are for and the train is as likely to
   have backed in as driven in.
-- It can be set or cleared afterwards from **Train arrived from** in the right-click menu, on both
-  the editor and the track diagram.
+- It can be **set** afterwards from **Train arrived from** in the right-click menu, on both the editor
+  and the track diagram. Not cleared — see below.
 - Not knowing is a legitimate answer. It does **not** mean nothing is blocked: where the geometry
   leaves only one way back, the walk still follows it, because that answer is forced rather than
   guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.

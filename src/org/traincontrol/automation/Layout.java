@@ -643,6 +643,29 @@ public class Layout
     private static final int COMPLETION_POLL = 250;
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
+
+    /**
+     * Locomotives this railway turned round at their destination, not yet written to the graph.
+     *
+     * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same
+     * as always."**
+     *
+     * A reversal at the arrival is one the RAILWAY made, and it is the one direction change nothing
+     * was following.  The echo of it lands inside the run’s own pause, while `isRunning()` is still
+     * true, so the window takes the baseline-only branch; and when the run ends the idle reconcile
+     * LEVELS the baseline rather than following it.  Both of those are right for a command somebody
+     * else sent mid-run - which is what they were written for - and both are wrong for this one,
+     * because this one is not news arriving late: it is a thing this code did on purpose and knows
+     * about at the moment it does it.
+     *
+     * So it is recorded here, where it is certain, and the window drains it when the railway next goes
+     * idle.  Recorded rather than acted on: writing a facing means writing the SETUP, and nothing in
+     * this class may call the window - a rule this file's own tests pin.
+     *
+     * Concurrent because driver threads write it and the event thread drains it.
+     */
+    private final java.util.Set<String> reversedOnArrival = java.util.Collections.newSetFromMap(
+        new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
     
     // Route-related settings
     private boolean activateRoutes = false;
@@ -2995,6 +3018,24 @@ public class Layout
         this.refreshUI();
     }
     
+    /**
+     * The locomotives turned round at their destination since this was last asked, and forgets them.
+     *
+     * Drained rather than read, so one reversal is written to the graph once.  A caller that read
+     * without clearing would re-flip the facing on every refresh, which turns a record into a
+     * metronome.
+     *
+     * @return the names, possibly empty, never null
+     */
+    public java.util.Set<String> takeReversalsOnArrival()
+    {
+        java.util.Set<String> taken = new java.util.HashSet<>(this.reversedOnArrival);
+
+        this.reversedOnArrival.removeAll(taken);
+
+        return taken;
+    }
+
     /**
      * Fires callbacks to repaint the graph UI
      */
@@ -6525,6 +6566,10 @@ public class Layout
             );
             loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection().delay(1000); // pause to avoid network issues
 
+            // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
+            // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
+            // direction change can pick this one up.
+            if (loc.getName() != null) this.reversedOnArrival.add(loc.getName());
         }
         
         if (loc.hasCallback(CB_ROUTE_END))

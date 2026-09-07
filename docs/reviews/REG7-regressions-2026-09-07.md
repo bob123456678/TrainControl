@@ -27,7 +27,9 @@ REG7-A1 and REG7-B1 sit *beside* two of those limits and are distinct from them;
 
 ## Status
 
-| # | Finding | Severity | Confidence | Disposition |
+| # > **AUDITED 2026-09-07 (REG8-C6).** The table below had gone stale within three days - it showed every finding Open after three had been closed. `A1` was fixed on Adam's ruling (`5f492d9f`) and then **dissolved** by `d45d7951`, which removed the mechanism it described; `A2` was traced to something sharper and fixed (`82e10084`); `B1`'s prompt-side half closed in `8f006b3a` and its store-side half in `073ab12a`. `B2` is narrowed by the week's placement sweeps but not closed - see `REG8-B2`. The rest were checked against HEAD and are genuinely open. This is the `audit-the-bodies-not-the-index` failure the 2026-09-04 audit existed to end, recurring in the newest document in the folder, which is why the correction is written here rather than by quietly editing the rows.
+
+| Finding | Severity | Confidence | Disposition |
 |---|---------|----------|------------|-------------|
 | REG7-A1 | The departure answer overrides the path's committed geometry: "keep" at a may-reverse **turning copy** the path routes through skips a turn the route depends on; "turn" at a **plain copy** reverses a train whose route continues forward | A | Plausible | Open |
 | REG7-A2 | `followDirectionChanges` cannot tell the run's own reversal from an operator's: after any journey that turned the train, the first post-run echo spuriously flips a recorded facing and can move the train onto the wrong copy | A | Confirmed (trace) | Open |

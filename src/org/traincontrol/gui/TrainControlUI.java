@@ -6134,6 +6134,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // a journey is MEANT to disagree with the graph: it is between two copies.
             if (built.isRunning()) return;
 
+            // WHAT THE RAILWAY TURNED ROUND AT ITS DESTINATION, written to the graph before the
+            // baseline is levelled (Adam, 2026-09-07: "it should be recorded at the destination").
+            //
+            // These are not echoes to be followed or ignored - they are reversals this application
+            // performed and recorded at the moment it performed them.  Levelling without writing them
+            // first is what made a manual "no, turn" at a may-reverse destination invisible to the
+            // graph: the train reversed, the setup went on saying it had not, and the next dispatch
+            // offered paths for the wrong heading.
+            //
+            // Before the levelling below, and drained, so each is written exactly once.
+            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+            for (String turned : built.takeReversalsOnArrival())
+            {
+                if (session != null) session.flipFacing(turned, built);
+            }
+
             for (org.traincontrol.automation.Point point : built.getPoints())
             {
                 org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();

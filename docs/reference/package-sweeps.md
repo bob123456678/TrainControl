@@ -7,8 +7,16 @@ ruled on**, and every live one worth fixing is fixed.
 
 **Method.** Each finding's stated mechanism was looked for in today's source. A finding is Cancelled
 only when the mechanism is *demonstrably* gone - the guard is there, the call is the non-creating one,
-the two statements are inside one monitor - and not merely when I could not find it. Every behavioural
-fix below was proved by a test seen failing first.
+the two statements are inside one monitor - and not merely when I could not find it.
+
+**On red-before-green, corrected.** An earlier version of this line claimed every behavioural fix below
+was proved by a test seen failing first. That was false for five of the fourteen, and a reviewer
+checked it: **C6, C7, C19b, C22 and C24 shipped with no test at all**, as did the mid-run reversal
+change. C7 is the one that matters - what the application believes a train's speed to be is what the
+length and blocking rules run on, and a revert to integer division is invisible to the battery. The
+others are a concurrency fix, a menu-state fix, a stat guard and a clipboard guard; defensible to ship
+unpinned, but the sentence should have said so rather than claiming a discipline it did not follow.
+Fixes made after that check carry their tests.
 
 **What the sweep was worth.** Twelve were already gone, eleven of them fixed in the five weeks since by
 people who did not know the finding existed. Fourteen are now fixed. Six are ruled and left, with
