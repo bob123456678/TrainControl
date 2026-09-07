@@ -2944,31 +2944,21 @@ public class AutonomyEditorPanel extends JPanel
                 }));
         }
 
-        // AND A WAY TO SAY "I DO NOT KNOW", which is not the same as any of the four.  A tail nobody
-        // has placed blocks nothing; a tail placed wrongly blocks the wrong rail and reports a
-        // protection that is not there.  Clearing has to be reachable or a mistaken answer is
-        // permanent.
-        menu.addSeparator();
-
-        menu.add(radio(group, I18n.t("autosetup.ui.arrivedFromUnknown"), "autosetup.ui.hintArrivedFrom",
-            recorded == null,
-            () ->
-            {
-                session.setArrivedFrom(target, null);
-
-                setupChanged();
-
-                org.traincontrol.automation.Layout now =
-                    runningLayout == null ? null : runningLayout.get();
-
-                if (now != null)
-                {
-                    org.traincontrol.automation.Point on = pointOnTheLayout(now, target);
-
-                    if (on != null) on.setArrivedFrom(null);
-                }
-            }));
-
+        // NO WAY TO SAY "I DO NOT KNOW", by Adam’s ruling of 2026-09-07: **"clearing should not be
+        // possible, only setting."**
+        //
+        // There used to be one, defended here on the grounds that a mistaken answer would otherwise be
+        // permanent.  It is not: every side the geometry offers is above, so correcting a wrong answer
+        // means picking the right one.  What clearing actually offered was a way to switch the tail
+        // blocking off, which is a preference about the check rather than a fact about the railway.
+        //
+        // And the premise had gone stale.  Autonomy writes the side on arrival and a hand placement
+        // works it out - asking on the squares where the answer is genuinely open - so every train that
+        // reaches a square now has one.  "Not known" describes state saved before that was true.
+        //
+        // The automatic clear stays where it is, in Point.setLocomotive: a square whose occupant
+        // changes has a new train that did not arrive the way the old one did.  That is the railway
+        // dropping a fact it no longer holds, which is not the same as a person declaring ignorance.
         return menu;
     }
 

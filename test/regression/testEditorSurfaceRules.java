@@ -1338,6 +1338,56 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The tail can be set, and not un-set (Adam, 2026-09-07).
+     *
+     * Annotating the behaviour reference beside the paragraph on `arrivedFrom`: **"Given the other
+     * items above, when would we not know?  Clearing should not be possible, only setting."**
+     *
+     * The menu carried a "Not known" option, defended in a comment on the grounds that a mistaken
+     * answer would otherwise be permanent. It would not: the same menu lists every side the geometry
+     * offers, so correcting a wrong answer means picking the right one. What clearing actually offered
+     * was a way to turn the blocking off, which is not a fact about the railway.
+     *
+     * And the premise is now false. Autonomy writes the side on arrival; a hand placement works it out,
+     * asking where the answer is genuinely open. Every train that reaches a square has an answer, so
+     * "not known" describes only state saved before the feature existed - a transitional case, not a
+     * choice worth offering forever.
+     *
+     * The automatic clear stays: `Point.setLocomotive` drops the side when the occupant changes,
+     * because the new train did not arrive the way the old one did. That is the railway retracting a
+     * fact it no longer holds, not a person declaring ignorance.
+     *
+     * MUTATION: restoring the null-writing radio fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheTailCanBeSetAndNotUnset() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        String menu = bodyOf(panel,
+            "public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
+
+        assertNotEquals(menu, "",
+            "buildArrivedFromMenu is not declared that way any more, so this checked nothing");
+
+        assertTrue(menu.contains("session.setArrivedFrom(target, side)"),
+            "the menu no longer sets the arrival side at all, so the absence checked below is the"
+            + " absence of a menu rather than the absence of a clear");
+
+        assertFalse(menu.contains("setArrivedFrom(target, null)"),
+            "the menu still offers a way to clear the arrival side. Adam, 2026-09-07: \"clearing"
+            + " should not be possible, only setting\" - a wrong answer is corrected by choosing the"
+            + " right side, and what clearing offered was a way to switch the tail blocking off");
+
+        assertFalse(menu.contains("on.setArrivedFrom(null)"),
+            "the menu clears the side on the running layout, so the setup and the railway now"
+            + " disagree about whether clearing is possible at all");
+    }
+    /**
      * Dragging a locomotive puts its name on the clipboard, and cannot fail because of it (C26).
      *
      * A review filed the clipboard write as an unwanted side effect of starting a drag. Adam,

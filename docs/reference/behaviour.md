@@ -63,16 +63,43 @@ its direction**. Three kinds of square matter:
 - **A compulsory turn** (`mustReverse`). Every copy turns trains. Not a question in any tier: a
   turning copy's only outgoing edges leave by the side the train arrived from, so *not* turning is
   not an available outcome — it drives the train forward off its reserved path.
+- **A may-reverse square** (`canReverse` on the tile). The build splits it into a plain copy and a
+  turning one. Autonomy turns only where the setup says. **Manual always asks.**
 
-Clarify: the first is a station, the second is not.
+**A terminus is a station; a compulsory turn is not.** The distinction is what each is *for*, and it
+decides whether trains are sent there:
 
-- **A may-reverse square** (`canReverse`). The build splits it into a plain copy and a turning one.
-  Autonomy turns only where the flag says. **Manual always asks.**
+| | trains are sent to it | every arrival turns | it is a destination |
+|---|---|---|---|
+| **Terminus** | yes - it is the end of a line, and somewhere to go | yes | **necessarily** |
+| **Compulsory turn** (`mustReverse`) | no | yes | no |
+| **May-reverse** | yes, if it is also a destination | only when chosen | independently |
 
-Clarify what "the flag" is here.
+The code enforces the first row in both directions: a terminus **must** be a destination, so
+`setDestination(false)` clears `isTerminus` and a copy trains may not arrive at is emitted as a plain
+reversing point rather than as a terminus. A compulsory turn is a place the track turns trains round -
+a headshunt, a reversing loop - and nothing is ever routed *to* it.
 
-Having two copies seems like unnecessary complexity, I wonder if it can be done more easily by simply following the edges?
-Don't implement until evaluating.
+**Which matters for length** (§5): the track-room rule gates on terminus-**or**-reversing and has no
+destination requirement, so a compulsory turn a train does not physically fit into is still refused.
+The station-capacity rule gates on being a destination, and has nothing to say about a square nobody
+calls a station. Adam, 2026-09-07: *"the terminus that isn’t a destination should fail on the track
+length check - the station length can safely be ignored."*
+
+**"The flag" is on the tile, not on the train.** `canReverse` is a property of the square in the
+autonomy setup: *may a train turn round here.* It is set by marking the tile in the editor. It is not
+`Locomotive.isReversible`, which is a property of the **train** - *is this a locomotive that can run
+in either direction at all* - and the two are asked in different places for different reasons. A
+non-reversible train may still back into a terminus (MT-245); a reversible train may still be refused
+a turn at a may-reverse square, because the operator said no.
+
+**On the two copies.** Adam: *"having two copies seems like unnecessary complexity, I wonder if it can
+be done more easily by simply following the edges? Don’t implement until evaluating."* The written
+evaluation is still owed and nothing has been changed on the strength of it. The one fact already
+established: the copies **are** the edges. Facing is encoded as one-way edges (§8), so a turning copy
+exists precisely to carry a different set of outgoing edges from the plain one, and "following the
+edges" would need somewhere to hang the two sets. Whether that somewhere has to be a second `Point` is
+the open question.
 
 ### The question, and when it is asked
 
@@ -100,7 +127,16 @@ leaves only by the side the train came in at — so a train that does not turn t
 its path does not hold. The answer is always honoured; the journey that depends on a different answer
 is not started. A terminus is exempt.
 
-It is unnecessary to prompt on intermediates.  We care about the reversal if it's the destimation, since that dictate where the train can go, and where it is facing.
+**Only the destination is asked about** (Adam, 2026-09-07: *"it is unnecessary to prompt on
+intermediates - we care about the reversal if it’s the destination, since that dictates where the
+train can go, and where it is facing"*). Intermediates turn as the path requires, exactly as they do
+for autonomy.
+
+That ruling **dissolved** the refusal described above rather than qualifying it: with nothing asked
+about intermediates there is no declined turn for a journey to depend on, and the stranding refusal,
+its helper, both door checks and its message in all eight bundles were removed the same day. A
+journey to a may-reverse **destination** is still refused if the operator declines the turn it needs,
+because that is the square the question was about.
 
 ### What the runtime cannot answer
 
@@ -117,7 +153,14 @@ mistake has been made in both directions.
   *during* a run is followed once the run ends, not discarded.
 - A reversal at a may-reverse square emits exactly the same command a terminus does.
 
-Reversals during the run should be ignored and not queued.  Only count reversals when nothing is running.  That way, there is no backlog.
+> *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is likely
+> corrective by the user."* - Adam, 2026-09-07
+
+**A direction command arriving while a run is under way is ignored, not queued.** The baseline is
+brought up to date as it arrives, so nothing is left behind to be replayed. It used to be recorded
+with `putIfAbsent`, which kept the pre-run direction: the first echo after the run then read a change
+that had already been acted on and re-followed a reversal the railway had made itself. Reversals are
+counted only when nothing is running, and there is no backlog.
 
 ---
 
@@ -147,7 +190,20 @@ turned round the two point the same way while the carriages have not moved.
   guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
   (Corrected 2026-09-07 after `VAL8-C1` — the earlier wording claimed less than the code does.)
 
-Given the other items above, when would we not know?  Clearing should not be possible, only setting.
+**When would it not be known?** Adam asked, and it is a fair question given the two rules above.
+Three cases, all narrow:
+
+- a setup saved before the field existed;
+- a square whose **occupant changed** - `Point.setLocomotive` drops the side, because the new train
+  did not arrive the way the old one did;
+- a square with no named copies at all, where there is no side to record.
+
+**Clearing is not offered.** Adam, 2026-09-07: *"clearing should not be possible, only setting."* The
+menu used to carry a "Not known" option, on the argument that a mistaken answer would otherwise be
+permanent. It would not: the menu lists every side the geometry offers, so a wrong answer is corrected
+by choosing the right one. What clearing offered was a way to switch the tail blocking off, which is a
+preference about the check rather than a fact about the railway. The automatic clear above stays - the
+railway dropping a fact it no longer holds is not a person declaring ignorance.
 
 ### Pasting a train
 
@@ -160,6 +216,24 @@ way a train ends up facing is decided by the track between the two platforms and
 off — one that leaves southbound round a loop is northbound one square away. A square with one copy
 has one answer, which at a terminus is the reversal.
 
+> *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
+> 2026-09-07, on a dismissed prompt
+
+**A dismissed arrival-side question abandons the paste.** The question is asked *before* the train
+moves, which is what makes declining it possible at all: it used to be asked after the drop, by which
+point the train had been lifted, put down, and the clipboard emptied, so closing the dialog placed the
+train anyway and merely declined to record which way round it was. Nothing moves, the clipboard still
+holds the train, and the next square accepts the same paste.
+
+Only a **may-reverse** square can be dismissed. Everywhere else the side is worked out rather than
+asked, so no answer means "there was nothing to record" rather than "the operator said no" — treating
+the two alike would refuse every paste onto plain track.
+
+**A paste onto a square no train could leave is refused**, naming the square, from both doors. The
+right-click menu had always greyed the item; the diagram drop said nothing and did it anyway
+(Adam, MT-136). The question is asked of the square rather than of one arbitrary copy, since the paste
+itself walks to a copy that can depart.
+
 ---
 
 ## 5. Length: will the train fit?
@@ -168,13 +242,27 @@ Two separate rules, both about length, both easy to mistake for each other.
 
 ### 5a. Room at the berth
 
-A train is refused a **terminus or reversing** destination it does not fit in.  
-^ This is true, but the train should be refused any destination it does not fit in, i.e. where the accepted length > train length.
+**Two rules, not one, and they are asked in different places.**
+
+| | what it measures | which squares it judges |
+|---|---|---|
+| **Track room** | the rail leading in, from the last switch to the berth | terminus **or** reversing, destination or not |
+| **Station capacity** | the length the station says it accepts | **every destination** that states one |
+
+Adam, annotating this section: *"the train should be refused any destination it does not fit in, i.e.
+where the train length exceeds the accepted length."* It is - by the second rule, and in all three
+tiers: `Point.validateTrainLength` is asked from `Layout.isPathClear`, which every autonomy and manual
+path goes through, and again from `HomeStaging`. A destination with no stated capacity is not judged
+on capacity; that is what leaving the field at zero means.
+
+The rest of this section is about the **first** rule.
 
 - The room is measured **from the last switch** to the berth. A train that fits there fits behind any
   earlier switch too; one that does not comes to rest standing on the switch.
 
-^ this is true, but "fit" here refers to the surrounding track, not necessarily the length of the berth, which is handled at the station level.
+  **"Fit" here means the surrounding track**, not the length of the berth - that is the station
+  capacity rule above, and it is asked separately. A train can fit the platform and still be refused
+  because it would be left standing on the switch behind it.
 
 - **Exactly-fits is admitted.** Four units of room takes a four-unit train — otherwise every berth
   measured to the train that lives in it becomes unusable.
@@ -231,6 +319,23 @@ that could have run.
 
 ---
 
+## 6a. Editing the setup while the railway is using it
+
+**Nothing that changes the shape of the graph may run while trains are moving or a plan is being
+made.** Renaming a point, deleting a point and deleting an edge all refuse while `isRunning()` or
+`isStagingInProgress()`. A rename mutates a `Point` under live visited sets; a delete removes the
+object those sets and already-issued paths hold.
+
+**Staging counts as running.** The Return Home planner walks these structures with nothing dispatched
+at all, which is exactly the window a bare "is autonomy running" flag waves through.
+
+**The greying on the menu is not this guard.** Menu items are greyed when the popup *opens* and the
+action fires when it is *clicked*; starting autonomy from another window in between leaves a live item
+over a running railway. The refusal has to be in the method, and the menu asks the same question so
+the two agree.
+
+---
+
 ## 7. Routing checks in the editor
 
 **Path Type (Auto / Manual)** decides which tier the check answers for. The two differ **only** in
@@ -248,18 +353,33 @@ settings.
 
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it
   means, or it is asking a question the graph does not answer.
-- **`canReverse` is not in the running layout.** Only the setup knows it.
-
-Clarify this- the train, or the point?  It is known at the locomotive level.
+- **`canReverse` is not in the running layout.** Only the setup knows it. **It is a property of the
+  TILE**, not of the train: *may a train turn round on this square.* `AutonomyBuilder` expresses it by
+  splitting the square into a plain copy and a turning one and never emits the flag itself, so nothing
+  in the automation layer can ask the question - which is why the manual doors read it from the setup.
+  The train’s own ability to run in either direction is `Locomotive.isReversible`, a different fact
+  asked in different places (§3).
 
 - **Facing is encoded as one-way edges.** There is no direction field on a train's route; the sparse
   and doubled edges *are* the direction.
-- **Signals and switches are the same device.** `accessoryType` is display-only.
-
-But the play very different roles in what they control.  They are just commanded via the same protocol.
+- **Signals and switches are the same device to the protocol, and different things on the railway.**
+  They are commanded identically and share one address space - a signal and a switch at one address
+  are one accessory, and `accessoryType` only decides which icon is drawn. Adam: *"they play very
+  different roles in what they control; they are just commanded via the same protocol."* So code that
+  looks one up must not key on the type, and a person reading the diagram must not be told the two are
+  interchangeable. Both halves are true and neither implies the other.
 
 - **Occupancy and reservation are different facts.** A route holds track it intends to use; a
   standing train covers track it is lying on. Neither is the other.
+- **An accessory record is a counter, not a claim.** Adam, 2026-09-07: *"there’s no reason to delete
+  an accessory, since we just track their actuations; them being in the database doesn’t otherwise
+  harm anything."* A row does not assert that anything is wired to that address. **Reading one must
+  still not create it**: `getAccessoryState` registers a switch on a miss, which is right on a path
+  about to command the thing and wrong on one that is only looking, so route conditions and the
+  keyboard paint use `getAccessoryStateIfPresent`. Creation belongs to the path that commands.
+- **A speed the railway reports is rounded, not truncated.** What the model believes about a train is
+  what the length and blocking rules run on, so a fine step set from another controller must not be
+  quietly lost on the way in.
 
 ---
 
@@ -269,6 +389,14 @@ Written 2026-09-07 at Adam's request, after a run of sessions in which the same 
 re-litigated because nothing stated them in one place. Several were reversed during that work — the
 Return Home tier, the meaning of an unmeasured segment, and whether a compulsory turn is a question —
 and each reversal is recorded above with the case that forced it.
+
+**Revised 2026-09-07** against Adam's annotations on the first draft. Six of them were requests to
+say something more precisely - terminus against station, what "the flag" is, whether `canReverse`
+describes a train or a square, what signals and switches share and what they do not, and which of the
+two length rules the word "fit" belongs to - and those are now written out rather than assumed. Two
+were rulings: intermediates are not asked about, and the arrival side may be set but not cleared. One
+is still owed: the written evaluation of whether the two copies could be replaced by following the
+edges. Nothing has been built on that one.
 
 The review documents in `docs/reviews/` are the working record of how these rules were arrived at.
 This is the answer they were working towards.
