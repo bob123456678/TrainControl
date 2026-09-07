@@ -199,6 +199,29 @@ public class ImageUtil
     }
     
     /**
+     * The wash for track a standing train is lying across.
+     *
+     * Adam, 2026-09-06: **"locked tiles in this way should be greyed out until the train blocking it
+     * moves."**
+     *
+     * Grey rather than red, and thin rather than opaque.  Red is what this application uses for a
+     * fault the operator has to fix; this is not a fault, it is the railway working - a train is
+     * standing there and the track behind it is spoken for.  The tile stays readable underneath
+     * because the operator still needs to see what the track IS while knowing it is unavailable.
+     */
+    private static final Color COVERED = new Color(90, 90, 90, 120);
+
+    /**
+     * Greys a tile to show a standing train is lying across it.
+     *
+     * @param originalIcon the tile as it is drawn
+     * @return a new icon; the original is not touched
+     */
+    public static ImageIcon addCoveredOverlay(ImageIcon originalIcon)
+    {
+        return addHighlightOverlay(originalIcon, COVERED);
+    }
+    /**
      * Highlights an icon
      * @param originalIcon
      * @return 

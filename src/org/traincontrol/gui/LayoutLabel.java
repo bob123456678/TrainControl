@@ -31,6 +31,25 @@ import org.traincontrol.util.ImageUtil;
  */
 public final class LayoutLabel extends JLabel
 {
+    /**
+     * Which square of which page this tile is, so it can ask whether a train is lying across it.
+     *
+     * Set by `LayoutGrid`, which already builds this key a few lines above where it makes the label.
+     * Null on a tile the grid did not key - the blank filler squares - and asking about null is
+     * answered "not covered" rather than guarded at every call.
+     */
+    private org.traincontrol.automationui.TileGraph.TileKey square;
+
+    /**
+     * Tells this tile which square it is drawing.
+     *
+     * @param key the square, or null
+     */
+    public void setSquare(org.traincontrol.automationui.TileGraph.TileKey key)
+    {
+        this.square = key;
+    }
+
     private LayoutDiagramComponent component;
     
     private final Container parent;
@@ -978,6 +997,20 @@ public final class LayoutLabel extends JLabel
                         );
                         
                         this.setIcon(lastIcon); 
+
+                        // GREYED WHILE A TRAIN IS LYING ACROSS IT (Adam, 2026-09-06: "locked tiles in
+                        // this way should be greyed out until the train blocking it moves").
+                        //
+                        // Laid over `lastIcon` rather than replacing it, so the tile is still readable
+                        // underneath: the operator needs to see what the track IS while knowing it is
+                        // spoken for.  And AFTER the plain icon is set, so the temporary click
+                        // highlight below still restores to the ungreyed one - a wash that outlived
+                        // the train would be worse than none.
+                        if (this.square != null && this.tcUI != null
+                            && this.tcUI.isTrackCovered(this.square))
+                        {
+                            this.setIcon(ImageUtil.addCoveredOverlay((ImageIcon) lastIcon));
+                        }
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)

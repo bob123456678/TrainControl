@@ -6075,6 +6075,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
 
     /**
+     * The diagram squares a standing train is lying across, as of the last refresh.
+     *
+     * **Cached rather than asked per tile.**  Working it out walks every train on the railway, and the
+     * diagram asks once per SQUARE while it draws - so computing it in the drawing path would run that
+     * walk hundreds of times for one repaint, on the event thread.  It is recomputed where the layout
+     * is refreshed, which is the same moment anything else about a train changes.
+     *
+     * Volatile because the drawing reads it from the event thread and the refresh writes it from
+     * whatever thread noticed the train move.  Replaced wholesale rather than mutated, so a reader
+     * always sees one consistent answer rather than a set half way through being rebuilt.
+     */
+    private volatile java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> coveredTrack =
+        java.util.Collections.emptySet();
+
+    /**
+     * Whether a standing train is lying across this square, so the diagram can grey it.
+     *
+     * @param page the page the tile is drawn on
+     * @param x the column
+     * @param y the row
+     * @return true when covered
+     */
+    public boolean isTrackCovered(String page, int x, int y)
+    {
+        if (page == null) return false;
+
+        return coveredTrack.contains(
+            new org.traincontrol.automationui.TileGraph.TileKey(page, x, y));
+    }
+
+    /**
+     * The same, for a caller that already has the square.
+     *
+     * @param square the tile
+     * @return true when a standing train is lying across it
+     */
+    public boolean isTrackCovered(org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        return square != null && coveredTrack.contains(square);
+    }
+
+    /**
+     * Recomputes the covered squares, which the diagram greys.
+     *
+     * Asks the RAILWAY which edges are covered and the session to turn them into squares - one
+     * statement of the rule, translated, rather than a second implementation that could drift.
+     */
+    private void refreshCoveredTrack()
+    {
+        try
+        {
+            if (this.model == null || !this.model.hasAutoLayout() || getAutonomySession() == null)
+            {
+                coveredTrack = java.util.Collections.emptySet();
+
+                return;
+            }
+
+            coveredTrack = getAutonomySession()
+                .tilesCoveredByStandingTrains(this.model.getAutoLayout());
+        }
+        catch (Exception cannotWorkItOut)
+        {
+            // NOTHING GREYED rather than a broken diagram.  This runs inside a refresh that also
+            // redraws the whole railway, and a picture nobody can read is worse than a protection
+            // nobody can see.
+            coveredTrack = java.util.Collections.emptySet();
+        }
+    }
+
+    /**
      * Writes a square's occupant into the autonomy setup, after the layout has been changed.
      */
 
@@ -25264,6 +25335,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // there was no graph window - so on the diagram path the labels were the whole job and on the
         // graph path they were an afterthought.  The graph is gone; the labels are what was worth
         // keeping.
+        // The covered track first, because the diagram is greyed from it.
+        refreshCoveredTrack();
+
         for (Point p : this.model.getAutoLayout().getPoints())
         {
             this.updateStationLabels(p);
