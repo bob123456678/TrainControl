@@ -993,27 +993,25 @@ public final class LayoutLabel extends JLabel
                         
                         boolean hadIcon = (this.getIcon() != null);
                         lastIcon = new javax.swing.ImageIcon(
-                            img     
+                            img
                         );
-                        
-                        this.setIcon(lastIcon); 
 
-                        // GREYED WHILE A TRAIN IS LYING ACROSS IT (Adam, 2026-09-06: "locked tiles in
-                        // this way should be greyed out until the train blocking it moves").
-                        //
-                        // Laid over `lastIcon` rather than replacing it, so the tile is still readable
-                        // underneath: the operator needs to see what the track IS while knowing it is
-                        // spoken for.
-                        //
-                        // THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in
-                        // the autonomy or diagram editor, only the track diagram viewer"). An editor is
-                        // where the railway is arranged, and what happens to be standing on it while
-                        // you arrange it is a fact about right now rather than about the drawing - the
-                        // same reasoning that made station names the default caption there.
-                        boolean covered = !edit && this.square != null && this.tcUI != null
-                            && this.tcUI.isTrackCovered(this.square);
+                        this.setIcon(lastIcon);
 
-                        if (covered) this.setIcon(ImageUtil.addCoveredOverlay((ImageIcon) lastIcon));
+                        // A TRAIN IS A LINE ALONG THE TRACK, AND NOT AN ICON AT ALL (MT-309).
+                        //
+                        // It used to be a grey wash laid over this icon here.  Adam, 2026-09-08:
+                        // "instead of shading the entire tiles, we need to draw a line (let's say in
+                        // orange) to show that the train is there.  graying makes it look confusing on
+                        // double curve tiles" - and, asked whether the two should stand together, he
+                        // chose one indicator rather than two: the line REPLACES the wash.
+                        //
+                        // Which means it is no longer part of the icon, and three places that swapped
+                        // the icon for a greyed copy have gone with it: this one, the restore at the
+                        // end of the transient highlight, and `refreshCoveredMark`.  It is painted in
+                        // `paintCoveredMark` instead, over whatever the icon happens to be - so a tile
+                        // flashing yellow for an accessory change still shows the train on it, which
+                        // is the hazard the old restore needed a paragraph to handle.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
@@ -1028,25 +1026,18 @@ public final class LayoutLabel extends JLabel
                             {
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
-                                    // BACK TO THE WASH, not to the bare tile.
+                                    // STRAIGHT BACK TO THE TILE, and the train comes back with it.
                                     //
-                                    // Adam, 2026-09-07: "shaded tiles get overwritten if an accessory
-                                    // change highlights the same square". `lastIcon` is the UNGREYED
-                                    // icon - the comment above this block used to defend restoring to
-                                    // it, on the grounds that a wash outliving the train would be
-                                    // worse than none. That is a real hazard and this is not the way
-                                    // to avoid it: the wash was simply lost, permanently, the first
-                                    // time anything flashed that square.
+                                    // This used to restore to a greyed copy when the square was
+                                    // covered - Adam, 2026-09-07: "shaded tiles get overwritten if an
+                                    // accessory change highlights the same square" - because the mark
+                                    // WAS the icon and putting the plain one back lost it.
                                     //
-                                    // Asked again rather than remembered, which handles the hazard the
-                                    // old comment was worried about: the train may have moved while the
-                                    // highlight was showing, and re-asking gives the answer as it is
-                                    // when the tile is redrawn rather than as it was when it flashed.
-                                    boolean stillCovered = !edit && this.square != null
-                                        && this.tcUI != null && this.tcUI.isTrackCovered(this.square);
-
-                                    this.setIcon(stillCovered
-                                        ? ImageUtil.addCoveredOverlay((ImageIcon) lastIcon) : lastIcon);
+                                    // The mark is painted over the icon since MT-309, so it is not in
+                                    // the icon to lose, and the question this branch had to ask no
+                                    // longer arises: whatever the icon is, `paintCoveredMark` draws
+                                    // the train on top of it at the next paint.
+                                    this.setIcon(lastIcon);
                                 }
                             });
 
@@ -1356,6 +1347,22 @@ public final class LayoutLabel extends JLabel
         TileOverlay overlay = autonomyOverlay;
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
+        // THE TRAIN FIRST, UNDER EVERYTHING AUTONOMY DRAWS (MT-309).
+        //
+        // It says where a train IS; the arrows say where trains MAY go and the run line says where
+        // one is heading.  Both of those are about this instant and are the more urgent, so they go
+        // on top - the same order, and the same reasoning, as the annotation and the overlay below.
+        java.awt.Graphics2D mark = (java.awt.Graphics2D) g.create();
+
+        try
+        {
+            paintCoveredMark(mark);
+        }
+        finally
+        {
+            mark.dispose();
+        }
+
         if ((overlay == null || overlay.isBlank())
             && (annotation == null || annotation.isBlank())) return;
 
@@ -1402,37 +1409,127 @@ public final class LayoutLabel extends JLabel
         }
     }
     /**
-     * Re-applies the covered wash, without rebuilding the tile (OB-180).
+     * Redraws this tile because the train on it has arrived or gone (OB-180).
      *
-     * The wash is decided when a tile is DRAWN, and a tile is only drawn when its own accessory,
-     * feedback or route changes. So moving a train - which changes which squares its tail lies across
-     * and nothing else - left the old squares greyed until something unrelated happened to repaint
-     * them. Adam: **"when a train is manually moved to a new station in the track diagram viewer using
-     * control+X and V, its former shaded icons are not reset."**
+     * The mark is decided when a tile is PAINTED, and a tile is only painted when something asks it
+     * to. Moving a train changes which squares its tail lies across and nothing else about any of
+     * them, so nothing asked. Adam: **"when a train is manually moved to a new station in the track
+     * diagram viewer using control+X and V, its former shaded icons are not reset."**
      *
-     * `updateImage` cannot do this job. It repaints only when the IMAGE NAME changed, and the wash is
-     * not part of the image name; forcing it with `highlight` would flash every signal and switch it
+     * `updateImage` cannot do this job. It repaints only when the IMAGE NAME changed, and the mark is
+     * no part of the image; forcing it with `highlight` would flash every signal and switch it
      * touched, which is a different message to the operator entirely.
      *
-     * So this asks the question the drawing path asks and swaps the icon, which is exactly what the
-     * highlight timer already does when it restores - one mechanism, two callers.
+     * A plain repaint since MT-309, where the wash stopped being an icon and became a line painted
+     * over one - so there is nothing to swap and nothing that a tile which has not drawn its picture
+     * yet would miss. `paintCoveredMark` asks the window afresh every time it runs, which is what
+     * makes this enough.
      */
-    public void refreshCoveredWash()
+    public void refreshCoveredMark()
     {
         if (this.component == null || this.component.isText()) return;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        // repaint() is safe from any thread, and the answer is read inside the paint.
+        this.repaint();
+    }
+
+    /**
+     * The orange a train is drawn in (MT-309).
+     *
+     * Adam: *"we need to draw a line (let's say in orange) to show that the train is there."*  Opaque,
+     * and the one strongly coloured line on an ordinary diagram: the greens and reds already mean
+     * "trains may run this way" and "they may not", and yellow is the transient flash for something
+     * that has just been switched. Orange is not spoken for.
+     */
+    public static final Color TRAIN_MARK = new Color(255, 140, 0);
+
+    /**
+     * Draws the train lying across this square, along the road it is on.
+     *
+     * **The road, not the square** (Adam, 2026-09-08: *"graying makes it look confusing on double
+     * curve tiles"*). A double curve carries two roads that never meet, and a wash over the whole
+     * square said a train was on both. The window is asked which routes of this square are covered -
+     * an answer the reduction already had, since each step of an edge records the route it runs
+     * through - and one line is drawn along each of them.
+     *
+     * Edge to edge in one stroke, along the rail rather than around it, which is the same shape and
+     * the same reasoning as the run line: "a curve here is not an arc and a switch's diverging leg is
+     * not a right angle", see `TileAnnotation.paintTraces`.
+     *
+     * Where the window can name no road - a portal hop, which has no side on the grid - nothing is
+     * drawn rather than a line across the middle of the square. A mark in a place no rail goes is
+     * worse than none, and the square is still spoken for on the railway either way.
+     *
+     * THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in the autonomy or
+     * diagram editor, only the track diagram viewer"). An editor is where the railway is arranged,
+     * and what happens to be standing on it while you arrange it is a fact about right now rather
+     * than about the drawing.
+     *
+     * @param g the tile's graphics
+     */
+    private void paintCoveredMark(java.awt.Graphics2D g)
+    {
+        if (component == null) return;
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Route> roads = coveredRoads();
+
+        if (roads.isEmpty()) return;
+
+        int span = Math.min(getWidth(), getHeight());
+
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+        g.setStroke(new java.awt.BasicStroke(Math.max(3f, span / 7f),
+            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+        g.setColor(TRAIN_MARK);
+
+        for (org.traincontrol.automationui.TilePorts.Route road : roads)
         {
-            // Read on the EDT, because the icon it is compared against is.  A tile that has never been
-            // drawn has nothing to lay the wash over and will pick it up when it is.
-            if (lastIcon == null) return;
+            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
+                road.getA(), getWidth(), getHeight());
 
-            boolean covered = !edit && this.square != null && this.tcUI != null
-                && this.tcUI.isTrackCovered(this.square);
+            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
+                road.getB(), getWidth(), getHeight());
 
-            this.setIcon(covered
-                ? ImageUtil.addCoveredOverlay((ImageIcon) lastIcon) : lastIcon);
-        });
+            if (a == null || b == null) continue;
+
+            g.drawLine(a[0], a[1], b[0], b[1]);
+        }
+    }
+
+    /**
+     * The roads of this square a standing train is lying across, as the sides they join.
+     *
+     * @return the roads, possibly none
+     */
+    private java.util.List<org.traincontrol.automationui.TilePorts.Route> coveredRoads()
+    {
+        java.util.List<org.traincontrol.automationui.TilePorts.Route> out =
+            new java.util.ArrayList<>();
+
+        if (edit || square == null || tcUI == null || component == null) return out;
+
+        for (org.traincontrol.automationui.TileGraph.RouteId road : tcUI.coveredRoutesAt(square))
+        {
+            java.util.List<org.traincontrol.automationui.TilePorts.Route> routes =
+                org.traincontrol.automationui.TilePorts.ports(
+                    component.getType(), component.getOrientation(), road.getState());
+
+            // A route the port map no longer has: the diagram has been edited under a covered set
+            // computed before it.  The square keeps its mark at the next refresh.
+            if (road.getIndex() < 0 || road.getIndex() >= routes.size()) continue;
+
+            org.traincontrol.automationui.TilePorts.Route route = routes.get(road.getIndex());
+
+            // A stub - one side twice - is a portal, and has no line to draw.
+            if (route.getA() == route.getB()) continue;
+
+            out.add(route);
+        }
+
+        return out;
     }
 
     /**

@@ -198,34 +198,17 @@ public class ImageUtil
         return bufferedImage;
     }
     
-    /**
-     * The wash for track a standing train is lying across.
-     *
-     * Adam, 2026-09-06: **"locked tiles in this way should be greyed out until the train blocking it
-     * moves."**
-     *
-     * Grey rather than red, and thin rather than opaque.  Red is what this application uses for a
-     * fault the operator has to fix; this is not a fault, it is the railway working - a train is
-     * standing there and the track behind it is spoken for.  The tile stays readable underneath
-     * because the operator still needs to see what the track IS while knowing it is unavailable.
-     *
-     * **Lightened 2026-09-07** ("make the shading be slightly lighter"), by raising the grey rather
-     * than by dropping the alpha alone: at a low alpha a dark grey reads as a smudge on a pale tile
-     * and as nothing at all on a dark one, while a pale grey at a modest alpha reads the same over
-     * both.
-     */
-    private static final Color COVERED = new Color(140, 140, 140, 95);
+    // THE COVERED WASH IS GONE, AND SO IS THE GREY IT WAS DRAWN IN (MT-309).
+    //
+    // `addCoveredOverlay` greyed a whole tile to say a train was lying across it, and Adam has ruled
+    // the other way: "instead of shading the entire tiles, we need to draw a line (let's say in
+    // orange) to show that the train is there.  graying makes it look confusing on double curve
+    // tiles."  A line along one road of a square is not a wash over an icon, so it is painted by
+    // `LayoutLabel.paintCoveredMark` and there is nothing left for this to do.
+    //
+    // Removed rather than left unused: a tinting helper sitting here with no caller is an invitation
+    // to put the wash back beside the line, which is the one thing he said he did not want.
 
-    /**
-     * Greys a tile to show a standing train is lying across it.
-     *
-     * @param originalIcon the tile as it is drawn
-     * @return a new icon; the original is not touched
-     */
-    public static ImageIcon addCoveredOverlay(ImageIcon originalIcon)
-    {
-        return addHighlightOverlay(originalIcon, COVERED);
-    }
     /**
      * Highlights an icon
      * @param originalIcon

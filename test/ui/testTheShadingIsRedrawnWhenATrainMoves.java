@@ -44,7 +44,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * | | |
  * |---|---|
  * | BARE | nothing standing anywhere |
- * | COVERED | the train placed, and a square its tail lies across is DARKER than it was |
+ * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a grey wash) |
  * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
  *
  * MUTATION: removing the `repaintTheWashWhereItChanged` call from
@@ -185,16 +185,23 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             assertNotNull(bareTile, "the covered square " + covered + " is outside the drawn page");
 
             double bareBrightness = support.Rendered.brightness(bareTile);
-            double darkBrightness = support.Rendered.brightness(darkTile);
 
             support.Rendered.save(bare, new File(OUT, "bare.png"));
             support.Rendered.save(withTrain, new File(OUT, "covered.png"));
 
-            assertTrue(darkBrightness < bareBrightness - 1.0,
-                "the square at " + covered + " is reported as covered and is drawn no darker than when"
-                + " nothing was standing anywhere (" + darkBrightness + " against " + bareBrightness
-                + "). The wash is not reaching the screen at all, so the assertion below - that it comes"
-                + " off again - could not fail either. Images in " + OUT);
+            // ORANGE, NOT DARKER (MT-309).
+            //
+            // This asked whether the square had got darker, which was the right question while the
+            // mark was a grey wash over the whole tile.  Adam has replaced that with a line along the
+            // road the train is on - "instead of shading the entire tiles, we need to draw a line
+            // (let's say in orange)" - and a line over a few pixels of a mostly white square does not
+            // move its mean brightness by a whole point.  What it does is put orange on it.
+            assertTrue(support.Rendered.hasTheTrainMark(darkTile),
+                "the square at " + covered + " is reported as covered and is drawn without the train"
+                + " mark on it (mean brightness " + support.Rendered.brightness(darkTile)
+                + " against a bare " + bareBrightness + "). The mark is not reaching the screen at"
+                + " all, so the assertion below - that it comes off again - could not fail either."
+                + " Images in " + OUT);
 
             // 3. AFTER - the train taken away, and the SAME grid painted again.
             clearEveryTrain(built);

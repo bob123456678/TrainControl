@@ -278,6 +278,91 @@ public final class Rendered
         }
     }
 
+    /**
+     * Whether this tile is drawing the mark that says a train is lying across it (MT-309).
+     *
+     * The mark used to be the tile's ICON - a greyed copy - so "is it marked" could be asked of the
+     * object with an identity comparison.  It is a line PAINTED over the icon now, which is not in
+     * the object at all, so the only honest way to ask is to paint the tile and look.
+     *
+     * By hue rather than against `LayoutLabel.TRAIN_MARK`: the claim is that somebody looking at the
+     * square sees orange on it, and a check reading production's own constant would agree with any
+     * value that constant was changed to, grey included.
+     *
+     * `paint` and not `printAll`: both of the others begin with an isShowing() check and do nothing
+     * for a component that is not on screen, which is every component a test builds.
+     *
+     * @param tile the label
+     * @return true when the mark is on it
+     * @throws Exception if Swing cannot paint it
+     */
+    public static boolean showsTheTrainMark(final java.awt.Component tile) throws Exception
+    {
+        if (tile == null) return false;
+
+        final BufferedImage[] shot = new BufferedImage[1];
+
+        SwingUtilities.invokeAndWait(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                int width = Math.max(1, tile.getWidth() > 0 ? tile.getWidth() : TILE);
+                int height = Math.max(1, tile.getHeight() > 0 ? tile.getHeight() : TILE);
+
+                tile.setSize(width, height);
+
+                shot[0] = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+                Graphics2D g = shot[0].createGraphics();
+
+                try
+                {
+                    g.setColor(Color.WHITE);
+                    g.fillRect(0, 0, width, height);
+
+                    tile.paint(g);
+                }
+                finally
+                {
+                    g.dispose();
+                }
+            }
+        });
+
+        return hasTheTrainMark(shot[0]);
+    }
+
+    /**
+     * The same question asked of a picture that has already been taken (MT-309).
+     *
+     * Separate so that a test working from a whole-page snapshot - `tile(page, x, y)` - asks the same
+     * thing as one painting a single label, and there is one statement of what the mark looks like.
+     *
+     * @param image the tile
+     * @return true when there is orange on it
+     */
+    public static boolean hasTheTrainMark(BufferedImage image)
+    {
+        if (image == null) return false;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+
+                if (r > 190 && g > 70 && g < 190 && b < 90 && r - g > 60) return true;
+            }
+        }
+
+        return false;
+    }
+
     private static void layoutEverything(Container container)
     {
         container.doLayout();

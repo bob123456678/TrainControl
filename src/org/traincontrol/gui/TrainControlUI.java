@@ -6600,11 +6600,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * whatever thread noticed the train move.  Replaced wholesale rather than mutated, so a reader
      * always sees one consistent answer rather than a set half way through being rebuilt.
      */
-    private volatile java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> coveredTrack =
-        java.util.Collections.emptySet();
+    private volatile java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> coveredTrack = java.util.Collections.emptyMap();
 
     /**
-     * Whether a standing train is lying across this square, so the diagram can grey it.
+     * Whether a standing train is lying across this square, so the diagram can mark it.
      *
      * @param page the page the tile is drawn on
      * @param x the column
@@ -6615,7 +6615,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (page == null) return false;
 
-        return coveredTrack.contains(
+        return coveredTrack.containsKey(
             new org.traincontrol.automationui.TileGraph.TileKey(page, x, y));
     }
 
@@ -6627,7 +6627,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean isTrackCovered(org.traincontrol.automationui.TileGraph.TileKey square)
     {
-        return square != null && coveredTrack.contains(square);
+        return square != null && coveredTrack.containsKey(square);
+    }
+
+    /**
+     * WHICH ROADS of a square the train is lying across (MT-309).
+     *
+     * A double curve carries two roads that never meet, and Adam's report is that a mark over the
+     * whole square says a train is on both: *"graying makes it look confusing on double curve
+     * tiles."*  So the tile is told which of its roads to draw the line along.
+     *
+     * Empty for a square nothing is standing on, and also for a covered square the reduction could
+     * not attribute to a route - a portal hop.  A caller that finds no road still knows the square is
+     * covered; what it cannot do is draw a line along one particular rail.
+     *
+     * @param square the tile
+     * @return the routes, never null
+     */
+    public java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> coveredRoutesAt(
+        org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        if (square == null) return java.util.Collections.emptySet();
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads = coveredTrack.get(square);
+
+        return roads == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.RouteId>emptySet() : roads;
     }
 
     /**
@@ -6638,26 +6662,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void refreshCoveredTrack()
     {
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was = coveredTrack;
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = coveredTrack;
 
         try
         {
             if (this.model == null || !this.model.hasAutoLayout() || getAutonomySession() == null)
             {
-                coveredTrack = java.util.Collections.emptySet();
+                coveredTrack = java.util.Collections.emptyMap();
 
                 return;
             }
 
             coveredTrack = getAutonomySession()
-                .tilesCoveredByStandingTrains(this.model.getAutoLayout());
+                .routesCoveredByStandingTrains(this.model.getAutoLayout());
         }
         catch (Exception cannotWorkItOut)
         {
-            // NOTHING GREYED rather than a broken diagram.  This runs inside a refresh that also
+            // NOTHING MARKED rather than a broken diagram.  This runs inside a refresh that also
             // redraws the whole railway, and a picture nobody can read is worse than a protection
             // nobody can see.
-            coveredTrack = java.util.Collections.emptySet();
+            coveredTrack = java.util.Collections.emptyMap();
         }
         finally
         {
@@ -6691,26 +6716,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param now the set just computed
      */
     private void repaintTheWashWhereItChanged(
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was,
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> now)
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was,
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> now)
     {
         try
         {
             if (getDiagramTileRegistry() == null) return;
 
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed =
-                new java.util.HashSet<>(was == null ? java.util.Collections.emptySet() : was);
+            // THE ROAD COUNTS AS A CHANGE, not only whether the square is covered at all (MT-309).
+            //
+            // The mark is a line along one road of the square now, so a train that has come to lie
+            // across a DIFFERENT road of a square it was already on has changed what that tile draws
+            // while the square stays in the set both times.  A symmetric difference over the keys
+            // alone would have left the line pointing the old way.
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> before =
+                was == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey,
+                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>>emptyMap() : was;
 
-            for (org.traincontrol.automationui.TileGraph.TileKey key : now)
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed = new java.util.HashSet<>(before.keySet());
+
+            changed.addAll(now.keySet());
+
+            for (java.util.Iterator<org.traincontrol.automationui.TileGraph.TileKey> key = changed.iterator(); key.hasNext();)
             {
-                if (!changed.remove(key)) changed.add(key);
+                org.traincontrol.automationui.TileGraph.TileKey at = key.next();
+
+                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> then = before.get(at);
+                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = now.get(at);
+
+                if (then == null ? after == null : then.equals(after)) key.remove();
             }
 
             for (org.traincontrol.automationui.TileGraph.TileKey key : changed)
             {
                 for (LayoutLabel label : getDiagramTileRegistry().labelsFor(key))
                 {
-                    label.refreshCoveredWash();
+                    label.refreshCoveredMark();
                 }
             }
         }

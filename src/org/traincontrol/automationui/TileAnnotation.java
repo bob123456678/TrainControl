@@ -1910,8 +1910,17 @@ public class TileAnnotation
 
     /**
      * Where a side meets the edge of the tile.
+     *
+     * Public since MT-309: the diagram's own train mark is a line along the rail, drawn by
+     * `LayoutLabel` rather than by anything here, and where a rail meets the edge of a square is one
+     * rule rather than two - the run line, the tested path and the train all have to agree about it.
+     *
+     * @param side the side
+     * @param width the tile's width
+     * @param height its height
+     * @return the point, or null for a side that is not one of the four
      */
-    static int[] midpoint(Side side, int width, int height)
+    public static int[] midpoint(Side side, int width, int height)
     {
         if (side == null) return null;
 

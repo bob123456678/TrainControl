@@ -54,12 +54,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * to the ICONS: real `LayoutLabel`s, registered in the real `DiagramTileRegistry`, redrawn by the real
  * `TrainControlUI.refreshCoveredTrack`, and asked afterwards which image they are actually showing.
  *
- * **How far that is, exactly.**  `refreshCoveredWash` sets a tile's icon to `addCoveredOverlay(lastIcon)`
- * when its square is covered and to `lastIcon` itself when it is not, so the question "is this tile
- * greyed" has a plain answer in the object and that is what is asked here.  What is NOT checked is
- * pixels on a screen: no window is photographed and none needs to be, because everything between the
- * train moving and the icon changing - the recompute, the symmetric difference, the registry lookup,
- * the event-thread hop, the overlay - is production code being run.  Confirmed by mutation on
+ * **How far that is, exactly.**  Every tile is PAINTED and looked at: since MT-309 the mark is an
+ * orange line drawn along the road the train is on rather than a greyed copy of the icon, so "is this
+ * tile marked" has no answer in the object and the only honest way to ask is to paint the square.
+ * `support.Rendered.showsTheTrainMark` does it, and everything between the train moving and the
+ * picture changing - the recompute, the difference, the registry lookup, the event-thread hop, the
+ * paint - is production code being run.  Confirmed by mutation on
  * 2026-09-08: with `repaintTheWashWhereItChanged(was, coveredTrack)` deleted from `refreshCoveredTrack`
  * this class stops at the icon assertion in stage 2 - having passed every model-level assertion above
  * it, including the one saying those same squares are no longer covered - which is OB-180 restored and
@@ -555,7 +555,7 @@ public class testTheShadingFollowsTheTrain
 
         // The icons are decoded off the event thread and applied on it, so a label asked for its image
         // straight after construction has none.  Waited for rather than assumed: a null icon makes
-        // `refreshCoveredWash` return without doing anything, and every assertion about the wash would
+        // `refreshCoveredMark` return without doing anything, and every assertion about the wash would
         // then be an assertion about a tile that was never drawn.
         long until = System.currentTimeMillis() + 30000;
 
@@ -573,7 +573,7 @@ public class testTheShadingFollowsTheTrain
 
         // Drawn now, so the wash each one is showing is the answer to the CURRENT covered set rather
         // than to whatever it was when the label was constructed.
-        for (LayoutLabel label : out) label.refreshCoveredWash();
+        for (LayoutLabel label : out) label.refreshCoveredMark();
 
         pumpTheEventThread();
 
@@ -581,20 +581,20 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * Whether this tile is showing the greyed image or the bare one.
+     * Whether this tile is drawing the mark that says a train is lying across it.
      *
-     * `refreshCoveredWash` sets the icon to `addCoveredOverlay(lastIcon)` when the square is covered and
-     * to `lastIcon` itself when it is not, so identity against `lastIcon` is the question exactly.  Read
-     * fresh each time rather than remembered, because an ordinary redraw replaces `lastIcon` with a new
-     * object for the same picture.
+     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a greyed copy of it -
+     * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
+     * now, which is nowhere in the object, and the only honest question left is what the square looks
+     * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.
      *
      * @param label the tile
-     * @return true when the wash is on it
-     * @throws Exception on a reflection failure
+     * @return true when the mark is on it
+     * @throws Exception on an event-thread failure
      */
     private static boolean isWashed(LayoutLabel label) throws Exception
     {
-        return label.getIcon() != bareIconOf(label);
+        return support.Rendered.showsTheTrainMark(label);
     }
 
     private static Icon bareIconOf(LayoutLabel label) throws Exception

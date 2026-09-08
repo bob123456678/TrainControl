@@ -699,18 +699,30 @@ public class testATrainCoversTheTrackBehindIt
             "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
             + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
 
-        assertTrue(ui.contains("if (!changed.remove(key)) changed.add(key)"),
-            "the redraw no longer takes the symmetric difference, so one of the two directions is not"
-            + " being repainted - either the wash is not put on, or it is not taken off");
+        // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).
+        //
+        // This asked for the symmetric difference in its exact spelling - `if (!changed.remove(key))
+        // changed.add(key)` - and that is no longer enough of a question.  The covered set became a
+        // map of square to the ROADS of it a train is lying across, because the mark is a line along
+        // one road now, so a square can stay covered while what it has to draw changes.  The redraw
+        // walks the union of the two sets and drops the squares whose answer is the same, which is
+        // the symmetric difference plus exactly that case.
+        assertTrue(ui.contains("changed.addAll(now.keySet())"),
+            "the redraw no longer walks both sets, so one of the two directions is not being"
+            + " repainted - either the mark is not put on, or it is not taken off");
 
-        assertTrue(ui.contains("label.refreshCoveredWash()"),
+        assertTrue(ui.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
+            "the redraw repaints every square in either set rather than the ones that changed, which"
+            + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
+
+        assertTrue(ui.contains("label.refreshCoveredMark()"),
             "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");
 
         String label = new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(label.contains("public void refreshCoveredWash()"),
+        assertTrue(label.contains("public void refreshCoveredMark()"),
             "the label cannot re-apply its wash without a full rebuild - and a full rebuild through"
             + " updateImage(true) would flash every signal and switch it touched");
     }

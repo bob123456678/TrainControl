@@ -4964,7 +4964,28 @@ public class AutonomySession
      */
     public Set<TileKey> tilesCoveredByStandingTrains(org.traincontrol.automation.Layout running)
     {
-        Set<TileKey> out = new LinkedHashSet<>();
+        return routesCoveredByStandingTrains(running).keySet();
+    }
+
+    /**
+     * The same answer, saying WHICH ROAD of each square the train is on (MT-309).
+     *
+     * Adam, 2026-09-08: *"instead of shading the entire tiles, we need to draw a line (let's say in
+     * orange) to show that the train is there.  graying makes it look confusing on double curve
+     * tiles."*  A double curve carries two roads that never meet, and a mark over the whole square
+     * says a train is on both of them - which is the confusion he is describing.
+     *
+     * The road is not worked out here: `GraphReducer.TileStep` records the route each step of an edge
+     * runs through, so the walk simply keeps what it already had in its hand.  Deriving it from the
+     * geometry afterwards would be a second answer to a question the reduction has already answered.
+     *
+     * @param running the layout, which is what knows where the trains are
+     * @return each covered square, with the routes of it the train is lying across
+     */
+    public Map<TileKey, Set<RouteId>> routesCoveredByStandingTrains(
+        org.traincontrol.automation.Layout running)
+    {
+        Map<TileKey, Set<RouteId>> out = new LinkedHashMap<>();
 
         if (running == null || reducer == null || getStationIndex() == null) return out;
 
@@ -5028,7 +5049,8 @@ public class AutonomySession
      * @param out the squares to draw, added to
      */
     private void walkBackFrom(org.traincontrol.automation.Layout running,
-        org.traincontrol.base.Locomotive train, Set<TileKey> covered, Set<TileKey> out)
+        org.traincontrol.base.Locomotive train, Set<TileKey> covered,
+        Map<TileKey, Set<RouteId>> out)
     {
         if (train == null || train.getTrainLength() == null) return;
 
@@ -5068,13 +5090,24 @@ public class AutonomySession
 
             if (next == null) return;
 
-            List<TileKey> between = pathBetween(at, next);
+            List<GraphReducer.TileStep> between = pathBetween(at, next);
 
-            for (TileKey step : between)
+            for (GraphReducer.TileStep step : between)
             {
-                out.add(step);
+                Set<RouteId> roads = out.get(step.getTile());
 
-                remaining -= store.getTileLength(step);
+                if (roads == null)
+                {
+                    roads = new LinkedHashSet<>();
+
+                    out.put(step.getTile(), roads);
+                }
+
+                // Null on a step the reduction could not attribute to a route - a portal hop.  The
+                // square is still covered; what cannot be said is which road of it.
+                if (step.getRouteId() != null) roads.add(step.getRouteId());
+
+                remaining -= store.getTileLength(step.getTile());
 
                 if (remaining <= 0) return;
             }
@@ -5099,11 +5132,15 @@ public class AutonomySession
      * spends the train's length square by square, so a path handed back the wrong way round would
      * draw the far end of the segment and leave the square beside the train clear.
      *
+     * The STEPS rather than the squares, because each one records which route of its square the edge
+     * runs through - and that is what lets the diagram draw the road the train is on rather than the
+     * whole tile (MT-309).
+     *
      * @param from the square walked from
      * @param to the square walked to
-     * @return the squares between, endpoints excluded, or null when they are not joined
+     * @return the steps between, endpoints excluded, or null when they are not joined
      */
-    private List<TileKey> pathBetween(TileKey from, TileKey to)
+    private List<GraphReducer.TileStep> pathBetween(TileKey from, TileKey to)
     {
         if (from == null || to == null || reducer == null) return null;
 
@@ -5114,7 +5151,7 @@ public class AutonomySession
 
             if (!sameWay && !otherWay) continue;
 
-            List<TileKey> tiles = new ArrayList<>();
+            List<GraphReducer.TileStep> steps = new ArrayList<>();
 
             for (GraphReducer.TileStep step : edge.getPath())
             {
@@ -5123,12 +5160,12 @@ public class AutonomySession
                 // The squares at either end are where trains STAND, not track lying under one.
                 if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
 
-                tiles.add(step.getTile());
+                steps.add(step);
             }
 
-            if (otherWay) java.util.Collections.reverse(tiles);
+            if (otherWay) java.util.Collections.reverse(steps);
 
-            return tiles;
+            return steps;
         }
 
         return null;

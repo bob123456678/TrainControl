@@ -1411,8 +1411,12 @@ public class testEditorSurfaceRules
      * a rendered label and a real image, and this file's convention is to assert the decision rather
      * than the pixels.
      *
-     * MUTATION: restoring `lastIcon` bare fails the first; dropping `!edit` fails the second; removing
-     * the lock sweep in isPathClear fails the third.
+     * **Restated for MT-309**, where the wash became a line painted over the icon rather than a greyed
+     * copy of it. The first report is now impossible by construction and the rule is asked of the
+     * mechanism that carries it: the mark is painted, and there is no wash beside it.
+     *
+     * MUTATION: deleting the `paintCoveredMark` call fails the first; dropping the `edit` guard in
+     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the third.
      *
      * @throws Exception on a failure to read the source
      */
@@ -1423,27 +1427,34 @@ public class testEditorSurfaceRules
             java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
             StandardCharsets.UTF_8));
 
-        // THE HIGHLIGHT RESTORES TO THE WASH.
-        // THE RESTORE, not the first set.  Setting the bare icon before the wash is laid over it is
-        // right and is what makes the wash a wash; it is the TIMER that must not put it back.
+        // THE HIGHLIGHT CANNOT TAKE THE MARK WITH IT (MT-309 restates this rule).
+        //
+        // Adam, 2026-09-07: "shaded tiles get overwritten if an accessory change highlights the same
+        // square."  While the mark WAS the icon, the rule was "the restore must put the greyed copy
+        // back", and this asked for exactly that spelling.
+        //
+        // The mark is a line PAINTED over the icon now, so the hazard is gone by construction rather
+        // than by a branch: whatever icon the restore puts back, the next paint draws the train on
+        // top of it.  What has to hold instead is that the paint really does it - which is the two
+        // assertions below, and they are the same rule asked of the mechanism that now carries it.
         int timer = label.indexOf("javax.swing.Timer restore");
 
         assertTrue(timer > 0,
             "the highlight timer has gone, so this checked the absence of something that is not there");
 
-        String restore = label.substring(timer, Math.min(label.length(), timer + 1400));
+        assertTrue(label.contains("paintCoveredMark(mark)"),
+            "nothing paints the train mark, so a covered square is drawn as ordinary track and the"
+            + " transient highlight has nothing left to overwrite because there was never anything"
+            + " there (Adam, 2026-09-07 and MT-309)");
 
-        assertFalse(restore.contains("this.setIcon(lastIcon);"),
-            "the highlight timer restores the bare icon, so a tile loses its wash the first time an"
-            + " accessory change flashes it - permanently, because nothing redraws it again until the"
-            + " train moves (Adam, 2026-09-07)");
+        assertFalse(label.contains("addCoveredOverlay"),
+            "the grey wash is back beside the orange line. Adam chose ONE indicator: \"instead of"
+            + " shading the entire tiles, we need to draw a line (let's say in orange)\" - and a tile"
+            + " wearing both says the same thing twice, in the shape he asked to be rid of");
 
-        assertTrue(restore.contains("stillCovered"),
-            "the restore does not re-ask whether the track is still covered");
-
-        // AND THE WASH IS THE VIEWER'S ONLY.
-        assertTrue(label.contains("boolean covered = !edit"),
-            "the covered wash is drawn in the editors too. An editor is where the railway is arranged,"
+        // AND THE MARK IS THE VIEWER'S ONLY.
+        assertTrue(label.contains("if (edit || square == null"),
+            "the train mark is drawn in the editors too. An editor is where the railway is arranged,"
             + " and what happens to be standing on it while you arrange it is a fact about right now"
             + " (Adam: \"only the track diagram viewer\")");
 
