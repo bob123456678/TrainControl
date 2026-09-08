@@ -90,6 +90,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
+| [MT-336](#mt-336) | 2026-09-08 | OB-183: a rebuild puts trains back where the file says - which word wins | needs test | OB-183 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17203,6 +17204,53 @@ behind it, so it produced plans the runtime refused on the first move.
 train's tail lies after a move depends on the side it arrives by, which the planner does not model -
 so it under-claims rather than over-refuses. If you see a plan that is still refused at execution
 because of a tail, that is this limit and it is worth reporting.
+
+---
+
+<a id="mt-336"></a>
+
+### MT-336 - 2026-09-08 - OB-183: a rebuild puts trains back where the file says - which word wins
+
+**Disposition:** needs test
+**From:** OB-183
+
+**Written:** 2026-09-08
+
+**OB-183 is diagnosed and needs a ruling from you before it is fixed, because the fix decides whose
+word wins.**
+
+**What you reported:** changing a home can teleport a locomotive on the diagram.
+
+**What is happening.** Changing a home rebuilds the running layout from the setup, and that rebuild
+regenerates every placement from the file. The rebuild's own javadoc names this hazard - it is OB-144,
+fixed here once - and says why it is normally safe: *"every caller reaches this BECAUSE the setup just
+changed, with the running layout captured upstream when the editor opened."*
+
+**That invariant is stated and not enforced.** It holds only while nothing has moved since the editor
+opened. Move a train by hand - by paste, by a route, from the keyboard - while the editor is open, and
+the setup is now stale about where that train is. The next rebuild puts it back where the file says,
+which is the teleport you saw. Autonomy running is already refused by a gate; hand movement is not.
+
+**What I did not do.** The obvious fix - capture the running layout into the setup just before
+rebuilding - is the one the code explicitly warns against: `captureFromLayout` writes what the layout
+has and REMOVES what it does not, and a capture at the wrong moment is what silently deleted a
+declined edit (ACC-B3). Doing it here would risk deleting the very home change that triggered the
+rebuild.
+
+**The question for you.** When the setup and the live railway disagree about where a train is
+standing, which one is right?
+
+1. **The railway.** Preserve live placements across a rebuild - the train stays where it is and the
+   setup catches up. Matches what an operator sees and expects.
+2. **The file.** Keep today's behaviour and say so - the rebuild announces that placements were
+   restored from the setup, so a teleport is explained rather than mysterious.
+3. **Refuse.** Decline the rebuild while the two disagree, the way it already declines while autonomy
+   is running, and say what to do about it.
+
+My own view is (1), on the grounds that where a train IS is a fact and where the file thinks it is is
+a record - but this is the same class of decision as the mid-run direction rule, and it is yours.
+
+**Not a test to run.** Nothing to check until this is settled.
 
 ---
 

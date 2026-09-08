@@ -640,9 +640,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     };
         
     /**
-     * Creates new form MarklinUI
+     * Installs the application's look and feel.
+     *
+     * **A method rather than three lines in the constructor, because a window is not the only thing
+     * that needs it.** Adam, 2026-09-08: *"in the test windows that popup, JMenu font sizes are smaller
+     * than before... but not in the compiled production app."*
+     *
+     * They were. `MarklinControlStation.init` takes a `showUI` flag: production passes true and gets a
+     * `TrainControlUI`, whose constructor was the only caller of `FlatLightLaf.setup()`. The test suite
+     * passes false, so nothing installed a look and feel at all - and every dialog, menu and window a
+     * test opened afterwards was drawn in METAL, with Metal's fonts. Nothing had regressed; the tests
+     * had simply never been looking at the same program.
+
+     * That matters beyond appearance: `testEveryLanguageFits` measures whether translated text fits its
+     * controls, and it was measuring it in the wrong typeface.
+     *
+     * Idempotent - `FlatLightLaf.setup()` may be called again - so `init` calling it before the
+     * constructor does costs nothing.
      */
-    public TrainControlUI()
+    public static void installLookAndFeel()
     {
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
@@ -650,6 +666,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Makes tabs narrower
         javax.swing.UIManager.put("TabbedPane.tabWidthMode", "compact");
         javax.swing.UIManager.put("TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
+    }
+
+    /**
+     * Creates new form MarklinUI
+     */
+    public TrainControlUI()
+    {
+        installLookAndFeel();
         
         initComponents();
         

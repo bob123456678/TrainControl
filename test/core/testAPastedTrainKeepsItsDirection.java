@@ -299,6 +299,94 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
+     * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).
+     *
+     * Adam: **"Changing a home can teleport a current locomotive's location on the diagram/graph."**
+     *
+     * Nothing about a home decides where a train stands, so the suspect is the REBUILD that a home
+     * change triggers rather than the change itself. `AutonomyBuilder.placementCopy` picks between a
+     * square's copies by the recorded facing and **falls through to COPY 0** when there is no facing or
+     * none of them matches. Copy 0 is whichever the builder emitted first - so if that order is not
+     * stable, every rebuild is a chance for a facing-less train to appear somewhere else, and a home
+     * assignment is simply one of the many things that rebuilds.
+     *
+     * That makes this a question with a yes-or-no answer, and it is worth asking whatever the answer
+     * is: a builder whose output depends on iteration order would move trains for reasons no one could
+     * ever reproduce.
+     *
+     * MUTATION: a builder that ordered its copies from a HashMap fails this.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testARebuildPutsTheCopiesBackInTheSameOrder() throws Exception
+    {
+        java.util.Map<TileKey, java.util.List<String>> first = copiesBySquare();
+
+        assertFalse(first.isEmpty(), "no square built to a copy, so this compared nothing");
+
+        // A change of the kind Adam made - it touches no placement, and it rebuilds.
+        TileKey somewhere = first.keySet().iterator().next();
+
+        Object wasHome = session.getPointProperty(somewhere, "home");
+
+        try
+        {
+            session.setHome(somewhere, train);
+
+            java.util.Map<TileKey, java.util.List<String>> second = copiesBySquare();
+
+            java.util.List<String> moved = new LinkedList<>();
+
+            for (java.util.Map.Entry<TileKey, java.util.List<String>> was : first.entrySet())
+            {
+                java.util.List<String> now = second.get(was.getKey());
+
+                if (now == null || !now.equals(was.getValue()))
+                {
+                    moved.add(was.getKey() + ": " + was.getValue() + " -> " + now);
+                }
+            }
+
+            assertTrue(moved.isEmpty(),
+                "a square's copies came back in a different order after a rebuild that changed nothing"
+                + " about them. `placementCopy` falls through to COPY 0 for a train with no recorded"
+                + " facing, so an unstable order moves that train to a different Point every time"
+                + " anything rebuilds - which is a locomotive teleporting for no reason anybody can"
+                + " reproduce (OB-183). " + moved);
+        }
+        finally
+        {
+            session.setHome(somewhere, wasHome == null ? null : String.valueOf(wasHome));
+        }
+    }
+
+    /**
+     * Every square that builds to at least one copy, with its copies in the order the builder emitted.
+     *
+     * @return square to copy names
+     * @throws Exception on a failure to build
+     */
+    private java.util.Map<TileKey, java.util.List<String>> copiesBySquare() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        java.util.Map<TileKey, java.util.List<String>> out = new java.util.LinkedHashMap<>();
+
+        for (Point station : stations())
+        {
+            TileKey square = session.getStationIndex().squareOf(station.getName());
+
+            if (square == null || out.containsKey(square)) continue;
+
+            java.util.List<String> names = session.getStationIndex().pointNamesAt(square);
+
+            if (names != null && !names.isEmpty()) out.put(square, new java.util.ArrayList<>(names));
+        }
+
+        return out;
+    }
+    /**
      * SQUARES DO SPLIT ON THIS RAILWAY, and that retires a caveat four review findings were argued from.
      *
      * This method used to assert the opposite - every named square builds to exactly ONE copy - and it

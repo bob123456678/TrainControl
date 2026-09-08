@@ -3839,6 +3839,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // User interface - only initialize if needed
         TrainControlUI ui = null;
         
+        // THE LOOK AND FEEL FIRST, and whether or not a window is being built.
+        //
+        // It used to be installed by the TrainControlUI constructor, so a caller passing showUI=false -
+        // which is every test in the suite - got no look and feel at all, and every dialog and menu it
+        // opened afterwards was drawn in Metal. Adam saw it as "JMenu font sizes are smaller than
+        // before... but not in the compiled production app": nothing had regressed, the tests had
+        // simply never been looking at the same program.
+        //
+        // Idempotent, so the constructor asking again below costs nothing.
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+
         if (showUI) ui = new TrainControlUI();
         
         if (initIP == null)
