@@ -5615,6 +5615,83 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Which locomotive is standing on which point, and which side it came in by (OB-183).
+     *
+     * Read off the RUNNING layout, which is the only place a train's position lives once anything has
+     * moved it: `currentLoc` is not written back to the setup until something captures it.
+     *
+     * By POINT NAME rather than by square, because on a split square which copy a train is on IS its
+     * direction - putting it back on the square would be putting it back facing an arbitrary way.
+     *
+     * @return locomotive name to {point name, arrival side}, the side possibly null
+     */
+    private java.util.Map<String, String[]> whereTheTrainsAre()
+    {
+        java.util.Map<String, String[]> standing = new java.util.LinkedHashMap<>();
+
+        if (this.model == null || !this.model.hasAutoLayout()) return standing;
+
+        for (org.traincontrol.automation.Point point : this.model.getAutoLayout().getPoints())
+        {
+            org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
+
+            if (loc == null || loc.getName() == null) continue;
+
+            standing.put(loc.getName(), new String[]{point.getName(), point.getArrivedFrom()});
+        }
+
+        return standing;
+    }
+
+    /**
+     * Puts each train back where it was standing before the rebuild (OB-183).
+     *
+     * **Only where the point still exists.** An edit that renamed or removed a square is an edit about
+     * that square, and the setup's answer is the only one left - so those are left where the rebuild
+     * put them rather than dropped on the floor.
+     *
+     * The arrival side goes back with the train, because `Point.setLocomotive` clears it when the
+     * occupant changes - which is right when a different train arrives and wrong when the same train is
+     * being put back exactly where it was. Without this the tail blocking would switch itself off on
+     * every home change, which is the defect OB-183 was reported as, wearing different clothes.
+     *
+     * @param standing what `whereTheTrainsAre` recorded
+     */
+    private void putTheTrainsBack(java.util.Map<String, String[]> standing)
+    {
+        if (standing == null || standing.isEmpty()) return;
+
+        if (this.model == null || !this.model.hasAutoLayout()) return;
+
+        org.traincontrol.automation.Layout built = this.model.getAutoLayout();
+
+        for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
+        {
+            try
+            {
+                org.traincontrol.automation.Point back = built.getPoint(was.getValue()[0]);
+
+                if (back == null) continue;
+
+                if (back.getCurrentLocomotive() == null
+                    || !was.getKey().equals(back.getCurrentLocomotive().getName()))
+                {
+                    built.moveLocomotive(was.getKey(), was.getValue()[0], false);
+                }
+
+                if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
+            }
+            catch (Exception cannotPutItBack)
+            {
+                // ONE TRAIN, NOT THE REBUILD.  A locomotive that cannot be put back is worth saying
+                // out loud - it is standing somewhere the diagram no longer has - and it is not a
+                // reason to abandon the others.
+                this.model.log(cannotPutItBack.getMessage());
+            }
+        }
+    }
+
+    /**
      * The same rebuild, saying so when it declines one the operator has not been warned about
      * (VD11-C8).
      *
@@ -5710,7 +5787,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // session that opened that way. This method cannot check that for itself - by the time it
             // is called the running layout has already been rebuilt over once - which is why the rule
             // is an ORDER upstream rather than a guard here, exactly as DW-A1 was settled.
+            // AND WHERE THE TRAINS ACTUALLY ARE SURVIVES IT (OB-183, Adam 2026-09-08: **"option 1"**).
+            //
+            // He reported it as a locomotive teleporting when a home was changed. The paragraph above
+            // has the mechanism and admits the hole: the setup is the newer of the two only because
+            // `openLayoutEditor` captured the railway on the way in, and that stops being true the
+            // moment anything moves a train afterwards - a paste, a route, the keyboard. The rebuild
+            // then regenerates every placement from a file that is stale about exactly that, and puts
+            // the train back where it started.
+            //
+            // His ruling settles which of the two is right: **where a train IS is a fact, and where the
+            // file thinks it is is a record.** So the placements are carried across the rebuild.
+            //
+            // PLACEMENTS ONLY, and that is the whole reason this is safe. Folding the entire running
+            // layout back - which is what `captureFromLayout` does - writes the stale answer over the
+            // edit that asked for the rebuild, and is what silently deleted a declined edit (ACC-B3).
+            // A placement is not an inferred setting: nobody chose it in the editor, and the railway is
+            // the only place it lives.
+            java.util.Map<String, String[]> standing = whereTheTrainsAre();
+
             getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
+
+            putTheTrainsBack(standing);
         }
     }
 
@@ -5792,6 +5890,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // of the two sites, and the fix had to be applied to both.  Left as it was there would be two
         // again.
         rebuildRunningLayoutFromSetup();
+
+        // AND THE FILE IS WRITTEN, which is the third of the three moments Adam named (2026-09-08:
+        // **"on exit or editor load or editor close, save to the setup file.  this is how it was in
+        // 2.8.x"**).
+        //
+        // Exit had this and so did editor OPEN - `captureRunningLayout` is on both - and closing did
+        // not, so between one close and the next open the file said where the trains had started.
+        //
+        // AFTER the rebuild, not before, and the order is the whole of what makes it safe.  Capturing
+        // first folds the running layout over the configuration and REMOVES what the layout does not
+        // carry, which is what silently deleted a declined edit (ACC-B3) - and the layout at that
+        // moment is the one built before the edit.  After the rebuild it carries the edit, so what is
+        // written back is the edit plus where the trains really are.
+        captureRunningLayout();
     }
 
     /**

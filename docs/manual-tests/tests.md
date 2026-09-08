@@ -90,7 +90,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
-| [MT-336](#mt-336) | 2026-09-08 | OB-183: a rebuild puts trains back where the file says - which word wins | needs test | OB-183 |
+| [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | needs test | OB-183 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17211,7 +17211,7 @@ because of a tail, that is this limit and it is worth reporting.
 
 ### MT-336 - 2026-09-08 - OB-183: a rebuild puts trains back where the file says - which word wins
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-183
 
 **Written:** 2026-09-08
@@ -17251,6 +17251,49 @@ My own view is (1), on the grounds that where a train IS is a fact and where the
 a record - but this is the same class of decision as the mid-run direction rule, and it is yours.
 
 **Not a test to run.** Nothing to check until this is settled.
+
+#### Comments
+
+**Claude, 2026-09-08.** Adam ruled the same day: **"option 1. then, on exit or editor load or editor
+close, save to the setup file. this is how it was in 2.8.x."**
+
+Built, and [MT-337](#mt-337) is the test. This entry was the question, and the question is answered.
+
+---
+
+<a id="mt-337"></a>
+
+### MT-337 - 2026-09-08 - A train you moved by hand stays put when a home changes
+
+**Disposition:** needs test
+**From:** OB-183
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. Open the autonomy editor.
+2. While it is open, move a train by hand on the track diagram - cut and paste it to another station.
+3. Change a home locomotive on some square.
+
+**Expected**
+
+The train you moved **stays where you put it**. It used to jump back to wherever the setup last
+recorded it, because changing a home rebuilds the running layout from the file and the file had not
+been told about your paste.
+
+4. Close the editor, then quit and restart.
+
+**Expected**
+
+The train is still where you put it. Closing the editor now writes the setup file, which is the third
+of the three moments you named - exit and editor-open already did.
+
+**What was deliberately NOT done, and why it matters if you see something odd.** Only the PLACEMENTS
+are carried across a rebuild, not the whole running layout. Folding everything back is what silently
+deleted a declined edit once (ACC-B3): the capture removes what the layout does not carry, and the
+layout at that moment is the one built before your edit. So an authored setting still comes from the
+setup, and only where the trains are comes from the railway.
 
 ---
 

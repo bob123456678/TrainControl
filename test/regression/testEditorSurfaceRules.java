@@ -1672,6 +1672,68 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * A rebuild does not move the trains, and closing the editor writes the file (OB-183).
+     *
+     * Adam reported it as a locomotive teleporting when a home was changed, and ruled on the fix:
+     * **"option 1"** - the railway wins - and **"on exit or editor load or editor close, save to the
+     * setup file. this is how it was in 2.8.x."**
+     *
+     * The rebuild regenerates every placement from the setup. That is safe only while the setup knows
+     * where the trains are, which `openLayoutEditor` arranges by capturing on the way in - and which
+     * stops being true the moment anything moves a train afterwards. His ruling settles it: where a
+     * train IS is a fact, and where the file thinks it is is a record.
+     *
+     * **Placements only.** Folding the whole running layout back is what deleted a declined edit
+     * (ACC-B3), because the capture removes what the layout does not carry and the layout at that
+     * moment predates the edit. Carrying the placements across carries nothing that was authored.
+     *
+     * MUTATION: dropping either helper from the rebuild restores the teleport; dropping the capture
+     * from the close leaves the file saying where the trains started until the next open.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testARebuildLeavesTheTrainsWhereTheyAre() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        String rebuild = bodyOf(ui, "public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined)");
+
+        assertNotEquals(rebuild, "",
+            "rebuildRunningLayoutFromSetup is not declared that way any more, so this checked nothing");
+
+        int read = rebuild.indexOf("whereTheTrainsAre()");
+        int loaded = rebuild.indexOf("getAutonomyViewerPanel().load(");
+        int back = rebuild.indexOf("putTheTrainsBack(");
+
+        assertTrue(read > 0 && loaded > 0 && back > 0,
+            "the rebuild no longer carries the placements across, so every train goes back where the"
+            + " setup last said it was - which is the teleport Adam reported (OB-183)");
+
+        // THE ORDER, because each half is useless in the wrong place: reading after the load reads the
+        // answer the load just invented, and putting back before it is overwritten by the load itself.
+        assertTrue(read < loaded && loaded < back,
+            "the placements are read or restored on the wrong side of the reload, so the rebuild either"
+            + " records what it just overwrote or is overwritten by it");
+
+        // AND THE THIRD SAVE MOMENT.  Exit and editor-open already called captureRunningLayout; close
+        // did not, so between a close and the next open the file said where the trains had started.
+        String closed = bodyOf(ui, "public void autonomyEditorClosed()");
+
+        assertNotEquals(closed, "", "autonomyEditorClosed is not declared that way any more");
+
+        assertTrue(closed.contains("captureRunningLayout()"),
+            "closing the editor no longer writes the setup file, so where the trains are is lost until"
+            + " something else captures - Adam: \"on exit or editor load or editor close\" (OB-183)");
+
+        assertTrue(closed.indexOf("rebuildRunningLayoutFromSetup()")
+            < closed.indexOf("captureRunningLayout()"),
+            "the close captures BEFORE it rebuilds, so it folds a layout that predates the edit over the configuration and removes what that layout does not carry - which is how a declined edit was silently deleted (ACC-B3)");
+    }
+
+    /**
      * Moving an arrow redraws the arrows, not the whole diagram (OB-185).
      *
      * Adam: **"changing any pathing arrow in the track autonomy editor makes the whole screen
