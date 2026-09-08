@@ -5093,6 +5093,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (named == null || named.trim().isEmpty()) return null;
         }
 
+        // AND ONE NAME PER STATION, THE OFFSET ONE WINNING (MT-337).
+        //
+        // Adam, 2026-09-08: "if a station has an offset label, the current home loc is shown twice
+        // (once on the tile itself, once on the offset label)."
+        //
+        // A station may carry more than one caption and that is deliberate - AutonomyCompanionStore.
+        // setCaption: "several squares may name the same station... a long platform is legitimately
+        // labelled at both ends" - so the store is not where this can be settled.  What is NOT
+        // deliberate is a station captioned on its own square AND beside it: the two land next to
+        // each other and say the same thing twice, which is what he was looking at.
+        //
+        // The state is reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
+        // the old caption away, but `migrateStationLabels` writes through the raw store door, so a
+        // station already captioned on its own square gains a second one the moment a legacy
+        // "Point:" label is migrated off the page beside it.  `1 - Main:6,4` on the operator's own
+        // railway is captioned on `6,5` and on `6,4`.
+        //
+        // The SELF-caption gives way, because the offset one is the one somebody placed: a caption
+        // beside the platform is either where the placer put it or where `placeCaption` found room,
+        // and the square's own is the last resort of both.  "Once - on the caption square when there
+        // is one, otherwise on the station square", which is Adam's ruling read back.
+        //
+        // Only against ANOTHER square.  A station captioned only on itself keeps its caption, and two
+        // captions at opposite ends of a platform are both offset, so neither is touched - that is
+        // the case the store's own comment exists for.
+        if (caption != null && caption.equals(where))
+        {
+            for (org.traincontrol.automationui.TileGraph.TileKey elsewhere
+                : session.captionsFor(caption))
+            {
+                if (!caption.equals(elsewhere)) return null;
+            }
+        }
+
         return caption;
     }
 

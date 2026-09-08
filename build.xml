@@ -354,6 +354,7 @@
         <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
         <test-one-class class="testTheShadingFollowsTheTrain"/>
         <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
+        <test-one-class class="testTheHomeLabelIsDrawnOnce"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
     </target>
     <target name="package-for-store" depends="jar">
