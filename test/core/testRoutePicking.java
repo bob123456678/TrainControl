@@ -581,10 +581,25 @@ public class testRoutePicking
 
     /**
      * Puts a locomotive at the start and hands it back.
+     *
+     * **WITH NO RECORDED LENGTH, deliberately** (MT-262).  This locomotive comes from the real
+     * database, so it arrives carrying whatever length Adam has typed on it - and since the room rule
+     * stopped being fenced behind terminus-or-reversing, a length longer than a fixture's edges
+     * refuses that fixture's berth.  Two tests here failed for exactly that: `importantButFarAway`
+     * measures the near station two units away, and a real locomotive is longer than two.
+     *
+     * These tests are about which destination the picking rules PREFER, and every one of their
+     * assertions names two candidates the layout can reach.  A length that removes one of them turns a
+     * preference test into a reachability test, and it does it depending on a value in a file nobody
+     * editing this class would think to look at.
+     *
+     * Zero is how the model spells "not recorded", which is what these fixtures always meant.
      */
     private static Locomotive placedLocomotive(Layout layout) throws Exception
     {
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        loc.setTrainLength(0);
 
         layout.moveLocomotive(loc.getName(), "RP_Start", false);
 
