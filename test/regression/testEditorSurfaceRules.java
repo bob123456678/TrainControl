@@ -1818,10 +1818,24 @@ public class testEditorSurfaceRules
         // radios are a ButtonGroup ticked by equality, so a recorded side missing from the list ticks
         // NOTHING: the section reads as "no tail recorded" while the side it does not show goes on
         // steering the tail walk. A track edit that re-plumbs a square leaves exactly that state.
-        assertTrue(menu.contains("if (recorded != null && !sides.contains(recorded)) sides.add(recorded)"),
+        assertTrue(menu.contains("recorded != null && !sides.contains(recorded) ? recorded : null"),
             "the arrived-from menu drops a recorded side the geometry does not offer, so it opens with"
-            + " every choice blank for a square that HAS a tail recorded - which is OB-177's symptom"
-            + " on the sibling menu, unswept (RGD-C4)");
+            + " every choice blank for a square that HAS a tail recorded - a value still steering the"
+            + " tail walk, unseen (RGD-C4)");
+
+        // SHOWN, NOT OFFERED.  The first attempt copied the facing menu's answer - add it to the list
+        // - and Adam met it as a regression: "75 407 DB's menu now lets you select arrival from the
+        // west at BottomMainPost, which makes no sense". The tail walk matches stored sides against the
+        // geometry, so a side the geometry does not have can never match: offering it is offering a
+        // choice guaranteed to do nothing.
+        assertFalse(menu.contains("sides.add(recorded)"),
+            "a recorded side the track does not have is offered as a choice again. It can never match"
+            + " the tail walk, so setting it blocks nothing - it is a statement about the square, and"
+            + " belongs in the menu disabled (RGD-C4)");
+
+        assertTrue(menu.contains("gone.setEnabled(false)"),
+            "the recorded-but-absent side is not disabled, so it reads as an answer the operator may"
+            + " choose rather than as a fault to correct (RGD-C4)");
     }
 
     /**

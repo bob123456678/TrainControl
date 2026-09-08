@@ -2941,21 +2941,29 @@ public class AutonomyEditorPanel extends JPanel
 
         final String recorded = session.getArrivedFrom(target);
 
-        // AND WHATEVER IS ACTUALLY RECORDED, even when the geometry does not offer it (RGD-C4).
+        // A RECORDED SIDE THE TRACK DOES NOT HAVE IS SHOWN, NOT OFFERED (RGD-C4, and Adam's report of
+        // the first attempt: **"75 407 DB's menu now lets you select arrival from the west at
+        // BottomMainPost, which makes no sense"**).
         //
-        // The same rule as the facing menu thirty lines below, which is where it was written first
-        // (OB-177) and where it was left. The radios are a ButtonGroup ticked by `side.equals(recorded)`,
-        // so a recorded side that is not in this list ticked NOTHING: the section opened with every
-        // choice blank, which reads as "no tail recorded" while a side that IS recorded goes on steering
-        // the tail walk. A track edit that re-plumbs a square leaves exactly that state, and so did an
-        // answer stored while these were briefly named by the build rather than by the geometry.
+        // The problem is real: the radios are a ButtonGroup ticked by `side.equals(recorded)`, so a
+        // recorded side not in this list ticked NOTHING, and the section read as "no tail recorded"
+        // for a square that has one - a value still steering the tail walk, unseen. A track edit that
+        // re-plumbs a square under a standing train leaves exactly that state.
         //
-        // It gets an entry rather than being silently dropped, for the reason the facing menu gives:
-        // which of the two is wrong - the record or the track under it - is not this menu's to decide.
-        // Clicking any other entry resolves both.
-        if (recorded != null && !sides.contains(recorded)) sides.add(recorded);
+        // The facing menu's answer to the same problem (OB-177) was to ADD the recorded value to the
+        // list, and copying that here was wrong, which is `lifted-rules-lose-their-precondition` in one
+        // step. A facing the square cannot hold is still a facing, and something already reports it:
+        // `facingsThatCannotBeHeld`. An arrival side the track does not have is not an answer to this
+        // question at all - the tail walk matches stored sides against the GEOMETRY, so a side the
+        // geometry does not have can never match and blocks nothing. Offering it as a choice invites
+        // the operator to set a value that is guaranteed to do nothing.
+        //
+        // So it appears once, ticked, DISABLED, saying what it is. The menu still does not lie about
+        // what is recorded, and every clickable entry is one that works.
+        final String recordedButGone =
+            recorded != null && !sides.contains(recorded) ? recorded : null;
 
-        if (sides.isEmpty()) return null;
+        if (sides.isEmpty() && recordedButGone == null) return null;
 
         javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("autosetup.ui.menuArrivedFrom"));
 
@@ -2989,6 +2997,19 @@ public class AutonomyEditorPanel extends JPanel
                         if (on != null) on.setArrivedFrom(side);
                     }
                 }));
+        }
+
+        if (recordedButGone != null)
+        {
+            javax.swing.JRadioButtonMenuItem gone = new javax.swing.JRadioButtonMenuItem(
+                I18n.f("autosetup.ui.arrivedFromNotOnTrack", I18n.t(sideLabel(recordedButGone))), true);
+
+            // Not in the group, and not enabled: it is a statement about the square, not a choice.
+            gone.setEnabled(false);
+
+            gone.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivedFromNotOnTrack")));
+
+            menu.add(gone);
         }
 
         // NO WAY TO SAY "I DO NOT KNOW", by Adam’s ruling of 2026-09-07: **"clearing should not be
