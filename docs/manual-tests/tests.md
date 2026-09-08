@@ -92,7 +92,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
 | [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | needs test | OB-183 |
 | [MT-338](#mt-338) | 2026-09-08 | The station label and the facing menu say the same thing | needs test | OB-181 |
-| [MT-339](#mt-339) | 2026-09-08 | The menu bar, the menu font and the start button | needs test | OB-186 |
+| [MT-340](#mt-340) | 2026-09-08 | The menu bar in the window title, to look at | needs test | OB-186 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17339,7 +17339,7 @@ facing in the list, which is a guess shown as a fact. It now ticks what the trai
 
 ### MT-339 - 2026-09-08 - The menu bar, the menu font and the start button
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-186
 
 **Written:** 2026-09-08
@@ -17383,6 +17383,58 @@ have attributed to the same cause - the window decorations changed the top of th
 been able to see it. **If it is still flat after this, say so** and I will set its margin explicitly
 instead; the button lives in the generated block, so that has to be done from outside it and I would
 rather not double the padding by guessing.
+
+#### Comments
+
+**Claude, 2026-09-08.** Adam: *"it looks good now."* The interface is back to the size it was.
+
+**The cause was none of the three things this entry guessed at.** FlatLaf scales the whole interface -
+fonts, insets and button padding by one factor - and computes it once while installing itself. On a
+120-dpi display that is 1.25. Measured in a fresh JVM: installing cold, before anything has touched AWT,
+gives `Label.font` 12; installing after a single call into the toolkit gives 15. Same machine, same
+code, only what had run first.
+
+That is why the menus, the labels above the diagram and the button's padding all moved together: they
+are the same multiplier. `installLookAndFeel` now asks the toolkit for the screen resolution before
+installing, so the answer no longer depends on where the method is called from, and `UI_SCALE` pins it
+if the automatic answer is ever wrong.
+
+Superseded by [MT-340](#mt-340), which is the title-bar preview he asked for next.
+
+---
+
+<a id="mt-340"></a>
+
+### MT-340 - 2026-09-08 - The menu bar in the window title, to look at
+
+**Disposition:** needs test
+**From:** OB-186
+
+**Written:** 2026-09-08
+
+**A preview, not a decision.** Adam, 2026-09-08: *"toggle the window title menubar so I can preview that
+version."*
+
+`TrainControlUI.MENUS_IN_THE_TITLE_BAR` is **true** in this build, so the menu bar is drawn inside the
+window title the way FlatLaf prefers.
+
+**Steps**
+
+1. Start TrainControl and look at the top of the window.
+2. Open a menu or two, and resize the window narrow enough that the title and the menus compete for
+   room.
+
+**What to weigh**
+
+- It buys back a row of vertical space, which on a track diagram is real estate.
+- The menu text is drawn in the title bar's own size, which is smaller than a normal menu bar.
+- The three languages whose menu bars are already tight - French, Spanish and Italian, measured by
+  `testEveryLanguageFits` at 568px and 650px against 555px of room - have less room in a title bar than
+  on a bar of their own.
+
+**Either answer is one line.** Set the constant back to false for the plain bar; leave it true to keep
+this. Nothing else changes with it, which is the point of it being a constant rather than an accident of
+when the look and feel happens to be installed.
 
 ---
 

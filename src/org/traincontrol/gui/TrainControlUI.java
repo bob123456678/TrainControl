@@ -673,8 +673,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * So the appearance was never chosen: it was a side effect of when a line happened to run.  Saying
      * it here makes it a decision, and one that no longer depends on construction order.
+     *
+     * **TRUE at the moment, at Adam's request of 2026-09-08: "toggle the window title menubar so I can
+     * preview that version."**  This is the preview, not a decision - set it back to false if the plain
+     * bar is preferred, and nothing else has to change either way.
      */
-    public static final boolean MENUS_IN_THE_TITLE_BAR = false;
+    public static final boolean MENUS_IN_THE_TITLE_BAR = true;
 
     /**
      * How much larger the menus are than the rest of the interface.
