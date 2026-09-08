@@ -13964,10 +13964,17 @@ commands did, say so and I will put the sweep back for occupied platforms only.
 
 5. **Take a locomotive that is not reversible** and give it a home at a parking terminus -
    TunnelLeftPark, or whichever you tried on MT-245.
-6. **Drive it away and press Return Home.** It should go, and it should arrive having been turned
-   round on the way, at the reversing point - backing in, not nose-first.
-7. **A terminus with no reversing point on the way to it** should now be reported as impossible for
-   that locomotive, rather than offered and then failing on the first move.
+6. **Drive it away and press Return Home.** It should go, and it should arrive **nose first**. It then
+   has to be backed out by hand to leave, and nothing in the software will say so at the time - the
+   warning in the autonomy editor is the only place that mentions it.
+7. **A terminus with no reversing point on the way to it** should be **offered and should work**, for
+   the same reason.
+
+> **Rewritten 2026-09-07 (MON-C7).** Steps 6 and 7 used to ask for the opposite: turned round on the
+> way, backing in, and an impossibility report for a terminus with no reversing point on the way. That
+> was the `mustBackIn` rule, and Adam removed it on 2026-09-04 - **"Return Home is manual operation"**
+> - which is recorded under [MT-250](#mt-250). Running the queue against the old text would have failed
+> a railway that is behaving correctly.
 
 #### Comments
 
