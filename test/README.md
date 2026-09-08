@@ -4,10 +4,14 @@ Four folders, by what a test is FOR rather than by what it happens to import.
 
 | Folder | What lives there | How many |
 |---|---|---|
-| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 63 |
-| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 16 |
-| `regression/` | Written for one named defect, to stop it coming back. | 45 |
-| `support/` | Not tests. Fixtures the others use. | 3 |
+| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 81 |
+| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 29 |
+| `regression/` | Written for one named defect, to stop it coming back. | 54 |
+| `support/` | Not tests. Fixtures the others use. | 4 |
+
+**Counted 2026-09-08.**  They read 63/16/45/3 until then, stale by thirty-four classes (MON-C20) - a
+table that has to be recounted to be believed, in the document that exists to say where a new test goes.
+If you add a class, the number here is the one to move.
 
 Set 2026-08-22, at Adam's request, when 76 classes in one flat folder had stopped saying anything about
 themselves.
@@ -103,3 +107,33 @@ configuration failure in `@BeforeClass`, not as a test failure, so it is easy to
 
 The fixture files stay at the root of `test/`, because `ui/` and `regression/` want them too. Every
 lookup is therefore **absolute**: `getResource("/LocDB2_5_16.data")`. Keep new ones that way.
+
+---
+
+## What the fixtures cannot see
+
+A survey of every fixture in the suite (MON-C17 to C21, 2026-09-07) asked what the tests are shaped
+like rather than what they assert.  Recorded here because a blind spot nobody has written down is
+found the expensive way - twice this month, by a defect walking straight through it.
+
+**Settled 2026-09-08.**  The largest one on the list is gone: every "real layout" test was building a
+FIVE-EDGE skeleton of the railway, because the fixture parsed its pages with a second `CS2File` and
+never wired their accessories.  `support.LayoutSandbox.wired` runs the application's own wiring loop
+and the same railway now reduces to 128 edges and builds to 149.  Ten tests failed the moment they
+could see it; a guard in `testEveryTestIsInTheBattery` stops the recipe coming back.
+
+**Still true, in rough order of what they would cost to close:**
+
+| | the gap | what would close it |
+|---|---|---|
+| **C20** | Four checked-in railways - `test_layout`, `operator_layout`, `baseline/layout`, `test_layout_snapshot` - are the same five pages, and all four exclude three of them.  Realistic geometry in this suite is one railway counted four times | a genuinely second railway, which is a decision rather than a chore |
+| **C17** | Non-zero tile orientation appears in four files.  Everything else is orientation 0 on one horizontal row, because adjacent feedbacks connect on their own and a rotated straight has to be got right.  `TilePorts`' `(4 - orientation)` convention is verified by a data table and by whatever the real layout happens to contain | a vertical and an L-bend variant of the standard run-of-track helper |
+| **C18** | The reducer never crosses a page.  `testAutonomyDiagramReducer` passes one page in all ~28 fixtures and mentions no portal; the only place the REDUCER contracts across one is a report-not-assert class | one two-page fixture with a paired link, asserting the contracted edge's endpoints, length and lock set |
+| **C21** | Nothing hand-built runs more than two locomotives, and the concurrency cap's own fixture is two DISJOINT routes - two trains that cannot contend, so it tests the counter and not the contention | a fixture where two trains want the same metal |
+| **C19** | Every test locomotive is non-reversible unless a test says so: the short constructors never assign `reversible` and no checked-in JSON carries the key.  So the suite mostly exercises the non-reversible path, and the reversible-only rules - the may-reverse prompt, turning-copy selection, `flipFacing` - are the thin side | awareness, plus reversible variants where reversal is the subject |
+
+**And one piece of bookkeeping worth keeping honest:** `blockedPoints` is empty in all four
+`setup.json` files, so the `blockedBy` restriction is only ever reached through hand-built fixtures and
+never through a loaded layout.  One entry in a checked-in setup would close that, and it is deliberately
+not done here: changing a shared fixture while Adam is testing against it is how a green suite starts
+lying about a railway he is looking at.

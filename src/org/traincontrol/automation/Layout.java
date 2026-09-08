@@ -3804,9 +3804,14 @@ public class Layout
             // The terminus clause with the rest, because this method's whole job is to mirror
             // pickPath's - "every clause pickPath applies to its candidates has to be mirrored here",
             // and the two have fallen out of step once already.
-            // The shared clauses through the one method (DR-B3).  A no-op here rather than a
-            // tightening: these candidates come from `getPossiblePaths`, which now asks
-            // `isSendableDestination` itself, so every end already satisfies it.  Written out anyway
+            // The shared clauses through the one method (DR-B3).  A small TIGHTENING, not the no-op
+            // this claimed until 2026-09-08 (MON-C4): `getPossiblePaths` filters on
+            // `end.isDestination()` and deliberately no more - its javadoc says the wider net is on
+            // purpose - so a candidate can arrive here inactive, reversing, or marked as somewhere
+            // autonomy does not choose, and this is where those are refused.
+            //
+            // A comment certifying that a check cannot fire is worse than no comment: the next sweep
+            // reads it and deletes the check.  Written out anyway
             // because this loop must mirror pickPath clause for clause - "the two have fallen out of
             // step once already" - and mirroring a method is easier to keep true than mirroring four
             // conditions.
