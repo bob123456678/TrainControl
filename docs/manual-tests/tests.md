@@ -46,6 +46,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 | [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 | [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
+| [MT-274](#mt-274) | 2026-09-07 | The length, shading and caption work, in front of your eyes | needs test | OB-172, OB-173, OB-174, OB-175, OB-176, OB-177, OB-178, OB-179, FR-057, FR-061 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -15372,5 +15373,95 @@ while it happens.
 **Disposition: fixed validated**, with that noted.
 
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 18:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+---
+
+
+<a id="mt-274"></a>
+
+### MT-274 - 2026-09-07 - The length, shading and caption work, in front of your eyes
+
+**Disposition:** needs test
+**From:** OB-172, OB-173, OB-174, OB-175, OB-176, OB-177, OB-178, OB-179, FR-057, FR-061
+
+**Written:** 2026-09-07
+
+Nine changes over four days, every one coded and covered by tests, and **not one of them driven by a
+person**. They are grouped here rather than filed separately because they are all in the same two
+windows and you will meet them in one sitting.
+
+Two of these a test genuinely cannot reach, and they are listed first for that reason.
+
+#### 1. Control+K, in the autonomy editor (OB-179)
+
+The column and row numbers are no longer a setting of their own - they are drawn exactly when the grid
+is. **Press Control+K in the AUTONOMY editor.** The grid, the numbers and the Grid tick box should all
+change together, and change back on a second press.
+
+*Why this one is here:* the shortcut sits behind a guard shared with Control+G, L and D, and the code
+says that guard covers both editors. Nobody has watched it. If Control+K does nothing in the autonomy
+editor, that guard is the place to look.
+
+#### 2. The "<locomotive> is facing" menu, on both surfaces
+
+Right-click a square holding a train, in the **autonomy editor** and again on the **track diagram**.
+One menu now carries both questions under two bold headings - which way the train faces, and which side
+it arrived from. Before this the arrival side existed only in the editor.
+
+Look at whether it reads as two sets or as eight compass points in a row. Both sets say "(right)",
+"(left)", "(up)", "(down)" now.
+
+#### 3. The covered-track shading
+
+Stand a train with a length on a platform whose approach is measured. The track behind it greys.
+
+- **On the track diagram only.** Open either editor and the grey should be gone - what is standing on
+  the railway is not a fact about the drawing.
+- **It survives a flash.** Fire a route or throw a switch that highlights a greyed square. The yellow
+  flash should fade back to grey, not to bare track. That was the report.
+- **It is lighter than it was.**
+- **And nothing may cross it.** Try to send a train through a greyed switch. It should be refused. The
+  specific case reported was EN57-203 from TunnelLeftPark to BottomMainC across switch 60.
+
+#### 4. Pasting onto a curve (issue 5)
+
+Paste a train onto **BottomMainPost**. The question should offer **North** and **South** - the sides
+the track actually reaches it by - not South and West. It asked the wrong pair because it was measuring
+towards the neighbouring point rather than reading the side the rail leaves by, and those differ on
+every curve.
+
+#### 5. Text Labels, the dropdown (FR-061)
+
+In the autonomy editor sidebar, above Track Directions. Four options that exclude each other: Station
+Names (the default), Parked Locs, Home Locs, None.
+
+- It should be remembered when you close and reopen the editor.
+- **Home Locs shows nothing at all on a square with no home assigned** - not the station name. That was
+  your ruling and it is the one behaviour here that changed after you first saw it.
+- The width should sit inside the sidebar without widening it.
+
+#### 6. The home locomotive dialog
+
+Right-click a square with a train standing on it and assign a home. There should be **two** shortcut
+buttons where there was one: **Use current** for the train parked there, and **Use active** for the one
+you are driving. Only one appears when they are the same train.
+
+#### 7. The four from earlier in the week
+
+- **OB-172** - a page whose top row is empty still numbers its axis.
+- **OB-173** - the editor comes to the front on the FIRST open, not only the second.
+- **OB-175** - the incoming arrow on a curved sensor tile sits in the lower-right corner, clear of the
+  track.
+- **OB-176** - the track-length box is selected when its dialog opens, so you can type straight away.
+- **OB-177** - the facing menu ticks the recorded facing even when the square cannot hold it.
+- **OB-178** - a route with auto-fire unchecked and a blank s88 saves.
+
+#### And one thing to read rather than drive
+
+The tooltip on the Grid box now mentions the numbers, in eight languages. **Seven of those translations
+were written by an agent and nobody has read them for idiom.** If a language you read looks wrong, it
+probably is.
 
 ---
