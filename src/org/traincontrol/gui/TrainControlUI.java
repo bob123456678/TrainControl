@@ -800,6 +800,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         initComponents();
         
         // Set internationalized options
+
+        // THE UTILITIES MENU HEADING, set here rather than in the form.
+        //
+        // The GUI builder wrote `functionsMenu.setText("Utilities")` into the generated block when Adam
+        // consolidated several menus into it, and that block is not ours to edit - the next form change
+        // would overwrite anything put there.  Setting it after `initComponents` is the same rule every
+        // other string in this window follows when the form has hard-coded one.
+        //
+        // A new key rather than reusing `ui.main.toolbar.functions`: that one is the word "Functions",
+        // which is a different menu and a different idea in this program.  This heading now covers the
+        // odds and ends, so the translations say tools rather than functions - Werkzeuge, Utilitaires,
+        // Hulpmiddelen.
+        this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
         this.SizeList.setModel(new javax.swing.DefaultComboBoxModel<String>() {{
             layoutSizes.keySet().forEach(this::addElement);
         }});
@@ -11474,6 +11487,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         fileMenu = new javax.swing.JMenu();
         backupDataMenuItem = new javax.swing.JMenuItem();
         changeIPMenuItem = new javax.swing.JMenuItem();
+        syncMenuItem = new javax.swing.JMenuItem();
         jSeparator17 = new javax.swing.JPopupMenu.Separator();
         exitMenuItem = new javax.swing.JMenuItem();
         locomotiveMenu = new javax.swing.JMenu();
@@ -11482,15 +11496,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         viewDatabaseMenuItem = new javax.swing.JMenuItem();
         addLocomotiveMenuItem = new javax.swing.JMenuItem();
         jSeparator23 = new javax.swing.JPopupMenu.Separator();
-        syncMenuItem = new javax.swing.JMenuItem();
+        functionsMenu = new javax.swing.JMenu();
+        turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
+        turnOnLightsMenuItem = new javax.swing.JMenuItem();
+        syncFullLocStateMenuItem = new javax.swing.JMenuItem();
+        jSeparator1 = new javax.swing.JPopupMenu.Separator();
         checkForRenameMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
         exportLocsToCSVMenuItem = new javax.swing.JMenuItem();
-        functionsMenu = new javax.swing.JMenu();
-        turnOnLightsMenuItem = new javax.swing.JMenuItem();
-        turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
-        jSeparator16 = new javax.swing.JPopupMenu.Separator();
-        syncFullLocStateMenuItem = new javax.swing.JMenuItem();
         layoutMenu = new javax.swing.JMenu();
         showCurrentLayoutFolderMenuItem = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
@@ -16516,6 +16529,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         fileMenu.add(changeIPMenuItem);
+
+        syncMenuItem.setText(bundle.getString("ui.main.toolbar.syncDBWithCS")); // NOI18N
+        syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                syncMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(syncMenuItem);
         fileMenu.add(jSeparator17);
 
         exitMenuItem.setText(bundle.getString("ui.main.toolbar.exit")); // NOI18N
@@ -16564,13 +16585,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locomotiveMenu.add(addLocomotiveMenuItem);
         locomotiveMenu.add(jSeparator23);
 
-        syncMenuItem.setText(bundle.getString("ui.main.toolbar.syncDBWithCS")); // NOI18N
-        syncMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        functionsMenu.setText("Utilities");
+
+        turnOffFunctionsMenuItem.setText(bundle.getString("ui.main.toolbar.turnOffFunctions")); // NOI18N
+        turnOffFunctionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                syncMenuItemActionPerformed(evt);
+                turnOffFunctionsMenuItemActionPerformed(evt);
             }
         });
-        locomotiveMenu.add(syncMenuItem);
+        functionsMenu.add(turnOffFunctionsMenuItem);
+
+        turnOnLightsMenuItem.setText(bundle.getString("ui.main.toolbar.turnOnLights")); // NOI18N
+        turnOnLightsMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.turnOnLights")); // NOI18N
+        turnOnLightsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                turnOnLightsMenuItemActionPerformed(evt);
+            }
+        });
+        functionsMenu.add(turnOnLightsMenuItem);
+
+        syncFullLocStateMenuItem.setText(bundle.getString("ui.main.toolbar.syncFullFunctionState")); // NOI18N
+        syncFullLocStateMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                syncFullLocStateMenuItemActionPerformed(evt);
+            }
+        });
+        functionsMenu.add(syncFullLocStateMenuItem);
+        functionsMenu.add(jSeparator1);
 
         checkForRenameMenuItem.setText(bundle.getString("ui.main.toolbar.checkForRenamedLocs")); // NOI18N
         checkForRenameMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.checkForRenamedLocs")); // NOI18N
@@ -16579,7 +16620,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 checkForRenameMenuItemActionPerformed(evt);
             }
         });
-        locomotiveMenu.add(checkForRenameMenuItem);
+        functionsMenu.add(checkForRenameMenuItem);
+
+        locomotiveMenu.add(functionsMenu);
         locomotiveMenu.add(jSeparator6);
 
         exportLocsToCSVMenuItem.setText(bundle.getString("ui.main.toolbar.exportToCSV")); // NOI18N
@@ -16592,41 +16635,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locomotiveMenu.add(exportLocsToCSVMenuItem);
 
         mainMenuBar.add(locomotiveMenu);
-
-        functionsMenu.setText(bundle.getString("ui.main.toolbar.functions")); // NOI18N
-        functionsMenu.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                functionsMenuKeyReleased(evt);
-            }
-        });
-
-        turnOnLightsMenuItem.setText(bundle.getString("ui.main.toolbar.turnOnLights")); // NOI18N
-        turnOnLightsMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.turnOnLights")); // NOI18N
-        turnOnLightsMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                turnOnLightsMenuItemActionPerformed(evt);
-            }
-        });
-        functionsMenu.add(turnOnLightsMenuItem);
-
-        turnOffFunctionsMenuItem.setText(bundle.getString("ui.main.toolbar.turnOffFunctions")); // NOI18N
-        turnOffFunctionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                turnOffFunctionsMenuItemActionPerformed(evt);
-            }
-        });
-        functionsMenu.add(turnOffFunctionsMenuItem);
-        functionsMenu.add(jSeparator16);
-
-        syncFullLocStateMenuItem.setText(bundle.getString("ui.main.toolbar.syncFullFunctionState")); // NOI18N
-        syncFullLocStateMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                syncFullLocStateMenuItemActionPerformed(evt);
-            }
-        });
-        functionsMenu.add(syncFullLocStateMenuItem);
-
-        mainMenuBar.add(functionsMenu);
 
         layoutMenu.setText(bundle.getString("ui.main.toolbar.layouts")); // NOI18N
         layoutMenu.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -20591,10 +20599,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void locomotiveMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_locomotiveMenuKeyPressed
         LocControlPanelKeyPressed(evt);
     }//GEN-LAST:event_locomotiveMenuKeyPressed
-
-    private void functionsMenuKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_functionsMenuKeyReleased
-        LocControlPanelKeyPressed(evt);
-    }//GEN-LAST:event_functionsMenuKeyReleased
 
     private void layoutMenuKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_layoutMenuKeyPressed
         LocControlPanelKeyPressed(evt);
@@ -27562,13 +27566,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane6;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
     private javax.swing.JSeparator jSeparator12;
     private javax.swing.JSeparator jSeparator13;
     private javax.swing.JSeparator jSeparator14;
     private javax.swing.JSeparator jSeparator15;
-    private javax.swing.JPopupMenu.Separator jSeparator16;
     private javax.swing.JPopupMenu.Separator jSeparator17;
     private javax.swing.JPopupMenu.Separator jSeparator18;
     private javax.swing.JPopupMenu.Separator jSeparator19;
