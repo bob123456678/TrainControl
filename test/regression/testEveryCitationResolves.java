@@ -23,17 +23,24 @@ import org.testng.annotations.Test;
  * than *what*. The plan is to delete the prose once it has stopped earning its place. That is only safe
  * if every id a comment names still resolves to something, which is what this holds.
  *
- * **Sixty-two do not, today**, and they are not scattered: they cluster into whole prefixes whose
- * declaring document is gone. `LE2`, `V33`, `VAL`, `LD` and `IND` have none in `docs/` at all; `RC`
- * has one that defines `A1-A5` and `B1-B5` and stops, so every `RC-A6` upward is a dead end. The
- * independent index built on 2026-09-07 reached the same conclusion by a different route.
+ * **Forty-five do not, today**, and they are not scattered: they cluster into whole prefixes whose
+ * declaring document is gone. `RC` has one that defines `A1-A5` and `B1-B5` and stops, so every
+ * `RC-A6` upward is a dead end; `LE2` and `LD` have no declaring document in `docs/` at all. Those
+ * three are two thirds of the list.
  *
  * They are rolled at the foot of `docs/reviews/findings.md` under "Citations with no finding behind
  * them", with the files that cite each one, so the citation leads somewhere even though the finding
- * does not - and this holds the count at sixty-two.
+ * does not - and this holds the count at forty-five.
  *
- * A sixty-third is a comment pointing at nothing, and the point of catching it here is the day it is
+ * A forty-sixth is a comment pointing at nothing, and the point of catching it here is the day it is
  * written rather than six weeks later, when nobody remembers what it meant.
+ *
+ * **Do not read a high count as licence to delete the documents.** It was 230 an hour before this was
+ * written, and every fall since came from teaching the catalogue a spelling the review folder was
+ * already using - four ways of declaring a prefix, headings with and without separators, refs bolded
+ * inside table cells. `V33` and `DOC` were on this list as dead prefixes while their documents sat in
+ * `docs/reviews/` with every finding in them. An id that resolves to nothing may mean the finding is
+ * gone, or only that this file cannot see it.
  *
  * **It asks the catalogue, not the prose**, which is the whole point. An earlier version searched every
  * `.md` under `docs/` and passed if anything mentioned the id at all. Three of the ten above -
@@ -84,7 +91,7 @@ public class testEveryCitationResolves
      * A ratchet, not a target: it may fall, and when it does this test says so and asks for the number
      * to come down with it.
      */
-    private static final int DEAD_CITATIONS = 62;
+    private static final int DEAD_CITATIONS = 45;
 
     /**
      * Every id cited from the code is defined in `docs/`, or is one of the known dead ones.

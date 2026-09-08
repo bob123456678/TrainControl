@@ -18,20 +18,20 @@ for as long as it is worth keeping.
 
 | | |
 |---|---|
-| findings | 2030 |
-| documents they came from | 114 |
-| carrying a file and line | 1115 |
-| carrying a commit | 503 |
-| with no disposition recorded anywhere | 784 |
+| findings | 2269 |
+| documents they came from | 120 |
+| carrying a file and line | 1167 |
+| carrying a commit | 520 |
+| with no disposition recorded anywhere | 821 |
 
-By severity: **?** 84, **A** 169, **B** 410, **C** 750, **D** 617
+By severity: **?** 92, **A** 218, **B** 469, **C** 818, **D** 672
 
-**Refs that appear in two documents** are shown as `REF @date`, and there are 94 of them.
+**Refs that appear in two documents** are shown as `REF @date`, and there are 99 of them.
 Some are one finding revisited by a later pass; some are two different findings that were
 given the same id. Both rows are here either way, so nothing is lost, but a citation of a
 bare one is ambiguous and a NEW citation should use the dated form.
 
-They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, `D24-B1`, `DAY-A1`, `DAY-B1`, `DAY-B2`, `DAY-C1`, `DAY-C2`, `DAY-C3`, `DAY-C4`, `DAY-C5`, `DD-A2`, `DD-A6`, `DD-B8`, `DD-B9`, `DD-C9`, `DD-D9`, `DY3-C4`, `FSR-C7`, `FV-B1`, `FV-C1`, `FV-D1`, `FV2-A1`, `FV2-B2`, `FV2-B3`, `FV2-C1`, `FV2-C10`, `FV2-C5`, `FV2-C7`, `IPR-A1`, `IPR-A2`, `IPR-B1`, `IPR-B2`, `IPR-B3`, `IPR-B4`, `IPR-C1`, `IPR-C2`, `IPR-C3`, `IPR-C4`, `IPR-C5`, `IR-B1`, `IR-B2`, `IR-C1`, `IR-C2`, `IR-C3`, `IR-C4`, `IR-C5`, `IR-C6`, `IR-C7`, `IR-C9`, `LE-D3`, `R28-B1`, `R28-B2`, `R28-C1`, `R28-C2`, `R28-C3`, `R28-C5`, `RG3-C3`, `RG3-C4`, `RGN-A1`, `RGN-A2`, `RGN-B1`, `RGN-B2`, `RGN-B3`, `RGN-C1`, `RGN-C2`, `RGN-C3`, `RGN-C4`, `RTG-B1`, `SG-B5`, `SV2-A1`, `SV2-A2`, `SV2-B1`, `SV2-C6`, `SVN-A2`, `SVN-A3`, `SVN-B13`, `SVN-C10`, `SVN-C12`, `SVN-C15`, `SVN-C9`, `TCS-A2`, `TCX-A2`, `TCX-A3`, `TCX-B7`, `TS3-A1`, `TS3-B2`, `TV2-A1`, `TV2-C1`.
+They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, `D24-B1`, `DAY-A1`, `DAY-B1`, `DAY-B2`, `DAY-C1`, `DAY-C2`, `DAY-C3`, `DAY-C4`, `DAY-C5`, `DD-A2`, `DD-A6`, `DD-B8`, `DD-B9`, `DD-C9`, `DD-D9`, `DY3-C4`, `FSR-C7`, `FV-B1`, `FV-C1`, `FV-D1`, `FV2-A1`, `FV2-B2`, `FV2-B3`, `FV2-C1`, `FV2-C10`, `FV2-C5`, `FV2-C7`, `IPR-A1`, `IPR-A2`, `IPR-B1`, `IPR-B2`, `IPR-B3`, `IPR-B4`, `IPR-C1`, `IPR-C2`, `IPR-C3`, `IPR-C4`, `IPR-C5`, `IR-B1`, `IR-B2`, `IR-C1`, `IR-C2`, `IR-C3`, `IR-C4`, `IR-C5`, `IR-C6`, `IR-C7`, `IR-C9`, `LE-D3`, `R28-B1`, `R28-B2`, `R28-C1`, `R28-C2`, `R28-C3`, `R28-C5`, `RG3-C3`, `RG3-C4`, `RGN-A1`, `RGN-A2`, `RGN-B1`, `RGN-B2`, `RGN-B3`, `RGN-C1`, `RGN-C2`, `RGN-C3`, `RGN-C4`, `RTG-B1`, `SG-B5`, `SV2-A1`, `SV2-A2`, `SV2-B1`, `SV2-C6`, `SVN-A2`, `SVN-A3`, `SVN-B13`, `SVN-C10`, `SVN-C12`, `SVN-C15`, `SVN-C9`, `TCS-A2`, `TCX-A2`, `TCX-A3`, `TCX-B7`, `TR-A11`, `TR-A21`, `TR-A22`, `TR-A23`, `TR-B13`, `TS3-A1`, `TS3-B2`, `TV2-A1`, `TV2-C1`.
 
 ## The catalogue
 
@@ -195,11 +195,129 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `RS-C2` | C | layout download trusts page names as filenames | Fixed - `sanitizeFilename` applied to the write AND to the local read, which the finding did not consider; pinned by `te | 1: testParseCS2Layout.java |  |  | 2026-08-02-pre-release-sweep.md:116 |
 | `RS-D4` | D | `CS2File`, otherwise clean | Clean |  |  |  | 2026-08-02-pre-release-sweep.md:131 |
 | `RS-D5` | D | pattern sweeps over the unread GUI classes | Ruled (stated in the body) |  | `TrainControlUI.java:14257` | `2cddfe9` | 2026-08-02-pre-release-sweep.md:143 |
+| `AD-A1` | A | Captions never persisted: `KNOWN_SHARED` omitted them, so every save wrote the stale copy over them | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A2` | A | Autonomy rewrote layout files and deleted everything the parser could not model | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A3` | A | Caption migration corrupted signal types and rotations | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A4` | A | `reconcile` deleted captions on squares that hold no component - which is most of them | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A5` | A | A failed store load emptied the setup, then a save wrote the empty one to disk | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A6` | A | Autonomy menu used while an editor was open committed its unsaved edits and broke the main diagram | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A7` | A | Capture deleted every configuration entry on a page that was temporarily excluded | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A8` | A | "Exit without saving" discarded nothing | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-A9` | A | Migration destroyed labels naming stations on excluded pages | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B1` | B | The graph could not say which way a train faced, so journeys reversed where no train can | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B2` | B | The reducer walk dropped any run crossing one square twice | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B3` | B | `findPath` compared sides, not routes, so it returned non-contiguous paths at a double curve | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B4` | B | Findings count and editor list disagreed: graph problems listed twice, notices counted as warnings | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B5` | B | A locomotive was emitted on every copy of a split square | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B6` | B | Split stations overwrote their own label with `[---]` | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B7` | B | Right-clicking a sensor in a popup window resolved the page from the main window | Fixed | 1: TrainControlUI.java |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B8` | B | Two editors could open on one diagram and unset each other's edit flag | Fixed | 1: TrainControlUI.java |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B9` | B | Jump-to-square from a finding was a guaranteed no-op | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B10` | B | The banner stayed on "cannot run yet" after the problem was fixed | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B11` | B | A stale portal pairing severed track with no diagnostic | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B12` | B | `deleteConfiguration` ignored a failed delete, so the configuration returned next session | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-B13` | B | Backup covered neither the track diagrams nor the autonomy setup | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C1` | C | `AutonomyOverlayToggle.isShowing()` overrode `Component.isShowing()`, freezing the strip's repaints | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C2` | C | The registry prune reached across windows and orphaned the main window's cached pages | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C3` | C | `DiagramTileRegistry` never pruned main-window labels; it grew without bound | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C4` | C | Every IOException from creating a configuration was reported as "name already in use" | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C5` | C | `promptNumber` showed the length error for a station's priority | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C6` | C | A caption could be filed outside the area the diagram draws | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C7` | C | Split names could collide with an authored name and invalidate the whole configuration | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C8` | C | "May turn round here" was silently promoted to "must" on a square reached only by a link | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C9` | C | The `baseNames` cache was not dropped when the flags it derives from changed | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C10` | C | Backup had no cycle guard and reported bare file names | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C11` | C | CS2 array syntax was re-emitted as a single brace-string | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C12` | C | The trapped-arrival check was not track-aware, missing the case the builder delegates to it | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C13` | C | Two strings promised captions were saved immediately, after they became deferred | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C14` | C | `showPages()` kept a stale submenu reference after a rebuild | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C15` | C | "Export raw graph as JSON" appeared with no graph to export | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C16` | C | The name-everything button was hidden rather than greyed, unlike its neighbour | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-C17` | C | An unpaired link was a blocking error, refusing any imported diagram carrying a page-jump arrow | Fixed |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D1` | D | `testReturnHomeOnRealLayout` failing on every run | Not a code defect - data |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D2` | D | Sample layout file modified in the working tree after every app run | Correct behaviour |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D3` | D | Legacy JSON export "missing" the new may-turn/must-turn attributes | No such attributes exist |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D4` | D | Deriving 22 reversible connections against the hand-built 7 | Not a defect; see B1 |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D5` | D | Length and address labels sharing a colour and colliding | Cannot collide |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `AD-D6` | D | `Collection` and `I18n` audits across the branch | Clean |  |  |  | 2026-08-17-autonomy-diagram-review.md |
+| `DA-C1` | C | `AD-C15`'s twin: the Manage popup still offers the raw graph export | **Fixed** before 2026-08-18 - gated on a setup existing and no blocking problems |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-C2` | C | `AD-A5`'s residual: configuration files are read after `clear()` | **Fixed 2026-08-18** - configurations are read before anything is cleared |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-C3` | C | `AD-B12` reports the failure as a bare filename, and left dead code | **Fixed 2026-08-18** - a sentence instead of a filename, dead branch removed |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-C4` | C | Deleting the running configuration lacks its sibling's busy check | **Fixed** before 2026-08-18 - `delete()` refuses while autonomy is busy |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-C5` | C | Stale javadoc contradicts the `AD-A8`/`AD-C13` fixes | **Fixed** before 2026-08-18 - the javadoc matches the code |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-C6` | C | Dead overload, undeduplicated warning, cubic label rebuild | **Fixed 2026-08-18** - dead overload removed; the cubic label rebuild is deferred |  |  |  | 2026-08-17-disposition-audit.md |
+| `DA-A1` | A | The signal-rotation fix is asymmetric, and one half of it is a regression | **Fixed 2026-08-17** |  | `CS2File.java:2319` |  | 2026-08-17-disposition-audit.md:59 |
+| `DA-A2` | A | Undo, redo, copy and move strip the verbatim data, so "undo, then Save" deletes every unmodelled key on the page | Fixed (stated in the body) |  | `LayoutDiagramComponent.java:105` |  | 2026-08-17-disposition-audit.md:86 |
+| `DA-B1` | B | `AD-A6`: the menu is gated, the banner button is not | **Fixed 2026-08-17** |  |  |  | 2026-08-17-disposition-audit.md:119 |
+| `DA-B2` | B | `AD-B8`: three `layoutEditingComplete` paths clear the gate | **Fixed 2026-08-18** - the three paths refuse while an editor is open |  |  |  | 2026-08-17-disposition-audit.md:131 |
+| `DA-B3` | B | `AD-B3`'s sibling in the one-way tracer | **Fixed 2026-08-18** - the undirected walk carries the side it arrived by |  |  |  | 2026-08-17-disposition-audit.md:141 |
+| `DA-B4` | B | `AD-B4`'s residual: INFO findings | **Fixed** before 2026-08-18 - INFO is bucketed with notices in both counts |  |  |  | 2026-08-17-disposition-audit.md:149 |
+| `DA-B5` | B | The caption migration rewrites every page on every launch, forever, when any label matches nothing | Fixed (stated in the body) |  | `AutonomyViewerPanel.java:1051` | `ddff66e` | 2026-08-17-disposition-audit.md:157 |
+| `UH-B4` | B | `AutoLocomotiveStatus.updateState` mutates Swing on a raw background thread | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md |
+| `UH-B5` | B | Double-click dispatch can execute a different path than the one clicked | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md |
+| `UH-B6` | B | Double-clicking below a short path list dispatches the last path | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md |
+| `UH-B7` | B | `AutoJSONExport` realizes a file chooser on a raw thread beside a second modal dialog | Open - deferred with its class |  |  |  | 2026-08-17-unread-half-review.md |
+| `UH-B1` | B | A comma in a locomotive name | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md:46 |
+| `UH-B2` | B | A backward clock step drops feedback | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md:63 |
+| `UH-B3` | B | Parentheses shred a condition | **Fixed 2026-08-17** |  |  |  | 2026-08-17-unread-half-review.md:77 |
 | `B4-B7` | B | , in brief | - |  |  |  | 2026-08-17-unread-half-review.md:89 |
+| `BR-C1` | C | Crash window between the two moves of a case-only rename | Open |  |  |  | 2026-08-17-v2.8.1-backport-review.md |
+| `BR-C2` | C | The recorded rationale for synchronizing the device collection was false | **Fixed 2026-08-17** (`a673bc7`) |  |  |  | 2026-08-17-v2.8.1-backport-review.md |
+| `BR-C3` | C | A 0-speed locomotive in a parallel timetable retries in an unbounded paced loop | Open |  |  |  | 2026-08-17-v2.8.1-backport-review.md |
+| `BR-B1` | B | The speed guard was placed where Start does not go | Fixed (stated in the body) |  |  | `a673bc7` | 2026-08-17-v2.8.1-backport-review.md:36 |
 | `C1-C6` | C | `automation/` - pacing, ceiling race, missing guards, dead parameter | Closed 2026-09-07 - C3, C5, C6 Fixed; C2 Cancelled; C1, C4 ruled and left. See [package-sweeps.md](../reference/package- |  |  |  | 2026-08-17-whole-project-review.md |
 | `C7-C12` | C | `marklin/` - speed truncation, dead guard, MFX fallback, three-way pause, headless paths | Closed 2026-09-07 - C7 Fixed; C8, C9, C11, C12 Cancelled (all four fixed since the sweep, three with comments naming the |  |  |  | 2026-08-17-whole-project-review.md |
 | `C13-C19` | C | `base/` - phantom accessories, interrupt spin, recursion, stale comments | Closed 2026-09-07 - C13, C16, C18, C19a, C19b, C19c Fixed; C14, C17 Cancelled; C15, C19e ruled and left. **C13 was much  |  |  |  | 2026-08-17-whole-project-review.md |
 | `C20-C29` | C | `gui/` - regex filter, ghost mappings, off-EDT enable, silent rebind | Closed 2026-09-07 - C22, C23, C24 Fixed; C20, C21, C25, C28, C29 Cancelled (C28 was fixed at the model layer as UC-B1);  |  |  |  | 2026-08-17-whole-project-review.md |
+| `WP-A1` | A | Route conditions are not repaired when a locomotive is renamed, so condition-gated routes silently stop firing | **Fixed 2026-08-17** |  | `Route.java:152` |  | 2026-08-17-whole-project-review.md:44 |
+| `WP-A2` | A | `LayoutDiagram.saveChanges` deletes the page file on a case-only rename | **Fixed 2026-08-17** |  | `LayoutDiagram.java:438` |  | 2026-08-17-whole-project-review.md:66 |
+| `WP-A3` | A | Route-editor command capture collapses commands for different locomotives | Fixed (stated in the body) |  | `RouteEditor.java:252` |  | 2026-08-17-whole-project-review.md:85 |
+| `WP-B1` | B | Dispatch at speed 0 | **Fixed 2026-08-17** |  | `Layout.java:3135` |  | 2026-08-17-whole-project-review.md:117 |
+| `WP-B2` | B | NPE on a null `locIdCache` | **Fixed 2026-08-17** |  | `MarklinControlStation.java:1931` |  | 2026-08-17-whole-project-review.md:135 |
+| `WP-B3` | B | Duplicate route in an imported JSON leaks a live monitor | **Fixed 2026-08-17** |  | `MarklinRoute.java:135` |  | 2026-08-17-whole-project-review.md:149 |
+| `WP-B4` | B | The device databases are unsynchronised across three thread families | **Fixed 2026-08-17** |  | `RemoteDeviceCollection.java:17` |  | 2026-08-17-whole-project-review.md:164 |
+| `WP-B5` | B | A redundant power-on discards accumulated running time | **Fixed 2026-08-17** |  | `Locomotive.java:387` |  | 2026-08-17-whole-project-review.md:182 |
+| `WP-B6` | B | Bulk enable/disable NPEs on Cancel | **Fixed 2026-08-17** |  | `TrainControlUI.java:12664` |  | 2026-08-17-whole-project-review.md:192 |
+| `WP-B7` | B | "Address is free" is answered from the wrong list | **Fixed 2026-08-17** |  | `AddLocomotive.java:464` |  | 2026-08-17-whole-project-review.md:198 |
+| `WP-B8` | B | Every editor click runs the tool | **Fixed 2026-08-17** |  | `LayoutEditor.java:405` |  | 2026-08-17-whole-project-review.md:204 |
+| `WP-B9` | B | `RouteEditor` realised off the EDT | **Fixed 2026-08-17** |  | `TrainControlUI.java:12577` |  | 2026-08-17-whole-project-review.md:216 |
+| `SA-A4` | A | station captions do not exist at all without a local layout folder | **PARTLY fixed 2026-08-18** - the menu says so, but a CS layout page still draws the raw `Point:` text. See the post-fix |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-A5` | A | undo does not undo the caption edits the diagram editor performs | **Fixed 2026-08-18** - LayoutEditor snapshots and restores the captions on Cancel |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-A6` | A | the caption migration rewrites .cs2 pages in place, with no atomic write | **Fixed 2026-08-18** - LayoutDiagram writes through Util.writeAtomically, so all three callers benefit. testAtomicWrite  |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-V2` | ? | the run loop was still unguarded; fireCallback caught Exception, not Throwable | fixed |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-V3` | ? | HomeStaging's rationale for per-Point occupancy went stale | comment corrected |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-V4` | ? | `clearLocomotiveExcept`'s javadoc stranded above the wrong method by my insertion | moved back |  |  |  | 2026-08-18-station-arrivals-review.md |
+| `SA-A1` | A | a barred terminus copy is emitted as a terminus that is not a destination | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:46 |
+| `SA-A2` | A | the save-time pruning was measured against the graph, which leaves out excluded pages | fixed, `a5de425` |  |  |  | 2026-08-18-station-arrivals-review.md:72 |
+| `SA-A3` | A | Cancel discarded the track and kept the deletions in the setup | fixed, next commit |  |  | `d4cc22a` | 2026-08-18-station-arrivals-review.md:93 |
+| `SA-B1` | B | stale barred sides were counted, hidden, and unremovable | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:153 |
+| `SA-B2` | B | the diagram menu hung off the designation, not the locomotive | fixed, `81a51ac` |  |  |  | 2026-08-18-station-arrivals-review.md:178 |
+| `SA-B3` | B | the B2 fix covered the train and not the empty platform | fixed, next commit |  |  |  | 2026-08-18-station-arrivals-review.md:195 |
+| `SA-B4` | B | and placement then ignored the rule the same hunk had just added | fixed, `a5de425` |  |  |  | 2026-08-18-station-arrivals-review.md:206 |
+| `SA-B5` | B | the prune deleted the captions of every cached page | fixed, next commit |  |  |  | 2026-08-18-station-arrivals-review.md:220 |
+| `SA-B6` | B | open, and for Adam | **PARTLY fixed 2026-08-18** - the lite path runs on AutonomyRenderer; its twin repaintAutoLocListFull still searches on  |  |  | `d4cc22a` | 2026-08-18-station-arrivals-review.md:237 |
+| `SA-C1` | C | the index was derived by whoever asked first, which is often the feedback thread | fixed, `d4cc22a` | 1: AutonomySession.java |  |  | 2026-08-18-station-arrivals-review.md:264 |
+| `SA-C2` | C | a fifth builder, already drifted | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:276 |
+| `SA-C3` | C | captions and switched-off links did not follow a page rename | fixed, `d4cc22a` |  |  | `0c96536` | 2026-08-18-station-arrivals-review.md:282 |
+| `SA-C4` | C | a restriction outlived the station it restricted | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:292 |
+| `SA-C5` | C | the per-call builder came back | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:298 |
+| `SA-C6` | C | a Point stopped being in the same place as itself | fixed, next commit |  |  |  | 2026-08-18-station-arrivals-review.md:303 |
+| `SA-C7` | C | blank and equal disagreed | fixed, next commit |  |  |  | 2026-08-18-station-arrivals-review.md:311 |
+| `SA-C8` | C | two tests that agreed with themselves | fixed, next commit |  |  | `d4cc22a` | 2026-08-18-station-arrivals-review.md:318 |
+| `SA-D1` | D | (no heading text) | fixed, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:343 |
+| `SA-D2` | D | (no heading text) | deleted, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:349 |
+| `SA-D3` | D | (no heading text) | corrected, `d4cc22a` |  |  |  | 2026-08-18-station-arrivals-review.md:355 |
+| `SA-D4` | D | open | open - see below |  |  |  | 2026-08-18-station-arrivals-review.md:361 |
+| `SA-D5` | D | (no heading text) | fixed, next commit |  |  |  | 2026-08-18-station-arrivals-review.md:370 |
+| `SA-D6` | D | accepted | accepted, see below |  |  |  | 2026-08-18-station-arrivals-review.md:377 |
+| `SA-D7` | D | accepted | accepted, see below |  |  |  | 2026-08-18-station-arrivals-review.md:383 |
+| `SA-D8` | D | withdrawn | withdrawn - not a defect |  |  |  | 2026-08-18-station-arrivals-review.md:390 |
+| `SA-D9` | D | accepted, with a caveat for Adam | accepted, deliberate - but see below |  |  | `16852e4` | 2026-08-18-station-arrivals-review.md:400 |
+| `SA-V1` | ? | the block was written into the model and never into the file | fixed |  |  |  | 2026-08-18-station-arrivals-review.md:624 |
+| `SA-V5` | ? | not a defect, and the tests said so | NOT a defect - see below |  |  |  | 2026-08-18-station-arrivals-review.md:631 |
+| `SA-V6` | ? | the cost, measured and accepted | accepted, measured - see below |  |  |  | 2026-08-18-station-arrivals-review.md:644 |
+| `SA-V7` | ? | the origin is direction-free, deliberately | accepted, matches findPath - see below |  |  |  | 2026-08-18-station-arrivals-review.md:656 |
+| `SA-V8` | ? | a commit message that describes another commit | recorded here, history left alone |  |  | `ec7973c` | 2026-08-18-station-arrivals-review.md:664 |
 | `MB-B1` | B | The Lite repaint now takes the Layout monitor on the EDT | **Fixed on master** `68d78e4` |  | `TrainControlUI.java:15658` | `ac66dc7` | 2026-08-18-v2.8.1-master-review.md:41 |
 | `MB-C1` | C | The callback armor covers one door of three | **Fixed on master** `68d78e4` |  | `Layout.java:3237` | `ac66dc7` | 2026-08-18-v2.8.1-master-review.md:84 |
 | `MB-C2` | C | Two route editors, one guard, different threads | **Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280` |  | `TrainControlUI.java:11222` |  | 2026-08-18-v2.8.1-master-review.md:114 |
@@ -217,6 +335,24 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `TS-C3` | C | Green that means "did not run" | Open | 1: testRouteInventory.java |  |  | 2026-08-19-test-suite-review.md:115 |
 | `TS-D1` | D | Clean checks: where the suite is strong, verified rather than assumed | Recorded |  |  |  | 2026-08-19-test-suite-review.md:126 |
 | `TS-D2` | D | Reconciliation | Recorded |  |  |  | 2026-08-19-test-suite-review.md:167 |
+| `IP-D1` | D | `Util.writeAtomically` and its six call sites | Clean |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D2` | D | `KNOWN_SHARED` against the keys `sharedFields()` actually writes | Clean |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D3` | D | `RemoteDeviceCollection.add` evicting a duplicated locomotive | Not a defect |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D4` | D | Lock-order inversion between the Layout monitor and the `activeLocomotives` monitor | Not a defect |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D5` | D | The arrival-side split, lock-edge symmetry, grid-edge bounds and key collisions in the reducer | Clean |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D6` | D | `MarklinSimpleComponent` round trip and `serialVersionUID` | Clean |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D7` | D | `validatePathActuation` returning `true` on interrupt | Not a defect (unreachable) |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D8` | D | `CS2File`'s `magList` / `locList` caches going stale across syncs | Not a defect |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-D9` | D | The comment at `Layout.java:5077` naming the wrong field as the capture guard | Not a defect (comment only) |  |  |  | 2026-08-21-independent-pass.md |
+| `IP-A1` | A | An unreadable `UIState.data` is reported as a first launch and then overwritten on exit | Fixed 2026-08-21 |  | `TrainControlUI.java:1667` |  | 2026-08-21-independent-pass.md:73 |
+| `IP-B1` | B | The CS2 route importer drives a three-way into a position it cannot hold | Open |  | `CS2File.java:851` |  | 2026-08-21-independent-pass.md:124 |
+| `IP-B2` | B | A link switched off still blocks the build | Open |  | `TileGraph.java:684` |  | 2026-08-21-independent-pass.md:184 |
+| `IP-B3` | B | Page names and the restored position are dropped, then erased, when the preference outruns the file | Fixed 2026-08-21 |  | `TrainControlUI.java:3939` |  | 2026-08-21-independent-pass.md:229 |
+| `IP-B4` | B | One bad element in one page aborts the whole diagram import, and the answer is to forget the user's layout folder | Fixed for the page |  | `CS2File.java:2233` |  | 2026-08-21-independent-pass.md:285 |
+| `IP-C1` | C | An `Error` on a timetable thread leaves the run "running" for ever | Fixed 2026-08-21 |  | `Layout.java:3617` |  | 2026-08-21-independent-pass.md:341 |
+| `IP-C2` | C | One self-loop is reported as several | Fixed 2026-08-21 |  | `GraphReducer.java:302` |  | 2026-08-21-independent-pass.md:374 |
+| `IP-C3` | C | A renamed page is written under a name the reader will not look for | Fixed 2026-08-21 |  | `LayoutDiagram.java:433` |  | 2026-08-21-independent-pass.md:401 |
+| `IP-C4` | C | A multi-unit member whose name contains a comma-and-space is dropped from its consist | Fixed (stated in the body) |  | `CS2File.java:498` |  | 2026-08-21-independent-pass.md:435 |
 | `LT-A1` | A | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | Fixed - it was the station LABEL, which resolves to no Point |  |  |  | 2026-08-21-layout-test-feedback.md |
 | `LT-A2` | A | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | Fixed - the capture pruned by Point, not by tile |  |  |  | 2026-08-21-layout-test-feedback.md |
 | `LT-A3` | A | Dragging a selection LEFT removes the locomotive | Fixed - same prune as A2; confirmed by Adam on a re-run |  |  |  | 2026-08-21-layout-test-feedback.md |
@@ -251,11 +387,74 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `LT-A9` | A | why one direction and not the others, and why the earlier tests missed it | Fixed - it landed on its own label |  |  |  | 2026-08-21-layout-test-feedback.md:140 |
 | `LT-F2` | ? | what was built, and the three judgement calls in it | **Done** - a sidebar of pages and modes; the Edit button no longer asks. See the notes below |  |  |  | 2026-08-21-layout-test-feedback.md:185 |
 | `LT-M11` | ? | what "must trigger save/exit checks" was taken to mean | Fixed - see the note on what "save/exit checks" was taken to mean |  |  |  | 2026-08-21-layout-test-feedback.md:269 |
-| `TR-A11` | A | validated 2026-08-21 - confirmed, with one correction that changes the fix | - |  |  |  | 2026-08-21-review-dispositions.md:187 |
-| `TR-A21` | A | validated 2026-08-21 - your reading is right; downgraded to D | - |  |  |  | 2026-08-21-review-dispositions.md:251 |
-| `TR-A22` | A | validated and fixed 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:308 |
-| `TR-A23` | A | fixed 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:326 |
-| `TR-B13` | B | cleaned up 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:345 |
+| `TR-A11 @2026-08-21` | A | validated 2026-08-21 - confirmed, with one correction that changes the fix | - |  |  |  | 2026-08-21-review-dispositions.md:187 |
+| `TR-A21 @2026-08-21` | A | validated 2026-08-21 - your reading is right; downgraded to D | - |  |  |  | 2026-08-21-review-dispositions.md:251 |
+| `TR-A22 @2026-08-21` | A | validated and fixed 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:308 |
+| `TR-A23 @2026-08-21` | A | fixed 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:326 |
+| `TR-B13 @2026-08-21` | B | cleaned up 2026-08-21 | - |  |  |  | 2026-08-21-review-dispositions.md:345 |
+| `TR-A1` | A | **Shift Up / Shift Left from the last row or column moves the whole diagram and tells the autonomy setup nothing.** `LayoutDiagram.shiftUp` normalises | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A2` | A | **Cancel in the diagram editor does not take back the autonomy edits already written to disk.** `rememberAutonomy` → `saveQuietly()` writes `setup.jso | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A3` | A | **A facing does not travel with the tile it is about.** Directions are keyed by square *and* route (`page:x,y#state,index`); `moveKeys` matches whole  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A4` | A | **A tile dragged onto a square does not take that square's setup away.** `moveKeys`/`moveMembers` only overwrite a landing square when the source has  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A5` | A | **Discarding an edit keeps a signal pairing made since the load, and the next save writes it to disk.** `clear()` omits `stationSignals`; `clearShared | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A6` | A | **Renaming a configuration deletes its file before anything replaces it.** The new file is only written by the following save; `load()` rebuilds the l | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A7` | A | **Two differently-named configurations can share one file.** Uniqueness is checked on the in-memory name; the filename is sanitised, and sanitising is | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A8` | A | **An import that cannot be read empties the shared half on its way to failing.** `clearShared()` runs before `readShared(merged)`, and `merged` is ass | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A9` | A | **The track-diagram page index is truncated in place.** `gleisbild.cs2` names every page there is and was the one file in the project not written atom | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A10` | A | **`setup.json` gained an array shape with no version bump.** A station with two signals writes an array; the previous release reads that field with a  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A11 @2026-08-21` | A | **Every command reports success on a failed network write, and one failure wedges the switching thread for the session.** `NetworkProxy.sendMessage` r | Fixed 2026-08-21. The wait is bounded; the discarded boolean is C6 |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A12` | A | **Every mark in the command table is acted on twice.** `actOnRowMarks` registers a mouse listener that dispatches on the cell's value, ignoring the co | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A13` | A | **A signal row's Setting cell can be flipped by one stray click.** An accessory row upgraded to a Signal row for display keeps the word "turn", which  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A14` | A | **A condition mixing AND and OR without brackets is flattened.** `write()` recurses into a child at the parent's depth whatever word the child uses, s | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A15` | A | **Exporting a diagram as a picture permanently stops tile updates for that page.** The offscreen grid is built with a null master; its labels are regi | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A16` | A | **The feedback branch of `receiveMessage` is a check-then-act whose NPE is swallowed.** `hasId` then `getById` are two separate acquisitions, and `syn | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A17` | A | **Backspace over the diagram removes a locomotive instead of cycling tabs.** `locomotiveGestureOnDiagram` claims bare Backspace and is consulted befor | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A18` | A | **Ctrl+X on a selection deletes the tiles and empties the clipboard.** `cutSelection` copies then deletes; `delete()` ends with `resetClipboard()`, wh | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A19` | A | **`Layout.layoutVersion` is not volatile.** It is the fence that stops a train when a configuration is reloaded — written once by the loading thread,  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A20` | A | **The UDP reader ignores the received datagram length and reuses one buffer.** The message is read out of the buffer rather than the packet, so a shor | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A21 @2026-08-21` | A | **Every wait on a level is untimed.** `waitForPowerState`, `waitForOccupiedFeedback`, `waitForClearFeedback`, `waitForAccessoryState` and `waitForS88R | **Withdrawn - see D9.** Raised as A, downgraded 2026-08-21 |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A22 @2026-08-21` | A | **The Layout monitor is held across per-command sleeps, and a running train needs it before every sensor wait.** `configureAndLockPath` holds `synchro | Fixed 2026-08-21 |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A23 @2026-08-21` | A | **Main-window diagram tiles are registered with the model forever.** Removal is opportunistic and keyed on `isParentVisible()`; for a main-window tile | Fixed 2026-08-21 |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B1` | B | **Capturing into a route that contains a three-way row throws, and the captured rows land invisibly.** `settleCapturedRows` calls `toCommand()` on eve | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B2` | B | **A page switch while tiles are still decoding can leave that page permanently blank.** `showWhenTilesAreReady` hides the container and relies on `rev | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B3` | B | **An existing automatic route opens with its S88 field and Trigger dropdown greyed out and unreachable.** `showSensorIfAutomatic()` runs once during ` | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B4` | B | **The hovered diagram square is not cleared when the grid is torn down.** `mouseExited` is the only writer that clears it, and `repaintLayout` replace | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B5` | B | **A saved state with more pages than the preference grows the page count without growing the tab strip.** The tabs are built in the constructor; `setV | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B6` | B | **A locked route's explanation is overwritten immediately after construction.** `becomeReadOnly()` sets a title saying why every control is grey; `edi | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B7` | B | **"Show Station Here" tooltip says the action is refused, on an item that performs it.** `setEnabled(mine)` was removed in favour of a confirm dialog; | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B8` | B | **The save-immediately mechanism reached the move paths and not the forget paths beside them.** The three `forgetCaptionsAt` call sites (paste, fill,  | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B9` | B | **`updatePowerState` touches Swing straight from the message thread** — the one `View` callback in that class that does not marshal. Intermittently st | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B10` | B | **`AutoLocomotiveStatus` can NPE on the EDT** reading the last milestone for a locomotive whose driver has already cleared them (the two maps are clea | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B11` | B | **A popup diagram window never discards the grid it replaces**, so the outgoing grid's failsafe (8s) and grace (120ms) timers go on mutating the panel | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B12` | B | **`NetworkProxy.model` is assigned after the control station's constructor has already transmitted.** A send failure in that window NPEs inside the ca | Fixed `174178c5` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-B13 @2026-08-21` | B | **Executors, socket and timers are never shut down** — three non-daemon single-thread pools, a `DatagramSocket` nothing closes, a non-daemon reader th | Fixed 2026-08-21 |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C1` | C | **Two ordinary adjacent turnouts with a settle delay open as one three-way row.** `Switch 5 straight,300` then `Switch 6 turn` — a common crossover —  | **Declined** — documented trade-off of reading points back out of commands |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C2` | C | **The digits-only address editor covers Accessory and Feedback but not Signal or Three-way**, so those accept "twelve" and complain only at Save. | **Declined** — validation catches it |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C3` | C | **`AutonomyBanner.hold()` stores the rendered placeholder into `saying`**, so `isSaying()` returns true forever after the first message. | **Declined** — no caller anywhere in `src` or `test` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C4` | C | **`snapshotPage` puts live per-point `JSONObject` references into the undo snapshot**, and `setPointProperty` mutates them in place. Reachable only by | **Declined** — `snapshotSetup`, added in this batch, deep-copies and is the model if it ever needs fixing |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C5` | C | **The page cache branch replaces a panel's contents without discarding the outgoing grid**, so its 120ms grace timer can still drop a spinner into the | **Declined** — same shape as B2, no observed symptom on that path |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C6` | C | **`exec()` discards the boolean `sendMessage` returns**, so a send that failed locally - a closed socket that could not be reopened, a dead interface  | Open |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D1` | D | `CS2File.sanitizeFilename` does not replace `/` and `\`, so a configuration name holding a path separator escapes the folder | Wrong. The character class covers both. The reviewer rejected it before reporting; re-checked here literally. |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D2` | D | `MarklinAccessory.parseMessage` applies state after `updateTiles`, so a throw in the tile loop loses the state | Wrong. The order is the other way round - state is applied first. Rejected by the reviewer before reporting. |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D3` | D | The multi-signal widening leaves callers assuming a single signal | Traced end to end and clean: the store's list accessors, `rekeyListValues`/`moveListValues` (both `setValue` a fresh lis |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D4` | D | The signal picker dialog nests modals without bound | Clean. The click - add - reopen path fully unwinds before the next click, and all four option labels are distinct in eve |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D5` | D | `RouteCapture` and `ThreeWaySwitch` drifted from the editor they were lifted out of | Clean. The filter is a faithful lift; expand and read are exact inverses for all three positions. |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D6` | D | The new route editor drops a field the deleted one wrote | Clean. Name, s88, trigger, enabled, commands and conditions all reach the same `editRoute`/`newRoute` signatures, and `e |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D7` | D | The eight message bundles have drifted apart | Clean. All pure ASCII, identical key sets, and every key referenced from code resolves - the seven apparent misses are d |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D8` | D | `TileAnnotation`, `RowIcons`, `LayoutRightclickAutonomyMenu` and the `TEST_CS2_ADDRESS` change carry defects | Clean. Nothing found. |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D9` | D | **Withdrawn from A21.** The sensor waits are untimed and one dropped datagram strands a driving thread | Raised as A, withdrawn 2026-08-21 after validation. A deadline here has nothing safe to do - the train is between sensor |  |  |  | 2026-08-21-review-findings.md |
+| `TR-A24` | A | **The fix for A23 evicts labels that are alive, so tiles stop following the railway - and it does so on the sample layout as it stands.** `LayoutLabel | **Open.** Regression introduced by the TR-A23 fix in `0b5f5e73` |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C7` | C | **A rename between two names that resolve to ONE file is not written to disk at all, so it still reverts on a failed save.** `renameConfiguration` gua | Open |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C8` | C | **The advisory can fire twice, the second time saying the train has waited 0 minutes.** When `minDuration > 0` and the sensor drops during the re-chec | Open |  |  |  | 2026-08-21-review-findings.md |
+| `TR-C9` | C | **The second consecutive "power was not confirmed" warning is swallowed.** `MarklinControlStation.log` drops a message equal to the one before it (`:2 | Open |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D10` | D | `moveTiles`: does `forgetSquares(landing)` throw away something that should have survived, and is the source/landing split right for a group drag? | Clean. `landing` is every destination that is not itself a source, so a group moved by one square - where every square i |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D11` | D | `Layout.pendingS88Monitor`: are `updatePendingS88`/`waitForS88Reached` really the only users, and is there a new lost wakeup? | Clean. `git show 1efa3b9a:...Layout.java` has exactly one `wait()` and one `notifyAll()` and both were this pair; after  |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D12` | D | `versionWritten()`: computed from the right state at the right moment, including on export? | Clean. Both callers - `sharedFields()` (which `save()` calls and then writes immediately) and `exportBundle` - read the  |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D13` | D | `LayoutEditor`: is the snapshot taken before anything can touch the store, does Save abandon it, and what about autonomy mode? | Clean. The snapshot is the first thing in the constructor after the field assignments; `initComponents` only builds comp |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D14` | D | The bounded `waitForPowerState`: deadline arithmetic across an interrupt, and the caller on false | Clean. `left` is recomputed from a fixed deadline on every pass, so a spurious wakeup cannot extend it; an interrupt ret |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D15` | D | A13: does the "turn"/"straight" to "red"/"green" translation round trip, and is its twin covered? | Clean. `CommandRow.toCommand` resolves SIGNAL through `oneOf(setting, "turn", "straight", "red", "green")`, so red ≡ tur |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D16` | D | A12: is the duplicate listener really gone, and are there twins? | Clean. `actOnRowMarks` now has two call sites, one per table (`:2617`, `:3060`), and each adds one `MouseAdapter`. The d |  |  |  | 2026-08-21-review-findings.md |
+| `TR-D17` | D | The CAN handlers: the feedback branch and the datagram length check | Clean. `RemoteDeviceCollection.getById` returns `db.get(id)` under the collection's own lock, so the null test is one ac |  |  |  | 2026-08-21-review-findings.md |
 | `A1-A11` | A | , the ones that destroy work silently | - |  | `LayoutEditor.java:2805` | `174178c5` | 2026-08-21-review-findings.md:34 |
 | `A12-A23` | A | , the ones the user meets | Ruled (stated in the body) |  | `RouteEditorFrame.java:2555` | `174178c5` | 2026-08-21-review-findings.md:50 |
 | `AR-2` | ? | Place Locomotive is redundant in the autonomy editor | Removed - the item now appears only to EDIT a train that is there |  |  |  | 2026-08-22-adam-round.md |
@@ -315,6 +514,9 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `DD-C9 @2026-08-22` | C | `sideTowards` and `sideToward`, in the same class | Open | 1: TileGraph.java | `TileGraph.java:109` |  | 2026-08-22-duplication-and-design.md:1162 |
 | `DD-C10` | C | the port table exists three times, one of them in Python | Open | 3: LayoutDiagramComponent.java, TilePorts.java, testAutonomyDiagramPorts.java | `TilePorts.java:239` | `d4d5b7ba` | 2026-08-22-duplication-and-design.md:1186 |
 | `DD-C11` | C | the trace loops re-derive what the reducer already recorded | Open |  | `DiagramMonitor.java:370` | `beee4d3a` | 2026-08-22-duplication-and-design.md:1205 |
+| `DD-A1` | A | the automationui chain | Open | 5: AutonomyCompanionStore.java, TileGraph.java, testAutonomyDiagramStore.java |  | `db1db789` | 2026-08-22-duplication-and-design.md:1457 |
+| `DD-A2 @2026-08-22` | A | `Layout.java` and `HomeStaging` | Closed `ae94421a` - 34 classes added, `ant test` runs 75 | 1: testEveryTestIsInTheBattery.java |  | `2ab59d4` | 2026-08-22-duplication-and-design.md:1481 |
+| `DD-A3` | A | `base/` against `marklin/` | Closed `ae94421a` - greying applied after the table's own renderer |  |  | `8bde2099` | 2026-08-22-duplication-and-design.md:1515 |
 | `FR-C2` | C | C | Fixed |  |  |  | 2026-08-22-f2-review.md |
 | `FR-D1` | D | D | Removed |  |  |  | 2026-08-22-f2-review.md |
 | `FR-D2` | D | D | Fixed |  |  |  | 2026-08-22-f2-review.md |
@@ -752,15 +954,15 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `DOC-B26` | B | A review that claims to follow the house severities, then restates them wrongly | Open |  | `review.md:7` |  | 2026-08-28-documentation-review.md:750 |
 | `DOC-B27` | B | `CR` names two documents; `FR` names three things | Open |  | `README.md:99` | `eac0e392` | 2026-08-28-documentation-review.md:772 |
 | `IC-B1` | B | CS3 condition S88s are imported with inverted polarity | Ruled (stated in the body) |  | `CS2File.java:1440` | `8349217e` | 2026-08-28-independent-review.md:56 |
-| `IC-C1` | C | `parseMags` is the one per-record parser without a per-record guard | - |  | `CS2File.java:697` |  | 2026-08-28-independent-review.md:126 |
-| `IC-C2` | C | `control.logf` at lines 707 and 760 - the sweep that fixed line 2346 missed its twins | - |  | `CS2File.java:2340` |  | 2026-08-28-independent-review.md:149 |
-| `IC-C3` | C | Renaming a route on the Central Station never propagates | - |  | `MarklinControlStation.java:1220` |  | 2026-08-28-independent-review.md:166 |
-| `IC-D1` | D | CS3 locomotive parsing would skip a record missing `icon`/`dectyp`/function keys - none exists | - |  |  |  | 2026-08-28-independent-review.md:194 |
-| `IC-D2` | D | The CS3 branch subtracts decoder bases unconditionally - verified safe | - |  |  |  | 2026-08-28-independent-review.md:205 |
-| `IC-D3` | D | `NetworkProxy` - clean | - |  |  |  | 2026-08-28-independent-review.md:214 |
-| `IC-D4` | D | The CS3 `magList`/`locList` caches are per-sync by construction | - |  |  |  | 2026-08-28-independent-review.md:224 |
-| `IC-D5` | D | `.S88Flag` never matching the key regex is load-bearing | - |  |  |  | 2026-08-28-independent-review.md:230 |
-| `IC-D6` | D | Duplicate page names collapse to one file in the backup download - deliberate, unreachable | - |  |  |  | 2026-08-28-independent-review.md:238 |
+| `IC-C1` | C | `parseMags` is the one per-record parser without a per-record guard | open |  | `CS2File.java:697` |  | 2026-08-28-independent-review.md:126 |
+| `IC-C2` | C | `control.logf` at lines 707 and 760 - the sweep that fixed line 2346 missed its twins | open |  | `CS2File.java:2340` |  | 2026-08-28-independent-review.md:149 |
+| `IC-C3` | C | Renaming a route on the Central Station never propagates | open |  | `MarklinControlStation.java:1220` |  | 2026-08-28-independent-review.md:166 |
+| `IC-D1` | D | CS3 locomotive parsing would skip a record missing `icon`/`dectyp`/function keys - none exists | CS3 parser's throw-on-missing-key style: no real record misses a key |  |  |  | 2026-08-28-independent-review.md:194 |
+| `IC-D2` | D | The CS3 branch subtracts decoder bases unconditionally - verified safe | Unconditional uid base subtraction in `parseLocomotivesCS3`: safe against all real uids |  |  |  | 2026-08-28-independent-review.md:205 |
+| `IC-D3` | D | `NetworkProxy` - clean | `NetworkProxy` read end to end: clean |  |  |  | 2026-08-28-independent-review.md:214 |
+| `IC-D4` | D | The CS3 `magList`/`locList` caches are per-sync by construction | CS3 id caches cannot go stale across syncs |  |  |  | 2026-08-28-independent-review.md:224 |
+| `IC-D5` | D | `.S88Flag` never matching the key regex is load-bearing | The `.S88Flag` fold-into-item oddity is load-bearing, and correct for the format |  |  |  | 2026-08-28-independent-review.md:230 |
+| `IC-D6` | D | Duplicate page names collapse to one file in the backup download - deliberate, unreachable | Duplicate page names in the backup download: deliberate, and cannot occur on a real station |  |  |  | 2026-08-28-independent-review.md:238 |
 | `TST-A1` | A | the export/import parity test's key list is incomplete, and says it is not | open | 1: testAutoLayout.java | `testAutoLayout.java:1140` |  | 2026-08-28-test-suite-review.md:63 |
 | `TST-A2` | A | the legacy-sensor gate is an identity comparison | open | 1: testAutonomyDiagramSampleLayout.java | `testAutonomyDiagramSampleLayout.java:634` |  | 2026-08-28-test-suite-review.md:82 |
 | `TST-A3` | A | the tail-clearing gate is proved present and ordered, not effective | open | 1: testTrainTailClearsEdges.java | `Layout.java:4856` |  | 2026-08-28-test-suite-review.md:105 |
@@ -885,12 +1087,21 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `VB-C7` | C | The new annotation scan reads one level down | open |  |  |  | 2026-08-29-c-round-validation.md:278 |
 | `VB-C8` | C | GraphStream is gone except where it is not | open |  | `TrainControlUI.java:583` |  | 2026-08-29-c-round-validation.md:287 |
 | `VB-C9` | C | A restored locomotive is a name and an address | open |  | `LayoutRightclickAutonomyMenu.java:225` | `17ddd270` | 2026-08-29-c-round-validation.md:303 |
-| `VAL-A1` | A | `tailHasProvablyPassed`'s first clause is the same defect WK-B1 removed, one edge earlier | - | 2: Layout.java, testTrainTailClearsEdges.java | `Layout.java:3433` | `eac0e392` | 2026-08-29-round-validation.md:61 |
-| `VAL-B1` | B | Only two of the three Central Station items have an owner that hands them back | - | 2: LayoutEditor.java, TrainControlUI.java | `TrainControlUI.java:23867` |  | 2026-08-29-round-validation.md:129 |
-| `VAL-B2` | B | The store test proves nothing, and the fixture change made it prove less | - |  |  |  | 2026-08-29-round-validation.md:175 |
-| `VAL-B3` | B | Two agents' comments contradict each other in one block | - |  |  |  | 2026-08-29-round-validation.md:232 |
-| `VAL-B4` | B | The two new hourglass tests no longer test what they say, and their mutations are live | - | 1: testTheWaitMarkIsAnHourglass.java |  |  | 2026-08-29-round-validation.md:248 |
-| `VAL-B5` | B | Three `YES_NO_OPTS[0]` sites were fixed; six destructive siblings were not | - | 1: TrainControlUI.java | `TrainControlUI.java:568` |  | 2026-08-29-round-validation.md:274 |
+| `VAL-C1` | C | `waiting[2]` is now written and never read | open | 1: Layout.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C2` | C | `Layout.java:4721` states the false premise VAL-A1 rests on | open |  |  |  | 2026-08-29-round-validation.md |
+| `VAL-C3` | C | `LoadingSpinner`'s two-cycle frame counter and its javadoc are vestigial | open | 1: LoadingSpinner.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C4` | C | `guardLayoutMenu`'s loop still re-enables `initializeLocalLayoutMenuItem` - the third instance of the pattern the round fixed twice | open | 1: TrainControlUI.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C5` | C | `confirmExitWithoutAsking` closes an editor with no `repaintLayout`, leaving the CS items greyed | open | 1: LayoutEditor.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C6` | C | `BulkEnableOrDisable` duplicates `editRoute` rather than calling `enableOrDisableRoute` | open | 1: TrainControlUI.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C7` | C | The real railway's `configuration-Main.json` is in the uncommitted set with a settings change | open |  |  |  | 2026-08-29-round-validation.md |
+| `VAL-C8` | C | The counting ratchets absorb a regression that coincides with a repair | open | 2: testJavadocsAreAttached.java, testSwitchingToACentralStationLayout.java |  |  | 2026-08-29-round-validation.md |
+| `VAL-C9` | C | `gracefulStop`'s unbounded wait can leave both buttons disabled | open |  |  |  | 2026-08-29-round-validation.md |
+| `VAL-A1` | A | `tailHasProvablyPassed`'s first clause is the same defect WK-B1 removed, one edge earlier | open | 2: Layout.java, testTrainTailClearsEdges.java | `Layout.java:3433` | `eac0e392` | 2026-08-29-round-validation.md:61 |
+| `VAL-B1` | B | Only two of the three Central Station items have an owner that hands them back | open | 2: LayoutEditor.java, TrainControlUI.java | `TrainControlUI.java:23867` |  | 2026-08-29-round-validation.md:129 |
+| `VAL-B2` | B | The store test proves nothing, and the fixture change made it prove less | open |  |  |  | 2026-08-29-round-validation.md:175 |
+| `VAL-B3` | B | Two agents' comments contradict each other in one block | open |  |  |  | 2026-08-29-round-validation.md:232 |
+| `VAL-B4` | B | The two new hourglass tests no longer test what they say, and their mutations are live | open | 1: testTheWaitMarkIsAnHourglass.java |  |  | 2026-08-29-round-validation.md:248 |
+| `VAL-B5` | B | Three `YES_NO_OPTS[0]` sites were fixed; six destructive siblings were not | open | 1: TrainControlUI.java | `TrainControlUI.java:568` |  | 2026-08-29-round-validation.md:274 |
 | `LE-A1` | A | a group cut and paste left the setup on the squares it emptied | fixed, `regression.testTheEditorTellsAutonomy` | 2: LayoutEditor.java, testTheEditorTellsAutonomy.java |  |  | 2026-08-30-layout-editor-review.md:29 |
 | `LE-A4` | A | pasting a cut block back where it came from destroyed the whole block's setup | fixed, `regression.testTheEditorTellsAutonomy` | 2: LayoutEditor.java, testLayoutEditorBulkEdits.java |  |  | 2026-08-30-layout-editor-review.md:53 |
 | `LE-A5` | A | a non-rectangular cut moved the setup off squares that were never cut | fixed, `regression.testTheEditorTellsAutonomy` | 3: LayoutEditor.java, TileSelection.java, testTheEditorTellsAutonomy.java |  |  | 2026-08-30-layout-editor-review.md:78 |
@@ -1027,24 +1238,24 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `RGN-D6` | D | route sort order, ids, enable and disable | - |  |  |  | 2026-08-31-regression-review.md:588 |
 | `RGN-D7` | D | the two mechanical sweeps came back almost empty | - |  | `RightClickFunctionMenu.java:107` |  | 2026-08-31-regression-review.md:596 |
 | `RGN-D8` | D | preference defaults, diffed mechanically | - |  | `TrainControlUI.java:882` |  | 2026-08-31-regression-review.md:608 |
-| `TCS-A1` | A | The MT-149 timetable-redraw guard tests the helper, not the guard, and not the call | - |  | `testARenameReachesTheTimetableOnScreen.java:46` |  | 2026-08-31-test-suite-review.md:74 |
-| `TCS-A2 @2026-08-31` | A | The OB-159 z-order test passes with OB-159 put back, two different ways | - | 1: testDiagramLooksRight.java | `testDiagramLooksRight.java:2056` |  | 2026-08-31-test-suite-review.md:129 |
-| `TCS-A3` | A | The OB-164 change to `unlockPath` has no test, and the test that names that branch models the code before it | - |  | `Layout.java:5289` |  | 2026-08-31-test-suite-review.md:189 |
-| `TCS-B1` | B | Four classes restore the layout preference while their `TrainControlUI` is still alive | - |  | `testEveryLanguageFits.java:40` | `fd31d2b2` | 2026-08-31-test-suite-review.md:258 |
-| `TCS-B2` | B | `testEveryLanguageFits`'s two safety assertions are each satisfied by nothing | - |  | `testEveryLanguageFits.java:173` |  | 2026-08-31-test-suite-review.md:325 |
-| `TCS-B3` | B | `Outcome.NO_HOMES` is asserted by no test in the suite | - |  | `HomeStaging.java:709` | `66c96736` | 2026-08-31-test-suite-review.md:371 |
-| `TCS-B4` | B | `testALocomotiveInOnePlaceIsNotReported` - a control that asserts nothing about its own fixture | - |  | `testAutonomyDiagramSession.java:4546` |  | 2026-08-31-test-suite-review.md:412 |
-| `TCS-C1` | C | `testATrainIsNotPlannedIntoItsOwnDetectionSection` closes on `!= READY` | - |  | `testHomeStaging.java:3618` |  | 2026-08-31-test-suite-review.md:443 |
-| `TCS-C2` | C | A home on a split square is triaged and never planned or executed | - |  | `HomeStaging.java:1589` |  | 2026-08-31-test-suite-review.md:467 |
-| `TCS-C3` | C | `testRouteTilePlacement` throws instead of reporting, on its own failure path | - |  | `testRouteTilePlacement.java:288` |  | 2026-08-31-test-suite-review.md:488 |
-| `TCS-C4` | C | The routing tooltip is refreshed by reflection, never through the control | - |  | `testRoutingRuleTooltips.java:79` |  | 2026-08-31-test-suite-review.md:506 |
-| `TCS-C5` | C | Three more vacuous-on-empty loops, outside `TST-C8`'s list | - |  | `testAutonomyDiagramReversal.java:248` |  | 2026-08-31-test-suite-review.md:523 |
-| `TCS-C6` | C | The window-icon guard cannot see the construction OB-105 was about | - |  | `AutonomyEditorPanel.java:3019` |  | 2026-08-31-test-suite-review.md:540 |
-| `TCS-C7` | C | Three negative controls with no floor | - |  | `testStationBlockedByAnotherPoint.java:148` |  | 2026-08-31-test-suite-review.md:576 |
-| `TCS-C8` | C | A `MUTATION` line that names the wrong guard | - |  | `testARouteDoesNotThrowSwitchesUnderATrain.java:99` |  | 2026-08-31-test-suite-review.md:600 |
-| `TCS-D1` | D | Clean checks, with receipts | - |  | `testALocomotiveDoesNotEvictItself.java:37` |  | 2026-08-31-test-suite-review.md:624 |
-| `TCS-D2` | D | `build.xml` reconciles exactly against disk | - |  |  |  | 2026-08-31-test-suite-review.md:691 |
-| `TCS-D3` | D | Withdrawn: "the multi-unit sweep's eviction half is untested" | - |  | `testAutoLayout.java:126` |  | 2026-08-31-test-suite-review.md:699 |
+| `TCS-A1` | A | The MT-149 timetable-redraw guard tests the helper, not the guard, and not the call | open |  | `testARenameReachesTheTimetableOnScreen.java:46` |  | 2026-08-31-test-suite-review.md:74 |
+| `TCS-A2 @2026-08-31` | A | The OB-159 z-order test passes with OB-159 put back, two different ways | open | 1: testDiagramLooksRight.java | `testDiagramLooksRight.java:2056` |  | 2026-08-31-test-suite-review.md:129 |
+| `TCS-A3` | A | The OB-164 change to `unlockPath` has no test, and the test that names that branch models the code before it | open |  | `Layout.java:5289` |  | 2026-08-31-test-suite-review.md:189 |
+| `TCS-B1` | B | Four classes restore the layout preference while their `TrainControlUI` is still alive | open |  | `testEveryLanguageFits.java:40` | `fd31d2b2` | 2026-08-31-test-suite-review.md:258 |
+| `TCS-B2` | B | `testEveryLanguageFits`'s two safety assertions are each satisfied by nothing | open |  | `testEveryLanguageFits.java:173` |  | 2026-08-31-test-suite-review.md:325 |
+| `TCS-B3` | B | `Outcome.NO_HOMES` is asserted by no test in the suite | open |  | `HomeStaging.java:709` | `66c96736` | 2026-08-31-test-suite-review.md:371 |
+| `TCS-B4` | B | `testALocomotiveInOnePlaceIsNotReported` - a control that asserts nothing about its own fixture | open |  | `testAutonomyDiagramSession.java:4546` |  | 2026-08-31-test-suite-review.md:412 |
+| `TCS-C1` | C | `testATrainIsNotPlannedIntoItsOwnDetectionSection` closes on `!= READY` | open |  | `testHomeStaging.java:3618` |  | 2026-08-31-test-suite-review.md:443 |
+| `TCS-C2` | C | A home on a split square is triaged and never planned or executed | open |  | `HomeStaging.java:1589` |  | 2026-08-31-test-suite-review.md:467 |
+| `TCS-C3` | C | `testRouteTilePlacement` throws instead of reporting, on its own failure path | open |  | `testRouteTilePlacement.java:288` |  | 2026-08-31-test-suite-review.md:488 |
+| `TCS-C4` | C | The routing tooltip is refreshed by reflection, never through the control | open |  | `testRoutingRuleTooltips.java:79` |  | 2026-08-31-test-suite-review.md:506 |
+| `TCS-C5` | C | Three more vacuous-on-empty loops, outside `TST-C8`'s list | open |  | `testAutonomyDiagramReversal.java:248` |  | 2026-08-31-test-suite-review.md:523 |
+| `TCS-C6` | C | The window-icon guard cannot see the construction OB-105 was about | open |  | `AutonomyEditorPanel.java:3019` |  | 2026-08-31-test-suite-review.md:540 |
+| `TCS-C7` | C | Three negative controls with no floor | open |  | `testStationBlockedByAnotherPoint.java:148` |  | 2026-08-31-test-suite-review.md:576 |
+| `TCS-C8` | C | A `MUTATION` line that names the wrong guard | open |  | `testARouteDoesNotThrowSwitchesUnderATrain.java:99` |  | 2026-08-31-test-suite-review.md:600 |
+| `TCS-D1` | D | Clean checks, with receipts | closed |  | `testALocomotiveDoesNotEvictItself.java:37` |  | 2026-08-31-test-suite-review.md:624 |
+| `TCS-D2` | D | `build.xml` reconciles exactly against disk | closed |  |  |  | 2026-08-31-test-suite-review.md:691 |
+| `TCS-D3` | D | Withdrawn: "the multi-unit sweep's eviction half is untested" | closed |  | `testAutoLayout.java:126` |  | 2026-08-31-test-suite-review.md:699 |
 | `RTG-D1` | D | The IMPOSSIBLE for a train on an inactive/non-station origin, suspected as a false proof | Not a defect: staging executes with `running` set and `isPathClear:2192`/`:2201` refuse the first edge, so planner and r |  |  |  | 2026-09-01-autonomy-routing-review.md |
 | `RTG-D2` | D | `firstClearRoute` ignoring lock edges | Deliberate and sound — staging runs one train at a time (`timetableSequential`, `Layout.java:6528-6538`), so the runtime |  |  |  | 2026-09-01-autonomy-routing-review.md |
 | `RTG-D3` | D | The reversal-as-state search (`Candidate.turned`, seen-set keyed by point+turned+commands) in `firstClearRoute`, and the mirrored two-state BFS in `co | Correct by reading: turned is monotonic, terminus is arrived-at but never expanded, arrival is tested before the visited |  |  |  | 2026-09-01-autonomy-routing-review.md |
@@ -1358,15 +1569,15 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `V31-D14` | D | the disposition corrections in `54a70c03` are both right, and the distinction they draw holds elsewhere | - |  | `index.md:219` | `54a70c03` | 2026-09-02-first-validation.md:564 |
 | `V31-D15` | D | the remaining dispositions from `cf048f9b`, spot-checked against the artefacts they name | - |  | `TrainControlUI.java:5183` | `cf048f9b` | 2026-09-02-first-validation.md:583 |
 | `V31-D16` | D | things that looked wrong and are not | - |  | `LayoutLabel.java:345` | `1cfdf370` | 2026-09-02-first-validation.md:608 |
-| `V34-B1` | B | the affordance fix left a call nothing reads, and pinned it | open | 3: AutonomyOverlayToggle.java, TrainControlUI.java, testErrorsStopTheSetupRunning.java | `AutonomyOverlayToggle.java:342` |  | 2026-09-02-fourth-validation.md:58 |
-| `V34-C1` | C | the helper is `isReversible()` with a parameter it ignores, so `V33-C8` is not fixed | open |  | `testHomeStaging.java:189` |  | 2026-09-02-fourth-validation.md:139 |
-| `V34-C2` | C | `shortBerth()` lost its javadoc to the new helper | open |  | `testHomeStaging.java:243` |  | 2026-09-02-fourth-validation.md:207 |
-| `V34-C3` | C | `one.sh` counts a skip as a failure, and says it does not | open |  | `one.sh:221` |  | 2026-09-02-fourth-validation.md:237 |
-| `V34-C4` | C | the 600 ms correction was written once, and its twins in the same file still disagree | open | 1: TrainControlUI.java | `TrainControlUI.java:16123` |  | 2026-09-02-fourth-validation.md:309 |
-| `V34-C5` | C | the three-way comment accounts for two of the three kinds of drive | open | 1: LayoutLabel.java | `LayoutLabel.java:415` |  | 2026-09-02-fourth-validation.md:362 |
-| `V34-C6` | C | the two new affordance assertions are whole-file `contains` | open | 1: testErrorsStopTheSetupRunning.java | `testErrorsStopTheSetupRunning.java:242` |  | 2026-09-02-fourth-validation.md:396 |
-| `V34-C7` | C | the new dispose runs ahead of the preference restore | open | 1: testThePaletteStillPlacesTiles.java | `testThePaletteStillPlacesTiles.java:188` |  | 2026-09-02-fourth-validation.md:424 |
-| `V34-C8` | C | the findings answered are still open in their own documents | open |  | `validation.md:27` |  | 2026-09-02-fourth-validation.md:466 |
+| `V34-B1` | B | the affordance fix left a call nothing reads, and pinned it | Open | 3: AutonomyOverlayToggle.java, TrainControlUI.java, testErrorsStopTheSetupRunning.java | `AutonomyOverlayToggle.java:342` |  | 2026-09-02-fourth-validation.md:58 |
+| `V34-C1` | C | the helper is `isReversible()` with a parameter it ignores, so `V33-C8` is not fixed | Open |  | `testHomeStaging.java:189` |  | 2026-09-02-fourth-validation.md:139 |
+| `V34-C2` | C | `shortBerth()` lost its javadoc to the new helper | Open |  | `testHomeStaging.java:243` |  | 2026-09-02-fourth-validation.md:207 |
+| `V34-C3` | C | `one.sh` counts a skip as a failure, and says it does not | Open |  | `one.sh:221` |  | 2026-09-02-fourth-validation.md:237 |
+| `V34-C4` | C | the 600 ms correction was written once, and its twins in the same file still disagree | Open | 1: TrainControlUI.java | `TrainControlUI.java:16123` |  | 2026-09-02-fourth-validation.md:309 |
+| `V34-C5` | C | the three-way comment accounts for two of the three kinds of drive | Open | 1: LayoutLabel.java | `LayoutLabel.java:415` |  | 2026-09-02-fourth-validation.md:362 |
+| `V34-C6` | C | the two new affordance assertions are whole-file `contains` | Open | 1: testErrorsStopTheSetupRunning.java | `testErrorsStopTheSetupRunning.java:242` |  | 2026-09-02-fourth-validation.md:396 |
+| `V34-C7` | C | the new dispose runs ahead of the preference restore | Open | 1: testThePaletteStillPlacesTiles.java | `testThePaletteStillPlacesTiles.java:188` |  | 2026-09-02-fourth-validation.md:424 |
+| `V34-C8` | C | the findings answered are still open in their own documents | Open |  | `validation.md:27` |  | 2026-09-02-fourth-validation.md:466 |
 | `V34-D1` | D | `one.sh`'s classification, path by path | correct on every path |  | `one.sh:181` |  | 2026-09-02-fourth-validation.md:503 |
 | `V34-D2` | D | the strip now asks the guard's question, and the fallback is unchanged | correct, and identical to the old behaviour |  | `TrainControlUI.java:5183` |  | 2026-09-02-fourth-validation.md:538 |
 | `V34-D3` | D | `bodyOf` is reliable here, and a rename fails loudly | reliable, and fails loudly |  | `testEditorSurfaceRules.java:1087` |  | 2026-09-02-fourth-validation.md:556 |
@@ -1491,6 +1702,34 @@ They are: `AC2-C1`, `AC2-C3`, `CMT-B1`, `CMT-B2`, `CMT-B3`, `CMT-B4`, `CMT-C2`, 
 | `TS3-D5` | D | `testTwoHomesOnOneSquareDoNotBothSurviveTheLoader` is a well-built test | closed — checked clean |  | `testHomeStaging.java:3229` | `8d1c17ca` | 2026-09-02-test-suite-review.md:866 |
 | `TS3-D6` | D | the battery list and the tree agree exactly | closed — checked clean |  | `build.xml:270` | `7931e11a` | 2026-09-02-test-suite-review.md:875 |
 | `TS3-D7` | D | `battery.sh`'s result classification is sound | closed — checked clean |  | `Layout.java:2296` | `cf048f9b` | 2026-09-02-test-suite-review.md:893 |
+| `V33-A1` | A | `one.sh` cannot see a teardown that threw | Open |  | `one.sh:470` |  | 2026-09-02-third-validation.md:49 |
+| `V33-B1` | B | `one.sh` does not call out skips, or a class with no tests in it | Open |  | `one.sh:176` | `3c014e77` | 2026-09-02-third-validation.md:96 |
+| `V33-C1` | C | `battery.sh` never reaps after the last class | Open |  | `battery.sh:367` |  | 2026-09-02-third-validation.md:132 |
+| `V33-C2` | C | `one.sh` has no reaper, and its JVMs carry no run id | Open |  | `one.sh:171` |  | 2026-09-02-third-validation.md:161 |
+| `V33-C3` | C | `one.sh` does not check whether the tree compiled | Open |  | `one.sh:153` |  | 2026-09-02-third-validation.md:185 |
+| `V33-C4` | C | `one.sh` always exits 0 | Open |  | `one.sh:204` | `3c014e77` | 2026-09-02-third-validation.md:209 |
+| `V33-C5` | C | the copy-check test's last assertion depends on which way round `TOWARD_A` points | Open | 1: testAutonomyDiagramSession.java | `testAutonomyDiagramSession.java:689` |  | 2026-09-02-third-validation.md:230 |
+| `V33-C6` | C | the protecting-signal test does not catch one of the two mutations it names | Open | 1: testEditorSurfaceRules.java | `testEditorSurfaceRules.java:625` |  | 2026-09-02-third-validation.md:270 |
+| `V33-C7` | C | the route-door test's negative half can go vacuous silently | Open | 1: testEditorSurfaceRules.java | `testEditorSurfaceRules.java:602` |  | 2026-09-02-third-validation.md:299 |
+| `V33-C8` | C | two preconditions that restate the two lines above them | Open | 1: testHomeStaging.java | `testHomeStaging.java:181` |  | 2026-09-02-third-validation.md:325 |
+| `V33-C9` | C | the longer-approach test has no control, and passes with the rule absent | Open | 1: testHomeStaging.java | `testHomeStaging.java:3353` |  | 2026-09-02-third-validation.md:360 |
+| `V33-C10` | C | "twenty times, because `getNeighbors` shuffles" is not why | Open | 1: testHomeStaging.java | `testHomeStaging.java:3383` | `e6791631` | 2026-09-02-third-validation.md:387 |
+| `V33-C11` | C | the palette test leaves its editor window undisposed | Open | 1: testThePaletteStillPlacesTiles.java | `testThePaletteStillPlacesTiles.java:188` |  | 2026-09-02-third-validation.md:413 |
+| `V33-C12` | C | "the guard's question, whichever one that is" is not what the test does | Open | 1: testErrorsStopTheSetupRunning.java | `testErrorsStopTheSetupRunning.java:208` |  | 2026-09-02-third-validation.md:439 |
+| `V33-D1` | D | the reaper path correction (`TS3-A1`) is right, and complete | - |  | `battery.sh:295` | `fb3722f5` | 2026-09-02-third-validation.md:470 |
+| `V33-D2` | D | `testTheEditorWarnsAboutACopyWithNoWayOutOrIn` (apart from C5) | - |  | `testAutonomyDiagramSession.java:689` |  | 2026-09-02-third-validation.md:494 |
+| `V33-D3` | D | `testTheEditorWarnsAboutACopyThatReachesNoOtherStation` | - |  | `testAutonomyDiagramSession.java:802` |  | 2026-09-02-third-validation.md:519 |
+| `V33-D4` | D | `testAShutPlainSquareDrawsItsCrossOnTheRunningDiagram` | - |  | `testAutonomyDiagramSession.java:904` |  | 2026-09-02-third-validation.md:542 |
+| `V33-D5` | D | `testAShutPlainSquareReachesTheRunningGraph`, and the `TS3-B1` repair to its control | - |  | `testAutonomyDiagramSession.java:958` |  | 2026-09-02-third-validation.md:561 |
+| `V33-D6` | D | `testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning` (apart from C7) | - |  | `testEditorSurfaceRules.java:580` |  | 2026-09-02-third-validation.md:580 |
+| `V33-D7` | D | `testEveryLatchRaiseHasAWayDown`, the three-link version | - |  | `testEditorSurfaceRules.java:2193` |  | 2026-09-02-third-validation.md:595 |
+| `V33-D8` | D | `testTheAuditSeesTheReversalRoomRuleTheStagingPlannerDoesNotHave` (apart from C8) | - |  | `testHomeStaging.java:163` |  | 2026-09-02-third-validation.md:614 |
+| `V33-D9` | D | `testTwoHomesOnOneSquareDoNotBothSurviveTheLoader` | - |  | `testHomeStaging.java:3269` |  | 2026-09-02-third-validation.md:640 |
+| `V33-D10` | D | `testNothingIsLoadedWhenAlreadyHome`, with the sequential flag | - |  | `testHomeStaging.java:944` |  | 2026-09-02-third-validation.md:664 |
+| `V33-D11` | D | `testTheAffordancesAskTheGuardsOwnQuestion` (apart from the comment, C12) | - |  | `testErrorsStopTheSetupRunning.java:198` |  | 2026-09-02-third-validation.md:680 |
+| `V33-D12` | D | the four smaller repairs | - |  | `testAutonomyDiagramSession.java:3809` |  | 2026-09-02-third-validation.md:699 |
+| `V33-D13` | D | the two integration-test repairs, and the fixture re-sync | - |  | `testAMovedTileCarriesItsSetup.java:227` | `409d4ce8` | 2026-09-02-third-validation.md:732 |
+| `V33-D14` | D | `testThePaletteStillPlacesTiles` as a test (apart from C11) | - |  | `testSwitchingToACentralStationLayout.java:748` | `2e83b737` | 2026-09-02-third-validation.md:760 |
 | `D1-D10` | D | Checks that came back clean, and one finding raised and withdrawn during this pass | - |  |  |  | 2026-09-02-three-days-review.md |
 | `D3F-B1` | B | the room check's "keep looking" is defeated by the search's own `seen` bookkeeping | open | 2: HomeStaging.java, testHomeStaging.java | `testHomeStaging.java:3388` | `e6791631` | 2026-09-02-three-days-review.md:57 |
 | `D3F-C1` | C | `checkBadCopies` documents the ERROR its own body removed | open | 1: AutonomyChecks.java | `AutonomyChecks.java:749` | `409d4ce8` | 2026-09-02-three-days-review.md:152 |
@@ -2075,15 +2314,13 @@ assigned them is gone. The citation now leads here, which is the most that can b
 recovered: the comment is still explained by the file it sits in, and the reader is no
 longer hunting a document that does not exist.
 
-`testEveryCitationResolves.testEveryCitationLeadsSomewhere` holds this list at **62**.
+`testEveryCitationResolves.testEveryCitationLeadsSomewhere` holds this list at **45**.
 Add a citation to a finding that does not exist and it fails, naming the file.
 
 They cluster by prefix rather than scattering, which is the tell: a whole document is
 missing, not a line. Where a row says *mentioned in* there is prose to read, but no
 finding was ever filed under that id.
 
-- **`AD-B7`** - cited in `TrainControlUI.java`
-- **`AD-B8`** - cited in `TrainControlUI.java`
 - **`AR-19`** - cited in `RouteEditorFrame.java` - mentioned in `docs/manual-tests/tests.md`
 - **`FCR-B3`** - cited in `MarklinControlStation.java`
 - **`IND-M1`** - cited in `testAdvancedRoutes.java`
@@ -2122,22 +2359,7 @@ finding was ever filed under that id.
 - **`RC-B7`** - cited in `Layout.java`
 - **`RC-B8`** - cited in `Layout.java`, `testRoutePicking.java`
 - **`RC-B9`** - cited in `MarklinControlStation.java`
-- **`SA-C1`** - cited in `AutonomySession.java`
 - **`SM31-108`** - cited in `testAutonomyDiagramSession.java`
-- **`V33-C10`** - cited in `testHomeStaging.java`
-- **`V33-C11`** - cited in `testThePaletteStillPlacesTiles.java`
-- **`V33-C12`** - cited in `testErrorsStopTheSetupRunning.java`
-- **`V33-C5`** - cited in `testAutonomyDiagramSession.java`
-- **`V33-C6`** - cited in `testEditorSurfaceRules.java`
-- **`V33-C7`** - cited in `testEditorSurfaceRules.java`
-- **`V33-C8`** - cited in `testHomeStaging.java`
-- **`V33-C9`** - cited in `testHomeStaging.java`
-- **`VAL-C1`** - cited in `Layout.java`
-- **`VAL-C3`** - cited in `LoadingSpinner.java`
-- **`VAL-C4`** - cited in `TrainControlUI.java`
-- **`VAL-C5`** - cited in `LayoutEditor.java`
-- **`VAL-C6`** - cited in `TrainControlUI.java`
-- **`VAL-C8`** - cited in `testJavadocsAreAttached.java`, `testSwitchingToACentralStationLayout.java`
 - **`VAL-D4`** - cited in `testTheWaitMarkIsAnHourglass.java`
 - **`VAL9-B3`** - cited in `Util.java`, `testInvalidInput.java`
 - **`VAL9-B4`** - cited in `testATrainCoversTheTrackBehindIt.java`

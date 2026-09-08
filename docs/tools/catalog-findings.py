@@ -52,7 +52,7 @@ HEADING = re.compile(r"^#{2,4}\s+([A-Z][A-Z0-9]{1,7}-[A-Z]?\d+[a-z]?(?:\.\.[A-Z]
 # without backticks, and several carry a sentence after the prefix - hence the loose tail.
 # "**Prefix:**", "**Prefix for citing these findings elsewhere:**" and "**Citation prefix:**" are
 # all in use, with and without backticks.
-PREFIX = re.compile(r"^\*\*(?:Citation [Pp]|P)refix[^:]{0,60}:\*\*\s*`?([A-Z][A-Z0-9]{1,7})`?")
+PREFIX = re.compile(r"^\*\*(?:Citation [Pp]refix|Prefix(?: for citing [^:]{0,40})?)\s*:\s*\**\s*`?([A-Z][A-Z0-9]{1,7})`?")
 
 # A short heading: severity letter, number, optional sub-letter.  Anchored on the separator so that a
 # section called `## B - medium` is not read as a finding named B.
