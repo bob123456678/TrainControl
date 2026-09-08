@@ -640,6 +640,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     };
         
     /**
+     * The interface scale, or empty to let FlatLaf work it out from the display.
+     *
+     * Adam, 2026-09-08, on everything above the track diagram shrinking: *"the font is still small...
+     * notice how the fonts above the track diagram are also smaller now, and the padding on the button
+     * is still missing."*
+     *
+     * All of that is one number. FlatLaf scales the whole interface - fonts, insets, button padding -
+     * by a factor it computes ONCE while installing itself, from the display. On a 120-dpi screen that
+     * is 1.25, and the difference between it applying and not is a 12-point interface against a
+     * 15-point one, with every margin scaled to match.
+     *
+     * Set this to "1.25" to force the larger interface, or "1" for the smaller one. Left empty it
+     * follows the display, which is right on any machine.
+     */
+    public static final String UI_SCALE = "";
+
+    /**
      * Whether the menu bar is drawn INSIDE the window title bar, FlatLaf-style.
      *
      * **False, by Adam's word of 2026-09-08:** *"the production app now also has a different menu bar,
@@ -697,6 +714,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static void installLookAndFeel()
     {
+        // AWT FIRST, and this is the line that decides how big the whole interface is.
+        //
+        // FlatLaf works out a UI SCALE once, when it installs itself, and caches it - on a 120-dpi
+        // display it is 1.25, which is the difference between a 12-point interface and a 15-point one.
+        // Measured 2026-09-08: installing cold, before anything has touched AWT, produced
+        // `Label.font` at 12; installing after a call into the toolkit produced 15. Same machine, same
+        // display, same code - only what had run first.
+        //
+        // That is why moving this method could change the size of every font and every button's padding
+        // at once, and why nobody could find it by reading either version.  Asking the toolkit here
+        // makes the answer the same wherever this is called from, which is the whole point.
+        java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
+
+        // AND THE SCALE CAN BE PINNED, if the automatic answer is ever wrong.  Empty means "let FlatLaf
+        // decide", which is the default; "1.25" or "1" forces it.  It is a system property rather than
+        // a UI default because FlatLaf reads it while installing.
+        if (!UI_SCALE.isEmpty()) System.setProperty("flatlaf.uiScale", UI_SCALE);
+
         // BEFORE setup(), because FlatLaf reads these when it installs itself - afterwards is too late
         // for the window decorations, which are decided once.
         if (!MENUS_IN_THE_TITLE_BAR)
