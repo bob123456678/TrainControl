@@ -6303,7 +6303,14 @@ public class AutonomyEditorPanel extends JPanel
 
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
-            if (point.isDestination() && point.isActive() && point.isAutoDestination()) count++;
+            // THE RULE, ASKED, rather than spelled out again (MON-C2).
+            //
+            // This was `isDestination() && isActive() && isAutoDestination()` - the rule with
+            // `!isReversing()` missing - which is a THIRD copy of it, and it overcounted by every
+            // reversing station on the railway. The number feeds "why is nothing considered", so the
+            // one place an operator goes when no train moves was telling them there were more
+            // destinations than autonomy has.
+            if (layout.isSendableDestination(point)) count++;
         }
 
         return count;

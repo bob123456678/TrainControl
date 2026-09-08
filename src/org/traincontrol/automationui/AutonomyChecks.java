@@ -486,10 +486,21 @@ public class AutonomyChecks
 
             if (notAutoDestinations.contains(point.getTile())) continue;
 
-            // A reversing station is not a destination either, and it is the older spelling of the
-            // same idea - `isAutoDestination` already treats it so, but the reversing sets are what
-            // this method has in its hand, so it is asked here too rather than trusted twice over.
-            if (reversing.contains(point.getTile())) continue;
+            // NOT ASKED AGAIN HERE, and the sentence that used to stand in its place is the reason
+            // why (MON-C1).
+            //
+            // It said the reversing clause was "asked here too rather than trusted twice over" - and
+            // the two spellings are not the same. `notAutoDestinations` comes from
+            // `stationsAutonomyWillNotChoose`, which narrows deliberately to squares where turning is
+            // COMPULSORY: "a may-reverse square keeps a plain copy, and autonomy can choose that one
+            // perfectly well". `reversing` here is may-turn AND must-turn together, so re-applying it
+            // was the stricter of the two rules quietly overriding the narrower one three lines after
+            // it was applied.
+            //
+            // What that cost: a reversing square whose only reachable stations are may-reverse squares
+            // was told its run leads nowhere, when autonomy can send trains to their plain copies.
+            //
+            // Trusted once, from the parameter, which is where the decision was made.
 
             stationTiles.add(point.getTile());
         }

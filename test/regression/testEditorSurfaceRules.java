@@ -4185,49 +4185,104 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * "Somewhere a train can be sent" is written once (DR-B3).
+     * The sendable-destination rule is written ONCE, anywhere in the program (MON-C3).
      *
-     * The four clauses - destination, active, auto-destination, not a turning copy - were spelled out
-     * at three sites in `Layout`, and they had already drifted: the reachability probe was missing
-     * two of them. That one is a real difference (it takes no locomotive, so the per-train questions
-     * cannot be asked there) but nothing distinguished it from an oversight, and nothing held the
-     * other two together except somebody remembering.
+     * A station autonomy may send a train to is `isDestination() && isActive() && isAutoDestination()
+     * && !isReversing()`, and it lives in `Layout.isSendableDestination`. Everything else asks.
      *
-     * This counts the spellings. It does not care where they are - a fourth copy in a new method is
-     * exactly the thing that would otherwise pass review.
+     * **The version of this guard that shipped could not see a single one of the copies it exists to
+     * find.** It read only `Layout.java`, and it counted only lines carrying two of the clauses on ONE
+     * PHYSICAL LINE. So it was blind to:
      *
-     * @throws Exception on a failure to read the source
+     * - `AutoLocomotiveStatus.notChosenByAutonomy`, which had lost two limbs and marked no parking berth
+     *   for as long as it had existed (MON-B1);
+     * - `AutonomyEditorPanel.countDestinations`, three clauses of four, overcounting by every reversing
+     *   station in the number an operator reads when nothing moves (MON-C2);
+     * - the decomposed spelling in `barredFromAutonomy`, which is the rule as a list of reasons.
+     *
+     * It passed throughout. "Guard knows only what it lists", enforced on the one file that was already
+     * behaving.
+     *
+     * So this asks the question the other way round: `isAutoDestination()` is the clause a copy cannot
+     * be written without, so every file that mentions it is either the rule, an excused reader that
+     * asks it for a DIFFERENT question, or a copy. The excused list is short and each entry says what
+     * its different question is - which is what makes a new copy visible: it arrives unexcused.
+     *
+     * MUTATION: spelling the conjunction into any other class fails this by name.
+     *
+     * @throws Exception on a failure to read the sources
      */
     @Test
     public void testTheSendableDestinationRuleIsWrittenOnce() throws Exception
     {
-        String layout = new String(java.nio.file.Files.readAllBytes(
+        // Where the rule lives, and the places that legitimately name one clause for another purpose.
+        java.util.Map<String, String> excused = new java.util.LinkedHashMap<>();
+
+        excused.put("automation/Layout.java",
+            "the rule itself, and `barredFromAutonomy` which decomposes it into named reasons");
+
+        excused.put("automation/Point.java", "the accessor");
+
+        excused.put("automationui/AutonomyChecks.java",
+            "names the clause in a comment explaining why a notice is drawn");
+
+        excused.put("automationui/AutonomySession.java",
+            "names the runtime rule in a comment, and narrows a set deliberately (MON-C1)");
+
+        excused.put("gui/AutoLocomotiveStatus.java",
+            "a DELIBERATE lock-free copy - the rule is synchronized on the Layout and this runs on the"
+            + " event thread three times per repaint. Kept honest by testWhyStuck"
+            + " .testTheDashAgreesWithTheRule, which compares its answer with the rule's over every"
+            + " case rather than asserting a mark (MON-B1)");
+
+        java.util.List<String> unexcused = new java.util.ArrayList<>();
+
+        java.util.List<java.io.File> sources = javaFilesUnder(new java.io.File("src"));
+
+        assertTrue(sources.size() > 50, "only " + sources.size() + " sources were found, so this swept"
+            + " almost nothing - the walk is broken rather than the program clean");
+
+        for (java.io.File file : sources)
+        {
+            String body = codeOnly(new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                StandardCharsets.UTF_8));
+
+            if (!body.contains("isAutoDestination()")) continue;
+
+            String where = file.getPath().replace(java.io.File.separatorChar, '/');
+
+            boolean known = false;
+
+            for (String excusedFile : excused.keySet())
+            {
+                if (where.endsWith(excusedFile)) known = true;
+            }
+
+            if (!known) unexcused.add(where);
+        }
+
+        assertTrue(unexcused.isEmpty(),
+            "these ask whether a station is one autonomy may send a train to, and the rule is"
+            + " Layout.isSendableDestination. A copy is how the dash came to mark no parking berth at"
+            + " all and how the \"why is nothing considered\" count came to overcount by every"
+            + " reversing station. Call the rule, or excuse it here saying what different question it"
+            + " is asking: " + unexcused);
+
+        // AND STILL ONCE INSIDE THE RULE'S OWN FILE, which is the check this replaced - kept, because
+        // the file-level sweep above cannot see a second copy written NEXT TO the original.
+        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+            StandardCharsets.UTF_8));
 
-        String code = layout.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
-
-        String flat = code.replaceAll("\\s+", " ");
-
-        // The CONJUNCTION, not every mention: `why` asks isAutoDestination on its own to name a
-        // reason, which is a different question and a legitimate second use.  What must not be
-        // written twice is the four clauses together.
         int conjunctions = 0;
 
-        for (String line : code.split("\\r?\\n"))
+        for (String line : layout.split("\r?\n"))
         {
-            if (line.contains("isAutoDestination()") && line.contains("isReversing()"))
-            {
-                conjunctions++;
-            }
+            if (line.contains("isAutoDestination()") && line.contains("isReversing()")) conjunctions++;
         }
 
         assertEquals(conjunctions, 1,
-            "the sendable-destination conjunction is written out " + conjunctions + " times in"
-            + " Layout. There must be one - inside isSendableDestination - because three copies"
-            + " had already drifted apart before anyone noticed (DR-B3)");
-
-        assertTrue(code.contains("public boolean isSendableDestination(Point end)"),
-            "isSendableDestination has gone, so whatever replaced it is the second spelling again");
+            "the sendable-destination conjunction is written out " + conjunctions + " times in Layout."
+            + " There must be exactly one, inside isSendableDestination");
     }
 }
