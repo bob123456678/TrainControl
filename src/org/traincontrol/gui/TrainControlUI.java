@@ -18108,11 +18108,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // SAID OUT LOUD, as the midway door says it (DIR-C2).
                     //
-                    // MT-247 made the two doors agree about the ACT - both now cancel the whole route
-                    // - and left them disagreeing about the RECORD: this one returned in silence while
-                    // the midway one logs two lines.  `executeRoute`'s own comment states the
-                    // principle: "unlike the greyed button these two doors say nothing on their own -
-                    // the operator confirmed a dialog and is owed a reason why nothing happened."
+                    // MT-247 made the two doors agree that a cancel ends the route, and left them
+                    // disagreeing about the RECORD: this one returned in silence while the midway one
+                    // logs two lines.  `executeRoute`'s own comment states the principle: "unlike the
+                    // greyed button these two doors say nothing on their own - the operator confirmed
+                    // a dialog and is owed a reason why nothing happened."
+                    //
+                    // THE TWO CANCELS ARE NOT THE SAME SIZE, and this comment said they were until
+                    // 2026-09-08.  A REFUSED here happens BEFORE the route starts: neither caller then
+                    // calls execRoute, so not one command goes out.  The midway question is answered
+                    // from inside `MarklinRoute.execRoute`'s own command loop, which returns where it
+                    // stands - so every command earlier in the list has already gone out and stands,
+                    // a stop already obeyed, an accessory already thrown.  `execRoute` says so where
+                    // it happens: "once a command is refused the ones already sent stand, because they
+                    // went out before the conflict existed."  behaviour.md section 7a carries both
+                    // halves.
                     if (answer == RouteConflict.REFUSED)
                     {
                         this.model.logf("route.cancelledByOperator", picked.getName());

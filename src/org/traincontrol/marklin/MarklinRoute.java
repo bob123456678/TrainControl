@@ -732,10 +732,16 @@ public class MarklinRoute extends Route
                                     // So the two doors now answer differently on purpose, and each
                                     // answer is whole rather than partial:
                                     //
-                                    // A PERSON asked and saying no means the route does not happen -
-                                    // not its speeds, not its functions, not the route it chains to.
-                                    // Somebody looking at the railway said no to this route; running
-                                    // most of it is not what they said.
+                                    // A PERSON asked and saying no means the REST of the route does not
+                                    // happen - not its remaining speeds, not its functions, not the
+                                    // route it chains to.  Somebody looking at the railway said no to
+                                    // this route; running most of it is not what they said.
+                                    //
+                                    // "The rest", because this question is asked from inside the
+                                    // command loop: the commands before it have already gone out and
+                                    // stand, for the reason the comment at the group check above gives.
+                                    // The screen shown BEFORE the route starts is the whole-route
+                                    // refusal, and that one really does let no command out.
                                     //
                                     // NOBODY THERE - the s88 door - means the conflicting ironwork is
                                     // left alone and everything else in the route still runs, which is
