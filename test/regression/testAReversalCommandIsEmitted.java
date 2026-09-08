@@ -344,9 +344,18 @@ public class testAReversalCommandIsEmitted
      * train came in on, and not turning would drive it off its reserved path - and that flip happens
      * before the answered one. "No" therefore returns the train to the direction it set off in.
      *
-     * **The answer is about how the train ARRIVES, and it reads as being about how it started.** That
-     * is a question for Adam rather than a defect to fix behind him, so this asserts what is actually
-     * guaranteed - that the answer changes the outcome - and leaves the wording to him.
+     * **The answer is about how the train ARRIVES, and it reads as being about how it started.**
+     *
+     * **AND THIS FIXTURE IS NOT A SHAPE THE BUILDER EMITS.** It calls `setReversing(true)` on a square
+     * a straight path runs through. `AutonomyBuilder` splits a may-turn square into a plain copy for
+     * paths passing onwards and a turning copy for paths backing in, so a real journey only reaches a
+     * reversing copy when it is backing in there - which is Adam's rule, already implemented by the
+     * split: *"only reverse if intended at the end or when backing in somewhere per the path, don't
+     * reverse if passing onwards."*
+     *
+     * So the cancelling pair of turns this shows cannot happen on a built railway, and the test earns
+     * its place as the guard that the two answers still differ rather than as a report of a defect.
+     * `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled it.
      *
      * MUTATION: make the middle square ordinary and this passes, which is exactly why the two-leg test
      * above did not catch it.
