@@ -11,19 +11,31 @@ afterwards; nothing below needs them to be understood.
 
 ## How big the backlog actually is
 
-**90 open rows across 8 documents** — not the ~240 a naive count suggests, which counted table
-headers and prose. Of those:
+**Re-counted 2026-09-08, and the numbers below are what the sections now say.** The version of this
+table that stood until then disagreed with its own bodies in every row - it said the September work was
+both ten open rows and "all now closed" in the same cell, counted the per-package sweeps as four open
+while §2d was headed CLOSED, and carried a headline of ninety that its own contents contradicted by at
+least fourteen. An index that has to be checked against the thing it indexes is worse than no index,
+and this one was quoted in three other documents.
 
-| | rows | |
-|---|---|---|
-| September (reversal, length, blocking work) | 10 | **all now closed** — they were fixed and the dispositions never updated |
-| August, code structure and duplication | 46 | `DD-*`, `DR-*`, `GC-*` |
-| August, test-suite quality | 30 | `TA-*`, `TS-*` |
-| August, per-package sweeps | 4 | `C1-C6`, `C7-C12`, `C13-C19`, `C20-C29` — each a bundle, not one finding |
+| | state |
+|---|---|
+| September - reversals, length, blocking | **closed.** Fixed through the week; the last of them, the
+  arrival-side vocabulary, on 2026-09-08 as OB-182 |
+| §2a - one rule written several times | **closed 2026-09-08.** The last live copy was the
+  sendable-destination rule, in three spellings; `testTheSendableDestinationRuleIsWrittenOnce` now
+  sweeps every source file rather than one |
+| §2b - tests that do not test what they claim | **closed 2026-09-07**, except the one named there |
+| §2c - structure | **open, and deliberately.** Adam: extract only what a feature needs. Nothing here
+  is a defect; it is a shape somebody may want to change one day |
+| §2d - per-package sweeps | **closed 2026-09-07** |
+| Test-suite quality (`TA-*`, `TS-*`) | **largely overtaken.** The fixture rebuilt itself on
+  2026-09-08: the suite had been running against a five-edge skeleton of the railway, and several of
+  these rows describe what that skeleton could not reach |
 
-**The headline: nothing on the list is a known railway-behaviour defect.** Every open row is about the codebase or the tests. Every open row is about
-the codebase or the tests. That is worth stating plainly, because a list of ninety unread items reads
-like a railway full of bugs and it is not one.
+**Nothing on this list is a known railway-behaviour defect.** Every remaining row is about the codebase
+or the tests. Worth stating plainly, because an unread backlog reads like a railway full of bugs and it
+is not one - the railway defects live in `docs/manual-tests/issues.md`, and that inbox is empty.
 
 ---
 

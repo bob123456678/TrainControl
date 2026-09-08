@@ -447,6 +447,13 @@ Recorded so the next pass need not re-plough these.
 ## Ranked summary
 
 | Finding | One line | Grade |
+
+**This table has no disposition column, which the reviews README forbids: one status, in one place.**
+Adding one now would be inventing a second home for something `docs/reviews/README.md` says lives on
+the finding.  So it is said here instead, checked against HEAD on 2026-09-08: **A1, B1, B3, B4, B5 and
+C1 are fixed**; **B2 is a process observation rather than a defect**; **B6 is the late-echo race, open,**
+and is the same finding as REG8-B1.  Each finding's own body carries its disposition and is the
+authority.
 |---|---|---|
 | IND9-A1 | Stale `arrivedFrom` survives clears and the assign door, and blocks the wrong track for the next train | A |
 | IND9-B1 | The destination-only ruling is pinned below the door; reverting `forJourney` leaves the battery green | B |

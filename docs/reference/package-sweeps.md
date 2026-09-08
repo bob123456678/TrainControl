@@ -2,7 +2,25 @@
 
 `C1-C29` from [`2026-08-17-whole-project-review.md`](../reviews/2026-08-17-whole-project-review.md).
 They were filed as four bundle rows - `automation/`, `marklin/`, `base/`, `gui/` - and never triaged,
-so "four open items" was really twenty-nine. **All twenty-nine have now been read against the code and
+so "four open items" was really twenty-nine - and the count was wrong three ways, which is recorded
+here rather than quietly corrected (MON-C9).  The prose said twenty-nine three times, the adjudicating
+commit's subject said twenty-eight, and the tables below hold thirty-two rows, because several filed
+findings turned out to be bundles of their own.
+
+**Worse, and the reason this matters: `WP-C19` filed SIX sub-defects and the sweep dispositioned four.**
+Two had no row, no id and no disposition anywhere, inside a bundle the document declared closed.  Both
+were adjudicated on 2026-09-08:
+
+- **C19d, the case-sensitive command names.**  Fixed.  `Feedback` was matched through `toLowerCase()`
+  and every other command with `equals`, so "feedback 12,1" parsed and "emergency stop" did not, in the
+  same file typed by the same person.  All command names accept any case now; the exporter still writes
+  the canonical spelling, so no existing route changes meaning.  `testACommandParsesWhateverCaseItIsTypedIn`
+  pins it, including that Feedback stays forgiving - the direction this ruling did not go.
+- **C19f, the orphaned javadoc.**  Already fixed, and recorded at the head of the source review: it was
+  "reattached in passing, as its method was being deleted anyway".  Not a missing adjudication so much
+  as one filed in the prose instead of the table.
+
+**All twenty-nine have now been read against the code and
 ruled on**, and every live one worth fixing is fixed.
 
 **Method.** Each finding's stated mechanism was looked for in today's source. A finding is Cancelled

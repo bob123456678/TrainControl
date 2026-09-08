@@ -746,24 +746,34 @@ public class RouteCommand implements java.io.Serializable
     private static RouteCommand parseLine(String line, boolean extractAccessoryType) throws Exception
     {
         line = line.trim();
-        
-        if (COMMAND_EMERGENCY_STOP.equals(line))
+
+        // CASE DOES NOT DECIDE WHETHER A COMMAND IS A COMMAND (WP-C19d, ruled 2026-09-08).
+        //
+        // `Feedback` was already matched through `toLowerCase()` and every other command name was not,
+        // so "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list,
+        // typed by the same person.  A format that accepts one spelling of one word and not another is
+        // a format nobody can learn.
+        //
+        // Forgiving rather than strict, and it cannot break a file this program wrote: the exporter
+        // emits the canonical casing, so every existing route still matches exactly as before.  What
+        // changes is only that a hand-typed line now works where it used to fail with "unrecognised".
+        if (COMMAND_EMERGENCY_STOP.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandStop();
         }
-        else if (COMMAND_ALL_LIGHTS_ON.equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandLightsOn();
         }
-        else if (COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY.equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandAutonomyLightsOn();
         }
-        else if (COMMAND_ALL_FUNCTIONS_OFF.equals(line))
+        else if (COMMAND_ALL_FUNCTIONS_OFF.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandFunctionsOff();
         }
-        else if (line.startsWith(COMMAND_ROUTE_PREFIX))
+        else if (line.toLowerCase().startsWith((COMMAND_ROUTE_PREFIX).toLowerCase()))
         {
             String routeName = line.replaceFirst(COMMAND_ROUTE_PREFIX, "").trim();
             
@@ -776,7 +786,7 @@ public class RouteCommand implements java.io.Serializable
             
             return RouteCommand.RouteCommandRoute(routeName);
         }
-        else if (line.startsWith(LOC_DIRECTION_PREFIX + ",")) 
+        else if (line.toLowerCase().startsWith((LOC_DIRECTION_PREFIX + ",").toLowerCase())) 
         {
             String[] parts = line.split(",");
 

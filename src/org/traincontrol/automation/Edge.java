@@ -50,8 +50,14 @@ public class Edge
      * hand-written configuration and every pre-3.0.0 file will leave it as.  Such an edge does not
      * bound where a train may come to rest, and `Layout.measuredRoomToReverseInto` walks back past it.
      *
-     * `-1` when it does cross one and some tile in the stretch after it has no length recorded: the
-     * room is bounded but unknown, and unknown is the case this guard has always declined to act on.
+     * `-1` when it does cross one and NOTHING in the stretch after it is measured: the room is bounded
+     * but unknown, and unknown is the case this guard declines to act on.
+     *
+     * **Not "some tile is unmeasured", which is what this said until 2026-09-08** - that was the rule
+     * Adam replaced two days earlier: *"you need to measure total distance between points, not validate
+     * that every edge has a length > 0.  It is only indeterminate if the entire logical segment has
+     * length 0."*  An unmeasured tile now contributes nothing and the rest still counts, so a partly
+     * measured stretch answers with what is known rather than throwing it away.
      *
      * Not authored anywhere.  It is derived from the diagram by `GraphReducer`, which is the only part
      * of the system that knows which tiles an edge is made of.

@@ -176,6 +176,57 @@ public class testAdvancedRoutes
     // ---------------------------------------------------------------------------------------------
 
     /**
+     * A route command parses whatever case it is typed in (WP-C19d).
+     *
+     * `Feedback` was matched through `toLowerCase()` and every other command name with `equals`, so
+     * "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list, typed
+     * by the same person. A format that accepts one spelling of one word and not another is a format
+     * nobody can learn.
+     *
+     * That asymmetry sat unadjudicated for three weeks inside a bundle the sweep document declared
+     * closed: `WP-C19` filed six sub-defects and four were dispositioned (MON-C9).
+     *
+     * **The canonical casing is what this program writes**, so no existing route changes meaning - the
+     * lower-case forms below are ones that used to fail with "unrecognised" and now work.
+     *
+     * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
+     *
+     * @throws Exception on a parse failure
+     */
+    @Test
+    public void testACommandParsesWhateverCaseItIsTypedIn() throws Exception
+    {
+        String[][] same =
+        {
+            {"Emergency Stop", "emergency stop"},
+            {"Emergency Stop", "EMERGENCY STOP"},
+        };
+
+        for (String[] pair : same)
+        {
+            org.traincontrol.base.RouteCommand canonical =
+                org.traincontrol.base.RouteCommand.fromLine(pair[0], false);
+
+            org.traincontrol.base.RouteCommand typed =
+                org.traincontrol.base.RouteCommand.fromLine(pair[1], false);
+
+            assertNotNull(canonical, "the canonical spelling \"" + pair[0] + "\" no longer parses,"
+                + " so this test is not about case at all");
+
+            assertNotNull(typed, "\"" + pair[1] + "\" does not parse while \"" + pair[0] + "\" does."
+                + " Feedback has accepted any case since it was written; a format where one command is"
+                + " forgiving and the rest are not is one nobody can learn (WP-C19d)");
+
+            assertEquals(typed.toLine(null).trim(), canonical.toLine(null).trim(),
+                "\"" + pair[1] + "\" parsed as something other than \"" + pair[0] + "\"");
+        }
+
+        // AND THE ONE THAT WAS ALREADY FORGIVING, so this cannot pass by everything becoming strict.
+        assertNotNull(org.traincontrol.base.RouteCommand.fromLine("feedback 12,1", false),
+            "Feedback stopped accepting lower case, which is the direction this ruling did NOT go");
+    }
+
+    /**
      * Asking about an accessory must not create one (C13).
      *
      * `Route.evaluate` reads an accessory condition through `getAccessoryState`, whose miss branch

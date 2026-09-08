@@ -178,8 +178,13 @@ public class GraphReducer
         }
 
         /**
-         * @return the room after the last switch on this edge; `Integer.MIN_VALUE` when it crosses
-         *  none, `-1` when it crosses one and the stretch is not fully measured
+         * The room after the last switch on this edge.
+         *
+         * `Integer.MIN_VALUE` when it crosses no switch; `-1` when it crosses one and NOTHING in the
+         * stretch is measured.  Partly measured answers with the total of what is - the all-or-nothing
+         * reading was Adam's rule until 2026-09-06 and this line until 2026-09-08.
+         *
+         * @return the room, or one of the two sentinels above
          */
         public int getRoomAtTheEnd()
         {
@@ -1188,7 +1193,8 @@ public class GraphReducer
      * @param path the tiles between the two Points, endpoints excluded
      * @param end the square the edge arrives at, whose own length is part of the room
      * @return the measured room, `-1` when a tile in that stretch has no length, or
-     *  `Integer.MIN_VALUE` when this edge crosses no switch at all
+     *  `Integer.MIN_VALUE` when this edge crosses no switch at all; `-1` when it crosses one and NOT
+     *  ONE tile of the stretch is measured, which is the only case that is genuinely no information
      */
     private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
     {

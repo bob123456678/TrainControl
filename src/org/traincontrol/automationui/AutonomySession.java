@@ -2473,14 +2473,18 @@ public class AutonomySession
      *   it, `getRoomAtTheEnd() >= 0`. It never looks past the last switch, so an unmeasured stretch
      *   beyond it blinds nothing.
      * - `GraphReducer.roomAfterTheLastSwitch` is that number: one edge's **tiles**, walked backwards
-     *   from the end, stopping at the first switch, `-1` if any of them has no length.
+     *   from the end, stopping at the first switch, summing what is measured and treating an
+     *   unmeasured tile as nothing.  `-1` only when NOT ONE of them has a length, which is genuinely
+     *   no information rather than a small number.  (This said "`-1` if any of them has no length"
+     *   until 2026-09-08, which was Adam's rule until 2026-09-06: MON-C6.)
      * - `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this asks
      *   for. **So for the last edge the notice and the guard agree by construction.**
      *
-     * **The square's own length is the first thing that stretch contains**, and it is why asking for
-     * it is not the over-report the finding called it: `roomAfterTheLastSwitch` seeds `measured` from
-     * `getTileLength(end)`, so without it the answer is `-1` and the guard returns null. Blind, not
-     * under-counting.
+     * **The square's own length is the first thing that stretch contains**, and asking for it is still
+     * right, though no longer for the reason written here before: the `measured` flag it described was
+     * deleted on 2026-09-06.  An unmeasured berth square now contributes nothing to the total rather
+     * than blinding the answer, so the guard under-counts by exactly that square rather than declining
+     * to judge - which is a smaller fault and still one worth a notice.
      *
      * **Two ways they still disagree, and both are narrower than "anywhere earlier":**
      *
@@ -2534,11 +2538,23 @@ public class AutonomySession
 
             // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2, 2026-09-02).
             //
-            // Asking for the reversal square alone left the guard unable to fire: it needs the whole
-            // stretch that bounds the train, and returns "unknown" if any tile in it is unmeasured.
-            // So somebody could clear every notice this raised and still have a guard that judged
-            // nothing - which is what `D24-C7` and `TCX-B2` both said, and what he was shown when he
-            // answered "20 warnings sounds OK".
+            // Asking for the reversal square alone left the guard unable to fire: it needs the stretch
+            // that bounds the train, and a stretch with nothing measured in it answers "unknown".  So
+            // somebody could clear every notice this raised and still have a guard that judged nothing
+            // - which is what `D24-C7` and `TCX-B2` both said, and what he was shown when he answered
+            // "20 warnings sounds OK".
+            //
+            // **WHY IT STILL REPORTS A PARTLY MEASURED STRETCH** (MON-C6, 2026-09-08).  The sentence
+            // above used to read "returns unknown if ANY tile in it is unmeasured", which was Adam's
+            // rule until 2026-09-06.  It is not any more: an unmeasured tile contributes nothing and
+            // the rest still counts.
+            //
+            // The notice is kept because the cost simply changed shape.  A half-measured stretch no
+            // longer blinds the guard - it makes it PESSIMISTIC, since the missing tiles count as zero
+            // - so a train that would fit is refused rather than admitted.  That is the safe direction
+            // and it is still worth telling somebody about, but it is a different sentence from the one
+            // this was written for, and whether it earns its place in a list Adam has called a wall is
+            // his call: it is put to him on MT-305.
             //
             // WHICH squares comes from ruling 1: the stretch after the LAST switch on the edge
             // arriving here, because that is the one the room is measured over.  Not every segment of
