@@ -124,6 +124,53 @@ public final class LayoutSandbox
     }
 
     /**
+     * The pages the MODEL parsed, wired to their accessories - not a second parse of the same files.
+     *
+     * **Measured 2026-09-08, and this is the difference between a railway and a skeleton.** Every
+     * sandbox test built its pages by constructing a fresh `CS2File` and calling
+     * `parseLayout(new LinkedList<MarklinAccessory>())`. That looks harmless - the same files, read the
+     * same way - and it is not, because parsing is not what attaches a tile to its accessory.
+     * `MarklinControlStation.syncLayouts` does that, in a loop AFTER the parse: it creates an accessory
+     * from each tile's own address when the model has none, and calls `setAccessory` on the component.
+     * A second parser bypasses that loop, so every switch and signal comes back with a null accessory.
+     *
+     * `TileGraph` then reports `errorTileHasNoAddress` for each of them and refuses to trace through
+     * them, which breaks the chains and cuts the railway to pieces:
+     *
+     * | | re-parsed | the model's own |
+     * |---|---|---|
+     * | switches and signals with an accessory | 0 of 222 | 221 of 222 |
+     * | reduced edges | 18 | 128 |
+     * | built points / edges | 59 / 5 | 96 / 149 |
+     * | isolated points | 51 | 3 |
+     *
+     * A railway with about ninety connections arrived as FIVE EDGES. Tests standing on that were
+     * asserting against a graph where nothing is connected to anything - and passing, because an
+     * assertion about a square that has no edges is usually an assertion about null.
+     *
+     * Nothing was missing from the fixture folder; the recipe was wrong.
+     *
+     * @param model the control station, already built with this sandbox open
+     * @return its pages, in its own order
+     */
+    public static java.util.List<org.traincontrol.base.LayoutDiagram> wiredPages(
+        org.traincontrol.marklin.MarklinControlStation model)
+    {
+        java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
+
+        if (model == null) return pages;
+
+        for (String name : model.getLayoutList())
+        {
+            org.traincontrol.base.LayoutDiagram page = model.getLayout(name);
+
+            if (page != null) pages.add(page);
+        }
+
+        return pages;
+    }
+
+    /**
      * @return where the copy lives, for a test that wants to look at what was written
      */
     public File getFolder()

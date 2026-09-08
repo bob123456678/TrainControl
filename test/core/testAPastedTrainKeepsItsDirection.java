@@ -83,13 +83,16 @@ public class testAPastedTrainKeepsItsDirection
 
         model = init(null, true, false, false, false);
 
-        String path = "file:///"
-            + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        // THE MODEL'S OWN PAGES, not a second parse of the same files.
+        //
+        // This used to build a fresh `CS2File` and call `parseLayout(new LinkedList<>())`, which reads
+        // the same bytes and produces a railway that is not connected: attaching a tile to its
+        // accessory happens in `MarklinControlStation.syncLayouts`, AFTER the parse, and a second
+        // parser never reaches it. 222 switches and signals came back with a null accessory, TileGraph
+        // refused to trace through every one of them, and this class was asserting against a graph of
+        // FIVE EDGES with 51 of its 59 points isolated. See `LayoutSandbox.wiredPages` for the
+        // measurement either way.
+        List<LayoutDiagram> pages = support.LayoutSandbox.wiredPages(model);
 
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
