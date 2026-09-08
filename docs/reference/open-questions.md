@@ -295,5 +295,17 @@ this document exactly the thing it replaces.
 
 ---
 
-*Written 2026-09-07. Reviews in `docs/reviews/` are the working record; this is what they were
-working towards. If this document and the code disagree, the code wins and this is stale — say so.*
+*Written 2026-09-07. If this document and the code disagree, the code wins and this is stale — say so.*
+
+**2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
+`docs/manual-tests/triage.db`. Everything still open above is open in that store too, so it can be
+queried rather than re-read:*
+
+```sql
+SELECT ref, severity, title, evidence FROM finding WHERE status LIKE 'Open%' ORDER BY severity, ref;
+```
+
+*Three of the items in `2c` were re-measured that day and had grown since they were filed:
+`TrainControlUI` to 28,052 lines, the `JOptionPane` parents to 326 calls, and `DD-B6`'s duplicated
+test init to 103 files. The prose above is the argument; the store is the list. See
+[`behaviour.md`](behaviour.md) for how to read a citation.*

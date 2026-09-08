@@ -282,8 +282,8 @@ D24-C3	2026-09-01-last-day-review.md	Closed	open
 D24-C4	2026-09-01-last-day-review.md	Closed	open
 D24-C5	2026-09-01-last-day-review.md	Closed	open
 D24-C6	2026-09-01-last-day-review.md	Closed	open
-D24-C7	2026-09-01-last-day-review.md	Closed - was awaiting your decision	DEFERRED - needs Adam
-D24-C8	2026-09-01-last-day-review.md	Closed - was awaiting your decision	DEFERRED - needs Adam
+D24-C7	2026-09-01-last-day-review.md	Open - needs your decision	DEFERRED - needs Adam
+D24-C8	2026-09-01-last-day-review.md	Open - needs your decision	DEFERRED - needs Adam
 D24-C9	2026-09-01-last-day-review.md	Closed	open
 D24-D1	2026-09-01-last-day-review.md	Closed	clean
 D24-D2	2026-09-01-last-day-review.md	Closed	harmless
@@ -322,24 +322,18 @@ DA-C2	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - configuratio
 DA-C3	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - a sentence instead of a filename, dead branch removed
 DA-C4	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - `delete()` refuses while autonomy is busy
 DA-C5	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - the javadoc matches the code
-DA-C6	2026-08-17-disposition-audit.md	Closed - was awaiting your decision	**Fixed 2026-08-18** - dead overload removed; the cubic label rebuild is deferred
+DA-C6	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - dead overload removed; the cubic label rebuild is deferred
 DAY-A1	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - `Layout:1148` and `:1276` name this finding, the assignment d
 DAY-A1	2026-08-31-fanout-index.md	Closed	Two locomotives could be homed on one platform. MT-165 let a positional home onto a split 
 DAY-B1	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - `TrainControlUI:17225` and `:23223` both repaint the timetabl
-DAY-B1	2026-09-03-release-review.md	Closed	**fixed** - `repaintTimetable()` at both rename doors (`97137c4b`)
 DAY-B2	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both launch-pad comparisons use it now: `HomeStaging:202` com
 DAY-B2	2026-08-31-fanout-index.md	Closed	`atHome` reached five comparisons and not the two launch-pad ones, so a train on the far c
 DAY-B3	2026-08-31-day-of-commits-review.md	Closed	**fixed by MT-165 without this document saying so**, verified 2026-09-04 at HEAD. The mism
-DAY-C1	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` stil
-DAY-C1	2026-09-03-release-review.md	Closed	reproduces
-DAY-C2	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `c
-DAY-C2	2026-09-03-release-review.md	Closed	reproduces
+DAY-C1	2026-08-31-day-of-commits-review.md	Open	**still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` stil
+DAY-C2	2026-08-31-day-of-commits-review.md	Open	**still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `c
 DAY-C3	2026-08-31-day-of-commits-review.md	Closed	fixed - the message is chosen by whether a run was actually going, and `wasRunning` is cap
-DAY-C3	2026-09-03-release-review.md	Closed	reproduces
 DAY-C4	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both sites carry the correction and cite this finding: `Edge.
-DAY-C4	2026-09-03-release-review.md	Closed	reproduces, at two sites
 DAY-C5	2026-08-31-day-of-commits-review.md	Closed	fixed by VD10-B2, verified 2026-09-04 - `nameEverything()` now ends at `setupChanged()` un
-DAY-C5	2026-09-03-release-review.md	Closed	reproduces (filed as out of `DAY`'s range)
 DAY-D1	2026-08-31-day-of-commits-review.md	Closed	-
 DAY-D10	2026-08-31-day-of-commits-review.md	Closed	-
 DAY-D2	2026-08-31-day-of-commits-review.md	Closed	-
@@ -350,7 +344,7 @@ DAY-D6	2026-08-31-day-of-commits-review.md	Closed	-
 DAY-D7	2026-08-31-day-of-commits-review.md	Closed	-
 DAY-D8	2026-08-31-day-of-commits-review.md	Closed	-
 DAY-D9	2026-08-31-day-of-commits-review.md	Closed	-
-DD-A1	2026-08-22-duplication-and-design.md	Closed	Open
+DD-A1	2026-08-22-duplication-and-design.md	Open	Open
 DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75
 DD-A2	2026-08-24-duplication-robustness.md	Closed	Closed (`ae94421a`); its step-2 matrix extensions (reconcile, clear-then-load, import/expo
 DD-A3	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - greying applied after the table's own renderer
@@ -364,22 +358,22 @@ DD-B2	2026-08-22-duplication-and-design.md	Closed	Open
 DD-B3	2026-08-22-duplication-and-design.md	Closed	Open
 DD-B4	2026-08-22-duplication-and-design.md	Closed	Closed in `c0c9055d`, arriving as a user-visible defect (MT-093) - three rounds of it. See
 DD-B5	2026-08-22-duplication-and-design.md	Closed	Open
-DD-B6	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B6	2026-08-22-duplication-and-design.md	Open	Open
 DD-B7	2026-08-22-duplication-and-design.md	Closed	Open
 DD-B8	2026-08-22-duplication-and-design.md	Closed	Open
 DD-B8	2026-08-24-duplication-robustness.md	Closed	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.
-DD-B9	2026-08-22-duplication-and-design.md	Closed	Open
-DD-B9	2026-08-24-duplication-robustness.md	Closed	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr
-DD-C1	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B9	2026-08-22-duplication-and-design.md	Open	Open
+DD-B9	2026-08-24-duplication-robustness.md	Open	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr
+DD-C1	2026-08-22-duplication-and-design.md	Open	Open
 DD-C10	2026-08-22-duplication-and-design.md	Closed	Open
 DD-C11	2026-08-22-duplication-and-design.md	Closed	Open
 DD-C2	2026-08-22-duplication-and-design.md	Closed	Open
 DD-C3	2026-08-22-duplication-and-design.md	Closed	Open
-DD-C4	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C4	2026-08-22-duplication-and-design.md	Open	Open
 DD-C5	2026-08-22-duplication-and-design.md	Closed	Open
-DD-C6	2026-08-22-duplication-and-design.md	Closed	Open
-DD-C7	2026-08-22-duplication-and-design.md	Closed	Open
-DD-C8	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C6	2026-08-22-duplication-and-design.md	Open	Open
+DD-C7	2026-08-22-duplication-and-design.md	Open	Open
+DD-C8	2026-08-22-duplication-and-design.md	Open	Open
 DD-C9	2026-08-22-duplication-and-design.md	Closed	Open
 DD-C9	2026-08-24-duplication-robustness.md	Closed	**Fixed** (`gridSideTowards`/`sideTowardNeighbour`, javadoc cites DD-C9). Recorded in DR-D
 DD-D1	2026-08-22-duplication-and-design.md	Closed	Recorded
@@ -591,13 +585,13 @@ FBR-D8	2026-08-24-fable-round-review.md	Closed	OB-069: the repair targets the co
 FBR-D9	2026-08-24-fable-round-review.md	Closed	OB-076: the editor-open proxy is true during a layout refresh, and that is fine
 FP-B1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-B2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
-FP-B3	2026-07-27-fresh-perspective-review.md	Closed	**Open - deferred by author 2026-07-27**, judged unlikely in practice
+FP-B3	2026-07-27-fresh-perspective-review.md	Open	**Open - deferred by author 2026-07-27**, judged unlikely in practice
 FP-C1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-C2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-C3	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-C4	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-C5	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
-FP-C6	2026-07-27-fresh-perspective-review.md	Closed	**Open - deferred by author 2026-07-27**
+FP-C6	2026-07-27-fresh-perspective-review.md	Open	**Open - deferred by author 2026-07-27**
 FP-D1	2026-07-27-fresh-perspective-review.md	Closed	Recorded
 FR-A1	2026-08-22-f2-review.md	Closed	Fixed
 FR-A2	2026-08-22-f2-review.md	Closed	Fixed, and turned into a better question
@@ -610,7 +604,7 @@ FR-D2	2026-08-22-f2-review.md	Closed	Fixed
 FR-D3	2026-08-22-f2-review.md	Closed	Removed and reworded
 FR3-B1	2026-09-04-final-release-review.md	Closed	fixed 2026-09-04 - `tidy()`'s floor for row 0 is its own depth rather than zero, which is 
 FR3-C1	2026-09-04-final-release-review.md	Closed	fixed - the precondition now also asserts `isPathClear` is NOT in the stack, which is what
-FR3-C2	2026-09-04-final-release-review.md	Closed	**accepted, not fixed** - the branch chooses a message key by `wasRunning`, and reaching i
+FR3-C2	2026-09-04-final-release-review.md	Open	**accepted, not fixed** - the branch chooses a message key by `wasRunning`, and reaching i
 FR3-C3	2026-09-04-final-release-review.md	Closed	fixed, after two wrong attempts of its own - the rule scans every .java under src/ and ask
 FR3-C4	2026-09-04-final-release-review.md	Closed	fixed - the javadoc names `paint()`, and records that `paintChildren` was the first attemp
 FR3-C5	2026-09-04-final-release-review.md	Closed	fixed - when both lists are empty the escape adds its own separator and locomotive name, t
@@ -787,27 +781,17 @@ IP-D8	2026-08-21-independent-pass.md	Closed	Not a defect
 IP-D9	2026-08-21-independent-pass.md	Closed	Not a defect (comment only)
 IPR-A1	2026-08-31-fanout-index.md	Closed	The same import wrote a station's CAPACITY into the track's LENGTH - two different measure
 IPR-A1	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 against the code - `AutonomySession:795` carries the fix and na
-IPR-A1	2026-09-03-release-review.md	Closed	**Adam**
 IPR-A2	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 - `AutonomyReport:131-139` reads `getDroppedTileProperties()` a
 IPR-A2	2026-09-03-release-review.md	Closed	reproduces
 IPR-B1	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 - `RouteEditorFrame:2407` and `:2418` both ask `hasAddress()` b
-IPR-B1	2026-09-03-release-review.md	Closed	reproduces
 IPR-B2	2026-08-31-independent-review.md	Closed	fixed - one token in `read`, and the finding's own trace is the test
-IPR-B2	2026-09-03-release-review.md	Closed	**fixed** - `read` recurses at `depth + 1`, not the row's own depth
 IPR-B3	2026-08-31-independent-review.md	Closed	fixed 2026-09-04 - a joiner closes every run deeper than itself, so two groups at one inde
-IPR-B3	2026-09-03-release-review.md	Closed	reproduces; **Adam**
 IPR-B4	2026-08-31-independent-review.md	Closed	fixed - reproduced at the finding's own numbers, 502 MB for a 296 x 114 icon
-IPR-B4	2026-09-03-release-review.md	Closed	**fixed** - reproduced at 18506 x 7120 / 502 MB; the overhang is built at the icon's size
-IPR-C1	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(..
-IPR-C1	2026-09-03-release-review.md	Closed	reproduces, with the bad state already in the data
-IPR-C2	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five n
-IPR-C2	2026-09-03-release-review.md	Closed	reproduces
-IPR-C3	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unco
-IPR-C3	2026-09-03-release-review.md	Closed	reproduces
-IPR-C4	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = mi
-IPR-C4	2026-09-03-release-review.md	Closed	mechanism reproduces; the rounding-to-zero half is unreadable
+IPR-C1	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(..
+IPR-C2	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five n
+IPR-C3	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unco
+IPR-C4	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = mi
 IPR-C5	2026-08-31-independent-review.md	Closed	fixed - the comment names what actually stops the recursion (startAtCover's own guard) rat
-IPR-C5	2026-09-03-release-review.md	Closed	reproduces
 IPR-D1	2026-08-31-independent-review.md	Closed	-
 IPR-D2	2026-08-31-independent-review.md	Closed	-
 IPR-D3	2026-08-31-independent-review.md	Closed	-
@@ -819,21 +803,15 @@ IR-A1	2026-08-22-independent-week-review.md	Closed	Fixed - the copy is on disk n
 IR-B1	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - guards, dispatch-loop fence and entry fence a
 IR-B1	2026-08-22-independent-week-review.md	Closed	Fixed - once per gesture
 IR-B2	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (working tree) - the snapshot is hoisted to the calling thread, so th
-IR-B2	2026-08-22-independent-week-review.md	Closed	Fixed - `execCopy` can keep quiet, like `delete`
 IR-B3	2026-08-22-independent-week-review.md	Closed	Fixed - the origin travels
 IR-B4	2026-08-22-independent-week-review.md	Closed	Fixed - said off the lock
 IR-C1	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28**. Fix validated - all four surfaces plus entry-deletion, the route-act
-IR-C1	2026-08-22-independent-week-review.md	Closed	Fixed
 IR-C2	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28**. Fix validated
-IR-C2	2026-08-22-independent-week-review.md	Closed	Fixed - both helpers parse
 IR-C3	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated at all seven sites; the point me
-IR-C3	2026-08-22-independent-week-review.md	Closed	Fixed - the documented order
 IR-C4	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated; the two sibling call sites that
 IR-C4	2026-08-22-independent-week-review.md	Closed	-
 IR-C5	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - validated as a large narrowing; the copy itse
-IR-C5	2026-08-22-independent-week-review.md	Closed	Fixed
 IR-C6	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`) - the hot twin is synchronized and the repaint copies und
-IR-C6	2026-08-22-independent-week-review.md	Closed	Fixed - the precondition is asserted
 IR-C7	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`). Fix validated - the new arm routes through `describeStag
 IR-C7	2026-08-22-independent-week-review.md	Closed	Fixed - and the first fix for it was vacuous too
 IR-C8	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`). Fix validated - the flag lives on the Layout, the model 
@@ -920,7 +898,6 @@ LE-C9	2026-08-30-layout-editor-review.md	Closed	fixed
 LE-D1	2026-08-30-layout-editor-review.md	Closed	-
 LE-D2	2026-08-30-layout-editor-review.md	Closed	-
 LE-D3	2026-08-30-layout-editor-review.md	Closed	-
-LE-D3	2026-09-03-release-review.md	Closed	unreadable
 LT-A1	2026-08-21-layout-test-feedback.md	Closed	Fixed - it was the station LABEL, which resolves to no Point
 LT-A2	2026-08-21-layout-test-feedback.md	Closed	Fixed - the capture pruned by Point, not by tile
 LT-A3	2026-08-21-layout-test-feedback.md	Closed	Fixed - same prune as A2; confirmed by Adam on a re-run
@@ -969,7 +946,7 @@ MON-B5	MON-month-2026-09-07.md	Closed	Open - and being answered the only way it 
 MON-C1	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the narrowed set is trusted once, from the parameter, where the decisio
 MON-C10	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - REG8's table checked against HEAD, IND9's summary says where the truth 
 MON-C11	MON-month-2026-09-07.md	Closed	Open - the consolidation decision, and the one item here that is Adam's rather than mine: 
-MON-C12	MON-month-2026-09-07.md	Closed - was awaiting your decision	Deferred by its own finding - no work before 3.0.0; belongs with the decomposition roadmap
+MON-C12	MON-month-2026-09-07.md	Open - deferred past 3.0.0 by ruling	Deferred by its own finding - no work before 3.0.0; belongs with the decomposition roadmap
 MON-C13	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - both limits stated in behaviour.md section 5, with which of the two to 
 MON-C14	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - CONFIRMED reachable by a new test, and behaviour.md was the wrong half:
 MON-C15	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - five citations now name methods rather than line numbers, and the mid-r
@@ -1052,18 +1029,13 @@ PV-C7	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-D1	2026-07-27-post-cycle-verification.md	Closed	Recorded
 R28-A1	2026-09-01-regression-vs-2.8.1-review.md	Closed	**half fixed**, verified 2026-09-04 - the silence is gone: `MarklinControlStation:3010` lo
 R28-B1	2026-09-01-regression-vs-2.8.1-review.md	Closed	**half fixed**, verified 2026-09-04 - the loss is now reported: `AutonomySession:920-944` 
-R28-B1	2026-09-03-release-review.md	Closed	a legacy `autonomy.json`'s per-edge accessory commands are dropped on import and cannot be
 R28-B2	2026-09-01-regression-vs-2.8.1-review.md	Closed	WITHDRAWN IN FULL
-R28-B2	2026-09-03-release-review.md	Closed	**restored by `B4` above**
 R28-C1	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02 (`1cfdf370`)
 R28-C1	2026-09-02-fanout-index.md	Closed	**Clear All Home Locomotives**, which Adam asked for back, with its 2.8.1 confirmation
 R28-C2	2026-09-01-regression-vs-2.8.1-review.md	Closed	DECLINED 2026-09-02
-R28-C2	2026-09-03-release-review.md	Closed	"Copy Outgoing Edge..." is gone with no equivalent; the HEAD connections submenu has nothi
 R28-C3	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED - both constants are gone from the tree (verified 2026-09-03). The display half is a
-R28-C3	2026-09-03-release-review.md	Closed	`SHOW_HOME_LOCOMOTIVES` and `HIDE_REVERSING_EDGES_PREF` survive as dead constants and the 
 R28-C4	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the key is out of all eight bundles, with the four `autosetup.ui.layer*
 R28-C5	2026-09-01-regression-vs-2.8.1-review.md	Closed	2026-09-02: one restored, one DECLINED
-R28-C5	2026-09-03-release-review.md	Closed	the graph window's Ctrl+S (s88 address) and Ctrl+H (home locomotive) have mouse-only succe
 R28-D1	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
 R28-D10	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
 R28-D11	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
@@ -1196,9 +1168,7 @@ RG3-B2	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
 RG3-C1	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
 RG3-C2	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
 RG3-C3	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
-RG3-C3	2026-09-03-release-review.md	Closed	the legacy track diagram editor's menu item is removed on only one of the two branches (`T
 RG3-C4	2026-09-02-regression-vs-2.8.1-review.md	Closed	**declined on Adam's answer, 2026-09-04** - the same question as `RG3-C4`, which he answer
-RG3-C4	2026-09-03-release-review.md	Closed	"Test Connection" - Adam's question, carried in MT-260's tail
 RG3-C5	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the changelog says a column on the right and a row at the bottom, which
 RG3-C6	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the four keys are gone from all eight bundles, with `route.ui.errorUnus
 RG3-D1	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
@@ -1257,23 +1227,15 @@ RGD-C6	RGD-regression-2026-09-07.md	Closed	Fixed. The false claim is gone and th
 RGD-C7	RGD-regression-2026-09-07.md	Closed	Fixed. Drained names are put back when the write does not happen, in a finally. Tested beh
 RGN-A1	2026-08-31-fanout-index.md	Closed	Importing a 2.7.4c `autonomy.json` kept only the points: thirteen run-wide settings and th
 RGN-A1	2026-08-31-regression-review.md	Closed	fixed, verified 2026-09-04 - `importLegacy` now reads `edges` (`:925`), `timetable` (`:946
-RGN-A1	2026-09-03-release-review.md	Closed	**Adam**
 RGN-A2	2026-08-31-regression-review.md	Closed	fixed, verified 2026-09-04 - the gate reads `valid && loaded && isLocalLayout()`, and `loa
 RGN-A2	2026-09-03-release-review.md	Closed	reproduces; **Adam**, and he asked for a test
 RGN-B1	2026-08-31-regression-review.md	Closed	fixed - it is announced now, in the changelog and in the log
-RGN-B1	2026-09-03-release-review.md	Closed	**fixed** - announced in the changelog and in the start-up log; what it does is unchanged
 RGN-B2	2026-08-31-regression-review.md	Closed	closed - descriptions fixed; behaviour ruled unchanged by Adam, 2026-09-03
-RGN-B2	2026-09-03-release-review.md	Closed	**descriptions fixed** - changelog and both log messages now say what the code does; the b
 RGN-B3	2026-08-31-regression-review.md	Closed	fixed - moved to v2.8.0, not v3.0.0; see below
-RGN-B3	2026-09-03-release-review.md	Closed	**fixed** - both bullets moved to v2.8.0, which is where the commits landed
-RGN-C1	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSel
-RGN-C1	2026-09-03-release-review.md	Closed	reproduces
-RGN-C2	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, s
-RGN-C2	2026-09-03-release-review.md	Closed	not a defect
-RGN-C3	2026-08-31-regression-review.md	Closed	**needs Adam's ruling** - the comment claiming three doors is corrected to say which doors
-RGN-C3	2026-09-03-release-review.md	Closed	reproduces; whether a real locomotive is affected needs **Adam**'s database
-RGN-C4	2026-08-31-regression-review.md	Closed	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins
-RGN-C4	2026-09-03-release-review.md	Closed	reproduces, permanent by construction
+RGN-C1	2026-08-31-regression-review.md	Open	**still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSel
+RGN-C2	2026-08-31-regression-review.md	Open	**still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, s
+RGN-C3	2026-08-31-regression-review.md	Open - needs your decision	**needs Adam's ruling** - the comment claiming three doors is corrected to say which doors
+RGN-C4	2026-08-31-regression-review.md	Open	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins
 RGN-D1	2026-08-31-regression-review.md	Closed	-
 RGN-D2	2026-08-31-regression-review.md	Closed	-
 RGN-D3	2026-08-31-regression-review.md	Closed	-
@@ -1389,7 +1351,6 @@ SG-B2	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testTimetableColumnH
 SG-B3	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testRoutingRuleTooltips`
 SG-B4	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testDiagramLooksRight.testTheTrainIsDrawnOverTheStationCaption`
 SG-B5	2026-08-30-staging-planner-round.md	Closed	closed - MT-083 did the person-half; the comparison was re-run on 2026-09-03 and reproduce
-SG-B5	2026-09-03-release-review.md	Closed	reproduces
 SG-C1	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testLocomotiveExclusions.testExcludingOneLocomotiveDoesNotBarTheOthers`
 SG-C2	2026-08-30-staging-planner-round.md	Closed	fixed, `regression.testARouteDoesNotThrowSwitchesUnderATrain.testAnAutomaticRouteWithNoCon
 SG-C3	2026-08-30-staging-planner-round.md	Closed	fixed, `regression.testARunSurvivesADiagramEdit.testTheWindowsCaptureActuallyCapturesAndSt
@@ -1414,8 +1375,8 @@ SV-A1	2026-08-24-second-validation.md	Closed	Already reverted before this pass r
 SV-B1	2026-08-24-second-validation.md	Closed	Fixed. `readIndexLines` falls back to ISO-8859-1, which is total, when strict UTF-8 refuse
 SV-B2	2026-08-24-second-validation.md	Closed	Fixed. `pageIdFloor()` reads the `autonomySession` FIELD instead of calling the lazy build
 SV-C1	2026-08-24-second-validation.md	Closed	Fixed, and it needed the fixture rather than the assertions. A caption on a LOADED page no
-SV2-A1	2026-09-01-fanout-index.md	Closed	`208b3ee1`
-SV2-A1	2026-09-01-second-validation.md	Closed	open — the remedy needs Adam's ruling, stated below in one sentence
+SV2-A1	2026-09-01-fanout-index.md	Open - needs your decision	`208b3ee1`
+SV2-A1	2026-09-01-second-validation.md	Open - needs your decision	open — the remedy needs Adam's ruling, stated below in one sentence
 SV2-A2	2026-09-01-fanout-index.md	Closed	`208b3ee1`
 SV2-A2	2026-09-01-second-validation.md	Closed	open
 SV2-B1	2026-09-01-fanout-index.md	Closed	`208b3ee1`
@@ -1452,9 +1413,9 @@ SVN-B15	2026-09-01-week-of-commits-review.md	Closed	half overtaken, half **fixed
 SVN-B16	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`87b6c10a`)
 SVN-B17	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02, with `V31-C2` and `AU-C12`
 SVN-B2	2026-09-01-week-of-commits-review.md	Closed	**closed** by `FX2-3`
-SVN-B3	2026-09-01-week-of-commits-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+SVN-B3	2026-09-01-week-of-commits-review.md	Open - needs your decision	**DEFERRED — needs Adam**
 SVN-B4	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`975f157d`)
-SVN-B5	2026-09-01-week-of-commits-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+SVN-B5	2026-09-01-week-of-commits-review.md	Open - needs your decision	**DEFERRED — needs Adam**
 SVN-B6	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`1cfdf370`)
 SVN-B7	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`87b6c10a`), reasoning corrected by `V31-B2`
 SVN-B8	2026-09-01-week-of-commits-review.md	Closed	**fixed**
@@ -1566,7 +1527,7 @@ TCX-B10	2026-09-01-test-suite-review.md	Closed	open
 TCX-B11	2026-09-01-test-suite-review.md	Closed	open
 TCX-B12	2026-09-01-test-suite-review.md	Closed	open
 TCX-B13	2026-09-01-test-suite-review.md	Closed	open
-TCX-B2	2026-09-01-test-suite-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+TCX-B2	2026-09-01-test-suite-review.md	Open - needs your decision	**DEFERRED — needs Adam**
 TCX-B3	2026-09-01-test-suite-review.md	Closed	open
 TCX-B4	2026-09-01-test-suite-review.md	Closed	open
 TCX-B5	2026-09-01-test-suite-review.md	Closed	open
@@ -1677,7 +1638,7 @@ TR-D7	2026-08-21-review-findings.md	Closed	Clean. All pure ASCII, identical key 
 TR-D8	2026-08-21-review-findings.md	Closed	Clean. Nothing found.
 TR-D9	2026-08-21-review-findings.md	Closed	Raised as A, withdrawn 2026-08-21 after validation. A deadline here has nothing safe to do
 TS-B1	2026-08-19-test-suite-review.md	Closed	Open
-TS-C1	2026-08-19-test-suite-review.md	Closed	Open
+TS-C1	2026-08-19-test-suite-review.md	Open	Open
 TS-C2	2026-08-19-test-suite-review.md	Closed	Open
 TS-C3	2026-08-19-test-suite-review.md	Closed	Open
 TS-D1	2026-08-19-test-suite-review.md	Closed	Recorded
@@ -1857,7 +1818,7 @@ UH-B3	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B4	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B5	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B6	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
-UH-B7	2026-08-17-unread-half-review.md	Closed	Open - deferred with its class
+UH-B7	2026-08-17-unread-half-review.md	Open	Open - deferred with its class
 UR-1	2026-08-23-uninformed-review.md	Closed	CONFIRMED
 UR-10	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), PLAUSIBLE (trigger)
 UR-11	2026-08-23-uninformed-review.md	Closed	PLAUSIBLE
@@ -2166,7 +2127,7 @@ VD11-C4	2026-09-03-validation-round-three.md	Closed	fixed, all three - a skipped
 VD11-C5	2026-09-03-validation-round-three.md	Closed	fixed - and the paragraph no longer names a count; nine was the third wrong number in that
 VD11-C6	2026-09-03-validation-round-three.md	Closed	fixed - the assertion is gone, with a line saying why rather than a silent deletion
 VD11-C7	2026-09-03-validation-round-three.md	Closed	fixed - the heading has its blank comment line and the double blank is closed up
-VD11-C8	2026-09-03-validation-round-three.md	Closed - was awaiting your decision	fixed, on Adam's instruction - the loss is now reported with its remedy rather than deferr
+VD11-C8	2026-09-03-validation-round-three.md	Closed	fixed, on Adam's instruction - the loss is now reported with its remedy rather than deferr
 VD11-C9	2026-09-03-validation-round-three.md	Closed	fixed - the comment gives the measurement rather than the argument, and says what to do if
 VD11-D1	2026-09-03-validation-round-three.md	Closed	closed
 VD11-D10	2026-09-03-validation-round-three.md	Closed	closed
