@@ -2463,12 +2463,31 @@ public class Layout
                 {
                     Locomotive onShared = coveredTrack.get(sharing);
 
-                    if (onShared != null && !onShared.equals(loc))
-                    {
-                        lyingAcross = onShared;
+                    if (onShared == null || onShared.equals(loc)) continue;
 
-                        break;
-                    }
+                    // SHARED METAL ONLY, and lockEdges holds two different relations (RGD-B2).
+                    //
+                    // The reduction derives locks from SHARED TILES, which is the relation this rule
+                    // wants: a train lying across a switch fouls every road through it. The builder
+                    // then adds a second population for the FR-001 restrictions - an edge arriving at
+                    // a station somebody has held back gains every edge that ends at the watched
+                    // square - and those two edges need share no metal at all. Sweeping both refused
+                    // paths over physically clear track and blamed a train that was nowhere near it.
+                    //
+                    // Told apart by SYMMETRY, which needs nothing new in the file. Sharing a tile is
+                    // mutual and the reducer adds both directions, so a shared-metal partner lists
+                    // this edge back. A restriction is one-directional: the held station's approach
+                    // gains the watched square's arrivals, and they do not gain it.
+                    //
+                    // Known limit: two stations each holding the other back are symmetric by
+                    // coincidence, and this would refuse there. That is one narrow case of
+                    // over-refusal against the whole of FR-001, and it is written down rather than
+                    // left to be rediscovered.
+                    if (!sharing.getLockEdges().contains(e)) continue;
+
+                    lyingAcross = onShared;
+
+                    break;
                 }
             }
 

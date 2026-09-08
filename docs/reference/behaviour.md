@@ -173,11 +173,16 @@ mistake has been made in both directions.
 > *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is likely
 > corrective by the user."* - Adam, 2026-09-07
 
-**A direction command arriving while a run is under way is ignored, not queued.** The baseline is
-brought up to date as it arrives, so nothing is left behind to be replayed. It used to be recorded
-with `putIfAbsent`, which kept the pre-run direction: the first echo after the run then read a change
-that had already been acted on and re-followed a reversal the railway had made itself. Reversals are
+**A direction command arriving while a run is under way is ignored, not queued.** Reversals are
 counted only when nothing is running, and there is no backlog.
+
+How that is achieved is worth stating exactly, because an earlier version of this paragraph got it
+backwards. `putIfAbsent` is still there and is still right: it gives a train nobody has seen before a
+baseline and nothing more, so a locomotive first met mid-journey is not treated as having changed
+direction. What stops the backlog is the other half - `reconcileFacingWhenIdle` brings the baseline
+level with the live state once the railway is idle, so nothing arriving mid-run is left behind to be
+replayed. Neither half works alone: without the baseline the first echo is skipped, and without the
+levelling the first echo after the run re-follows a reversal the railway already made.
 
 > *"It should be recorded at the destination. Otherwise, it’s just the same as always."* — Adam,
 > 2026-09-07

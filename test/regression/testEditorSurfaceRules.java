@@ -1353,6 +1353,20 @@ public class testEditorSurfaceRules
      */
     private static String bodyOf(String source, String declaration)
     {
+        // LINE ENDINGS ARE NOT PART OF THE RULE.
+        //
+        // `TrainControlUI.java` has mixed endings - most of it LF, some regions CRLF - and a
+        // declaration written across two lines is searched for with a bare newline. When an edit
+        // converted one such region to CRLF the search stopped matching, this answered with the empty
+        // string, and `testTheGreyEditButtonSaysWhyItIsGrey` reported that a door had stopped asking
+        // which refusal applies. The door had not changed at all.
+        //
+        // A guard that fails on a carriage return is worse than no guard: it costs a real
+        // investigation and it teaches whoever meets it that this file cries wolf. Normalised here
+        // rather than at each caller, because the next caller would have to remember.
+        source = source.replace("\r\n", "\n");
+        declaration = declaration.replace("\r\n", "\n");
+
         int at = source.indexOf(declaration);
 
         if (at < 0) return "";

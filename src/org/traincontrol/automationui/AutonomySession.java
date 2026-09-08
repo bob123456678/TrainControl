@@ -3741,6 +3741,28 @@ public class AutonomySession
             org.json.JSONObject before = existing.has(id)
                 ? existing.getJSONObject(id) : new org.json.JSONObject();
 
+            // AND THE TAIL GOES WITH THE TRAIN THAT LEFT (RGD-B1).
+            //
+            // The loop below replaces `loc` from the running layout, so a capture can hand a square to
+            // a different locomotive - autonomy ran, the trains moved, somebody opened the editor.
+            // `arrivedFrom` is not one of these keys and is not captured either: which side a train
+            // came in by is worked out by the railway on arrival, not commanded, so there is nothing
+            // to capture. But leaving the OLD train's side on a square whose occupant just changed is
+            // the same defect the placement doors were fixed for, arriving by a different road.
+            //
+            // Read before the replacement, because the replacement is what makes them differ.
+            //
+            // REG8-A1 fixed the other half of this - the build applies the side after placing trains,
+            // so the file gets the last word - and its own body said the ordering fix and this one had
+            // to land together. Only the ordering did.
+            String occupantWas = nameOfPlacedLocomotive(before.opt("loc"));
+            String occupantNow = nameOfPlacedLocomotive(captured.opt("loc"));
+
+            if (occupantWas != null && !occupantWas.equals(occupantNow))
+            {
+                before.remove("arrivedFrom");
+            }
+
             // Keys the layout can speak for are replaced - including being REMOVED when the layout no
             // longer carries them, which is how a property returned to its default is cleared.
             for (String key : POINT_OPERATIONAL_KEYS)
