@@ -315,6 +315,53 @@ def load_findings(conn, rows, force=False):
     return len(rows)
 
 
+def add_findings(conn, rows):
+    """Merges findings into the catalogue without touching the rest of it.
+
+    `load_findings` REPLACES, which is right for a sweep of the whole folder and fatal for anything
+    less. A review written after 2026-09-08 is a handful of documents beside a catalogue of 2,265
+    findings from documents that no longer exist, so it has to be added rather than loaded.
+
+    A row is identified by (ref, document), so re-running over the same review updates its findings in
+    place rather than doubling them - which is what makes this safe to run as often as you like.
+
+    Statuses are preserved for rows that already exist, for the same reason `load_findings` preserves
+    them: the disposition is what a document said, and the status is our answer to it.
+
+    :param conn: an open connection
+    :param rows: dicts from `docs/tools/catalog-findings.py`
+    :return: (added, updated)
+    """
+    added = 0
+    updated = 0
+
+    for r in rows:
+        key = (r.get("ref"), r.get("document"))
+
+        held = conn.execute("SELECT status, status_note FROM finding WHERE ref = ? AND document = ?",
+                            key).fetchone()
+
+        if held is None:
+            added += 1
+        else:
+            updated += 1
+
+        conn.execute(
+            "INSERT OR REPLACE INTO finding"
+            " (ref, document, line, severity, title, disposition, evidence, commit_id, cited_by,"
+            "  status, status_note)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (r.get("ref"), r.get("document"), r.get("line") or None, r.get("severity"),
+             r.get("what"), r.get("disposition"), r.get("where") or None,
+             r.get("commit") or None,
+             ",".join(sorted(r.get("cited", []))) or None)
+            + (tuple(held) if held is not None else (None, None)))
+
+    conn.commit()
+
+    return added, updated
+
+
 def load_dead(conn, orphans):
     """Stores the ids that are cited from the code and are findings nowhere.
 

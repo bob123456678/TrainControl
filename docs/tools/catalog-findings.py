@@ -533,7 +533,62 @@ def into_the_database(rows):
 ENOUGH_DOCUMENTS = 20
 
 
+def add_one_folder(folder):
+    """Scans one review folder and MERGES its findings into the store.
+
+    For reviews written after the folder was retired. The full sweep replaces the table and refuses
+    when it would collapse; this one only ever adds, so a new review joins the catalogue instead of
+    replacing it. Re-running over the same folder updates its rows in place.
+
+    :param folder: the directory of review documents
+    :return: 0 on success, 1 if there was nothing to add
+    """
+    global REVIEWS
+
+    was = REVIEWS
+
+    REVIEWS = folder
+
+    try:
+        rows = collect()
+    finally:
+        REVIEWS = was
+
+    if not rows:
+        print("no findings under %s - nothing to add" % folder)
+
+        return 1
+
+    disambiguate(rows)
+
+    used = citations_in_the_code()
+
+    for r in rows:
+        r["cited"] = used.get(r["ref"], set())
+
+    sys.path.insert(0, os.path.join("docs", "manual-tests"))
+
+    import triagedb
+
+    conn = triagedb.connect()
+
+    added, updated = triagedb.add_findings(conn, rows)
+
+    print("%s: %d findings, %d new, %d updated" % (folder, len(rows), added, updated))
+
+    print("mirror rewritten: %d" % triagedb.render_findings(conn))
+
+    return 0
+
+
 def main():
+    # ONE FOLDER, MERGED. `--add <dir>` is how a review written after 2026-09-08 joins the catalogue:
+    # the full sweep below replaces the table, which is right for a sweep and fatal for three documents.
+    if "--add" in sys.argv:
+        where = sys.argv[sys.argv.index("--add") + 1]
+
+        return add_one_folder(where)
+
     rows = collect()
 
     # THE FOLDER WAS DELETED ON 2026-09-08, on Adam's instruction, once the catalogue was carrying it.
