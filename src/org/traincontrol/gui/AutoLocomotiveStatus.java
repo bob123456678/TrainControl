@@ -1061,6 +1061,23 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                             locomotive.getPreferredSpeed(), null,
                             answered);
 
+                        // AND THE GRAPH IS TOLD, which is the other half of what Adam asked for
+                        // (2026-09-08, OB-189): **"if yes, emit reversal command and update on
+                        // the graph."**
+                        //
+                        // A destination reversal is recorded by toggling the locomotive's name
+                        // into `Layout.reversedOnArrival`, and the window writes it to the setup
+                        // in `reconcileFacingWhenIdle` - which is only reached from a diagram
+                        // refresh.  Autonomy refreshes constantly so its turns land within a
+                        // tick; nothing refreshed when a HAND-DRIVEN journey ended, so the facing
+                        // sat pending and the diagram went on showing the train pointing the way
+                        // it set off.  The command had been sent and the railway had obeyed it.
+                        //
+                        // Safe from here because `reconcileFacingWhenIdle` refuses while anything
+                        // is moving - a train between two copies is MEANT to disagree with the
+                        // graph - and this runs after the journey has returned.
+                        javax.swing.SwingUtilities.invokeLater(() -> { if (this.parent != null) this.parent.updateVisiblePoints(); });
+
                         if (!success)
                         {
                             javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));

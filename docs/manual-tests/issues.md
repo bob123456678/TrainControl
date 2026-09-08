@@ -601,6 +601,20 @@ I send EN57-203 from BottomMainA to BottomMainPost.  I say to No to keep current
 
 right clicking a local locomotive icon should provide a clear option to clear it and change it, rather than opening an editor without context.  create a dropdown for this in 3.1.0 when the icon is clicked.
 
+### OB-190 - 2026-09-08 - OB-189 follow-up: confirm the diagram shows the new facing after a hand-driven reversal
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-08  
+
+The command half of OB-189 was measured firing on every answered journey - a probe in Layout.executePathInternal logged the arrival turn each time, and answering yes versus no produces different final directions. What was missing is the GRAPH half of Adam's instruction of 2026-09-08: **"if yes, emit reversal command and update on the graph."**
+
+A destination reversal is recorded by toggling the locomotive into Layout.reversedOnArrival, and the window writes it to the setup in reconcileFacingWhenIdle - reachable only from a diagram refresh. Autonomy refreshes constantly so its turns land within a tick. Nothing refreshed when a HAND-DRIVEN journey ended, so the facing sat pending and the diagram went on showing the train pointing the way it set off, while the railway had already obeyed the command.
+
+Both manual doors now refresh when the journey returns. This needs confirming on the real railway: send a train to a may-reverse destination, answer No, and check that the arrow on the diagram turns as well as the locomotive.
+
+ALSO STILL OPEN, and Adam's call rather than a defect: a journey that passes a reversing square gets a compulsory turn there, which is invisible to the operator and flips the train once before the answered turn at the destination flips it again. Measured 2026-09-08: keep-direction ends backward, reverse ends forward. So the answer is honoured but reads as doing nothing when the net is nil. testAReversalCommandIsEmitted guards that the two answers differ.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
