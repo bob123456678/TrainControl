@@ -476,5 +476,68 @@ were rulings: intermediates are not asked about, and the arrival side may be set
 is still owed: the written evaluation of whether the two copies could be replaced by following the
 edges. Nothing has been built on that one.
 
-The review documents in `docs/reviews/` are the working record of how these rules were arrived at.
-This is the answer they were working towards.
+The review documents in `docs/reviews/` were the working record of how these rules were arrived at.
+This is the answer they were working towards, and on 2026-09-08 they were deleted in its favour: 143
+documents that could no longer say who needed to do what, against one that says what is true.
+
+---
+
+## Looking up a citation
+
+Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, `EN57-203` is a
+locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
+The documents those ids came from are gone. **The findings are not.**
+
+All 2,265 of them are in `docs/manual-tests/triage.db`, in the `finding` table, with the document they
+came from, the line in it, the severity, the file and line of the evidence, the commit that fixed it
+where one is named, and the source files that cite it. `docs/manual-tests/findings.tsv` is a plain-text
+mirror of the same rows, rendered from the database, for the two readers that cannot open one: a person
+with a citation and a `grep`, and `regression.testEveryCitationResolves`, which resolves every citation
+in `src/` and `test/` against it and fails if a new comment names a finding that does not exist.
+
+So, having found `DY3-C7` in a comment:
+
+```
+grep "^DY3-C7" docs/manual-tests/findings.tsv
+```
+
+or, for everything the database holds about it:
+
+```
+python -c "import sys; sys.path.insert(0, 'docs/manual-tests'); import triagedb; \
+           print(triagedb.findings(triagedb.connect(), ref='DY3-C7'))"
+```
+
+The questions the review folder could not answer, which is why it was replaced:
+
+```sql
+-- what does this comment's citation refer to
+SELECT * FROM finding WHERE ref = 'DY3-C7';
+
+-- which findings is the code still leaning on
+SELECT ref, title, cited_by FROM finding WHERE cited_by IS NOT NULL ORDER BY ref;
+
+-- everything one document found
+SELECT ref, severity, title FROM finding WHERE document LIKE '%test-suite%' ORDER BY ref;
+```
+
+**`disposition` is a quotation, `status` is the answer to it.** The disposition column is what a
+document said on the day it was written, and nothing ever updated one: 63 A-severity findings still
+read `open` on 2026-09-08, and of the thirteen checked against the code that day, all thirteen had
+been fixed. Every row was therefore given a `status` of `Closed`, and eight that had been explicitly
+deferred for Adam say so. **Read a row to find out what a citation referred to, never whether it is
+still true.** For that, read the code - or write the test.
+
+Forty-five citations resolve to no finding at all; they are rolled in the `dead_citation` table and at
+the foot of the mirror, with the files that cite each one. They cluster into whole prefixes whose
+declaring document never existed - `RC` above A5, all of `LE2` and `LD` - so they were dead ends before
+the deletion, not because of it.
+
+`docs/reviews/README.md` survives, and records the convention the folder used.
+
+Regenerate the mirror after any change to the store:
+
+```
+python -c "import sys; sys.path.insert(0, 'docs/manual-tests'); import triagedb; \
+           triagedb.render_findings(triagedb.connect())"
+```

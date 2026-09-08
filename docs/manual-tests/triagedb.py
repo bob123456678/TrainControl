@@ -126,7 +126,14 @@ CREATE TABLE IF NOT EXISTS finding (
     evidence    TEXT,               -- the first `File.java:123` the body cites
     commit_id   TEXT,               -- the first commit id the body cites
     cited_by    TEXT,               -- source files that name this ref, comma-separated
+    status      TEXT,               -- OURS, not the document's: survives every reload
+    status_note TEXT,               -- when it was set that way, and on what evidence
     PRIMARY KEY (ref, document)     -- nine refs mean different things in different reviews
+);
+
+CREATE TABLE IF NOT EXISTS dead_citation (
+    ref       TEXT PRIMARY KEY,     -- cited from the code, a finding in no document
+    cited_by  TEXT                  -- the files that cite it, comma-separated
 );
 
 CREATE INDEX IF NOT EXISTS finding_by_ref ON finding (ref);
@@ -222,10 +229,42 @@ def connect(path=DB_FILE):
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
 
+    migrate(conn)
+
     return conn
 
 
-def load_findings(conn, rows):
+# Columns added to a table after it first shipped. `CREATE TABLE IF NOT EXISTS` will not add them to a
+# store that already exists, and this one is tracked in git, so every checkout has an old copy.
+LATER_COLUMNS = [
+    ("finding", "status", "TEXT"),
+    ("finding", "status_note", "TEXT"),
+]
+
+
+def migrate(conn):
+    """Adds any column that SCHEMA has gained since a store was created.
+
+    :param conn: an open connection
+    :return: the columns added, for the caller that wants to say so
+    """
+    added = []
+
+    for table, column, kind in LATER_COLUMNS:
+        have = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % table)]
+
+        if column not in have:
+            conn.execute("ALTER TABLE %s ADD COLUMN %s %s" % (table, column, kind))
+
+            added.append("%s.%s" % (table, column))
+
+    if added:
+        conn.commit()
+
+    return added
+
+
+def load_findings(conn, rows, force=False):
     """Replaces the finding catalogue with what the scanner found.
 
     Adam, 2026-09-08, ruling on MON-C11 - a review folder of 143 documents that could no longer say
@@ -240,21 +279,150 @@ def load_findings(conn, rows):
     :param rows: dicts from `docs/tools/catalog-findings.py`
     :return: how many were stored
     """
+    # A LOAD MUST NOT BE ABLE TO EMPTY THIS TABLE. Once docs/reviews/ is deleted the scanner finds
+    # nothing, and a wholesale replace would take the only remaining copy of 2,269 findings with it -
+    # by way of a script that had always been safe to run. Below half is a collapse, not an edit.
+    held = conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0]
+
+    if held and not force and len(rows) * 2 < held:
+        raise ValueError(
+            "refusing to load %d findings over the %d already stored: that is a collapse, not an "
+            "update, and it would destroy the record. If the review documents have been deleted, the "
+            "database IS the record now - do not run the scanner against an empty folder. Pass "
+            "force=True only to rebuild deliberately." % (len(rows), held))
+
+    # Statuses are ours and the documents know nothing about them, so they are carried over rather than
+    # rewritten. See the module docstring: the disposition column is what a document SAID.
+    kept = {(r["ref"], r["document"]): (r["status"], r["status_note"])
+            for r in conn.execute("SELECT ref, document, status, status_note FROM finding")}
+
     conn.execute("DELETE FROM finding")
 
     for r in rows:
         conn.execute(
             "INSERT OR REPLACE INTO finding"
-            " (ref, document, line, severity, title, disposition, evidence, commit_id, cited_by)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " (ref, document, line, severity, title, disposition, evidence, commit_id, cited_by,"
+            "  status, status_note)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (r.get("ref"), r.get("document"), r.get("line") or None, r.get("severity"),
              r.get("what"), r.get("disposition"), r.get("where") or None,
              r.get("commit") or None,
-             ",".join(sorted(r.get("cited", []))) or None))
+             ",".join(sorted(r.get("cited", []))) or None)
+            + kept.get((r.get("ref"), r.get("document")), (None, None)))
 
     conn.commit()
 
     return len(rows)
+
+
+def load_dead(conn, orphans):
+    """Stores the ids that are cited from the code and are findings nowhere.
+
+    In the store rather than only in the generated file, for the same reason as everything else here:
+    the documents are gone and a roll that only exists in a rendered artifact is one `rm` from lost.
+
+    :param conn: an open connection
+    :param orphans: {ref: iterable of file names}
+    :return: how many
+    """
+    conn.execute("DELETE FROM dead_citation")
+
+    for ref in sorted(orphans):
+        conn.execute("INSERT OR REPLACE INTO dead_citation (ref, cited_by) VALUES (?, ?)",
+                     (ref, ",".join(sorted(orphans[ref])) or None))
+
+    conn.commit()
+
+    return len(orphans)
+
+
+def close_findings(conn, note, severity=None, only_open=True):
+    """Sets a status on findings, without touching what the documents said.
+
+    Adam, 2026-09-08, having been shown that the open dispositions are stale: *"in the database, mark
+    all of them as closed or no longer relevant."*
+
+    The disposition column is left exactly as it was. It is a quotation - what a document said on the
+    day it was written - and rewriting a quotation to match today loses the only evidence of when the
+    claim was made. The status column is the answer to it.
+
+    :param conn: an open connection
+    :param note: why, and on what evidence - this is the whole value of the row
+    :param severity: restrict to one severity, or None for all
+    :param only_open: only rows whose stated disposition reads open
+    :return: how many were marked
+    """
+    where = ["1=1"]
+    args = []
+
+    if severity:
+        where.append("severity = ?")
+        args.append(severity)
+
+    if only_open:
+        where.append("(disposition IS NULL OR LOWER(disposition) LIKE '%open%' OR disposition = '-')")
+
+    sql = "UPDATE finding SET status = 'Closed', status_note = ? WHERE " + " AND ".join(where)
+
+    n = conn.execute(sql, [note] + args).rowcount
+
+    conn.commit()
+
+    return n
+
+
+FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
+
+
+def render_findings(conn, path=FINDINGS_MIRROR):
+    """Writes the plain-text mirror of the catalogue, from the store.
+
+    Two readers need this and neither can open a database. `testEveryCitationResolves` resolves every
+    citation in the codebase against it - there is no SQLite driver on this project's classpath - and a
+    person who has just found `RC-A1` in a comment wants one grep, not a query.
+
+    The reviews folder was deleted on 2026-09-08, so this file and the store are the only copies of what
+    2,265 findings were about. Keep both in git.
+
+    :param conn: an open connection
+    :param path: where to write it
+    :return: how many findings were written
+    """
+    out = ["# Every review finding. Rendered from docs/manual-tests/triage.db - do not hand-edit.",
+           "# Regenerate: python -c \"import triagedb; triagedb.render_findings(triagedb.connect())\"",
+           "#",
+           "# ref<TAB>document<TAB>status<TAB>disposition-as-that-document-stated-it",
+           "#",
+           "# The DOCUMENTS ARE GONE - deleted 2026-09-08, and in git history before that. This file and",
+           "# the database are what is left of them.",
+           "#",
+           "# `disposition` is what a document said ON THE DAY IT WAS WRITTEN, and nothing ever updated",
+           "# one: of 63 A-severity findings still reading `open`, 13 were checked against the code and",
+           "# all 13 had been fixed. `status` is the answer to that, set deliberately. Read a row to find",
+           "# out WHAT a citation referred to - never whether it is still true. For that, read the code.",
+           "#",
+           "# Refs below the DEAD marker are cited from the code and are findings in no document."]
+
+    n = 0
+
+    for r in conn.execute("SELECT ref, document, status, disposition FROM finding"
+                          " ORDER BY ref, document"):
+        out.append("%s\t%s\t%s\t%s" % (
+            r["ref"], r["document"], r["status"] or "-",
+            " ".join((r["disposition"] or "-").split())[:90]))
+
+        n += 1
+
+    out.append("# DEAD - cited, no finding behind them")
+
+    for r in conn.execute("SELECT ref FROM dead_citation ORDER BY ref"):
+        out.append("%s\t-\t-\t-" % r["ref"])
+
+    out.append("")
+
+    io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(out))
+
+    return n
 
 
 def findings(conn, ref=None, disposition=None, severity=None, cited=None):

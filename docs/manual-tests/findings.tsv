@@ -1,0 +1,2325 @@
+# Every review finding. Rendered from docs/manual-tests/triage.db - do not hand-edit.
+# Regenerate: python -c "import triagedb; triagedb.render_findings(triagedb.connect())"
+#
+# ref<TAB>document<TAB>status<TAB>disposition-as-that-document-stated-it
+#
+# The DOCUMENTS ARE GONE - deleted 2026-09-08, and in git history before that. This file and
+# the database are what is left of them.
+#
+# `disposition` is what a document said ON THE DAY IT WAS WRITTEN, and nothing ever updated
+# one: of 63 A-severity findings still reading `open`, 13 were checked against the code and
+# all 13 had been fixed. `status` is the answer to that, set deliberately. Read a row to find
+# out WHAT a citation referred to - never whether it is still true. For that, read the code.
+#
+# Refs below the DEAD marker are cited from the code and are findings in no document.
+A1-A11	2026-08-21-review-findings.md	Closed	-
+A12-A23	2026-08-21-review-findings.md	Closed	Ruled (stated in the body)
+AC2-A1	2026-09-04-independent-acceptance.md	Closed	fixed
+AC2-C1	2026-09-04-independent-acceptance.md	Closed	2 and 3 closed - not defects. Adam, 2026-09-04: **"there is no loading back to the station
+AC2-C1	2026-09-05-single-pass-validation.md	Closed	-
+AC2-C2	2026-09-04-independent-acceptance.md	Closed	fixed
+AC2-C3	2026-09-04-independent-acceptance.md	Closed	fixed
+AC2-C3	2026-09-05-single-pass-validation.md	Closed	-
+AC2-C4	2026-09-04-independent-acceptance.md	Closed	fixed
+AC2-D1	2026-09-04-independent-acceptance.md	Closed	record of coverage; nothing to fix
+AC3-B1	2026-09-05-fable-acceptance.md	Closed	fixed - the stream has its own resource at both sites, the model's and the window's twin. 
+AC3-C1	2026-09-05-fable-acceptance.md	Closed	fixed - the move is guarded and the staging file goes either way. Asserted in the same tes
+AC3-C2	2026-09-05-fable-acceptance.md	Closed	fixed - wrapped in an `IllegalArgumentException` carrying a translated message, rather tha
+AC3-D1	2026-09-05-fable-acceptance.md	Closed	record of coverage; nothing to fix
+ACC-A1	2026-09-04-release-acceptance-review.md	Closed	fixed 2026-09-04 - the handler gates the release on `activeLocomotives` membership, captur
+ACC-B1	2026-09-04-release-acceptance-review.md	Closed	fixed 2026-09-04 - `autosetup.ui.leftEdgeLocks` is the fifth line, in all eight bundles; c
+ACC-B2	2026-09-04-release-acceptance-review.md	Closed	**closed by Adam's ruling, 2026-09-04: "closing track diagram should not stop trains"** - 
+ACC-B3	2026-09-04-release-acceptance-review.md	Closed	fixed 2026-09-04 - a declined edit sets a flag and the exit capture is skipped entirely ra
+ACC-C1	2026-09-04-release-acceptance-review.md	Closed	fixed - all three now describe the rule in the past tense, and the AutonomyChecks one says
+ACC-C10	2026-09-04-release-acceptance-review.md	Closed	fixed - the ellipsis is added after the loop when the base list is empty, which is the one
+ACC-C2	2026-09-04-release-acceptance-review.md	Closed	**half done, and the first wording of this was untrue (OPV-C2)** - the paragraph went into
+ACC-C3	2026-09-04-release-acceptance-review.md	Closed	fixed - the sentence says autonomy chooses FROM that list rather than that it is exactly w
+ACC-C4	2026-09-04-release-acceptance-review.md	Closed	fixed - the facing is the first legal one rather than a random one, and the count is repor
+ACC-C5	2026-09-04-release-acceptance-review.md	Closed	fixed - the javadoc describes what the only caller actually does, and says the cancel step
+ACC-C6	2026-09-04-release-acceptance-review.md	Closed	fixed - the undo door reads saveQuietly's answer and logs, as its sibling does
+ACC-C7	2026-09-04-release-acceptance-review.md	Closed	fixed - a file carrying keys the old format never wrote is counted and reported; reported 
+ACC-C8	2026-09-04-release-acceptance-review.md	Closed	fixed - a release-note line in Readme.md's 3.0.0 section, in the terms a non-technical rea
+ACC-C9	2026-09-04-release-acceptance-review.md	Closed	fixed - the three constants nothing read are deleted and the sentence that went stale when
+ACC-D1	2026-09-04-release-acceptance-review.md	Closed	`Layout.java:3835, 3577, 4146`
+ACC-D10	2026-09-04-release-acceptance-review.md	Closed	`AutonomySession.java`, `AutonomyCompanionStore.java`
+ACC-D11	2026-09-04-release-acceptance-review.md	Closed	`AutonomyCompanionStore.java:4858-4933`
+ACC-D12	2026-09-04-release-acceptance-review.md	Closed	`2026-09-03-questions-for-adam.md`, `2026-09-03-c-sweep-report.md`
+ACC-D13	2026-09-04-release-acceptance-review.md	Closed	below
+ACC-D14	2026-09-04-release-acceptance-review.md	Closed	below
+ACC-D15	2026-09-04-release-acceptance-review.md	Closed	below
+ACC-D16	2026-09-04-release-acceptance-review.md	Closed	below
+ACC-D2	2026-09-04-release-acceptance-review.md	Closed	`HomeStaging.java:600-680`
+ACC-D3	2026-09-04-release-acceptance-review.md	Closed	`AutonomyChecks.java:450`, `AutonomySession.java:2885`
+ACC-D4	2026-09-04-release-acceptance-review.md	Closed	`src/org/traincontrol/resources/`
+ACC-D5	2026-09-04-release-acceptance-review.md	Closed	`LayoutLabel.java:1465`, `Layout.java:7879`
+ACC-D6	2026-09-04-release-acceptance-review.md	Closed	`cs2_sample_layout/config/autonomy/setup.json`
+ACC-D7	2026-09-04-release-acceptance-review.md	Closed	below
+ACC-D8	2026-09-04-release-acceptance-review.md	Closed	`LayoutRightclickAutonomyMenu.java:280-460`, `testAutoLayout.java:1601-1693`
+ACC-D9	2026-09-04-release-acceptance-review.md	Closed	MT-250
+ACC4-1	ACC4-acceptance-2026-09-06.md	Closed	Open
+ACC4-2	ACC4-acceptance-2026-09-06.md	Closed	Open
+ACC4-3	ACC4-acceptance-2026-09-06.md	Closed	Open
+ACC4-4	ACC4-acceptance-2026-09-06.md	Closed	Open
+ACC4-5	ACC4-acceptance-2026-09-06.md	Closed	Open
+AD-A1	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A2	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A3	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A4	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A5	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A6	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A7	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A8	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-A9	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B1	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B10	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B11	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B12	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B13	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B2	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B3	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B4	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B5	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B6	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B7	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B8	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-B9	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C1	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C10	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C11	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C12	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C13	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C14	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C15	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C16	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C17	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C2	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C3	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C4	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C5	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C6	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C7	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C8	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-C9	2026-08-17-autonomy-diagram-review.md	Closed	Fixed
+AD-D1	2026-08-17-autonomy-diagram-review.md	Closed	Not a code defect - data
+AD-D2	2026-08-17-autonomy-diagram-review.md	Closed	Correct behaviour
+AD-D3	2026-08-17-autonomy-diagram-review.md	Closed	No such attributes exist
+AD-D4	2026-08-17-autonomy-diagram-review.md	Closed	Not a defect; see B1
+AD-D5	2026-08-17-autonomy-diagram-review.md	Closed	Cannot collide
+AD-D6	2026-08-17-autonomy-diagram-review.md	Closed	Clean
+AR-1	2026-08-22-adam-round.md	Closed	Fixed - the panel could not find the main window
+AR-10	2026-08-22-adam-round.md	Closed	Done - all three now guarded
+AR-11	2026-08-22-adam-round.md	Closed	Fixed - taller, and the scrollbar shows itself
+AR-12	2026-08-22-adam-round.md	Closed	**It is right, and the reason is worth reading** - see below
+AR-13	2026-08-22-adam-round.md	Closed	Done - a white six-armed star in the middle of the square
+AR-14	2026-08-22-adam-round.md	Closed	Done, in the running diagram's black-on-white style
+AR-15	2026-08-22-adam-round.md	Closed	Fixed
+AR-16	2026-08-22-adam-round.md	Closed	Not done - see the last section
+AR-2	2026-08-22-adam-round.md	Closed	Removed - the item now appears only to EDIT a train that is there
+AR-3	2026-08-22-adam-round.md	Closed	Fixed - it was added again on every mount
+AR-4	2026-08-22-adam-round.md	Closed	Fixed - wrapped
+AR-5	2026-08-22-adam-round.md	Closed	Done
+AR-6	2026-08-22-adam-round.md	Closed	Fixed - one width, cut short, whole name in a tooltip
+AR-7	2026-08-22-adam-round.md	Closed	Done
+AR-8	2026-08-22-adam-round.md	Closed	Done - beyond eight
+AR-9	2026-08-22-adam-round.md	Closed	Fixed - one constant, used by both
+AU-A1	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-A2	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-A3	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B1	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B10	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B2	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B3	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B4	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B5	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B6	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B7	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-B8	2026-08-25-autonomous-round.md	Closed	filed as OB-108 - three remedies, each trading something real away
+AU-B9	2026-08-25-autonomous-round.md	Closed	Fixed (stated in the body)
+AU-C1	2026-08-25-autonomous-round.md	Closed	fixed, `4419d1cf`
+AU-C10	2026-08-25-autonomous-round.md	Closed	fixed, `2ac2ee5e`
+AU-C11	2026-08-25-autonomous-round.md	Closed	**open, deliberately - Adam's decision, and the same one MT-187 asks**
+AU-C12	2026-08-25-autonomous-round.md	Closed	open - three surfaces disagree; making them agree changes two of them
+AU-C13	2026-08-25-autonomous-round.md	Closed	open - the fix is right, the cost wants a cached accessor
+AU-C14	2026-08-25-autonomous-round.md	Closed	fixed, `6b6e6bd4`
+AU-C2	2026-08-25-autonomous-round.md	Closed	fixed, `4419d1cf`
+AU-C3	2026-08-25-autonomous-round.md	Closed	fixed, `4419d1cf`
+AU-C4	2026-08-25-autonomous-round.md	Closed	open - recorded, unreachable from anything this application writes
+AU-C5	2026-08-25-autonomous-round.md	Closed	open - pre-existing, needs a page name containing `#`
+AU-C6	2026-08-25-autonomous-round.md	Closed	open - unreachable today; the contradictory comments are the live half
+AU-C7	2026-08-25-autonomous-round.md	Closed	fixed, `8117b2a7`
+AU-C8	2026-08-25-autonomous-round.md	Closed	fixed, `2ac2ee5e`
+AU-C9	2026-08-25-autonomous-round.md	Closed	fixed, `2ac2ee5e`; the audit exemption remains unguarded and says so
+AU-D1	2026-08-25-autonomous-round.md	Closed	-
+AU-D2	2026-08-25-autonomous-round.md	Closed	-
+AU-D3	2026-08-25-autonomous-round.md	Closed	-
+AU-D4	2026-08-25-autonomous-round.md	Closed	-
+AU-D5	2026-08-25-autonomous-round.md	Closed	-
+AU-D6	2026-08-25-autonomous-round.md	Closed	-
+AU-D7	2026-08-25-autonomous-round.md	Closed	-
+AU-D8	2026-08-25-autonomous-round.md	Closed	-
+B4-B7	2026-08-17-unread-half-review.md	Closed	-
+BR-B1	2026-08-17-v2.8.1-backport-review.md	Closed	Fixed (stated in the body)
+BR-C1	2026-08-17-v2.8.1-backport-review.md	Closed	Open
+BR-C2	2026-08-17-v2.8.1-backport-review.md	Closed	**Fixed 2026-08-17** (`a673bc7`)
+BR-C3	2026-08-17-v2.8.1-backport-review.md	Closed	Open
+C1-C6	2026-08-17-whole-project-review.md	Closed	Closed 2026-09-07 - C3, C5, C6 Fixed; C2 Cancelled; C1, C4 ruled and left. See [package-sw
+C13-C19	2026-08-17-whole-project-review.md	Closed	Closed 2026-09-07 - C13, C16, C18, C19a, C19b, C19c Fixed; C14, C17 Cancelled; C15, C19e r
+C20-C29	2026-08-17-whole-project-review.md	Closed	Closed 2026-09-07 - C22, C23, C24 Fixed; C20, C21, C25, C28, C29 Cancelled (C28 was fixed 
+C7-C12	2026-08-17-whole-project-review.md	Closed	Closed 2026-09-07 - C7 Fixed; C8, C9, C11, C12 Cancelled (all four fixed since the sweep, 
+CD3-B1	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-B2	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-B3	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C1	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C2	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C3	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C4	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C5	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C6	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-C7	2026-09-02-comments-and-docs-review.md	Closed	open
+CD3-D1	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D2	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D3	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D4	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D5	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D6	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D7	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D8	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect)
+CD3-D9	2026-09-02-comments-and-docs-review.md	Closed	closed (not a defect, but a related count needs a refresh)
+CDR-B1	2026-08-31-comments-and-docs-review.md	Closed	open
+CDR-B2	2026-08-31-comments-and-docs-review.md	Closed	open
+CDR-B3	2026-08-31-comments-and-docs-review.md	Closed	open
+CDR-B4	2026-08-31-comments-and-docs-review.md	Closed	MOOT 2026-09-03 - the rule it was about was removed the same day (`CMT-C3`)
+CDR-C1	2026-08-31-comments-and-docs-review.md	Closed	open
+CDR-C2	2026-08-31-comments-and-docs-review.md	Closed	open
+CDR-D1	2026-08-31-comments-and-docs-review.md	Closed	closed (not a defect)
+CDR-D2	2026-08-31-comments-and-docs-review.md	Closed	closed (not a defect)
+CDR-D3	2026-08-31-comments-and-docs-review.md	Closed	closed (not a defect)
+CDR-D4	2026-08-31-comments-and-docs-review.md	Closed	closed (not a defect)
+CMT-B1	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-B1	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+CMT-B2	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-B2	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+CMT-B3	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-B3	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+CMT-B3	2026-09-01-fix-validation.md	Closed	Prose only
+CMT-B4	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-B4	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+CMT-B4	2026-09-01-fix-validation.md	Closed	Prose only
+CMT-C1	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-C2	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-C2	2026-09-03-c-sweep-report.md	Closed	Noise. **The direction that costs you something is the other one** — a key renamed without
+CMT-C3	2026-09-01-comments-and-docs-review.md	Closed	open
+CMT-D1	2026-09-01-comments-and-docs-review.md	Closed	closed (not a defect)
+CMT-D2	2026-09-01-comments-and-docs-review.md	Closed	closed (not a defect)
+CMT-D3	2026-09-01-comments-and-docs-review.md	Closed	closed (not a defect)
+CMT-D4	2026-09-01-comments-and-docs-review.md	Closed	closed (not a defect)
+CONF-A1	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-A2	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-A3	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B1	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B2	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B3	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B4	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B5	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-B6	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-C1	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-C2	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-C3	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-C4	CONF-confirmation-2026-09-06.md	Closed	Open
+CONF-C5	CONF-confirmation-2026-09-06.md	Closed	CONFIRMED
+CONF-D1	CONF-confirmation-2026-09-06.md	Closed	see each
+CONF2-B1	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-B2	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-C1	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D1	CONF2-confirmation-2026-09-06.md	Closed	Fixed (stated in the body)
+CONF2-D10	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D2	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D3	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D4	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D5	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D6	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D7	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D8	CONF2-confirmation-2026-09-06.md	Closed	Open
+CONF2-D9	CONF2-confirmation-2026-09-06.md	Closed	Open
+CP-C1	2026-08-01-two-commit-review.md	Closed	Fixed - `simClearBehind` stands down when `!isCurrentLayout()`; pinned by `testAClearFromA
+CP-C2	2026-08-01-two-commit-review.md	Closed	Fixed - the fixture reloads after every method; missed by both readings
+CP-D1	2026-08-01-two-commit-review.md	Closed	Verified identical
+CP-D2	2026-08-01-two-commit-review.md	Closed	Clean - concurs with `SF`
+CP-D3	2026-08-01-two-commit-review.md	Closed	Unreachable - recorded as a trap
+CR-C1	2026-08-24-conversion-review.md	Closed	open
+CR-C2	2026-08-24-conversion-review.md	Closed	open
+CR-C3	2026-08-24-conversion-review.md	Closed	open
+CR-C4	2026-08-24-conversion-review.md	Closed	open
+CR-D1	2026-08-24-conversion-review.md	Closed	-
+CR-D10	2026-08-24-conversion-review.md	Closed	-
+CR-D2	2026-08-24-conversion-review.md	Closed	-
+CR-D3	2026-08-24-conversion-review.md	Closed	-
+CR-D4	2026-08-24-conversion-review.md	Closed	-
+CR-D5	2026-08-24-conversion-review.md	Closed	-
+CR-D6	2026-08-24-conversion-review.md	Closed	-
+CR-D7	2026-08-24-conversion-review.md	Closed	-
+CR-D8	2026-08-24-conversion-review.md	Closed	-
+CR-D9	2026-08-24-conversion-review.md	Closed	-
+D1-D10	2026-09-02-three-days-review.md	Closed	-
+D1-D12	2026-09-01-regression-vs-2.8.1-review.md	Closed	checks that came back clean
+D1-D13	2026-09-02-regression-vs-2.8.1-review.md	Closed	verification of `R28`'s open findings, and checks that came back clean
+D1-D16	2026-09-04-regression-sweep-3.0.0.md	Closed	corrections to prior findings, the downgrade matrix, and the successor census
+D1-D7	2026-09-05-fable-regression.md	Closed	the three measurements made and clean, the `357cdc40` review, and the re-verified baseline
+D1-D8	2026-08-31-regression-review.md	Closed	checks that came back clean
+D24-A1	2026-09-01-last-day-review.md	Closed	ALREADY RECORDED - open, restated as a release gate
+D24-B1	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+D24-B1	2026-09-01-last-day-review.md	Closed	open
+D24-B2	2026-09-01-last-day-review.md	Closed	open
+D24-B3	2026-09-01-last-day-review.md	Closed	open
+D24-B4	2026-09-01-last-day-review.md	Closed	open
+D24-B5	2026-09-01-last-day-review.md	Closed	open
+D24-C1	2026-09-01-last-day-review.md	Closed	open
+D24-C10	2026-09-01-last-day-review.md	Closed	open
+D24-C11	2026-09-01-last-day-review.md	Closed	open
+D24-C12	2026-09-01-last-day-review.md	Closed	open
+D24-C2	2026-09-01-last-day-review.md	Closed	open
+D24-C3	2026-09-01-last-day-review.md	Closed	open
+D24-C4	2026-09-01-last-day-review.md	Closed	open
+D24-C5	2026-09-01-last-day-review.md	Closed	open
+D24-C6	2026-09-01-last-day-review.md	Closed	open
+D24-C7	2026-09-01-last-day-review.md	Closed - was awaiting your decision	DEFERRED - needs Adam
+D24-C8	2026-09-01-last-day-review.md	Closed - was awaiting your decision	DEFERRED - needs Adam
+D24-C9	2026-09-01-last-day-review.md	Closed	open
+D24-D1	2026-09-01-last-day-review.md	Closed	clean
+D24-D2	2026-09-01-last-day-review.md	Closed	harmless
+D24-D3	2026-09-01-last-day-review.md	Closed	complete
+D24-D4	2026-09-01-last-day-review.md	Closed	it does not
+D24-D5	2026-09-01-last-day-review.md	Closed	handled
+D24-D6	2026-09-01-last-day-review.md	Closed	unreachable
+D24-D7	2026-09-01-last-day-review.md	Closed	the operator's own state
+D24-D8	2026-09-01-last-day-review.md	Closed	it does not
+D3F-B1	2026-09-02-three-days-review.md	Closed	open
+D3F-C1	2026-09-02-three-days-review.md	Closed	open
+D3F-C2	2026-09-02-three-days-review.md	Closed	open
+D3F-C3	2026-09-02-three-days-review.md	Closed	open
+D3F-C4	2026-09-02-three-days-review.md	Closed	open
+D3F-C5	2026-09-02-three-days-review.md	Closed	open
+D3F-C6	2026-09-02-three-days-review.md	Closed	open
+D3F-D1	2026-09-02-three-days-review.md	Closed	-
+D3F-D10	2026-09-02-three-days-review.md	Closed	-
+D3F-D2	2026-09-02-three-days-review.md	Closed	-
+D3F-D3	2026-09-02-three-days-review.md	Closed	-
+D3F-D4	2026-09-02-three-days-review.md	Closed	-
+D3F-D5	2026-09-02-three-days-review.md	Closed	-
+D3F-D6	2026-09-02-three-days-review.md	Closed	-
+D3F-D7	2026-09-02-three-days-review.md	Closed	-
+D3F-D8	2026-09-02-three-days-review.md	Closed	-
+D3F-D9	2026-09-02-three-days-review.md	Closed	-
+DA-A1	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-17**
+DA-A2	2026-08-17-disposition-audit.md	Closed	Fixed (stated in the body)
+DA-B1	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-17**
+DA-B2	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - the three paths refuse while an editor is open
+DA-B3	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - the undirected walk carries the side it arrived by
+DA-B4	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - INFO is bucketed with notices in both counts
+DA-B5	2026-08-17-disposition-audit.md	Closed	Fixed (stated in the body)
+DA-C1	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - gated on a setup existing and no blocking problems
+DA-C2	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - configurations are read before anything is cleared
+DA-C3	2026-08-17-disposition-audit.md	Closed	**Fixed 2026-08-18** - a sentence instead of a filename, dead branch removed
+DA-C4	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - `delete()` refuses while autonomy is busy
+DA-C5	2026-08-17-disposition-audit.md	Closed	**Fixed** before 2026-08-18 - the javadoc matches the code
+DA-C6	2026-08-17-disposition-audit.md	Closed - was awaiting your decision	**Fixed 2026-08-18** - dead overload removed; the cubic label rebuild is deferred
+DAY-A1	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - `Layout:1148` and `:1276` name this finding, the assignment d
+DAY-A1	2026-08-31-fanout-index.md	Closed	Two locomotives could be homed on one platform. MT-165 let a positional home onto a split 
+DAY-B1	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - `TrainControlUI:17225` and `:23223` both repaint the timetabl
+DAY-B1	2026-09-03-release-review.md	Closed	**fixed** - `repaintTimetable()` at both rename doors (`97137c4b`)
+DAY-B2	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both launch-pad comparisons use it now: `HomeStaging:202` com
+DAY-B2	2026-08-31-fanout-index.md	Closed	`atHome` reached five comparisons and not the two launch-pad ones, so a train on the far c
+DAY-B3	2026-08-31-day-of-commits-review.md	Closed	**fixed by MT-165 without this document saying so**, verified 2026-09-04 at HEAD. The mism
+DAY-C1	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` stil
+DAY-C1	2026-09-03-release-review.md	Closed	reproduces
+DAY-C2	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `c
+DAY-C2	2026-09-03-release-review.md	Closed	reproduces
+DAY-C3	2026-08-31-day-of-commits-review.md	Closed	fixed - the message is chosen by whether a run was actually going, and `wasRunning` is cap
+DAY-C3	2026-09-03-release-review.md	Closed	reproduces
+DAY-C4	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both sites carry the correction and cite this finding: `Edge.
+DAY-C4	2026-09-03-release-review.md	Closed	reproduces, at two sites
+DAY-C5	2026-08-31-day-of-commits-review.md	Closed	fixed by VD10-B2, verified 2026-09-04 - `nameEverything()` now ends at `setupChanged()` un
+DAY-C5	2026-09-03-release-review.md	Closed	reproduces (filed as out of `DAY`'s range)
+DAY-D1	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D10	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D2	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D3	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D4	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D5	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D6	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D7	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D8	2026-08-31-day-of-commits-review.md	Closed	-
+DAY-D9	2026-08-31-day-of-commits-review.md	Closed	-
+DD-A1	2026-08-22-duplication-and-design.md	Closed	Open
+DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75
+DD-A2	2026-08-24-duplication-robustness.md	Closed	Closed (`ae94421a`); its step-2 matrix extensions (reconcile, clear-then-load, import/expo
+DD-A3	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - greying applied after the table's own renderer
+DD-A4	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - `asShown` in all four paths
+DD-A5	2026-08-22-duplication-and-design.md	Closed	Fixed in `d6b9b00c`; the copies are still unequal
+DD-A6	2026-08-22-duplication-and-design.md	Closed	Open
+DD-A6	2026-08-24-duplication-robustness.md	Closed	Open. `canBeHome`/`homeBrokenByExcluding` still have no production caller; the editor stil
+DD-A7	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B1	2026-08-22-duplication-and-design.md	Closed	Closed in `6a8948d4`, arriving independently as Adam's own note on MT-086.
+DD-B2	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B3	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B4	2026-08-22-duplication-and-design.md	Closed	Closed in `c0c9055d`, arriving as a user-visible defect (MT-093) - three rounds of it. See
+DD-B5	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B6	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B7	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B8	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B8	2026-08-24-duplication-robustness.md	Closed	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.
+DD-B9	2026-08-22-duplication-and-design.md	Closed	Open
+DD-B9	2026-08-24-duplication-robustness.md	Closed	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr
+DD-C1	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C10	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C11	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C2	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C3	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C4	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C5	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C6	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C7	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C8	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C9	2026-08-22-duplication-and-design.md	Closed	Open
+DD-C9	2026-08-24-duplication-robustness.md	Closed	**Fixed** (`gridSideTowards`/`sideTowardNeighbour`, javadoc cites DD-C9). Recorded in DR-D
+DD-D1	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D10	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D11	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D12	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D13	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D2	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D3	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D4	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D5	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D6	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D7	2026-08-22-duplication-and-design.md	Closed	Severity revised B → C
+DD-D7a	2026-08-22-duplication-and-design.md	Closed	Severity revised A → B (DD-B7)
+DD-D8	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D9	2026-08-22-duplication-and-design.md	Closed	Recorded
+DD-D9	2026-08-24-duplication-robustness.md	Closed	Reaffirmed; see DR-D3.
+DIR-A1	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-A2	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-A3	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-B1	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-B2	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-B3	2026-09-06-direction-and-consistency.md	Closed	fixed - Adam, 2026-09-06: **"flipFacing should also update the running layout."** `flipFac
+DIR-B4	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C1	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C10	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C2	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C3	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C4	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C5	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C6	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C7	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C8	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-C9	2026-09-06-direction-and-consistency.md	Closed	fixed
+DIR-D1	2026-09-06-direction-and-consistency.md	Closed	-
+DOC-A1	2026-08-28-documentation-review.md	Closed	Open
+DOC-A2	2026-08-28-documentation-review.md	Closed	Open
+DOC-A3	2026-08-28-documentation-review.md	Closed	Open
+DOC-A4	2026-08-28-documentation-review.md	Closed	Open
+DOC-A5	2026-08-28-documentation-review.md	Closed	Open
+DOC-A6	2026-08-28-documentation-review.md	Closed	Open
+DOC-B1	2026-08-28-documentation-review.md	Closed	Open
+DOC-B10	2026-08-28-documentation-review.md	Closed	Open
+DOC-B11	2026-08-28-documentation-review.md	Closed	Open
+DOC-B12	2026-08-28-documentation-review.md	Closed	Open
+DOC-B13	2026-08-28-documentation-review.md	Closed	Open
+DOC-B14	2026-08-28-documentation-review.md	Closed	Open
+DOC-B15	2026-08-28-documentation-review.md	Closed	Open
+DOC-B16	2026-08-28-documentation-review.md	Closed	Open
+DOC-B17	2026-08-28-documentation-review.md	Closed	Open
+DOC-B18	2026-08-28-documentation-review.md	Closed	Open
+DOC-B19	2026-08-28-documentation-review.md	Closed	Open
+DOC-B2	2026-08-28-documentation-review.md	Closed	Open
+DOC-B20	2026-08-28-documentation-review.md	Closed	Open
+DOC-B21	2026-08-28-documentation-review.md	Closed	Open
+DOC-B22	2026-08-28-documentation-review.md	Closed	Open
+DOC-B23	2026-08-28-documentation-review.md	Closed	Open
+DOC-B24	2026-08-28-documentation-review.md	Closed	Open
+DOC-B25	2026-08-28-documentation-review.md	Closed	Open
+DOC-B26	2026-08-28-documentation-review.md	Closed	Open
+DOC-B27	2026-08-28-documentation-review.md	Closed	Open
+DOC-B3	2026-08-28-documentation-review.md	Closed	Open
+DOC-B4	2026-08-28-documentation-review.md	Closed	Open
+DOC-B5	2026-08-28-documentation-review.md	Closed	Open
+DOC-B6	2026-08-28-documentation-review.md	Closed	Open
+DOC-B7	2026-08-28-documentation-review.md	Closed	Open
+DOC-B8	2026-08-28-documentation-review.md	Closed	Open
+DOC-B9	2026-08-28-documentation-review.md	Closed	Open
+DOC-C1	2026-08-28-documentation-review.md	Closed	Open
+DOC-C10	2026-08-28-documentation-review.md	Closed	Open
+DOC-C11	2026-08-28-documentation-review.md	Closed	Open
+DOC-C12	2026-08-28-documentation-review.md	Closed	Open
+DOC-C13	2026-08-28-documentation-review.md	Closed	Open
+DOC-C14	2026-08-28-documentation-review.md	Closed	Open
+DOC-C15	2026-08-28-documentation-review.md	Closed	Open
+DOC-C16	2026-08-28-documentation-review.md	Closed	Open
+DOC-C17	2026-08-28-documentation-review.md	Closed	Open
+DOC-C18	2026-08-28-documentation-review.md	Closed	Open
+DOC-C19	2026-08-28-documentation-review.md	Closed	Open
+DOC-C2	2026-08-28-documentation-review.md	Closed	Open
+DOC-C20	2026-08-28-documentation-review.md	Closed	Open
+DOC-C21	2026-08-28-documentation-review.md	Closed	Open
+DOC-C22	2026-08-28-documentation-review.md	Closed	Open
+DOC-C23	2026-08-28-documentation-review.md	Closed	Open
+DOC-C24	2026-08-28-documentation-review.md	Closed	Open
+DOC-C3	2026-08-28-documentation-review.md	Closed	Open
+DOC-C4	2026-08-28-documentation-review.md	Closed	Open
+DOC-C5	2026-08-28-documentation-review.md	Closed	Open
+DOC-C6	2026-08-28-documentation-review.md	Closed	Open
+DOC-C7	2026-08-28-documentation-review.md	Closed	Open
+DOC-C8	2026-08-28-documentation-review.md	Closed	Open
+DOC-C9	2026-08-28-documentation-review.md	Closed	Open
+DOC-D1	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D10	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D11	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D2	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D3	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D4	2026-08-28-documentation-review.md	Closed	Withdrawn
+DOC-D5	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D6	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D7	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D8	2026-08-28-documentation-review.md	Closed	Clean
+DOC-D9	2026-08-28-documentation-review.md	Closed	Clean
+DR-A1	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B1	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B10	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B2	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B3	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B4	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B5	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B6	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B7	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B8	2026-08-24-duplication-robustness.md	Closed	Open
+DR-B9	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C1	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C2	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C3	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C4	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C5	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C6	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C7	2026-08-24-duplication-robustness.md	Closed	Open
+DR-C8	2026-08-24-duplication-robustness.md	Closed	Open
+DR-D1	2026-08-24-duplication-robustness.md	Closed	Recorded
+DR-D2	2026-08-24-duplication-robustness.md	Closed	Recorded
+DR-D3	2026-08-24-duplication-robustness.md	Closed	Recorded
+DR-D4	2026-08-24-duplication-robustness.md	Closed	Recorded
+DR-D5	2026-08-24-duplication-robustness.md	Closed	Fixed (stated in the body)
+DW-A1	2026-08-24-day-review.md	Closed	open
+DW-C1	2026-08-24-day-review.md	Closed	open
+DW-C2	2026-08-24-day-review.md	Closed	open
+DW-C3	2026-08-24-day-review.md	Closed	open
+DW-C4	2026-08-24-day-review.md	Closed	open
+DW-C5	2026-08-24-day-review.md	Closed	open
+DW-D1	2026-08-24-day-review.md	Closed	-
+DW-D2	2026-08-24-day-review.md	Closed	-
+DW-D3	2026-08-24-day-review.md	Closed	-
+DW-D4	2026-08-24-day-review.md	Closed	-
+DW-D5	2026-08-24-day-review.md	Closed	-
+DW-D6	2026-08-24-day-review.md	Closed	-
+DW-D7	2026-08-24-day-review.md	Closed	-
+DW-D8	2026-08-24-day-review.md	Closed	-
+DW-D9	2026-08-24-day-review.md	Closed	-
+DY3-A1	2026-09-02-last-day-review.md	Closed	-
+DY3-B1	2026-09-02-last-day-review.md	Closed	-
+DY3-C1	2026-09-02-last-day-review.md	Closed	-
+DY3-C10	2026-09-02-last-day-review.md	Closed	-
+DY3-C2	2026-09-02-last-day-review.md	Closed	-
+DY3-C3	2026-09-02-last-day-review.md	Closed	-
+DY3-C4	2026-09-02-last-day-review.md	Closed	-
+DY3-C4	2026-09-03-c-sweep-report.md	Closed	A cache over the method every guard and every affordance consults is not a release-candida
+DY3-C5	2026-09-02-last-day-review.md	Closed	-
+DY3-C6	2026-09-02-last-day-review.md	Closed	-
+DY3-C7	2026-09-02-last-day-review.md	Closed	-
+DY3-C8	2026-09-02-last-day-review.md	Closed	-
+DY3-C9	2026-09-02-last-day-review.md	Closed	-
+DY3-D1	2026-09-02-last-day-review.md	Closed	-
+DY3-D10	2026-09-02-last-day-review.md	Closed	-
+DY3-D11	2026-09-02-last-day-review.md	Closed	-
+DY3-D2	2026-09-02-last-day-review.md	Closed	-
+DY3-D3	2026-09-02-last-day-review.md	Closed	-
+DY3-D4	2026-09-02-last-day-review.md	Closed	-
+DY3-D5	2026-09-02-last-day-review.md	Closed	-
+DY3-D6	2026-09-02-last-day-review.md	Closed	-
+DY3-D7	2026-09-02-last-day-review.md	Closed	-
+DY3-D8	2026-09-02-last-day-review.md	Closed	-
+DY3-D9	2026-09-02-last-day-review.md	Closed	-
+FB-A1	2026-08-25-independent-fable.md	Closed	fixed in `47870317`
+FB-A2	2026-08-25-independent-fable.md	Closed	fixed in `47870317`
+FB-C1	2026-08-25-independent-fable.md	Closed	fixed in `47870317`
+FB-C2	2026-08-25-independent-fable.md	Closed	fixed in `47870317`
+FB-D1	2026-08-25-independent-fable.md	Closed	checked clean
+FB-D2	2026-08-25-independent-fable.md	Closed	checked clean, byte-identical and idempotent
+FB-D3	2026-08-25-independent-fable.md	Closed	checked clean, order-insensitively equal
+FB-D4	2026-08-25-independent-fable.md	Closed	verified against the enforcing code
+FB-D5	2026-08-25-independent-fable.md	Closed	**withdrawn by the reviewer before reporting**
+FBR-A1	2026-08-24-fable-round-review.md	Closed	Fixed. `setViewListener` is passed `null` and the lambda's `finally` is now the only relea
+FBR-A2	2026-08-24-fable-round-review.md	Closed	Fixed, and independently of the argument about the filters. Anything stored that the picke
+FBR-B1	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-B2	2026-08-24-fable-round-review.md	Closed	Fixed by removing the occupancy test from the scan entirely, which is what FBR-B1's own "W
+FBR-B3	2026-08-24-fable-round-review.md	Closed	-
+FBR-C1	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C2	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C3	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C4	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C5	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C6	2026-08-24-fable-round-review.md	Closed	**fixed**
+FBR-C7	2026-08-24-fable-round-review.md	Closed	-
+FBR-C8	2026-08-24-fable-round-review.md	Closed	Fixed and verified the hard way: the source is read with carriage returns stripped, and th
+FBR-D1	2026-08-24-fable-round-review.md	Closed	OB-067: every write path merges the held entries back
+FBR-D10	2026-08-24-fable-round-review.md	Closed	The manual-test ledger is clean after the round's document churn
+FBR-D11	2026-08-24-fable-round-review.md	Closed	FR-015: paths, failure reporting, and the test
+FBR-D12	2026-08-24-fable-round-review.md	Closed	OB-072: both abandonment paths now set the flag
+FBR-D13	2026-08-24-fable-round-review.md	Closed	The rewritten source-rule guards can fail
+FBR-D14	2026-08-24-fable-round-review.md	Closed	FBR-B1: the sensor-sibling loop does match `canRest`'s, and the planned locomotive's exemp
+FBR-D15	2026-08-24-fable-round-review.md	Closed	FBR-B1: the "lost proof" direction is nearly empty — the blocker that cannot move is alrea
+FBR-D16	2026-08-24-fable-round-review.md	Closed	FBR-C1: the field, the guard that stayed, and the thread each is touched on
+FBR-D17	2026-08-24-fable-round-review.md	Closed	FBR-C2: escapes, apostrophes, placeholders, key sets — and what `testMessageBundles` does 
+FBR-D18	2026-08-24-fable-round-review.md	Closed	FBR-C6: reentrancy, staticness, and what the holder hands out
+FBR-D19	2026-08-24-fable-round-review.md	Closed	The staging test can fail, and the one precondition it does not assert
+FBR-D2	2026-08-24-fable-round-review.md	Closed	OB-067: `pageIsHere` really does mirror `pageOf`
+FBR-D20	2026-08-24-fable-round-review.md	Closed	The picker test can fail, and what it cannot tell you
+FBR-D21	2026-08-24-fable-round-review.md	Closed	Withdrawn: `locationOf` picking the wrong copy of a split square
+FBR-D3	2026-08-24-fable-round-review.md	Closed	OB-067: the index always precedes the read
+FBR-D4	2026-08-24-fable-round-review.md	Closed	OB-067: value-side holding is not a new loss
+FBR-D5	2026-08-24-fable-round-review.md	Closed	Withdrawn: a page named after an absent page's id being held
+FBR-D6	2026-08-24-fable-round-review.md	Closed	OB-071: no page-key colon split remains on the first colon
+FBR-D7	2026-08-24-fable-round-review.md	Closed	OB-070: both exit doors go through the editor question
+FBR-D8	2026-08-24-fable-round-review.md	Closed	OB-069: the repair targets the container the timetable actually lives in
+FBR-D9	2026-08-24-fable-round-review.md	Closed	OB-076: the editor-open proxy is true during a layout refresh, and that is fine
+FP-B1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-B2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-B3	2026-07-27-fresh-perspective-review.md	Closed	**Open - deferred by author 2026-07-27**, judged unlikely in practice
+FP-C1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-C2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-C3	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-C4	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-C5	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
+FP-C6	2026-07-27-fresh-perspective-review.md	Closed	**Open - deferred by author 2026-07-27**
+FP-D1	2026-07-27-fresh-perspective-review.md	Closed	Recorded
+FR-A1	2026-08-22-f2-review.md	Closed	Fixed
+FR-A2	2026-08-22-f2-review.md	Closed	Fixed, and turned into a better question
+FR-B1	2026-08-22-f2-review.md	Closed	Fixed
+FR-C1	2026-08-22-f2-review.md	Closed	Fixed
+FR-C2	2026-08-22-f2-review.md	Closed	Fixed
+FR-C3	2026-08-22-f2-review.md	Closed	Fixed
+FR-D1	2026-08-22-f2-review.md	Closed	Removed
+FR-D2	2026-08-22-f2-review.md	Closed	Fixed
+FR-D3	2026-08-22-f2-review.md	Closed	Removed and reworded
+FR3-B1	2026-09-04-final-release-review.md	Closed	fixed 2026-09-04 - `tidy()`'s floor for row 0 is its own depth rather than zero, which is 
+FR3-C1	2026-09-04-final-release-review.md	Closed	fixed - the precondition now also asserts `isPathClear` is NOT in the stack, which is what
+FR3-C2	2026-09-04-final-release-review.md	Closed	**accepted, not fixed** - the branch chooses a message key by `wasRunning`, and reaching i
+FR3-C3	2026-09-04-final-release-review.md	Closed	fixed, after two wrong attempts of its own - the rule scans every .java under src/ and ask
+FR3-C4	2026-09-04-final-release-review.md	Closed	fixed - the javadoc names `paint()`, and records that `paintChildren` was the first attemp
+FR3-C5	2026-09-04-final-release-review.md	Closed	fixed - when both lists are empty the escape adds its own separator and locomotive name, t
+FR3-D1	2026-09-04-final-release-review.md	Closed	`Layout.java:5100-5248`, run log
+FR3-D2	2026-09-04-final-release-review.md	Closed	below
+FR3-D3	2026-09-04-final-release-review.md	Closed	`TrainControlUI.java:2293, 5586, 22583`
+FR3-D4	2026-09-04-final-release-review.md	Closed	`Layout.java:5143`, `LocIconCropDialog.java:953`
+FR3-D5	2026-09-04-final-release-review.md	Closed	`LayoutEditor.java:5402`, `TrainControlUI.java:18066`
+FR3-D6	2026-09-04-final-release-review.md	Closed	`Readme.md:362-445`, `docs/manual-tests/`
+FR3-D7	2026-09-04-final-release-review.md	Closed	below
+FR3-D8	2026-09-04-final-release-review.md	Closed	below
+FR3-D9	2026-09-04-final-release-review.md	Closed	below
+FSR-C1	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C2	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C3	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C4	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C5	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C6	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C7	2026-08-24-fable-second-round.md	Closed	**fixed**
+FSR-C7	2026-08-24-reopen-audit.md	Closed	The fix **swapped the two comments**. Each now describes the other site; both are false wh
+FSR-D1	2026-08-24-fable-second-round.md	Closed	The latch ordering is sound now, and nothing else needed the latch
+FSR-D2	2026-08-24-fable-second-round.md	Closed	`!built` means what the exit assumes, and the remaining no-countdown cases predate the fix
+FSR-D3	2026-08-24-fable-second-round.md	Closed	The scan removal is clean, and the stateless `canRest` is genuinely state-independent
+FSR-D4	2026-08-24-fable-second-round.md	Closed	The carry-through cannot duplicate, null, self-select, or destroy
+FSR-D5	2026-08-24-fable-second-round.md	Closed	`testHomeStaging`: 60 tests, no duplicate names, green, and the new test's preconditions
+FSR-D6	2026-08-24-fable-second-round.md	Closed	`testEditorSurfaceRules`: well-formed after the deletion, nothing else depends on line end
+FSR-D7	2026-08-24-fable-second-round.md	Closed	MT-164's supersession follows the README, and the ledger is clean
+FSR-D8	2026-08-24-fable-second-round.md	Closed	The null-name path behind carried entries is unchanged, and still untraced
+FV-A1	2026-08-24-fix-verification.md	Closed	**Fixed** in `38ccbfc8`
+FV-A2	2026-08-24-fix-verification.md	Closed	Fixed (stated in the body)
+FV-B1	2026-08-02-final-validation-pass.md	Closed	Fixed - `Util.writeAtomically` stages and moves, used by all three writers; pinned by `tes
+FV-B1	2026-08-24-fix-verification.md	Closed	**Fixed** in `38ccbfc8`
+FV-B2	2026-08-24-fix-verification.md	Closed	Fixed (stated in the body)
+FV-C1	2026-08-02-final-validation-pass.md	Closed	Fixed - the document is trimmed to `DEBUG_LOG_MAX_CHARS` after each insert, preserving new
+FV-C1	2026-08-24-fix-verification.md	Closed	**Open**
+FV-C2	2026-08-24-fix-verification.md	Closed	**Open**
+FV-C3	2026-08-24-fix-verification.md	Closed	**Fixed**
+FV-D1	2026-08-02-final-validation-pass.md	Closed	Clean
+FV-D1	2026-08-24-fix-verification.md	Closed	Closed
+FV-D2	2026-08-02-final-validation-pass.md	Closed	Clean, except FV-C1
+FV-D3	2026-08-02-final-validation-pass.md	Closed	Ruled (stated in the body)
+FV2-A1	2026-09-01-fanout-index.md	Closed	`c9153aaf` (the winpid write, the fallback and the second opinion; this row said `f59fa45e
+FV2-A1	2026-09-01-fix-validation.md	Closed	open
+FV2-B1	2026-09-01-fix-validation.md	Closed	open
+FV2-B2	2026-09-01-fanout-index.md	Closed	`f59fa45e`
+FV2-B2	2026-09-01-fix-validation.md	Closed	open
+FV2-B3	2026-09-01-fanout-index.md	Closed	`c9153aaf`
+FV2-B3	2026-09-01-fix-validation.md	Closed	open
+FV2-C1	2026-09-01-fanout-index.md	Closed	`f59fa45e`
+FV2-C1	2026-09-01-fix-validation.md	Closed	open
+FV2-C10	2026-09-01-fanout-index.md	Closed	`f59fa45e`
+FV2-C10	2026-09-01-fix-validation.md	Closed	open
+FV2-C2	2026-09-01-fix-validation.md	Closed	open
+FV2-C3	2026-09-01-fix-validation.md	Closed	open
+FV2-C4	2026-09-01-fix-validation.md	Closed	open
+FV2-C5	2026-09-01-fanout-index.md	Closed	`f59fa45e`
+FV2-C5	2026-09-01-fix-validation.md	Closed	open
+FV2-C6	2026-09-01-fix-validation.md	Closed	open
+FV2-C7	2026-09-01-fanout-index.md	Closed	`f59fa45e`
+FV2-C7	2026-09-01-fix-validation.md	Closed	open
+FV2-C8	2026-09-01-fix-validation.md	Closed	open
+FV2-C9	2026-09-01-fix-validation.md	Closed	open
+FV2-D1	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FV2-D2	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FV2-D3	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FV2-D4	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FV2-D5	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FX2-1	2026-09-01-fanout-index.md	Closed	**Closed**
+FX2-2	2026-09-01-fanout-index.md	Closed	**Closed** (`6f729027`)
+FX2-3	2026-09-01-fanout-index.md	Closed	**Closed, accepted as-is**
+FX2-4	2026-09-01-fanout-index.md	Closed	**Closed**
+FX2-5	2026-09-01-fanout-index.md	Closed	**Closed** (`6f729027`)
+FX2-6	2026-09-01-fanout-index.md	Closed	**Withdrawn**
+FX2-D24	2026-09-01-fanout-index.md	Closed	1 A, 5 B, 11 C, 8 D
+FX2-R28	2026-09-01-fanout-index.md	Closed	1 A, 2 B, 5 C, 12 D
+GC-A1	2026-08-22-general-code-review.md	Closed	Half closed - the LAYOUT half is fixed in LayoutGrid and the false comment and test are co
+GC-A2	2026-08-22-general-code-review.md	Closed	Closed `3aa24314`+ - the teardown unmounts it, and the contract is pinned by test
+GC-B1	2026-08-22-general-code-review.md	Closed	Open
+GC-B2	2026-08-22-general-code-review.md	Closed	Closed - Ctrl+G handled above the autonomy-mode guard, since it is FOR autonomy mode
+GC-B3	2026-08-22-general-code-review.md	Closed	Closed - six added, and `testEveryTestIsInTheBattery` now fails when the list falls behind
+GC-C1	2026-08-22-general-code-review.md	Closed	Open
+GC-C2	2026-08-22-general-code-review.md	Closed	Open
+GC-C3	2026-08-22-general-code-review.md	Closed	Open
+GC-C4	2026-08-22-general-code-review.md	Closed	Open
+GC-C5	2026-08-22-general-code-review.md	Closed	Open
+GC-D1	2026-08-22-general-code-review.md	Closed	Recorded
+GC-D2	2026-08-22-general-code-review.md	Closed	Recorded
+GC-D3	2026-08-22-general-code-review.md	Closed	Recorded
+GC-D4	2026-08-22-general-code-review.md	Closed	Recorded
+GC-D5	2026-08-22-general-code-review.md	Closed	Recorded
+GC-D6	2026-08-22-general-code-review.md	Closed	Recorded
+GR-B1	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (`4753f57`) - validated; one residual recorded in the validation roun
+GR-C1	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (working tree at validation) - validated; scoped narrower than filed,
+GR-C2	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (working tree at validation) - validated; the finding's exposure clai
+GR-C3	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (working tree at validation) - validated
+GR-D1	2026-08-18-v3.0.0-branch-review.md	Closed	Recorded
+GR-D2	2026-08-18-v3.0.0-branch-review.md	Closed	Recorded
+HP-C1	2026-07-31-home-parity-review.md	Closed	Fixed - the sibling skip no longer tests isActive, so a train on a deactivated point close
+HP-C2	2026-07-31-home-parity-review.md	Closed	Fixed - `firstClearRoute` refuses an inactive origin, matching the rule `isPathClear` appl
+HP-C3	2026-07-31-home-parity-review.md	Closed	Fixed - the audit skips excluded destinations, symmetric with the inactive skip beside it.
+HP-C4	2026-07-31-home-parity-review.md	Closed	Fixed - homes are scanned pairwise for shared sections at plan time, so conflicting goals 
+HP-C5	2026-07-31-home-parity-review.md	Closed	Fixed - both entrances, not one: `confirmExclusion` clears the home on a worker, and `appl
+HP-C6	2026-07-31-home-parity-review.md	Closed	Fixed - all three: the deleted field's javadoc, the stranded `describe` javadoc, and the d
+HP-C7	2026-07-31-home-parity-review.md	Closed	Fixed - both consumers. The audit skips a locomotive whose origin is inactive, a third cor
+HP-C8	2026-07-31-home-parity-review.md	Closed	Fixed - `confirmExclusion` takes the apply-and-repaint work as a Runnable and runs it itse
+HP-C9	2026-07-31-home-parity-review.md	Closed	Fixed
+HS-B1	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated
+HS-B2	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated - and see HS-B6 for the entrance it does not cover
+HS-B3	2026-07-27-home-staging-review.md	Closed	**Partly fixed 2026-07-27** - the `canRest` half is fixed and validated; the A* exhaustion
+HS-B4	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated; one limitation recorded (mixed hardware)
+HS-B5	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27** - the wait is now `isRunning() && isCurrentLayout()`, and a reload se
+HS-B6	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27** - the guard moved from `timetableSequential` to a new `timetableExecu
+HS-C1	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated
+HS-C2	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27, amended** - the first fix moved the gap to placements; `Full` now carr
+HS-C3	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated
+HS-C4	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated
+HS-C5	2026-07-27-home-staging-review.md	Closed	**Fixed 2026-07-27**. Fix validated; the flag has one unset entrance, subsumed by `HS-B5`
+HS-D1	2026-07-27-home-staging-review.md	Closed	Recorded
+IAR-A1	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-A2	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-B1	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-B2	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-C1	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-C2	2026-08-24-independent-application-review.md	Closed	**Open**
+IAR-D1	2026-08-24-independent-application-review.md	Closed	**Withdrawn** — would have been a B
+IAR-D10	2026-08-24-independent-application-review.md	Closed	Scope, not a finding
+IAR-D2	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D3	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D4	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D5	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D6	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D7	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D8	2026-08-24-independent-application-review.md	Closed	Clean
+IAR-D9	2026-08-24-independent-application-review.md	Closed	Clean
+IC-B1	2026-08-28-independent-review.md	Closed	Ruled (stated in the body)
+IC-C1	2026-08-28-independent-review.md	Closed	open
+IC-C2	2026-08-28-independent-review.md	Closed	open
+IC-C3	2026-08-28-independent-review.md	Closed	open
+IC-D1	2026-08-28-independent-review.md	Closed	CS3 parser's throw-on-missing-key style: no real record misses a key
+IC-D2	2026-08-28-independent-review.md	Closed	Unconditional uid base subtraction in `parseLocomotivesCS3`: safe against all real uids
+IC-D3	2026-08-28-independent-review.md	Closed	`NetworkProxy` read end to end: clean
+IC-D4	2026-08-28-independent-review.md	Closed	CS3 id caches cannot go stale across syncs
+IC-D5	2026-08-28-independent-review.md	Closed	The `.S88Flag` fold-into-item oddity is load-bearing, and correct for the format
+IC-D6	2026-08-28-independent-review.md	Closed	Duplicate page names in the backup download: deliberate, and cannot occur on a real statio
+IND9-A1	IND9-independent-2026-09-07.md	Closed	Open
+IND9-B1	IND9-independent-2026-09-07.md	Closed	Open
+IND9-B2	IND9-independent-2026-09-07.md	Closed	Open
+IND9-B3	IND9-independent-2026-09-07.md	Closed	Open
+IND9-B4	IND9-independent-2026-09-07.md	Closed	Open - and worth a hands-on check before treating as confirmed
+IND9-B5	IND9-independent-2026-09-07.md	Closed	Open
+IND9-B6	IND9-independent-2026-09-07.md	Closed	Open
+IND9-C1	IND9-independent-2026-09-07.md	Closed	Open
+IND9-C2	IND9-independent-2026-09-07.md	Closed	Open
+IND9-C3	IND9-independent-2026-09-07.md	Closed	Open
+IND9-C4	IND9-independent-2026-09-07.md	Closed	Open
+IND9-C5	IND9-independent-2026-09-07.md	Closed	Open
+IP-A1	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
+IP-B1	2026-08-21-independent-pass.md	Closed	Open
+IP-B2	2026-08-21-independent-pass.md	Closed	Open
+IP-B3	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
+IP-B4	2026-08-21-independent-pass.md	Closed	Fixed for the page
+IP-C1	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
+IP-C2	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
+IP-C3	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
+IP-C4	2026-08-21-independent-pass.md	Closed	Fixed (stated in the body)
+IP-D1	2026-08-21-independent-pass.md	Closed	Clean
+IP-D2	2026-08-21-independent-pass.md	Closed	Clean
+IP-D3	2026-08-21-independent-pass.md	Closed	Not a defect
+IP-D4	2026-08-21-independent-pass.md	Closed	Not a defect
+IP-D5	2026-08-21-independent-pass.md	Closed	Clean
+IP-D6	2026-08-21-independent-pass.md	Closed	Clean
+IP-D7	2026-08-21-independent-pass.md	Closed	Not a defect (unreachable)
+IP-D8	2026-08-21-independent-pass.md	Closed	Not a defect
+IP-D9	2026-08-21-independent-pass.md	Closed	Not a defect (comment only)
+IPR-A1	2026-08-31-fanout-index.md	Closed	The same import wrote a station's CAPACITY into the track's LENGTH - two different measure
+IPR-A1	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 against the code - `AutonomySession:795` carries the fix and na
+IPR-A1	2026-09-03-release-review.md	Closed	**Adam**
+IPR-A2	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 - `AutonomyReport:131-139` reads `getDroppedTileProperties()` a
+IPR-A2	2026-09-03-release-review.md	Closed	reproduces
+IPR-B1	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 - `RouteEditorFrame:2407` and `:2418` both ask `hasAddress()` b
+IPR-B1	2026-09-03-release-review.md	Closed	reproduces
+IPR-B2	2026-08-31-independent-review.md	Closed	fixed - one token in `read`, and the finding's own trace is the test
+IPR-B2	2026-09-03-release-review.md	Closed	**fixed** - `read` recurses at `depth + 1`, not the row's own depth
+IPR-B3	2026-08-31-independent-review.md	Closed	fixed 2026-09-04 - a joiner closes every run deeper than itself, so two groups at one inde
+IPR-B3	2026-09-03-release-review.md	Closed	reproduces; **Adam**
+IPR-B4	2026-08-31-independent-review.md	Closed	fixed - reproduced at the finding's own numbers, 502 MB for a 296 x 114 icon
+IPR-B4	2026-09-03-release-review.md	Closed	**fixed** - reproduced at 18506 x 7120 / 502 MB; the overhang is built at the icon's size
+IPR-C1	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(..
+IPR-C1	2026-09-03-release-review.md	Closed	reproduces, with the bad state already in the data
+IPR-C2	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five n
+IPR-C2	2026-09-03-release-review.md	Closed	reproduces
+IPR-C3	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unco
+IPR-C3	2026-09-03-release-review.md	Closed	reproduces
+IPR-C4	2026-08-31-independent-review.md	Closed	**still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = mi
+IPR-C4	2026-09-03-release-review.md	Closed	mechanism reproduces; the rounding-to-zero half is unreadable
+IPR-C5	2026-08-31-independent-review.md	Closed	fixed - the comment names what actually stops the recursion (startAtCover's own guard) rat
+IPR-C5	2026-09-03-release-review.md	Closed	reproduces
+IPR-D1	2026-08-31-independent-review.md	Closed	-
+IPR-D2	2026-08-31-independent-review.md	Closed	-
+IPR-D3	2026-08-31-independent-review.md	Closed	-
+IPR-D4	2026-08-31-independent-review.md	Closed	-
+IPR-D5	2026-08-31-independent-review.md	Closed	-
+IPR-D6	2026-08-31-independent-review.md	Closed	-
+IPR-D7	2026-08-31-independent-review.md	Closed	-
+IR-A1	2026-08-22-independent-week-review.md	Closed	Fixed - the copy is on disk now
+IR-B1	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - guards, dispatch-loop fence and entry fence a
+IR-B1	2026-08-22-independent-week-review.md	Closed	Fixed - once per gesture
+IR-B2	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (working tree) - the snapshot is hoisted to the calling thread, so th
+IR-B2	2026-08-22-independent-week-review.md	Closed	Fixed - `execCopy` can keep quiet, like `delete`
+IR-B3	2026-08-22-independent-week-review.md	Closed	Fixed - the origin travels
+IR-B4	2026-08-22-independent-week-review.md	Closed	Fixed - said off the lock
+IR-C1	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28**. Fix validated - all four surfaces plus entry-deletion, the route-act
+IR-C1	2026-08-22-independent-week-review.md	Closed	Fixed
+IR-C2	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28**. Fix validated
+IR-C2	2026-08-22-independent-week-review.md	Closed	Fixed - both helpers parse
+IR-C3	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated at all seven sites; the point me
+IR-C3	2026-08-22-independent-week-review.md	Closed	Fixed - the documented order
+IR-C4	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated; the two sibling call sites that
+IR-C4	2026-08-22-independent-week-review.md	Closed	-
+IR-C5	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - validated as a large narrowing; the copy itse
+IR-C5	2026-08-22-independent-week-review.md	Closed	Fixed
+IR-C6	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`) - the hot twin is synchronized and the repaint copies und
+IR-C6	2026-08-22-independent-week-review.md	Closed	Fixed - the precondition is asserted
+IR-C7	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`). Fix validated - the new arm routes through `describeStag
+IR-C7	2026-08-22-independent-week-review.md	Closed	Fixed - and the first fix for it was vacuous too
+IR-C8	2026-07-28-independent-full-review.md	Closed	**Fixed 2026-07-28** (`62a89e9`). Fix validated - the flag lives on the Layout, the model 
+IR-C9	2026-07-28-independent-full-review.md	Closed	**Open** - filed by the sixth round
+IR-C9	2026-08-22-independent-week-review.md	Closed	-
+IR-D1	2026-07-28-independent-full-review.md	Closed	Recorded
+IR-D2	2026-07-28-independent-full-review.md	Closed	Recorded
+IR-D3	2026-07-28-independent-full-review.md	Closed	Recorded
+IR-D4	2026-07-28-independent-full-review.md	Closed	Recorded
+IR-D5	2026-07-28-independent-full-review.md	Closed	Recorded
+ISD-A1	2026-08-24-independent-seven-days.md	Closed	**Fixed** in `38ccbfc8`
+ISD-A2	2026-08-24-independent-seven-days.md	Closed	**Fixed** in `38ccbfc8` (= `FV-A2`)
+ISD-A3	2026-08-24-independent-seven-days.md	Closed	**Fixed** in `38ccbfc8`
+ISD-A4	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-072`
+ISD-A5	2026-08-24-independent-seven-days.md	Closed	Fixed (stated in the body)
+ISD-B1	2026-08-24-independent-seven-days.md	Closed	**Fixed** in `a2decb01` — `OB-068`, MT-148
+ISD-B2	2026-08-24-independent-seven-days.md	Closed	**Fixed (locomotive half)** in `a2decb01` — `OB-069`, MT-149; the STATION half remains ope
+ISD-B3	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-070`
+ISD-B4	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-074`
+ISD-B5	2026-08-24-independent-seven-days.md	Closed	**Fixed** in `38ccbfc8` (= `FV-B1`)
+ISD-B6	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-071`
+ISD-B7	2026-08-24-independent-seven-days.md	Closed	**Open** — recorded in MT-142
+ISD-B8	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-075`
+ISD-B9	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-076`
+ISD-C1	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-077`
+ISD-C2	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-078`
+ISD-C3	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-079`
+ISD-C4	2026-08-24-independent-seven-days.md	Closed	**Open**
+ISD-D1	2026-08-24-independent-seven-days.md	Closed	**Withdrawn** — originally raised at B
+ISD-D2	2026-08-24-independent-seven-days.md	Closed	Closed
+ISD-D3	2026-08-24-independent-seven-days.md	Closed	**Open** — `OB-080`
+LD-A1	2026-08-25-last-day.md	Closed	fixed in `0665608e`, [MT-191](../manual-tests/tests.md#mt-191)
+LD-A2	2026-08-25-last-day.md	Closed	fixed in `5d4d3dd0`
+LD-A3	2026-08-25-last-day.md	Closed	fixed in `0665608e`, [MT-189](../manual-tests/tests.md#mt-189)
+LD-A4	2026-08-25-last-day.md	Closed	fixed in `0665608e`
+LD-A5	2026-08-25-last-day.md	Closed	fixed in `b75876fa`
+LD-A6	2026-08-25-last-day.md	Closed	fixed in `b75876fa`, [MT-184](../manual-tests/tests.md#mt-184)
+LD-B1	2026-08-25-last-day.md	Closed	fixed in `b75876fa`
+LD-B2	2026-08-25-last-day.md	Closed	fixed in `b75876fa`
+LD-B3	2026-08-25-last-day.md	Closed	fixed in `7bd0e10a`
+LD-B4	2026-08-25-last-day.md	Closed	fixed in `7bd0e10a`
+LD-B5	2026-08-25-last-day.md	Closed	fixed in `7bd0e10a`
+LD-B6	2026-08-25-last-day.md	Closed	fixed in `b75876fa`
+LD-B7	2026-08-25-last-day.md	Closed	fixed in `21cd6d89`
+LD-C1	2026-08-25-last-day.md	Closed	fixed in `7bd0e10a`
+LD-C2	2026-08-25-last-day.md	Closed	fixed in `7bd0e10a`
+LD-C3	2026-08-25-last-day.md	Closed	fixed in `21cd6d89`
+LD-C4	2026-08-25-last-day.md	Closed	fixed in `21cd6d89`
+LD-C5	2026-08-25-last-day.md	Closed	fixed in `21cd6d89`
+LD-C6	2026-08-25-last-day.md	Closed	open
+LD-C7	2026-08-25-last-day.md	Closed	open
+LD-C8	2026-08-25-last-day.md	Closed	open
+LD-C9	2026-08-25-last-day.md	Closed	open, waiting on MT-140
+LD-D1	2026-08-25-last-day.md	Closed	offered as a fourth bad case under A2; **withdrawn**
+LD-D2	2026-08-25-last-day.md	Closed	reported as an amplifier of A1; **withdrawn**
+LD-D3	2026-08-25-last-day.md	Closed	checked clean, byte-identical on the real configuration
+LD-D4	2026-08-25-last-day.md	Closed	checked clean
+LD-D5	2026-08-25-last-day.md	Closed	checked clean
+LD-D6	2026-08-25-last-day.md	Closed	examined, not ranked
+LE-A1	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-A2	2026-08-30-layout-editor-review.md	Closed	withdrawn - see *What the pass got wrong*
+LE-A3	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-A4	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-A5	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-A6	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-A7	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-B1	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-B2	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-B3	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-B4	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-B5	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-B6	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C1	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-C10	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C11	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C2	2026-08-30-layout-editor-review.md	Closed	fixed, `regression.testTheEditorTellsAutonomy`
+LE-C3	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C4	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C5	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C6	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C7	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C8	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-C9	2026-08-30-layout-editor-review.md	Closed	fixed
+LE-D1	2026-08-30-layout-editor-review.md	Closed	-
+LE-D2	2026-08-30-layout-editor-review.md	Closed	-
+LE-D3	2026-08-30-layout-editor-review.md	Closed	-
+LE-D3	2026-09-03-release-review.md	Closed	unreadable
+LT-A1	2026-08-21-layout-test-feedback.md	Closed	Fixed - it was the station LABEL, which resolves to no Point
+LT-A2	2026-08-21-layout-test-feedback.md	Closed	Fixed - the capture pruned by Point, not by tile
+LT-A3	2026-08-21-layout-test-feedback.md	Closed	Fixed - same prune as A2; confirmed by Adam on a re-run
+LT-A4	2026-08-21-layout-test-feedback.md	Closed	Reported, not corrected - a new check names the square
+LT-A5	2026-08-21-layout-test-feedback.md	Closed	Fixed - sensors reached the view through nothing at all
+LT-A6	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-A7	2026-08-21-layout-test-feedback.md	Closed	Fixed - twice; see below
+LT-A8	2026-08-21-layout-test-feedback.md	Closed	Fixed - a bulk edit told the setup nothing at all
+LT-A9	2026-08-21-layout-test-feedback.md	Closed	Fixed - it landed on its own label
+LT-B1	2026-08-21-layout-test-feedback.md	Closed	Fixed - the tab is put back rather than the culprit hunted
+LT-B2	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-B3	2026-08-21-layout-test-feedback.md	Closed	Fixed - Adam named it exactly: the fade is the inverse of the status
+LT-B4	2026-08-21-layout-test-feedback.md	Closed	Fixed - the javadoc always said blocking
+LT-B5	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-B6	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-C1	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-C2	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-C3	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-C4	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-C5	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-D1	2026-08-21-layout-test-feedback.md	Closed	Bring tests 26-41 into the manual list itself rather than pointing at two other documents 
+LT-F1	2026-08-21-layout-test-feedback.md	Closed	**Done** - opens the autonomy editor at that station; does nothing while autonomy is runni
+LT-F2	2026-08-21-layout-test-feedback.md	Closed	**Done** - a sidebar of pages and modes; the Edit button no longer asks. See the notes bel
+LT-M1	2026-08-21-layout-test-feedback.md	Closed	Fixed, then amended - see LT-M9
+LT-M10	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M11	2026-08-21-layout-test-feedback.md	Closed	Fixed - see the note on what "save/exit checks" was taken to mean
+LT-M2	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M3	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M4	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M5	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M6	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M7	2026-08-21-layout-test-feedback.md	Closed	Fixed - station, turning, arrivals, departures and links all headed
+LT-M8	2026-08-21-layout-test-feedback.md	Closed	Fixed
+LT-M9	2026-08-21-layout-test-feedback.md	Closed	Fixed - it is not the duplicate the other two were
+MB-B1	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on master** `68d78e4`
+MB-C1	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on master** `68d78e4`
+MB-C2	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280`
+MB-C3	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280`
+MB-D1	2026-08-18-v2.8.1-master-review.md	Closed	Recorded
+MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
+MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
+MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
+MON-B3	MON-month-2026-09-07.md	Closed	Fixed 2026-09-07 - the mechanism paragraph rewritten; the retracted rule had gone with REG
+MON-B4	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
+MON-B5	MON-month-2026-09-07.md	Closed	Open - and being answered the only way it can be: Adam has been driving the release throug
+MON-C1	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the narrowed set is trusted once, from the parameter, where the decisio
+MON-C10	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - REG8's table checked against HEAD, IND9's summary says where the truth 
+MON-C11	MON-month-2026-09-07.md	Closed	Open - the consolidation decision, and the one item here that is Adam's rather than mine: 
+MON-C12	MON-month-2026-09-07.md	Closed - was awaiting your decision	Deferred by its own finding - no work before 3.0.0; belongs with the decomposition roadmap
+MON-C13	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - both limits stated in behaviour.md section 5, with which of the two to 
+MON-C14	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - CONFIRMED reachable by a new test, and behaviour.md was the wrong half:
+MON-C15	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - five citations now name methods rather than line numbers, and the mid-r
+MON-C16	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - three rows are one ruling of Adam's own, quoted; the fourth says it is 
+MON-C17	MON-month-2026-09-07.md	Closed	Recorded 2026-09-08 in test/README.md, with what would close it
+MON-C17..C21	MON-month-2026-09-07.md	Closed	-
+MON-C18	MON-month-2026-09-07.md	Closed	Recorded 2026-09-08 in test/README.md, with what would close it
+MON-C19	MON-month-2026-09-07.md	Closed	Recorded 2026-09-08 in test/README.md - awareness rather than a mechanical fix
+MON-C2	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - countDestinations asks isSendableDestination; it was overcounting by ev
+MON-C20	MON-month-2026-09-07.md	Closed	Partly fixed 2026-09-08 - the README counts are right again (stale by 34); the one-railway
+MON-C21	MON-month-2026-09-07.md	Closed	Recorded 2026-09-08 in test/README.md, with what would close it
+MON-C3	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the written-once guard sweeps every source file rather than one, with f
+MON-C4	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the comment said the check was a no-op; it is a tightening, and a comme
+MON-C5	MON-month-2026-09-07.md	Closed	Ruled (stated in the body)
+MON-C6	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - four javadocs and two traced statements now state the total-of-what-is-
+MON-C7	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
+MON-C8	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the index re-counted against its own sections; three other documents qu
+MON-C9	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the arithmetic recorded, and BOTH unadjudicated sub-findings ruled: C19
+NR-1	2026-08-23-night-review.md	Closed	Medium-high
+NR-2	2026-08-23-night-review.md	Closed	High
+NR-3	2026-08-23-night-review.md	Closed	High
+NR-4	2026-08-23-night-review.md	Closed	High
+NR-5	2026-08-23-night-review.md	Closed	High
+NR-6	2026-08-23-night-review.md	Closed	High
+NR-7	2026-08-23-night-review.md	Closed	High
+NR-8	2026-08-23-night-review.md	Closed	High
+NR-9	2026-08-23-night-review.md	Closed	Medium
+OPV-B1	2026-09-04-opus-validation.md	Closed	fixed for the finding's headline case - `testALockPhaseFailureLeavesTheTrainWhereItStands`
+OPV-C1	2026-09-04-opus-validation.md	Closed	fixed - the key is `block`, and each of the three markers is now asserted separately, beca
+OPV-C2	2026-09-04-opus-validation.md	Closed	fixed - the ACC-C2 disposition now says the paragraph is in the generator and the checked-
+OPV-C3	2026-09-04-opus-validation.md	Closed	fixed - the lead sentence no longer says "chosen at random", and the duplicated paragraph 
+OPV-C4	2026-09-04-opus-validation.md	Closed	fixed - the ellipsis is added after the More Destinations submenu, so it is the last item 
+OPV-C5	2026-09-04-opus-validation.md	Closed	fixed both halves - the flag rides on `sayIfDeclined`, which is exactly "this door carried
+OPV-C6	2026-09-04-opus-validation.md	Closed	fixed - both citations name the statement (`the activeLocomotives.put in executePathIntern
+OPV-C7	2026-09-04-opus-validation.md	Closed	fixed - the paragraph is folded into the javadoc of the `paint()` that carries it, so the 
+OPV-D1	2026-09-04-opus-validation.md	Closed	`Layout.java:5111-5220, 5391-5414`
+OPV-D10	2026-09-04-opus-validation.md	Closed	`AutonomySession.java:940-968`
+OPV-D11	2026-09-04-opus-validation.md	Closed	`TrainControlUI.java:569-590`
+OPV-D12	2026-09-04-opus-validation.md	Closed	`2026-09-04-release-acceptance-review.md:3`
+OPV-D13	2026-09-04-opus-validation.md	Closed	`LayoutEditor.java:435, 571, 595, 607`
+OPV-D14	2026-09-04-opus-validation.md	Closed	`LayoutEditor.java:3961-3972, 5029`
+OPV-D15	2026-09-04-opus-validation.md	Closed	below
+OPV-D2	2026-09-04-opus-validation.md	Closed	`Layout.java:5115`, `testAutoLayout.java:1349`
+OPV-D3	2026-09-04-opus-validation.md	Closed	`HomeStaging.java:996, 1060, 1731-1805`
+OPV-D4	2026-09-04-opus-validation.md	Closed	`src/org/traincontrol/resources/`
+OPV-D5	2026-09-04-opus-validation.md	Closed	`LayoutRightclickAutonomyMenu.java:403-440`
+OPV-D6	2026-09-04-opus-validation.md	Closed	`LayoutGrid.java:704-780`, `AxisRuler.java`
+OPV-D7	2026-09-04-opus-validation.md	Closed	`TrainControlUI.java:227-263`
+OPV-D8	2026-09-04-opus-validation.md	Closed	`master:Point.java:493-581`
+OPV-D9	2026-09-04-opus-validation.md	Closed	below
+OV2-B1	2026-09-04-second-validation.md	Closed	fixed - the test is re-aimed at the lock loop with the injection this finding supplies (a 
+OV2-C1	2026-09-04-second-validation.md	Closed	fixed - the escape is lifted out of the `otherPaths` branch entirely, so it fires whenever
+OV2-C2	2026-09-04-second-validation.md	Closed	documented rather than changed - the unreachability is now written at the flag: the editor
+OV2-C3	2026-09-04-second-validation.md	Closed	fixed, and swept - the third site logs, and `testEverySaveOfTheSetupReadsWhetherItWorked` 
+OV2-C4	2026-09-04-second-validation.md	Closed	fixed - the third citation names `autonomyEditorClosed()`
+OV2-C5	2026-09-04-second-validation.md	Closed	fixed - one `wouldCapture` predicate, asked once, carrying every term including the sessio
+OV2-D1	2026-09-04-second-validation.md	Closed	`AutonomySession.java:1025`, `testAutonomyDiagramSession.java:5811`
+OV2-D10	2026-09-04-second-validation.md	Closed	below
+OV2-D11	2026-09-04-second-validation.md	Closed	below
+OV2-D2	2026-09-04-second-validation.md	Closed	`AutonomySession.java:667-695`
+OV2-D3	2026-09-04-second-validation.md	Closed	`LayoutGrid.java:740-778`
+OV2-D4	2026-09-04-second-validation.md	Closed	`LayoutRightclickAutonomyMenu.java:366, 403, 488`
+OV2-D5	2026-09-04-second-validation.md	Closed	`ConditionOutline.java:178-188, 230-299`
+OV2-D6	2026-09-04-second-validation.md	Closed	`Layout.java:5103, 5205, 5213, 5216`
+OV2-D7	2026-09-04-second-validation.md	Closed	`TrainControlUI.java:2286-2299`
+OV2-D8	2026-09-04-second-validation.md	Closed	`2026-09-04-release-acceptance-review.md:289`
+OV2-D9	2026-09-04-second-validation.md	Closed	below
+PARITY-901	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
+PARITY-902	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
+PARITY-903	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
+PARITY-904	2026-09-03-parity-report.md	Closed	1 of 2 variant(s) gone
+PV-B1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-C1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-C2	2026-07-27-post-cycle-verification.md	Closed	**Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope
+PV-C3	2026-07-27-post-cycle-verification.md	Closed	**Fixed 2026-07-27**. Fix validated
+PV-C4	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-C5	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-C6	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-C7	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
+PV-D1	2026-07-27-post-cycle-verification.md	Closed	Recorded
+R28-A1	2026-09-01-regression-vs-2.8.1-review.md	Closed	**half fixed**, verified 2026-09-04 - the silence is gone: `MarklinControlStation:3010` lo
+R28-B1	2026-09-01-regression-vs-2.8.1-review.md	Closed	**half fixed**, verified 2026-09-04 - the loss is now reported: `AutonomySession:920-944` 
+R28-B1	2026-09-03-release-review.md	Closed	a legacy `autonomy.json`'s per-edge accessory commands are dropped on import and cannot be
+R28-B2	2026-09-01-regression-vs-2.8.1-review.md	Closed	WITHDRAWN IN FULL
+R28-B2	2026-09-03-release-review.md	Closed	**restored by `B4` above**
+R28-C1	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02 (`1cfdf370`)
+R28-C1	2026-09-02-fanout-index.md	Closed	**Clear All Home Locomotives**, which Adam asked for back, with its 2.8.1 confirmation
+R28-C2	2026-09-01-regression-vs-2.8.1-review.md	Closed	DECLINED 2026-09-02
+R28-C2	2026-09-03-release-review.md	Closed	"Copy Outgoing Edge..." is gone with no equivalent; the HEAD connections submenu has nothi
+R28-C3	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED - both constants are gone from the tree (verified 2026-09-03). The display half is a
+R28-C3	2026-09-03-release-review.md	Closed	`SHOW_HOME_LOCOMOTIVES` and `HIDE_REVERSING_EDGES_PREF` survive as dead constants and the 
+R28-C4	2026-09-01-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the key is out of all eight bundles, with the four `autosetup.ui.layer*
+R28-C5	2026-09-01-regression-vs-2.8.1-review.md	Closed	2026-09-02: one restored, one DECLINED
+R28-C5	2026-09-03-release-review.md	Closed	the graph window's Ctrl+S (s88 address) and Ctrl+H (home locomotive) have mouse-only succe
+R28-D1	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D10	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D11	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D12	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D2	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D3	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D4	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D5	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D6	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D7	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D8	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+R28-D9	2026-09-01-regression-vs-2.8.1-review.md	Closed	-
+RA-C1	2026-08-24-reopen-audit.md	Closed	Open — **reopen FSR-C7**
+RA-C2	2026-08-24-reopen-audit.md	Closed	Open
+RA-C3	2026-08-24-reopen-audit.md	Closed	Open
+RA-C4	2026-08-24-reopen-audit.md	Closed	Open
+RA-D1	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D10	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D11	2026-08-24-reopen-audit.md	Closed	Guards, for its stated reason
+RA-D12	2026-08-24-reopen-audit.md	Closed	Guards, for its stated reason
+RA-D13	2026-08-24-reopen-audit.md	Closed	Can fail, in charter
+RA-D14	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D15	2026-08-24-reopen-audit.md	Closed	All hold
+RA-D16	2026-08-24-reopen-audit.md	Closed	All accurate
+RA-D17	2026-08-24-reopen-audit.md	Closed	Hold
+RA-D18	2026-08-24-reopen-audit.md	Closed	All still accurate
+RA-D19	2026-08-24-reopen-audit.md	Closed	Clean
+RA-D2	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D3	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D4	2026-08-24-reopen-audit.md	Closed	Clean
+RA-D5	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D6	2026-08-24-reopen-audit.md	Closed	Holds (residual: RA-C3)
+RA-D7	2026-08-24-reopen-audit.md	Closed	Holds, measured
+RA-D8	2026-08-24-reopen-audit.md	Closed	Holds
+RA-D9	2026-08-24-reopen-audit.md	Closed	Holds
+RC-A1	2026-08-30-release-candidate-review.md	Closed	fixed, `regression.testLayoutEditorBulkEdits` (two tests)
+RC-A2	2026-08-30-release-candidate-review.md	Closed	fixed, `regression.testTheRoutingChoiceSurvivesTheUpgrade` (new class, two tests)
+RC-A3	2026-08-30-release-candidate-review.md	Closed	fixed, `regression.testLayoutFolderRobustness` (three tests)
+RC-A4	2026-08-30-release-candidate-review.md	Closed	fixed, `regression.testLayoutFolderRobustness`
+RC-A5	2026-08-30-release-candidate-review.md	Closed	fixed
+RC-B1	2026-08-30-release-candidate-review.md	Closed	fixed, `regression.testLayoutEditorBulkEdits`
+RC-B2	2026-08-30-release-candidate-review.md	Closed	fixed, `core.testRoutePicking` (two tests)
+RC-B3	2026-08-30-release-candidate-review.md	Closed	fixed
+RC-B4	2026-08-30-release-candidate-review.md	Closed	fixed
+RC-B5	2026-08-30-release-candidate-review.md	Closed	fixed, `core.testRoutePicking` (two tests)
+RC-C1	2026-08-30-release-candidate-review.md	Closed	-
+RC-C10	2026-08-30-release-candidate-review.md	Closed	-
+RC-C11	2026-08-30-release-candidate-review.md	Closed	-
+RC-C12	2026-08-30-release-candidate-review.md	Closed	Fixed (stated in the body)
+RC-C2	2026-08-30-release-candidate-review.md	Closed	-
+RC-C3	2026-08-30-release-candidate-review.md	Closed	-
+RC-C4	2026-08-30-release-candidate-review.md	Closed	-
+RC-C5	2026-08-30-release-candidate-review.md	Closed	-
+RC-C6	2026-08-30-release-candidate-review.md	Closed	-
+RC-C7	2026-08-30-release-candidate-review.md	Closed	-
+RC-C8	2026-08-30-release-candidate-review.md	Closed	-
+RC-C9	2026-08-30-release-candidate-review.md	Closed	-
+REG6-A1	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-A2	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-B1	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-B2	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-B3	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-B4	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-B5	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C1	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C2	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C3	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C4	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C5	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-C6	REG6-regressions-2026-09-06.md	Closed	Open
+REG6-D1	REG6-regressions-2026-09-06.md	Closed	-
+REG7-A1	REG7-regressions-2026-09-07.md	Closed	Cancelled 2026-09-07 - fixed in 5f492d9f, then dissolved by d45d7951
+REG7-A2	REG7-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 - 82e10084
+REG7-B1	REG7-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 - 8f006b3a and 073ab12a
+REG7-B2	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-B3	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-B4	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-C1	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-C2	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-C3	REG7-regressions-2026-09-07.md	Closed	Open
+REG7-D1	REG7-regressions-2026-09-07.md	Closed	Recorded
+REG8-A1	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (95c09ac4) - the build applies the arrival side AFTER placing the locomot
+REG8-B1	REG8-regressions-2026-09-07.md	Closed	Open - the late-echo race, still only reachable by a run. Same finding as IND9-B6
+REG8-B2	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (51a6a971) - both doors go through GraphLocAssign.commitAndRecord, which 
+REG8-C1	REG8-regressions-2026-09-07.md	Closed	Fixed - behaviour.md carries one rule for each; the arrival-side half was settled by Adam'
+REG8-C2	REG8-regressions-2026-09-07.md	Closed	Fixed - the refusal sentence is gone from behaviour.md
+REG8-C3	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-08 (MON-C6 sweep) - the call-site comment and three javadocs now state the t
+REG8-C4	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (1bd81f53) - the test's rationale names the idle reconcile, and its guard
+REG8-C5	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (1bd81f53) - the three orphan keys are gone from all eight bundles
+REG8-C6	REG8-regressions-2026-09-07.md	Closed	Open
+REL-A1	2026-09-03-release-review.md	Closed	`LayoutLabel.java:655`, `:1459`
+REL-A2	2026-09-03-release-review.md	Closed	`AutonomySession.java:3051`, `Layout.java:7718/7744/7779/7818`
+REL-B1	2026-09-03-release-review.md	Closed	`AutonomySession.java:3434`
+REL-B2	2026-09-03-release-review.md	Closed	`docs/tools/one.sh:110-138`
+REL-B3	2026-09-03-release-review.md	Closed	`TrainControlUI.java:923-928` vs `master:704`
+REL-B4	2026-09-03-release-review.md	Closed	`AutonomyMenu.java:326, :445`, `TrainControl.java:23`
+REL-C1	2026-09-03-release-review.md	Closed	`MarklinControlStation.java:3878, 3990, 4000`
+REL-C10	2026-09-03-release-review.md	Closed	`docs/tools/battery.sh:252, :307`
+REL-C11	2026-09-03-release-review.md	Closed	`messages.properties:1538`, `AutonomySession.java:2018`
+REL-C12	2026-09-03-release-review.md	Closed	`messages.properties:1916-1917`
+REL-C13	2026-09-03-release-review.md	Closed	`CommandRow.java:239-273`, `RouteEditorFrame.java:3415-3419`
+REL-C14	2026-09-03-release-review.md	Closed	`2026-09-02-first-validation.md:576, :579`
+REL-C15	2026-09-03-release-review.md	Closed	`AutonomyEditorPanel.java:2084`, `TrainControlUI.java:24593`, and sixteen more
+REL-C16	2026-09-03-release-review.md	Closed	`Edge.java:452-458`, `Layout.java:2947-2949`
+REL-C2	2026-09-03-release-review.md	Closed	`AutonomySession.java:5369`
+REL-C3	2026-09-03-release-review.md	Closed	`docs/tools/one.sh:242`
+REL-C4	2026-09-03-release-review.md	Closed	`AutonomyEditorPanel.java:6720`
+REL-C5	2026-09-03-release-review.md	Closed	`AutonomySession.java:4337`
+REL-C6	2026-09-03-release-review.md	Closed	`Layout.java:2367, 2422`
+REL-C7	2026-09-03-release-review.md	Closed	`AutonomyEditorPanel.java:6665`
+REL-C8	2026-09-03-release-review.md	Closed	`LayoutEditor.java:4875`
+REL-C9	2026-09-03-release-review.md	Closed	`docs/tools/battery.sh:297-305`
+REL-D1	2026-09-03-release-review.md	Closed	`TrainControlUI.java:5243`
+REL-D10	2026-09-03-release-review.md	Closed	below
+REL-D11	2026-09-03-release-review.md	Closed	-
+REL-D12	2026-09-03-release-review.md	Closed	below
+REL-D13	2026-09-03-release-review.md	Closed	-
+REL-D14	2026-09-03-release-review.md	Closed	below
+REL-D15	2026-09-03-release-review.md	Closed	-
+REL-D2	2026-09-03-release-review.md	Closed	`MarklinControlStation.java:3835-4042`
+REL-D3	2026-09-03-release-review.md	Closed	`AutoLocomotiveStatus.java:90`
+REL-D4	2026-09-03-release-review.md	Closed	`AutonomyChecks.java`, `HomeStaging.java`
+REL-D5	2026-09-03-release-review.md	Closed	`messages.properties`
+REL-D6	2026-09-03-release-review.md	Closed	`AutonomySession.java:4394`
+REL-D7	2026-09-03-release-review.md	Closed	`HomeStaging.java:1063, 699`
+REL-D8	2026-09-03-release-review.md	Closed	`AutonomySession.java:2143`
+REL-D9	2026-09-03-release-review.md	Closed	-
+RG3-B1	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02 (`11e06d6d`, committed `76d7bb70`)
+RG3-B2	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
+RG3-C1	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
+RG3-C2	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
+RG3-C3	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
+RG3-C3	2026-09-03-release-review.md	Closed	the legacy track diagram editor's menu item is removed on only one of the two branches (`T
+RG3-C4	2026-09-02-regression-vs-2.8.1-review.md	Closed	**declined on Adam's answer, 2026-09-04** - the same question as `RG3-C4`, which he answer
+RG3-C4	2026-09-03-release-review.md	Closed	"Test Connection" - Adam's question, carried in MT-260's tail
+RG3-C5	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the changelog says a column on the right and a row at the bottom, which
+RG3-C6	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-03 - the four keys are gone from all eight bundles, with `route.ui.errorUnus
+RG3-D1	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D10	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D11	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D12	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D13	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D2	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D3	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D4	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D5	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D6	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D7	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D8	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-D9	2026-09-02-regression-vs-2.8.1-review.md	Closed	-
+RG3-R28	2026-09-02-regression-vs-2.8.1-review.md	Closed	evidence at `cf048f9b`
+RG4-B1	2026-09-04-regression-sweep-3.0.0.md	Closed	closed. Code half fixed. Adam, 2026-09-04: **"I haven't finished the other signals yet, so
+RG4-B2	2026-09-04-regression-sweep-3.0.0.md	Closed	closed - not a regression. Adam, 2026-09-04: **"These are all valid."** All three pairs ma
+RG4-C1	2026-09-04-regression-sweep-3.0.0.md	Closed	closed - tuning. Adam, 2026-09-04: **"c1 pacing is my testing."** The three values are del
+RG4-C2	2026-09-04-regression-sweep-3.0.0.md	Closed	fixed
+RG4-C3	2026-09-04-regression-sweep-3.0.0.md	Closed	fixed
+RG4-D1	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D10	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D11	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D12	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D13	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D14	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D15	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D16	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D2	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D3	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D4	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D5	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D6	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D7	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D8	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG4-D9	2026-09-04-regression-sweep-3.0.0.md	Closed	-
+RG5-B1	2026-09-05-fable-regression.md	Closed	fixed - and the finding was right about the provenance line. The cause was the 120ms grace
+RG5-C1	2026-09-05-fable-regression.md	Closed	closed - the finding's mechanism was wrong and its conclusion was right. Adam, 2026-09-05:
+RG5-C2	2026-09-05-fable-regression.md	Closed	fixed - the scan now counts `owner.removeAll()` as well as `parent.removeAll()`, and pins 
+RG5-D1	2026-09-05-fable-regression.md	Closed	-
+RG5-D2	2026-09-05-fable-regression.md	Closed	-
+RG5-D3	2026-09-05-fable-regression.md	Closed	-
+RG5-D4	2026-09-05-fable-regression.md	Closed	-
+RG5-D5	2026-09-05-fable-regression.md	Closed	-
+RG5-D6	2026-09-05-fable-regression.md	Closed	-
+RG5-D7	2026-09-05-fable-regression.md	Closed	-
+RGD-B1	RGD-regression-2026-09-07.md	Closed	Open
+RGD-B2	RGD-regression-2026-09-07.md	Closed	Open
+RGD-C1	RGD-regression-2026-09-07.md	Closed	Fixed. behaviour.md described putIfAbsent backwards; it now states which half does what, a
+RGD-C2	RGD-regression-2026-09-07.md	Closed	Open
+RGD-C3	RGD-regression-2026-09-07.md	Closed	Fixed. The mode is applied to the text switch at open too, and Control+L moves the dropdow
+RGD-C4	RGD-regression-2026-09-07.md	Closed	Fixed. A recorded side the geometry does not offer is added to the menu and ticked, as OB-
+RGD-C5	RGD-regression-2026-09-07.md	Closed	Fixed. One reader: getLocomotiveNameAt delegates to nameOfPlacedLocomotive, which now know
+RGD-C6	RGD-regression-2026-09-07.md	Closed	Fixed. The false claim is gone and the comment says why the window test is used instead.
+RGD-C7	RGD-regression-2026-09-07.md	Closed	Fixed. Drained names are put back when the write does not happen, in a finally. Tested beh
+RGN-A1	2026-08-31-fanout-index.md	Closed	Importing a 2.7.4c `autonomy.json` kept only the points: thirteen run-wide settings and th
+RGN-A1	2026-08-31-regression-review.md	Closed	fixed, verified 2026-09-04 - `importLegacy` now reads `edges` (`:925`), `timetable` (`:946
+RGN-A1	2026-09-03-release-review.md	Closed	**Adam**
+RGN-A2	2026-08-31-regression-review.md	Closed	fixed, verified 2026-09-04 - the gate reads `valid && loaded && isLocalLayout()`, and `loa
+RGN-A2	2026-09-03-release-review.md	Closed	reproduces; **Adam**, and he asked for a test
+RGN-B1	2026-08-31-regression-review.md	Closed	fixed - it is announced now, in the changelog and in the log
+RGN-B1	2026-09-03-release-review.md	Closed	**fixed** - announced in the changelog and in the start-up log; what it does is unchanged
+RGN-B2	2026-08-31-regression-review.md	Closed	closed - descriptions fixed; behaviour ruled unchanged by Adam, 2026-09-03
+RGN-B2	2026-09-03-release-review.md	Closed	**descriptions fixed** - changelog and both log messages now say what the code does; the b
+RGN-B3	2026-08-31-regression-review.md	Closed	fixed - moved to v2.8.0, not v3.0.0; see below
+RGN-B3	2026-09-03-release-review.md	Closed	**fixed** - both bullets moved to v2.8.0, which is where the commits landed
+RGN-C1	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSel
+RGN-C1	2026-09-03-release-review.md	Closed	reproduces
+RGN-C2	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, s
+RGN-C2	2026-09-03-release-review.md	Closed	not a defect
+RGN-C3	2026-08-31-regression-review.md	Closed	**needs Adam's ruling** - the comment claiming three doors is corrected to say which doors
+RGN-C3	2026-09-03-release-review.md	Closed	reproduces; whether a real locomotive is affected needs **Adam**'s database
+RGN-C4	2026-08-31-regression-review.md	Closed	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins
+RGN-C4	2026-09-03-release-review.md	Closed	reproduces, permanent by construction
+RGN-D1	2026-08-31-regression-review.md	Closed	-
+RGN-D2	2026-08-31-regression-review.md	Closed	-
+RGN-D3	2026-08-31-regression-review.md	Closed	-
+RGN-D4	2026-08-31-regression-review.md	Closed	-
+RGN-D5	2026-08-31-regression-review.md	Closed	-
+RGN-D6	2026-08-31-regression-review.md	Closed	-
+RGN-D7	2026-08-31-regression-review.md	Closed	-
+RGN-D8	2026-08-31-regression-review.md	Closed	-
+RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito
+RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits
+RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**
+RR-C4	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**
+RR-C5	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**
+RR-D1	2026-07-27-regression-review.md	Closed	Recorded
+RS-C1	2026-08-02-pre-release-sweep.md	Closed	Fixed - `split("=", 2)`, matching its twin; pinned by `testAMultiUnitMemberNameContainingA
+RS-C2	2026-08-02-pre-release-sweep.md	Closed	Fixed - `sanitizeFilename` applied to the write AND to the local read, which the finding d
+RS-D1	2026-08-02-pre-release-sweep.md	Closed	Clean
+RS-D2	2026-08-02-pre-release-sweep.md	Closed	Clean
+RS-D3	2026-08-02-pre-release-sweep.md	Closed	Clean
+RS-D4	2026-08-02-pre-release-sweep.md	Closed	Clean
+RS-D5	2026-08-02-pre-release-sweep.md	Closed	Ruled (stated in the body)
+RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open
+RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open
+RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open
+RT3-D1	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D10	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D11	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D12	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D13	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D14	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D15	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D2	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D3	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D4	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D5	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D6	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D7	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D8	2026-09-02-autonomy-routing-review.md	Closed	-
+RT3-D9	2026-09-02-autonomy-routing-review.md	Closed	-
+RTG-A1	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-A2	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-B1	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-B1	2026-09-01-fanout-index.md	Closed	`7d8543f3`
+RTG-B2	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-C1	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-C2	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-C3	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-C4	2026-09-01-autonomy-routing-review.md	Closed	-
+RTG-D1	2026-09-01-autonomy-routing-review.md	Closed	Not a defect: staging executes with `running` set and `isPathClear:2192`/`:2201` refuse th
+RTG-D10	2026-09-01-autonomy-routing-review.md	Closed	Square-level checks present on both doors (`isSamePlaceAs` at `Layout.java:1088-1091` and 
+RTG-D2	2026-09-01-autonomy-routing-review.md	Closed	Deliberate and sound — staging runs one train at a time (`timetableSequential`, `Layout.ja
+RTG-D3	2026-09-01-autonomy-routing-review.md	Closed	Correct by reading: turned is monotonic, terminus is arrived-at but never expanded, arriva
+RTG-D4	2026-09-01-autonomy-routing-review.md	Closed	No defect found; the RANDOM_ANY_STATION comparator and the band close-out at `Layout.java:
+RTG-D5	2026-09-01-autonomy-routing-review.md	Closed	In step clause-for-clause today, including the terminus clause (`Layout.java:3474-3477` vs
+RTG-D6	2026-09-01-autonomy-routing-review.md	Closed	`Point.setTerminus`/`setReversing` refuse the illegal pair in both orders (`Point.java:333
+RTG-D7	2026-09-01-autonomy-routing-review.md	Closed	One-place invariant holds through every placement door; the planner is the stricter half b
+RTG-D8	2026-09-01-autonomy-routing-review.md	Closed	Correct by reading; the `Scored`-carries-its-own-score device does what its comment claims
+RTG-D9	2026-09-01-autonomy-routing-review.md	Closed	`executePathInternal:5296-5308` and `:5575-5582` reverse where the graph says; a non-rever
+RV-C1	2026-08-01-reversing-destinations-review.md	Closed	Fixed (`b43fd36`) - `hasAutonomousDestination` filters the enumeration on exactly the two 
+RV-C2	2026-08-01-reversing-destinations-review.md	Closed	Fixed - the probe now applies `passesThroughReversingStation` and enumerates with `uniqueD
+RV-D1	2026-08-01-reversing-destinations-review.md	Closed	Clean - except its through-traffic bullet, whose judgment `b56b407` reverses; see "The thi
+RV-D2	2026-08-01-reversing-destinations-review.md	Closed	Verified
+RV-D3	2026-08-01-reversing-destinations-review.md	Closed	Concurs
+SA-A1	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-A2	2026-08-18-station-arrivals-review.md	Closed	fixed, `a5de425`
+SA-A3	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-A4	2026-08-18-station-arrivals-review.md	Closed	**PARTLY fixed 2026-08-18** - the menu says so, but a CS layout page still draws the raw `
+SA-A5	2026-08-18-station-arrivals-review.md	Closed	**Fixed 2026-08-18** - LayoutEditor snapshots and restores the captions on Cancel
+SA-A6	2026-08-18-station-arrivals-review.md	Closed	**Fixed 2026-08-18** - LayoutDiagram writes through Util.writeAtomically, so all three cal
+SA-B1	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-B2	2026-08-18-station-arrivals-review.md	Closed	fixed, `81a51ac`
+SA-B3	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-B4	2026-08-18-station-arrivals-review.md	Closed	fixed, `a5de425`
+SA-B5	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-B6	2026-08-18-station-arrivals-review.md	Closed	**PARTLY fixed 2026-08-18** - the lite path runs on AutonomyRenderer; its twin repaintAuto
+SA-C1	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-C2	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-C3	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-C4	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-C5	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-C6	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-C7	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-C8	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-D1	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
+SA-D2	2026-08-18-station-arrivals-review.md	Closed	deleted, `d4cc22a`
+SA-D3	2026-08-18-station-arrivals-review.md	Closed	corrected, `d4cc22a`
+SA-D4	2026-08-18-station-arrivals-review.md	Closed	open - see below
+SA-D5	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
+SA-D6	2026-08-18-station-arrivals-review.md	Closed	accepted, see below
+SA-D7	2026-08-18-station-arrivals-review.md	Closed	accepted, see below
+SA-D8	2026-08-18-station-arrivals-review.md	Closed	withdrawn - not a defect
+SA-D9	2026-08-18-station-arrivals-review.md	Closed	accepted, deliberate - but see below
+SA-V1	2026-08-18-station-arrivals-review.md	Closed	fixed
+SA-V2	2026-08-18-station-arrivals-review.md	Closed	fixed
+SA-V3	2026-08-18-station-arrivals-review.md	Closed	comment corrected
+SA-V4	2026-08-18-station-arrivals-review.md	Closed	moved back
+SA-V5	2026-08-18-station-arrivals-review.md	Closed	NOT a defect - see below
+SA-V6	2026-08-18-station-arrivals-review.md	Closed	accepted, measured - see below
+SA-V7	2026-08-18-station-arrivals-review.md	Closed	accepted, matches findPath - see below
+SA-V8	2026-08-18-station-arrivals-review.md	Closed	recorded here, history left alone
+SF-B1	2026-08-01-simulation-feedback-race-review.md	Closed	Fixed - epoch-guarded clears (`simAnnounce`/`simClearBehind` in `Layout`); each announceme
+SF-C1	2026-08-01-simulation-feedback-race-review.md	Closed	Closed, remedy withdrawn - the recommendation inverted when reversing stations stopped bei
+SF-D1	2026-08-01-simulation-feedback-race-review.md	Closed	Withdrawn by the author before implementation - the `reversible` flag gates TERMINUS arriv
+SF-D2	2026-08-01-simulation-feedback-race-review.md	Closed	Clean
+SF-D3	2026-08-01-simulation-feedback-race-review.md	Closed	Recorded
+SG-A1	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testHomeStaging.testTwoTrainsAlreadyHomeOnOneSensorAreNotRefused`
+SG-A2	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testHomeStaging.testALocomotiveOnANonStationIsNotPlannedHome`
+SG-A3	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testHomeStaging.testALocomotiveHeldOnTwoPointsIsReportedRatherThanGuessedAt` 
+SG-A4	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testHomeStaging.testATrainIsNotPlannedIntoItsOwnDetectionSection`
+SG-A5	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testStagingSkipsALegWithNoSpeed`
+SG-B1	2026-08-30-staging-planner-round.md	Closed	fixed, `regression.testLayoutEditorBulkEdits.testTheOutlineNeverLandsOnTheGridsPadding`
+SG-B2	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testTimetableColumnHeadings`
+SG-B3	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testRoutingRuleTooltips`
+SG-B4	2026-08-30-staging-planner-round.md	Closed	fixed, `ui.testDiagramLooksRight.testTheTrainIsDrawnOverTheStationCaption`
+SG-B5	2026-08-30-staging-planner-round.md	Closed	closed - MT-083 did the person-half; the comparison was re-run on 2026-09-03 and reproduce
+SG-B5	2026-09-03-release-review.md	Closed	reproduces
+SG-C1	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testLocomotiveExclusions.testExcludingOneLocomotiveDoesNotBarTheOthers`
+SG-C2	2026-08-30-staging-planner-round.md	Closed	fixed, `regression.testARouteDoesNotThrowSwitchesUnderATrain.testAnAutomaticRouteWithNoCon
+SG-C3	2026-08-30-staging-planner-round.md	Closed	fixed, `regression.testARunSurvivesADiagramEdit.testTheWindowsCaptureActuallyCapturesAndSt
+SG-C4	2026-08-30-staging-planner-round.md	Closed	fixed, `core.testAutonomyDiagramReducer.testALockNamesEveryCopyOfTheTrackItLocks`
+SG-D1	2026-08-30-staging-planner-round.md	Closed	-
+SG-D2	2026-08-30-staging-planner-round.md	Closed	-
+SG-D3	2026-08-30-staging-planner-round.md	Closed	-
+SPEC-A1	SPEC-validation-2026-09-06.md	Closed	High on the mechanism, high on the spec gap
+SPEC-A2	SPEC-validation-2026-09-06.md	Closed	High on the logic, **unmeasured** on reachability
+SPEC-B1	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-B2	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-B3	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-B4	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-B5	SPEC-validation-2026-09-06.md	Closed	High on the code, unmeasured on reachability
+SPEC-C1	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-C2	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-C3	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-C4	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-C5	SPEC-validation-2026-09-06.md	Closed	High
+SPEC-D1	SPEC-validation-2026-09-06.md	Closed	See each
+SV-A1	2026-08-24-second-validation.md	Closed	Already reverted before this pass reported, but for the wrong two reasons - the revert not
+SV-B1	2026-08-24-second-validation.md	Closed	Fixed. `readIndexLines` falls back to ISO-8859-1, which is total, when strict UTF-8 refuse
+SV-B2	2026-08-24-second-validation.md	Closed	Fixed. `pageIdFloor()` reads the `autonomySession` FIELD instead of calling the lazy build
+SV-C1	2026-08-24-second-validation.md	Closed	Fixed, and it needed the fixture rather than the assertions. A caption on a LOADED page no
+SV2-A1	2026-09-01-fanout-index.md	Closed	`208b3ee1`
+SV2-A1	2026-09-01-second-validation.md	Closed	open — the remedy needs Adam's ruling, stated below in one sentence
+SV2-A2	2026-09-01-fanout-index.md	Closed	`208b3ee1`
+SV2-A2	2026-09-01-second-validation.md	Closed	open
+SV2-B1	2026-09-01-fanout-index.md	Closed	`208b3ee1`
+SV2-B1	2026-09-01-second-validation.md	Closed	open
+SV2-B2	2026-09-01-second-validation.md	Closed	open
+SV2-C1	2026-09-01-second-validation.md	Closed	open
+SV2-C2	2026-09-01-second-validation.md	Closed	open
+SV2-C3	2026-09-01-second-validation.md	Closed	open
+SV2-C4	2026-09-01-second-validation.md	Closed	open — systematic across the round, not new to these commits
+SV2-C5	2026-09-01-second-validation.md	Closed	open
+SV2-C6	2026-09-01-fanout-index.md	Closed	`208b3ee1`
+SV2-C6	2026-09-01-second-validation.md	Closed	open
+SV2-C7	2026-09-01-second-validation.md	Closed	open
+SV2-D1	2026-09-01-second-validation.md	Closed	closed — checked clean, measured
+SV2-D2	2026-09-01-second-validation.md	Closed	closed — checked clean
+SV2-D3	2026-09-01-second-validation.md	Closed	closed — checked clean
+SV2-D4	2026-09-01-second-validation.md	Closed	closed — checked clean
+SV2-D5	2026-09-01-second-validation.md	Closed	closed — checked clean
+SV2-D6	2026-09-01-second-validation.md	Closed	closed — not a defect
+SVN-A1	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-A2	2026-09-01-fanout-index.md	Closed	`a33b9ae1`
+SVN-A2	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-A3	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-A3	2026-09-02-fanout-index.md	Closed	the page-switch teardown ran its continuation BEFORE the refresh, so the refresh arrived l
+SVN-A4	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-B1	2026-09-01-week-of-commits-review.md	Closed	**closed** - the under-report was Adam's ruling 2; the sentence is corrected
+SVN-B10	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`87b6c10a`)
+SVN-B11	2026-09-01-week-of-commits-review.md	Closed	**fixed**
+SVN-B12	2026-09-01-week-of-commits-review.md	Closed	**fixed** as `DAY-B1` (`97137c4b`)
+SVN-B13	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`8d1c17ca`)
+SVN-B13	2026-09-02-fanout-index.md	Closed	two locomotives homed on two copies of one square walked past the loader - the state `shar
+SVN-B14	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`1cfdf370`)
+SVN-B15	2026-09-01-week-of-commits-review.md	Closed	half overtaken, half **fixed** 2026-09-02
+SVN-B16	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`87b6c10a`)
+SVN-B17	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02, with `V31-C2` and `AU-C12`
+SVN-B2	2026-09-01-week-of-commits-review.md	Closed	**closed** by `FX2-3`
+SVN-B3	2026-09-01-week-of-commits-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+SVN-B4	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`975f157d`)
+SVN-B5	2026-09-01-week-of-commits-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+SVN-B6	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`1cfdf370`)
+SVN-B7	2026-09-01-week-of-commits-review.md	Closed	**fixed** 2026-09-02 (`87b6c10a`), reasoning corrected by `V31-B2`
+SVN-B8	2026-09-01-week-of-commits-review.md	Closed	**fixed**
+SVN-B9	2026-09-01-week-of-commits-review.md	Closed	**fixed**
+SVN-C1	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C10	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C10	2026-09-03-c-sweep-report.md	Closed	Harness, and neither can damage the railway. Worth doing next time the harness is opened
+SVN-C11	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C12	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C12	2026-09-03-c-sweep-report.md	Closed	Latent — the field arrived after the version bump, so no released build reads it with a st
+SVN-C13	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C14	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C15	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C15	2026-09-03-c-sweep-report.md	Closed	Pure cost, nobody has reported feeling it, and the fix reorders the route-throwing path
+SVN-C16	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C17	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C2	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C3	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C4	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C5	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C6	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C7	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C8	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C9	2026-09-01-week-of-commits-review.md	Closed	open
+SVN-C9	2026-09-03-c-sweep-report.md	Closed	Same class, same reason. Narrow: needs the editor, a curved feedback station, and shut
+SWC-B1	2026-07-29-switch-command-review.md	Closed	**Partly fixed.** The first-match `setDelay(address, ms)` is fixed; the three-way semantic
+SWC-B2	2026-07-29-switch-command-review.md	Closed	Fixed
+SWC-B3	2026-07-29-switch-command-review.md	Closed	**Fixed (ordering half); closed by decision (delay half.)** The dedup now keeps the last-w
+SWC-B4	2026-07-29-switch-command-review.md	Closed	Fixed - the pair joins with the operator in a condition, via the extracted `RouteEditor.th
+SWC-C1	2026-07-29-switch-command-review.md	Closed	Fixed - seeded through `LayoutDiagramComponent.getPrimaryDriveState`/`getSecondaryDriveSta
+SWC-C2	2026-07-29-switch-command-review.md	Closed	Fixed - dialogs stay on the event thread, the sleeps and both sends move together to a sin
+SWC-C3	2026-07-29-switch-command-review.md	Closed	Fixed - the changelog no longer claims the CS2 parse path
+SWC-C4	2026-07-29-switch-command-review.md	Closed	Fixed - both inline copies now call `isThrow`, and the javadoc no longer says two callers
+SWC-C5	2026-07-29-switch-command-review.md	Closed	Fixed - the edge boundary is stated at the sort
+SWC-C6	2026-07-29-switch-command-review.md	Closed	Won't fix - accepted by the author. Any threshold that hides the floor also hides an opera
+SWC-C7	2026-07-29-switch-command-review.md	Closed	Fixed - the comment names the CS3 importer and the two builders that do not use the consta
+SWC-C8	2026-07-29-switch-command-review.md	Closed	Fixed - execute() instead of submit(), so an escaping exception reaches the thread handler
+SWC-C9	2026-07-29-switch-command-review.md	Closed	Fixed - both possessives repaired, and the validator now rejects the sequence, so this cla
+SWC-D15	2026-07-29-switch-command-review.md	Closed	Verified clean
+TA-A1	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B1	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B10	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B2	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B3	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B4	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B5	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B6	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B7	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B8	2026-08-24-test-suite-audit.md	Closed	Open
+TA-B9	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C1	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C10	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C11	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C12	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C13	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C14	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C15	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C2	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C3	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C4	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C5	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C6	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C7	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C8	2026-08-24-test-suite-audit.md	Closed	Open
+TA-C9	2026-08-24-test-suite-audit.md	Closed	Open
+TA-D1	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D2	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D3	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D4	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D5	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D6	2026-08-24-test-suite-audit.md	Closed	Recorded
+TA-D7	2026-08-24-test-suite-audit.md	Closed	Recorded
+TCR-C1	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (`136a273`) - the method bounces to a short-lived thread when entered
+TCR-C2	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (working tree) - one escape restored, file re-verified ASCII-pure
+TCR-C3	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (`136a273`) - `clearSelection()` at both sites; validated
+TCR-C4	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (`297763a`) - now "Markér", matching the bundle's imperative style ("
+TCR-C5	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (working tree) - all eight bundles reworded: `*` is the timetable sta
+TCR-C6	2026-07-28-ten-commit-review.md	Closed	**Fixed 2026-07-28** (working tree) - all seven translations carry the same clarification,
+TCR-D1	2026-07-28-ten-commit-review.md	Closed	Recorded
+TCR-D2	2026-07-28-ten-commit-review.md	Closed	Recorded
+TCR-D3	2026-07-28-ten-commit-review.md	Closed	Recorded
+TCS-A1	2026-08-31-test-suite-review.md	Closed	open
+TCS-A2	2026-08-31-fanout-index.md	Closed	The only OB-159 test passed with OB-159 put back: it sampled a pixel the caption never pai
+TCS-A2	2026-08-31-test-suite-review.md	Closed	open
+TCS-A3	2026-08-31-test-suite-review.md	Closed	open
+TCS-B1	2026-08-31-test-suite-review.md	Closed	open
+TCS-B2	2026-08-31-test-suite-review.md	Closed	open
+TCS-B3	2026-08-31-test-suite-review.md	Closed	open
+TCS-B4	2026-08-31-test-suite-review.md	Closed	open
+TCS-C1	2026-08-31-test-suite-review.md	Closed	open
+TCS-C2	2026-08-31-test-suite-review.md	Closed	open
+TCS-C3	2026-08-31-test-suite-review.md	Closed	open
+TCS-C4	2026-08-31-test-suite-review.md	Closed	open
+TCS-C5	2026-08-31-test-suite-review.md	Closed	open
+TCS-C6	2026-08-31-test-suite-review.md	Closed	open
+TCS-C7	2026-08-31-test-suite-review.md	Closed	open
+TCS-C8	2026-08-31-test-suite-review.md	Closed	open
+TCS-D1	2026-08-31-test-suite-review.md	Closed	closed
+TCS-D2	2026-08-31-test-suite-review.md	Closed	closed
+TCS-D3	2026-08-31-test-suite-review.md	Closed	closed
+TCX-A1	2026-09-01-test-suite-review.md	Closed	open
+TCX-A2	2026-09-01-test-suite-review.md	Closed	open
+TCX-A2	2026-09-02-fanout-index.md	Closed	the reversal-room rule was in `isPathClear` and nowhere in the staging planner, so Return 
+TCX-A3	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
+TCX-A3	2026-09-01-test-suite-review.md	Closed	open
+TCX-A4	2026-09-01-test-suite-review.md	Closed	**open — look at this first**
+TCX-B1	2026-09-01-test-suite-review.md	Closed	open
+TCX-B10	2026-09-01-test-suite-review.md	Closed	open
+TCX-B11	2026-09-01-test-suite-review.md	Closed	open
+TCX-B12	2026-09-01-test-suite-review.md	Closed	open
+TCX-B13	2026-09-01-test-suite-review.md	Closed	open
+TCX-B2	2026-09-01-test-suite-review.md	Closed - was awaiting your decision	**DEFERRED — needs Adam**
+TCX-B3	2026-09-01-test-suite-review.md	Closed	open
+TCX-B4	2026-09-01-test-suite-review.md	Closed	open
+TCX-B5	2026-09-01-test-suite-review.md	Closed	open
+TCX-B6	2026-09-01-test-suite-review.md	Closed	open
+TCX-B7	2026-09-01-fanout-index.md	Closed	`testAutonomySimulationSanity` does assert `getPathValidationFailureCount() == 0` on a `si
+TCX-B7	2026-09-01-test-suite-review.md	Closed	open
+TCX-B8	2026-09-01-test-suite-review.md	Closed	open
+TCX-B9	2026-09-01-test-suite-review.md	Closed	open
+TCX-C1	2026-09-01-test-suite-review.md	Closed	open
+TCX-C2	2026-09-01-test-suite-review.md	Closed	open
+TCX-C3	2026-09-01-test-suite-review.md	Closed	open
+TCX-C4	2026-09-01-test-suite-review.md	Closed	open
+TCX-C5	2026-09-01-test-suite-review.md	Closed	open
+TCX-C6	2026-09-01-test-suite-review.md	Closed	open
+TCX-C7	2026-09-01-test-suite-review.md	Closed	open
+TCX-C8	2026-09-01-test-suite-review.md	Closed	open
+TCX-C9	2026-09-01-test-suite-review.md	Closed	open
+TCX-D1	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D2	2026-09-01-test-suite-review.md	Closed	closed — withdrawn
+TCX-D3	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D4	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D5	2026-09-01-test-suite-review.md	Closed	closed — withdrawn
+TCX-D6	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D7	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D8	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TCX-D9	2026-09-01-test-suite-review.md	Closed	closed — checked clean
+TD-1	2026-08-23-three-day-history.md	Closed	Medium-high
+TD-10	2026-08-23-three-day-history.md	Closed	High
+TD-11	2026-08-23-three-day-history.md	Closed	High (code) / Low (reachable today)
+TD-12	2026-08-23-three-day-history.md	Closed	High / Medium
+TD-13	2026-08-23-three-day-history.md	Closed	High
+TD-14	2026-08-23-three-day-history.md	Closed	High
+TD-15	2026-08-23-three-day-history.md	Closed	High
+TD-2	2026-08-23-three-day-history.md	Closed	High (code) / Medium (reach)
+TD-3	2026-08-23-three-day-history.md	Closed	High
+TD-4	2026-08-23-three-day-history.md	Closed	High
+TD-5	2026-08-23-three-day-history.md	Closed	High
+TD-6	2026-08-23-three-day-history.md	Closed	High
+TD-7	2026-08-23-three-day-history.md	Closed	High (both packaged) / Medium (which wins)
+TD-8	2026-08-23-three-day-history.md	Closed	High
+TD-9	2026-08-23-three-day-history.md	Closed	High
+TR-A1	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A10	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A11	2026-08-21-review-dispositions.md	Closed	-
+TR-A11	2026-08-21-review-findings.md	Closed	Fixed 2026-08-21. The wait is bounded; the discarded boolean is C6
+TR-A12	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A13	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A14	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A15	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A16	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A17	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A18	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A19	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A2	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A20	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A21	2026-08-21-review-dispositions.md	Closed	-
+TR-A21	2026-08-21-review-findings.md	Closed	**Withdrawn - see D9.** Raised as A, downgraded 2026-08-21
+TR-A22	2026-08-21-review-dispositions.md	Closed	-
+TR-A22	2026-08-21-review-findings.md	Closed	Fixed 2026-08-21
+TR-A23	2026-08-21-review-dispositions.md	Closed	-
+TR-A23	2026-08-21-review-findings.md	Closed	Fixed 2026-08-21
+TR-A24	2026-08-21-review-findings.md	Closed	**Open.** Regression introduced by the TR-A23 fix in `0b5f5e73`
+TR-A3	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A4	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A5	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A6	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A7	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A8	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-A9	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B1	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B10	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B11	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B12	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B13	2026-08-21-review-dispositions.md	Closed	-
+TR-B13	2026-08-21-review-findings.md	Closed	Fixed 2026-08-21
+TR-B2	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B3	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B4	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B5	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B6	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B7	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B8	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-B9	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
+TR-C1	2026-08-21-review-findings.md	Closed	**Declined** — documented trade-off of reading points back out of commands
+TR-C2	2026-08-21-review-findings.md	Closed	**Declined** — validation catches it
+TR-C3	2026-08-21-review-findings.md	Closed	**Declined** — no caller anywhere in `src` or `test`
+TR-C4	2026-08-21-review-findings.md	Closed	**Declined** — `snapshotSetup`, added in this batch, deep-copies and is the model if it ev
+TR-C5	2026-08-21-review-findings.md	Closed	**Declined** — same shape as B2, no observed symptom on that path
+TR-C6	2026-08-21-review-findings.md	Closed	Open
+TR-C7	2026-08-21-review-findings.md	Closed	Open
+TR-C8	2026-08-21-review-findings.md	Closed	Open
+TR-C9	2026-08-21-review-findings.md	Closed	Open
+TR-D1	2026-08-21-review-findings.md	Closed	Wrong. The character class covers both. The reviewer rejected it before reporting; re-chec
+TR-D10	2026-08-21-review-findings.md	Closed	Clean. `landing` is every destination that is not itself a source, so a group moved by one
+TR-D11	2026-08-21-review-findings.md	Closed	Clean. `git show 1efa3b9a:...Layout.java` has exactly one `wait()` and one `notifyAll()` a
+TR-D12	2026-08-21-review-findings.md	Closed	Clean. Both callers - `sharedFields()` (which `save()` calls and then writes immediately) 
+TR-D13	2026-08-21-review-findings.md	Closed	Clean. The snapshot is the first thing in the constructor after the field assignments; `in
+TR-D14	2026-08-21-review-findings.md	Closed	Clean. `left` is recomputed from a fixed deadline on every pass, so a spurious wakeup cann
+TR-D15	2026-08-21-review-findings.md	Closed	Clean. `CommandRow.toCommand` resolves SIGNAL through `oneOf(setting, "turn", "straight", 
+TR-D16	2026-08-21-review-findings.md	Closed	Clean. `actOnRowMarks` now has two call sites, one per table (`:2617`, `:3060`), and each 
+TR-D17	2026-08-21-review-findings.md	Closed	Clean. `RemoteDeviceCollection.getById` returns `db.get(id)` under the collection's own lo
+TR-D2	2026-08-21-review-findings.md	Closed	Wrong. The order is the other way round - state is applied first. Rejected by the reviewer
+TR-D3	2026-08-21-review-findings.md	Closed	Traced end to end and clean: the store's list accessors, `rekeyListValues`/`moveListValues
+TR-D4	2026-08-21-review-findings.md	Closed	Clean. The click - add - reopen path fully unwinds before the next click, and all four opt
+TR-D5	2026-08-21-review-findings.md	Closed	Clean. The filter is a faithful lift; expand and read are exact inverses for all three pos
+TR-D6	2026-08-21-review-findings.md	Closed	Clean. Name, s88, trigger, enabled, commands and conditions all reach the same `editRoute`
+TR-D7	2026-08-21-review-findings.md	Closed	Clean. All pure ASCII, identical key sets, and every key referenced from code resolves - t
+TR-D8	2026-08-21-review-findings.md	Closed	Clean. Nothing found.
+TR-D9	2026-08-21-review-findings.md	Closed	Raised as A, withdrawn 2026-08-21 after validation. A deadline here has nothing safe to do
+TS-B1	2026-08-19-test-suite-review.md	Closed	Open
+TS-C1	2026-08-19-test-suite-review.md	Closed	Open
+TS-C2	2026-08-19-test-suite-review.md	Closed	Open
+TS-C3	2026-08-19-test-suite-review.md	Closed	Open
+TS-D1	2026-08-19-test-suite-review.md	Closed	Recorded
+TS-D2	2026-08-19-test-suite-review.md	Closed	Recorded
+TS3-A1	2026-09-02-fanout-index.md	Closed	`battery.sh` had called its reaper at a path that has not existed since 2026-08-30, with t
+TS3-A1	2026-09-02-test-suite-review.md	Closed	open
+TS3-B1	2026-09-02-test-suite-review.md	Closed	open
+TS3-B2	2026-09-02-fanout-index.md	Closed	a test left the shared locomotive mutated for its 84 siblings
+TS3-B2	2026-09-02-test-suite-review.md	Closed	open
+TS3-B3	2026-09-02-test-suite-review.md	Closed	open
+TS3-B4	2026-09-02-test-suite-review.md	Closed	open
+TS3-B5	2026-09-02-test-suite-review.md	Closed	open
+TS3-B6	2026-09-02-test-suite-review.md	Closed	open
+TS3-B7	2026-09-02-test-suite-review.md	Closed	open
+TS3-C1	2026-09-02-test-suite-review.md	Closed	open
+TS3-C2	2026-09-02-test-suite-review.md	Closed	open
+TS3-C3	2026-09-02-test-suite-review.md	Closed	open
+TS3-C4	2026-09-02-test-suite-review.md	Closed	open
+TS3-C5	2026-09-02-test-suite-review.md	Closed	open
+TS3-C6	2026-09-02-test-suite-review.md	Closed	open
+TS3-D1	2026-09-02-test-suite-review.md	Closed	closed — downgraded to TS3-C1
+TS3-D2	2026-09-02-test-suite-review.md	Closed	closed — withdrawn
+TS3-D3	2026-09-02-test-suite-review.md	Closed	closed — checked clean
+TS3-D4	2026-09-02-test-suite-review.md	Closed	closed — checked clean
+TS3-D5	2026-09-02-test-suite-review.md	Closed	closed — checked clean
+TS3-D6	2026-09-02-test-suite-review.md	Closed	closed — checked clean
+TS3-D7	2026-09-02-test-suite-review.md	Closed	closed — checked clean
+TST-A1	2026-08-28-test-suite-review.md	Closed	open
+TST-A10	2026-08-28-test-suite-review.md	Closed	open
+TST-A11	2026-08-28-test-suite-review.md	Closed	open
+TST-A12	2026-08-28-test-suite-review.md	Closed	open
+TST-A13	2026-08-28-test-suite-review.md	Closed	open
+TST-A14	2026-08-28-test-suite-review.md	Closed	open
+TST-A15	2026-08-28-test-suite-review.md	Closed	open
+TST-A2	2026-08-28-test-suite-review.md	Closed	open
+TST-A3	2026-08-28-test-suite-review.md	Closed	open
+TST-A4	2026-08-28-test-suite-review.md	Closed	open
+TST-A5	2026-08-28-test-suite-review.md	Closed	open
+TST-A6	2026-08-28-test-suite-review.md	Closed	open
+TST-A7	2026-08-28-test-suite-review.md	Closed	open
+TST-A8	2026-08-28-test-suite-review.md	Closed	open
+TST-A9	2026-08-28-test-suite-review.md	Closed	open
+TST-B1	2026-08-28-test-suite-review.md	Closed	open
+TST-B10	2026-08-28-test-suite-review.md	Closed	open
+TST-B11	2026-08-28-test-suite-review.md	Closed	open
+TST-B12	2026-08-28-test-suite-review.md	Closed	open
+TST-B13	2026-08-28-test-suite-review.md	Closed	open
+TST-B14	2026-08-28-test-suite-review.md	Closed	open
+TST-B15	2026-08-28-test-suite-review.md	Closed	open
+TST-B16	2026-08-28-test-suite-review.md	Closed	open
+TST-B17	2026-08-28-test-suite-review.md	Closed	open
+TST-B18	2026-08-28-test-suite-review.md	Closed	open
+TST-B19	2026-08-28-test-suite-review.md	Closed	open
+TST-B2	2026-08-28-test-suite-review.md	Closed	open
+TST-B20	2026-08-28-test-suite-review.md	Closed	open
+TST-B21	2026-08-28-test-suite-review.md	Closed	open
+TST-B22	2026-08-28-test-suite-review.md	Closed	open
+TST-B23	2026-08-28-test-suite-review.md	Closed	open
+TST-B3	2026-08-28-test-suite-review.md	Closed	open
+TST-B4	2026-08-28-test-suite-review.md	Closed	open
+TST-B5	2026-08-28-test-suite-review.md	Closed	open
+TST-B6	2026-08-28-test-suite-review.md	Closed	open
+TST-B7	2026-08-28-test-suite-review.md	Closed	open
+TST-B8	2026-08-28-test-suite-review.md	Closed	open
+TST-B9	2026-08-28-test-suite-review.md	Closed	open
+TST-C1	2026-08-28-test-suite-review.md	Closed	open
+TST-C10	2026-08-28-test-suite-review.md	Closed	open
+TST-C11	2026-08-28-test-suite-review.md	Closed	open
+TST-C12	2026-08-28-test-suite-review.md	Closed	open
+TST-C13	2026-08-28-test-suite-review.md	Closed	open
+TST-C14	2026-08-28-test-suite-review.md	Closed	open
+TST-C15	2026-08-28-test-suite-review.md	Closed	open
+TST-C16	2026-08-28-test-suite-review.md	Closed	open
+TST-C17	2026-08-28-test-suite-review.md	Closed	open
+TST-C2	2026-08-28-test-suite-review.md	Closed	open
+TST-C3	2026-08-28-test-suite-review.md	Closed	open
+TST-C4	2026-08-28-test-suite-review.md	Closed	open
+TST-C5	2026-08-28-test-suite-review.md	Closed	open
+TST-C6	2026-08-28-test-suite-review.md	Closed	open
+TST-C7	2026-08-28-test-suite-review.md	Closed	open
+TST-C8	2026-08-28-test-suite-review.md	Closed	open
+TST-C9	2026-08-28-test-suite-review.md	Closed	open
+TSX-A1	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-B1	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-B2	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-B3	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-B4	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-B5	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-B6	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-B7	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-B8	2026-09-03-test-suite-audit.md	Closed	Pass 3 - **fixed**, plus six more sites the finding did not name
+TSX-C1	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C10	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-C11	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-C12	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-C13	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-C14	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C15	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C16	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C17	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C18	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C19	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C2	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C20	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-C3	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C4	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C5	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C6	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C7	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-C8	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-C9	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-D1	2026-09-03-test-suite-audit.md	Closed	Fixed (stated in the body)
+TSX-D10	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-D11	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TSX-D2	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-D3	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-D4	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-D5	2026-09-03-test-suite-audit.md	Closed	Pass 1
+TSX-D6	2026-09-03-test-suite-audit.md	Closed	Fixed (stated in the body)
+TSX-D7	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-D8	2026-09-03-test-suite-audit.md	Closed	Pass 2
+TSX-D9	2026-09-03-test-suite-audit.md	Closed	Pass 3
+TV2-A1	2026-09-01-fanout-index.md	Closed	`9fec3b71`
+TV2-A1	2026-09-01-third-validation.md	Closed	open
+TV2-B1	2026-09-01-third-validation.md	Closed	open
+TV2-B2	2026-09-01-third-validation.md	Closed	open
+TV2-B3	2026-09-01-third-validation.md	Closed	open
+TV2-C1	2026-09-01-fanout-index.md	Closed	`9fec3b71`
+TV2-C1	2026-09-01-third-validation.md	Closed	open
+TV2-C2	2026-09-01-third-validation.md	Closed	open
+TV2-C3	2026-09-01-third-validation.md	Closed	open
+TV2-C4	2026-09-01-third-validation.md	Closed	open
+TV2-C5	2026-09-01-third-validation.md	Closed	open
+TV2-C6	2026-09-01-third-validation.md	Closed	open — structural, no instance found on the derived graph
+TV2-C7	2026-09-01-third-validation.md	Closed	Fixed (stated in the body)
+TV2-D1	2026-09-01-third-validation.md	Closed	closed — checked clean
+TV2-D2	2026-09-01-third-validation.md	Closed	closed — checked clean, traced not run
+TV2-D3	2026-09-01-third-validation.md	Closed	closed — checked clean, measured
+TV2-D4	2026-09-01-third-validation.md	Closed	closed — checked clean
+TV2-D5	2026-09-01-third-validation.md	Closed	closed — checked clean
+UC-B1	2026-08-01-untouched-code-review.md	Closed	Fixed at the model, both writers: `setAddress` clears out-of-range functions after the res
+UC-C1	2026-08-01-untouched-code-review.md	Closed	Fixed in `compareVersions` - each component parses its leading digit run - so the fix cove
+UC-C10	2026-08-01-untouched-code-review.md	Closed	Fixed - a `TYPE_CUSTOM` source falls back to `TYPE_INT_ARGB`
+UC-C11	2026-08-01-untouched-code-review.md	Closed	Fixed - the constructor rejects a non-numeric s88 where the mistake is made, and a null/ne
+UC-C12	2026-08-01-untouched-code-review.md	Closed	Fixed - `setLocalImageURL` touches only the override and `getImageURL` falls back, so clea
+UC-C13	2026-08-01-untouched-code-review.md	Closed	Fixed (stated in the body)
+UC-C14	2026-08-01-untouched-code-review.md	Closed	Fixed - all nine are final
+UC-C15	2026-08-01-untouched-code-review.md	Closed	Fixed - the assign-to-button item is omitted when no button is current
+UC-C16	2026-08-01-untouched-code-review.md	Closed	**Fixed in this round** - comment moved back onto `compareVersions`
+UC-C17	2026-08-01-untouched-code-review.md	Closed	Fixed - the sync adopts the CS image unconditionally; with the override in its own field a
+UC-C18	2026-08-01-untouched-code-review.md	Closed	isStagingInProgress()`, layout-local and the strongest available: it holds through the gra
+UC-C19	2026-08-01-untouched-code-review.md	Closed	Fixed - `route.warningRouteNotExistCalledFrom` with "execRoute" as the caller, the same ke
+UC-C2	2026-08-01-untouched-code-review.md	Closed	Fixed - the token is trimmed. Pinned by `testFeedbackStateTokenIsTrimmed`
+UC-C20	2026-08-01-untouched-code-review.md	Closed	Fixed one level deeper than suggested: normalization became `NodeExpression.normalize`, ap
+UC-C21	2026-08-01-untouched-code-review.md	Closed	Fixed by the second offered remedy - the sentence is made true: the A* expansion skips a f
+UC-C3	2026-08-01-untouched-code-review.md	Closed	Fixed - only forward/backward parse, case-insensitively; anything else raises the friendly
+UC-C4	2026-08-01-untouched-code-review.md	Closed	Fixed at the JSON door, second attempt: `NodeAnd`/`NodeOr.fromJSON` wrap a bare cross-oper
+UC-C5	2026-08-01-untouched-code-review.md	Closed	Fixed - `renamePoint` refuses a taken target name (self-rename allowed) and refuses while 
+UC-C6	2026-08-01-untouched-code-review.md	Closed	Fixed - unknown names log and return. Pinned by `testExecutingAnUnknownRouteNameIsANoOp`
+UC-C7	2026-08-01-untouched-code-review.md	Closed	Fixed - the commented `init` names the real 5-arg form, the switch example acts on the swi
+UC-C8	2026-08-01-untouched-code-review.md	Closed	Fixed, with one correction: `textToImage` and `rotateImage` removed, the inert visibility 
+UC-C9	2026-08-01-untouched-code-review.md	Closed	Fixed - `focusImages` now fires from an `AncestorListener` when the dialog shows, the `Gra
+UC-D1	2026-08-01-untouched-code-review.md	Closed	Not a defect
+UC-D10	2026-08-01-untouched-code-review.md	Closed	Re-verified consistent with documented design
+UC-D11	2026-08-01-untouched-code-review.md	Closed	Clean
+UC-D2	2026-08-01-untouched-code-review.md	Closed	Clean
+UC-D3	2026-08-01-untouched-code-review.md	Closed	Withdrawn - reset exists
+UC-D4	2026-08-01-untouched-code-review.md	Closed	Handled by both callers - duplicates `FCR-D1`
+UC-D5	2026-08-01-untouched-code-review.md	Closed	Clean - stats pad every day
+UC-D6	2026-08-01-untouched-code-review.md	Closed	Compensated
+UC-D7	2026-08-01-untouched-code-review.md	Closed	Unreachable - both entrances guard
+UC-D8	2026-08-01-untouched-code-review.md	Closed	Unreachable
+UC-D9	2026-08-01-untouched-code-review.md	Closed	Measured clean (text-origin)
+UH-B1	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B2	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B3	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B4	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B5	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B6	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
+UH-B7	2026-08-17-unread-half-review.md	Closed	Open - deferred with its class
+UR-1	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-10	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), PLAUSIBLE (trigger)
+UR-11	2026-08-23-uninformed-review.md	Closed	PLAUSIBLE
+UR-12	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-13	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-14	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), unproven trigger
+UR-15	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-16	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-17	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-18	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-19	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-2	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-3	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-4	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), PLAUSIBLE (trigger)
+UR-5	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-6	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UR-7	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), PLAUSIBLE (trigger)
+UR-8	2026-08-23-uninformed-review.md	Closed	CONFIRMED (arithmetic), PLAUSIBLE (trigger)
+UR-9	2026-08-23-uninformed-review.md	Closed	CONFIRMED
+UXR-A1	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B1	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B10	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B11	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B12	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B2	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B3	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B4	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B5	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B6	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B7	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B8	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-B9	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C1	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C10	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C11	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C12	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C13	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C14	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C15	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C16	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C17	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C18	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C19	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C2	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C20	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C21	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C3	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C4	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C5	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C6	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C7	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C8	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-C9	2026-08-28-ux-consistency-review.md	Closed	open
+UXR-D1	2026-08-28-ux-consistency-review.md	Closed	The Start button staying live and explaining at press time is deliberate
+UXR-D10	2026-08-28-ux-consistency-review.md	Closed	Return Home does not ask the power state — but neither surface does, so nothing disagrees
+UXR-D11	2026-08-28-ux-consistency-review.md	Closed	`AutonomyMenu.rebuild`'s remote branch escapes `guardWhileEditing` — unreachable
+UXR-D12	2026-08-28-ux-consistency-review.md	Closed	"Central Station" untranslated is deliberate; German translating it *sometimes* is not (se
+UXR-D2	2026-08-28-ux-consistency-review.md	Closed	**Withdrawn:** `refuseWhileAutonomyRunning` vs `isAutonomyBusy` — they agree
+UXR-D3	2026-08-28-ux-consistency-review.md	Closed	**Withdrawn:** `switchLocMapping`'s single-page branch — unreachable, `MIN_LOC_MAPPINGS` i
+UXR-D4	2026-08-28-ux-consistency-review.md	Closed	**Corrected:** UXR-B11's failure is a blank dialog, not an uncaught exception
+UXR-D5	2026-08-28-ux-consistency-review.md	Closed	The route editor's add and edit paths both guard, and both refuse a second window
+UXR-D6	2026-08-28-ux-consistency-review.md	Closed	Bundle key sets, duplicates, ASCII escapes and placeholder parity are all clean
+UXR-D7	2026-08-28-ux-consistency-review.md	Closed	`editPageMenu`'s two writers agree
+UXR-D8	2026-08-28-ux-consistency-review.md	Closed	Deleting a diagram page is fully guarded
+UXR-D9	2026-08-28-ux-consistency-review.md	Closed	`buildDiagramExportMenu` cannot duplicate its item
+V31-B1	2026-09-02-first-validation.md	Closed	B
+V31-B2	2026-09-02-first-validation.md	Closed	B
+V31-C1	2026-09-02-first-validation.md	Closed	C
+V31-C2	2026-09-02-first-validation.md	Closed	C
+V31-C3	2026-09-02-first-validation.md	Closed	C
+V31-C4	2026-09-02-first-validation.md	Closed	C
+V31-D1	2026-09-02-first-validation.md	Closed	-
+V31-D10	2026-09-02-first-validation.md	Closed	-
+V31-D11	2026-09-02-first-validation.md	Closed	-
+V31-D12	2026-09-02-first-validation.md	Closed	-
+V31-D13	2026-09-02-first-validation.md	Closed	-
+V31-D14	2026-09-02-first-validation.md	Closed	-
+V31-D15	2026-09-02-first-validation.md	Closed	-
+V31-D16	2026-09-02-first-validation.md	Closed	-
+V31-D2	2026-09-02-first-validation.md	Closed	-
+V31-D3	2026-09-02-first-validation.md	Closed	-
+V31-D4	2026-09-02-first-validation.md	Closed	-
+V31-D5	2026-09-02-first-validation.md	Closed	-
+V31-D6	2026-09-02-first-validation.md	Closed	-
+V31-D7	2026-09-02-first-validation.md	Closed	-
+V31-D8	2026-09-02-first-validation.md	Closed	-
+V31-D9	2026-09-02-first-validation.md	Closed	-
+V32-B1	2026-09-02-second-validation.md	Closed	open
+V32-B2	2026-09-02-second-validation.md	Closed	open
+V32-C1	2026-09-02-second-validation.md	Closed	open
+V32-C2	2026-09-02-second-validation.md	Closed	open
+V32-C3	2026-09-02-second-validation.md	Closed	open
+V32-C4	2026-09-02-second-validation.md	Closed	open
+V32-C5	2026-09-02-second-validation.md	Closed	open
+V32-C6	2026-09-02-second-validation.md	Closed	open
+V32-D1	2026-09-02-second-validation.md	Closed	-
+V32-D2	2026-09-02-second-validation.md	Closed	-
+V32-D3	2026-09-02-second-validation.md	Closed	-
+V32-D4	2026-09-02-second-validation.md	Closed	-
+V32-D5	2026-09-02-second-validation.md	Closed	-
+V32-D6	2026-09-02-second-validation.md	Closed	-
+V32-D7	2026-09-02-second-validation.md	Closed	-
+V32-D8	2026-09-02-second-validation.md	Closed	-
+V33-A1	2026-09-02-third-validation.md	Closed	Open
+V33-B1	2026-09-02-third-validation.md	Closed	Open
+V33-C1	2026-09-02-third-validation.md	Closed	Open
+V33-C10	2026-09-02-third-validation.md	Closed	Open
+V33-C11	2026-09-02-third-validation.md	Closed	Open
+V33-C12	2026-09-02-third-validation.md	Closed	Open
+V33-C2	2026-09-02-third-validation.md	Closed	Open
+V33-C3	2026-09-02-third-validation.md	Closed	Open
+V33-C4	2026-09-02-third-validation.md	Closed	Open
+V33-C5	2026-09-02-third-validation.md	Closed	Open
+V33-C6	2026-09-02-third-validation.md	Closed	Open
+V33-C7	2026-09-02-third-validation.md	Closed	Open
+V33-C8	2026-09-02-third-validation.md	Closed	Open
+V33-C9	2026-09-02-third-validation.md	Closed	Open
+V33-D1	2026-09-02-third-validation.md	Closed	-
+V33-D10	2026-09-02-third-validation.md	Closed	-
+V33-D11	2026-09-02-third-validation.md	Closed	-
+V33-D12	2026-09-02-third-validation.md	Closed	-
+V33-D13	2026-09-02-third-validation.md	Closed	-
+V33-D14	2026-09-02-third-validation.md	Closed	-
+V33-D2	2026-09-02-third-validation.md	Closed	-
+V33-D3	2026-09-02-third-validation.md	Closed	-
+V33-D4	2026-09-02-third-validation.md	Closed	-
+V33-D5	2026-09-02-third-validation.md	Closed	-
+V33-D6	2026-09-02-third-validation.md	Closed	-
+V33-D7	2026-09-02-third-validation.md	Closed	-
+V33-D8	2026-09-02-third-validation.md	Closed	-
+V33-D9	2026-09-02-third-validation.md	Closed	-
+V34-B1	2026-09-02-fourth-validation.md	Closed	Open
+V34-C1	2026-09-02-fourth-validation.md	Closed	Open
+V34-C2	2026-09-02-fourth-validation.md	Closed	Open
+V34-C3	2026-09-02-fourth-validation.md	Closed	Open
+V34-C4	2026-09-02-fourth-validation.md	Closed	Open
+V34-C5	2026-09-02-fourth-validation.md	Closed	Open
+V34-C6	2026-09-02-fourth-validation.md	Closed	Open
+V34-C7	2026-09-02-fourth-validation.md	Closed	Open
+V34-C8	2026-09-02-fourth-validation.md	Closed	Open
+V34-D1	2026-09-02-fourth-validation.md	Closed	correct on every path
+V34-D2	2026-09-02-fourth-validation.md	Closed	correct, and identical to the old behaviour
+V34-D3	2026-09-02-fourth-validation.md	Closed	reliable, and fails loudly
+V34-D4	2026-09-02-fourth-validation.md	Closed	traced; no other rule can refuse a 20-unit train here
+V34-D5	2026-09-02-fourth-validation.md	Closed	yes
+V34-D6	2026-09-02-fourth-validation.md	Closed	correct
+V34-D7	2026-09-02-fourth-validation.md	Closed	all three correct
+V34-D8	2026-09-02-fourth-validation.md	Closed	correct — no false negative and no false positive
+V34-D9	2026-09-02-fourth-validation.md	Closed	honest; the play-button door really did stop asking
+V35-C1	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02
+V35-C2	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02
+V35-C3	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02 (`76d7bb70`)
+V35-D1	2026-09-02-fifth-validation.md	Closed	-
+V35-D10	2026-09-02-fifth-validation.md	Closed	-
+V35-D11	2026-09-02-fifth-validation.md	Closed	-
+V35-D12	2026-09-02-fifth-validation.md	Closed	-
+V35-D2	2026-09-02-fifth-validation.md	Closed	-
+V35-D3	2026-09-02-fifth-validation.md	Closed	-
+V35-D4	2026-09-02-fifth-validation.md	Closed	-
+V35-D5	2026-09-02-fifth-validation.md	Closed	-
+V35-D6	2026-09-02-fifth-validation.md	Closed	-
+V35-D7	2026-09-02-fifth-validation.md	Closed	-
+V35-D8	2026-09-02-fifth-validation.md	Closed	-
+V35-D9	2026-09-02-fifth-validation.md	Closed	-
+V36-A1	2026-09-02-sixth-validation.md	Closed	Open
+V36-B1	2026-09-02-sixth-validation.md	Closed	Open
+V36-B2	2026-09-02-sixth-validation.md	Closed	Open
+V36-C1	2026-09-02-sixth-validation.md	Closed	Open
+V36-C2	2026-09-02-sixth-validation.md	Closed	Open
+V36-C3	2026-09-02-sixth-validation.md	Closed	Open
+V36-C4	2026-09-02-sixth-validation.md	Closed	Open
+V36-C5	2026-09-02-sixth-validation.md	Closed	Open
+V36-C6	2026-09-02-sixth-validation.md	Closed	Open
+V36-D1	2026-09-02-sixth-validation.md	Closed	clean
+V36-D2	2026-09-02-sixth-validation.md	Closed	clean
+V36-D3	2026-09-02-sixth-validation.md	Closed	clean
+V36-D4	2026-09-02-sixth-validation.md	Closed	clean
+V36-D5	2026-09-02-sixth-validation.md	Closed	clean
+V36-D6	2026-09-02-sixth-validation.md	Closed	clean
+V36-D7	2026-09-02-sixth-validation.md	Closed	clean
+V36-D8	2026-09-02-sixth-validation.md	Closed	clean
+V36-D9	2026-09-02-sixth-validation.md	Closed	clean
+V37-B1	2026-09-02-seventh-validation.md	Closed	Open
+V37-B2	2026-09-02-seventh-validation.md	Closed	Open
+V37-C1	2026-09-02-seventh-validation.md	Closed	Open
+V37-C2	2026-09-02-seventh-validation.md	Closed	Open
+V37-C3	2026-09-02-seventh-validation.md	Closed	Open
+V37-D1	2026-09-02-seventh-validation.md	Closed	clean
+V37-D2	2026-09-02-seventh-validation.md	Closed	clean
+V37-D3	2026-09-02-seventh-validation.md	Closed	clean
+V37-D4	2026-09-02-seventh-validation.md	Closed	clean
+V37-D5	2026-09-02-seventh-validation.md	Closed	clean
+V37-D6	2026-09-02-seventh-validation.md	Closed	clean
+V37-D7	2026-09-02-seventh-validation.md	Closed	clean
+V37-D8	2026-09-02-seventh-validation.md	Closed	clean
+V37-D9	2026-09-02-seventh-validation.md	Closed	clean
+VAL-A1	2026-08-29-round-validation.md	Closed	open
+VAL-B1	2026-08-29-round-validation.md	Closed	open
+VAL-B2	2026-08-29-round-validation.md	Closed	open
+VAL-B3	2026-08-29-round-validation.md	Closed	open
+VAL-B4	2026-08-29-round-validation.md	Closed	open
+VAL-B5	2026-08-29-round-validation.md	Closed	open
+VAL-C1	2026-08-29-round-validation.md	Closed	open
+VAL-C2	2026-08-29-round-validation.md	Closed	open
+VAL-C3	2026-08-29-round-validation.md	Closed	open
+VAL-C4	2026-08-29-round-validation.md	Closed	open
+VAL-C5	2026-08-29-round-validation.md	Closed	open
+VAL-C6	2026-08-29-round-validation.md	Closed	open
+VAL-C7	2026-08-29-round-validation.md	Closed	open
+VAL-C8	2026-08-29-round-validation.md	Closed	open
+VAL-C9	2026-08-29-round-validation.md	Closed	open
+VAL8-A1	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-A2	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-B1	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-B2	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-B3	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-B4	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C1	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C2	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C3	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C4	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C5	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C6	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C7	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C8	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-C9	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D1	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D2	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D3	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D4	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D5	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D6	VAL8-validation-2026-09-07.md	Closed	Open
+VAL8-D7	VAL8-validation-2026-09-07.md	Closed	Open
+VAL9-A1	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-B1	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-B2	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C1	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C2	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C3	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C4	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C5	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C6	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C7	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C8	VAL9-validation-2026-09-07.md	Closed	Open
+VAL9-C9	VAL9-validation-2026-09-07.md	Closed	Open
+VB-B1	2026-08-29-c-round-validation.md	Closed	open
+VB-B2	2026-08-29-c-round-validation.md	Closed	open
+VB-C1	2026-08-29-c-round-validation.md	Closed	open
+VB-C2	2026-08-29-c-round-validation.md	Closed	open
+VB-C3	2026-08-29-c-round-validation.md	Closed	open
+VB-C4	2026-08-29-c-round-validation.md	Closed	open
+VB-C5	2026-08-29-c-round-validation.md	Closed	open
+VB-C6	2026-08-29-c-round-validation.md	Closed	open
+VB-C7	2026-08-29-c-round-validation.md	Closed	open
+VB-C8	2026-08-29-c-round-validation.md	Closed	open
+VB-C9	2026-08-29-c-round-validation.md	Closed	open
+VD10-A1	2026-09-03-validation-round-two.md	Closed	fixed - the clear follows the release, as it does on the ordinary path; test seeds cleared
+VD10-A2	2026-09-03-validation-round-two.md	Closed	fixed - the premise was false and the real mechanism is the capture on the way out; MT-246
+VD10-B1	2026-09-03-validation-round-two.md	Closed	fixed - the failed locomotive is stopped before the track is given back
+VD10-B2	2026-09-03-validation-round-two.md	Closed	fixed - and it was nine doors, not five; the rule now names every writer
+VD10-B3	2026-09-03-validation-round-two.md	Closed	fixed - setupChanged sits above refresh's javadoc
+VD10-B4	2026-09-03-validation-round-two.md	Closed	fixed - all seven translations have their letters back, as escapes
+VD10-B5	2026-09-03-validation-round-two.md	Closed	fixed - a floor of 20, TC_CONDITION_FLOOR to override, exit 2 when it bites
+VD10-B6	2026-09-03-validation-round-two.md	Closed	fixed - serialised before the stream is opened, and a failure is recorded
+VD10-B7	2026-09-03-validation-round-two.md	Closed	fixed - the README says what ant test does, and build.xml no longer points at the false se
+VD10-C1	2026-09-03-validation-round-two.md	Closed	fixed as a side effect of A1, which replaced the block the citation was in
+VD10-C10	2026-09-03-validation-round-two.md	Closed	fixed - it writes the report its usage line always advertised, and run.sh asks for it
+VD10-C11	2026-09-03-validation-round-two.md	Closed	fixed - the frozen copy by default, and a skipped section exits 2
+VD10-C12	2026-09-03-validation-round-two.md	Closed	fixed - the three pairs are a --self-test rather than a sentence
+VD10-C13	2026-09-03-validation-round-two.md	Closed	fixed - atom names are canonical
+VD10-C14	2026-09-03-validation-round-two.md	Closed	fixed - both failure paths return before announcing
+VD10-C15	2026-09-03-validation-round-two.md	Closed	fixed - his configuration has atomicRoutes false, which is A1's premise
+VD10-C16	2026-09-03-validation-round-two.md	Closed	fixed - the quotation carries the two lines that say whether anything was skipped
+VD10-C2	2026-09-03-validation-round-two.md	Closed	fixed - one rebuild per gesture, coalesced onto the event queue
+VD10-C3	2026-09-03-validation-round-two.md	Closed	fixed - the paragraph break is back
+VD10-C4	2026-09-03-validation-round-two.md	Closed	fixed - and the document now says the summary column is a second place by construction
+VD10-C5	2026-09-03-validation-round-two.md	Closed	fixed - there was no version in which four was right, and it says so
+VD10-C6	2026-09-03-validation-round-two.md	Closed	fixed - the number is attached to the clause it counts
+VD10-C7	2026-09-03-validation-round-two.md	Closed	fixed - the licence cited is the one that applies here
+VD10-C8	2026-09-03-validation-round-two.md	Closed	fixed at both sites - the claim is the weaker true one
+VD10-C9	2026-09-03-validation-round-two.md	Closed	fixed - by macro name, and the route not taken is named
+VD10-D1	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D10	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D11	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D12	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D13	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D14	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D2	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D3	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D4	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D5	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D6	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D7	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D8	2026-09-03-validation-round-two.md	Closed	closed
+VD10-D9	2026-09-03-validation-round-two.md	Closed	closed
+VD11-A1	2026-09-03-validation-round-three.md	Closed	fixed - the rule no longer holds a list; the wider sweep derives every mutator from Autono
+VD11-A2	2026-09-03-validation-round-three.md	Closed	fixed - autonomyLoadedFromDiagram takes a resumed flag and only a genuine load stops the r
+VD11-B1	2026-09-03-validation-round-three.md	Closed	fixed - the ellipsis compares against shown + otherPaths.size(), so it fires only when som
+VD11-B2	2026-09-03-validation-round-three.md	Closed	fixed - the rename door reads didTheNoteRepairFail() and logs the file the operator has to
+VD11-B3	2026-09-03-validation-round-three.md	Closed	fixed - the block was split and each javadoc re-emitted against its own method
+VD11-C1	2026-09-03-validation-round-three.md	Closed	fixed - the comment reads as written
+VD11-C10	2026-09-03-validation-round-three.md	Closed	fixed - MT-266 is filed, covering B1, C2 and C3 in five steps
+VD11-C2	2026-09-03-validation-round-three.md	Closed	**overturned by Adam** - the recommendation was taken, he saw the result on his own railwa
+VD11-C3	2026-09-03-validation-round-three.md	Closed	fixed - the separator and the locomotive's name are added when the top-level list is empty
+VD11-C4	2026-09-03-validation-round-three.md	Closed	fixed, all three - a skipped section exits 2 against a divergence's 1, and last run's repo
+VD11-C5	2026-09-03-validation-round-three.md	Closed	fixed - and the paragraph no longer names a count; nine was the third wrong number in that
+VD11-C6	2026-09-03-validation-round-three.md	Closed	fixed - the assertion is gone, with a line saying why rather than a silent deletion
+VD11-C7	2026-09-03-validation-round-three.md	Closed	fixed - the heading has its blank comment line and the double blank is closed up
+VD11-C8	2026-09-03-validation-round-three.md	Closed - was awaiting your decision	fixed, on Adam's instruction - the loss is now reported with its remedy rather than deferr
+VD11-C9	2026-09-03-validation-round-three.md	Closed	fixed - the comment gives the measurement rather than the argument, and says what to do if
+VD11-D1	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D10	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D11	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D2	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D3	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D4	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D5	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D6	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D7	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D8	2026-09-03-validation-round-three.md	Closed	closed
+VD11-D9	2026-09-03-validation-round-three.md	Closed	closed
+VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it
+VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two
+VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 
+VD9-B4	2026-09-03-validation-of-the-day.md	Closed	fixed - `-Xmx` IS reachable via `run.jvmargs`; not set because that property also feeds Ru
+VD9-B5	2026-09-03-validation-of-the-day.md	Closed	fixed - a link on unrelated pages must now survive, and the clear-the-set fix fails it
+VD9-B6	2026-09-03-validation-of-the-day.md	Closed	fixed - traced against the two methods; both replacement sentences were wrong and the seco
+VD9-B7	2026-09-03-validation-of-the-day.md	Closed	fixed - `AutonomyChecks` points at the one account instead of carrying a second copy
+VD9-B8	2026-09-03-validation-of-the-day.md	Closed	fixed - the log line and the changelog say "the first time this version rewrote it"
+VD9-C1	2026-09-03-validation-of-the-day.md	Closed	fixed - re-screened by parsing under both engines, which is a better screen than either ea
+VD9-C10	2026-09-03-validation-of-the-day.md	Closed	fixed - `run.sh` explains `run.sh`, including what moved for `TARGET`
+VD9-C11	2026-09-03-validation-of-the-day.md	Closed	fixed with `B3` - the diagram edit comes first, because the checkbox pushes no undo point
+VD9-C12	2026-09-03-validation-of-the-day.md	Closed	fixed - cited by method name, which is the form that does not go stale
+VD9-C13	2026-09-03-validation-of-the-day.md	Closed	fixed - nine, not four; and the unreachable arm says it is unreachable
+VD9-C14	2026-09-03-validation-of-the-day.md	Closed	fixed - the fixture server is stopped in a `finally`
+VD9-C15	2026-09-03-validation-of-the-day.md	Closed	fixed - renamed `testEverySandboxIsOpenedInsideATry`, which is what it checks
+VD9-C16	2026-09-03-validation-of-the-day.md	Closed	fixed - `captionsOnPage` describes its own caller, and the three assertions agree with the
+VD9-C17	2026-09-03-validation-of-the-day.md	Closed	fixed - the coordinates are named as decorative
+VD9-C18	2026-09-03-validation-of-the-day.md	Closed	fixed - three more sites swept
+VD9-C19	2026-09-03-validation-of-the-day.md	Closed	fixed - the second open is on the same session, and fails with the reset removed
+VD9-C2	2026-09-03-validation-of-the-day.md	Closed	fixed - the sentence is narrower, the family is wider, and the bracket-free case is a test
+VD9-C20	2026-09-03-validation-of-the-day.md	Closed	fixed - counted per page, added on the write; the sentence names pages rather than files
+VD9-C3	2026-09-03-validation-of-the-day.md	Closed	fixed - the refusal names the rows `edgesAreEmpty` actually checks, in eight languages
+VD9-C4	2026-09-03-validation-of-the-day.md	Closed	fixed - the javadoc describes the branch it is attached to
+VD9-C5	2026-09-03-validation-of-the-day.md	Closed	fixed - it asserts a pixel now, mutation-confirmed against an unscaled offset
+VD9-C6	2026-09-03-validation-of-the-day.md	Closed	fixed - the assertion no implementation could fail is gone, with its reason
+VD9-C7	2026-09-03-validation-of-the-day.md	Closed	fixed - `$LOCK`, `$REPORTED` and `$DONE` are defaulted, so the claim is true
+VD9-C8	2026-09-03-validation-of-the-day.md	Closed	fixed with `C20` - the `ant test` paragraph and the property comment agree now
+VD9-C9	2026-09-03-validation-of-the-day.md	Closed	fixed - written in place, which is the primitive this class measured as surviving the lock
+VD9-D1	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D10	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D11	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D12	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D13	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D2	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D3	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D4	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D5	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D6	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D7	2026-09-03-validation-of-the-day.md	Closed	closed — the discipline working
+VD9-D8	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VD9-D9	2026-09-03-validation-of-the-day.md	Closed	closed — checked clean
+VLD-B1	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-B2	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-B3	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-B4	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-B5	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C1	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C2	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C3	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C4	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C5	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C6	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-C7	2026-09-05-single-pass-validation.md	Closed	fixed
+VLD-D1	2026-09-05-single-pass-validation.md	Closed	-
+WK-B1	2026-08-28-week-review.md	Closed	open
+WK-B2	2026-08-28-week-review.md	Closed	open
+WK-C1	2026-08-28-week-review.md	Closed	open
+WK-C2	2026-08-28-week-review.md	Closed	open
+WK-C3	2026-08-28-week-review.md	Closed	open, needs hands-on verification
+WK-D1	2026-08-28-week-review.md	Closed	clean — unreachable as claimed
+WK-D2	2026-08-28-week-review.md	Closed	clean
+WK-D3	2026-08-28-week-review.md	Closed	clean at both call sites
+WK-D4	2026-08-28-week-review.md	Closed	clean — ASCII only, key parity via existing tests
+WK-D5	2026-08-28-week-review.md	Closed	clean
+WK-D6	2026-08-28-week-review.md	Closed	clean
+WK-D7	2026-08-28-week-review.md	Closed	clean — matches where the databases actually live
+WK3-A1	2026-09-02-week-of-commits-review.md	Closed	`Layout.java:6134`, `LayoutLabel.java:400`
+WK3-B1	2026-09-02-week-of-commits-review.md	Closed	`LayoutLabel.java:400-409` vs `MarklinRoute.java:460-475`
+WK3-B2	2026-09-02-week-of-commits-review.md	Closed	`HomeStaging.java:1017-1049`
+WK3-C1	2026-09-02-week-of-commits-review.md	Closed	`TrainControlUI.java:5183` vs `:20159-20167`
+WK3-C2	2026-09-02-week-of-commits-review.md	Closed	`TrainControlUI.java:16115`, `:24541-24560`, `Route.java:115`
+WK3-C3	2026-09-02-week-of-commits-review.md	Closed	`AutonomySession.java:3364`, `:4041`, `:4083`
+WK3-D1	2026-09-02-week-of-commits-review.md	Closed	`MarklinControlStation.java:552`
+WP-A1	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-A2	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-A3	2026-08-17-whole-project-review.md	Closed	Fixed (stated in the body)
+WP-B1	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B2	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B3	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B4	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B5	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B6	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B7	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B8	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WP-B9	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
+WR-B1	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (`6be3bda`). Fix validated
+WR-B2	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - a volatile `stagingFlowActive`, set on the EDT at th
+WR-B3	2026-07-28-week-verification-review.md	Closed	**Open**
+WR-C1	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (`6be3bda`). Fix validated; the occupancy-guard observation stays rec
+WR-C2	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (`6be3bda`). Fix validated - and see WR-C5 for what the insertion cos
+WR-C3	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (`6be3bda`). Fix validated; audit re-run clean
+WR-C4	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (`6be3bda`). Fix validated
+WR-C5	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - `pacedWait` relocated above `executeTimetable`'s jav
+WR-C6	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - the entry guard routes through `describeStagingOutco
+WR-C7	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - the message takes the button label as `{0}`, filled 
+WR-C8	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - reworded to cover both states: wait for arrival, or 
+WR-C9	2026-07-28-week-verification-review.md	Closed	**Open**
+WR-D1	2026-07-28-week-verification-review.md	Closed	Recorded
+# DEAD - cited, no finding behind them
+AR-19	-	-	-
+FCR-B3	-	-	-
+IND-M1	-	-	-
+IND-M4	-	-	-
+INT-A1	-	-	-
+INT-A2	-	-	-
+LD-1	-	-	-
+LD-11	-	-	-
+LD-4	-	-	-
+LD-5	-	-	-
+LD-6	-	-	-
+LD-7	-	-	-
+LD-8	-	-	-
+LD-9	-	-	-
+LE2-A8	-	-	-
+LE2-B20	-	-	-
+LE2-B21	-	-	-
+LE2-B7	-	-	-
+LE2-B8	-	-	-
+LE2-B9	-	-	-
+LE2-C12	-	-	-
+LE2-C13	-	-	-
+LE2-C14	-	-	-
+LE2-C16	-	-	-
+NET-1	-	-	-
+RA-A1	-	-	-
+RC-A10	-	-	-
+RC-A11	-	-	-
+RC-A12	-	-	-
+RC-A6	-	-	-
+RC-A8	-	-	-
+RC-A9	-	-	-
+RC-B10	-	-	-
+RC-B11	-	-	-
+RC-B6	-	-	-
+RC-B7	-	-	-
+RC-B8	-	-	-
+RC-B9	-	-	-
+SM31-108	-	-	-
+VAL-D4	-	-	-
+VAL9-B3	-	-	-
+VAL9-B4	-	-	-
+VAL9-B5	-	-	-
+WP-C19	-	-	-
+WP-C19d	-	-	-
