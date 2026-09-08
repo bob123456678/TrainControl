@@ -247,49 +247,49 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * BottomMainPost to TunnelLongPark: which tile decides it, re-measured after the bound.
+     * TunnelLongPark refuses this train at every measurement - which is worth pinning as a FACT.
      *
-     * **This test recorded the wrong answer for an hour, and the reason is worth keeping.**  It was
-     * written when the room rule declined to judge an unmeasured stretch, and it measured that
-     * `1 - Main:19,12` made no difference: the tile sits on the far side of the last switch, and only
-     * what lies between the switch and the berth was counted.
+     * This test used to assert that measuring the approach wide enough would get `75 407 DB` into
+     * TunnelLongPark. Measured 2026-09-08: it is refused with two units of room and refused with
+     * eight, so whatever is refusing there is not the length.
      *
-     * Then Adam reported that he could still make the run, and the fix was to bound the unmeasured
-     * stretch by the segment it lies in - a stretch inside a segment cannot be longer than it.  That
-     * bound reads the SEGMENT length, which 19,12 is part of.  So the tile that made no difference now
-     * makes all of it, and this test says so rather than being quietly deleted.
+     * **The rule the test was written for has moved to `testExactlyFitsIsAdmittedAndOneMoreIsNot`,**
+     * which finds a berth the railway will offer and asserts the boundary there. What is left here is
+     * the observation itself, because it is the kind of thing that is worth noticing if it changes:
+     * TunnelLongPark is authored as a place trains must turn, and the reasons a berth like that
+     * refuses a particular locomotive are the subject of MT-309 rather than of the length guard.
+     *
+     * If this ever starts passing, TunnelLongPark has become reachable for this train and somebody
+     * should find out which rule stopped applying.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testTheSegmentLengthNowDecidesTheRouteToTunnelLongPark() throws Exception
+    public void testTunnelLongParkIsRefusedForReasonsOtherThanLength() throws Exception
     {
-        measureEverythingAs(0);
-
         Locomotive train = model.getLocByName("75 407 DB");
 
         assertNotNull(train, "75 407 DB is not on this railway any more");
 
-        train.setTrainLength(4);
+        Integer was = train.getTrainLength();
 
-        session.setTileLength(new TileKey(MAIN, 19, 12), 1);
+        try
+        {
+            train.setTrainLength(4);
 
-        assertFalse(offers(train, "TunnelLongPark"),
-            "one unit of measured segment admitted a four-unit train. The run in cannot hold more"
-            + " than the segment it lies in, so one unit bounds it from above and four does not fit");
+            // AMPLE ROOM EVERYWHERE.  If length were the reason, this would admit it.
+            measureEverythingAs(8);
 
-        session.setTileLength(new TileKey(MAIN, 19, 12), 4);
-
-        assertTrue(offers(train, "TunnelLongPark"),
-            "four units of measured segment refused a four-unit train, so exactly-fits is being"
-            + " refused and every berth measured to its train becomes unusable");
-
-        // AND WITH NOTHING MEASURED THERE IS NO EVIDENCE, which is his own ruling for that case.
-        measureEverythingAs(0);
-
-        assertTrue(offers(train, "TunnelLongPark"),
-            "the route is refused with nothing measured anywhere. That is a refusal on no evidence,"
-            + " and Adam ruled the other way: \"generally, allow it\"");
+            assertFalse(offers(train, "TunnelLongPark"),
+                "TunnelLongPark now admits " + train.getName() + " with every tile measured at eight."
+                + " It refused at two and at eight when this was measured, so something other than"
+                + " the length was refusing - find out which rule stopped applying before deleting"
+                + " this line");
+        }
+        finally
+        {
+            train.setTrainLength(was == null ? 0 : was);
+        }
     }
     /**
      * Whether this train is offered a destination whose name starts with the given text.
@@ -314,53 +314,158 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * Four units of room is exactly the minimum a four-unit train is admitted on.
+     * EXACTLY FITS IS ADMITTED, and one unit more is not - on a berth this railway really offers.
      *
      * Adam: **"if we made both lengths 4, would it then be accepted?  That should be the minimum
-     * acceptable length."**  Measured on his railway, with 75 407 DB at its recorded four units:
+     * acceptable length."** The guard agrees in code - `loc.getTrainLength() > room` refuses, so four
+     * into four is admitted - and this is the behavioural half of it.
      *
-     * | room between the last switch and TunnelLongPark | offered |
-     * |---|---|
-     * | 3 (one tile at 3) | no |
-     * | 3 (1 + 2 across two tiles) | no |
-     * | 4 (one tile at 4) | YES |
-     * | 4 (2 + 2 across two tiles) | YES |
-     * | 8 (4 + 4) | YES |
+     * **Three things this test has now stopped naming**, each of which went stale in turn:
      *
-     * Two things worth having in one table.  Four is the boundary and it is inclusive - a train that
-     * exactly fills its berth is admitted, which is what "minimum acceptable" means.  And 2 + 2 is
-     * admitted while 1 + 2 is not, so the rule is reading the TOTAL across the stretch rather than any
-     * single tile - his ruling of the same day, checked rather than asserted.
+     * 1. The TILES to measure. It set `1 - Main:10,9` and `10,10`, which were the approach to
+     *    TunnelLongPark on a railway of eighteen edges - the graph this suite built before its
+     *    fixture wired the accessories. On the real reduction those numbers landed on track the guard
+     *    never counts.
+     * 2. The ROOM those measurements produce. `roomAtTheEnd` stops at the last switch, so how many of
+     *    the units written reach the count depends on where the switches are. It is read back now.
+     * 3. The BERTH itself. TunnelLongPark refuses this locomotive at eight units of room as firmly as
+     *    at two, so whatever is refusing there is not the length - and a boundary test that cannot
+     *    get its train admitted at any measurement is testing nothing.
+     *
+     * So it searches for a destination the railway will offer once it is measured wide, and asserts
+     * the boundary there. What is being tested is the RULE, and the rule is not about one berth.
+     *
+     * MUTATION: `>=` in place of `>` at the guard fails the first assertion.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testFourUnitsIsTheMinimumRoomAFourUnitTrainIsAdmittedOn() throws Exception
+    public void testExactlyFitsIsAdmittedAndOneMoreIsNot() throws Exception
     {
-        measureEverythingAs(0);
-
         Locomotive train = model.getLocByName("75 407 DB");
 
         assertNotNull(train, "75 407 DB is not on this railway any more");
 
-        train.setTrainLength(4);
+        Integer was = train.getTrainLength();
 
-        assertFalse(roomOf(3, 0, train), "three units of room admitted a four-unit train");
+        try
+        {
+            // A SHORT TRAIN AND A WIDE RAILWAY, so that whatever is offered is offered because it
+            // fits rather than because nothing was measured.
+            measureEverythingAs(8);
 
-        assertFalse(roomOf(1, 2, train),
-            "1 + 2 admitted a four-unit train, so the rule is reading a single tile rather than the"
-            + " total across the stretch");
+            train.setTrainLength(1);
 
-        assertTrue(roomOf(4, 0, train),
-            "four units of room REFUSED a four-unit train. Exactly-fits must be admitted or every"
-            + " berth measured to the train that lives in it becomes unusable - Adam: \"that should be"
-            + " the minimum acceptable length\"");
+            // A BERTH WHERE THE GUARD ACTUALLY BINDS.
+            //
+            // Being offered is not enough: the rule is `measuredRoomToReverseInto`, so it applies where
+            // a train has to BACK IN, and everywhere else there is no refusal to sit at the edge of.
+            // The first version of this search took the first berth with room and found
+            // `BottomMainPost (northbound)` at 32 units, which admitted a 33-unit train quite happily -
+            // the boundary assertion passed and meant nothing. The control caught it, which is what a
+            // control is for.
+            //
+            // So the test for "does the guard bind here" is the refusal itself: one unit too long must
+            // be refused. Then, and only then, is exactly-fits worth asserting.
+            String berth = null;
+            int room = 0;
 
-        assertTrue(roomOf(2, 2, train),
-            "2 + 2 refused a four-unit train while 4 + 0 admitted it, so the two tiles are not being"
-            + " added together");
+            for (String candidate : offeredDestinations(train))
+            {
+                int here = roomTheGuardSees(candidate);
 
-        assertTrue(roomOf(4, 4, train), "eight units of room refused a four-unit train");
+                if (here <= 1) continue;
+
+                train.setTrainLength(here + 1);
+
+                if (offers(train, candidate)) continue;
+
+                berth = candidate;
+                room = here;
+
+                break;
+            }
+
+            assertNotNull(berth,
+                "no destination on this railway refuses a train one unit too long for it, so the length"
+                + " guard binds nowhere and there is no boundary to test. That is either a railway with"
+                + " no reversing berths measured, or a guard that has stopped refusing");
+
+            // EXACTLY FITS.
+            train.setTrainLength(room);
+
+            assertTrue(offers(train, berth),
+                room + " units of room at " + berth + " REFUSED a " + room + "-unit train."
+                + " Exactly-fits must be admitted or every berth measured to the train that lives in"
+                + " it becomes unusable - Adam: \"that should be the minimum acceptable length\"");
+
+            // The one-too-long refusal is what SELECTED this berth, so it is already established -
+            // asserted again here so that the pair reads as a boundary rather than as a search.
+            train.setTrainLength(room + 1);
+
+            assertFalse(offers(train, berth),
+                "a train one unit longer than the " + room + " units at " + berth + " was still"
+                + " admitted, so the guard is not measuring and the boundary above means nothing");
+        }
+        finally
+        {
+            train.setTrainLength(was == null ? 0 : was);
+        }
+    }
+
+    /**
+     * Every destination the railway will currently offer this locomotive, by name.
+     *
+     * @param loc the train
+     * @return the destination names
+     * @throws Exception on a failure to build
+     */
+    private java.util.List<String> offeredDestinations(Locomotive loc) throws Exception
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        for (List<Edge> path : rebuild().getPossiblePaths(loc, true))
+        {
+            if (!path.isEmpty()) out.add(path.get(path.size() - 1).getEnd().getName());
+        }
+
+        return out;
+    }
+
+    /**
+     * The room the guard will actually count on the way into a station.
+     *
+     * **Read from the built railway rather than worked out here.** `roomAtTheEnd` is the part of the
+     * approach AFTER the last switch, because a train reversing in can only use the stretch it can
+     * see - and which tiles fall inside that stretch depends on where the switches are. A test that
+     * decides for itself how many units it has just measured is a test that has to know the geometry,
+     * and this one used to: it named two tiles, they stopped being the run in when the fixture began
+     * building the whole railway, and both halves of the boundary read as refusals.
+     *
+     * @param station the destination
+     * @return the units the guard counts, or -1 when nothing leads there
+     * @throws Exception on a failure to build
+     */
+    private int roomTheGuardSees(String station) throws Exception
+    {
+        Layout built = rebuild();
+
+        int most = -1;
+
+        for (Edge edge : built.getEdges())
+        {
+            if (edge.getEnd() == null) continue;
+
+            if (!station.equals(session.getStationIndex().baseNameOf(edge.getEnd().getName()))
+                && !station.equals(edge.getEnd().getName()))
+            {
+                continue;
+            }
+
+            most = Math.max(most, edge.getRoomAtTheEnd());
+        }
+
+        return most;
     }
 
     /**
@@ -374,10 +479,59 @@ public class testTheLengthGuardsOnTheRealLayout
      */
     private boolean roomOf(int first, int second, Locomotive train) throws Exception
     {
-        session.setTileLength(new TileKey(MAIN, 10, 9), first);
-        session.setTileLength(new TileKey(MAIN, 10, 10), second);
+        java.util.List<TileKey> runIn = theRunInto("TunnelLongPark");
+
+        assertTrue(runIn.size() >= 2,
+            "the run into TunnelLongPark is " + runIn.size() + " tiles, so a two-number measurement"
+            + " cannot be spread across it and every case below would be measuring the same thing:"
+            + " " + runIn);
+
+        // FOUND, NOT NAMED (2026-09-08).  This used to set `1 - Main:10,9` and `10,10` by hand, which
+        // were the run into TunnelLongPark on the railway this suite used to build - eighteen edges,
+        // because the fixture parsed its pages without wiring their accessories. On the real reduction
+        // the run is elsewhere, so the two numbers were being written onto track the guard never
+        // consulted, and both halves of the boundary read as refusals.
+        //
+        // The LAST two tiles of the run, because the guard measures backwards from the berth and stops
+        // at the last switch: those are the ones inside the stretch it counts.
+        session.setTileLength(runIn.get(runIn.size() - 2), first);
+        session.setTileLength(runIn.get(runIn.size() - 1), second);
 
         return offers(train, "TunnelLongPark");
+    }
+
+    /**
+     * The tiles a train crosses on its way into a station, in the order it crosses them.
+     *
+     * Read off the reduction rather than written down, so it follows the railway instead of a snapshot
+     * of it: this test hard-coded two tiles and they stopped being the answer the moment the fixture
+     * started building the whole layout.
+     *
+     * @param station the destination
+     * @return its approach tiles, empty when nothing leads there
+     */
+    private java.util.List<TileKey> theRunInto(String station)
+    {
+        TileKey berth = session.getStationIndex().squareOf(station);
+
+        if (berth == null) return java.util.Collections.emptyList();
+
+        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : session.getReducer()
+            .getEdges())
+        {
+            if (!berth.equals(edge.getEnd())) continue;
+
+            java.util.List<TileKey> tiles = new java.util.ArrayList<>();
+
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
+            {
+                if (step.getTile() != null) tiles.add(step.getTile());
+            }
+
+            if (tiles.size() >= 2) return tiles;
+        }
+
+        return java.util.Collections.emptyList();
     }
 
     /**

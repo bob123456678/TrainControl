@@ -690,6 +690,16 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = builtWithAnApproachFromTheYard();
 
+        // STOPPED FIRST, because this test EDITS the railway and the fixture starts it.
+        //
+        // Every layout in this class comes from a builder that calls `runLocomotives()`, deliberately:
+        // the blocking rules it exists to test are asked of a running railway, and the builder's own
+        // comment says it "sets the auto-running flag and starts nothing here". Deleting a point is the
+        // one thing in this class that is not a question about a running railway - `Layout.deletePoint`
+        // refuses while `isRunning()`, which is the affordance and the guard asking one question
+        // (OB-057) - so this test could never pass while the flag was set.
+        layout.stopLocomotives();
+
         org.traincontrol.automation.Point watched = layout.getPoint("BK YARD");
         org.traincontrol.automation.Point station = layout.getPoint("BK B");
 

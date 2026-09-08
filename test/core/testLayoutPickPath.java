@@ -715,31 +715,38 @@ public class testLayoutPickPath
     }
 
     /**
-     * An inactive DESTINATION is refused to autonomy but allowed to a route picked by hand.
+     * An inactive endpoint is refused at EVERY door - and an inactive start is not.
      *
-     * This asymmetry against the intermediate rule above is the point of the pair, not an oversight.
-     * Sending a train to a switched-off station is a deliberate act - it is how a train is put away on
-     * a berth that autonomy is meant to leave alone - whereas crossing one is never chosen for its own
-     * sake.  Deactivating a station therefore keeps autonomy out without putting it out of the
-     * operator's reach.
+     * Adam, 2026-09-06: **"In manual mode, inactive endpoints and intermediates should be refused as
+     * well. Just not inactive start points. Inactive really means nothing can pass."**
      *
-     * A note on which rule fires: isPathClear carries a later check reporting
-     * errorInactiveStationInAutoRun, which names the offending station, but it cannot be reached.  The
-     * fenced loop above it tests every edge END, and the last of those IS the destination, so the
-     * generic errorInactivePointInAutoRun always wins.  Behaviour is asserted here - refused either
-     * way - with the shadowing recorded so nobody assumes an operator has seen the friendlier message.
+     * **This test asserted the opposite until 2026-09-08**, and it was right when it was written: the
+     * destination check used to be fenced behind `isAutoRunning`, so a hand-driven send could finish on
+     * a closed square while a Return Home run could not - and the cross drawn on that square meant two
+     * different things depending on who was asking. His ruling removed the fence. Nobody swept the
+     * test, and it went red in the first full battery run since.
+     *
+     * The START stays exempt, and that is the whole of the exception: a train standing on a square that
+     * has been switched off is driven OUT by hand, which is what closing a square around a train is
+     * for.
+     *
+     * MUTATION: putting the `isAutoRunning()` fence back on the destination check fails the first half.
+     *
+     * @throws Exception on a failure to build
      */
     @Test(timeOut = 60000)
-    public void testAnInactiveDestinationIsRefusedOnlyWhileAutonomyRuns() throws Exception
+    public void testAnInactiveEndpointIsRefusedAtEveryDoor() throws Exception
     {
         Locomotive loc = dummyLoc();
         Layout layout = threeInARow(loc);
 
         layout.getPoint("PC_C").setActive(false);
 
-        assertTrue(layout.isPathClear(wholeRun(layout), loc),
-            "a route to a switched-off station may still be picked by hand - this is what makes a "
-                + "deactivated berth reachable at all");
+        assertFalse(layout.isPathClear(wholeRun(layout), loc),
+            "a route ENDING on a switched-off station was allowed with nothing running. Adam,"
+            + " 2026-09-06: \"inactive really means nothing can pass\" - the destination check used to"
+            + " be fenced behind isAutoRunning, and removing that fence is what made the cross on a"
+            + " square mean one thing rather than two");
 
         layout.setLocomotivesToRun(new LinkedList<>());
         layout.runLocomotives();
@@ -747,14 +754,22 @@ public class testLayoutPickPath
         try
         {
             assertFalse(layout.isPathClear(wholeRun(layout), loc),
-                "autonomy may not send a train to an inactive station");
+                "autonomy may not send a train to an inactive station either");
         }
         finally
         {
             layout.stopLocomotives();
         }
-    }
 
+        // AND THE START IS EXEMPT, which is the half that makes the rule usable: a train shut in by a
+        // square being switched off has to be able to drive out.
+        layout.getPoint("PC_C").setActive(true);
+        layout.getPoint("PC_A").setActive(false);
+
+        assertTrue(layout.isPathClear(wholeRun(layout), loc),
+            "a train standing on a switched-off square cannot be driven off it, so closing a square"
+            + " around a train traps it - Adam: \"just not inactive start points\"");
+    }
     /**
      * Autonomy may not set off from a point that is not a station, and that rule is fenced too.
      *
