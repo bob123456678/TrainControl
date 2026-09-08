@@ -4965,6 +4965,17 @@ public class LayoutEditor extends PositionAwareJFrame
             this.showTextCheckbox.setSelected(!this.layout.getEditHideText());
 
             refreshGrid();
+
+            // AND THE CAPTION DROPDOWN, which is the only visible state of this switch in autonomy
+            // mode (RGD-C3).  The checkbox above is hidden there because None IS this switch off, so
+            // without this Control+L emptied the diagram under a control still naming a caption.
+            //
+            // After the rebuild, not before: the panel answers by changing its selection, which asks
+            // for a rebuild of its own.
+            if (autonomyPanel != null && autonomyPanel.isVisible())
+            {
+                autonomyPanel.textLabelsChanged(!this.layout.getEditHideText());
+            }
         }
         catch (Exception e)
         {

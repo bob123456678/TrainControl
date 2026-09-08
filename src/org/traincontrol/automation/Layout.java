@@ -3093,6 +3093,33 @@ public class Layout
     }
 
     /**
+     * Puts back reversals that were drained but not written.
+     *
+     * Draining is what stops a record becoming a metronome, but it happens BEFORE the caller has
+     * written anything, and the caller can fail: no setup to write to, a store that throws part way
+     * through a list. The names were gone and the turn they described was lost, which is the opposite
+     * of what this record is for - it exists so a turn made at a destination is durable (RGD-C7).
+     *
+     * `add` is the whole implementation because membership here is a PARITY, not an event: putting a
+     * name back restores exactly the state the drain took away. Anything already turned again in the
+     * meantime keeps its own answer, which is why this cannot simply assign.
+     *
+     * Not a cure for a configuration RELOAD between the turn and the write - that swaps this object
+     * entirely and the pending names go with it. That one needs the record to outlive the layout.
+     *
+     * @param unwritten the names the caller did not manage to write, may be null or empty
+     */
+    public void restoreReversalsOnArrival(java.util.Collection<String> unwritten)
+    {
+        if (unwritten == null) return;
+
+        for (String name : unwritten)
+        {
+            if (name != null) this.reversedOnArrival.add(name);
+        }
+    }
+
+    /**
      * Fires callbacks to repaint the graph UI
      */
     public void refreshUI()

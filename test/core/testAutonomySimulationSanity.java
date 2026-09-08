@@ -379,6 +379,26 @@ public class testAutonomySimulationSanity
             assertTrue(layout.takeReversalsOnArrival().isEmpty(),
                 "the record was not drained, so the same reversal is written to the graph again on"
                 + " every refresh, flipping the facing back and forth instead of recording it once");
+
+            // AND A DRAIN THAT WAS NOT WRITTEN CAN BE PUT BACK (RGD-C7).
+            //
+            // Draining happens before the caller has written anything, and the caller can fail: no
+            // setup to write to, a store that throws on the second of three names. Those turns were
+            // gone, which is the opposite of what a record described as "recorded here, where it is
+            // certain" is for.
+            layout.restoreReversalsOnArrival(turned);
+
+            assertTrue(layout.takeReversalsOnArrival().contains(loc.getName()),
+                "a drained reversal that was never written to the graph cannot be put back, so every"
+                + " way of failing to write one - no session, a throwing flip - loses the turn the"
+                + " railway actually made (RGD-C7)");
+
+            // Idempotent about NULL, because the caller passes whatever its loop did not reach.
+            layout.restoreReversalsOnArrival(null);
+
+            assertTrue(layout.takeReversalsOnArrival().isEmpty(),
+                "restoring nothing put something back, so the reconcile's finally block would"
+                + " resurrect a turn it had just written and flip the facing a second time");
         }
         finally
         {

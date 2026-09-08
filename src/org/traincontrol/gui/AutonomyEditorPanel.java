@@ -649,7 +649,15 @@ public class AutonomyEditorPanel extends JPanel
         showParkedTrains.setFocusable(false);
         showHomeLocomotives.setFocusable(false);
 
-        applyCaptionMode(false);
+        // Seeded from what was restored, so Control+L comes back to the mode this window opened with
+        // rather than to the default (RGD-C3).  The listener below is added after this and does not
+        // fire for the restore.
+        if (captions.getSelectedIndex() != CAPTIONS_NONE)
+        {
+            lastNamedCaptionMode = captions.getSelectedIndex();
+        }
+
+        applyCaptionMode();
 
         // Not focusable, like every other control in this window (OB-019).
         //
@@ -675,7 +683,14 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putInt(PREF_CAPTION_MODE, captions.getSelectedIndex());
 
-            applyCaptionMode(true);
+            // What Control+L comes back to (RGD-C3).  Only the three that say something: None is the
+            // state being returned FROM, so remembering it would make the shortcut a no-op.
+            if (captions.getSelectedIndex() != CAPTIONS_NONE)
+            {
+                lastNamedCaptionMode = captions.getSelectedIndex();
+            }
+
+            applyCaptionMode();
 
             // The GRID, not just a repaint: a caption's text is decided when the diagram is built.
             if (onDiagramChanged != null) onDiagramChanged.run();
@@ -2921,8 +2936,24 @@ public class AutonomyEditorPanel extends JPanel
         // THE GEOMETRIC SIDES, matching what the tail walk reads (MON-A1).  See the note at the paste
         // door: the build's answer is the right one and the model cannot yet read it, so writing it
         // here would store a side `edgesCoveredByStandingTrains` never matches and block nothing.
-        java.util.List<String> sides =
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point);
+        java.util.List<String> sides = new java.util.ArrayList<>(
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point));
+
+        final String recorded = session.getArrivedFrom(target);
+
+        // AND WHATEVER IS ACTUALLY RECORDED, even when the geometry does not offer it (RGD-C4).
+        //
+        // The same rule as the facing menu thirty lines below, which is where it was written first
+        // (OB-177) and where it was left. The radios are a ButtonGroup ticked by `side.equals(recorded)`,
+        // so a recorded side that is not in this list ticked NOTHING: the section opened with every
+        // choice blank, which reads as "no tail recorded" while a side that IS recorded goes on steering
+        // the tail walk. A track edit that re-plumbs a square leaves exactly that state, and so did an
+        // answer stored while these were briefly named by the build rather than by the geometry.
+        //
+        // It gets an entry rather than being silently dropped, for the reason the facing menu gives:
+        // which of the two is wrong - the record or the track under it - is not this menu's to decide.
+        // Clicking any other entry resolves both.
+        if (recorded != null && !sides.contains(recorded)) sides.add(recorded);
 
         if (sides.isEmpty()) return null;
 
@@ -2931,8 +2962,6 @@ public class AutonomyEditorPanel extends JPanel
         menu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivedFrom")));
 
         javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
-
-        final String recorded = session.getArrivedFrom(target);
 
         for (final String side : sides)
         {
@@ -5287,6 +5316,13 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The last caption mode that drew something, for Control+L to come back to (RGD-C3).
+     *
+     * Station Names to begin with, which is what the dropdown itself defaults to.
+     */
+    private int lastNamedCaptionMode = CAPTIONS_STATIONS;
+
+    /**
      * Makes the window agree with the caption choice (FR-061).
      *
      * The two boxes are the internal representation - everything that draws a caption asks them, and
@@ -5298,21 +5334,55 @@ public class AutonomyEditorPanel extends JPanel
      * dropdown subsumes, and driving it from here is why the two boxes no longer need to reach for it
      * themselves.
      *
-     * @param interactive whether this is the operator changing it, rather than the window opening;
-     *        the text switch is only touched when it is, so opening a setup never overrides a choice
-     *        somebody made in the plain editor
+     * **At open as well, which it did not used to be (RGD-C3).** The text switch was left alone when
+     * the window opened, on the grounds that opening a setup should not override a choice somebody
+     * made in the plain editor. But the mode is REMEMBERED between opens ("with the setting remembered
+     * between open") and the text switch is not - it is a plain field that defaults to on - so None
+     * came back as a word and not as an effect: the dropdown said None while station names were drawn
+     * under it, which is the state the four options exist to make impossible.
+     *
+     * The cost is the courtesy: opening the autonomy editor now imposes its caption mode on the text
+     * switch. That is what a control naming four exclusive options claims to do, and the alternative
+     * was a control that lies on the first open after every restart.
      */
-    private void applyCaptionMode(boolean interactive)
+    private void applyCaptionMode()
     {
         int mode = captions.getSelectedIndex();
 
         showParkedTrains.setSelected(mode == CAPTIONS_PARKED);
         showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
 
-        if (!interactive) return;
-
         if (mode == CAPTIONS_NONE) turnTextLabelsOff();
         else turnTextLabelsOn();
+    }
+
+    /**
+     * Told that the diagram's text switch moved on its own, so the dropdown can agree (RGD-C3).
+     *
+     * The Text Labels checkbox is hidden in autonomy mode because None IS that switch turned off - but
+     * Control+L still reaches it, and the box was the only thing that used to show its state. Pressing
+     * it with "Parked Locs" selected made every caption vanish under a control still saying Parked,
+     * which is OB-174's symptom ("indistinguishable from a control that does not work") reached
+     * through the shortcut the tidy-up left wired.
+     *
+     * Turning the text back on restores the last mode that said something, rather than a default: the
+     * operator who pressed Control+L twice asked for what they had before.
+     *
+     * Selecting fires the dropdown's own listener, which is wanted - the choice really did change, and
+     * it should be stored and drawn like any other. The listener's call back into the text switch is
+     * idempotent, so this does not bounce.
+     *
+     * @param shown whether the labels are now displayed
+     */
+    public void textLabelsChanged(boolean shown)
+    {
+        if (captions == null) return;
+
+        boolean saysSomething = captions.getSelectedIndex() != CAPTIONS_NONE;
+
+        if (shown == saysSomething) return;
+
+        captions.setSelectedIndex(shown ? lastNamedCaptionMode : CAPTIONS_NONE);
     }
 
     /**

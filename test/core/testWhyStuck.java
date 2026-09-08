@@ -281,20 +281,26 @@ public class testWhyStuck
     }
 
     /**
-     * The commands panel's dash agrees with the rule it is a copy of (SVN-C4).
+     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed (MON-B1).
      *
-     * The run list marks a destination " -" to mean *autonomy will not choose this, but you may*.  It
-     * spells the rule out by hand instead of asking `Layout.barredFromAutonomy`, and its own javadoc
-     * says why - every public way in to that rule is `synchronized` on the Layout, and this is asked
-     * three times per repaint on the event thread, which is the freeze `AutoLocomotiveStatus` was
-     * rewritten to remove.
+     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of
+     * `Layout.barredFromAutonomy` - the rule is `synchronized` on the Layout and this runs on the event
+     * thread three times per repaint - so the two can only be kept together by a test that asks both.
      *
-     * **A deliberate copy still drifts.**  `280ff08b` moved the terminus rule out of `isPathClear`
-     * into three places and missed this fourth mirror, so a terminus a non-reversible train cannot be
-     * sent to was listed with no dash for a week.  This is what would have caught it: the two answers
-     * are compared on a fixture where they must agree.
+     * The previous version of this test exercised the TERMINUS limb and claimed in its own words to
+     * catch "removing any limb of the dash's predicate". It could not: a test that builds one case
+     * cannot notice a limb that was never written. Two were missing - `!isAutoDestination()` and
+     * `!isActive()` - and the first of them is how a modern parking berth is spelled, which is the very
+     * thing the dash's javadoc says it exists to mark.
      *
-     * MUTATION this catches: removing any limb of the dash's predicate.
+     * So this compares the two ANSWERS over every case instead of asserting a mark. Both are reached by
+     * reflection: the copy is private, and the rule is private because everything public that reaches
+     * it takes the monitor this copy exists to avoid.
+     *
+     * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one
+     * reason, and the clean case pins the other direction.
+     *
+     * @throws Exception on a failure to reach either method
      */
     @Test
     public void testTheDashAgreesWithTheRule() throws Exception
@@ -305,6 +311,8 @@ public class testWhyStuck
 
         layout.moveLocomotive(loc.getName(), "WS11_A", false);
 
+        final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
+
         java.lang.reflect.Method dash =
             org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod(
                 "notChosenByAutonomy", org.traincontrol.automation.Point.class,
@@ -312,40 +320,97 @@ public class testWhyStuck
 
         dash.setAccessible(true);
 
-        boolean was = loc.isReversible();
+        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("barredFromAutonomy",
+            org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
+
+        rule.setAccessible(true);
+
+        // Each case names itself, sets ONE thing, and puts it back.
+        java.util.LinkedHashMap<String, Runnable[]> cases = new java.util.LinkedHashMap<>();
+
+        cases.put("nothing wrong with it", new Runnable[]{() -> { }, () -> { }});
+
+        cases.put("switched off", new Runnable[]{
+            () -> end.setActive(false), () -> end.setActive(true)});
+
+        cases.put("a parking berth, spelled the modern way", new Runnable[]{
+            () -> end.setAutoDestination(false), () -> end.setAutoDestination(true)});
+
+        cases.put("a reversing station", new Runnable[]{
+            () -> quietly(() -> end.setReversing(true)),
+            () -> quietly(() -> end.setReversing(false))});
+
+        cases.put("a terminus this train cannot back into", new Runnable[]{
+            () -> { quietly(() -> end.setTerminus(true)); loc.setReversible(false); },
+            () -> { quietly(() -> end.setTerminus(false)); loc.setReversible(true); }});
+
+        cases.put("excluding this locomotive", new Runnable[]{
+            () -> end.setExcludedLocs(new java.util.HashSet<>(java.util.Arrays.asList(loc))),
+            () -> end.setExcludedLocs(new java.util.HashSet<>())});
+
+        boolean wasReversible = loc.isReversible();
+
+        loc.setReversible(true);
 
         try
         {
-            // A TERMINUS THIS TRAIN CANNOT BACK INTO, which is the limb that was missed.
-            layout.getPoint("WS11_B").setTerminus(true);
+            for (java.util.Map.Entry<String, Runnable[]> each : cases.entrySet())
+            {
+                each.getValue()[0].run();
 
-            loc.setReversible(false);
+                try
+                {
+                    boolean barred = rule.invoke(layout, end, loc) != null;
+                    boolean marked = " -".equals(dash.invoke(null, end, loc));
 
-            assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS11_B"),
-                "precondition: the model does not bar a terminus for a train that cannot reverse, so "
-                + "this test is not about the rule it says it is");
-
-            assertEquals(dash.invoke(null, layout.getPoint("WS11_B"), loc), " -",
-                "the run list offers a terminus to a train that cannot back into it with no mark, "
-                + "while the model will never send it there - so the dash says autonomy might choose "
-                + "a station autonomy has already ruled out");
-
-            // AND THE OTHER WAY: a train that can reverse is offered it without a dash.
-            loc.setReversible(true);
-
-            assertFalse(layout.destinationsBarredFromAutonomy(loc).contains("WS11_B"),
-                "precondition: the model bars this terminus for a reversible train too, so the "
-                + "assertion below would pass for the wrong reason");
-
-            assertEquals(dash.invoke(null, layout.getPoint("WS11_B"), loc), "",
-                "the run list marks a station autonomy WILL choose as one it will not");
+                    assertEquals(marked, barred,
+                        "the run list and the model disagree about a station that is " + each.getKey()
+                        + ": the model says autonomy " + (barred ? "will never" : "may")
+                        + " choose it, the dash says autonomy " + (marked ? "will never" : "may")
+                        + " choose it. The dash is a deliberate copy of that rule and a copy that has"
+                        + " lost a limb offers a berth autonomy has already ruled out (MON-B1)");
+                }
+                finally
+                {
+                    each.getValue()[1].run();
+                }
+            }
         }
         finally
         {
-            loc.setReversible(was);
-
-            layout.getPoint("WS11_B").setTerminus(false);
+            loc.setReversible(wasReversible);
         }
+    }
+
+    /**
+     * Runs something that declares a checked exception, failing the test if it throws.
+     *
+     * `setReversing` and `setTerminus` both declare `Exception`, which a `Runnable` cannot carry, and
+     * wrapping each in its own try block would bury the cases above in ceremony.
+     *
+     * @param body what to run
+     */
+    private static void quietly(ThrowingBody body)
+    {
+        try
+        {
+            body.run();
+        }
+        catch (Exception failed)
+        {
+            throw new RuntimeException(failed);
+        }
+    }
+
+    /**
+     * A body that may throw, for `quietly`.
+     */
+    private interface ThrowingBody
+    {
+        /**
+         * @throws Exception whatever the body throws
+         */
+        void run() throws Exception;
     }
 
     /**

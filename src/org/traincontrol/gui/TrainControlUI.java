@@ -6168,9 +6168,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Before the levelling below, and drained, so each is written exactly once.
             org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-            for (String turned : built.takeReversalsOnArrival())
+            // AND FORGOTTEN ONLY ONCE WRITTEN (RGD-C7).  The drain happens before any of these reach
+            // the graph, so every way of not reaching it - no session to write to, a store that throws
+            // on the second of three - used to lose the turn for good. The remainder goes back.
+            java.util.Set<String> turnedRound = built.takeReversalsOnArrival();
+
+            try
             {
-                if (session != null) session.flipFacing(turned, built);
+                if (session != null)
+                {
+                    for (java.util.Iterator<String> pending = turnedRound.iterator(); pending.hasNext();)
+                    {
+                        String turned = pending.next();
+
+                        session.flipFacing(turned, built);
+
+                        // Written, and only now forgotten.
+                        pending.remove();
+                    }
+                }
+            }
+            finally
+            {
+                built.restoreReversalsOnArrival(turnedRound);
             }
 
             for (org.traincontrol.automation.Point point : built.getPoints())

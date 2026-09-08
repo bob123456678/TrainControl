@@ -4619,33 +4619,7 @@ public class AutonomySession
     {
         if (tile == null) return null;
 
-        Object placed = getPointProperty(tile, "loc");
-
-        if (placed == null) return null;
-
-        String name;
-
-        if (placed instanceof org.json.JSONObject)
-        {
-            org.json.JSONObject loc = (org.json.JSONObject) placed;
-
-            // optString, not getString: a placement with no name is not this program's doing, but a
-            // hand-edited file can carry one, and asking for a key that is not there throws.
-            name = loc.optString("name", null);
-        }
-        else
-        {
-            // A bare string.  Not a shape written here, but setup files get edited by hand and an
-            // older autonomy.json may hold one - and drawing nothing on an occupied platform is the
-            // one wrong answer a label must not give.
-            name = String.valueOf(placed);
-        }
-
-        if (name == null) return null;
-
-        name = name.trim();
-
-        return name.isEmpty() ? null : name;
+        return nameOfPlacedLocomotive(getPointProperty(tile, "loc"));
     }
 
     /**
@@ -4756,19 +4730,47 @@ public class AutonomySession
     /**
      * The locomotive named by a stored placement, or null when there is none.
      *
-     * A placement is a JSON object carrying the train's name and whatever was recorded with it. Asked
-     * here so that re-placing the SAME locomotive on a square it is already on - which happens whenever
-     * a door writes the placement back unchanged - does not read as a change of occupant and throw away
-     * an arrival side that is still true.
+     * THE ONE PLACE THAT KNOWS THE SHAPE.  `getLocomotiveNameAt` is the same question asked of a
+     * square rather than of a value, and it comes here; there were three readers before and they did
+     * not agree.
+     *
+     * A placement is an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because parseAuto
+     * resets whatever a placement omits, so a train's length and functions have to travel with its name
+     * rather than beside it.  A BARE STRING is not a shape this program writes, but setup files get
+     * edited by hand and an older autonomy.json may hold one.
+     *
+     * That second shape is why this is shared rather than reimplemented (RGD-C5).  This method is also
+     * what the occupant-change guards ask, so answering null for a bare string made re-placing a train
+     * on the square it is already standing on read as a CHANGE of occupant - and throw away an arrival
+     * side that was still true, which is the exact case the guard exists to avoid.  Tail blocking then
+     * goes quietly off for that square until the next arrival.
      *
      * @param placement whatever was stored under "loc"
-     * @return the name, or null
+     * @return the name, trimmed, or null
      */
     private static String nameOfPlacedLocomotive(Object placement)
     {
-        if (!(placement instanceof org.json.JSONObject)) return null;
+        if (placement == null) return null;
 
-        return ((org.json.JSONObject) placement).optString("name", null);
+        String name;
+
+        if (placement instanceof org.json.JSONObject)
+        {
+            // optString, not getString: a placement with no name is not this program's doing, but a
+            // hand-edited file can carry one, and asking for a key that is not there throws.
+            name = ((org.json.JSONObject) placement).optString("name", null);
+        }
+        else
+        {
+            // Drawing nothing on an occupied platform is the one wrong answer a label must not give.
+            name = String.valueOf(placement);
+        }
+
+        if (name == null) return null;
+
+        name = name.trim();
+
+        return name.isEmpty() ? null : name;
     }
 
     /**

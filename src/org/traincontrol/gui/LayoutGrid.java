@@ -1034,9 +1034,16 @@ public class LayoutGrid
         // numbers "in both autonomy editor and track diagram editor" and the viewer is neither: it is
         // where trains are watched, and a ruler there is scenery over the railway.
         //
-        // `master instanceof LayoutEditor` rather than `inEditor`, which is `layout.getEdit() &&
-        // ...` - autonomy mode deliberately does not set that flag, so `inEditor` is false in the one
-        // editor where coordinates matter most.
+        // `master instanceof LayoutEditor` rather than `inEditor`, and NOT because the flag is unset
+        // in autonomy mode - it is set there (RGD-C6).  `LayoutEditor.render()` calls
+        // `layout.setEdit()` unconditionally and `setAutonomyMode` runs before it, so `getEdit()` is
+        // true in both editors; `setAutonomyMode`'s own javadoc says it "does not call setEdit", which
+        // is true of that method and false of the window it runs in, and that sentence is where the
+        // opposite claim that used to stand here came from.
+        //
+        // The window test is used because it is the one that answers the question actually being
+        // asked - is this an editor at all - rather than borrowing a flag that means "the diagram is
+        // editable" and happens to agree.
         //
         // AND ONLY WITH THE GRID ON, which is the whole of what `coordinatesVisible` now answers - see
         // it for why the numbers stopped being a setting of their own.  Asked through that method

@@ -123,11 +123,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.
      *
-     * Two reasons, one meaning to the operator.  The station may exclude this particular locomotive,
-     * or it may be a reversing station: a parking berth, which autonomy no longer chooses, leaving it
-     * to a route picked by hand or to "return home".  Both answer the same question,
-     * which is why they share a marker rather than accumulating a symbol each: this list offers the
-     * berth, because you may still choose it yourself, and the dash says autonomy will not.
+     * Several reasons, one meaning to the operator.  The station may exclude this particular
+     * locomotive, be switched off, be a reversing station, or be marked as somewhere autonomy does not
+     * choose - a parking berth, left to a route picked by hand or to "return home".  They all answer
+     * the same question, which is why they share a marker rather than accumulating a symbol each: this
+     * list offers the berth, because you may still choose it yourself, and the dash says autonomy will
+     * not.
+     *
+     * **A PARKING BERTH IS SPELLED `autoDestination:false`** in anything the builder has emitted since,
+     * and that limb was not here at all (MON-B1) - so the one case this marker was written for was the
+     * one it got wrong, for as long as it has existed. `!isActive()` was missing with it.
      *
      * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
      * the full predicate is spelled out to match the rule in Layout rather than relying on that.
@@ -148,7 +153,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         if (p == null) return "";
 
-        return (p.isReversing() && p.isDestination())
+        // ALL FIVE LIMBS, in the rule's order (MON-B1).  Two were missing and the guard could not say
+        // so - it built the terminus case and claimed to catch "removing any limb", which a test that
+        // constructs one case cannot do for a limb that was never written.
+        return !p.isActive()
+            || (p.isReversing() && p.isDestination())
+            || !p.isAutoDestination()
             || (loc != null && p.isTerminus() && !loc.isReversible())
             || p.getExcludedLocs().contains(loc) ? " -" : "";
     }

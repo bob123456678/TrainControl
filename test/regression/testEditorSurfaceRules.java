@@ -1699,7 +1699,7 @@ public class testEditorSurfaceRules
             + " named, and Adam asked for that default by name");
 
         // THE TWO INTERNAL FLAGS ARE EXCLUSIVE BY CONSTRUCTION, which is what retires OB-174.
-        String applier = bodyOf(panel, "private void applyCaptionMode(boolean interactive)");
+        String applier = bodyOf(panel, "private void applyCaptionMode()");
 
         assertNotEquals(applier, "",
             "applyCaptionMode has gone, so nothing turns the one choice into what the drawing code"
@@ -1714,6 +1714,30 @@ public class testEditorSurfaceRules
             "the choice does not drive the text switch both ways. None must turn captions off, and the"
             + " other three must turn them on - otherwise picking one changes nothing anybody can see,"
             + " which is the defect OB-174 reported");
+
+        // AND AT OPEN AS WELL (RGD-C3).  The mode is remembered between opens and the text switch is
+        // not, so a version that skipped the switch when the window opened restored None as a word and
+        // not as an effect: the dropdown said None over station names it had not turned off.
+        assertFalse(applier.contains("if (!interactive) return"),
+            "the caption mode is applied to the internal flags at open but not to the text switch, so"
+            + " a remembered None comes back as a dropdown saying None with the captions still drawn"
+            + " - which is exactly the contradiction four exclusive options exist to make impossible"
+            + " (RGD-C3)");
+
+        // AND THE OTHER DIRECTION: Control+L still reaches the switch in autonomy mode, where the
+        // checkbox that used to show its state is hidden.
+        assertTrue(panel.contains("public void textLabelsChanged(boolean shown)"),
+            "nothing tells the dropdown the text switch moved. Control+L is still bound in autonomy"
+            + " mode and the Text Labels checkbox is hidden there, so without this the captions vanish"
+            + " under a control still naming one - OB-174's symptom by another road (RGD-C3)");
+
+        String editorSource = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")),
+            StandardCharsets.UTF_8);
+
+        assertTrue(codeOnly(editorSource).contains("autonomyPanel.textLabelsChanged("),
+            "the text toggle does not tell the autonomy panel, so the method above is never called and"
+            + " the dropdown goes on naming a caption nobody can see (RGD-C3)");
 
         // AND THE OLD COUPLING IS GONE.  Leaving it would be harmless today and would be the thing a
         // future reader copies.
@@ -1787,6 +1811,64 @@ public class testEditorSurfaceRules
         assertFalse(menu.contains("on.setArrivedFrom(null)"),
             "the menu clears the side on the running layout, so the setup and the railway now"
             + " disagree about whether clearing is possible at all");
+
+        // AND IT SHOWS WHAT IS RECORDED, even when the geometry does not offer it (RGD-C4).
+        //
+        // The sibling menu thirty lines below learned this as OB-177 and this half was not swept. The
+        // radios are a ButtonGroup ticked by equality, so a recorded side missing from the list ticks
+        // NOTHING: the section reads as "no tail recorded" while the side it does not show goes on
+        // steering the tail walk. A track edit that re-plumbs a square leaves exactly that state.
+        assertTrue(menu.contains("if (recorded != null && !sides.contains(recorded)) sides.add(recorded)"),
+            "the arrived-from menu drops a recorded side the geometry does not offer, so it opens with"
+            + " every choice blank for a square that HAS a tail recorded - which is OB-177's symptom"
+            + " on the sibling menu, unswept (RGD-C4)");
+    }
+
+    /**
+     * One reader of a placement, because the two disagreed about the shape (RGD-C5).
+     *
+     * A placement is normally an object - `{"name": ..., "speed": ...}` - because `parseAuto` resets
+     * whatever a placement omits, so a train's length and functions travel with its name. A hand-edited
+     * or older `autonomy.json` can hold a BARE STRING, and `getLocomotiveNameAt` has always handled it:
+     * *"drawing nothing on an occupied platform is the one wrong answer a label must not give."*
+     *
+     * `nameOfPlacedLocomotive` was written later for the occupant-change guards and answered null for
+     * that shape. Null is "nobody here", so re-placing a train on the square it already occupies - which
+     * every door does when it writes a placement back unchanged - read as a CHANGE of occupant and threw
+     * away an arrival side that was still true. That is the exact case the guard exists to prevent, and
+     * the cost is tail blocking quietly off for that square until the next arrival.
+     *
+     * MUTATION: restoring the `instanceof JSONObject` early return fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testOneReaderOfAPlacement() throws Exception
+    {
+        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")),
+            StandardCharsets.UTF_8));
+
+        String namer = bodyOf(session, "private static String nameOfPlacedLocomotive(Object placement)");
+
+        assertNotEquals(namer, "",
+            "nameOfPlacedLocomotive is not declared that way any more, so this checked nothing");
+
+        assertFalse(namer.contains("if (!(placement instanceof org.json.JSONObject)) return null"),
+            "the occupant guard answers null for a placement stored as a bare string, so a train"
+            + " re-placed on the square it is already standing on reads as a change of occupant and"
+            + " loses an arrival side that is still true (RGD-C5)");
+
+        assertTrue(namer.contains("String.valueOf(placement)"),
+            "the shared reader no longer handles the bare-string placement shape that"
+            + " getLocomotiveNameAt was written to handle, so the two readers of one shape disagree"
+            + " again (RGD-C5)");
+
+        String byTile = bodyOf(session, "public String getLocomotiveNameAt(TileKey tile)");
+
+        assertTrue(byTile.contains("nameOfPlacedLocomotive(getPointProperty(tile, \"loc\"))"),
+            "the by-square reader has its own copy of the shape knowledge again. There were three"
+            + " before and they did not agree; the point of the fix was that there is one (RGD-C5)");
     }
     /**
      * Dragging a locomotive puts its name on the clipboard, and cannot fail because of it (C26).

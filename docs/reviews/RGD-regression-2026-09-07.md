@@ -181,7 +181,7 @@ the story.
 |---|---|
 | **Severity** | C - document only, but this is the document the review discipline names as the arbiter when code and intent disagree, so it arguing with itself is worth more than an ordinary comment drift. |
 | **Confidence** | High - both paragraphs quoted from HEAD. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. behaviour.md described putIfAbsent backwards; it now states which half does what, and that neither works alone. |
 
 ---
 
@@ -254,7 +254,7 @@ when it goes off.
 |---|---|
 | **Severity** | C - display state only, self-corrects on the next dropdown touch. |
 | **Confidence** | High on the traces; the restart case deserves one manual check because whether the autonomy editor draws captions with text off depends on the `else if (!layout.getEditHideText())` gate at `LayoutGrid.java:1347`, which I read but did not run. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. The mode is applied to the text switch at open too, and Control+L moves the dropdown with it. Guarded in testEditorSurfaceRules. |
 
 ---
 
@@ -287,7 +287,7 @@ Arrived-from section shows N and S, neither ticked.
 |---|---|
 | **Severity** | C - the stale value's blocking consequence is bounded (arrivedFrom picks between candidates), and the state needs a pre-`f1ce9681` answer or a track edit. |
 | **Confidence** | High - both code paths read at HEAD. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. A recorded side the geometry does not offer is added to the menu and ticked, as OB-177 does on the sibling. Guarded. |
 
 ---
 
@@ -312,7 +312,7 @@ one).
 |---|---|
 | **Severity** | C - needs the legacy string shape, which this program never writes. |
 | **Confidence** | High - both readers quoted from HEAD. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. One reader: getLocomotiveNameAt delegates to nameOfPlacedLocomotive, which now knows the bare-string shape. Guarded. |
 
 ---
 
@@ -344,7 +344,7 @@ standing (MT-worthy, one line) would settle it permanently.
 |---|---|
 | **Severity** | C - comment defect; behaviour verified correct by trace. |
 | **Confidence** | High on the trace; the render-order claim (`setAutonomyMode` before `render()`) is from the code's own comment plus the call at `TrainControlUI:4799`, not from an execution. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. The false claim is gone and the comment says why the window test is used instead. |
 
 ---
 
@@ -376,7 +376,7 @@ up NOT turned for a train the railway turned once. Same probability as before, w
 |---|---|
 | **Severity** | C - each path needs an unusual state (no store, a throwing flip, a reload in the gap, a >1s echo). |
 | **Confidence** | High on the reads; the race half needs a run and says so in REG8-B1 already. |
-| **Disposition** | Open |
+| **Disposition** | Fixed. Drained names are put back when the write does not happen, in a finally. Tested behaviourally. The reload case is named as out of reach. |
 
 ---
 
