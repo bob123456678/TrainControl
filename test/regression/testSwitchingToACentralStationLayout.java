@@ -231,7 +231,20 @@ public class testSwitchingToACentralStationLayout
     }
 
     /** How many test classes build a model without a sandbox today - see the ratchet above. */
-    private static final int MODELS_WITHOUT_A_SANDBOX = 56;
+    /**
+     * How many test classes build a model without a sandbox today - see the ratchet above.
+     *
+     * **55 since 2026-09-08, down from 56, and the drop is the point of a ratchet.** The first full
+     * battery in a while found this at 59: four classes had joined the population since it was pinned
+     * - `testATrainCoversTheTrackBehindIt`, `testATrainTooLongIsRefusedTheBerth`,
+     * `testLengthRulesUnderRandomLayouts` and `testTheKeyboardDrag` - and every one of them was
+     * building a model against whatever railway the machine has, which on Adam's is his own.
+     *
+     * They were sandboxed rather than pinned. `testTheKeyboardDrag` is the instructive one: it already
+     * opened a sandbox inside ONE test method, which reads as careful and is not the same thing - `init`
+     * runs in `@BeforeClass` and had already loaded his railway by then.
+     */
+    private static final int MODELS_WITHOUT_A_SANDBOX = 55;
 
     /**
      * WHICH classes, not just how many (VAL-C8).
@@ -289,7 +302,6 @@ public class testSwitchingToACentralStationLayout
         "testStationBlockedByAnotherPoint.java",
         "testStuckTrainAdvisory.java",
         "testTheCheckerAgreesWithTheBuild.java",
-        "testTheGoldenLayoutHoldsTogether.java",
         "testTimetableCapture.java",
         "testTimetableCaptureThroughARealRun.java",
         "testTimetableOnDerivedGraph.java",
@@ -668,8 +680,16 @@ public class testSwitchingToACentralStationLayout
         // MT-258's shortcut reads a field only the editor's own hover handler sets. Both open their
         // sandbox before the model, as the rule above requires. (18 was testThePaletteStillPlacesTiles,
         // added the same day for OB-169.)
-        assertEquals(checked, 20,
-            checked + " test classes were found to build a window, not the 20 there were when this "
+        // TWENTY-TWO since 2026-09-08, and the two that arrived are the ones that look at what is
+        // DRAWN: `ui.testTheShadingIsRedrawnWhenATrainMoves` and `core.testTheShadingFollowsTheTrain`,
+        // both written for OB-180 - a defect no assertion about the model could see, because the
+        // covered set was right the whole time and nothing repainted the tiles.
+        //
+        // The number is deliberately a hard count rather than a floor: a class that builds a window
+        // opens the operator's railway if it gets the sandbox wrong, so each new one is worth a moment
+        // of somebody's attention rather than a silently rising number.
+        assertEquals(checked, 22,
+            checked + " test classes were found to build a window, not the 22 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

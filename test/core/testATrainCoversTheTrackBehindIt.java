@@ -48,9 +48,22 @@ public class testATrainCoversTheTrackBehindIt
 
     private static int addresses = 700;
 
+    /**
+     * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
+     *
+     * `MarklinControlStation.init` reads the layout preference and loads whatever it names, which on
+     * Adam's machine is his real railway. This class does not mean to read it and has no business
+     * doing so; the sandbox redirects the preference at a copy for the life of the class.
+     *
+     * BEFORE the model, because init is the thing that reads it - after would redirect nothing.
+     */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUp() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
     }
 
@@ -760,5 +773,13 @@ public class testATrainCoversTheTrackBehindIt
         layout.createPoint(name, destination, sensor.getName());
 
         return layout.getPoint(name);
+    }
+    /**
+     * Puts the layout preference back where it was.
+     */
+    @org.testng.annotations.AfterClass(alwaysRun = true)
+    public static void tearDownTheSandbox() throws Exception
+    {
+        if (sandbox != null) sandbox.close();
     }
 }

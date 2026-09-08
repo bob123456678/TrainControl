@@ -502,7 +502,17 @@ public class testTheLengthGuardsOnTheRealLayout
     // ---------------------------------------------------------------- the setups Adam asked for
 
     /**
-     * Sets every tile on the main page to one length, which is what makes the guard testable here.
+     * Sets EVERY tile the reduction knows to one length, which is what makes the guard testable here.
+     *
+     * **Every page, not just the main one, since 2026-09-08.** It filtered to `1 - Main` and its name
+     * still said "everything", which was true of the railway this suite used to build: the fixture
+     * parsed its pages without wiring their accessories, so the graph was eighteen edges and never left
+     * that page. Wired, it is the whole railway - and a berth on another page arrived UNMEASURED, which
+     * the guard cannot judge, so a nine-unit train was offered `LowerFront` on a layout this method had
+     * just declared measured at one unit throughout.
+     *
+     * Two of the four failures in this class were that, and they are the good kind: the test said
+     * something about the whole railway while looking at a fifth of it.
      *
      * @param units the length to give every tile
      */
@@ -514,20 +524,14 @@ public class testTheLengthGuardsOnTheRealLayout
         // version of this test did exactly that and then reported that nothing was reachable.
         Set<TileKey> everyTile = new LinkedHashSet<>();
 
-        for (TileKey tile : session.getReducer().getPoints().keySet())
-        {
-            if (MAIN.equals(tile.getPage())) everyTile.add(tile);
-        }
+        everyTile.addAll(session.getReducer().getPoints().keySet());
 
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : session.getReducer()
             .getEdges())
         {
             for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
             {
-                if (step.getTile() != null && MAIN.equals(step.getTile().getPage()))
-                {
-                    everyTile.add(step.getTile());
-                }
+                if (step.getTile() != null) everyTile.add(step.getTile());
             }
         }
 

@@ -52,9 +52,19 @@ public class testTheKeyboardDrag
 
     private static final String[] TEST_LOCS = { "KD one", "KD two", "KD three" };
 
+    /** The copy this whole class runs against - see setUpClass. */
+    private static support.LayoutSandbox classSandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
+        //
+        // One test in this class already opened a sandbox for itself, which is not the same thing:
+        // `init` reads the layout preference and loads whatever it names, and it runs here - so the
+        // class was reading Adam's real railway before any test method got the chance to redirect it.
+        classSandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
         model.stop();
     }
@@ -62,6 +72,7 @@ public class testTheKeyboardDrag
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
+        if (classSandbox != null) classSandbox.close();
         for (String name : TEST_LOCS)
         {
             if (model != null) model.deleteLoc(name);
