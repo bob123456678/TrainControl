@@ -325,4 +325,80 @@ public class testAReversalCommandIsEmitted
             + " where it began, and to the operator that is indistinguishable from never turning at"
             + " all, which is what OB-189 reports");
     }
+
+    /**
+     * A journey that passes a reversing square on the way to the one that was answered.
+     *
+     * Adam, 2026-09-08, on OB-189 and which square the dialog named: *"it may have named
+     * bottommainpost, but it could have been rampdown on some of the runs."* RampDown is on the way
+     * to BottomMainPost, and it is a square trains turn at.
+     *
+     * **The answer is honoured; the compulsory turn on the way is what surprises.** Measured both ways
+     * on 2026-09-08, same journey, same reversing square in the middle:
+     *
+     * - keep direction - started forward, ended BACKWARD
+     * - reverse - started forward, ended FORWARD
+     *
+     * So the destination turn fires either way. `shouldReverseAt` treats a reversing square nobody was
+     * asked about as a compulsory turn, which is right - a turning copy leaves only by the side the
+     * train came in on, and not turning would drive it off its reserved path - and that flip happens
+     * before the answered one. "No" therefore returns the train to the direction it set off in.
+     *
+     * **The answer is about how the train ARRIVES, and it reads as being about how it started.** That
+     * is a question for Adam rather than a defect to fix behind him, so this asserts what is actually
+     * guaranteed - that the answer changes the outcome - and leaves the wording to him.
+     *
+     * MUTATION: make the middle square ordinary and this passes, which is exactly why the two-leg test
+     * above did not catch it.
+     *
+     * @throws Exception on a failure to run the journey
+     */
+    @Test
+    public void testTheAnswerStillChangesTheOutcomeThroughAReversingSquare() throws Exception
+    {
+        Layout layout = longerRailway("VIA", 8420);
+
+        // THE DIFFERENCE FROM THE TEST ABOVE, and the whole of this fixture: the square in the middle
+        // is one trains turn at. Every hand-built layout in this suite is a straight chain of ordinary
+        // points, so nothing has ever run a journey through one.
+        layout.getPoint("VIA_MIDDLE").setReversing(true);
+
+        Locomotive driver = model.getLocByName(DRIVER);
+
+        Point end = layout.getPoint("VIA_END");
+
+        List<Edge> path = new ArrayList<>();
+
+        path.add(layout.getEdge("VIA_START", "VIA_MIDDLE"));
+        path.add(layout.getEdge("VIA_MIDDLE", "VIA_END"));
+
+        layout.runLocomotives();
+
+        run(layout, path, driver, answering(true, end), "the reversed journey through a reversal");
+
+        boolean afterNo = driver.goingForward();
+
+        // THE SAME JOURNEY AGAIN, the other answer, on its own railway so nothing carries over.
+        Layout second = longerRailway("VIA2", 8424);
+
+        second.getPoint("VIA2_MIDDLE").setReversing(true);
+
+        List<Edge> back = new ArrayList<>();
+
+        back.add(second.getEdge("VIA2_START", "VIA2_MIDDLE"));
+        back.add(second.getEdge("VIA2_MIDDLE", "VIA2_END"));
+
+        second.runLocomotives();
+
+        run(second, back, driver, answering(false, second.getPoint("VIA2_END")),
+            "the kept-direction journey through a reversal");
+
+        assertNotEquals(driver.goingForward(), afterNo,
+            "the two answers produced the same final direction, so the dialog did nothing on a journey"
+            + " that passes a reversing square. Measured on 2026-09-08 they differ - keep-direction"
+            + " ends backward, reverse ends forward - because the compulsory turn at the square in the"
+            + " middle flips the train once before the answered turn at the destination flips it"
+            + " again. If this fails, the answer really is being discarded and OB-189 is a defect"
+            + " rather than the surprise it turned out to be");
+    }
 }
