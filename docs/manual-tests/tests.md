@@ -15465,3 +15465,53 @@ were written by an agent and nobody has read them for idiom.** If a language you
 probably is.
 
 ---
+
+### MT-275 - 2026-09-07 - Four fixes the reviews found, in three places
+
+**Disposition:** needs test
+**From:** MON-B1, RGD-C3, RGD-C4, RGD-C7
+
+**Written:** 2026-09-07
+
+These came out of two review rounds rather than out of a report from you, and each is a place where the
+window said one thing while the railway did another. All four have tests; what a test cannot say is
+whether the new behaviour is the one you want.
+
+#### 1. The caption dropdown, after a restart (RGD-C3)
+
+**Set Text Labels to None in the autonomy editor. Quit TrainControl completely. Start it again and open
+the autonomy editor.**
+
+The dropdown should say None **and the captions should be gone**. Before this it said None with every
+station name still drawn under it - the setting was remembered as a word and not as an effect.
+
+**What this costs, and it is worth a look:** opening the autonomy editor now imposes its caption choice
+on the diagram's text labels. If you had turned text off in the plain editor and then opened the
+autonomy editor with Station Names selected, the text comes back on. Say if you would rather it did not.
+
+#### 2. Control+L in the autonomy editor (RGD-C3)
+
+**With the dropdown on Parked Locs, press Control+L. Then press it again.**
+
+The captions should vanish and the dropdown should move to None; pressing it again should bring back
+Parked Locs, not Station Names. The Text Labels tick box is hidden in autonomy mode - the dropdown's
+None IS that switch - but the shortcut still reaches it, so it used to empty the diagram under a control
+still saying Parked.
+
+#### 3. The arrived-from menu on a re-plumbed square (RGD-C4)
+
+Harder to reach deliberately, so read it rather than hunt for it: if a square has a tail recorded from a
+side the track no longer has - because you edited the track under a standing train - the **Arrived from**
+section used to open with every option blank, which reads as "nothing recorded" when something is. It now
+shows the recorded side, ticked, alongside the ones the track offers. This is the rule the facing menu got
+as OB-177; its sibling had not.
+
+#### 4. The dash in the commands panel (MON-B1)
+
+**Open the locomotive commands panel for a train and look at the destination list. A station you have
+marked as not chosen by autonomy - or switched off - should carry the " -" mark.**
+
+The mark means "you may send it here yourself, autonomy will not". It was missing exactly two reasons,
+and one of them is how a parking berth is stored, so a berth was offered with no mark at all.
+
+---
