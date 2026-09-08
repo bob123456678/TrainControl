@@ -1057,10 +1057,6 @@ public class AutonomyEditorPanel extends JPanel
 
             only.add(bulkTools());
 
-            javax.swing.JCheckBoxMenuItem numbers = coordinatesItem();
-
-            if (numbers != null) only.add(numbers);
-
             return only;
         }
 
@@ -1733,10 +1729,6 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(bulkTools());
 
-        javax.swing.JCheckBoxMenuItem showCoordinates = coordinatesItem();
-
-        if (showCoordinates != null) menu.add(showCoordinates);
-
 
         // A station name can go on almost any square, not only on a text square.  The label is drawn
         // beside the tile wherever it sits, so there is no reason to make the user find a text square
@@ -1917,42 +1909,19 @@ public class AutonomyEditorPanel extends JPanel
         onReveal.accept(partner);
     }
 
-    /**
-     * Shows or hides the diagram's column and row numbers (FR-057).
-     *
-     * Adam: "coordinates are referenced in issues but not visible to the user."  Every warning this
-     * window raises names its square as `page:x,y`, so this is the menu where the numbers are most
-     * worth having - and it is on the track editor's menu too, reading the same preference, because
-     * moving a square to the coordinate a warning named happens in that one.
-     *
-     * On the ignored-square menu as well as the ordinary one, for the same reason Bulk Tools is there:
-     * it is not about the square, and an excluded page is exactly where somebody is trying to work out
-     * which square a warning meant.
-     *
-     * Null when this panel is not inside an editor window - the main window builds these menus too,
-     * from a panel held only for that, and the viewer's diagram is not what Adam asked for.  Returning
-     * null rather than offering an item that would have nothing to redraw.
-     *
-     * @return the item, ticked to match what the diagram is doing, or null outside an editor
-     */
-    private javax.swing.JCheckBoxMenuItem coordinatesItem()
-    {
-        java.awt.Component where = owner();
-
-        if (!(where instanceof LayoutEditor)) return null;
-
-        final LayoutEditor editor = (LayoutEditor) where;
-
-        javax.swing.JCheckBoxMenuItem item = new javax.swing.JCheckBoxMenuItem(
-            I18n.t("layout.ui.menuShowCoordinates"));
-
-        item.setSelected(LayoutEditor.showingCoordinates());
-        item.setToolTipText(wrapped(I18n.t("layout.ui.tooltipShowCoordinates")));
-
-        item.addActionListener(event -> editor.toggleCoordinates());
-
-        return item;
-    }
+    // `coordinatesItem` is gone, from both menus this class builds (OB-179).
+    //
+    // Adam: "hide the show coordinates right click menu option in the autonomy and track editors, make
+    // coordinates on be default, as this is tied to the show grid option and will be toggled on and
+    // off together with the grid."
+    //
+    // It was the one item on the tile menu, and one of two on the ignored-square menu, that switched a
+    // view rather than acting on the setup - and what it switched is now decided by the grid, which
+    // has its own checkbox in the editor's tools column.  Two controls for one setting, on a menu
+    // Adam was reading as clutter.
+    //
+    // The numbers themselves are not gone and are on by default: see `LayoutGrid.coordinatesVisible`,
+    // which is the only place the rule is written.  Control+K turns the grid, and them with it.
 
     /**
      * The actions that are about the whole setup rather than about one square (MT-257, V35-C1).

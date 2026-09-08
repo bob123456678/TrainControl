@@ -348,11 +348,14 @@ delete a number.
 **OB-172's second half: the numbers now follow the grid.** You asked to *"tie the appearance of the
 numbers to the enablement of the grid, so we only see the axis labels if the grid is also on"*.
 
-3. **Turn the grid off.** The numbers should go. **Turn it back on.** They should come back, without
-   your having touched the coordinates setting.
-4. **The coordinates checkbox still remembers your own choice** while the grid is off - it does not
-   untick itself, because a box that unticks itself reads as the click not having worked. So with the
-   grid off and coordinates on you see nothing, and turning the grid on shows them again.
+3. **Turn the grid off.** The numbers should go. **Turn it back on.** They should come back.
+4. **There is no coordinates setting left to touch** (OB-179, 2026-09-07). This step used to ask you
+   to check that the coordinates checkbox kept its own value while the grid was off. It has no value
+   to keep: you asked for the numbers to be *"always on with the grid, off without, and the menu
+   option gone"*, so the grid's checkbox is the only switch, and **"Show Coordinates" is off both
+   editors' right-click menus**. Look for it and confirm it is not there. **Control+K**, which used to
+   be the numbers' own key, now turns the grid - press it and the grid and the numbers should go
+   together, **and the Grid checkbox should untick itself to match**.
 
 ---
 

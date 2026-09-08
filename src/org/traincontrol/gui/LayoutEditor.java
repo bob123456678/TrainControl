@@ -4028,6 +4028,18 @@ public class LayoutEditor extends PositionAwareJFrame
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, show);
         }
 
+        // AND THE CHECKBOX SAYS SO, whoever asked (OB-179).
+        //
+        // There are two doors onto this now - the box in the tools column and Control+K - and only the
+        // box used to set the tick, because it was the tick.  A key that turns the grid off and leaves
+        // the box ticked is a window disagreeing with itself about a setting the user can see, and the
+        // next click on that box would then appear to do nothing.
+        //
+        // Here rather than at the key, because this is the one method that knows the answer changed;
+        // put at the caller it would have to be repeated by the next caller, which is how the two come
+        // to disagree.  Setting it to what it already is, on the box's own path, costs nothing.
+        if (showGridCheckbox != null) showGridCheckbox.setSelected(show);
+
         // The borders as they stand are the old answer, so they are all put back.  Both panels: the
         // palette keeps its own thicker line either way, and asking it costs nothing.
         clearBordersFromChildren(this.newComponents);
@@ -5062,52 +5074,22 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    /**
-     * Shows or hides the diagram's column and row numbers (FR-057).
-     *
-     * Adam: "axis labels can be printed in both autonomy editor and track diagram editor, with an
-     * optional toggle."  One preference for both, because it is the same diagram and somebody working
-     * through a list of coordinates wants the same answer in each window.
-     *
-     * A redraw rather than a repaint: the numbers live in a border whose insets change the size of the
-     * panel, so the layout has to be done again.  `drawGrid` is what every other view switch in this
-     * window calls for the same reason.
-     *
-     * @return whether the numbers are now shown, so a caller can tick its own control
-     */
-    public boolean toggleCoordinates()
-    {
-        boolean now = !TrainControlUI.getPrefs().getBoolean(
-            TrainControlUI.SHOW_COORDINATES_PREF, LayoutGrid.SHOW_COORDINATES_DEFAULT);
+    // `toggleCoordinates` and `showingCoordinates` are gone (OB-179).
+    //
+    // Adam: "coordinates should always be on with the grid, off without, and the menu option gone."
+    // The numbers had a preference, a menu item in each editor and a key of their own; they now have
+    // none of the three, because they are a property of the grid - see `LayoutGrid.coordinatesVisible`,
+    // which is where that rule lives and the only place it is written down.
+    //
+    // Turning them on and off is `setShowGrid` now, and nothing else needs to exist: it already
+    // redraws, which is what these did, and for the same reason - the numbers live in a border whose
+    // insets change the size of the panel, so the layout has to be done again.
+    //
+    // Said here rather than left as an absence, because the two methods were public and called from
+    // both right-click menus - `AutonomyEditorPanel` and `LayoutEditorRightclickMenu` - and a reader
+    // who goes looking for them should be told what replaced them rather than conclude the feature was
+    // dropped.
 
-        TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, now);
-
-        drawGrid();
-
-        // NOT THE MAIN WINDOW, AND NOT ANY MORE (REL-C8).
-        //
-        // This said "the main window draws the same diagram, and its grid is built from the same
-        // preference - so it is redrawn too rather than left showing the other answer".  It stopped
-        // being true when Adam reported the numbers turning up where they should not - *"they are
-        // visible in the track diagram viewer when they shouldn't be"* - and the ruler gained
-        // `master instanceof LayoutEditor`.
-        //
-        // The main window never draws them now, so there is no other answer for it to be left showing,
-        // and a full rebuild of its diagram on every Control+K was being bought by a sentence that was
-        // no longer true.
-
-        return now;
-    }
-
-    /**
-     * @return whether the diagram is currently printing its coordinates
-     */
-    public static boolean showingCoordinates()
-    {
-        return TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
-            LayoutGrid.SHOW_COORDINATES_DEFAULT);
-    }
-    
     public void clear()
     {
         try
@@ -6851,17 +6833,23 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return;
             }
 
-            // Control+K prints the column and row numbers (FR-057).
+            // Control+K draws and hides the grid, and with it the column and row numbers (OB-179).
+            //
+            // It was the coordinates' own key (FR-057) and they no longer have a setting to toggle:
+            // they are part of the grid now, so the key that showed them is the key that shows the
+            // grid.  KEPT RATHER THAN DELETED because it is not a duplicate of anything - the grid had
+            // no shortcut of its own, only the checkbox in the tools column - and because it does from
+            // the keyboard exactly what somebody pressing it for the numbers expects to see happen.
             //
             // With Control+G, Control+L and Control+D, above the guard, and by that guard's own rule:
             // "Every shortcut below places, cuts, rotates or retextures a tile."  This one shows and
-            // hides a number, which is what all four of these do.
+            // hides scenery, which is what all four of these do.
             //
             // Both modes, because the coordinates are what warnings are written in and the track
             // editor is where squares get moved to the coordinates a warning named.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_K)
             {
-                toggleCoordinates();
+                setShowGrid(!showGrid());
 
                 return;
             }

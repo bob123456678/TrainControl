@@ -344,9 +344,27 @@ public class testDiagramExport
     }
 
     /**
-     * The diagram carries the column and row numbers when the setting is on (FR-057).
+     * The preference key the column and row numbers used to have (OB-179).
      *
-     * Adam, after the first build of this: **"I don't see the axis labels in the editor grid."**
+     * A literal rather than a constant, because the constant is gone: the numbers are no longer a
+     * setting of their own, so nothing in the application names this key any more.  The VALUE is still
+     * in the operator's preferences - this project leaves a retired key's stored value where it is,
+     * for the reason `TrainControlUI` gives beside the other retired keys - and a stored `false` there
+     * is exactly what would come back to haunt somebody who had once turned the numbers off.
+     *
+     * So the test writes it, and writes the value that used to hide the numbers.  That is the half of
+     * this fix that a test of the grid alone would be silent about.
+     */
+    private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
+
+    /**
+     * The column and row numbers are part of the grid: on with it, off without (OB-179).
+     *
+     * Adam: **"coordinates should always be on with the grid, off without, and the menu option
+     * gone."**  They were two settings joined by an `&&` - the operator's own switch AND the grid -
+     * which meant an option that had to be found before the grid could show anything, and a diagram
+     * that could have its grid on and its numbers off with nothing on screen to say why.  One switch
+     * now, and it is the grid's.
      *
      * `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS, and it drew correctly the
      * whole time - what nothing covered was whether anybody put one on the diagram, which is this
@@ -355,16 +373,20 @@ public class testDiagramExport
      * image cache, and that is what this class already has.
      *
      * Both directions of the switch, because a test of the ON case alone passes for a grid that always
-     * carries a ruler - and BOTH WINDOWS, because Adam's second report was the other half: *"they are
+     * carries a ruler - and BOTH WINDOWS, because Adam's earlier report was the other half: *"they are
      * visible in the track diagram viewer when they shouldn't be."*  He asked for the numbers "in both
      * autonomy editor and track diagram editor", and the viewer is neither.
      *
-     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, reading a preference key
-     * nothing writes, or dropping the `master instanceof LayoutEditor` term - which is the one that
-     * put a ruler on the running diagram.
+     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT, which is what makes this test red against the build
+     * before the fix: that build read it, so with the grid on and this value stored it drew nothing.
+     *
+     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, restoring the retired
+     * preference as a second term of `coordinatesVisible`, dropping the `LayoutEditor.showGrid()` term
+     * so the numbers stop following the grid, or dropping the `master instanceof LayoutEditor` term -
+     * which is the one that put a ruler on the running diagram.
      */
     @Test
-    public void testTheGridCarriesTheCoordinateRulerWhenTheSettingIsOn() throws Exception
+    public void testTheCoordinateRulerIsPartOfTheGrid() throws Exception
     {
         final LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
 
@@ -376,10 +398,17 @@ public class testDiagramExport
         // one, so the operator ends up with a setting he did not choose and a later change of default
         // cannot reach him.  The rule is stated at `testDiagramLooksRight`, in the sweep that produced
         // it - this was one of the three sites that sweep missed.
-        boolean stored = TrainControlUI.getPrefs().get(TrainControlUI.SHOW_COORDINATES_PREF, null) != null;
+        //
+        // Both keys, because this test writes both: the grid's, which is the one that decides, and the
+        // retired one, which must not.
+        boolean gridStored = TrainControlUI.getPrefs().get(TrainControlUI.EDITOR_GRID_PREF, null) != null;
 
-        boolean was = TrainControlUI.getPrefs().getBoolean(
-            TrainControlUI.SHOW_COORDINATES_PREF, false);
+        boolean gridWas = TrainControlUI.getPrefs().getBoolean(
+            TrainControlUI.EDITOR_GRID_PREF, false);
+
+        boolean retiredStored = TrainControlUI.getPrefs().get(RETIRED_COORDINATES_PREF, null) != null;
+
+        boolean retiredWas = TrainControlUI.getPrefs().getBoolean(RETIRED_COORDINATES_PREF, false);
 
         final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
 
@@ -388,9 +417,11 @@ public class testDiagramExport
             SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0));
 
+            TrainControlUI.getPrefs().putBoolean(RETIRED_COORDINATES_PREF, false);
+
             for (final boolean on : new boolean[] { true, false })
             {
-                TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, on);
+                TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, on);
 
                 // THE EDITOR, which is one of the two windows that should carry it.
                 final javax.swing.JPanel forEditor = new javax.swing.JPanel();
@@ -405,15 +436,17 @@ public class testDiagramExport
                 if (on)
                 {
                     assertTrue(border instanceof org.traincontrol.gui.AxisRuler,
-                        "the setting is on and the editor's diagram carries " + border + ", so the "
-                        + "numbers are drawn nowhere - which is what Adam reported: \"I don't see the "
-                        + "axis labels in the editor grid\"");
+                        "the grid is on and the editor's diagram carries " + border + ", so the "
+                        + "numbers are drawn nowhere.  Adam: \"coordinates should always be on with "
+                        + "the grid\" - and the only other setting in play here is the retired "
+                        + "\"" + RETIRED_COORDINATES_PREF + "\", stored false, which nothing should "
+                        + "still be reading");
                 }
                 else
                 {
                     assertFalse(border instanceof org.traincontrol.gui.AxisRuler,
-                        "the setting is off and the editor's diagram still carries a ruler, so the "
-                        + "toggle only goes one way");
+                        "the grid is off and the editor's diagram still carries a ruler, so the "
+                        + "numbers outlived the thing they number");
                 }
 
                 // AND THE VIEWER, which should carry it in neither state.
@@ -426,14 +459,37 @@ public class testDiagramExport
 
                 assertFalse(inViewer[0].getContainer().getBorder()
                         instanceof org.traincontrol.gui.AxisRuler,
-                    "the running diagram carries the coordinate ruler with the setting " + on + " - "
+                    "the running diagram carries the coordinate ruler with the grid " + on + " - "
                     + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
+
+            // AND ON A MACHINE THAT HAS NEVER SET EITHER (Adam: "make coordinates on be default").
+            //
+            // The loop above proves the numbers follow a STORED grid setting.  What it cannot say is
+            // what a fresh install does, which is the other half of what was asked for - so both keys
+            // come out and the defaults are asked instead of a value this test wrote.
+            TrainControlUI.getPrefs().remove(RETIRED_COORDINATES_PREF);
+            TrainControlUI.getPrefs().remove(TrainControlUI.EDITOR_GRID_PREF);
+
+            final javax.swing.JPanel fresh = new javax.swing.JPanel();
+            final org.traincontrol.gui.LayoutGrid[] outOfTheBox = new org.traincontrol.gui.LayoutGrid[1];
+
+            SwingUtilities.invokeAndWait(() -> outOfTheBox[0] =
+                new org.traincontrol.gui.LayoutGrid(page, 30, fresh, editor[0], true, ui));
+
+            assertTrue(outOfTheBox[0].getContainer().getBorder()
+                    instanceof org.traincontrol.gui.AxisRuler,
+                "with nothing stored for either setting the editor's diagram carries no ruler, so the "
+                + "numbers are off out of the box - and the grid, whose default is on, is what they "
+                + "are supposed to follow");
         }
         finally
         {
-            if (stored) TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_COORDINATES_PREF, was);
-            else TrainControlUI.getPrefs().remove(TrainControlUI.SHOW_COORDINATES_PREF);
+            if (gridStored) TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, gridWas);
+            else TrainControlUI.getPrefs().remove(TrainControlUI.EDITOR_GRID_PREF);
+
+            if (retiredStored) TrainControlUI.getPrefs().putBoolean(RETIRED_COORDINATES_PREF, retiredWas);
+            else TrainControlUI.getPrefs().remove(RETIRED_COORDINATES_PREF);
 
             if (editor[0] != null)
             {

@@ -242,19 +242,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
 
-    /**
-     * Whether the diagram prints its column and row numbers (FR-057).
-     *
-     * Adam: "coordinates are referenced in issues but not visible to the user."  Every warning the
-     * autonomy editor raises names a square as `page:x,y`, and counting cells from the corner was the
-     * only way to find it.
-     *
-     * A preference rather than a field on the editor, because both editors draw the same diagram and
-     * the answer should be the same in each - and because somebody who turns it on is working through
-     * a list of coordinates and will want it still on tomorrow.
-     */
-    public static final String SHOW_COORDINATES_PREF = "ShowCoordinates";
-
+    // ShowCoordinates is gone too, and for a different reason from the five below (OB-179).
+    //
+    // Those named settings whose WINDOW was deleted.  This one named a setting that still exists and
+    // is still on by default - the diagram's column and row numbers - which stopped being a question
+    // of its own: Adam asked for them to be "always on with the grid, off without", so the grid's
+    // preference is now the only one either of them reads.  `LayoutGrid.coordinatesVisible` is where
+    // that rule is written down, and `EDITOR_GRID_PREF` above is the key it ends at.
+    //
+    // The stored value is left in the preferences store for the same reason as the others: it costs
+    // nothing there, and clearing a key is the one action that cannot be undone.  It matters more here
+    // than it did for them - a `false` written by somebody who once turned the numbers off is exactly
+    // the value that must NOT come back if this ever becomes a setting again with a different meaning.
+    //
     // HideReversingEdges and ShowHomeLocomotives are gone (R28-C3).
     //
     // Both were read and written by the graph window - declutter and a home badge - and both were the

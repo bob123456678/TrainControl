@@ -506,23 +506,16 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         add(diagramSubmenu);
 
-        // AND THE COORDINATES, at the foot of the menu (FR-057).
+        // SHOW COORDINATES IS NOT HERE ANY MORE (OB-179).
         //
-        // Adam: "coordinates are referenced in issues but not visible to the user."  It is a view
-        // switch rather than an edit, so it sits below everything that changes the diagram, with the
-        // same shape the autonomy editor's copy has - one preference, so ticking it in either window
-        // ticks it in both.
-        addSeparator();
-
-        javax.swing.JCheckBoxMenuItem coordinates =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("layout.ui.menuShowCoordinates"));
-
-        coordinates.setSelected(LayoutEditor.showingCoordinates());
-        coordinates.setToolTipText(I18n.t("layout.ui.tooltipShowCoordinates"));
-
-        coordinates.addActionListener(event -> edit.toggleCoordinates());
-
-        add(coordinates);
+        // Adam: "hide the show coordinates right click menu option... this is tied to the show grid
+        // option and will be toggled on and off together with the grid."  It was the only item on this
+        // menu that switched a view rather than changing the diagram, and it switched something the
+        // Grid checkbox in the tools column already governs - so it was a second control for one
+        // setting, sitting at the foot of a menu about track.
+        //
+        // The numbers follow the grid now; see `LayoutGrid.coordinatesVisible`.  The autonomy editor's
+        // copy of this item went with it, and Control+K turns the grid itself.
     }
 
     /**

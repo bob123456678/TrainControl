@@ -76,36 +76,32 @@ public class LayoutGrid
     public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
 
     /**
-     * Whether a diagram prints its coordinates when nobody has said either way (FR-057).
+     * Whether the column and row numbers are drawn at all: exactly when the grid is (OB-179).
      *
-     * ON.  Adam asked for "a grid around the diagram" because "coordinates are referenced in issues
-     * but not visible to the user", and an option that has to be found before it does anything is not
-     * an answer to that.  Control+K turns it off, in either editor, and the choice is remembered.
-     */
-    public static final boolean SHOW_COORDINATES_DEFAULT = true;
-
-    /**
-     * Whether the column and row numbers are drawn at all (OB-172).
+     * Adam: **"coordinates should always be on with the grid, off without, and the menu option
+     * gone."**  The numbers are scenery for reading coordinates off a grid, so a ruler round a diagram
+     * with no grid in it is numbering nothing, and a grid whose squares cannot be named is half of
+     * what a grid is for.  They are one thing to look at and now one thing to switch.
      *
-     * Two settings rather than one, and the operator's own switch is only half of it: Adam asked for
-     * the numbers to follow the grid, *"so we only see the axis labels if the grid is also on"*.  They
-     * are scenery for reading coordinates off a grid, and a ruler round a diagram with no grid in it
-     * is numbering nothing.
+     * ONE SETTING, NOT TWO ANDED TOGETHER (which is what OB-172 left behind).  That build had the
+     * operator's own switch and the grid, and the pair could disagree: with the numbers turned off and
+     * the grid on, turning the grid off and on again changed nothing on screen, and the only way to
+     * find out why was to open a right-click menu and read a tick.  It also made "on by default" a lie
+     * for anybody who had ever turned them off, because the stored `false` outlived every later change
+     * of mind about the grid.
      *
-     * **The menu item deliberately does NOT ask this.**  Its tick is the operator's own switch, which
-     * is a different question from whether anything is on screen: a checkbox that unticks itself
-     * because a second setting is off reads as the click not having worked.  So the preference is
-     * remembered either way and the grid decides whether it is acted on - which is also what makes
-     * turning the grid back on restore the numbers without touching anything else.
+     * So this holds no preference of its own.  It delegates, and it exists so that the rule has one
+     * name and one sentence: the ruler's call site asks whether coordinates are visible, which is not
+     * obviously the same question as whether a grid is drawn until this method says that it is.
+     *
+     * The retired preference key is described at `TrainControlUI`, beside the other retired ones.  Its
+     * stored value is deliberately still on the operator's machine and deliberately not read.
      *
      * @return true when the numbers should be drawn
      */
     public static boolean coordinatesVisible()
     {
-        return TrainControlUI.getPrefs() != null
-            && TrainControlUI.getPrefs().getBoolean(TrainControlUI.SHOW_COORDINATES_PREF,
-                SHOW_COORDINATES_DEFAULT)
-            && LayoutEditor.showGrid();
+        return LayoutEditor.showGrid();
     }
 
     /**
@@ -1030,8 +1026,7 @@ public class LayoutGrid
         // issue would quote.  `width` and `height` have already been incremented for the spacer row and
         // column, which hold nothing, so the ruler is told the real counts.
         //
-        // Read from the preference on every build, which is what makes the toggle a redraw rather than
-        // a special case.
+        // Asked on every build, which is what makes the toggle a redraw rather than a special case.
         // IN THE EDITORS, NOT IN THE VIEWER (Adam: "they are visible in the track diagram viewer when
         // they shouldn't be").
         //
@@ -1042,11 +1037,11 @@ public class LayoutGrid
         // `master instanceof LayoutEditor` rather than `inEditor`, which is `layout.getEdit() &&
         // ...` - autonomy mode deliberately does not set that flag, so `inEditor` is false in the one
         // editor where coordinates matter most.
-        // AND ONLY WITH THE GRID ON (OB-172, Adam: "tie the appearance of the numbers to the
-        // enablement of the grid, so we only see the axis labels if the grid is also on").
         //
-        // The two settings were independent, so the numbers could sit around a diagram with no grid
-        // to number.  They are one thing to look at, and now one thing to switch off.
+        // AND ONLY WITH THE GRID ON, which is the whole of what `coordinatesVisible` now answers - see
+        // it for why the numbers stopped being a setting of their own.  Asked through that method
+        // rather than as `LayoutEditor.showGrid()` here, so there is one place to read the rule and one
+        // place to change it.
         if (master instanceof LayoutEditor && coordinatesVisible())
         {
             // MEASURED, NOT MULTIPLIED (Adam: "the axis numbers drift and are out of alignment.
