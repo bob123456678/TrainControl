@@ -4800,22 +4800,21 @@ public class AutonomySession
     /**
      * The ways a train standing on this square could be pointing.
      *
-     * One per side track arrives by, mapped through onwardFrom - the other end of the route the train
-     * came in on, not the opposite of the side it entered by. Those two agree on a straight and differ
-     * on a curve, and its own javadoc calls the simpler rule "true by accident": a train entering an
-     * N-E curve by N leaves by E, and saying it faces S describes a train sitting across the rails.
-     * This sentence used to state that simpler rule as the reason (NR-7).
+     * One per copy the build emits for the square, which is what a train standing there can actually
+     * be: the ONWARD side of the route it came in on, not the opposite of the side it entered by.
+     * Those two agree on a straight and differ on a curve, and the simpler rule is "true by accident"
+     * (MT-125, NR-7) - a train entering an N-E curve by N leaves by E, and saying it faces S describes
+     * a train sitting across the rails.
      *
      * The sides come from arrivalSides - the same door the build splits on - rather than from a walk
      * of the reduced edges written out here, which is what this used to do and which is a second
      * author for one rule (DR-B6).  A square the door declines to split offers no facing at all, which
      * is right: the build emits it whole, with no facing recorded on it to offer.
      *
-     * Ordered the same way the builder orders its copies, so the first answer here is the one a
-     * placement with no facing recorded actually gets - and more exactly so than when that was
-     * written, since onwardFrom and AutonomyBuilder.facingOf now answer alike.  That last claim used
-     * to be a sentence and nothing else; testTheCheckerAgreesWithTheBuild asserts it against the
-     * facings the build actually emits.
+     * Ordered the way the builder orders its copies, because it IS the builder's order now - so the
+     * first answer is the one a placement with no recorded facing actually gets.  That used to be a
+     * claim about two methods agreeing, held up by a sentence and by
+     * `testTheCheckerAgreesWithTheBuild`; there is one method now.
      *
      * @param tile
      * @return the possible facings, empty when nothing reaches the square and a single entry - which
@@ -4823,77 +4822,38 @@ public class AutonomySession
      */
     public List<Side> facingChoices(TileKey tile)
     {
-        Set<Side> out = new java.util.LinkedHashSet<>();
-
-        for (Side arrival : arrivalSides(tile)) out.addAll(onwardFrom(tile, arrival));
-
-        // AND THE WAY A TRAIN THAT TURNED ROUND IS POINTING (OB-145).
+        // ASKED OF THE BUILD (DR-B6).
         //
-        // Adam: "on bottommainc, I don't see a 'locomotive is facing' choice even though there is a
-        // path out both ways", found by "the menu disappears when switch 70 disallows outbound travel
-        // to the west, which shouldn't affect leaving trains".
+        // This used to work the answer out for itself: the onward side of every arrival, plus the
+        // arrival sides again on a square trains may turn at, in that order.  Every clause of that was
+        // a sentence describing what `AutonomyBuilder` does - the comments said so, naming
+        // `AutonomyBuilder.facingOf` as the thing being reproduced - and a description of another
+        // method is a second author for one rule.
         //
-        // Onward sides alone are what a train that arrived and CARRIED ON is pointing. On a square a
-        // train may turn round on the build also emits a turning copy, and `AutonomyBuilder.facingOf`
-        // gives that copy the ARRIVAL side - so the square can genuinely hold that facing, and the
-        // menu was refusing to say so. BottomMainC has one arrival side since the one-way run was
-        // drawn, which left one onward facing, and `buildFacingMenu` returns null below two: the
-        // question vanished from the menu rather than being answered.
+        // `facingsFor` reads `StationIndex`, which reads `builder.facingByName()`.  So this is now the
+        // build's own list of what its copies face, which is exactly the question the menu is asking:
+        // a facing has to be one the build can HOLD, or `placementCopy` falls through to the first copy
+        // and quietly turns the train round.
         //
-        // Not on every square, because it is not true of every square: without a turning copy there is
-        // nothing standing that way for the build to place a train on, and offering it would be a
-        // facing that falls through to the first copy and quietly turns the train round - which is
-        // what `facingsThatCannotBeHeld` exists to report.
+        // Everything the old derivation was careful about comes for free:
         //
-        // AFTER the onward sides, so the first answer is unchanged - it is the one a placement with no
-        // recorded facing actually gets, and `placementCopy` prefers the plain copy to the turning one
-        // for the same reason: a train standing where it MAY turn round has not turned round yet.
+        // - the ONWARD side rather than the opposite of the arrival, because that is what `facingOf`
+        //   gives a plain copy (MT-125 - on a curve joining north to east a train entering by the north
+        //   is pointing EAST, and south is a direction that square has no track in);
+        // - the arrival side on a turn-around square, because the build emits a turning copy and gives
+        //   it the arrival side (OB-145);
+        // - the plain copy first, because `nodesFor` emits it first and `placementCopy` prefers it - a
+        //   train standing where it MAY turn round has not turned round yet;
+        // - nothing at all on a square the build emits whole, which has no facing to offer.
         //
-        // This is the twin of the carve-out in `facingsThatCannotBeHeld`, which was taught to accept an
-        // arrival-side facing on these squares and did not tell this method. The pair were held in
-        // step by a test that skipped the disagreement rather than catching it - see
-        // `testTheMenuOffersEveryFacingATurnAroundSquareCanHold`.
-        if (isTurnAround(tile)) out.addAll(arrivalSides(tile));
+        // The one thing lost is a fallback to `arrival.opposite()` where a square's track could not be
+        // described.  It is not needed: if the build emitted a copy it gave that copy a facing, and if
+        // it did not there is nothing to stand on.
+        Set<Side> out = new java.util.LinkedHashSet<>(facingsFor(tile).values());
 
         return new ArrayList<>(out);
     }
 
-    /**
-     * Where a train that came in by this side is pointing.
-     *
-     * The other end of the piece of track it is standing on - NOT the opposite compass point, which is
-     * what this used to answer.
-     *
-     * MT-125, Adam: "feedback 1016/1015 offer south and west as facing directions, instead of north and
-     * east." Those are curved squares. On a curve joining north to east, a train entering by the north
-     * side leaves by the EAST side: it is pointing east, and south is a direction that square has no
-     * track in at all. On a straight the two rules agree, which is why this survived everywhere anybody
-     * looked - "a train that came in by the west side is pointing east" is true, and true by accident.
-     *
-     * Where the square offers a choice - a switch, a double curve - every road out of the side it came
-     * in by is offered, because each is somewhere the train could genuinely be pointing and nothing
-     * here knows which road it took.
-     *
-     * @param tile the square
-     * @param arrival the side the train came in by
-     * @return the ways it could be pointing, falling back to the reverse of the arrival where the
-     *         square's track is not known
-     */
-    private List<Side> onwardFrom(TileKey tile, Side arrival)
-    {
-        List<Side> out = new ArrayList<>();
-
-        for (Route route : getRoutes(tile).values())
-        {
-            if (route.getA() == arrival && route.getB() != null) out.add(route.getB());
-            else if (route.getB() == arrival && route.getA() != null) out.add(route.getA());
-        }
-
-        // A square whose track nothing can describe - the old answer is still the best guess
-        if (out.isEmpty()) out.add(arrival.opposite());
-
-        return out;
-    }
 
     /**
      * The diagram tiles a standing train is lying across, for greying out (Adam, 2026-09-06).
