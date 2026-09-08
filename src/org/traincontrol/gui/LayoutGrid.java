@@ -1403,6 +1403,29 @@ public class LayoutGrid
 
                                 awayFromHome = !athome;
                             }
+                            else if (homes)
+                            {
+                                // NO HOME, NO LABEL (Adam, 2026-09-07: "if there are no home
+                                // locomotives, just hide the label at that station, rather than still
+                                // showing the station name").
+                                //
+                                // While this was a tick box layered over station names, falling
+                                // through to the station name was right - the box added an answer
+                                // rather than replacing one. As one of four options that exclude each
+                                // other it is wrong: a mode that quietly shows another mode's content
+                                // is indistinguishable from a control that does not work, which is how
+                                // it was reported.
+                                //
+                                // Nothing at all rather than the empty placeholder, which is what he
+                                // asked for: the placeholder means "a station with no name", and these
+                                // squares have names - they have no HOME, and a label saying nothing
+                                // about homes is the thing being removed.
+                                text.setText("");
+
+                                text.setOpaque(false);
+
+                                standingTrain = false;
+                            }
                             else if (naming)
                             {
                                 // The station's own name, which is what the track editor used to show

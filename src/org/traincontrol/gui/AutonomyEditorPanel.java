@@ -3441,6 +3441,37 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * One of the picker's shortcut buttons: choose this name and close the dialog.
+     *
+     * Written once because there are two of them now, and two copies of a four-line listener is how
+     * the pair would come to behave differently - one closing the dialog and the other only selecting.
+     *
+     * @param label what the button says, already formatted with the name
+     * @param name the locomotive it picks
+     * @param answer where the choice is left for the caller
+     * @param pane the dialog to close
+     * @return the button
+     */
+    private static javax.swing.JButton shortcut(String label, final String name,
+        final String[] answer, final javax.swing.JOptionPane pane)
+    {
+        javax.swing.JButton pick = new javax.swing.JButton(label);
+
+        pick.addActionListener(new java.awt.event.ActionListener()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                answer[0] = name;
+
+                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+            }
+        });
+
+        return pick;
+    }
+
+    /**
      * Asks for one locomotive from a list, with a box to narrow it down.
      *
      * FR-010 and FR-011. Both places that ask this question used `JOptionPane.showInputDialog` with a
@@ -3462,11 +3493,13 @@ public class AutonomyEditorPanel extends JPanel
      * @param prompt the question
      * @param names what may be chosen, in the order they should appear
      * @param current the one to start selected, or null
-     * @param useCurrent the name behind a "use current" button, or null for no such button
+     * @param useActive the locomotive being driven, behind a "use active" button, or null for none
+     * @param useParked the locomotive standing at this station, behind a "use current" button, or
+     *        null when nothing is parked there
      * @return the chosen name, or null if the dialog was cancelled
      */
     static String pickLocomotive(java.awt.Component owner, String title, String prompt,
-        List<String> names, String current, final String useCurrent)
+        List<String> names, String current, final String useActive, final String useParked)
     {
         final javax.swing.DefaultListModel<String> shown = new javax.swing.DefaultListModel<>();
 
@@ -3533,28 +3566,36 @@ public class AutonomyEditorPanel extends JPanel
 
         final String[] answer = new String[1];
 
-        if (useCurrent != null && names.contains(useCurrent))
+        // TWO SHORTCUTS, and they are different questions (Adam, 2026-09-07).
+        //
+        // *"In the home locomotive assignment box, 'use current' should be the train currently parked
+        // at the station.  Rename the current behavior to 'use active', and add a second button for
+        // 'use current' if a train is parked there."*
+        //
+        // The old button said "use current" and meant the locomotive being DRIVEN, which is the one
+        // question the word "current" does not obviously answer in a dialog about a station. Active is
+        // the one in your hand; current is the one on the platform in front of you, and assigning that
+        // one its own home is the more common gesture of the two.
+        //
+        // Each is offered only when its locomotive is actually in the list, so neither button can pick
+        // something the list would refuse.
+        JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+
+        if (useParked != null && names.contains(useParked))
         {
-            javax.swing.JButton pick =
-                new javax.swing.JButton(I18n.f("autosetup.ui.btnUseCurrentLocomotive", useCurrent));
-
-            pick.addActionListener(new java.awt.event.ActionListener()
-            {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
-                {
-                    answer[0] = useCurrent;
-
-                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
-                }
-            });
-
-            JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-
-            row.add(pick);
-
-            panel.add(row, java.awt.BorderLayout.SOUTH);
+            row.add(shortcut(I18n.f("autosetup.ui.btnUseParkedLocomotive", useParked),
+                useParked, answer, pane));
         }
+
+        if (useActive != null && names.contains(useActive) && !useActive.equals(useParked))
+        {
+            row.add(shortcut(I18n.f("autosetup.ui.btnUseActiveLocomotive", useActive),
+                useActive, answer, pane));
+        }
+
+        // Only when there is something in it: an empty strip still takes height, and this dialog is
+        // small enough for that to read as a gap somebody forgot to fill.
+        if (row.getComponentCount() > 0) panel.add(row, java.awt.BorderLayout.SOUTH);
 
         // Double-clicking a name is the same as choosing it and pressing OK, which is what a list
         // invites and what a combo box could not offer.
@@ -3898,9 +3939,15 @@ public class AutonomyEditorPanel extends JPanel
         String driving = parentWindow() == null || parentWindow().getActiveLoc() == null
             ? null : parentWindow().getActiveLoc().getName();
 
+        // AND THE ONE STANDING HERE, which is the more common gesture of the two (Adam, 2026-09-07).
+        //
+        // Read from the SETUP rather than the running layout: this is the editor, there may be no run
+        // at all, and what the setup says is parked here is what the diagram in front of him draws.
+        String parked = locomotiveAt(tile);
+
         String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuHomeNone"),
             I18n.t("autosetup.ui.promptHomeFor"), names,
-            current == null ? names.get(0) : current, driving);
+            current == null ? names.get(0) : current, driving, parked);
 
         if (chosen == null) return;
 
@@ -4229,7 +4276,7 @@ public class AutonomyEditorPanel extends JPanel
         // already have, so the one being driven is usually not in it, and a button that is absent
         // most of the time it is looked for is worse than no button.
         String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuAddToAutonomy"),
-            I18n.t("autosetup.ui.promptAddToAutonomy"), names, names.get(0), null);
+            I18n.t("autosetup.ui.promptAddToAutonomy"), names, names.get(0), null, null);
 
         if (chosen == null) return;
 

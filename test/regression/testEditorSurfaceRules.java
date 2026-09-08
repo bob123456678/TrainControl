@@ -1375,6 +1375,78 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The home picker offers the train in your hand AND the one on the platform.
+     *
+     * Adam, 2026-09-07: *"in the home locomotive assignment box, 'use current' should be the train
+     * currently parked at the station.  Rename the current behavior to 'use active', and add a second
+     * button for 'use current' if a train is parked there."*
+     *
+     * The old button said "use current" and meant the locomotive being DRIVEN - the one question the
+     * word "current" does not obviously answer in a dialog about a station. They are different trains
+     * and both are worth a shortcut: active is the one in your hand, current is the one standing in
+     * front of you, and giving that one its own home is the more common gesture.
+     *
+     * **Each is offered only when its locomotive is in the list**, so neither button can pick something
+     * the list itself would refuse - the property the single button already had and the one most easily
+     * lost when a second is added beside it. And they are not offered twice when they are the same
+     * train, which is the ordinary case of driving the loco you are standing at.
+     *
+     * Source-level: the picker is a modal dialog, and a modal dialog in a test is a hang rather than a
+     * failure - the rule this file follows for `addLocMappingPage`.
+     *
+     * MUTATION: dropping the `names.contains` guard on either button fails this; dropping the
+     * `!useActive.equals(useParked)` clause fails the last assertion.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheHomePickerOffersBothTrains() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        String picker = bodyOf(panel, "    static String pickLocomotive(java.awt.Component owner,");
+
+        assertNotEquals(picker, "",
+            "pickLocomotive is not declared that way any more, so this checked nothing");
+
+        assertTrue(picker.contains("btnUseParkedLocomotive"),
+            "the picker offers no way to choose the train parked at the station, which is the button"
+            + " Adam asked for and the more common of the two gestures");
+
+        assertTrue(picker.contains("btnUseActiveLocomotive"),
+            "the picker no longer offers the locomotive being driven. That shortcut was not replaced,"
+            + " it was renamed - the old label said \"use current\" and meant this");
+
+        assertFalse(picker.contains("btnUseCurrentLocomotive"),
+            "the old \"use current\" label is still used for the ACTIVE locomotive, which is the"
+            + " naming Adam asked to have corrected - current is the train on the platform");
+
+        // NEITHER BUTTON CAN PICK WHAT THE LIST WOULD REFUSE.
+        assertTrue(picker.contains("useParked != null && names.contains(useParked)"),
+            "the parked shortcut is offered without checking the list contains that locomotive, so it"
+            + " can choose something the picker itself refuses");
+
+        assertTrue(picker.contains("useActive != null && names.contains(useActive)"),
+            "the active shortcut lost the list check it has always had");
+
+        // AND NOT TWICE FOR ONE TRAIN.
+        assertTrue(picker.contains("!useActive.equals(useParked)"),
+            "driving the locomotive you are standing at offers two buttons that do the same thing,"
+            + " which is the ordinary case rather than an edge one");
+
+        // THE HOME DOOR SUPPLIES BOTH.
+        String home = bodyOf(panel, "    private void promptHome(TileKey tile)");
+
+        assertNotEquals(home, "", "promptHome is not declared that way any more");
+
+        assertTrue(home.contains("locomotiveAt(tile)"),
+            "the home dialog does not ask what is parked at this square, so its new button can never"
+            + " appear");
+    }
+
+    /**
      * What a caption says is one choice, not three switches (FR-061).
      *
      * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following

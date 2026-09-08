@@ -1770,14 +1770,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
                 // PREFERRED as well as maximum, and narrower than the Track Directions box below
+                // (Adam: "reduce width by about 20px", then "still too wide by 20-30px").
+                //
+                // A maximum alone does not do it, which is why the first attempt failed: BoxLayout
+                // caps the WIDTH at the maximum but the column still takes its preferred width from
+                // its widest child. Both are set, and the option text is shortened to "Locs" so 150
+                // is a width the words fit rather than one they are cut off at - Adam: "use Locs if
+                // shorter text is needed in the dropdown".
                 // (Adam: "the dropdown has made the panel too wide - reduce width by about 20px").
                 //
                 // A maximum alone does not do it: BoxLayout caps the WIDTH at the maximum but the
                 // column still takes its preferred width from the widest child, and this combo
                 // prefers whatever "Parked Locomotives" needs plus the arrow. Setting both makes the
                 // sidebar as wide as the sidebar was.
-                captionChoice.setPreferredSize(new java.awt.Dimension(180, 24));
-                captionChoice.setMaximumSize(new java.awt.Dimension(180, 24));
+                captionChoice.setPreferredSize(new java.awt.Dimension(150, 24));
+                captionChoice.setMaximumSize(new java.awt.Dimension(150, 24));
 
                 visibility.add(captionChoice);
                 javax.swing.JLabel directionsLabel =
