@@ -86,6 +86,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 | [MT-329](#mt-329) | 2026-09-08 | The shading clears from where a train used to be | needs test | OB-180 |
 | [MT-331](#mt-331) | 2026-09-08 | OB-181, and the five-edge railway every test was standing on | needs test | OB-181 |
+| [MT-332](#mt-332) | 2026-09-08 | The arrival prompt names the sides the track really has | needs test | OB-182 |
+| [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
+| [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
+| [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17091,6 +17095,114 @@ never once run.
 
 **Nothing to do here yet.** This entry exists so the state is written down. The decision it needs is in
 the report: convert the other nineteen files and fix what turns red now, or after the release.
+
+---
+
+<a id="mt-332"></a>
+
+### MT-332 - 2026-09-08 - The arrival prompt names the sides the track really has
+
+**Disposition:** needs test
+**From:** OB-182
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. Paste a train onto **BottomMainC** with Control+V.
+2. Read the sides the question offers.
+
+**Expected**
+
+**East and west** - the sides the track comes in by - not west and north.
+
+Try **BottomMainPost** as well, which is the square you reported the same fault on before.
+
+**What changed underneath, because this was fixed once and reverted.** The prompt used to name the
+compass direction of the neighbouring POINT, and a run of track turns corners on the way, so on a
+curve that is not the side the metal enters by. Correcting the prompt alone made the labels right and
+stopped the tail blocking working at all - the value it stored was then one the blocking walk never
+matched. The builder now writes the entry side into the configuration and everything reads that one
+value, so the label and the protection cannot disagree.
+
+---
+
+<a id="mt-333"></a>
+
+### MT-333 - 2026-09-08 - The track behind a train is still blocked after the prompt change
+
+**Disposition:** needs test
+**From:** OB-182
+
+**Written:** 2026-09-08
+
+**The half of OB-182 that is easy to lose, and was lost once already.**
+
+**Steps**
+
+1. Stand a long train on a platform reached by a **curved** approach, answering the arrival prompt.
+2. Try to send another train over the track behind it.
+
+**Expected**
+
+Refused, naming the train lying across it - exactly as it is on a straight approach.
+
+If the shading disappears or the second train is allowed through, the doors and the blocking walk are
+naming sides differently again, which is the state that made the first attempt at OB-182 worse than
+the bug.
+
+---
+
+<a id="mt-334"></a>
+
+### MT-334 - 2026-09-08 - Changing a pathing arrow no longer flickers the diagram
+
+**Disposition:** needs test
+**From:** OB-185
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. In the autonomy editor, use the one-way tool to close a run.
+2. Do it several times in a row, which is how the tool is actually used.
+
+**Expected**
+
+The arrows change and the diagram does not flash. It used to rebuild every tile on the page for a
+change that only moves an arrow.
+
+**Still on your list to judge:** the findings list is still recomputed on each click. You offered to
+have that deferred a few seconds; I have not, because a list that disagrees with the diagram for a
+second after every click is the kind of small lie this panel has been bitten by. If it still drags,
+say so and that is the next thing to spend.
+
+---
+
+<a id="mt-335"></a>
+
+### MT-335 - 2026-09-08 - Return Home will not plan through track a train is lying across
+
+**Disposition:** needs test
+**From:** OB-184
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. Stand a long train so its tail protrudes across a switch - the case you reported.
+2. Give another locomotive a home that can only be reached through that switch.
+3. Press **Return Home**.
+
+**Expected**
+
+It is not offered as a ready plan. Before this the planner did not know a train covers the track
+behind it, so it produced plans the runtime refused on the first move.
+
+**A limit worth knowing.** The rule applies to trains that have not moved yet in the plan. Where a
+train's tail lies after a move depends on the side it arrives by, which the planner does not model -
+so it under-claims rather than over-refuses. If you see a plan that is still refused at execution
+because of a tail, that is this limit and it is worth reporting.
 
 ---
 
