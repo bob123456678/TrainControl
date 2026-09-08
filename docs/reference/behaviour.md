@@ -433,6 +433,25 @@ limit is stated here (MON-C13):
 The first refuses trains that would fit, which is safe and annoying. The second admits trains that do
 not, which is neither - it is the one of the pair worth ruling on first.
 
+**Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
+(MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever
+either bullet gets wrong, it gets wrong everywhere rather than at a handful of reversal squares.
+
+**Measured on the operator's own railway, 2026-09-08**, because "everywhere" is not a number. Across
+all 3488 ordered station pairs, with each of the six train lengths in his database in turn: the room
+rule declines to judge almost all of them - the railway carries only a few measurements - and the
+journeys it newly refuses are 332, all of them arriving at the same four through berths, each measured
+at ONE unit of room:
+
+    BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound)
+
+Those are the berths Adam named himself, with the number he gave: *"bottommainb, which has a length of
+1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered *"with ONE
+measured unit of room behind it"*. So the widening is refusing the journeys he asked to have refused,
+at the squares he was looking at, and not - on this railway, today - a wider set that bullet 1 has
+under-counted. A layout with lengths scattered over more of its track would be a different answer, and
+the way to find out is to run that census again rather than to reason about it.
+
 ---
 
 ## 6. Parking and Return Home

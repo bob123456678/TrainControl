@@ -535,10 +535,12 @@ public class testStationBlockedByAnotherPoint
             + "  {\"name\": \"BK YARD TWIN\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"}"
             + "],"
             + "\"edges\": ["
-            + "  {\"start\": \"BK A\", \"end\": \"BK B\", \"length\": 1},"
-            + "  {\"start\": \"BK YARD\", \"end\": \"BK B\", \"length\": 1}"
+            + "  {\"start\": \"BK A\", \"end\": \"BK B\", \"length\": " + APPROACH + "},"
+            + "  {\"start\": \"BK YARD\", \"end\": \"BK B\", \"length\": " + APPROACH + "}"
             + "],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        theApproachHoldsTheTrainsUsedHere();
 
         Layout layout = Layout.fromJSON(json, model);
 
@@ -628,8 +630,10 @@ public class testStationBlockedByAnotherPoint
             + "  {\"name\": \"BK YARD\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"},"
             + "  {\"name\": \"BK YARD TWIN\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"}"
             + "],"
-            + "\"edges\": [{\"start\": \"BK A\", \"end\": \"BK B\", \"length\": 1}],"
+            + "\"edges\": [{\"start\": \"BK A\", \"end\": \"BK B\", \"length\": " + APPROACH + "}],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        theApproachHoldsTheTrainsUsedHere();
 
         Layout layout = Layout.fromJSON(json, model);
 
@@ -639,6 +643,47 @@ public class testStationBlockedByAnotherPoint
         layout.runLocomotives();
 
         return layout;
+    }
+
+    /**
+     * How long the run into BK B is measured, and it is measured LONGER THAN THE TRAINS on purpose.
+     *
+     * It was 1 until 2026-09-08, when MT-262 took the fence off the berth-room rule.  Until then
+     * `isPathClear` asked that rule only where the destination was a terminus or a reversing point,
+     * so a through platform like BK B was never judged on the track leading into it and any positive
+     * number did - the 1 was "some measured length", not a claim about room.  It is a claim now:
+     * `measuredRoomAtTheBerth` reads it, and every locomotive in this file comes from the operator's
+     * real database, where the first two are three units long.  Measured on 2026-09-08, that made
+     * five of these tests refuse the path before the FR-001 rule was ever reached - and, worse, made
+     * the three that assert a REFUSAL pass without it, because the length was refusing for them.
+     *
+     * So this is a fixture that has to be wide enough for the trains it borrows.  The room rule is
+     * not what this file is about; `core.testATrainTooLongIsRefusedTheBerth` and
+     * `core.testAManualSendIsRefusedABerthTooShort` are where it is tested.
+     */
+    private static final int APPROACH = 20;
+
+    /**
+     * That the approach really is longer than the trains these tests use.
+     *
+     * The locomotives come from the operator's own database - `getLocList().get(0)` and `.get(1)` -
+     * so their lengths are data this file does not control.  Without this, a longer train arriving in
+     * that database would put the whole class back where MT-262 found it, with the failures reading
+     * as FR-001 defects rather than as a fixture that has gone too small.
+     */
+    private static void theApproachHoldsTheTrainsUsedHere()
+    {
+        for (int which = 0; which < 2; which++)
+        {
+            Locomotive loc = model.getLocByName(model.getLocList().get(which));
+
+            Integer length = loc.getTrainLength();
+
+            assertTrue(length == null || length <= APPROACH,
+                loc.getName() + " is " + length + " units long and this fixture measures its approach"
+                + " at " + APPROACH + ", so the berth-room rule refuses every path below before the"
+                + " rule this file is about is ever asked.  Raise APPROACH");
+        }
     }
 
     private static MarklinControlStation model;
