@@ -459,6 +459,30 @@ action fires when it is *clicked*; starting autonomy from another window in betw
 over a running railway. The refusal has to be in the method, and the menu asks the same question so
 the two agree.
 
+> *"Where a train IS is a fact, and where the file thinks it is is a record."* - Adam, 2026-09-08,
+> ruling on OB-183
+
+**Every setup edit regenerates the running layout from the setup, and where the two disagree about a
+train the railway wins.** A run moves trains, where they ended up lives only in the running layout,
+and nothing writes it back to the setup when the run ends - so a setup that has not been captured
+since is stale about exactly those trains. Regenerating from it would put each one back where it set
+off, in the model and then on disk, and occupancy is the model's own record rather than the sensors:
+the next dispatch could then be routed into a block that is physically occupied.
+
+**The one exception is a train whose placement the edit was about**, and the doors that make such an
+edit say which train it is. Placing a locomotive from the autonomy editor, taking one off a square,
+and clearing every placement all write the new answer into the setup and nowhere else, so for those
+trains the setup IS the newer answer and the rebuild's placement stands. Every other door that moves
+a train - the track diagram's own place, facing and assign items - writes the running layout too, so
+it needs no exception: the record and the setup already agree.
+
+Neither half is inferred from the fact that a rebuild is happening. That inference is what made the
+rule wrong in both directions within one day: an edit undone on the way to being redrawn when the
+railway always won, and a train teleported back to its pre-run square when the setup always did. The
+surface that reaches this most often has no editor in it at all - the track diagram viewer's
+right-click autonomy menu rebuilds after every gesture, and nothing on that path ever captures where
+the trains are.
+
 ---
 
 ## 7. Routing checks in the editor

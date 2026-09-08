@@ -5813,7 +5813,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void rebuildRunningLayoutFromSetup()
     {
-        rebuildRunningLayoutFromSetup(false);
+        // NO PLACEMENT EDIT IS PENDING HERE, and that is a fact about this door rather than a default
+        // (D2-A1).  The only caller is `autonomyEditorClosed()`.  Every placement made in the editor
+        // reached the running layout when it was made - the panel's own gesture rebuilt then, naming
+        // the train - so by the time the editor closes the record and the setup agree about it, and
+        // the trains that must be carried across this rebuild are the ones a run moved.
+        rebuildRunningLayoutFromSetup(false, null);
     }
 
     /**
@@ -5858,12 +5863,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * every home change, which is the defect OB-183 was reported as, wearing different clothes.
      *
      * @param standing what `whereTheTrainsAre` recorded
+     * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
      */
-    private void putTheTrainsBack(java.util.Map<String, String[]> standing)
+    private void putTheTrainsBack(java.util.Map<String, String[]> standing,
+        java.util.Set<String> placementsJustEdited)
     {
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
-        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log);
+        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log, placementsJustEdited);
     }
 
     /**
@@ -5881,6 +5888,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log)
     {
+        putTheTrainsBack(built, standing, log, null);
+    }
+
+    /**
+     * The same, told which trains the setup has just been given a new placement for (D2-A1 / W7-A1).
+     *
+     * **The question this method cannot answer for itself.** The rebuild has regenerated every
+     * placement from the setup, and `standing` is where the running railway had those trains a moment
+     * ago. Where the two disagree, one of them is newer, and which one it is does not show in either:
+     *
+     * - the setup is newer where somebody has just placed a train in the editor, which writes `loc`
+     *   into the setup and nowhere else (`AutonomySession.placeLocomotive`) - that is `MT-337`;
+     * - the record is newer where a run moved a train after the last capture, because `currentLoc` is
+     *   the only place that lives and nothing folds it back when a run ends - that is `OB-183`.
+     *
+     * `MT-337` made the setup win always, on the reasoning that a rebuild is only ever asked for
+     * because the setup just changed. That is true, and it does not follow: the gesture that asked can
+     * be about something else entirely. The track diagram viewer's right-click autonomy menu is an
+     * `AutonomyEditorPanel`, so setting a home, a priority or a caption from the diagram ends in a
+     * rebuild - and nothing on that path ever captures the running layout. After a run, that rebuild
+     * put every moved train back where it had started, in the model and then on disk, and occupancy is
+     * `currentLoc` rather than the s88, so the next dispatch could route into an occupied block.
+     *
+     * So the doors that know say so, and this decides per TRAIN rather than per door: a train named
+     * here keeps where the rebuild put it, and every other train goes back where the railway had it.
+     * Naming nothing is the honest answer for a gesture that edited no placement, and it is what the
+     * three-argument form above means.
+     *
+     * @param built the layout the rebuild just produced
+     * @param standing what `whereTheTrainsAre` recorded before it
+     * @param log where to say that one train could not be put back
+     * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
+     */
+    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
+        java.util.Set<String> placementsJustEdited)
+    {
         if (standing == null || standing.isEmpty()) return;
 
         if (built == null) return;
@@ -5892,6 +5936,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 org.traincontrol.automation.Point back = built.getPoint(was.getValue()[0]);
 
                 if (back == null) continue;
+
+                // THE RAILWAY WINS, UNLESS THIS TRAIN'S PLACEMENT IS THE EDIT (D2-A1 / W7-A1).
+                //
+                // Adam's OB-183 ruling is the default and is stated at the call site: **where a train
+                // IS is a fact, and where the file thinks it is is a record.** The exception is a
+                // train the operator has just placed, whose new square exists only in the setup - and
+                // the exception is now supplied by the door that made it rather than inferred from
+                // the fact that a rebuild is happening.
+                if (placementsJustEdited == null || !placementsJustEdited.contains(was.getKey()))
+                {
+                    if (back.getCurrentLocomotive() == null
+                        || !was.getKey().equals(back.getCurrentLocomotive().getName()))
+                    {
+                        built.moveLocomotive(was.getKey(), was.getValue()[0], false);
+                    }
+
+                    // The arrival side goes back with the train: `Point.setLocomotive` clears it
+                    // whenever the occupant changes, so without this the tail blocking switches itself
+                    // off on every rebuild - the half of OB-183 that is not the placement.
+                    if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
+
+                    continue;
+                }
 
                 // WHERE THE REBUILD PUT IT, which is where the SETUP says it is.
                 //
@@ -5907,7 +5974,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // `whereTheTrainsAre` reads, so its placements agree with the record and survive.
                 //
                 // The comment that used to sit here said a placement is safe to carry across
-                // because "nobody chose it in the editor". Somebody can.
+                // because "nobody chose it in the editor". Somebody can - and this branch is now
+                // reached only for the trains somebody actually did choose.
                 org.traincontrol.automation.Point now = null;
 
                 for (org.traincontrol.automation.Point each : built.getPoints())
@@ -5921,27 +5989,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                if (now != null)
+                if (now == back && was.getValue()[1] != null)
                 {
                     // ONLY THE ARRIVAL SIDE, and only where it did not move. `Point.setLocomotive`
                     // clears `arrivedFrom` whenever the occupant changes, which is right for a
                     // different train arriving and wrong for the same train being rebuilt onto the
                     // square it was already on - and without it the tail blocking switches itself
                     // off on every rebuild, which is the half of OB-183 that is not the placement.
-                    if (now == back && was.getValue()[1] != null)
-                    {
-                        back.setArrivedFrom(was.getValue()[1]);
-                    }
-
-                    continue;
+                    back.setArrivedFrom(was.getValue()[1]);
                 }
 
-                // NO OPINION: the setup could not say where this train is, so the running railway's
-                // answer is the only one there is. This is OB-183 proper - a run moves trains and
-                // `currentLoc` is the only place that lives.
-                built.moveLocomotive(was.getKey(), was.getValue()[0], false);
-
-                if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
+                // AND `now == null` IS AN ANSWER TOO.  The Remove item and Clear Every Locomotive
+                // write "nowhere" into the setup and nowhere else, so a rebuild that places this
+                // train on no square is carrying the edit rather than losing the train.  Putting it
+                // back here is how those two doors used to appear to do nothing.
             }
             catch (Exception cannotPutItBack)
             {
@@ -5975,8 +6036,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * disk, which it will - the edit reached the file before this was ever called.
      *
      * @param sayIfDeclined true where the caller has not already warned about editing during a run
+     * @param placementsJustEdited locomotives whose placement this gesture wrote into the setup, so
+     *                             the rebuild's answer for them is the newer one; null where the
+     *                             gesture edited no placement, which is most of them (D2-A1)
      */
-    public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined)
+    public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
+        java.util.Set<String> placementsJustEdited)
     {
         if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
@@ -6064,13 +6129,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // PLACEMENTS ONLY, and that is the whole reason this is safe. Folding the entire running
             // layout back - which is what `captureFromLayout` does - writes the stale answer over the
             // edit that asked for the rebuild, and is what silently deleted a declined edit (ACC-B3).
-            // A placement is not an inferred setting: nobody chose it in the editor, and the railway is
-            // the only place it lives.
+            //
+            // AND THE ONE EXCEPTION IS NAMED RATHER THAN INFERRED (D2-A1 / W7-A1).
+            //
+            // The sentence that used to close the paragraph above - "a placement is not an inferred
+            // setting: nobody chose it in the editor, and the railway is the only place it lives" -
+            // was false at one door: `AutonomySession.placeLocomotive` writes `loc` into the setup and
+            // nowhere else, so an editor placement lived only there and this put it straight back
+            // (MT-337).  The answer to that was to let the rebuild win wherever it had an opinion,
+            // and it made this method wrong the other way round for every OTHER gesture: the track
+            // diagram viewer's right-click menu is an `AutonomyEditorPanel` too, every setting on it
+            // ends here, and NOTHING on that path captures.  Setting a home after a run then put each
+            // moved train back at its pre-run square - OB-183 again, through the door Adam uses most.
+            //
+            // Neither rule can be inferred from the fact that a rebuild is happening, so the doors
+            // that know say so: `placementsJustEdited` names the trains this gesture wrote a placement
+            // for, and `putTheTrainsBack` makes the exception for exactly those.  The comment block
+            // above states the default and stays true.
             java.util.Map<String, String[]> standing = whereTheTrainsAre();
 
             getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
 
-            putTheTrainsBack(standing);
+            putTheTrainsBack(standing, placementsJustEdited);
         }
     }
 

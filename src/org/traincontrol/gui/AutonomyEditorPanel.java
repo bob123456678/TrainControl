@@ -1170,7 +1170,9 @@ public class AutonomyEditorPanel extends JPanel
                     {
                         session.placeLocomotive(target, null);
 
-                        placementChanged();
+                        // The setup's new answer for this train is "nowhere", and it is an answer -
+                        // without naming it the rebuild puts the train straight back (D2-A1).
+                        placementChanged(java.util.Collections.singletonList(standing));
                     }));
             }
 
@@ -2171,7 +2173,7 @@ public class AutonomyEditorPanel extends JPanel
             // many Points it becomes and what they are called - which is the very example the rebuild
             // exists for.  Refreshing alone redrew this menu over a running layout that still held the
             // old Points.
-            placementChanged();
+            placementChanged(null);
 
             flashMenuTarget();
         });
@@ -3302,7 +3304,7 @@ public class AutonomyEditorPanel extends JPanel
             // fixed in its own lambda, which left its two neighbours - sitting in the same helper,
             // reached by the same gesture - still calling refresh(). The redraw belongs HERE, where
             // every radio gets it, rather than in whichever lambda somebody reported.
-            placementChanged();
+            placementChanged(null);
 
             flashMenuTarget();
         });
@@ -3971,7 +3973,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // The restriction is built into the configuration as lock edges, so the running layout has to
         // be regenerated for it to mean anything - the same seam every other setup edit uses.
-        placementChanged();
+        placementChanged(null);
 
         // Pick on the diagram: the ticks above are applied FIRST and then the next click is waited
         // for.  Arming without applying would throw away whatever had just been ticked, which is a
@@ -4439,7 +4441,10 @@ public class AutonomyEditorPanel extends JPanel
         session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
             session.facingsFor(tile), heading, null));
 
-        placementChanged();
+        // THE DOOR MT-337 WAS REPORTED AT.  This writes `loc` into the setup and nowhere else, so the
+        // rebuild that follows is the only thing that puts the train on the running layout - and
+        // without naming it here, the record read a moment ago puts it back where it was.
+        placementChanged(java.util.Collections.singletonList(name));
     }
 
     /**
@@ -4464,9 +4469,39 @@ public class AutonomyEditorPanel extends JPanel
      * - the body rebuilds unconditionally now, deliberately, because the two surfaces are on screen
      * together. That second sentence is the one somebody would have used to argue the stale-state
      * defect could not happen.
+     *
+     * @param placementsEdited the locomotives whose placement this gesture wrote into the setup
+     *                         and nowhere else, or null where it changed no placement (D2-A1)
      */
-    private void placementChanged()
+    private void placementChanged(java.util.Collection<String> placementsEdited)
     {
+        // WHICH TRAINS THE SETUP HAS JUST BEEN GIVEN A NEW ANSWER ABOUT (D2-A1 / W7-A1).
+        //
+        // The rebuild this ends in regenerates every placement from the setup, and it then has to
+        // decide, per train, whether the setup's answer or the running railway's is the newer one.
+        // That question has no answer in the data: a setup placement that disagrees with the railway
+        // is either an edit somebody just made or a record a run has outrun, and the two look
+        // identical afterwards.  `MT-337` assumed the first and `OB-183` assumed the second, and each
+        // assumption is right at some doors and wrong at others.
+        //
+        // So provenance is carried rather than guessed.  Only the doors that write a placement into
+        // the SETUP and nowhere else name a locomotive here - `placeLocomotive`, the per-square
+        // Remove, and Clear Every Locomotive.  Everything else passes null, including the doors that
+        // move a train on the running layout too (`GraphLocAssign.commitAndRecord` and the track
+        // diagram's own menu): those already agree with the record the rebuild reads, so they need no
+        // exception made for them.
+        //
+        // A COLLECTION AND NOT AN OPTIONAL EXTRA, so the compiler visits every call site.  This is the
+        // sweep this codebase keeps failing to do by hand: a placement door added later cannot quietly
+        // inherit whichever rule happens to be here.
+        if (placementsEdited != null)
+        {
+            for (String name : placementsEdited)
+            {
+                if (name != null) placementsJustEdited.add(name);
+            }
+        }
+
         // BOTH, not one or the other.
         //
         // It used to refresh the editor's own grid where there was one and rebuild the running layout
@@ -5744,7 +5779,7 @@ public class AutonomyEditorPanel extends JPanel
 
             // Built into the configuration as lock edges, so the running layout has to be regenerated
             // for it to mean anything - the same seam the checklist uses.
-            placementChanged();
+            placementChanged(null);
 
             // And back to the list, where the square just clicked is now ticked.  A second one is a
             // button and another click rather than the whole right-click menu again.
@@ -7203,12 +7238,28 @@ public class AutonomyEditorPanel extends JPanel
             // that was not running - the editor's other doors warn about that when it is - and the
             // rebuild is posted one event later, so a run starting in between throws the edit away.
             // `TrainControlUI.autonomyEditorClosed()` passes false because it has already said it.
-            if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup(true);
+            // AND WHOSE PLACEMENTS THIS GESTURE EDITED, drained so each edit is claimed once
+            // (D2-A1).  The rebuild is coalesced, so several writes can reach one rebuild and their
+            // names accumulate until it happens; after it, nothing is pending and the running railway
+            // is the only answer there is again.
+            java.util.Set<String> edited = new java.util.LinkedHashSet<>(placementsJustEdited);
+
+            placementsJustEdited.clear();
+
+            if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup(true, edited);
         });
     }
 
     /** Set between a setup change and the single rebuild it coalesces into (VD10-C2). */
     private boolean setupChangePending;
+
+    /**
+     * Locomotives whose placement this panel has written into the setup since the last rebuild.
+     *
+     * See `placementChanged` for what this is for.  Held rather than passed straight through because
+     * the rebuild is coalesced: one gesture can write several times and there is one rebuild after it.
+     */
+    private final java.util.Set<String> placementsJustEdited = new java.util.LinkedHashSet<>();
     /**
      * Re-reads the setup and shows what it says.
      *
@@ -7670,11 +7721,16 @@ public class AutonomyEditorPanel extends JPanel
         // the train standing there - and each write re-derives the station index, which is a full
         // builder construction on the event thread.  So this cost 2N of them, for the gesture that
         // exists precisely because doing it one at a time is too many.  Same writer, one re-derive.
+        // WHOSE PLACEMENTS THESE ARE, read before the clear takes them away (D2-A1).  Clearing is an
+        // answer about every one of them, and an unnamed clear is undone by the rebuild that carries
+        // it - the same defect as the single-square Remove, in the bulk door.
+        java.util.List<String> lifted = placedLocomotives();
+
         int cleared = session.clearEveryPlacement();
 
         say(hint, I18n.f("autosetup.ui.infoLocomotivesCleared", cleared));
 
-        placementChanged();
+        placementChanged(lifted);
     }
 
     /**

@@ -206,7 +206,10 @@ public class testEditorSurfaceRules
 
                 for (int k = j; k < Math.min(lines.size(), j + 30); k++)
                 {
-                    if (lines.get(k).contains("placementChanged()")) redrawn = true;
+                    // `placementChanged(null)`, not `placementChanged()`: the door now says WHICH
+                    // placements it edited, and a radio edits none (D2-A1).  Matching the bare name
+                    // would be satisfied by the declaration itself, which is not a call.
+                    if (lines.get(k).contains("placementChanged(null)")) redrawn = true;
                 }
             }
 
@@ -232,7 +235,8 @@ public class testEditorSurfaceRules
                 // whatever comes next; that is the property worth keeping, not the number.
                 for (int k = j; k < Math.min(lines.size(), j + 60); k++)
                 {
-                    if (lines.get(k).contains("placementChanged()")) rebuilt = true;
+                    // See the radio window above for why this is the null form (D2-A1).
+                    if (lines.get(k).contains("placementChanged(null)")) rebuilt = true;
                 }
 
                 assertTrue(rebuilt,
@@ -1769,7 +1773,7 @@ public class testEditorSurfaceRules
             java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
             StandardCharsets.UTF_8));
 
-        String rebuild = bodyOf(ui, "public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined)");
+        String rebuild = bodyOf(ui, "public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,");
 
         assertNotEquals(rebuild, "",
             "rebuildRunningLayoutFromSetup is not declared that way any more, so this checked nothing");
@@ -3985,7 +3989,7 @@ public class testEditorSurfaceRules
             // Adam reported - so a guard that named the heavy door by spelling would have forced the
             // four direction doors to keep redrawing every tile on the page in order to stay green.
             boolean announces = body.toString().contains("setupChanged()")
-                || body.toString().contains("placementChanged()")
+                || body.toString().contains("placementChanged(")
                 || body.toString().contains("annotationsChanged()")
 
                 // AND ONE HELPER THAT ANNOUNCES FOR ITS CALLER (VD11-A1).
@@ -4006,7 +4010,7 @@ public class testEditorSurfaceRules
         }
 
         // The exemption above is only sound while `radio` really does announce.
-        assertTrue(source.contains("placementChanged();"),
+        assertTrue(source.contains("placementChanged(null)"),
             "AutonomyEditorPanel no longer calls placementChanged anywhere, so the `radio(` "
             + "exemption below is exempting doors that announce nothing (VD11-A1)");
 
@@ -4014,8 +4018,8 @@ public class testEditorSurfaceRules
 
         assertTrue(radioAt > 0, "the radio helper has gone, and the exemption with it should too");
 
-        assertTrue(source.indexOf("placementChanged();", radioAt) > 0
-            && source.indexOf("placementChanged();", radioAt) < radioAt + 2000,
+        assertTrue(source.indexOf("placementChanged(null)", radioAt) > 0
+            && source.indexOf("placementChanged(null)", radioAt) < radioAt + 2000,
             "radio() no longer announces, so every radio door on this menu is silent and the "
             + "exemption is hiding them (VD11-A1)");
 
