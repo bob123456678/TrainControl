@@ -151,14 +151,38 @@ decline in silence. `DD-B5` — one way into the right-click menu, with the comm
 the two one-letter-apart methods are gone; `sideTowardNeighbour` asks the tile grid and `sideTowards`
 asks the graph, which are different questions in different domains.
 
+**Closed 2026-09-07.**
+
+- **`DD-A7`** - the tier split. `AutonomyChecks` predicts what the railway will do, so where the build
+  can answer, it asks the build; the seven ERROR checks that report why a build is *impossible* keep
+  reasoning about the diagram, because there is no build to inspect. The trapped-arrival walk is gone.
+- **`DR-B6`** - both halves. The arrival-sides walk was consolidated onto the `arrivalSides` door
+  earlier; the facing rule now reads `facingsFor`, which is `builder.facingByName()`, and the session's
+  second `onwardFrom` is deleted.
+- **`DR-B2`** - already done and never dispositioned. FR-001 is one rule, `Point.heldBackBy`,
+  parameterised by an `Occupancy`; the runtime passes the live block and the planner passes its
+  planned state. Its javadoc records that the two copies it replaced "guarded it differently".
+
 **Still open.**
 
-- **Reachability / "sendable destination"** across the runtime, the planner and the test oracle:
-  `isSendableDestination` settled the runtime's copy, and whether the planner and the oracle now
-  derive from it rather than restating it has not been checked. `DD-B9`, `DR-B2`.
-- **The checker re-implements rules the builder enforces**, and has disagreed with the railway.
-  `DD-A7`.
-- **The arrival-sides walk and the facing rule** each gained another copy. `DR-B6`.
+- **`DD-B9`, reachability.** Two walks over two graphs: `GraphReducer.reachableTiles` over the drawn
+  diagram, and `Layout`'s walk over the built one. **This is the same tier question `DD-A7` just
+  settled** - the checker's station-reachability findings predict the build and should ask it, and
+  build-derived equivalents already sit beside them in `copiesReachingNoStation`. The editor's *test a
+  path* tool is the exception and should keep the diagram walk: it runs while drawing, on a setup that
+  may not build yet.
+
+  Not merely theoretical. `GraphReducer`'s own javadoc records the two drifting once already - one
+  gained a `closed` set and its sibling three lines away did not - measured as *"the tool drew a route
+  the runtime refuses"*.
+
+**Ruled, not a defect.** The three TIERS answering "where may a train be sent" differently is
+deliberate, and section 1 of [`behaviour.md`](behaviour.md) records why: `isAutoDestination` appears
+nowhere in `HomeStaging`, because Return Home sits with Manual. The repeated `isDestination() &&
+isActive()` pairs inside the planner are different questions about different endpoints - a candidate
+station, a start, a home - that happen to share two clauses. Merging them would be the
+lookalike-column trap: better naming is not a pin, and one rule made out of three questions is worse
+than three.
 
 **Why it matters more than it looks:** every A-grade finding of the last three days was an instance
 of this — a guard and its affordance asking different questions, a rule enforced at one door of two.
