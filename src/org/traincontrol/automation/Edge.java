@@ -48,7 +48,7 @@ public class Edge
      *
      * `Integer.MIN_VALUE` - the default - when this edge crosses no switch, which is what a
      * hand-written configuration and every pre-3.0.0 file will leave it as.  Such an edge does not
-     * bound where a train may come to rest, and `Layout.measuredRoomToReverseInto` walks back past it.
+     * bound where a train may come to rest, and `Layout.measuredRoomAtTheBerth` walks back past it.
      *
      * `-1` when it does cross one and NOTHING in the stretch after it is measured: the room is bounded
      * but unknown, and unknown is the case this guard declines to act on.

@@ -1106,7 +1106,7 @@ public final class HomeStaging
                 // parallel run of track with identical ironwork would still be lost here.
                 if (next.equals(to))
                 {
-                    Integer room = Layout.measuredRoomToReverseInto(route, loc);
+                    Integer room = Layout.measuredRoomAtTheBerth(route, loc);
 
                     if (room != null && loc.getTrainLength() > room) continue;
                 }

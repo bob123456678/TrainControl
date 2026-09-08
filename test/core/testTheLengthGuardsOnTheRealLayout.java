@@ -358,8 +358,10 @@ public class testTheLengthGuardsOnTheRealLayout
 
             // A BERTH WHERE THE GUARD ACTUALLY BINDS.
             //
-            // Being offered is not enough: the rule is `measuredRoomToReverseInto`, so it applies where
-            // a train has to BACK IN, and everywhere else there is no refusal to sit at the edge of.
+            // Being offered is not enough: the rule is `measuredRoomAtTheBerth`, and it declines to
+            // judge a run in nobody has measured - so on most of a real railway there is no refusal
+            // to sit at the edge of.  (It applied only where a train had to BACK IN until MT-262,
+            // which is a narrower version of the same point.)
             // The first version of this search took the first berth with room and found
             // `BottomMainPost (northbound)` at 32 units, which admitted a 33-unit train quite happily -
             // the boundary assertion passed and meant nothing. The control caught it, which is what a

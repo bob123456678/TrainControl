@@ -1057,6 +1057,32 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     return;
                 }
 
+                // AND THE ONE REFUSAL THIS DOOR CAN EXPLAIN (MT-262).
+                //
+                // Adam, 2026-09-05, on a four-unit train being sent into two units of track: **"there
+                // is no notice that can help state/debug this."**  A send the railway then turns down
+                // ended at `autolayout.ui.autoFailedCheckLog` - "check the log" - which is the least
+                // useful thing a dialog can say about a refusal the operator could act on.
+                //
+                // `Layout.whyTooLongForTheBerth` is the rule, not a copy of it: `isPathClear` asks the
+                // same method, so this cannot come to a different answer than the railway does.  Asked
+                // HERE because the list this item was built from is a snapshot - the menu is assembled
+                // once and stays open while trains move and lengths are edited - and because the
+                // sentence is what Adam asked for.
+                //
+                // Only the length rule, deliberately.  Everything else `isPathClear` asks is about
+                // this minute and clears itself; refusing here on a busy sensor would turn a
+                // momentary block into a dialog.
+                String tooLong = org.traincontrol.automation.Layout.whyTooLongForTheBerth(path,
+                    locomotive);
+
+                if (tooLong != null)
+                {
+                    JOptionPane.showMessageDialog(this, tooLong);
+
+                    return;
+                }
+
                 // ASKED HERE, ON THE EVENT THREAD, BEFORE ANYTHING IS DISPATCHED (Adam,
                 // 2026-09-06): "make it be on departure itself, that way there is no dispatch prior
                 // to user input."

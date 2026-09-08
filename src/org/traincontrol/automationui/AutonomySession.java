@@ -2468,7 +2468,7 @@ public class AutonomySession
      * false, and the second is backwards. Traced against the two methods rather than against a summary
      * of them:
      *
-     * - `Layout.measuredRoomToReverseInto` walks the path's **edges** backwards and **stops at the
+     * - `Layout.measuredRoomAtTheBerth` walks the path's **edges** backwards and **stops at the
      *   first one that crosses a switch**. Before that it needs each edge's own `getLength() > 0`; at
      *   it, `getRoomAtTheEnd() >= 0`. It never looks past the last switch, so an unmeasured stretch
      *   beyond it blinds nothing.

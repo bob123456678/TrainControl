@@ -1206,7 +1206,7 @@ public class GraphReducer
         // This kept a `measured` flag that any single unmeasured tile cleared, and then threw away
         // every unit it had counted: `return measured ? room : -1`.  On his railway the run into
         // BottomMainPost is twelve tiles with one of them measured at 1, so the answer was -1 -
-        // "bounded but unmeasured" - and `measuredRoomToReverseInto` declined to judge, which let a
+        // "bounded but unmeasured" - and `measuredRoomAtTheBerth` declined to judge, which let a
         // four-unit train into one unit of room.  The measured tile was right there and was discarded
         // for the company it kept.
         //

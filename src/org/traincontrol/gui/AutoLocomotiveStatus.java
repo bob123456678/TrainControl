@@ -1045,6 +1045,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                     final List<Edge> chosen = this.paths.get(index);
 
+                    // AND THE ONE REFUSAL THIS DOOR CAN EXPLAIN (MT-262).
+                    //
+                    // Adam, 2026-09-05, on a four-unit train being sent into two units of track:
+                    // **"there is no notice that can help state/debug this."**  A send the railway
+                    // then turns down ended at `autolayout.ui.autoFailedCheckLog` - "check the log".
+                    //
+                    // `Layout.whyTooLongForTheBerth` is the rule rather than a copy: `isPathClear`
+                    // asks the same method, so this door and the railway cannot disagree.  Asked here
+                    // because `this.paths` is a snapshot - the comment above says why that matters -
+                    // and because the sentence is what Adam asked for.
+                    //
+                    // Its twin on the diagram's right-click menu does the same thing in the same
+                    // place.  Two hand-driven doors, one question: `guard-and-affordance-same-question`
+                    // is this file's own history, and the power check three lines up is there because
+                    // one of them had it and the other did not.
+                    String tooLong = org.traincontrol.automation.Layout.whyTooLongForTheBerth(chosen,
+                        locomotive);
+
+                    if (tooLong != null)
+                    {
+                        JOptionPane.showMessageDialog(this, tooLong);
+
+                        return;
+                    }
+
                     // ASKED HERE, ON THE EVENT THREAD, BEFORE THE THREAD BELOW STARTS (Adam,
                     // 2026-09-06): "make it be on departure itself, that way there is no dispatch
                     // prior to user input."

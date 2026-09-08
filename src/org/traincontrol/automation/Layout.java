@@ -2331,17 +2331,17 @@ public class Layout
             }
         }
 
-        // Check train length
-        if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
-        {
-            logPathError(
-                loc,
-                path,
-                logFailures,
-                I18n.f("autolayout.errorTrainLengthTooLong", path.get(path.size() - 1).getEnd().getName())
-            );
-            return false;
-        }
+        // THE STATION'S OWN CAPACITY IS ASKED ALONGSIDE THE TRACK ROOM NOW, further down (MT-262).
+        //
+        // It was asked here, so the two length rules - the capacity somebody typed on the station and
+        // the track actually leading into it - refused in different places, and a door that wants to
+        // say why could only ask half of "this train does not fit where you are sending it".  Adam's
+        // report is that a manual send has "no notice that can help state/debug this", and one
+        // predicate is what lets the doors and the why-not-moving window say the same thing.
+        //
+        // The move puts it after the inactive-endpoint and covered-track rules, so a berth that is
+        // both switched off and too short now reports as switched off.  Both are refusals and both
+        // are true; nothing is admitted that was not admitted before.
 
         // AT EVERY DOOR, not only while autonomy is running (Adam, 2026-09-06).
         //
@@ -2504,78 +2504,45 @@ public class Layout
             return false;
         }
 
-        // THE TOTAL OF WHAT IS MEASURED, which is not the same as all-or-nothing (REG8-C3).
+        // A TRAIN TOO LONG FOR THE TRACK IT WOULD STAND ON, at EVERY destination (MT-262).
         //
-        // This paragraph used to say a path carrying any unmeasured segment is not judged at all.
-        // That was the rule when it was written and Adam overturned it on 2026-09-06: "you need to
-        // measure total distance between points, not validate that every edge has a length > 0.  It is
-        // only indeterminate if the entire logical segment has length 0."  The method below implements
-        // the new rule - an unmeasured segment ends the count without cancelling it, and a stretch is
-        // capped by the segment it lies in - and carries the reasoning in full.  The call site kept the
-        // withdrawn version, which is the first thing a reader meets.
-        if (loc != null && loc.getTrainLength() != null && loc.getTrainLength() > 0
-            && !path.isEmpty())
+        // Adam, 2026-09-05: **"'75 407 DB' (length 4) is allowed to manually be sent from
+        // bottommainpost to bottomlongpark, even though track segments between the current position
+        // and there are 1+1 = 2 and there is no notice that can help state/debug this."**  His ruling
+        // was to refuse the send.
+        //
+        // THE FENCE THAT USED TO BE HERE IS THE DEFECT.  This asked the room rule only where
+        // `ending.isTerminus() || ending.isReversing()`, so a plain through platform was never judged
+        // on the track leading into it at all.  Measured on his railway on 2026-09-08 with that
+        // locomotive set to four units and standing at BottomMainPost: `BottomMainA (eastbound)` was
+        // offered with ONE measured unit of room behind it, and the rule declined to look because
+        // that platform is not a terminus.
+        //
+        // A train comes to rest with its head at the destination sensor whatever kind of station it
+        // is, so its tail lies back along the run in either way.  That is not a new claim here:
+        // `edgesCoveredByStandingTrains`, called a few lines above, has always modelled it that way
+        // and has never been fenced on terminus - and Adam's own example for THAT rule is a through
+        // platform.  "bottommainc should currently be blocked since a train of length 4 is standing at
+        // bottommainb, which has a length of 1 leading up to its switch."  So the railway already knew
+        // such a train lies across the switch behind it.  Nothing stopped one being sent there to do
+        // it.
+        //
+        // AUTONOMY IS INCLUDED, deliberately.  This method is the tier every door passes through, and
+        // a berth that cannot physically hold a train is not a preference a person may overrule.  The
+        // tiering in `docs/reference/behaviour.md` section 1 makes autonomy the STRICTER tier - manual
+        // may go where autonomy is told not to, never the other way about - so a length rule that refused
+        // only the operator would invert it.
+        //
+        // The rule, its two known unsoundnesses and Adam's "OK" accepting them as they stand are all
+        // in `measuredRoomAtTheBerth`, which is also what the staging planner asks: one walk, one
+        // answer, so a plan cannot offer a berth this then refuses on the first move.
+        String tooLong = whyTooLongForTheBerth(path, loc);
+
+        if (tooLong != null)
         {
-            Point ending = path.get(path.size() - 1).getEnd();
+            logPathError(loc, path, logFailures, tooLong);
 
-            if (ending.isTerminus() || ending.isReversing())
-            {
-                // KNOWN UNSOUND, AND WAITING ON A RULING (D24-B2 / SVN-B2 / RTG-B2, 2026-09-01).
-                //
-                // Two things about this sum are wrong, and both were found by the review round that
-                // read it the day it was written.  Neither is fixed here, because both fixes change
-                // what the railway does and that is Adam's to decide - see the deferred item.
-                //
-                //   1. `getLength() > 0` DOES NOT MEAN "MEASURED".  On a diagram-built graph an edge's
-                //      length is GraphReducer.sumLength, which adds `Math.max(0, tileLength)` over the
-                //      tiles it spans - so one measured tile out of five gives a positive length, and
-                //      this loop reads that as a measured segment.  The total then under-counts and
-                //      refuses trains that fit: exactly the failure the paragraph above says was
-                //      removed, one layer further down.
-                //
-                //   2. IT MAY BE THE WRONG SEGMENTS.  This adds the whole path.  Where the train backs
-                //      in after turning round part way along, the track it comes to rest on is only the
-                //      part after the reversal, so a 10 + 1 + 2 path admits an eight-unit train into
-                //      three units of room.  Adam's own words were "sum the track segments leading up
-                //      to it", which is what this does; whether "it" means the reversal or the berth is
-                //      the question that has to go back to him.
-                //
-                // Left as it is on purpose, and Adam has ruled on it: "OK", the rule is accepted as
-                // it stands (`FX2-3`).
-                //
-                // NOT INERT, which this used to claim (CD3-B2, D3F-C2).  The sentence said "it is
-                // inert on his railway today (six tiles carry lengths at all)", and `FV2-B1`/`FV2-C2`
-                // measured that on 2026-09-01 and found the opposite: two of the six measured tiles
-                // ARE reversal squares on his main page, one of them a home, so the guard is live
-                // there.  The claim was corrected everywhere else that day and survived here, in the
-                // one place a reader meets it.
-                //
-                // What is not acceptable is a reader trusting this loop, so it says so here.
-                // IN measuredRoomToReverseInto NOW, so the staging planner can ask the same
-                // question (TCX-A2).  It had this rule and the planner did not, and the planner is
-                // what decides where Return Home sends a train - so it offered berths this then
-                // refused on the first move.  The COUNTING IS NOT UNCHANGED, which this used to claim
-                // (REL-C6): `roomAtTheEnd` stops the sum at the last switch, which is most of what
-                // unsoundness 2 below describes - a 10 + 1 + 2 approach no longer admits an eight-unit
-                // train into three units of room unless the whole run in is switchless.  What remains
-                // is both of the
-                // unsoundnesses above.
-                Integer measuredRoom = measuredRoomToReverseInto(path, loc);
-
-                int room = measuredRoom == null ? 0 : measuredRoom;
-
-                if (measuredRoom != null && loc.getTrainLength() > room)
-                {
-                    logPathError(
-                        loc,
-                        path,
-                        logFailures,
-                        I18n.f("autolayout.errorTrainTooLongToReverse", loc.getName(),
-                            ending.getName(), room)
-                    );
-                    return false;
-                }
-            }
+            return false;
         }
 
         // A station held back while another point has a train STANDING on it (FR-001).
@@ -4530,7 +4497,34 @@ public class Layout
                 // says nothing about the second.
                 reason = firstClearOrWhyNot(loc, start, end);
             }
+            else
+            {
+                // A PHYSICAL REFUSAL OUTRANKS A PREFERENCE (MT-262).
+                //
+                // Adam, 2026-09-05, on being allowed to send a four-unit train into two units of
+                // track: **"that path is not shown in the 'why not moving' view."**  It was shown -
+                // saying *"Set not to be chosen automatically."*, which is the standing bar above and
+                // is a statement about AUTONOMY.  The operator asking why his own send will not work
+                // was being answered about somebody else.
+                //
+                // And it is exactly the wrong class of destination to lose the answer on.  A parking
+                // berth is spelled `autoDestination: false`, so the squares a person actually sends
+                // trains to by hand are precisely the ones this branch covers - the standing bar
+                // returned early and no route was ever examined.
+                //
+                // Only the LENGTH refusal is asked here, not the whole of `isPathClear`.  The rest of
+                // that method is about what is happening on the railway this minute - a train in the
+                // way, an s88 still occupied - and those clear themselves; being too long for the
+                // berth does not, and it is the one refusal that is as true of a hand-driven send as
+                // of an automatic one.
+                //
+                // The grouping is untouched: this station is still reported among the ones autonomy
+                // will never choose, because it still is one.  `destinationsBarredFromAutonomy` asks
+                // `barredFromAutonomy` exactly as before.
+                String cannotFit = whyNoRouteFitsTo(loc, start, end);
 
+                if (cannotFit != null) reason = cannotFit;
+            }
             out.put(end.getName(), reason);
         }
 
@@ -4568,6 +4562,66 @@ public class Layout
         return Point.heldBackBy(destination, loc);
     }
 
+    /**
+     * Why no route from start to end can hold this train, or null when one of them can (MT-262).
+     *
+     * **The refusal that does not clear itself.**  `explainDestinations` reports the standing bars
+     * first and stops, so a berth autonomy will not choose - a parking track, which is where a person
+     * sends a train by hand - could never report a hand-driven refusal.  This is the one such refusal
+     * that is a fact about the railway rather than about this minute.
+     *
+     * Every alternative route is tried, as `firstClearOrWhyNot` does and for its reason: one route
+     * being too short says nothing about another, and a longer approach is more room.  ONE route that
+     * fits is enough to answer no.
+     *
+     * **It costs nothing on a railway with no lengths recorded**, which is most of them: a train with
+     * no length is answered before any search happens.  That matters because this runs on the event
+     * thread when the operator hovers the "no available paths" label, and it is the same order of
+     * work `firstClearOrWhyNot` already does for every station that is NOT barred.
+     *
+     * @param loc the train
+     * @param start where it is standing
+     * @param end the destination being reported on
+     * @return the refusal, already translated, or null when some route fits
+     */
+    private String whyNoRouteFitsTo(Locomotive loc, Point start, Point end)
+    {
+        if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
+
+        String why = null;
+
+        try
+        {
+            List<Edge> path;
+            List<List<Edge>> seenPaths = new LinkedList<>();
+
+            do
+            {
+                path = this.bfs(start, end, seenPaths);
+
+                if (path == null) break;
+
+                seenPaths.add(path);
+
+                String tooLong = whyTooLongForTheBerth(path, loc);
+
+                // A route it fits down is a route the operator can be sent along, so there is nothing
+                // to report about length whatever the others say.
+                if (tooLong == null) return null;
+
+                why = tooLong;
+
+            } while (path != null);
+        }
+        catch (Exception e)
+        {
+            // The caller is explaining, not deciding.  A search that threw is reported by the reason
+            // the caller already had, which is better than replacing it with an exception message.
+            return null;
+        }
+
+        return why;
+    }
     /**
      * Null when some route from start to end is clear, and otherwise why the last one was not.
      *
@@ -7302,36 +7356,88 @@ public class Layout
     }
 
     /**
-     * The measured room a train has behind it if it reverses at the end of this path (TCX-A2).
+     * Why this train does not fit where this path would put it, or null when it does (MT-262).
+     *
+     * **ONE predicate for "it does not fit", so that no door writes a second copy.**  Adam, on being
+     * able to send a four-unit train into two units of track: *"there is no notice that can help
+     * state/debug this."*  A door that means to say why cannot ask half a rule, and there are two
+     * halves - the capacity somebody typed on the station, and the track actually leading into it.
+     * A train can clear the approach and not the platform, or the other way about, and either
+     * refuses.
+     *
+     * `isPathClear` asks this, so every tier is covered by asking it once; the manual send doors and
+     * the why-not-moving window ask it directly, because they want the SENTENCE rather than the
+     * yes-or-no, and a second copy of the arithmetic in a menu is how the two would come to disagree.
+     *
+     * **The message carries both numbers**, which is the whole of what Adam asked for: the room found
+     * and the length of the train.  A refusal that says only "too long" leaves nothing to measure.
+     *
+     * @param path the route, in order
+     * @param loc the train
+     * @return the refusal, already translated, or null when the train fits
+     */
+    public static String whyTooLongForTheBerth(List<Edge> path, Locomotive loc)
+    {
+        if (path == null || path.isEmpty() || loc == null) return null;
+
+        Point ending = path.get(path.size() - 1).getEnd();
+
+        if (ending == null) return null;
+
+        // THE STATION'S STATED CAPACITY.  `Point.validateTrainLength` is the rule and answers true for
+        // anything that is not a destination - there is no capacity to exceed on a square nobody calls
+        // a station - and true for a limit of zero, which is how every square starts.
+        if (!ending.validateTrainLength(loc))
+        {
+            return I18n.f("autolayout.errorTrainLengthTooLong", ending.getName());
+        }
+
+        // AND THE TRACK.  Null is "nobody has measured this", which is not a refusal: Adam, on an
+        // unmeasured run in, *"generally, allow it"*.
+        Integer room = measuredRoomAtTheBerth(path, loc);
+
+        if (room != null && loc.getTrainLength() != null && loc.getTrainLength() > room)
+        {
+            return I18n.f("autolayout.errorTrainTooLongForBerth", loc.getName(), ending.getName(),
+                room, loc.getTrainLength());
+        }
+
+        return null;
+    }
+
+    /**
+     * The measured room a train has to stand in at the end of this path (TCX-A2, MT-262).
      *
      * **Pure**, which is what lets the staging planner ask it.  Every other rule in `isPathClear`
      * reads live feedback, so `HomeStaging` has to re-implement them for hypothetical futures - and
      * every time one was mis-copied the result was a plan the runtime then refused.  This one reads
-     * only the path, the destination's own flags and the locomotive, so there is nothing to copy.
+     * only the path and the locomotive, so there is nothing to copy.
      *
-     * Null rather than a number in the three cases where the question does not arise: the train has no
-     * recorded length, the path does not end somewhere it would reverse, or some segment of the path
-     * is unmeasured.  **Unmeasured is unknown, not zero** - answering "I do not know how long this is"
-     * with "it is nothing" refuses trains that fit, which is the failure the guard's own comment says
-     * was removed once already.
+     * **It is not fenced on terminus, and used to be** (MT-262).  It was called
+     * `measuredRoomToReverseInto` and answered null unless the path ended somewhere the train would
+     * turn round, so a plain through platform was never judged on the track leading into it.  A train
+     * comes to rest with its head at the destination sensor whatever kind of station it is, and its
+     * tail lies back over the run in either way - which is exactly what
+     * `edgesCoveredByStandingTrains` has always assumed, on Adam's own through-platform example.  The
+     * call site in `isPathClear` carries his report and the measurement that found it.
+     *
+     * Null rather than a number in the two cases where the question does not arise: the train has no
+     * recorded length, or nothing on the run in is measured.  **Unmeasured is unknown, not zero** -
+     * answering "I do not know how long this is" with "it is nothing" refuses trains that fit, which
+     * is the failure the guard's own comment says was removed once already.
      *
      * The two known unsoundnesses in what it counts are recorded at the call site in `isPathClear` and
      * are Adam's to settle; they are about WHICH segments, not about who may ask.
      *
      * @param path the route, in order
      * @param loc the train
-     * @return the total measured length behind the reversal, or null when the question does not arise
+     * @return the total measured length behind the berth, or null when the question does not arise
      */
-    public static Integer measuredRoomToReverseInto(List<Edge> path, Locomotive loc)
+    public static Integer measuredRoomAtTheBerth(List<Edge> path, Locomotive loc)
     {
         if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         if (path == null || path.isEmpty()) return null;
-
-        Point ending = path.get(path.size() - 1).getEnd();
-
-        if (!ending.isTerminus() && !ending.isReversing()) return null;
-
         // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam, 2026-09-02).
         //
         // "If the train crosses the fork through the base, then the track after the switch has to be

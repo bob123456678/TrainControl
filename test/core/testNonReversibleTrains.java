@@ -948,7 +948,7 @@ public class testNonReversibleTrains
      * The second mutation this used to name - "comparing against the whole path rather than the track
      * at the reversal" - was two things wrong (TS3-C3).  This fixture cannot tell them apart: its path
      * is two edges of 2 and 3 against a train of 10, so 5 and 3 both refuse.  And since Adam's ruling
-     * of 2026-09-01 the whole run in IS the rule - `measuredRoomToReverseInto` sums every segment - so
+     * of 2026-09-01 the whole run in IS the rule - `measuredRoomAtTheBerth` sums every segment - so
      * it described the shipped code rather than a mutation.  What covers that distinction properly is
      * `testTheRoomIsEverySegmentLeadingUpToTheReversal`, two methods down, on a three-segment fixture.
      */

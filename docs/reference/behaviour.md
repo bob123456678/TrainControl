@@ -97,7 +97,7 @@ The code enforces the terminus row in both directions: a terminus **must** be a 
 reversing point rather than as a terminus. Nothing is ever routed *automatically* to a compulsory
 turn; `testACompulsoryTurnStationIsNotEmittedAsADestination` holds that against the real railway.
 
-**Which matters for length** (§5): the track-room rule gates on terminus-**or**-reversing and has no
+**Which matters for length** (§5): the track-room rule has no terminus requirement and no
 destination requirement, so a compulsory turn a train does not physically fit into is still refused.
 The station-capacity rule gates on being a destination, and has nothing to say about a square nobody
 calls a station. Adam, 2026-09-07: *"the terminus that isn’t a destination should fail on the track
@@ -294,7 +294,7 @@ Two separate rules, both about length, both easy to mistake for each other.
 
 | | what it measures | which squares it judges |
 |---|---|---|
-| **Track room** | the rail leading in, from the last switch to the berth | terminus **or** reversing, destination or not |
+| **Track room** | the rail leading in, from the last switch to the berth | **every** destination, terminus or not |
 | **Station capacity** | the length the station says it accepts | **every destination** that states one |
 
 Adam, annotating this section: *"the train should be refused any destination it does not fit in, i.e.
@@ -304,6 +304,18 @@ path goes through, and again from `HomeStaging`. A destination with no stated ca
 on capacity; that is what leaving the field at zero means.
 
 The rest of this section is about the **first** rule.
+
+- **It judges every destination, and used to judge only reversals** (MT-262). Adam, 2026-09-05:
+  *"'75 407 DB' (length 4) is allowed to manually be sent from bottommainpost to bottomlongpark,
+  even though track segments between the current position and there are 1+1 = 2."* The rule was
+  fenced behind terminus-or-reversing, so a plain through platform was never judged on the track
+  leading into it. A train comes to rest with its head at the destination sensor wherever it
+  stops, so its tail lies back over the run in either way - which is what §5c's covered-track rule
+  has always assumed, on Adam's own through-platform example.
+
+  **In every tier**, autonomy included. A berth that cannot physically hold a train is not a
+  preference manual may overrule, and §1 makes autonomy the stricter tier - a length rule that
+  refused only the operator would invert it.
 
 - The room is measured **from the last switch** to the berth. A train that fits there fits behind any
   earlier switch too; one that does not comes to rest standing on the switch.

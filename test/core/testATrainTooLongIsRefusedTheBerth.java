@@ -278,10 +278,12 @@ public class testATrainTooLongIsRefusedTheBerth
      * Adam, 2026-09-07: **"the terminus that isn't a destination should fail on the track length
      * check - the station length can safely be ignored."**
      *
-     * Two rules, two gates, and they are not the same gate.  `validateTrainLength` asks about the
-     * STATION'S stated capacity and returns true for anything that is not a destination - there is no
-     * capacity to exceed on a square nobody calls a station.  `measuredRoomToReverseInto` asks about
-     * the TRACK leading in and gates on terminus-or-reversing alone, with no destination requirement.
+     * Two rules, and they are not the same rule.  `validateTrainLength` asks about the STATION'S
+     * stated capacity and returns true for anything that is not a destination - there is no capacity
+     * to exceed on a square nobody calls a station.  `measuredRoomAtTheBerth` asks about the TRACK
+     * leading in, with no destination requirement and - since MT-262 - no terminus requirement
+     * either: a train comes to rest with its head at the sensor wherever it stops, so its tail lies
+     * back over the run in whether or not it had to back in.
      *
      * So a train can still be refused a dead end it does not physically fit into, whether or not that
      * dead end has ever been named a station.  Already true; pinned so it stays true, because the two

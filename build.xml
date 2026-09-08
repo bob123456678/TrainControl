@@ -348,6 +348,7 @@
         <test-one-class class="testATrainCoversTheTrackBehindIt"/>
         <test-one-class class="testOneChangeSticks"/>
         <test-one-class class="testATrainTooLongIsRefusedTheBerth"/>
+        <test-one-class class="testAManualSendIsRefusedABerthTooShort"/>
         <test-one-class class="testDismissingTheReversalPromptKeepsTheDirection"/>
         <test-one-class class="testLengthRulesUnderRandomLayouts"/>
         <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
