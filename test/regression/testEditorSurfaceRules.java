@@ -1672,6 +1672,65 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The station label and the facing menu answer from one place (OB-181).
+     *
+     * Adam: **"moving a train in the track diagram editor from tunnelleftpark to bottommaina showed its
+     * direction as eastbound in its station label, but westbound in the right click menu."**
+     *
+     * They had different sources, and the split was deliberate - which is why it drifted rather than
+     * being caught. The label reads which COPY of a split square the train is standing on, because that
+     * IS its direction and it is true however the train got there; it was moved off the stored facing
+     * on purpose, because the stored value is written only when somebody places a train BY HAND, so the
+     * arrow appeared for a train you had placed and vanished for one autonomy had driven there. The
+     * MENU was left on the stored value. From that day the two agreed only while a hand-placed train
+     * had not moved.
+     *
+     * `AutonomySession.facingOnTheRailway` is the one reading, and the stored facing is the fallback
+     * rather than the source: an empty square has no train whose direction it could be.
+     *
+     * The WRITE was already shared - both surfaces go through `setFacingAndMove`, which writes the setup
+     * and moves the train to the matching copy - so this closes the last half.
+     *
+     * MUTATION: pointing either surface back at `getFacing(target)` alone fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheLabelAndTheMenuAgreeAboutFacing() throws Exception
+    {
+        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(session.contains("public Side facingOnTheRailway(TileKey square,"),
+            "the shared reading of which way a standing train faces has gone, so the label and the menu"
+            + " are each working it out again - which is how they came to disagree (OB-181)");
+
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(panel.contains("session.facingOnTheRailway(target, showing)"),
+            "the facing menu reads the stored value again rather than the railway, so it disagrees with"
+            + " the station label for every train that has moved since it was placed (OB-181)");
+
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(ui.contains("session.facingOnTheRailway(square,"),
+            "the station label works out the facing itself again, so the two surfaces can drift apart"
+            + " the way they did before");
+
+        // AND THE WRITE STAYS SHARED.  Reading from one place while writing to two would put them back
+        // out of step on the first change.
+        assertTrue(panel.contains("session.setFacingAndMove(target, facing)"),
+            "the facing menu no longer writes through setFacingAndMove, so setting a facing updates the"
+            + " setup without moving the train to the copy that holds it - and the menu disagrees with"
+            + " the label again the moment it is used");
+    }
+
+    /**
      * A rebuild does not move the trains, and closing the editor writes the file (OB-183).
      *
      * Adam reported it as a locomotive teleporting when a home was changed, and ruled on the fix:

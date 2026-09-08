@@ -91,6 +91,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
 | [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | needs test | OB-183 |
+| [MT-338](#mt-338) | 2026-09-08 | The station label and the facing menu say the same thing | needs test | OB-181 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17294,6 +17295,42 @@ are carried across a rebuild, not the whole running layout. Folding everything b
 deleted a declined edit once (ACC-B3): the capture removes what the layout does not carry, and the
 layout at that moment is the one built before your edit. So an authored setting still comes from the
 setup, and only where the trains are comes from the railway.
+
+---
+
+<a id="mt-338"></a>
+
+### MT-338 - 2026-09-08 - The station label and the facing menu say the same thing
+
+**Disposition:** needs test
+**From:** OB-181
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. Move a train to a station that the setup draws as more than one arrival side - **BottomMainA** was
+   your case, from TunnelLeftPark.
+2. Read the direction in the **station label** on the diagram.
+3. Right-click the train and open the **"<locomotive> is facing"** menu.
+
+**Expected**
+
+They say the same thing. Before this the label said eastbound and the menu said westbound for the same
+train.
+
+**Why they differed, because it explains which one was right.** The label reads which COPY of a split
+square the train is standing on - on a split square that IS its direction, and it is true however the
+train got there. The menu read the facing stored in the setup, which is written only when somebody
+places a train by hand. So a train that was placed and then moved had a stored value describing where
+it used to be, and the label had the truth.
+
+They read one method now, and the stored value is the fallback rather than the source - an empty square
+has no train whose direction it could be. The WRITE was already shared: both go through
+`setFacingAndMove`, which moves the train to the copy that holds the facing you pick.
+
+**Also worth a look while you are there:** with nothing recorded, the menu used to tick the FIRST
+facing in the list, which is a guess shown as a fact. It now ticks what the train is actually doing.
 
 ---
 

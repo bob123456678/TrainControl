@@ -3078,7 +3078,24 @@ public class AutonomyEditorPanel extends JPanel
         final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
             new java.util.ArrayList<>(session.facingChoices(target));
 
-        final org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
+        // WHAT THE RAILWAY SAYS, and only then what the file says (OB-181).
+        //
+        // Adam: the station label said eastbound and this menu said westbound for the same train. The
+        // label reads which COPY of the square the train is standing on, because on a split square that
+        // IS its direction and it is true however the train got there; this read the stored facing,
+        // which is written only when somebody places a train by hand. So the two agreed until anything
+        // moved a train that had been placed - and then quietly did not.
+        //
+        // One question, one answer, and the file is the fallback rather than the source: an empty
+        // square has no train whose direction this could be, and there the stored value is all there is.
+        org.traincontrol.automation.Layout showing =
+            runningLayout == null ? null : runningLayout.get();
+
+        org.traincontrol.automationui.TilePorts.Side onTheRailway =
+            session.facingOnTheRailway(target, showing);
+
+        final org.traincontrol.automationui.TilePorts.Side recorded =
+            onTheRailway != null ? onTheRailway : session.getFacing(target);
 
         // AND WHATEVER IS ACTUALLY RECORDED, even when this square cannot hold it (OB-177).
         //

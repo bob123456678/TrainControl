@@ -5255,8 +5255,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null || at == null) return facingArrow(square);
 
-        org.traincontrol.automationui.TilePorts.Side facing =
-            session.getStationIndex().facingsAt(square).get(at.getName());
+        // THROUGH THE SESSION, so this and the facing MENU cannot come apart again (OB-181).
+        //
+        // This was the only place that read the copy the train is standing on, and the menu read the
+        // stored facing instead - a split made deliberately to fix the arrow vanishing for autonomy-
+        // driven trains, and never swept to the other surface. They ask one method now.
+        org.traincontrol.automationui.TilePorts.Side facing = session.facingOnTheRailway(square,
+            this.model == null ? null : this.model.getAutoLayout());
+
+        // The copy this caller resolved, when the shared reading cannot see a train - a crowded square
+        // speaks for the copy handed in rather than for the first occupied one.
+        if (facing == null && at != null)
+        {
+            facing = session.getStationIndex().facingsAt(square).get(at.getName());
+        }
 
         // Falls back to what the square remembers, which is what a hand-placed train wrote there.  A
         // square that never splits has one copy and no facing of its own, and that copy's train is

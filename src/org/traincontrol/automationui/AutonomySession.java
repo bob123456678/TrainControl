@@ -5297,6 +5297,47 @@ public class AutonomySession
     }
 
     /**
+     * Which way the train standing on this square is actually facing, according to the RAILWAY.
+     *
+     * **A square that splits is several Points, and which one a train is on IS its direction.** So this
+     * is not a lookup of something somebody typed; it is a reading of where the train is.
+     *
+     * Adam, OB-181: **"moving a train in the track diagram editor from tunnelleftpark to bottommaina
+     * showed its direction as eastbound in its station label, but westbound in the right click menu."**
+     * The two disagreed because they asked different sources - and that split was made on purpose,
+     * which is why it drifted rather than being noticed.
+     *
+     * The station label used to read the stored facing and was moved OFF it, for a good reason recorded
+     * at `TrainControlUI.facingArrowOf`: the stored value is written only when somebody places a train
+     * BY HAND, so the arrow appeared for a train you had placed and vanished for one autonomy had
+     * driven there. The facing MENU was left reading the stored value, so from that day the two agreed
+     * only while a hand-placed train had not moved.
+     *
+     * Null when no copy of the square holds a train - an empty square has no train whose direction this
+     * could be, and the caller falls back to what the setup records, which is all there is.
+     *
+     * @param square the diagram square
+     * @param running the running layout, which is where a train's position lives
+     * @return the facing of the copy holding the train, or null
+     */
+    public Side facingOnTheRailway(TileKey square,
+        org.traincontrol.automation.Layout running)
+    {
+        if (square == null || running == null || getStationIndex() == null) return null;
+
+        for (String name : getStationIndex().pointNamesAt(square))
+        {
+            org.traincontrol.automation.Point copy = running.getPoint(name);
+
+            if (copy == null || copy.getCurrentLocomotive() == null) continue;
+
+            return getStationIndex().facingsAt(square).get(name);
+        }
+
+        return null;
+    }
+
+    /**
      * Which way the locomotive on this square is pointing, as recorded.
      *
      * @param tile
