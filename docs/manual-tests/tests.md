@@ -58,7 +58,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-297](#mt-297) | 2026-09-07 | Importing a graph does not switch your routes off | needs test | RGN-A1 (split from MT-243) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
 | [MT-299](#mt-299) | 2026-09-07 | A home on a split square is still there next start | needs test | DAY-B3 (split from MT-245) |
-| [MT-300](#mt-300) | 2026-09-07 | Return Home reaches a split platform from either direction | needs test | DAY-B3 (split from MT-245) |
 | [MT-301](#mt-301) | 2026-09-07 | One platform, one home | needs test | DAY-B3 (split from MT-245) |
 | [MT-302](#mt-302) | 2026-09-07 | A non-reversible train and an all-turning platform - what happens now | needs test | DAY-B3 (split from MT-245) |
 | [MT-303](#mt-303) | 2026-09-07 | Signals stay where you put them | needs test | OB-166 (split from MT-246) |
@@ -81,8 +80,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-320](#mt-320) | 2026-09-07 | A route condition with a bracket that is not at the start | needs test | IPR-B2 (split from MT-265) |
 | [MT-321](#mt-321) | 2026-09-07 | Cropping a large photograph at full zoom-out | needs test | IPR-B4 (split from MT-265) |
 | [MT-322](#mt-322) | 2026-09-07 | The axis numbers survive switching between the editors | needs test | OB-172 (split from MT-268) |
-| [MT-323](#mt-323) | 2026-09-07 | The numbers appear only with the grid | needs test | OB-172, OB-179 (split from MT-268) |
-| [MT-324](#mt-324) | 2026-09-07 | Should closing the track diagram editor stop the trains | needs test | ACC-B2 (split from MT-269) |
 | [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
@@ -16210,7 +16207,7 @@ start.
 
 ### MT-300 - 2026-09-07 - Return Home reaches a split platform from either direction
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** DAY-B3 (split from MT-245)
 
 **Written:** 2026-09-07
@@ -16234,6 +16231,16 @@ But additional bugs are filed.
 Filed from this test: OB-183 (bug - changing home inconsistency), OB-184 (bug - home planner bug).  They are in `issues.md` until they are picked up.
 
 *Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+#### Comments
+
+**Claude, 2026-09-08.** Adam: *"Works: return home from either site. But additional bugs are
+filed."* Return Home reaching a split platform from both directions is what this entry asks, and
+it does.
+
+The two bugs found while driving it are their own entries rather than a reason to hold this one
+open: OB-183 (changing a home can teleport a locomotive on the diagram) and OB-184 (the home
+planner does not consider track blocked by a train's own length).
 
 ---
 
@@ -16782,7 +16789,7 @@ measurement, and I will go after it differently.
 
 ### MT-323 - 2026-09-07 - The numbers appear only with the grid
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-172, OB-179 (split from MT-268)
 
 **Written:** 2026-09-07
@@ -16802,13 +16809,18 @@ coordinates setting left to touch - the menu item is gone (OB-179).
 
 *Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+#### Comments
+
+**Claude, 2026-09-08.** Validated by Adam. The numbers follow the grid and there is no coordinates
+setting left to touch.
+
 ---
 
 <a id="mt-324"></a>
 
 ### MT-324 - 2026-09-07 - Should closing the track diagram editor stop the trains
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** ACC-B2 (split from MT-269)
 
 **Written:** 2026-09-07
@@ -16840,6 +16852,22 @@ boundary is yours.
 Allow it to keep rolling.  The editor should not be openable when autonomy is running.  If trains are being controlled manually, then the track diagram isn't relevant.
 
 *Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+#### Comments
+
+**Claude, 2026-09-08.** Adam ruled: *"Allow it to keep rolling. The editor should not be openable
+when autonomy is running. If trains are being controlled manually, then the track diagram isn't
+relevant."*
+
+**Both halves are already the behaviour, and no code changed.** Closing the track diagram editor
+does not stop the trains - that is what he drove and it is what he wants. And neither editor opens
+while autonomy is running: `TrainControlUI.openLayoutEditor` refuses both, which is OB-047, and its
+comment there says why it must be both - it used to ask only about the autonomy editor and fall
+back to the track one, so pressing Edit during a run opened the editor where a tile can be moved or
+deleted underneath a moving train.
+
+The case he drove is the third one: autonomy stopped, a train under hand control. The rule does not
+cover that and by his ruling it should not.
 
 ---
 

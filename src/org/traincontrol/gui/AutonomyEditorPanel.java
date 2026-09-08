@@ -5602,6 +5602,11 @@ public class AutonomyEditorPanel extends JPanel
 
             if (changed >= 0) showRestrictionsIfHidden();
 
+            // THE ARROWS, NOT THE DIAGRAM (OB-185).  A restriction changes no tile art - what moves is
+            // the arrow drawn over the tile - so redrawing every label to show it is what Adam sees as
+            // "the whole screen flicker", once per click, on the one tool used many times in a row.
+            if (changed >= 0) annotationsChanged();
+
             // Armed for the next one.  Closing a run is rarely a single act - a yard is several - and
             // the alternative is pressing the button again between each.
             if (changed >= 0 && tool == Tool.ONE_WAY)
@@ -6976,6 +6981,55 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Told when only the ANNOTATIONS need redrawing - the arrows, not the tiles under them.
+     *
+     * Adam, OB-185: **"changing any pathing arrow in the track autonomy editor makes the whole screen
+     * flicker."** It did, because there was one redraw door and it rebuilt the grid: every label
+     * destroyed and made again, which is a visible flash even when the tile art is identical.
+     *
+     * A direction restriction changes no tile art at all. What it changes is the arrow drawn over the
+     * tile, and those are annotations - `LayoutEditor.refreshAutonomyAnnotations` sets them on the
+     * labels that already exist. So this exists to say "the arrows moved" without saying "the diagram
+     * changed".
+     *
+     * Null when the panel is not inside an editor, in which case there are no annotations to refresh
+     * and `onDiagramChanged` is the only door there was.
+     */
+    private Runnable onAnnotationsChanged;
+
+    /**
+     * @param listener what to run when only the arrows need redrawing
+     */
+    public void setOnAnnotationsChanged(Runnable listener)
+    {
+        this.onAnnotationsChanged = listener;
+    }
+
+    /**
+     * A change that moves the arrows and nothing else (OB-185).
+     *
+     * The running layout is still rebuilt - a one-way restriction is a real change to the graph, and a
+     * diagram agreeing with a railway that has moved on is the failure `setupChanged` exists to avoid -
+     * but the tiles are left alone and only the annotations over them are re-set.
+     *
+     * Falls back to the full redraw when there is no annotation door, so a caller cannot silently draw
+     * nothing by choosing this one.
+     */
+    private void annotationsChanged()
+    {
+        if (onAnnotationsChanged == null)
+        {
+            setupChanged();
+
+            return;
+        }
+
+        onAnnotationsChanged.run();
+
+        rebuildRunningLayoutSoon();
+    }
+
+    /**
      * Says that the setup changed: rebuild the railway it describes, and redraw.
      *
      * **The thing every door has to do and seven of nine did not** (MT-246). Adam, 2026-09-03:
@@ -7025,6 +7079,17 @@ public class AutonomyEditorPanel extends JPanel
         // a HALF-APPLIED edit - the station flag written and `active` not - before rebuilding it from
         // the state the user actually asked for.  One rebuild, after the gesture, sees only the
         // finished edit.
+        rebuildRunningLayoutSoon();
+    }
+
+    /**
+     * The rebuild half of a setup change, coalesced - one per gesture, not one per write (VD10-C2).
+     *
+     * Split out so that an annotations-only change can ask for it without asking for a grid rebuild
+     * too (OB-185). The comment below is the whole reason it is coalesced and is unchanged.
+     */
+    private void rebuildRunningLayoutSoon()
+    {
         if (setupChangePending) return;
 
         setupChangePending = true;

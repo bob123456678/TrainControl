@@ -1642,6 +1642,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
+            // AND THE LIGHT DOOR BESIDE IT (OB-185).  A change that only moves the arrows re-sets the
+            // annotations on the labels that are already there, rather than rebuilding every one of
+            // them - which is a visible flash even when the tile art is identical.
+            autonomyPanel.setOnAnnotationsChanged(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    refreshAutonomyAnnotations();
+                }
+            });
+
             autonomyPanel.setOnReveal(new java.util.function.Consumer<
                 org.traincontrol.automationui.TileGraph.TileKey>()
             {

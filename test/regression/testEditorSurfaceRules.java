@@ -1672,6 +1672,51 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * Moving an arrow redraws the arrows, not the whole diagram (OB-185).
+     *
+     * Adam: **"changing any pathing arrow in the track autonomy editor makes the whole screen
+     * flicker."** There was one redraw door and it rebuilt the grid - every label destroyed and made
+     * again - which flashes even when the tile art is identical. A direction restriction changes no
+     * tile art at all: what moves is the annotation drawn over the tile.
+     *
+     * So the panel has a light door beside the heavy one. The running layout is still rebuilt, because
+     * a restriction is a real change to the graph and a diagram agreeing with a railway that has moved
+     * on is the failure the heavy door exists to prevent.
+     *
+     * MUTATION: pointing the one-way branch back at `setupChanged()` fails this, and so does an
+     * `annotationsChanged` that reaches for `onDiagramChanged`.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testAnArrowChangeDoesNotRebuildTheDiagram() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        String light = bodyOf(panel, "private void annotationsChanged()");
+
+        assertNotEquals(light, "",
+            "the light redraw door has gone, so every arrow change rebuilds the whole diagram again"
+            + " (OB-185)");
+
+        assertTrue(light.contains("onAnnotationsChanged.run()"),
+            "the light door does not refresh the annotations, so moving an arrow draws nothing");
+
+        assertTrue(light.contains("rebuildRunningLayoutSoon()"),
+            "the light door does not rebuild the running layout. A one-way restriction is a real change"
+            + " to the graph, and a diagram agreeing with a railway that has moved on is the defect the"
+            + " heavy door exists to prevent - the point was to stop the FLICKER, not the rebuild");
+
+        // AND THE ONE-WAY TOOL USES IT.  The door existing and nothing calling it is the shape a
+        // refactor leaves behind.
+        assertTrue(panel.contains("if (changed >= 0) annotationsChanged();"),
+            "the one-way tool does not use the light door, so the flicker Adam reported is still there"
+            + " on the one tool that is used many times in a row (OB-185)");
+    }
+
+    /**
      * What a caption says is one choice, not three switches (FR-061).
      *
      * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following
