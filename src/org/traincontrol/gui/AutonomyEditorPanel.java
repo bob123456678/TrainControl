@@ -2918,10 +2918,11 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return null;
 
-        // THE BUILD'S SIDES (issue 5, 2026-09-07).  The geometric form answers with the direction of
-        // the neighbouring POINT, which on a curve is not the side the metal leaves by.
+        // THE GEOMETRIC SIDES, matching what the tail walk reads (MON-A1).  See the note at the paste
+        // door: the build's answer is the right one and the model cannot yet read it, so writing it
+        // here would store a side `edgesCoveredByStandingTrains` never matches and block nothing.
         java.util.List<String> sides =
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(session.arrivalSides(target));
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point);
 
         if (sides.isEmpty()) return null;
 

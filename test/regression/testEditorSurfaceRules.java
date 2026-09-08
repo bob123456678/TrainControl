@@ -1445,45 +1445,70 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The arrival-side question asks the build which sides the track reaches this square by.
+     * The arrival side is written and read in ONE vocabulary (MON-A1).
      *
-     * Adam, 2026-09-07: pasting 75 407 DB onto BottomMainPost "asks if the train arrived from the south
-     * or from the west, rather than the north or the south."
+     * `arrivedFrom` is written by three doors and consumed by one walk, and they have to agree about
+     * what "N" means. Two answers are available and they differ on a curve:
      *
-     * **Why the tests were green.** `sidesOf` answered with the compass direction of the neighbouring
-     * POINT, and every fixture that exercised it - `testATrainCoversTheTrackBehindIt`'s hand-built
-     * lines - places its points in a straight row, where the direction of the neighbour and the side
-     * the metal leaves by are the same. They differ only on a curve, and no unit fixture has one. The
-     * sample-layout tests that do have curves never asked this question.
+     * - **the geometry** - `Layout.sideTowards`, the compass direction of the neighbouring POINT. A
+     *   Point is the far end of a reduced edge that can run several tiles and turn corners, so a rail
+     *   leaving north and curving east reaches a neighbour lying east and this answers "E".
+     * - **the build** - the reduced edge's entry side, which is the side the metal actually leaves by
+     *   and is what the builder splits the square on.
      *
-     * The builder has always known the answer, because it splits the square on it: `arrivalSides` goes
-     * to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`, which reads each reduced edge's ENTRY
-     * side. This is the third consumer moved onto that door, after the trapped-arrival check (DD-A7)
-     * and the facing menu (DR-B6).
+     * **The build's is the right answer and the model cannot read it**, which is the whole of this
+     * test. `Layout.executePathInternal` writes the geometric side on arrival, and
+     * `edgesCoveredByStandingTrains` matches the stored side against the geometric side and `break`s
+     * on a miss. For one afternoon the two operator doors wrote the build's answer instead: the offered
+     * labels became correct, no candidate matched on a curve, the tail walk stopped at the first hop,
+     * and **the track behind the train was not blocked at all**. A wrong label is cosmetic; a
+     * protection that silently does nothing is not.
      *
-     * MUTATION: making the paste door pass null for the sides falls back to the geometry and fails this.
+     * So all four speak the geometry until the entry side can reach the model - carried into the built
+     * configuration by `AutonomyBuilder`, which already has it in scope where it emits an edge, and
+     * read by both the arrival write and the tail walk. That change wants a fixture with a CURVE in it,
+     * which this suite does not have; every hand-built layout is a straight row of points, which is
+     * exactly why this could be introduced and pass.
+     *
+     * MUTATION: passing `session.arrivalSides(...)` at either door fails this.
      *
      * @throws Exception on a failure to read the source
      */
     @Test
-    public void testTheArrivalSidesComeFromTheBuild() throws Exception
+    public void testTheArrivalSideIsWrittenAndReadInOneVocabulary() throws Exception
     {
+        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
+            StandardCharsets.UTF_8));
+
+        // THE CONSUMER, which is what everything else has to agree with.
+        assertTrue(layout.contains("getArrivedFrom().equalsIgnoreCase(sideTowards(here, other))"),
+            "the tail walk no longer matches the stored arrival side against the geometry. If it has"
+            + " learned the build's vocabulary, that is the fix MON-A1 asks for - and the doors below"
+            + " should learn it in the same commit, not a different one");
+
+        assertTrue(layout.contains("setArrivedFrom(sideTowards(arrived,"),
+            "the arrival no longer writes the geometric side, so the writer and the walk above now"
+            + " disagree about what a side name means");
+
+        // AND THE DOORS, which must not hand the prompt the build's answer while the walk reads the
+        // geometry - that combination blocks nothing on a curve and looks entirely correct.
         String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
             StandardCharsets.UTF_8));
 
-        assertTrue(ui.contains("getAutonomySession().arrivalSides(aimed)"),
-            "the paste door does not hand the prompt the build's arrival sides, so it falls back to"
-            + " point-to-point geometry - which names the direction of the neighbouring POINT rather"
-            + " than the side the metal leaves by, and those differ on every curve");
+        assertFalse(ui.contains("getAutonomySession().arrivalSides(aimed)"),
+            "the paste door hands the prompt the BUILD's arrival sides while the tail walk still reads"
+            + " the geometry. The operator answers, the answer is stored, and on a curved approach the"
+            + " walk matches nothing and the track behind the train stays clear (MON-A1)");
 
         String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
             StandardCharsets.UTF_8));
 
-        assertTrue(panel.contains("ArrivalSidePrompt.sidesOf(session.arrivalSides(target))"),
-            "the arrived-from menu still works the sides out from geometry, so it and the paste prompt"
-            + " can offer different answers about one square");
+        assertFalse(panel.contains("sidesOf(session.arrivalSides(target))"),
+            "the arrived-from menu writes the build's side while the walk reads the geometry, so a"
+            + " tail set by hand on a curved approach blocks nothing (MON-A1)");
     }
 
     /**
