@@ -146,6 +146,41 @@ public class testTimetableCapture
 
     // ---------------------------------------------------------------------------------------------
 
+    /**
+     * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose.
+     *
+     * It was 1 until 2026-09-08, when MT-262 took the fence off the berth-room rule in
+     * `Layout.isPathClear`.  Until then that rule was asked only where the destination was a terminus
+     * or a reversing point, so B - a plain through station - was never judged on the track leading
+     * into it, and any positive number did.  It is judged now, and `firstLocomotive()` comes from the
+     * operator's real database, where it is three units long: the dispatch below was refused with
+     * "02 0314-1 DDR (length 3) is longer than the track leading into B, which measures 1", so
+     * `executePath` never reached the capture and testADispatchIsCapturedWhenCaptureIsOn failed on
+     * the whole of the feature.
+     *
+     * testNothingIsCapturedWhenCaptureIsOff was passing at the same time and for the same reason,
+     * which is the worse half: it asserts that NOTHING is captured, and a path that is refused
+     * captures nothing whatever the flag says.  Both ask a real question again now.
+     */
+    private static final int APPROACH = 20;
+
+    /**
+     * That the run really is longer than the train this class dispatches.
+     *
+     * The locomotive is the operator's own - `getLocList().get(0)` - so its length is data this file
+     * does not control, and a longer one arriving in that database would put both tests above back
+     * where MT-262 found them, reading as a broken capture rather than as a fixture gone too small.
+     */
+    private static void theRunHoldsTheTrainUsedHere(Locomotive loc)
+    {
+        Integer length = loc.getTrainLength();
+
+        assertTrue(length == null || length <= APPROACH,
+            loc.getName() + " is " + length + " units long and this fixture measures A to B at "
+            + APPROACH + ", so the berth-room rule refuses the dispatch before anything can be"
+            + " captured.  Raise APPROACH");
+    }
+
     private static String twoStationJSON()
     {
         return "{"
@@ -153,7 +188,7 @@ public class testTimetableCapture
             + "  {\"name\": \"A\", \"station\": true, \"s88\": 47441},"
             + "  {\"name\": \"B\", \"station\": true, \"s88\": 47442}"
             + "],"
-            + "\"edges\": [{\"start\": \"A\", \"end\": \"B\", \"length\": 1}],"
+            + "\"edges\": [{\"start\": \"A\", \"end\": \"B\", \"length\": " + APPROACH + "}],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
     }
 
@@ -169,7 +204,11 @@ public class testTimetableCapture
 
     private Locomotive firstLocomotive()
     {
-        return model.getLocByName(model.getLocList().get(0));
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        theRunHoldsTheTrainUsedHere(loc);
+
+        return loc;
     }
 
     /**
