@@ -598,6 +598,99 @@ public class testATrainCoversTheTrackBehindIt
             + " (VAL8-A1)");
     }
 
+    /**
+     * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
+     *
+     * Adam: **"when a train is manually moved to a new station in the track diagram viewer using
+     * control+X and V, its former shaded icons are not reset."**
+     *
+     * The wash is decided when a tile is DRAWN, and tiles are drawn when their own accessory, feedback
+     * or route changes - so moving a train, which changes which track its tail lies across and nothing
+     * else, updated the set and repainted nothing. `TrainControlUI.refreshCoveredTrack` now redraws the
+     * squares whose state changed.
+     *
+     * **What this test is for.** The redraw itself needs a window; what does not, and what the fix
+     * depends on absolutely, is that moving a train leaves a NON-EMPTY difference between the old set
+     * and the new one - squares that were covered and are not any more. If that difference were empty
+     * the fix would be repainting nothing and the defect would still be there with every test green.
+     *
+     * MUTATION: making the walk keep the departed train's edges fails the second assertion.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testMovingATrainLeavesTheOldTrackToBeRedrawn() throws Exception
+    {
+        Line line = straightLine(4, 1, 5);
+
+        java.util.Set<Edge> before = new java.util.HashSet<>(
+            line.layout.edgesCoveredByStandingTrains().keySet());
+
+        assertTrue(before.contains(line.leadIn) && before.contains(line.behind),
+            "the train is not covering the track behind it to begin with, so moving it away cannot"
+            + " show anything about what stops being covered");
+
+        // AWAY, by the door the operator uses: the same call the paste makes.
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        line.layout.moveLocomotive(null, line.leadIn.getStart().getName(), true);
+        line.layout.moveLocomotive(null, line.leadIn.getEnd().getName(), true);
+
+        java.util.Set<Edge> after = new java.util.HashSet<>(
+            line.layout.edgesCoveredByStandingTrains().keySet());
+
+        assertTrue(after.isEmpty(),
+            "track is still reported as covered with no train standing anywhere - so the diagram would"
+            + " be right to stay grey, and OB-180 is not about redrawing at all");
+
+        java.util.Set<Edge> stoppedBeingCovered = new java.util.HashSet<>(before);
+
+        stoppedBeingCovered.removeAll(after);
+
+        assertFalse(stoppedBeingCovered.isEmpty(),
+            "moving the train away left the covered set unchanged, so there is nothing for the"
+            + " diagram to redraw and the squares behind where it used to stand stay grey forever"
+            + " (OB-180). The locomotive is " + standing.getName());
+    }
+
+    /**
+     * And the refresh redraws exactly that difference, in both directions.
+     *
+     * Read from the source, because the redraw needs a window and a registry of live tiles. What is
+     * pinned is the SHAPE the test above proves is needed: the previous set is kept, the two are
+     * compared, and the labels for what changed are asked to re-apply the wash.
+     *
+     * Both directions matter and only one was reported: a square that has just become covered needs the
+     * wash put on, and one that has stopped being covered needs it taken off.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheRefreshRedrawsWhatChanged() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(ui.contains("repaintTheWashWhereItChanged(was, coveredTrack)"),
+            "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
+            + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
+
+        assertTrue(ui.contains("if (!changed.remove(key)) changed.add(key)"),
+            "the redraw no longer takes the symmetric difference, so one of the two directions is not"
+            + " being repainted - either the wash is not put on, or it is not taken off");
+
+        assertTrue(ui.contains("label.refreshCoveredWash()"),
+            "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");
+
+        String label = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(label.contains("public void refreshCoveredWash()"),
+            "the label cannot re-apply its wash without a full rebuild - and a full rebuild through"
+            + " updateImage(true) would flash every signal and switch it touched");
+    }
     // ---------------------------------------------------------------- fixtures
 
     /**

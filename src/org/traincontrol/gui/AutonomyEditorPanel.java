@@ -2960,6 +2960,12 @@ public class AutonomyEditorPanel extends JPanel
         //
         // So it appears once, ticked, DISABLED, saying what it is. The menu still does not lie about
         // what is recorded, and every clickable entry is one that works.
+        //
+        // "Not offered here" rather than "not on the track": the list above is the sides of the COPY
+        // this train is standing on - `pointOnTheLayout` picks the occupied one - and a split square
+        // has several. A side missing from this copy may be perfectly real at another, so the label
+        // says what is certain (it is not one of the answers here, and it therefore blocks nothing)
+        // rather than guessing at the cause.
         final String recordedButGone =
             recorded != null && !sides.contains(recorded) ? recorded : null;
 

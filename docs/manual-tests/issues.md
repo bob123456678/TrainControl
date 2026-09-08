@@ -504,6 +504,24 @@ OB-174 is currently only partially fixed.  fully address it by adding a "Text La
 
 hide the "show coordinates" right click menu option in the autonomy and track editors, make "coordinates on" be default, as this is tied to "show grid" option and will be toggled on and off together with the grid.
 
+### OB-180 - 2026-09-07 - shaded length block tiles not reset on train move
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-07 23:45  
+**Build:** commit 409d4ce8, build\classes, compiled 07 Sep 23:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when a train is manually moved to a new station in the track digram viewer using control+X and V, its former shaded icons are not reset.  example: en 57-203 from bottommaina back to tunnelleftpark
+
+### OB-181 - 2026-09-07 - copy and paste direction still inconsistent
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-07 23:47  
+**Build:** commit 409d4ce8, build\classes, compiled 07 Sep 23:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when copy and pasting, the right click menu direction still doesn't match the shown direction.  moving a train in the track diagram editor from tunnelleftpark (EN 57-203) to bottommaina showed its direction as eastbound in its station label, but westbound in the right click menu.  also, its "arrived from" is not set, even though it is forced.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

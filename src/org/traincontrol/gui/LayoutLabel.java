@@ -1402,6 +1402,40 @@ public final class LayoutLabel extends JLabel
         }
     }
     /**
+     * Re-applies the covered wash, without rebuilding the tile (OB-180).
+     *
+     * The wash is decided when a tile is DRAWN, and a tile is only drawn when its own accessory,
+     * feedback or route changes. So moving a train - which changes which squares its tail lies across
+     * and nothing else - left the old squares greyed until something unrelated happened to repaint
+     * them. Adam: **"when a train is manually moved to a new station in the track diagram viewer using
+     * control+X and V, its former shaded icons are not reset."**
+     *
+     * `updateImage` cannot do this job. It repaints only when the IMAGE NAME changed, and the wash is
+     * not part of the image name; forcing it with `highlight` would flash every signal and switch it
+     * touched, which is a different message to the operator entirely.
+     *
+     * So this asks the question the drawing path asks and swaps the icon, which is exactly what the
+     * highlight timer already does when it restores - one mechanism, two callers.
+     */
+    public void refreshCoveredWash()
+    {
+        if (this.component == null || this.component.isText()) return;
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            // Read on the EDT, because the icon it is compared against is.  A tile that has never been
+            // drawn has nothing to lay the wash over and will pick it up when it is.
+            if (lastIcon == null) return;
+
+            boolean covered = !edit && this.square != null && this.tcUI != null
+                && this.tcUI.isTrackCovered(this.square);
+
+            this.setIcon(covered
+                ? ImageUtil.addCoveredOverlay((ImageIcon) lastIcon) : lastIcon);
+        });
+    }
+
+    /**
      * Draws this tile's train onto the container, above the captions (OB-159).
      *
      * Adam: "it is a z order issue.  The stations paint over the locomotives."

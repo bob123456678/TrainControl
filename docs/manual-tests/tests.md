@@ -46,7 +46,26 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
 | [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 | [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
-| [MT-274](#mt-274) | 2026-09-07 | The length, shading and caption work, in front of your eyes | needs test | OB-172, OB-173, OB-174, OB-175, OB-176, OB-177, OB-178, OB-179, FR-057, FR-061 |
+| [MT-276](#mt-276) | 2026-09-07 | Control+K draws the grid and the numbers together | needs test | OB-179 (split from MT-274) |
+| [MT-277](#mt-277) | 2026-09-07 | One menu carries both the facing and the arrival side | needs test | FR-057 (split from MT-274) |
+| [MT-278](#mt-278) | 2026-09-07 | The covered-track shading survives a flash | needs test | OB-175 follow-up (split from MT-274) |
+| [MT-279](#mt-279) | 2026-09-07 | The covered-track shading is on the viewer only | needs test | OB-175 follow-up (split from MT-274) |
+| [MT-280](#mt-280) | 2026-09-07 | Nothing may be sent across covered track | needs test | OB-175 follow-up (split from MT-274) |
+| [MT-281](#mt-281) | 2026-09-07 | The paste prompt on a curve is still wrong, deliberately - a decision, not a test | needs test | MON-A1 (split from MT-274) |
+| [MT-282](#mt-282) | 2026-09-07 | Home Locs draws nothing where no home is assigned | needs test | FR-061 (split from MT-274) |
+| [MT-283](#mt-283) | 2026-09-07 | The Text Labels dropdown fits the sidebar | needs test | FR-061 (split from MT-274) |
+| [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
+| [MT-285](#mt-285) | 2026-09-07 | A page whose top row is empty still numbers its axis | needs test | OB-172 (split from MT-274) |
+| [MT-286](#mt-286) | 2026-09-07 | The editor comes to the front on the first open | needs test | OB-173 (split from MT-274) |
+| [MT-287](#mt-287) | 2026-09-07 | The incoming arrow on a curved sensor tile is clear of the track | needs test | OB-175 (split from MT-274) |
+| [MT-288](#mt-288) | 2026-09-07 | The track-length box is ready to type in | needs test | OB-176 (split from MT-274) |
+| [MT-289](#mt-289) | 2026-09-07 | The facing menu ticks a facing the square cannot hold | needs test | OB-177 (split from MT-274) |
+| [MT-290](#mt-290) | 2026-09-07 | A route with auto-fire unchecked and a blank s88 saves | needs test | OB-178 (split from MT-274) |
+| [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
+| [MT-292](#mt-292) | 2026-09-07 | A remembered None comes back with the captions actually off | needs test | RGD-C3 (split from MT-275) |
+| [MT-293](#mt-293) | 2026-09-07 | Control+L moves the caption dropdown with it | needs test | RGD-C3 (split from MT-275) |
+| [MT-294](#mt-294) | 2026-09-07 | A recorded arrival side the menu cannot offer is shown, not offered | needs test | RGD-C4 (split from MT-275) |
+| [MT-295](#mt-295) | 2026-09-07 | The dash marks every station autonomy will not choose | needs test | MON-B1 (split from MT-275) |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -15390,7 +15409,7 @@ while it happens.
 
 ### MT-274 - 2026-09-07 - The length, shading and caption work, in front of your eyes
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-172, OB-173, OB-174, OB-175, OB-176, OB-177, OB-178, OB-179, FR-057, FR-061
 
 **Written:** 2026-09-07
@@ -15471,11 +15490,28 @@ The tooltip on the Grid box now mentions the numbers, in eight languages. **Seve
 were written by an agent and nobody has read them for idiom.** If a language you read looks wrong, it
 probably is.
 
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of
+different things, so that I can provide clear feedback."*
+
+Its nine items are now [MT-276](#mt-276), [MT-277](#mt-277), [MT-278](#mt-278), [MT-279](#mt-279),
+[MT-280](#mt-280), [MT-281](#mt-281), [MT-282](#mt-282), [MT-283](#mt-283), [MT-284](#mt-284),
+[MT-285](#mt-285), [MT-286](#mt-286), [MT-287](#mt-287), [MT-288](#mt-288), [MT-289](#mt-289),
+[MT-290](#mt-290) and [MT-291](#mt-291), one outcome each.
+
+**One of them changed meaning and is worth reading rather than re-running.** Item 4 said the paste
+prompt on BottomMainPost had been fixed to ask North and South. That fix was reverted the same day -
+it broke tail blocking on every curve - so the prompt asks the wrong pair again, deliberately.
+[MT-281](#mt-281) carries what happened and the decision it needs.
+
 ---
+
+<a id="mt-275"></a>
 
 ### MT-275 - 2026-09-07 - Four fixes the reviews found, in three places
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** MON-B1, RGD-C3, RGD-C4, RGD-C7
 
 **Written:** 2026-09-07
@@ -15521,4 +15557,476 @@ marked as not chosen by autonomy - or switched off - should carry the " -" mark.
 The mark means "you may send it here yourself, autonomy will not". It was missing exactly two reasons,
 and one of them is how a parking berth is stored, so a berth was offered with no mark at all.
 
+#### Comments
+
+**Claude, 2026-09-07.** Split into one test per entry, with the rest: [MT-292](#mt-292),
+[MT-293](#mt-293), [MT-294](#mt-294) and [MT-295](#mt-295).
+
+[MT-294](#mt-294) is not the test that was written here. The fix it described was the wrong one and
+Adam met it as a regression the same evening; the entry carries what replaced it.
+
 ---
+
+<a id="mt-276"></a>
+
+### MT-276 - 2026-09-07 - Control+K draws the grid and the numbers together
+
+**Disposition:** needs test
+**From:** OB-179 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open the **autonomy** editor.
+2. Press **Control+K**.
+3. Press it again.
+
+**Expected**
+
+The grid, the column and row numbers, and the Grid tick box all change together, both times. There is
+no separate coordinates setting anywhere - the numbers are drawn exactly when the grid is.
+
+*If Control+K does nothing here, the shortcut guard shared with Control+G, L and D is the place to
+look: the code says it covers both editors and nobody has watched it.*
+
+---
+
+<a id="mt-277"></a>
+
+### MT-277 - 2026-09-07 - One menu carries both the facing and the arrival side
+
+**Disposition:** needs test
+**From:** FR-057 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Right-click a square holding a train in the **autonomy editor**.
+2. Right-click the same square on the **track diagram**.
+
+**Expected**
+
+Both menus carry the same thing: one menu with two bold headings - which way the train faces, and
+which side it arrived from. Every entry says "(right)", "(left)", "(up)" or "(down)" as well as the
+compass point.
+
+Before this the arrival side existed only in the editor. Say if it reads as eight compass points in a
+row rather than as two sets.
+
+---
+
+<a id="mt-278"></a>
+
+### MT-278 - 2026-09-07 - The covered-track shading survives a flash
+
+**Disposition:** needs test
+**From:** OB-175 follow-up (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Stand a train with a length on a platform whose approach is measured, so the track behind it greys.
+2. Fire a route, or throw a switch, that highlights one of the greyed squares.
+
+**Expected**
+
+The yellow flash fades back to **grey**, not to bare track. That was the report: the highlight was
+repainting over the shading and leaving it off.
+
+---
+
+<a id="mt-279"></a>
+
+### MT-279 - 2026-09-07 - The covered-track shading is on the viewer only
+
+**Disposition:** needs test
+**From:** OB-175 follow-up (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Stand a train with a length on a measured approach, so the track behind it greys on the track
+   diagram.
+2. Open the **track diagram editor**.
+3. Open the **autonomy editor**.
+
+**Expected**
+
+The grey is gone in both editors and present in the viewer. What is standing on the railway is not a
+fact about the drawing.
+
+---
+
+<a id="mt-280"></a>
+
+### MT-280 - 2026-09-07 - Nothing may be sent across covered track
+
+**Disposition:** needs test
+**From:** OB-175 follow-up (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Stand a long train so that its tail lies across a switch - the case reported was a train covering
+   switch 60.
+2. Try to send another train through that switch. The reported case was **EN57-203 from
+   TunnelLeftPark to BottomMainC**.
+
+**Expected**
+
+The trip is refused, and the reason names the train lying across the switch.
+
+*Changed since you last saw this:* the refusal now only fires when the two paths genuinely share
+metal. It used to fire on travel restrictions too, which refused trips over physically clear track and
+blamed a train nowhere near it.
+
+---
+
+<a id="mt-281"></a>
+
+### MT-281 - 2026-09-07 - The paste prompt on a curve is still wrong, deliberately - a decision, not a test
+
+**Disposition:** needs test
+**From:** MON-A1 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**This one is a question for you, not a test to run.** It is here because MT-274 told you it was
+fixed and it is not.
+
+**What you reported:** pasting onto **BottomMainPost** asks whether the train arrived from the south
+or from the west, rather than the north or the south.
+
+**What happened:** it was fixed on 2026-09-07 and **reverted the same day**. The fix made the doors
+read the side off the BUILD, which is the right answer for the label - but `arrivedFrom` is then read
+back by the tail walk, which matches it against the GEOMETRY. On a curve the two disagree, so nothing
+matched, and **the track behind a train stopped being blocked at all**. A wrong label is cosmetic; a
+protection that silently does nothing is not.
+
+**Expected today:** the prompt asks the wrong pair, exactly as you reported.
+
+**What I need from you:** the real fix is to carry the reduced edge's entry side into the built
+configuration so the arrival write and the tail walk share one vocabulary. It needs a test fixture
+with a curve and a switch in it, which the suite does not have - about an hour of work, and it also
+unblocks two other things. Before the release, or after?
+
+---
+
+<a id="mt-282"></a>
+
+### MT-282 - 2026-09-07 - Home Locs draws nothing where no home is assigned
+
+**Disposition:** needs test
+**From:** FR-061 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open the autonomy editor and set **Text Labels** to **Home Locs**.
+2. Look at a station square with no home locomotive assigned.
+
+**Expected**
+
+Nothing is drawn there - not the station name. That was your ruling, and it is the one behaviour in
+the caption work that changed after you first saw it.
+
+---
+
+<a id="mt-283"></a>
+
+### MT-283 - 2026-09-07 - The Text Labels dropdown fits the sidebar
+
+**Disposition:** needs test
+**From:** FR-061 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open the autonomy editor and look at the **Text Labels** dropdown, above Track Directions.
+
+**Expected**
+
+It sits inside the sidebar without widening it, at the same width as the controls around it.
+
+---
+
+<a id="mt-284"></a>
+
+### MT-284 - 2026-09-07 - The home dialog offers the parked train and the active one separately
+
+**Disposition:** needs test
+**From:** FR-057 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Right-click a square with a train standing on it and assign a home locomotive.
+
+**Expected**
+
+Two shortcut buttons where there was one: **Use current** for the train parked on that square, and
+**Use active** for the one you are driving. Only one of them appears when they are the same train.
+
+---
+
+<a id="mt-285"></a>
+
+### MT-285 - 2026-09-07 - A page whose top row is empty still numbers its axis
+
+**Disposition:** needs test
+**From:** OB-172 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open a page whose top row of squares is empty.
+2. Turn the grid on.
+
+**Expected**
+
+The axis is numbered from the page's own first row, not from the first row that happens to hold track.
+
+---
+
+<a id="mt-286"></a>
+
+### MT-286 - 2026-09-07 - The editor comes to the front on the first open
+
+**Disposition:** needs test
+**From:** OB-173 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. With TrainControl behind another window, click **Edit** to open the autonomy editor.
+2. Close it and click **Edit** again.
+
+**Expected**
+
+It comes to the front the **first** time, not only the second.
+
+*If it still opens behind:* say so - a process gets one chance at the foreground per start, and
+something else in start-up may be spending it.
+
+---
+
+<a id="mt-287"></a>
+
+### MT-287 - 2026-09-07 - The incoming arrow on a curved sensor tile is clear of the track
+
+**Disposition:** needs test
+**From:** OB-175 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Find a sensor tile that is a curve, with an incoming direction marked.
+
+**Expected**
+
+The arrow sits in the lower-right corner of the tile, clear of the track rather than drawn over it.
+
+---
+
+<a id="mt-288"></a>
+
+### MT-288 - 2026-09-07 - The track-length box is ready to type in
+
+**Disposition:** needs test
+**From:** OB-176 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open the dialog that sets a track length.
+
+**Expected**
+
+The number is already selected, so typing replaces it without clicking or selecting first.
+
+---
+
+<a id="mt-289"></a>
+
+### MT-289 - 2026-09-07 - The facing menu ticks a facing the square cannot hold
+
+**Disposition:** needs test
+**From:** OB-177 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Find a square whose recorded facing it cannot hold - the autonomy editor's findings list reports
+   these.
+2. Right-click the train standing there and open the **"<locomotive> is facing"** menu.
+
+**Expected**
+
+The recorded facing is listed and ticked, alongside the ones the square can hold. It used to open with
+every choice blank, which reads as "this train has no facing" when in fact it has one the square
+cannot hold.
+
+---
+
+<a id="mt-290"></a>
+
+### MT-290 - 2026-09-07 - A route with auto-fire unchecked and a blank s88 saves
+
+**Disposition:** needs test
+**From:** OB-178 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open a route, untick auto-fire, and leave the s88 field blank.
+2. Save.
+
+**Expected**
+
+It saves, with no complaint about the empty s88 - the field only matters when auto-fire is on.
+
+---
+
+<a id="mt-291"></a>
+
+### MT-291 - 2026-09-07 - The Grid tooltip, in a language you read
+
+**Disposition:** needs test
+**From:** FR-057 (split from MT-274)
+
+**Written:** 2026-09-07
+
+**This is something to read rather than drive.**
+
+**Steps**
+
+1. Switch the interface to German, or another language you read.
+2. Hover the **Grid** tick box in either editor.
+
+**Expected**
+
+The tooltip mentions the column and row numbers, and reads like something a person would write.
+
+**Seven of the eight translations were written by an agent and nobody has read them for idiom.** If
+one looks wrong, it probably is.
+
+---
+
+<a id="mt-292"></a>
+
+### MT-292 - 2026-09-07 - A remembered None comes back with the captions actually off
+
+**Disposition:** needs test
+**From:** RGD-C3 (split from MT-275)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. In the autonomy editor, set **Text Labels** to **None**.
+2. Quit TrainControl completely.
+3. Start it again and open the autonomy editor.
+
+**Expected**
+
+The dropdown says None **and the captions are gone**. It used to say None with every station name
+still drawn under it - the setting was remembered as a word and not as an effect.
+
+**One thing to rule on while you are here:** opening the autonomy editor now imposes its caption
+choice on the diagram's text labels. If you had turned text off in the plain editor and open the
+autonomy editor with Station Names selected, the text comes back on. Say if you would rather it did
+not.
+
+---
+
+<a id="mt-293"></a>
+
+### MT-293 - 2026-09-07 - Control+L moves the caption dropdown with it
+
+**Disposition:** needs test
+**From:** RGD-C3 (split from MT-275)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. In the autonomy editor, set **Text Labels** to **Parked Locs**.
+2. Press **Control+L**.
+3. Press it again.
+
+**Expected**
+
+The captions vanish and the dropdown moves to **None**; the second press brings back **Parked Locs**,
+not Station Names.
+
+The Text Labels tick box is hidden in autonomy mode - the dropdown's None is that switch - but
+Control+L still reaches it, so it used to empty the diagram under a control still naming a caption.
+
+---
+
+<a id="mt-294"></a>
+
+### MT-294 - 2026-09-07 - A recorded arrival side the menu cannot offer is shown, not offered
+
+**Disposition:** needs test
+**From:** RGD-C4 (split from MT-275)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Right-click a train whose recorded arrival side is not one of the ones the menu lists - **75 407 DB
+   at BottomMainPost** was the case you found.
+2. Open the **Arrived from** section.
+
+**Expected**
+
+The recorded side appears once, ticked, **greyed out and not clickable**, reading "recorded, but not
+offered here". The sides you can choose are the ones the menu lists, and every one of them works.
+
+**This is the second attempt.** The first added the recorded side to the list as a normal choice,
+which is what you met as *"75 407 DB's menu now lets you select arrival from the west at
+BottomMainPost, which makes no sense"*. It cannot be a choice: the tail walk matches stored sides
+against the geometry, so a side the menu does not list can never match, and setting it would block
+nothing. It still has to be SHOWN, or the menu opens with everything blank for a square that does have
+a tail recorded.
+
+---
+
+<a id="mt-295"></a>
+
+### MT-295 - 2026-09-07 - The dash marks every station autonomy will not choose
+
+**Disposition:** needs test
+**From:** MON-B1 (split from MT-275)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Open the locomotive commands panel for a train and look at its destination list.
+2. Find a station you have marked as **not chosen by autonomy**, and one that is **switched off**.
+
+**Expected**
+
+Both carry the **" -"** mark. It means "you may send it here yourself, autonomy will not".
+
+Two of the five reasons were missing from that mark, and one of them is how a parking berth is stored
+- so a berth was listed with no mark at all, which is the one case the mark exists for.
+
+---
+

@@ -6261,6 +6261,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void refreshCoveredTrack()
     {
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was = coveredTrack;
+
         try
         {
             if (this.model == null || !this.model.hasAutoLayout() || getAutonomySession() == null)
@@ -6279,6 +6281,67 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // redraws the whole railway, and a picture nobody can read is worse than a protection
             // nobody can see.
             coveredTrack = java.util.Collections.emptySet();
+        }
+        finally
+        {
+            // AND THE TILES THAT CHANGED ARE REDRAWN (OB-180).
+            //
+            // Updating the set is not showing it.  The wash is decided when a tile is DRAWN, and a
+            // tile is only drawn when its own accessory, feedback or route changes - so moving a train,
+            // which changes which squares its tail covers and nothing else, left the old squares grey
+            // until something unrelated repainted them. Adam: "when a train is manually moved to a new
+            // station in the track diagram viewer using control+X and V, its former shaded icons are
+            // not reset."
+            //
+            // In a finally, because the catch above is a real outcome: everything ungreying is exactly
+            // the case where the old tiles most need repainting.
+            //
+            // Only what CHANGED, which is usually a handful of squares out of hundreds. Repainting the
+            // whole diagram here would run on every refresh, and the refresh runs whenever anything
+            // about a train changes.
+            repaintTheWashWhereItChanged(was, coveredTrack);
+        }
+    }
+
+    /**
+     * Redraws the squares whose covered state is not what it was (OB-180).
+     *
+     * The symmetric difference, so both directions are covered: a square that has just BECOME covered
+     * needs the wash put on, and one that has stopped being covered needs it taken off. The second is
+     * the half that was reported, and the half a set comparison makes easy to forget.
+     *
+     * @param was the previous set
+     * @param now the set just computed
+     */
+    private void repaintTheWashWhereItChanged(
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was,
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> now)
+    {
+        try
+        {
+            if (getDiagramTileRegistry() == null) return;
+
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed =
+                new java.util.HashSet<>(was == null ? java.util.Collections.emptySet() : was);
+
+            for (org.traincontrol.automationui.TileGraph.TileKey key : now)
+            {
+                if (!changed.remove(key)) changed.add(key);
+            }
+
+            for (org.traincontrol.automationui.TileGraph.TileKey key : changed)
+            {
+                for (LayoutLabel label : getDiagramTileRegistry().labelsFor(key))
+                {
+                    label.refreshCoveredWash();
+                }
+            }
+        }
+        catch (Exception cannotRedraw)
+        {
+            // A STALE WASH rather than a broken refresh, which is what this was before the fix - so
+            // the worst case here is the defect it repairs, not a new one.
+            if (this.model != null) this.model.log(cannotRedraw.getMessage());
         }
     }
 
