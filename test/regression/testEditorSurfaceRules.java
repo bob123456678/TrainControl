@@ -3958,13 +3958,24 @@ public class testEditorSurfaceRules
 
             checked++;
 
-            // setupChanged is itself allowed to write nothing and announce nothing.
-            if (name.contains("setupChanged")) continue;
+            // setupChanged is itself allowed to write nothing and announce nothing.  So is the
+            // LIGHT door beside it, which is the same announcement without the grid rebuild.
+            if (name.contains("setupChanged") || name.contains("annotationsChanged")) continue;
 
             // placementChanged() counts: it ends in setupChanged(), and a door that goes through it
             // has announced the change exactly as one that calls it directly has.
+            //
+            // AND annotationsChanged() COUNTS, which is what this rule is actually about (MT-334).
+            //
+            // The rule is "the running layout is told", not "one particular method is called": the
+            // light door does that half through `rebuildRunningLayoutSoon`, exactly as setupChanged
+            // does, and falls back to setupChanged outright when there is no annotation door to use.
+            // What it leaves out is the GRID REBUILD, which is not an announcement and is the flicker
+            // Adam reported - so a guard that named the heavy door by spelling would have forced the
+            // four direction doors to keep redrawing every tile on the page in order to stay green.
             boolean announces = body.toString().contains("setupChanged()")
                 || body.toString().contains("placementChanged()")
+                || body.toString().contains("annotationsChanged()")
 
                 // AND ONE HELPER THAT ANNOUNCES FOR ITS CALLER (VD11-A1).
                 //
@@ -3996,6 +4007,15 @@ public class testEditorSurfaceRules
             && source.indexOf("placementChanged();", radioAt) < radioAt + 2000,
             "radio() no longer announces, so every radio door on this menu is silent and the "
             + "exemption is hiding them (VD11-A1)");
+
+        // AND THE LIGHT DOOR'S EXEMPTION IS ONLY SOUND WHILE IT ANNOUNCES (MT-334).
+        //
+        // Same shape as the radio check above and for the same reason: a door accepted here because
+        // of what a helper does has to be re-examined whenever that helper changes.
+        assertTrue(bodyOf(codeOnly(source), "private void annotationsChanged()")
+            .contains("rebuildRunningLayoutSoon()"),
+            "annotationsChanged no longer rebuilds the running layout, so the four direction doors "
+            + "exempted through it announce nothing to the railway (MT-334)");
 
         assertTrue(checked >= 7,
             "only " + checked + " writers of a point property were found in AutonomyEditorPanel, "

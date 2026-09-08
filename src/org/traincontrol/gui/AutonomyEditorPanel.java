@@ -3402,8 +3402,18 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
 
+        // THE ARROWS, NOT THE DIAGRAM (MT-334).
+        //
+        // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
+        // redraws.  Less, because the light door was wired to the One-Way tool alone and this is one
+        // of the four ordinary ways a direction is changed.  A restriction changes no tile art - what
+        // moves is the arrow drawn over the tile - and rebuilding every label on the page to show it
+        // is the flash he is reporting; measured, 384 of 384.
+        //
+        // The running layout is still rebuilt: annotationsChanged does that half exactly as
+        // setupChanged does, which is what the note this replaces was about.
         // Directions are edges in the running graph (VD10-B2).
-        setupChanged();
+        annotationsChanged();
     }
 
     /**
@@ -5863,8 +5873,18 @@ public class AutonomyEditorPanel extends JPanel
 
         if (changed != 0) showRestrictionsIfHidden();
 
+        // THE ARROWS, NOT THE DIAGRAM (MT-334).
+        //
+        // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
+        // redraws.  Less, because the light door was wired to the One-Way tool alone and this is one
+        // of the four ordinary ways a direction is changed.  A restriction changes no tile art - what
+        // moves is the arrow drawn over the tile - and rebuilding every label on the page to show it
+        // is the flash he is reporting; measured, 384 of 384.
+        //
+        // The running layout is still rebuilt: annotationsChanged does that half exactly as
+        // setupChanged does, which is what the note this replaces was about.
         // A run's direction is an edge in the running graph (VD11-A1).
-        setupChanged();
+        annotationsChanged();
     }
 
     /**
@@ -5950,8 +5970,18 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
+        // THE ARROWS, NOT THE DIAGRAM (MT-334).
+        //
+        // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
+        // redraws.  Less, because the light door was wired to the One-Way tool alone and this is one
+        // of the four ordinary ways a direction is changed.  A restriction changes no tile art - what
+        // moves is the arrow drawn over the tile - and rebuilding every label on the page to show it
+        // is the flash he is reporting; measured, 384 of 384.
+        //
+        // The running layout is still rebuilt: annotationsChanged does that half exactly as
+        // setupChanged does, which is what the note this replaces was about.
         // Directions are edges in the running graph (VD11-A1).
-        setupChanged();
+        annotationsChanged();
     }
 
     /**
@@ -6919,7 +6949,9 @@ public class AutonomyEditorPanel extends JPanel
             // A run's direction is an edge in the running graph, and this radio is the one-way choice
             // sitting on the same submenu as "All branches", which has announced since VD10-B2.  So
             // the bulk answer reached the railway and the per-route one beside it did not.
-            setupChanged();
+            //
+            // Through the LIGHT door, like its three siblings (MT-334) - see `cycle`.
+            annotationsChanged();
         });
 
         return item;
