@@ -1198,12 +1198,12 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     javax.swing.JMenu facingMenu = buildFacingMenu(target);
 
-                    // AND WHERE ITS TAIL IS, beside the facing, because they are the same question
-                    // asked about opposite ends of the train.
-                    javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);
-
-                    if (tailMenu != null) menu.add(tailMenu);
-
+                    // ONE MENU FOR BOTH ENDS OF THE TRAIN (Adam, 2026-09-07).
+                    //
+                    // The tail question used to be a second submenu added here, which is exactly why
+                    // it existed in the editor and not in the track diagram viewer: the viewer asks
+                    // TrainControlUI for `buildFacingMenu` and for nothing else. Folded inside that
+                    // menu under its own heading, both surfaces get it and neither can drift.
                     if (facingMenu != null) menu.add(facingMenu);
                 }
 
@@ -2896,6 +2896,25 @@ public class AutonomyEditorPanel extends JPanel
         this.runningLayout = source;
     }
     /**
+     * A bold, disabled line naming what the items under it are about.
+     *
+     * The same device the right-click menu heads itself with, for the same reason: a set of options
+     * with no title is a set the reader has to infer the subject of, and this menu now carries two
+     * sets of compass points that mean opposite ends of one train.
+     *
+     * @param text what the set below is about
+     * @return the heading item
+     */
+    private static javax.swing.JMenuItem heading(String text)
+    {
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(text);
+
+        item.setEnabled(false);
+        item.setFont(item.getFont().deriveFont(java.awt.Font.BOLD));
+
+        return item;
+    }
+    /**
      * Where the tail of the train standing here lies - the "arrived from" side.
      *
      * Adam, 2026-09-07: **"expose this property in the right-click menu advanced settings, both for
@@ -3072,6 +3091,14 @@ public class AutonomyEditorPanel extends JPanel
 
         facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
 
+        // A HEADING, because this menu now answers two questions (Adam, 2026-09-07).
+        //
+        // *"Move the setting into the '<locomotive> is facing' menu for both, with clear intro
+        // headings for each set of options."*  Two sets of compass points one after another, with
+        // nothing between them, would read as eight ways of saying one thing - and they are opposite
+        // ends of the train.
+        facingMenu.add(heading(I18n.t("autosetup.ui.headingFacing")));
+
         javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
 
         for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
@@ -3100,6 +3127,34 @@ public class AutonomyEditorPanel extends JPanel
             only.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacingOnlyOne")));
 
             facingMenu.add(only);
+        }
+
+        // AND WHERE ITS TAIL IS, in the same menu (Adam, 2026-09-07).
+        //
+        // *"The 'arrived from' menu option is only visible in the autonomy editor, not the track
+        // diagram viewer."*  It was a second submenu the editor added for itself, and the viewer only
+        // ever asks for this one - so the fix and the tidy-up are the same edit: the two questions are
+        // opposite ends of one train and belong together, and putting them together is what puts the
+        // tail question in front of the operator on the diagram as well.
+        //
+        // Under its own heading, after a separator, so the two sets of compass points cannot be read
+        // as one list.
+        javax.swing.JMenu tail = buildArrivedFromMenu(target);
+
+        if (tail != null && tail.getMenuComponentCount() > 0)
+        {
+            facingMenu.addSeparator();
+            facingMenu.add(heading(I18n.t("autosetup.ui.headingArrivedFrom")));
+
+            // The ITEMS, not the submenu: a submenu inside this one would be the third click for a
+            // question that is already two levels down.
+            while (tail.getMenuComponentCount() > 0)
+            {
+                java.awt.Component item = tail.getMenuComponent(0);
+
+                tail.remove(0);
+                facingMenu.add(item);
+            }
         }
 
         return facingMenu;

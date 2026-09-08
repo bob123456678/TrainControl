@@ -1375,6 +1375,174 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The covered-track wash survives a highlight, stays out of the editors, and blocks what it draws.
+     *
+     * Adam, 2026-09-07, four reports against the length work, and **every one of them had a green test
+     * over it**. That is the finding, and each has the same shape: the tests asserted the RULE and
+     * nothing asserted the DRAWING or the fixture had no switch in it.
+     *
+     * - **"Shaded tiles get overwritten if an accessory change highlights the same square."** The
+     *   restore put back `lastIcon`, the ungreyed icon. Nothing tested it because nothing tests icons:
+     *   `testATrainCoversTheTrackBehindIt` asserts which EDGES are covered, which was right the whole
+     *   time. The comment above the restore even argued for it.
+     * - **"EN57-203 is allowed to traverse a blocked/shaded switch."** Coverage is per edge for
+     *   routing and per square for drawing, and at a switch those differ. Every tail fixture in the
+     *   suite is a straight chain of two or three points with no switch and no lock edges, so no test
+     *   could tell the two apart - the same reason `VAL8-A1`'s one-way-rail gap went unseen.
+     * - **"Slightly lighter."** A colour nothing asserts.
+     * - **"Don't show shading in the autonomy or diagram editor."** The greying was written with no
+     *   `edit` guard at all, and no test builds a label in editor mode and looks at its icon.
+     *
+     * Source-level, because all four are about what a Swing component draws: an icon comparison needs
+     * a rendered label and a real image, and this file's convention is to assert the decision rather
+     * than the pixels.
+     *
+     * MUTATION: restoring `lastIcon` bare fails the first; dropping `!edit` fails the second; removing
+     * the lock sweep in isPathClear fails the third.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheCoveredWashIsDrawnWhereItShouldBe() throws Exception
+    {
+        String label = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
+            StandardCharsets.UTF_8));
+
+        // THE HIGHLIGHT RESTORES TO THE WASH.
+        // THE RESTORE, not the first set.  Setting the bare icon before the wash is laid over it is
+        // right and is what makes the wash a wash; it is the TIMER that must not put it back.
+        int timer = label.indexOf("javax.swing.Timer restore");
+
+        assertTrue(timer > 0,
+            "the highlight timer has gone, so this checked the absence of something that is not there");
+
+        String restore = label.substring(timer, Math.min(label.length(), timer + 1400));
+
+        assertFalse(restore.contains("this.setIcon(lastIcon);"),
+            "the highlight timer restores the bare icon, so a tile loses its wash the first time an"
+            + " accessory change flashes it - permanently, because nothing redraws it again until the"
+            + " train moves (Adam, 2026-09-07)");
+
+        assertTrue(restore.contains("stillCovered"),
+            "the restore does not re-ask whether the track is still covered");
+
+        // AND THE WASH IS THE VIEWER'S ONLY.
+        assertTrue(label.contains("boolean covered = !edit"),
+            "the covered wash is drawn in the editors too. An editor is where the railway is arranged,"
+            + " and what happens to be standing on it while you arrange it is a fact about right now"
+            + " (Adam: \"only the track diagram viewer\")");
+
+        // AND WHAT IS DRAWN IS WHAT IS REFUSED.
+        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(layout.contains("for (Edge sharing : e.getLockEdges())"),
+            "a path over track that SHARES metal with a covered edge is still allowed. Coverage is"
+            + " recorded per edge and drawn per square, and at a switch those differ - so the picture"
+            + " protected more than the railway did, and a train could run onto a shaded switch");
+    }
+
+    /**
+     * The arrival-side question asks the build which sides the track reaches this square by.
+     *
+     * Adam, 2026-09-07: pasting 75 407 DB onto BottomMainPost "asks if the train arrived from the south
+     * or from the west, rather than the north or the south."
+     *
+     * **Why the tests were green.** `sidesOf` answered with the compass direction of the neighbouring
+     * POINT, and every fixture that exercised it - `testATrainCoversTheTrackBehindIt`'s hand-built
+     * lines - places its points in a straight row, where the direction of the neighbour and the side
+     * the metal leaves by are the same. They differ only on a curve, and no unit fixture has one. The
+     * sample-layout tests that do have curves never asked this question.
+     *
+     * The builder has always known the answer, because it splits the square on it: `arrivalSides` goes
+     * to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`, which reads each reduced edge's ENTRY
+     * side. This is the third consumer moved onto that door, after the trapped-arrival check (DD-A7)
+     * and the facing menu (DR-B6).
+     *
+     * MUTATION: making the paste door pass null for the sides falls back to the geometry and fails this.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheArrivalSidesComeFromTheBuild() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(ui.contains("getAutonomySession().arrivalSides(aimed)"),
+            "the paste door does not hand the prompt the build's arrival sides, so it falls back to"
+            + " point-to-point geometry - which names the direction of the neighbouring POINT rather"
+            + " than the side the metal leaves by, and those differ on every curve");
+
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(panel.contains("ArrivalSidePrompt.sidesOf(session.arrivalSides(target))"),
+            "the arrived-from menu still works the sides out from geometry, so it and the paste prompt"
+            + " can offer different answers about one square");
+    }
+
+    /**
+     * One menu holds both ends of the train, headed, and the viewer gets it too.
+     *
+     * Adam, 2026-09-07: *"the 'arrived from' menu option is only visible in the autonomy editor, not
+     * the track diagram viewer.  Move the setting into the '<locomotive> is facing' menu for both, with
+     * clear intro headings for each set of options."*
+     *
+     * **Why no test caught it.** The two menus were both built and both correct; what was missing was
+     * one of them being ADDED on one surface. `testBothAutonomyMenusNameTheSquareTheSameWay` checks
+     * that the two menus agree about a square's name - it was written for exactly this class of fault
+     * and asks about naming rather than membership, so a menu absent from one surface is invisible to
+     * it. The viewer's route into these menus is `TrainControlUI.facingMenuFor`, which asks for the
+     * facing menu and nothing else, and nothing asserted what that menu contains.
+     *
+     * Folding the items in rather than nesting a submenu also removes the ability to drift: there is
+     * one menu now, so the two surfaces cannot offer different things.
+     *
+     * MUTATION: adding the tail menu separately in the editor again fails the last assertion.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheFacingMenuHoldsBothEndsOfTheTrain() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        String facing = bodyOf(panel, "public javax.swing.JMenu buildFacingMenu(final TileKey target)");
+
+        assertNotEquals(facing, "",
+            "buildFacingMenu is not declared that way any more, so this checked nothing");
+
+        assertTrue(facing.contains("buildArrivedFromMenu(target)"),
+            "the facing menu does not carry the arrival side, so the track diagram viewer - which asks"
+            + " for this menu and no other - still cannot set it (Adam, 2026-09-07)");
+
+        assertTrue(facing.contains("headingFacing") && facing.contains("headingArrivedFrom"),
+            "one or both sets of compass points has no heading. Two sets one after another read as"
+            + " eight ways of saying one thing, and they are opposite ends of the train");
+
+        // AND IT IS NOT ALSO ADDED SEPARATELY, which is what put it in one surface and not the other.
+        String menu = bodyOf(panel, "private void addLocomotiveItems(");
+
+        if (!menu.isEmpty())
+        {
+            assertFalse(menu.contains("menu.add(tailMenu)"),
+                "the arrival side is still added as its own submenu as well, so there are two doors"
+                + " again and only one of them is on the diagram");
+        }
+
+        assertFalse(panel.contains("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"),
+            "the editor still builds a separate tail submenu, which is the arrangement that gave the"
+            + " editor a setting the viewer did not have");
+    }
+
+    /**
      * The home picker offers the train in your hand AND the one on the platform.
      *
      * Adam, 2026-09-07: *"in the home locomotive assignment box, 'use current' should be the train

@@ -211,8 +211,14 @@ turned round the two point the same way while the carriages have not moved.
   the opposite of the facing (a train that has not been turned drove in forwards); **a may-reverse
   square asks**, because turning round is what those squares are for and the train is as likely to
   have backed in as driven in.
-- It can be **set** afterwards from **Train arrived from** in the right-click menu, on both the editor
-  and the track diagram. Not cleared — see below.
+- It can be **set** afterwards from inside the **"<locomotive> is facing"** menu, on both the editor
+  and the track diagram. Not cleared - see below. The two questions live in one menu under separate
+  headings because they are opposite ends of one train, and because a second submenu is what gave the
+  editor a setting the viewer did not have.
+- **The sides offered are the ones the BUILD splits on**, not the compass direction of the neighbouring
+  point. A `Point` is the far end of a reduced edge that can run several tiles and turn corners, so a
+  rail leaving north and curving east reaches a neighbour lying east; asking the geometry offered "E"
+  where the metal leaves by "N". On a straight the two agree, which is why it went unnoticed.
 - Not knowing is a legitimate answer. It does **not** mean nothing is blocked: where the geometry
   leaves only one way back, the walk still follows it, because that answer is forced rather than
   guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
@@ -330,7 +336,18 @@ The rest of this section is about the **first** rule.
   several means the graph cannot say which.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
-- Covered squares are **greyed on the diagram** until the train moves.
+- Covered squares are **greyed on the diagram** until the train moves, **on the track diagram viewer
+  only**. An editor is where the railway is arranged, and what happens to be standing on it while you
+  arrange it is a fact about right now rather than about the drawing - the same reasoning that makes
+  station names the default caption there.
+- **The wash survives a highlight.** An accessory change flashes the square it commands; when the
+  flash ends the square goes back to being greyed if it is still covered, asked again rather than
+  remembered, because the train may have moved while the highlight was showing.
+- **What is drawn is what is refused.** Coverage is recorded per EDGE and drawn per SQUARE, and at a
+  switch those are not the same thing: a train lying across a switch covers the edge it arrived along,
+  while a route taking the other pair of arms is a different edge. So a path is refused when any edge
+  it uses **shares metal** with a covered one - the lock-edge relation, which `GraphReducer` derives
+  from shared tiles. Before this the picture protected more than the railway did.
 
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
