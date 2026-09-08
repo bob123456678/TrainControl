@@ -507,8 +507,8 @@ public class MarklinRoute extends Route
         /** The operator said no: nothing in this route happens. */
         CANCEL_ROUTE,
 
-        /** Nobody was there to ask: leave the ironwork alone, run the rest. */
-        SKIP_ACCESSORIES
+        /** Nobody was there to ask: leave THIS accessory alone, run everything else. */
+        SKIP_THIS_ACCESSORY
     }
 
     /**
@@ -518,15 +518,17 @@ public class MarklinRoute extends Route
      * triggered: popup, just a notification in the log.  don't run the conflicting switch commands,
      * but do run the power off and others."**
      *
-     * The two doors answer differently on purpose, and each answer is WHOLE rather than partial:
+     * The two doors answer differently on purpose:
      *
      * A person asked and saying no means the route does not happen - not its speeds, not its
      * functions, not the route it chains to. Somebody looking at the railway said no to this route;
-     * running most of it is not what they said.
+     * running most of it is not what they said. That answer is WHOLE.
      *
-     * Nobody there - the s88 door - means the conflicting ironwork is left alone and everything else
-     * still runs, which is how a route that cuts the power still cuts it. The log line is the whole
-     * record, because there is no one to show a dialog to.
+     * Nobody there - the s88 door - means THIS accessory is left alone and everything else still
+     * runs, which is how a route that cuts the power still cuts it. That answer is per command, and
+     * it is per command because Adam's words are: *"don't run the conflicting switch commands"* -
+     * the ones that conflict, not the ones that happen to be in the same route. The log line is the
+     * whole record, because there is no one to show a dialog to.
      *
      * **The emergency-stop carve-out is gone**, and nothing is lost by it. A route carrying a stop
      * used to be excused the question; now the auto door does not ask at all, and the manual door
@@ -542,7 +544,7 @@ public class MarklinRoute extends Route
      */
     public static ConflictResponse respondToConflict(boolean askable, boolean saidYes)
     {
-        if (!askable) return ConflictResponse.SKIP_ACCESSORIES;
+        if (!askable) return ConflictResponse.SKIP_THIS_ACCESSORY;
 
         return saidYes ? ConflictResponse.RUN_EVERYTHING : ConflictResponse.CANCEL_ROUTE;
     }
@@ -594,15 +596,18 @@ public class MarklinRoute extends Route
                     // asks `activeAccs.contains(c.getAccessory())`, and a route component's accessory
                     // is null.
                     //
-                    // REFUSED rather than confirmed, and refused WHOLE. This class is the model half
-                    // and has no business showing a dialog - the tile-click door already asks, for the
-                    // one case where a person is present - and a route half executed leaves the layout
-                    // in a state nobody chose. Adam's rule for a running layout is the same shape:
-                    // "Never allow any modifications to a running layout."
+                    // REFUSED rather than confirmed, at the door with nobody at it. This class is the
+                    // model half and has no business showing a dialog - the two doors with a person at
+                    // them ask, before the route starts and again if a conflict appears while it runs.
+                    //
+                    // ONE COMMAND AT A TIME, which is Adam's ruling of 2026-09-06 (MT-247): "don't run
+                    // the conflicting switch commands, but do run the power off and others".  Being on
+                    // track a train is using is a property of the ACCESSORY, not of the route, so a
+                    // switch on clear track is thrown whatever a different switch is doing.  What this
+                    // used to do instead is written out below the override.
                     //
                     // Only the accessories that are actually on a locked path, so a route that turns
                     // on the lights or stops the power runs during autonomy exactly as before.
-                    // The ACCESSORY half only, never the whole route.
                     //
                     // The first version of this returned here, discarding every command in the route -
                     // and a validation pass proved what that costs: a route that cuts the power AND
@@ -610,11 +615,10 @@ public class MarklinRoute extends Route
                     // has, was refused entirely because of the turnout. The emergency stop did not
                     // run. Measured, not reasoned: `getPowerState()` was still true afterwards.
                     //
-                    // "Refused whole" is a good argument about accessories - setting three switches of
-                    // five leaves the layout in a state nobody chose - and it is not an argument for
-                    // suppressing a stop, which is safe to obey whatever else is true. So the
-                    // accessories go as a group and everything else runs: stop, functions off, lights,
-                    // locomotive speeds, chained routes.
+                    // "Refused whole" was never an argument for suppressing a stop, which is safe to
+                    // obey whatever else is true.  So everything that is not a held accessory runs:
+                    // stop, functions off, lights, locomotive speeds, chained routes - and the
+                    // accessories nothing is standing on.
                     // Unless somebody has said to go ahead.
                     //
                     // Adam: "conflicting routes should still be executable in case of a transient
@@ -629,56 +633,36 @@ public class MarklinRoute extends Route
                     // cannot be assigned; the mid-route question below moves this one.
                     boolean override = overrideConflicts;
 
-                    String[] conflict = override ? null : accessoryHeldByAutonomy();
-
-                    if (conflict != null && auto)
-                    {
-                        // The reason comes back with the accessory, because the two reasons are not
-                        // the same sentence.  "A train is running over it" is true of a locked path
-                        // and false of a platform with a train parked at it, and the log said the
-                        // first for both.
-                        //
-                        // AND ONLY AT THE UNATTENDED DOOR, because only there is this line true when
-                        // it is written.  Both of these messages end "The rest of the route ran" or
-                        // "Nothing further was switched either" - they are records of a REFUSAL.  At a
-                        // human door nothing has been refused yet: the operator has not been asked.
-                        // Logged here, one conflict wrote the refusal twice (again from the per-command
-                        // check below), and if the operator then clicked OK the log kept a permanent
-                        // record of the route not switching an accessory it went straight on to switch.
-                        //
-                        // The per-command check writes it at the human doors, in the branch where the
-                        // answer was no.
-                        this.network.logf(conflict[1], this.getName(), conflict[0]);
-                    }
-
-                    // A decision only at the door with NOBODY AT IT (B7, then its own review).
+                    // NOTHING IS DECIDED FOR THE WHOLE ROUTE HERE ANY MORE (MT-247).
                     //
-                    // This used to set skipAccessories, and the loop below skips every accessory
-                    // before the per-command check can ask about any of them. So the same conflict
-                    // produced two different outcomes decided by sub-second timing: present when the
-                    // route started, every accessory was dropped with only a log line; appearing a
-                    // moment later, the operator was asked. Adam's own ruling is that a conflicting
-                    // route must stay executable "in case of a transient accessory failure", and
-                    // dropping four turnouts silently is the version of that with no way past it.
+                    // Adam, 2026-09-06: **"if the route is auto triggered: popup, just a notification
+                    // in the log.  don't run the conflicting switch commands, but do run the power off
+                    // and others."**  Asked what "conflicting" means, he was clear: an accessory
+                    // command whose switch sits on track a train occupies or has reserved.
                     //
-                    // The per-command check makes the decision at the two HUMAN doors now, and it
-                    // asks at most ONCE per route: yes turns the override on for the rest of the run,
-                    // no skips the rest. So this costs exactly one dialog in the case that used to
-                    // cost four turnouts and a log line nobody was looking at.
+                    // This read that as being about the whole accessory GROUP.  It asked
+                    // `accessoryHeldByAutonomy` once, which returns the FIRST held command in the route
+                    // and says nothing about the others, and then set
                     //
-                    // The s88 door keeps the old whole-route refusal, and the first version of this
-                    // change took that away without noticing. There is nobody there to ask, so the
-                    // per-command check can only refuse - and refusing per command means the route
-                    // sets every accessory AHEAD of the conflicting one and drops the rest. That
-                    // contradicts the rule written forty lines above this: "REFUSED rather than
-                    // confirmed, and refused WHOLE ... a route half executed leaves the layout in a
-                    // state nobody chose." A four-turnout safety route fired by a sensor would have
-                    // set two and dropped two.
+                    //     boolean skipAccessories = auto && conflict != null;
                     //
-                    // A conflict appearing PART WAY through still leaves the earlier ones set, at
-                    // every door. That is unavoidable - they were sent before it existed - and it is
-                    // why the per-command check exists at all.
-                    boolean skipAccessories = auto && conflict != null;
+                    // so one turnout under a train dropped every other turnout in the route with it -
+                    // and the ones it dropped were on track nothing was standing on.  The per-command
+                    // check below, which is the right grain and already existed, could never run at
+                    // that door because the group skip continued past it.
+                    //
+                    // "Refused WHOLE" is still the right argument about a route INTERRUPTED part way,
+                    // and that is still what happens: once a command is refused the ones already sent
+                    // stand, because they went out before the conflict existed.  It was never an
+                    // argument for refusing a switch on clear track because a different switch is busy.
+                    // `heldReason`'s own comment records the same shape being found from the other
+                    // side, where an over-strict signal rule "took the whole route's turnouts with it".
+                    //
+                    // The log line that used to be written here went with it.  It named one accessory
+                    // for the whole route; the per-command branch below writes one line per command
+                    // actually refused, which is both the notification Adam asked for and an accurate
+                    // one.  `accessoryHeldByAutonomy` is still what screens a route BEFORE it runs, at
+                    // the human doors, through `conflictingAccessoryAndReason`.
 
                     for (RouteCommand rc : this.route)
                     {
@@ -686,23 +670,20 @@ public class MarklinRoute extends Route
                         {
                             if (rc.isAccessory())
                             {
-                                // Skipped as a group when any of them is on a locked path - see above.
-                                if (skipAccessories) continue;
-
-                                // And asked AGAIN, immediately before the command.
+                                // ASKED PER COMMAND, immediately before it goes out.
                                 //
-                                // The check above is made once and this loop takes seconds: it sleeps
-                                // SLEEP_INTERVAL plus each command's own delay between every pair of
-                                // commands. So a dispatch that locked a path while the route was part
-                                // way through was invisible, and the route went on to throw a turnout
-                                // the path had just configured - AU-A2 itself, surviving in a window
-                                // seconds wide, through the s88 door with nobody present.
+                                // This loop takes seconds: it sleeps SLEEP_INTERVAL plus each
+                                // command's own delay between every pair of commands.  So a dispatch
+                                // that locked a path while the route was part way through was
+                                // invisible to a check made once before the loop, and the route went
+                                // on to throw a turnout the path had just configured - AU-A2 itself,
+                                // surviving in a window seconds wide, through the s88 door with
+                                // nobody present.
                                 //
-                                // Once it trips, every LATER accessory is skipped too, so the route
-                                // does not go on setting some of its ironwork and not the rest as
-                                // conditions change under it. Partially set is a real cost and it is
-                                // the smaller one: the alternative is throwing a switch under a train
-                                // that is crossing it.
+                                // Per command is also the GRAIN of Adam's ruling (MT-247).  The held
+                                // accessory is the one skipped and the next is asked about fresh, so a
+                                // route does not stop setting the ironwork nothing is standing on
+                                // because one turnout happens to be busy.
                                 String[] now = override ? null : heldReason(rc);
 
                                 if (now != null)
@@ -817,23 +798,23 @@ public class MarklinRoute extends Route
                                         // standing as the only record of a command that did go out.
                                         this.network.logf(now[1], this.getName(), now[0]);
 
-                                        // Every LATER accessory too, so the route does not go on
-                                        // setting some of its ironwork and not the rest as conditions
-                                        // change under it.
+                                        // THIS COMMAND ONLY (MT-247).  It used to set a flag that
+                                        // dropped every LATER accessory as well, which made one busy
+                                        // turnout refuse the whole route's ironwork - including the
+                                        // switches on track nothing was standing on.
                                         //
                                         // **AND EVERYTHING ELSE IN THE ROUTE STILL RUNS** - speeds,
                                         // functions, chained routes (RGN-B2).  The two messages above
                                         // used to disagree about that, one saying "nothing further in
                                         // the route was switched either" and the other "the rest of
-                                        // the route ran"; both now say what actually happens.
+                                        // the route ran"; both now say what actually happens, which is
+                                        // that only this accessory was left alone.
                                         //
                                         // Whether an s88-fired route SHOULD go on driving trains over
                                         // ironwork it did not set is Adam's question, not this
                                         // comment's - put to him as part of RGN-B2.  What is not in
                                         // doubt is that he has to be able to tell which of the two
                                         // happened, and until today he could not.
-                                        skipAccessories = true;
-
                                         continue;
                                     }
                                 }

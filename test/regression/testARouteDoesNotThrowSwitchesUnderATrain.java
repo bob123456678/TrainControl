@@ -134,7 +134,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
         // AND THE CONTROL: the s88 door is not what changed, and must not become a question.
         assertEquals(MarklinRoute.respondToConflict(false, false),
-            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            MarklinRoute.ConflictResponse.SKIP_THIS_ACCESSORY,
             "the unattended door started cancelling, so an s88 route that cuts the power would stop "
             + "cutting it");
     }
@@ -178,14 +178,14 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         // THE AUTO DOOR, unchanged and load-bearing: no dialog, the ironwork left alone, everything
         // else still run - which is how a route that cuts the power still cuts it.
         assertEquals(MarklinRoute.respondToConflict(false, false),
-            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            MarklinRoute.ConflictResponse.SKIP_THIS_ACCESSORY,
             "an s88-fired route cancelled itself over a conflict.  Nobody is there to be asked, and "
             + "the emergency stop it may carry has to run (MT-247)");
 
         // AND THE ANSWER IS IGNORED WHEN THERE IS NOBODY TO GIVE IT, so a stray true cannot make the
         // unattended door behave like the attended one.
         assertEquals(MarklinRoute.respondToConflict(false, true),
-            MarklinRoute.ConflictResponse.SKIP_ACCESSORIES,
+            MarklinRoute.ConflictResponse.SKIP_THIS_ACCESSORY,
             "with nobody to ask, an answer of yes was acted on anyway");
     }
 
@@ -930,15 +930,19 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * trigger naturally has, was refused entirely because of the turnout. The emergency stop did not
      * run, with nobody present, on the door that fires by itself.
      *
-     * "Refused whole" is a good argument about accessories: setting three switches of five leaves the
-     * layout in a state nobody chose. It is not an argument for suppressing a stop, which is safe to
-     * obey whatever else is true. So the accessories go as a group and everything else runs.
+     * "Refused whole" was never an argument for suppressing a stop, which is safe to obey whatever
+     * else is true. So the held accessory is skipped and everything else in the route runs.
+     *
+     * **Accessories used to go as a GROUP here, and MT-247 made the refusal per command.** That does
+     * not touch this test - the route it fires has one accessory - and the point it pins is unchanged:
+     * a refusal, whatever its grain, must not take the stop with it.
+     * `testAConflictSkipsOnlyTheSwitchUnderTheTrain` is where the grain itself is held.
      *
      * Found by the pass that validated the guard, which measured `getPowerState()` afterwards rather
      * than reasoning about it.
      *
-     * MUTATION: making the refusal `return` instead of setting `skipAccessories` fails this test - the
-     * power stays on.
+     * MUTATION: making the refusal `return` instead of `continue` fails this test - the power stays
+     * on.
      */
     @Test
     public void testTheStopInARefusedRouteStillRuns() throws Exception
@@ -991,8 +995,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
             // FIRED AUTOMATICALLY, which is the door this rule is about.
             //
-            // `skipAccessories = auto && conflict != null` - so with `auto` false the whole rule is
-            // switched off and this assertion ran down a branch where nothing could be discarded. A
+            // The refusal only happens at the unattended door - so with `auto` false the whole rule
+            // is switched off and this assertion ran down a branch where nothing could be
+            // discarded. A
             // reviewer checked the whole corpus: every execRoute in the suite passed false, so the
             // safety behaviour being asserted here - a route carrying an emergency stop is not thrown
             // away whole - was never actually exercised. Restoring the original defect at the
@@ -1228,16 +1233,21 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * whose turnout IS on a locked path, so between them the tests say what that door refuses and
      * nothing says what it does when there is nothing to refuse.
      *
-     * The rule is `skipAccessories = auto && conflict != null`. Drop the second half and every
-     * s88-triggered route stops setting anything for as long as autonomy is running - which on this
-     * railway is most of an evening, since sensors are shared and these routes were written for manual
-     * operation. Nothing would fail, because the only test of that door expects its accessory to be
-     * skipped.
+     * The rule is `heldReason(rc)`, asked of each accessory command in turn. Make it answer for every
+     * command while autonomy is running and every s88-triggered route stops setting anything for as
+     * long as a train is out - which on this railway is most of an evening, since sensors are shared
+     * and these routes were written for manual operation. Nothing else would fail, because the only
+     * other test of that door expects its accessory to be skipped.
      *
-     * So this is the other side of the same `if`: a route on a DIFFERENT accessory, one no edge
+     * So this is the other side of the same question: a route on a DIFFERENT accessory, one no edge
      * configures, fired automatically while a train is running, must set it.
      *
-     * MUTATION this catches: `skipAccessories = auto` fails this test and leaves the one above green.
+     * (Until MT-247 the rule here was `skipAccessories = auto && conflict != null`, decided once for
+     * the whole route. What that cost - one busy turnout dropping the route's other switches - is
+     * held by `testAConflictSkipsOnlyTheSwitchUnderTheTrain`.)
+     *
+     * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while
+     * autonomy runs fails this test and leaves the one above green.
      *
      * @throws Exception
      */
