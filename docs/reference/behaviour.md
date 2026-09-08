@@ -362,18 +362,36 @@ The rest of this section is about the **first** rule.
   several means the graph cannot say which.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
-- Covered squares are **greyed on the diagram** until the train moves, **on the track diagram viewer
-  only**. An editor is where the railway is arranged, and what happens to be standing on it while you
-  arrange it is a fact about right now rather than about the drawing - the same reasoning that makes
-  station names the default caption there.
-- **The wash survives a highlight.** An accessory change flashes the square it commands; when the
-  flash ends the square goes back to being greyed if it is still covered, asked again rather than
-  remembered, because the train may have moved while the highlight was showing.
-- **What is drawn is what is refused.** Coverage is recorded per EDGE and drawn per SQUARE, and at a
-  switch those are not the same thing: a train lying across a switch covers the edge it arrived along,
-  while a route taking the other pair of arms is a different edge. So a path is refused when any edge
-  it uses **shares metal** with a covered one - the lock-edge relation, which `GraphReducer` derives
-  from shared tiles. Before this the picture protected more than the railway did.
+- A train is drawn as an **orange line along the track it is standing on**, **on the track diagram
+  viewer only**, until it moves. An editor is where the railway is arranged, and what happens to be
+  standing on it while you arrange it is a fact about right now rather than about the drawing - the
+  same reasoning that makes station names the default caption there.
+- **Along the road, not over the square.** The line follows the route the train occupies through each
+  tile, which is why it replaced a grey wash on 2026-09-08. Adam: *"instead of shading the entire
+  tiles, we need to draw a line (let's say in orange) to show that the train is there. graying makes
+  it look confusing on double curve tiles."* A double-curve tile carries two roads and a train on one
+  of them was indistinguishable from a train on the other.
+- **As long as the train, not as long as the edge.** The mark walks square by square from where the
+  train stands, each square paying its own length, and stops when the train is used up. Coverage is
+  recorded per EDGE - one hop between two sensors, which can be a dozen squares - so drawing the edge
+  washed seventeen squares for a train of length one (MT-309).
+- **The mark survives a highlight.** An accessory change flashes the square it commands; when the
+  flash ends the square is asked again rather than remembered, because the train may have moved while
+  the highlight was showing.
+- **WHAT IS DRAWN IS LESS THAN WHAT IS REFUSED**, deliberately, and this is the one place where the
+  picture and the guard are meant to differ. The drawing answers *"where is the train"*; the guard
+  answers *"what may not be used"*, and the second is wider for two reasons:
+
+  - coverage is recorded per EDGE, so the whole hop between two sensors is unavailable even where the
+    train is drawn on part of it;
+  - a path is refused when any edge it uses **shares metal** with a covered one - the lock-edge
+    relation `GraphReducer` derives from shared tiles - because at a switch a train lying across it
+    covers the edge it arrived along while a route taking the other pair of arms is a different edge.
+
+  **So a square with no orange on it may still be refused.** Until 2026-09-08 the two agreed by
+  construction and the document said "what is drawn is what is refused"; the drawing was narrowed to
+  answer Adam's question about double curves, and the guard was deliberately left where it was. The
+  "why not moving" view is where the refusal is explained, because the diagram no longer shows it.
 
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
@@ -438,6 +456,32 @@ is passable and reporting "no path" would be a lie about the railway to make a p
 settings.
 
 ---
+
+## 7a. A route that meets a train
+
+A route is a list of commands - accessories, functions, locomotive speeds, the power. Any of its
+switches may sit on track a train is standing on or has reserved, and throwing one there moves metal
+under a train.
+
+**Only the switch under the train is refused. Everything else in the route runs.** Adam, 2026-09-08:
+*"don't run the conflicting switch commands, but do run the power off and others."* Each accessory is
+asked about immediately before it goes out, so one held turnout costs that turnout and nothing else -
+the power still cuts, the functions still fire, and every other switch is thrown. Until MT-247 the
+question was asked once, before the loop, about the FIRST held command, and every accessory in the
+route was then skipped: one turnout under a train silently dropped all the others.
+
+**Who is asked depends on who started it.**
+
+- **A person started it.** The dialog stands. *"Cancel should cancel everything. OK should fire
+  everything."* Cancel abandons the whole route - not one command goes out. OK fires the whole route,
+  including the switch under the train, because the operator has looked at the railway and said so.
+- **A trigger started it** - an s88 or a condition, with nobody watching. No dialog: there is nobody
+  to answer it, and a modal dialog raised by the railway is a dialog nobody sees. A line is written to
+  the log instead, and the route runs without the held switches.
+
+**An emergency stop is obeyed whatever else is true.** A route carrying a stop is never refused at a
+human door and never has its stop skipped (SVN-A4). Suppressing a stop is the one refusal that can
+make things worse, and a route that contains one is a route somebody wants to happen now.
 
 ## 8. Things that are true of the whole system
 
