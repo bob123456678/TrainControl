@@ -1230,21 +1230,28 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The autonomy editor's caption switch remembers itself.
+     * The caption choice remembers itself and rebuilds the diagram.
      *
-     * FR-030: "have an option to switch between showing station name and parked train in the labels."
-     * Off by default - the station's own name - and persisted, because a view preference that resets
-     * every time the window opens is one the user sets again every time the window opens.
+     * A caption's text is decided when the grid is BUILT, so a control that changed the setting and
+     * only repainted would appear to do nothing at all until something else happened to rebuild.
+     * That is the property worth pinning and it has not changed.
      *
-     * The rebuild matters as much as the flag. A caption's text is decided when the grid is BUILT, not
-     * when it is painted, so a switch that changed the flag and repainted would appear to do nothing
-     * until the next time something else rebuilt the diagram.
+     * **What changed is the control** (FR-061, 2026-09-07). This drove `getShowParkedTrains()`, a tick
+     * box that is no longer mounted anywhere: what a caption says is one dropdown now, with four
+     * options that exclude each other, and the two boxes survive only as the internal representation
+     * that the drawing code reads. Clicking an unmounted box changed a field and rebuilt nothing, so
+     * this test failed - correctly, and for a reason that was about the test rather than the railway.
+     *
+     * Driving the dropdown instead is not a weakening: it is the control a person actually has, and
+     * asserting through it covers the box as well, because the box is set from it.
      *
      * MUTATION: dropping the onDiagramChanged call from the listener fails the rebuild assertion;
      * dropping the preference write fails the last one.
+     *
+     * @throws Exception on a failure to build the panel
      */
     @Test
-    public void testTheCaptionSwitchRemembersItselfAndRebuilds() throws Exception
+    public void testTheCaptionChoiceRemembersItselfAndRebuilds() throws Exception
     {
         org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
@@ -1262,26 +1269,38 @@ public class testDiagramLooksRight
 
         // WHETHER IT WAS STORED, not what the accessor answers (TSX-B3).
         //
-        // This one is the sharp version: the click below WRITES the preference, so a machine that had
-        // never set it ends up with it set - and putting `was` back writes the accessor's default,
-        // which is not the same as leaving it alone.  The key lives in the panel's own node, so the
-        // test reaches for that node rather than TrainControlUI's.
+        // Selecting below WRITES the preference, so a machine that had never set it ends up with it
+        // set - and putting the old value back writes the default, which is not the same as leaving
+        // it alone. The key lives in the panel's own node.
         java.util.prefs.Preferences viewPrefs = java.util.prefs.Preferences.userNodeForPackage(
             org.traincontrol.gui.AutonomyEditorPanel.class);
 
-        boolean captionTrainsStored = viewPrefs.get("autonomyEditorCaptionTrains", null) != null;
+        boolean modeStored = viewPrefs.get("autonomyEditorCaptionMode", null) != null;
 
-        boolean was = panel[0].isShowingParkedTrains();
+        final javax.swing.JComboBox<String> choice = panel[0].getCaptionChoice();
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].getShowParkedTrains().doClick());
+        final int was = choice.getSelectedIndex();
 
-        assertNotEquals(panel[0].isShowingParkedTrains(), was,
-            "pressing the switch did not change what the captions are asked for");
+        // Any option but the current one. Parked rather than None, so the box the drawing code reads
+        // changes too and the assertion below is about both halves.
+        final int wanted = was == org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED
+            ? org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_HOMES
+            : org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED;
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> choice.setSelectedIndex(wanted));
+
+        assertEquals(choice.getSelectedIndex(), wanted,
+            "selecting a caption option did not take");
+
+        assertEquals(panel[0].isShowingParkedTrains(),
+            wanted == org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED,
+            "the choice did not reach the flag the drawing code reads, so the menu says one thing and"
+            + " the captions draw another");
 
         assertTrue(rebuilds[0] > 0,
-            "the switch changed the setting without rebuilding the diagram. A caption's text is "
-            + "decided when the grid is built, so the switch would appear to do nothing at all until "
-            + "something else happened to rebuild it");
+            "the choice changed the setting without rebuilding the diagram. A caption's text is"
+            + " decided when the grid is built, so it would appear to do nothing at all until"
+            + " something else happened to rebuild it");
 
         // A second panel, built fresh, is the only honest way to ask whether it was remembered.
         final org.traincontrol.gui.AutonomyEditorPanel[] again =
@@ -1290,21 +1309,18 @@ public class testDiagramLooksRight
         javax.swing.SwingUtilities.invokeAndWait(() ->
             again[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> {}));
 
-        boolean remembered = again[0].isShowingParkedTrains();
+        int remembered = again[0].getCaptionChoice().getSelectedIndex();
 
         // Put it back before asserting, so a failure here does not leave the operator's own setting
-        // flipped.
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            if (panel[0].isShowingParkedTrains() != was) panel[0].getShowParkedTrains().doClick();
-        });
+        // changed.
+        javax.swing.SwingUtilities.invokeAndWait(() -> choice.setSelectedIndex(was));
 
         // And if nothing was stored before this test ran, nothing is stored after it.
-        if (!captionTrainsStored) viewPrefs.remove("autonomyEditorCaptionTrains");
+        if (!modeStored) viewPrefs.remove("autonomyEditorCaptionMode");
 
-        assertNotEquals(remembered, was,
-            "a new editor came up with the old setting, so the switch is not persisted and has to be "
-            + "set again every time the window is opened");
+        assertEquals(remembered, wanted,
+            "a new editor came up with the old choice, so it is not persisted and has to be set again"
+            + " every time the window is opened");
     }
 
     /**
