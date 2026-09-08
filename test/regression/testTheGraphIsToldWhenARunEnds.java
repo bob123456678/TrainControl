@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
@@ -54,11 +55,29 @@ public class testTheGraphIsToldWhenARunEnds
 
     private static int locCounter = 0;
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // BEFORE the model (OB-111): `init` reads the machine-global layout preference, and on the
+        // operator's machine that names his real railway - which the suite then reads, writes back
+        // with different line endings, and can raise a modal dialog over.
+        //
+        // This class was written on 2026-09-08 without one, which
+        // `testSwitchingToACentralStationLayout` reported at once: it pins the classes that still
+        // build a model bare, and its own instruction for a NEW one is to give it a sandbox rather
+        // than to add it to the list.
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
         model.stop();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass()
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**

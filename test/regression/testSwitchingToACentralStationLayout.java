@@ -694,8 +694,19 @@ public class testSwitchingToACentralStationLayout
         // The number is deliberately a hard count rather than a floor: a class that builds a window
         // opens the operator's railway if it gets the sandbox wrong, so each new one is worth a moment
         // of somebody's attention rather than a silently rising number.
-        assertEquals(checked, 23,
-            checked + " test classes were found to build a window, not the 23 there were when this "
+        // TWENTY-FIVE since 2026-09-08, and the two that arrived both assert on what is DRAWN,
+        // which is the only way either defect could be seen:
+        //
+        // - `regression.testTheHomeLabelIsDrawnOnce` (MT-337) - a station named twice drew its home
+        //   locomotive twice, once on the tile and once on the offset label.  Nothing about the model
+        //   is wrong in that state, so it is counted off the built captions in a real `LayoutGrid`.
+        // - `regression.testTheDiagramIsNotRebuiltForAnArrow` (MT-334) - "it still flickers, but
+        //   less".  A rebuild replaces every `LayoutLabel` and an annotation refresh does not, so the
+        //   assertion is object identity across a real editor's tiles.
+        //
+        // Both open their sandbox before the model, as the rule above requires.
+        assertEquals(checked, 25,
+            checked + " test classes were found to build a window, not the 25 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 
