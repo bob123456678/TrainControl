@@ -1768,7 +1768,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-                captionChoice.setMaximumSize(new java.awt.Dimension(200, 24));
+
+                // PREFERRED as well as maximum, and narrower than the Track Directions box below
+                // (Adam: "the dropdown has made the panel too wide - reduce width by about 20px").
+                //
+                // A maximum alone does not do it: BoxLayout caps the WIDTH at the maximum but the
+                // column still takes its preferred width from the widest child, and this combo
+                // prefers whatever "Parked Locomotives" needs plus the arrow. Setting both makes the
+                // sidebar as wide as the sidebar was.
+                captionChoice.setPreferredSize(new java.awt.Dimension(180, 24));
+                captionChoice.setMaximumSize(new java.awt.Dimension(180, 24));
 
                 visibility.add(captionChoice);
                 javax.swing.JLabel directionsLabel =
