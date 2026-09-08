@@ -495,6 +495,15 @@ if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the sa
 
 OB-174 is currently only partially fixed.  fully address it by adding a "Text Labels" label and dropdown right above Track Directions, with the following options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be default, with the setting remembered between open.
 
+### OB-179 - 2026-09-07 - show coordinates clutter
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-07 20:33  
+**Build:** commit 409d4ce8, build\classes, compiled 07 Sep 20:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+hide the "show coordinates" right click menu option in the autonomy and track editors, make "coordinates on" be default, as this is tied to "show grid" option and will be toggled on and off together with the grid.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -510,6 +519,11 @@ not, never both.
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
 | 2026-09-07 | FR-061 | feature request | what a caption says is one **Text Labels** dropdown above Track Directions - Station Names (default, remembered), Parked Locomotives, Home Locomotives, None - replacing a master switch and two boxes that were not independent of it | fixed unvalidated | - |
+| 2026-09-06 | OB-178 | bug | a route with auto-fire unchecked and a blank s88 refused to save, demanding an integer; blank now reads as 0 | fixed unvalidated | - |
+| 2026-09-05 | OB-177 | bug | the "<locomotive> is facing" menu showed nothing ticked when the recorded facing was one the square cannot hold; it now lists that facing too, so the menu says what the train is down as | fixed unvalidated | - |
+| 2026-09-05 | OB-176 | bug | the track-length box is selected when its dialog opens | fixed unvalidated | - |
+| 2026-09-04 | OB-175 | bug | the incoming arrow on a curved sensor tile overlapped the track; it sits in the lower-right corner now | fixed unvalidated | - |
+| 2026-09-04 | OB-174 | bug | ticking "show parked trains" left the captions hidden if Text Labels was off. **Superseded by FR-061**, which replaced the switch and its two boxes with one dropdown whose four options exclude each other - there is no longer a state that needs correcting | fixed validated | - |
 | 2026-09-04 | FR-060 | feature request | back a train into a parking track, with a new parking designation to say which stations those are | needs test | - |
 | 2026-09-04 | OB-173 | bug | the editor opened behind other windows on the first open; it now raises itself as the second open always did | - | [MT-268](tests.md#mt-268) |
 | 2026-09-04 | OB-172 | bug | one missing square could delete an axis number; the ruler now looks in three rows, and the numbers follow the grid setting | - | [MT-268](tests.md#mt-268) |
