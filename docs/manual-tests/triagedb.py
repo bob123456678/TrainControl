@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS issue (
     block       TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS finding (
+    ref         TEXT NOT NULL,      -- MON-C1, RGD-B2, DD-A7 - the citation the code uses
+    document    TEXT NOT NULL,      -- the review it was written in
+    line        INTEGER,            -- where in that document, so the prose is one jump away
+    severity    TEXT,               -- A / B / C / D as the review graded it
+    title       TEXT,               -- the finding's own heading: its author's one-line summary
+    disposition TEXT,               -- Open / Fixed / Cancelled / Ruled, wherever the document says it
+    evidence    TEXT,               -- the first `File.java:123` the body cites
+    commit_id   TEXT,               -- the first commit id the body cites
+    cited_by    TEXT,               -- source files that name this ref, comma-separated
+    PRIMARY KEY (ref, document)     -- nine refs mean different things in different reviews
+);
+
+CREATE INDEX IF NOT EXISTS finding_by_ref ON finding (ref);
+CREATE INDEX IF NOT EXISTS finding_by_disposition ON finding (disposition);
+
 CREATE INDEX IF NOT EXISTS test_by_disposition ON test (disposition);
 CREATE INDEX IF NOT EXISTS verdict_by_tag ON verdict (tag, seq);
 """
@@ -208,6 +224,76 @@ def connect(path=DB_FILE):
 
     return conn
 
+
+def load_findings(conn, rows):
+    """Replaces the finding catalogue with what the scanner found.
+
+    Adam, 2026-09-08, ruling on MON-C11 - a review folder of 143 documents that could no longer say
+    who needed to do what: *"update our MT triage database to catalog each review item.  Now, no
+    reference will ever be stale or lost, but useless prose will go away... Expand the database to
+    capture the line number/commit ID/filename of each issue."*
+
+    Replaced wholesale rather than merged, for the same reason `build` replaces the tests: the
+    documents are the source and a row that has disappeared from them should disappear from here.
+
+    :param conn: an open connection
+    :param rows: dicts from `docs/tools/catalog-findings.py`
+    :return: how many were stored
+    """
+    conn.execute("DELETE FROM finding")
+
+    for r in rows:
+        conn.execute(
+            "INSERT OR REPLACE INTO finding"
+            " (ref, document, line, severity, title, disposition, evidence, commit_id, cited_by)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (r.get("ref"), r.get("document"), r.get("line") or None, r.get("severity"),
+             r.get("what"), r.get("disposition"), r.get("where") or None,
+             r.get("commit") or None,
+             ",".join(sorted(r.get("cited", []))) or None))
+
+    conn.commit()
+
+    return len(rows)
+
+
+def findings(conn, ref=None, disposition=None, severity=None, cited=None):
+    """The catalogue, filtered.
+
+    :param conn: an open connection
+    :param ref: one citation, exactly
+    :param disposition: a substring - "Open", "Fixed"
+    :param severity: A, B, C or D
+    :param cited: True for only those something in src/ or test/ names
+    :return: rows
+    """
+    where = []
+    args = []
+
+    if ref:
+        where.append("ref = ?")
+        args.append(ref)
+
+    if disposition:
+        where.append("disposition LIKE ?")
+        args.append("%" + disposition + "%")
+
+    if severity:
+        where.append("severity = ?")
+        args.append(severity)
+
+    if cited:
+        where.append("cited_by IS NOT NULL")
+
+    sql = "SELECT ref, document, line, severity, title, disposition, evidence, commit_id, cited_by"
+    sql += " FROM finding"
+
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+
+    sql += " ORDER BY ref"
+
+    return [dict(r) for r in conn.execute(sql, args)]
 
 def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     """Fills the store from the markdown, replacing whatever was in it.

@@ -184,6 +184,7 @@
         <test-one-class class="testRouteEditorRoundTripCases"/>
         <test-one-class class="testBarredArrivalIsNotADestination"/>
         <test-one-class class="testEveryTestIsInTheBattery"/>
+        <test-one-class class="testEveryCitationResolves"/>
         <test-one-class class="testAutonomyLabelShowsLocomotiveName"/>
         <test-one-class class="testCancelRestoresPlacements"/>
         <test-one-class class="testDataSafetyRoundTrips"/>

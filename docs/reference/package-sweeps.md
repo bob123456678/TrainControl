@@ -11,12 +11,12 @@ findings turned out to be bundles of their own.
 Two had no row, no id and no disposition anywhere, inside a bundle the document declared closed.  Both
 were adjudicated on 2026-09-08:
 
-- **C19d, the case-sensitive command names.**  Fixed.  `Feedback` was matched through `toLowerCase()`
+- **`WP-C19d`, the case-sensitive command names.**  Fixed.  `Feedback` was matched through `toLowerCase()`
   and every other command with `equals`, so "feedback 12,1" parsed and "emergency stop" did not, in the
   same file typed by the same person.  All command names accept any case now; the exporter still writes
   the canonical spelling, so no existing route changes meaning.  `testACommandParsesWhateverCaseItIsTypedIn`
   pins it, including that Feedback stays forgiving - the direction this ruling did not go.
-- **C19f, the orphaned javadoc.**  Already fixed, and recorded at the head of the source review: it was
+- **`WP-C19f`, the orphaned javadoc.**  Already fixed, and recorded at the head of the source review: it was
   "reattached in passing, as its method was being deleted anyway".  Not a missing adjudication so much
   as one filed in the prose instead of the table.
 
