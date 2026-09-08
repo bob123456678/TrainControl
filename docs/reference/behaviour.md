@@ -72,7 +72,11 @@ its direction**. Three kinds of square matter:
   turning copy's only outgoing edges leave by the side the train arrived from, so *not* turning is
   not an available outcome — it drives the train forward off its reserved path.
 - **A may-reverse square** (`canReverse` on the tile). The build splits it into a plain copy and a
-  turning one. Autonomy turns only where the setup says. **Manual always asks.**
+  turning one. Autonomy turns only where the setup says. **A manual send asks** - but not
+  unconditionally, and this bullet read "Manual always asks" until 2026-09-08. *The question, and when
+  it is asked* below is the authority, and it has carried at least one exception since 2026-09-07: a
+  journey ending at a terminus is not asked about at all, and `ManualReversalPrompt.forJourney`
+  returns before the dialog for one.
 
 **A terminus is a station; a compulsory turn is not.** The distinction is what each is *for*, and it
 decides whether trains are sent there:
@@ -119,8 +123,15 @@ copy, may-reverse ones included, because a may-reverse square here is a dead end
 a dead end is deliberately not emitted. The complexity is paid in the code and not in the graph.
 Following the edges is a real option - it moves the same state from the graph into the search - but it
 would not remove the facing property, only the specific failure of picking the wrong copy, and it
-touches everything that reads the graph. Recommendation: not now, not ruled out, and
-`testEverySquareOnThisLayoutBuildsToOneCopy` is the tripwire that says when to look again.
+touches everything that reads the graph. Recommendation: not now, not ruled out.
+
+**And the tripwire named for it does not exist** (checked 2026-09-08).
+`testEverySquareOnThisLayoutBuildsToOneCopy` is cited as the guard here, in
+`docs/reference/two-copies-evaluation.md` twice, and in
+`test/core/testTheAutoTierScopeMatchesTheRuntime.java`, and there is no such class or method anywhere
+under `test/`. `regression.testEveryCitationResolves` resolves review-finding ids and not test names,
+so nothing caught it. Until somebody writes it, nothing says when a square on this railway starts
+building to two copies - which is the one measurement the decision above rests on.
 
 ### The question, and when it is asked
 
@@ -424,11 +435,17 @@ limit is stated here (MON-C13):
    positive number and the sum reads it as a measured segment. The total then under-counts and refuses
    trains that fit - the same failure the total-of-what-is-measured ruling removed, one layer further
    down.
-2. **It may be summing the wrong segments.** It adds the whole path. Where a train backs in after
-   turning part way along, the track it comes to rest on is only the part after the reversal - so a
-   10 + 1 + 2 path admits an eight-unit train into three units of room. Adam's words were "sum the
-   track segments leading up to it"; whether *it* means the reversal or the berth is the question that
-   has to go back to him.
+2. **It may be summing the wrong segments.** The walk runs backwards from the berth and stops at the
+   last SWITCH; it does not stop at a REVERSAL. Where a train backs in after turning part way along,
+   the track it comes to rest on is only the part after the reversal - so on a route with no switch
+   between the turn and the berth, a 10 + 1 + 2 path admits an eight-unit train into three units of
+   room. Adam's words were "sum the track segments leading up to it"; whether *it* means the reversal
+   or the berth is the question that has to go back to him.
+
+   This bullet said "It adds the whole path" until 2026-09-08, which is only true of a switch-free
+   route: `Layout.measuredRoomAtTheBerth` returns at the first edge it meets, walking back, whose
+   `crossesASwitch()` is true. The defect is the missing stop at the turn, not a missing stop
+   altogether - which matters, because the two would be fixed in different places.
 
 The first refuses trains that would fit, which is safe and annoying. The second admits trains that do
 not, which is neither - it is the one of the pair worth ruling on first.
@@ -533,8 +550,20 @@ route was then skipped: one turnout under a train silently dropped all the other
 **Who is asked depends on who started it.**
 
 - **A person started it.** The dialog stands. *"Cancel should cancel everything. OK should fire
-  everything."* Cancel abandons the whole route - not one command goes out. OK fires the whole route,
-  including the switch under the train, because the operator has looked at the railway and said so.
+  everything."* OK fires the whole route, including the switch under the train, because the operator
+  has looked at the railway and said so. Cancel abandons **the rest** of the route, and how much that
+  is depends on which of the two questions was answered:
+
+  - the screen asked **before** the route starts refuses it outright - `askAboutRouteConflict` returns
+    `REFUSED` and neither caller then calls `execRoute`, so not one command goes out;
+  - the question raised by a conflict that **appears while the route runs** stops it where it stands.
+    `MarklinRoute.execRoute` returns from inside its own command loop, so every command earlier in the
+    list has already gone out and stands - a stop already obeyed, an accessory already thrown. The
+    code says so where it happens: *"once a command is refused the ones already sent stand, because
+    they went out before the conflict existed."*
+
+  This bullet read "Cancel abandons the whole route - not one command goes out" until 2026-09-08. That
+  is true of the first door and false of the second, which is the door the paragraph above is about.
 - **A trigger started it** - an s88 or a condition, with nobody watching. No dialog: there is nobody
   to answer it, and a modal dialog raised by the railway is a dialog nobody sees. A line is written to
   the log instead, and the route runs without the held switches.
