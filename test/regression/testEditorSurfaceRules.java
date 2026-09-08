@@ -1459,32 +1459,34 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The arrival side is written and read in ONE vocabulary (MON-A1).
+     * The arrival side is written and read in ONE vocabulary - the BUILD’s (OB-182, MON-A1).
      *
-     * `arrivedFrom` is written by three doors and consumed by one walk, and they have to agree about
-     * what "N" means. Two answers are available and they differ on a curve:
+     * `arrivedFrom` is written by the arrival and by three operator doors, and consumed by the walk
+     * that blocks the track behind a standing train. They have to agree about what "N" means, and two
+     * answers were available:
      *
      * - **the geometry** - `Layout.sideTowards`, the compass direction of the neighbouring POINT. A
-     *   Point is the far end of a reduced edge that can run several tiles and turn corners, so a rail
+     *   Point is the far end of a reduced run that can cross several tiles and turn corners, so a rail
      *   leaving north and curving east reaches a neighbour lying east and this answers "E".
-     * - **the build** - the reduced edge's entry side, which is the side the metal actually leaves by
-     *   and is what the builder splits the square on.
+     * - **the build** - the reduced edge’s entry side, the side the metal actually comes in by, which
+     *   is what the builder splits the square on.
      *
-     * **The build's is the right answer and the model cannot read it**, which is the whole of this
-     * test. `Layout.executePathInternal` writes the geometric side on arrival, and
-     * `edgesCoveredByStandingTrains` matches the stored side against the geometric side and `break`s
-     * on a miss. For one afternoon the two operator doors wrote the build's answer instead: the offered
-     * labels became correct, no candidate matched on a curve, the tail walk stopped at the first hop,
-     * and **the track behind the train was not blocked at all**. A wrong label is cosmetic; a
-     * protection that silently does nothing is not.
+     * Adam met the difference twice: a paste prompt offering the wrong pair, and *"placing a train on
+     * bottommainc asks about arrival from the west or the north, whereas it should be east or west"*
+     * (OB-182).
      *
-     * So all four speak the geometry until the entry side can reach the model - carried into the built
-     * configuration by `AutonomyBuilder`, which already has it in scope where it emits an edge, and
-     * read by both the arrival write and the tail walk. That change wants a fixture with a CURVE in it,
-     * which this suite does not have; every hand-built layout is a straight row of points, which is
-     * exactly why this could be introduced and pass.
+     * **The first attempt corrected the doors alone and had to be reverted the same day.** The labels
+     * became right, the walk went on matching the geometry, nothing matched on a curve, and the track
+     * behind a standing train was not blocked at all. A wrong label is cosmetic; a protection that
+     * silently does nothing is not.
      *
-     * MUTATION: passing `session.arrivalSides(...)` at either door fails this.
+     * So the build’s answer was given to the model: `AutonomyBuilder` writes `entrySide` into each
+     * emitted edge, `parseAuto` reads it onto the runtime `Edge`, and `Layout.entrySideOf` is the one
+     * definition both the arrival write and the tail walk call. The doors then speak the same language
+     * as the thing that consumes what they write.
+     *
+     * MUTATION: pointing either reader back at `sideTowards`, or handing either door `null` instead of
+     * the session’s arrival sides, fails this.
      *
      * @throws Exception on a failure to read the source
      */
@@ -1495,36 +1497,52 @@ public class testEditorSurfaceRules
             java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
             StandardCharsets.UTF_8));
 
-        // THE CONSUMER, which is what everything else has to agree with.
-        assertTrue(layout.contains("getArrivedFrom().equalsIgnoreCase(sideTowards(here, other))"),
-            "the tail walk no longer matches the stored arrival side against the geometry. If it has"
-            + " learned the build's vocabulary, that is the fix MON-A1 asks for - and the doors below"
-            + " should learn it in the same commit, not a different one");
+        // ONE DEFINITION, and both readers call it.
+        assertTrue(layout.contains("public String entrySideOf(Edge edge, Point at)"),
+            "the shared definition of which side an edge comes in by has gone, so the arrival write and"
+            + " the tail walk are each working it out again - which is the state that blocked no track"
+            + " on any curve (OB-182)");
 
-        assertTrue(layout.contains("setArrivedFrom(sideTowards(arrived,"),
-            "the arrival no longer writes the geometric side, so the writer and the walk above now"
-            + " disagree about what a side name means");
+        assertTrue(layout.contains("arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));"),
+            "the arrival no longer writes the shared answer, so what it stores and what the walk looks"
+            + " for can differ again");
 
-        // AND THE DOORS, which must not hand the prompt the build's answer while the walk reads the
-        // geometry - that combination blocks nothing on a curve and looks entirely correct.
+        assertTrue(layout.contains("String cameInBy = entrySideOf(candidate, here);"),
+            "the tail walk no longer reads the shared answer, so a side written correctly by the"
+            + " arrival matches nothing and the track behind the train stays open");
+
+        // AND THE BUILD ACTUALLY SUPPLIES IT, or entrySideOf falls back to the geometry everywhere and
+        // the three assertions above are satisfied by a program that has changed nothing.
+        String builder = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomyBuilder.java")),
+            StandardCharsets.UTF_8));
+
+        assertTrue(builder.contains("json.put(\"entrySide\", edge.getEntrySide().name())"),
+            "the builder no longer writes the entry side into the configuration, so every edge falls"
+            + " back to the geometry and the fix is inert while looking present");
+
+        assertTrue(layout.contains("e.setEntrySide(edge.getString(\"entrySide\"))"),
+            "the configuration carries the entry side and parseAuto does not read it, so the model"
+            + " never sees it");
+
+        // AND THE DOORS OFFER IT.  A door handing null gets the geometric list, which is the answer
+        // Adam reported as wrong.
         String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
             StandardCharsets.UTF_8));
 
-        assertFalse(ui.contains("getAutonomySession().arrivalSides(aimed)"),
-            "the paste door hands the prompt the BUILD's arrival sides while the tail walk still reads"
-            + " the geometry. The operator answers, the answer is stored, and on a curved approach the"
-            + " walk matches nothing and the track behind the train stays clear (MON-A1)");
+        assertTrue(ui.contains("getAutonomySession().arrivalSides(aimed)"),
+            "the paste door offers the geometric sides again - the side a NEIGHBOUR lies on rather than"
+            + " the side the track comes in by, which is OB-182 as reported");
 
         String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
             StandardCharsets.UTF_8));
 
-        assertFalse(panel.contains("sidesOf(session.arrivalSides(target))"),
-            "the arrived-from menu writes the build's side while the walk reads the geometry, so a"
-            + " tail set by hand on a curved approach blocks nothing (MON-A1)");
+        assertTrue(panel.contains("sidesOf(session.arrivalSides(target))"),
+            "the arrived-from menu offers the geometric sides again, so it and the paste prompt can"
+            + " name different sides for the same square");
     }
-
     /**
      * One menu holds both ends of the train, headed, and the viewer gets it too.
      *

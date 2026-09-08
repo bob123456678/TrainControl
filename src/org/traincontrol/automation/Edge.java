@@ -297,6 +297,51 @@ public class Edge
     }
     
     /**
+     * The side of the END point this edge comes in by, as the BUILD names it.
+     *
+     * **Two vocabularies used to describe one thing, and only one of them blocked track.** A Point is
+     * the far end of a reduced run that may cross several tiles and turn corners, so the compass
+     * direction of the NEIGHBOURING POINT - which is what `Layout.sideTowards` answers - is not the
+     * side the metal actually leaves by. A rail leaving north and curving east reaches a neighbour
+     * lying east: the geometry says "E" and the track says "N". On a straight they agree, which is why
+     * it survived everywhere anybody looked.
+     *
+     * Adam met both halves of it: *"placing a train on bottommainc asks about arrival from the west or
+     * the north, whereas it should be east or west"* (OB-182), and before that the same square offering
+     * the wrong pair on a paste. The doors were corrected once to read the build and reverted the same
+     * day - because `arrivedFrom` is CONSUMED by `edgesCoveredByStandingTrains`, which matched it
+     * against the geometry, so correct labels meant nothing matched on a curve and the track behind a
+     * standing train stopped being blocked at all.
+     *
+     * So the answer is not to pick a side but to give the model the one the builder already has. The
+     * builder knows this when it emits the edge; it travels in the configuration; and the arrival
+     * write, the tail walk and the operator doors all read it. One vocabulary rather than two that
+     * have to agree.
+     *
+     * Null for a configuration written before this existed, and for one built by hand in a test. Every
+     * reader falls back to the geometry when it is null, which is exactly the old behaviour - so an
+     * old file keeps working and is wrong in the way it has always been wrong, rather than newly
+     * blocking nothing.
+     */
+    private String entrySide = null;
+
+    /**
+     * @return the side of the end point this edge enters by, or null when the build did not say
+     */
+    public String getEntrySide()
+    {
+        return this.entrySide;
+    }
+
+    /**
+     * @param entrySide the side of the end point this edge enters by
+     */
+    public void setEntrySide(String entrySide)
+    {
+        this.entrySide = entrySide;
+    }
+
+    /**
      * Returns the edge length
      * @return 
      */

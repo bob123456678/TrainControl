@@ -6037,26 +6037,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 facingAtTheLanding == null ? null : facingAtTheLanding.name(),
-            // THE GEOMETRIC SIDES, deliberately, until the model can speak the other vocabulary
-            // (MON-A1, 2026-09-07).
+            // THE BUILD’S SIDES, and now the model reads them too (OB-182, 2026-09-08).
             //
-            // Reading the sides off the BUILD is right - a rail leaving north and curving east
-            // reaches a neighbour lying east, and the geometry names the neighbour - and for one
-            // afternoon this door did that. But `arrivedFrom` is CONSUMED by the tail walk in
-            // `Layout.edgesCoveredByStandingTrains`, which matches the stored side against
-            // `sideTowards` - the geometry. Feeding it the build's answer meant no candidate
-            // matched on a curve, the walk broke at the first hop, and the tail blocked NOTHING.
+            // Adam: "placing a train on bottommainc asks about arrival from the west or the north,
+            // whereas it should be east or west."  The geometric answer names where the neighbouring
+            // POINT lies, and a reduced run turns corners on the way, so on a curve it is not the side
+            // the track comes in by.
             //
-            // A wrong label is a cosmetic fault; a protection that silently does nothing is not,
-            // so this waits. The real fix is to carry the reduced edge's entry side into the built
-            // configuration and have both the arrival write and the tail walk read it, which makes
-            // one vocabulary rather than two agreeing ones - and it wants a fixture with a curve
-            // in it, which the suite does not yet have.
-                mayTurnHere(aimed), this, null);
+            // This door was corrected once before and REVERTED the same day, because `arrivedFrom` is
+            // consumed by `Layout.edgesCoveredByStandingTrains`, which was matching against the
+            // geometry - so the label became right, nothing matched on a curve, and the track behind a
+            // standing train stopped being blocked.  The fix now is underneath: the builder writes the
+            // entry side into the configuration and `Layout.entrySideOf` is what both the arrival write
+            // and the tail walk read.  One vocabulary, so this can safely speak it.
+                mayTurnHere(aimed), this,
+                getAutonomySession() == null ? null : getAutonomySession().arrivalSides(aimed));
 
             if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
                 this.model == null ? null : this.model.getAutoLayout(), point,
-                mayTurnHere(aimed), null))
+                mayTurnHere(aimed), getAutonomySession() == null
+                    ? null : getAutonomySession().arrivalSides(aimed)))
             {
                 // Nothing moved, and the clipboard still holds it, so the next square accepts the
                 // same paste.  A dismissed question leaves the railway exactly as it was.

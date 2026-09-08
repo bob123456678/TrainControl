@@ -356,9 +356,19 @@ public class testATrainCoversTheTrackBehindIt
         String flat = source.replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
-            "arrived.setArrivedFrom(sideTowards(arrived, path.get(path.size() - 1).getStart()));"),
+            "arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));"),
             "the arrival no longer records which way the train came in, so nothing knows where any"
             + " tail lies until somebody sets it by hand");
+
+        // AND IT IS THE SAME RULE THE WALK READS BACK (OB-182).
+        //
+        // This used to pin `sideTowards` here, which names where the neighbouring POINT lies. A
+        // reduced run turns corners, so on a curve that is not the side the track comes in by - and
+        // the operator doors were offering the other answer. Correcting the doors alone made the walk
+        // match nothing and block no track at all, so the two now share `entrySideOf`.
+        assertTrue(flat.contains("String cameInBy = entrySideOf(candidate, here);"),
+            "the tail walk works out the arrival side its own way again, so it can disagree with what"
+            + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 
         int written = flat.indexOf("arrived.setArrivedFrom(");
         int turned = flat.indexOf("loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection()");

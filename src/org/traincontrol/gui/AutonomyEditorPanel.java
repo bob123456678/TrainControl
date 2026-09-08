@@ -2933,11 +2933,12 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return null;
 
-        // THE GEOMETRIC SIDES, matching what the tail walk reads (MON-A1).  See the note at the paste
-        // door: the build's answer is the right one and the model cannot yet read it, so writing it
-        // here would store a side `edgesCoveredByStandingTrains` never matches and block nothing.
+        // THE BUILD’S SIDES, which the model now reads as well (OB-182).  See the note at the paste
+        // door in TrainControlUI: the entry side travels in the configuration, and `Layout.entrySideOf`
+        // is what both the arrival write and the tail walk consult - so offering it here stores a value
+        // they can match rather than one that quietly blocks nothing.
         java.util.List<String> sides = new java.util.ArrayList<>(
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point));
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(session.arrivalSides(target)));
 
         final String recorded = session.getArrivedFrom(target);
 

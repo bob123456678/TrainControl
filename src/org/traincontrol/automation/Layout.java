@@ -5450,6 +5450,37 @@ public class Layout
     }
 
     /**
+     * Which side of its END point an edge comes in by - the ONE definition, used by both readers.
+     *
+     * **The build says, and the geometry is the fallback.** `AutonomyBuilder` splits a square on the
+     * side the metal actually enters by and now writes that into the configuration, so this is simply
+     * reading back a decision already made. Where it is missing - any setup saved before 2026-09-08,
+     * and every `Layout` a test builds by hand - the compass direction of the neighbouring POINT is
+     * used instead, which is the answer this program gave for its whole life and is wrong only on a
+     * curve.
+     *
+     * **Why it has to be one method.** The side is WRITTEN on arrival and READ by the walk that blocks
+     * the track behind a standing train. When those two disagreed, the walk matched nothing on a curve
+     * and blocked nothing at all - a protection that silently does nothing, which is worse than the
+     * wrong label it was fixing. They cannot drift apart if there is one rule and both call it.
+     *
+     * @param edge the edge
+     * @param at the point being arrived at, which must be one of its ends
+     * @return the side name, or null when neither source can say
+     */
+    public String entrySideOf(Edge edge, Point at)
+    {
+        if (edge == null || at == null) return null;
+
+        // The stored side describes the END of the edge, so it only answers for a train arriving.
+        if (edge.getEnd() == at && edge.getEntrySide() != null) return edge.getEntrySide();
+
+        Point other = edge.getStart() == at ? edge.getEnd() : edge.getStart();
+
+        return other == null ? null : sideTowards(at, other);
+    }
+
+    /**
      * The track behind every standing train, which nothing else may run over.
      *
      * Adam, 2026-09-06: **"if a train protrudes far behind where it is standing, those edges it
@@ -5535,7 +5566,13 @@ public class Layout
 
                         if (other == null) continue;
 
-                        if (standingHere.getArrivedFrom().equalsIgnoreCase(sideTowards(here, other)))
+                        // THE BUILD’S SIDE where there is one - see `entrySideOf`. The written
+                        // value and this comparison have to come from the same place, and until
+                        // 2026-09-08 they did not: this asked where the neighbour LIES and the
+                        // doors offered the side the track comes in by, which differ on a curve.
+                        String cameInBy = entrySideOf(candidate, here);
+
+                        if (cameInBy != null && standingHere.getArrivedFrom().equalsIgnoreCase(cameInBy))
                         {
                             segment = candidate;
 
@@ -6628,7 +6665,10 @@ public class Layout
         //
         // The square it came FROM is the far end of the last edge, and `sideTowards` turns that into
         // the compass side the operator sees in the menu.
-        arrived.setArrivedFrom(sideTowards(arrived, path.get(path.size() - 1).getStart()));
+        // THE SAME RULE THE WALK READS BACK (OB-182).  The last leg of the path is the
+                // one it came in on, so the side it entered by is that edge’s - which the build
+                // knows exactly and the geometry only approximates.
+                arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));
 
         // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT.  Without this the track behind an empty
         // platform stays blocked by a train that drove away from it - which is worse than never
@@ -9079,6 +9119,17 @@ public class Layout
                 if (edge.has("roomAtTheEnd") && edge.get("roomAtTheEnd") instanceof Integer)
                 {
                     e.setRoomAtTheEnd(edge.getInt("roomAtTheEnd"));
+                }
+
+                // THE SIDE THE TRACK COMES IN BY, as the builder split the square on (OB-182).
+                //
+                // Optional, and absent from every configuration written before 2026-09-08. The readers
+                // fall back to the geometry when it is missing, which is the behaviour those files
+                // already have - so an old setup is no worse off, and a new one stops asking about
+                // sides its track does not have.
+                if (edge.has("entrySide") && edge.get("entrySide") instanceof String)
+                {
+                    e.setEntrySide(edge.getString("entrySide"));
                 }
 
                 if (edge.has("length"))

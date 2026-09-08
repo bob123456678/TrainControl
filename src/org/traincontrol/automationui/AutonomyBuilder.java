@@ -1067,6 +1067,19 @@ public class AutonomyBuilder
             json.put("end", pair[1]);
             json.put("length", edge.getLength());
 
+            // AND THE SIDE IT COMES IN BY, which only this end of the program knows (OB-182).
+            //
+            // The model can work out where a neighbouring POINT lies and calls that the arrival side.
+            // That is a different question: a reduced run crosses tiles and turns corners, so the
+            // neighbour can lie east of a rail that leaves by the north. Everything downstream - the
+            // side written on arrival, the walk that blocks the track behind a standing train, and the
+            // question the operator is asked when placing one by hand - was answering that different
+            // question, and disagreeing with this one on every curve.
+            //
+            // Written here because the reduction has already decided it: this is the side the square is
+            // SPLIT on, so a value that disagreed with it would be describing a copy that does not exist.
+            if (edge.getEntrySide() != null) json.put("entrySide", edge.getEntrySide().name());
+
             // AND HOW MUCH OF IT IS AFTER THE LAST SWITCH (Adam's ruling, 2026-09-02).
             //
             // "Between the switch and the station, the length must be >= length of the train", and
