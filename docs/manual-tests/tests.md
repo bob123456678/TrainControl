@@ -39,7 +39,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-278](#mt-278) | 2026-09-07 | The covered-track shading survives a flash | needs test | OB-175 follow-up (split from MT-274) |
 | [MT-279](#mt-279) | 2026-09-07 | The covered-track shading is on the viewer only | needs test | OB-175 follow-up (split from MT-274) |
 | [MT-280](#mt-280) | 2026-09-07 | Nothing may be sent across covered track | needs test | OB-175 follow-up (split from MT-274) |
-| [MT-281](#mt-281) | 2026-09-07 | The paste prompt on a curve is still wrong, deliberately - a decision, not a test | needs test | MON-A1 (split from MT-274) |
 | [MT-282](#mt-282) | 2026-09-07 | Home Locs draws nothing where no home is assigned | needs test | FR-061 (split from MT-274) |
 | [MT-283](#mt-283) | 2026-09-07 | The Text Labels dropdown fits the sidebar | needs test | FR-061 (split from MT-274) |
 | [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
@@ -85,7 +84,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 | [MT-329](#mt-329) | 2026-09-08 | The shading clears from where a train used to be | needs test | OB-180 |
-| [MT-331](#mt-331) | 2026-09-08 | OB-181, and the five-edge railway every test was standing on | needs test | OB-181 |
 | [MT-332](#mt-332) | 2026-09-08 | The arrival prompt names the sides the track really has | needs test | OB-182 |
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
@@ -15772,7 +15770,7 @@ blamed a train nowhere near it.
 
 ### MT-281 - 2026-09-07 - The paste prompt on a curve is still wrong, deliberately - a decision, not a test
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** MON-A1 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15795,6 +15793,19 @@ protection that silently does nothing is not.
 configuration so the arrival write and the tail walk share one vocabulary. It needs a test fixture
 with a curve and a switch in it, which the suite does not have - about an hour of work, and it also
 unblocks two other things. Before the release, or after?
+
+#### Comments
+
+**Claude, 2026-09-08 - no longer needed.** This asked Adam to decide whether to do the entry-side fix
+before the release or after, and described a prompt that was knowingly wrong in the meantime.
+
+It was done the same night, as OB-182: the builder writes `entrySide` into the configuration and
+`Layout.entrySideOf` is the one definition the arrival write, the tail walk and both operator doors read.
+The prompt on a curve names the sides the track really has.
+
+What to run instead: [MT-332](#mt-332) for the prompt, and [MT-333](#mt-333) for the half that matters
+more - that the track behind a standing train is still blocked, which is what the first attempt at this
+broke.
 
 ---
 
@@ -16085,6 +16096,21 @@ BottomMainPost, which makes no sense"*. It cannot be a choice: the tail walk mat
 against the geometry, so a side the menu does not list can never match, and setting it would block
 nothing. It still has to be SHOWN, or the menu opens with everything blank for a square that does have
 a tail recorded.
+
+#### Comments
+
+**Claude, 2026-09-08 - the example in this entry should no longer be reachable, which is the point.**
+
+It names "75 407 DB at BottomMainPost", where the recorded side was west and the menu offered north and
+south. That disagreement WAS the two vocabularies: the side was written by the geometry and the menu
+listed the build's. OB-182 gave both the same source, so a side recorded from now on is one the menu can
+offer.
+
+**The entry still stands**, for the case it was really about: a track edit that re-plumbs a square under a
+standing train leaves a side that no longer exists, and the menu must show it rather than opening with
+every choice blank. That is harder to reach deliberately - re-plumb a square a train is standing on - so
+read the expectation rather than hunting for it, and if you meet it in the wild it should look like the
+greyed entry described above.
 
 ---
 
@@ -16377,6 +16403,19 @@ Roughly twenty, on a railway with about 23 squares where trains turn round and s
 **The question:** is that a useful prompt or a wall of noise? If it is noise, say so and I will scope
 it - to one page, to squares with a home on them, or to nothing until you ask for it.
 
+#### Comments
+
+**Claude, 2026-09-08 - the count in this entry is out of date, the question is not.**
+
+"Roughly twenty, on a railway with about 23 squares where trains turn round and six measured tiles" was
+true when it was written. Adam re-measured his railway at 01:35 that night: the six older measurements
+are gone - `5:20,13`=4, `5:0,11`=4, `5:20,14`=2, `5:1,10`=4, `5:14,3`=3, `5:5,4`=3 - and three tiles
+carry a length now, all at one unit.
+
+Fewer measured tiles means MORE notices, not fewer, since a notice is raised for a turning square whose
+run-in is not fully measured. So the wall is if anything taller than when the question was asked. Count
+what you see rather than checking it against the twenty.
+
 ---
 
 <a id="mt-306"></a>
@@ -16427,6 +16466,22 @@ wrong number for it?
 **A known gap, worth trying if you have such a berth:** where more than one edge leads in, the train
 will NOT be refused. The notice asks for the reversing square's length and the guard needs every
 segment of the run-in measured (`FV2-C3`).
+
+#### Comments
+
+**Claude, 2026-09-08 - this entry cannot be run as written any more.**
+
+Its premise was that `BottomMainB` (4 units) and `BottomMainC` (2 units) carry recorded lengths, which is
+what made the guard live on Adam's railway without him having to set anything up. Both of those numbers
+were among the six he cleared when he re-measured at 01:35 that night.
+
+So the specific case - "send one of the 42 locomotives longer than 2 into BottomMainC" - no longer has a
+2 to be longer than. **The rule is unchanged and is covered by test**
+(`testTheLengthGuardsOnTheRealLayout` now finds a berth where the guard binds rather than naming one, and
+the boundary is asserted there), so what is lost is the hands-on confirmation rather than the rule.
+
+To run it: measure a reversal square's approach deliberately - `5:19,12`, `5:14,13` or `5:22,7` are the
+three he measured - and send a train longer than that number into it.
 
 ---
 
@@ -17063,7 +17118,7 @@ recipe was not.
 
 ### MT-331 - 2026-09-08 - OB-181, and the five-edge railway every test was standing on
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-181
 
 **Written:** 2026-09-08
@@ -17098,6 +17153,17 @@ never once run.
 
 **Nothing to do here yet.** This entry exists so the state is written down. The decision it needs is in
 the report: convert the other nineteen files and fix what turns red now, or after the release.
+
+#### Comments
+
+**Claude, 2026-09-08 - no longer needed.** This existed to write down a state, not to be run: OB-181
+unreproducible, and the five-edge railway every test was standing on.
+
+Both are gone. The fixture builds the real railway - `LayoutSandbox.wired` runs the application's own
+wiring loop, 149 edges against the five this recorded - and OB-181 turned out to be the station label and
+the facing menu reading different sources, fixed the same night.
+
+What to run instead: [MT-338](#mt-338).
 
 ---
 
