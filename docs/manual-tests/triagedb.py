@@ -663,6 +663,26 @@ def check(conn, disposition=None, verdict=None, triaged=None, reopened=None, tag
     return rows
 
 
+def stale_queue(conn):
+    """Entries sitting in Adam's queue that he has already passed.
+
+    An entry he judged `Works`, that nothing has reopened, and that still reads `needs test`. There is
+    nothing for him to do with one: he has run it, it passed, and it is taking a line in the list of
+    things he has not run.
+
+    Four were in this state on 2026-09-08, the oldest since 2026-08-24, and two carried a follow-up he
+    had raised in the same breath that was never filed as an issue - which is the reason to look at
+    these rather than just close them.
+
+    :param conn: an open connection
+    :return: the rows
+    """
+    passed = ("Works", "Works, with notes")
+
+    return [r for r in check(conn, disposition="needs test", triaged=True, reopened=False)
+            if (r["latest"] or "") in passed]
+
+
 def history(conn, tag):
     """Everything said about one test, oldest first.
 

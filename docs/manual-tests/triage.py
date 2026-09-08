@@ -254,6 +254,12 @@ class Entry(object):
             return False
 
         theirs = [m.start() for m in re.finditer(r"\*\*Claude,[^*]*\*\*", self.block)]
+        # AND the explicit marker this app writes when it reopens something. A reopening does not
+        # always come with a Claude comment after it - MT-254 was reopened because the control it
+        # tests is MOVING, which is a note about the entry rather than a reply to Adam - and
+        # without this it read as never-triaged for six days, in the very view built to tell those
+        # two apart.
+        theirs += [m.start() for m in re.finditer(r"\*\*Re-opened\b", self.block)]
 
         return bool(theirs) and max(theirs) > max(mine)
 

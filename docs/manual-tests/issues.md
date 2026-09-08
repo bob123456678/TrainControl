@@ -558,6 +558,22 @@ The home planner does not consider blocks due to the length of a train, i.e. a t
 
 changing any pathing arrow in the track autonomy editor makes the whole screen flicker.  warning updates can be deferred a few seconds later if needed.
 
+### FR-062 - 2026-09-08 - download the CS3 data files too when the user confirms a Central Station download
+
+**Kind:** feature request  
+**Raised from:** the triage API  
+**Filed:** 2026-09-08  
+
+Raised by Adam in MT-170 on 2026-08-24, in the note attached to a Works verdict, and never filed on its own: *"if the user confirms the CS download, we should also download CS3 data files if using a CS3."* MT-170 tested backing up a layout that lives on the Central Station and passed; this is the follow-up it raised, filed so MT-170 can be closed without losing it.
+
+### OB-187 - 2026-09-08 - the menu options ungrey at different times when connecting finishes
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-08  
+
+Raised by Adam in MT-264 on 2026-09-06, in the note attached to a Works verdict, and never filed on its own: *"Looks good, but when the loading finishes, the menu options ungrey at different times."* MT-264 tested the window while it is connecting and passed; this is the follow-up it raised, filed so MT-264 can be closed without losing it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

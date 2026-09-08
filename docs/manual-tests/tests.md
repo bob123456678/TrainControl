@@ -187,7 +187,7 @@ scissors crossing, or two included pages sharing an s88, is the usual way in.
 
 ### MT-264 - 2026-09-03 - The window while it is connecting
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-170 follow-ups
 
 **Written:** 2026-09-03
@@ -750,7 +750,7 @@ chooses between them is being read after the stop has already cleared it.
 
 ### MT-272 - 2026-09-04 - A route you edit stays switched on for autonomy
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** AC2-A1
 
 **Written:** 2026-09-04
@@ -9377,7 +9377,7 @@ silently has nothing to put in the archive.
 
 ### MT-170 - 2026-08-24 - Backing up a layout that lives on the Central Station
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-020
 **Written:** 2026-08-24
 
@@ -16446,42 +16446,30 @@ That notice goes, and no other changes.
 
 **Written:** 2026-09-07
 
-**Two of the six tiles that carry a recorded length are reversal squares on `1 - Main`, so this guard
-is already live on your railway:** `BottomMainB` (4 units) and `BottomMainC` (2 units, and EN57-947's
-home). EN57-947 itself is exempt - it has no train length set, and the guard only applies to a
-locomotive that has one. 42 of the 54 locomotives that do carry a length are longer than 2.
+**Rewritten 2026-09-08.** It named `BottomMainB` (4 units) and `BottomMainC` (2), which were among the
+six lengths you cleared when you re-measured. It sets up its own condition now, so it cannot go stale
+with your railway again.
 
 **Steps**
 
-1. Send one of those 42 into **BottomMainC** - by hand, or by giving it that home and pressing Return
-   Home.
+1. In the autonomy editor, pick a square trains turn round at and set its track length, and the length
+   of every square on the way in to it, to **1**.
+2. Send a locomotive whose train length is more than 1 into that square - by hand, or give it that home
+   and press Return Home.
 
 **Expected**
 
-Refused, with a message about the train being too long.
+Refused, with a message saying the train is too long. Setting the lengths back to blank undoes it.
 
-**Two questions in one:** is that the behaviour you want on this berth, or is two units simply the
-wrong number for it?
-
-**A known gap, worth trying if you have such a berth:** where more than one edge leads in, the train
-will NOT be refused. The notice asks for the reversing square's length and the guard needs every
-segment of the run-in measured (`FV2-C3`).
+*The guard needs the WHOLE run-in measured before it will judge: one unmeasured square and it returns
+"unknown" rather than "short", and lets the train go. That is why step 1 says every square on the way
+in.*
 
 #### Comments
 
-**Claude, 2026-09-08 - this entry cannot be run as written any more.**
-
-Its premise was that `BottomMainB` (4 units) and `BottomMainC` (2 units) carry recorded lengths, which is
-what made the guard live on Adam's railway without him having to set anything up. Both of those numbers
-were among the six he cleared when he re-measured at 01:35 that night.
-
-So the specific case - "send one of the 42 locomotives longer than 2 into BottomMainC" - no longer has a
-2 to be longer than. **The rule is unchanged and is covered by test**
-(`testTheLengthGuardsOnTheRealLayout` now finds a berth where the guard binds rather than naming one, and
-the boundary is asserted there), so what is lost is the hands-on confirmation rather than the rule.
-
-To run it: measure a reversal square's approach deliberately - `5:19,12`, `5:14,13` or `5:22,7` are the
-three he measured - and send a train longer than that number into it.
+**Claude, 2026-09-08.** The rule itself is pinned by `testTheLengthGuardsOnTheRealLayout`, which finds a
+berth where the guard binds rather than naming one, and asserts the boundary. What this entry adds is
+the refusal you actually see on screen, which no test looks at.
 
 ---
 
@@ -17473,7 +17461,7 @@ Superseded by [MT-340](#mt-340), which is the title-bar preview he asked for nex
 
 ### MT-340 - 2026-09-08 - The menu bar in the window title, to look at
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-186
 
 **Written:** 2026-09-08
