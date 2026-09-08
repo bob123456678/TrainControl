@@ -22,29 +22,17 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
-| [MT-243](#mt-243) | 2026-08-31 | Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone | needs test | RGN-A1, IPR-A1 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
-| [MT-245](#mt-245) | 2026-08-31 | A home on a main-line platform, and it is still there next start | needs test | DAY-B3 |
-| [MT-246](#mt-246) | 2026-08-31 | Signals stay put, and a non-reversing train backs into its home | needs test | OB-166 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | needs test | FX2-2, SVN-A4 |
-| [MT-248](#mt-248) | 2026-09-01 | The length notice and the guard it is meant to arm | needs test | FX2-3, TCX-B2 |
-| [MT-250](#mt-250) | 2026-09-01 | Homing a train that is already standing on a reversing point | needs test | D24-B1 |
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
-| [MT-257](#mt-257) | 2026-09-02 | Five things the review round wants you to rule on | needs test | RG3, DY3 |
-| [MT-258](#mt-258) | 2026-09-02 | Bulk tools, the import's log, and Control+S | needs test | MT-257 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
-| [MT-261](#mt-261) | 2026-09-02 | Four things the C sweep needs you to choose | needs test | R28-C2, R28-C3, R28-C5, V31-C2 |
 | [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | needs test | OB-171 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
-| [MT-265](#mt-265) | 2026-09-03 | Four gestures behind today's fixes | needs test | SVN-B8, SVN-B11, IPR-B2, IPR-B4 |
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
-| [MT-268](#mt-268) | 2026-09-04 | The axis numbers, and the editor coming forward | needs test | OB-172, OB-173 |
-| [MT-269](#mt-269) | 2026-09-04 | Three from the acceptance review, and one ruling | needs test | ACC-B1, ACC-B2, ACC-B3 |
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
-| [MT-271](#mt-271) | 2026-09-04 | Two messages only a real failure can show you | needs test | FR3-C2, DAY-C3 |
 | [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
 | [MT-276](#mt-276) | 2026-09-07 | Control+K draws the grid and the numbers together | needs test | OB-179 (split from MT-274) |
 | [MT-277](#mt-277) | 2026-09-07 | One menu carries both the facing and the arrival side | needs test | FR-057 (split from MT-274) |
@@ -66,6 +54,39 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-293](#mt-293) | 2026-09-07 | Control+L moves the caption dropdown with it | needs test | RGD-C3 (split from MT-275) |
 | [MT-294](#mt-294) | 2026-09-07 | A recorded arrival side the menu cannot offer is shown, not offered | needs test | RGD-C4 (split from MT-275) |
 | [MT-295](#mt-295) | 2026-09-07 | The dash marks every station autonomy will not choose | needs test | MON-B1 (split from MT-275) |
+| [MT-296](#mt-296) | 2026-09-07 | A 2.7.4c import brings the autonomy settings across | needs test | RGN-A1, IPR-A1 (split from MT-243) |
+| [MT-297](#mt-297) | 2026-09-07 | Importing a graph does not switch your routes off | needs test | RGN-A1 (split from MT-243) |
+| [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
+| [MT-299](#mt-299) | 2026-09-07 | A home on a split square is still there next start | needs test | DAY-B3 (split from MT-245) |
+| [MT-300](#mt-300) | 2026-09-07 | Return Home reaches a split platform from either direction | needs test | DAY-B3 (split from MT-245) |
+| [MT-301](#mt-301) | 2026-09-07 | One platform, one home | needs test | DAY-B3 (split from MT-245) |
+| [MT-302](#mt-302) | 2026-09-07 | A non-reversible train and an all-turning platform - what happens now | needs test | DAY-B3 (split from MT-245) |
+| [MT-303](#mt-303) | 2026-09-07 | Signals stay where you put them | needs test | OB-166 (split from MT-246) |
+| [MT-304](#mt-304) | 2026-09-07 | A non-reversible train goes home nose first | needs test | OB-166 (split from MT-246) |
+| [MT-305](#mt-305) | 2026-09-07 | The reversal-length notices: a useful prompt, or noise | needs test | FX2-3, TCX-B2 (split from MT-248) |
+| [MT-306](#mt-306) | 2026-09-07 | Setting a length clears its notice | needs test | FX2-3 (split from MT-248) |
+| [MT-307](#mt-307) | 2026-09-07 | A train too long for a berth is refused | needs test | TCX-B2, SVN-B1 (split from MT-248) |
+| [MT-308](#mt-308) | 2026-09-07 | Homing a train that is already standing on a reversing point | needs test | D24-B1 (split from MT-250) |
+| [MT-309](#mt-309) | 2026-09-07 | EN57-203 can get back to TunnelLongPark | needs test | D24-B1 (split from MT-250) |
+| [MT-310](#mt-310) | 2026-09-07 | Test Connection has no successor that works without a train | needs test | RG3, DY3 (split from MT-257, item 5) |
+| [MT-311](#mt-311) | 2026-09-07 | Bulk Tools clears placements and keeps the homes | needs test | MT-257 item 1 (split from MT-258) |
+| [MT-312](#mt-312) | 2026-09-07 | The import says what it left behind | needs test | MT-257 item 3 (split from MT-258) |
+| [MT-313](#mt-313) | 2026-09-07 | Control+S names the square under the pointer | needs test | MT-257 item 4 (split from MT-258) |
+| [MT-314](#mt-314) | 2026-09-07 | Should a square's settings be copyable to another square | needs test | R28-C2 (split from MT-261) |
+| [MT-315](#mt-315) | 2026-09-07 | Where the home assignment should be drawn | needs test | R28-C3 (split from MT-261) |
+| [MT-316](#mt-316) | 2026-09-07 | Which keys for the s88 address and the home locomotive | needs test | R28-C5 (split from MT-261) |
+| [MT-317](#mt-317) | 2026-09-07 | Should the switch keyboard ask about the power | needs test | V31-C2 (split from MT-261) |
+| [MT-318](#mt-318) | 2026-09-07 | Undoing a shut link opens both halves, across pages | needs test | SVN-B8 (split from MT-265) |
+| [MT-319](#mt-319) | 2026-09-07 | A column that is cut, undone and pasted back keeps its setup | needs test | SVN-B11 (split from MT-265) |
+| [MT-320](#mt-320) | 2026-09-07 | A route condition with a bracket that is not at the start | needs test | IPR-B2 (split from MT-265) |
+| [MT-321](#mt-321) | 2026-09-07 | Cropping a large photograph at full zoom-out | needs test | IPR-B4 (split from MT-265) |
+| [MT-322](#mt-322) | 2026-09-07 | The axis numbers survive switching between the editors | needs test | OB-172 (split from MT-268) |
+| [MT-323](#mt-323) | 2026-09-07 | The numbers appear only with the grid | needs test | OB-172, OB-179 (split from MT-268) |
+| [MT-324](#mt-324) | 2026-09-07 | Should closing the track diagram editor stop the trains | needs test | ACC-B2 (split from MT-269) |
+| [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
+| [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
+| [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
+| [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -199,7 +220,7 @@ Looks good, but when the loading finishes, the menu options ungrey at different 
 
 ### MT-265 - 2026-09-03 - Four gestures behind today's fixes
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** SVN-B8, SVN-B11, IPR-B2, IPR-B4
 
 **Written:** 2026-09-03
@@ -241,6 +262,10 @@ code the test covers**, which is four short checks rather than four tests.
    look at.
 
 *Run against the next release candidate.*
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-318](#mt-318), [MT-319](#mt-319), [MT-320](#mt-320) and [MT-321](#mt-321), one outcome each.
 
 ---
 
@@ -328,7 +353,7 @@ reintroducing to save a message.
 
 ### MT-268 - 2026-09-04 - The axis numbers, and the editor coming forward
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-172, OB-173
 
 **Written:** 2026-09-04
@@ -544,13 +569,19 @@ is before any of this landed. Rebuild first.
 
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 03:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-322](#mt-322) and [MT-323](#mt-323), one outcome each.
+
+Its OB-173 half - the editor coming to the front on the first open - is [MT-286](#mt-286), which was already written when MT-274 was split.
+
 ---
 
 <a id="mt-269"></a>
 
 ### MT-269 - 2026-09-04 - Three from the acceptance review, and one ruling
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** ACC-B1, ACC-B2, ACC-B3
 
 **Written:** 2026-09-04
@@ -606,6 +637,10 @@ the positions annoys you more than I expect, say so** - the alternative is remem
 edit touched, which is more bookkeeping and more ways to be wrong.
 
 *Run against the next release candidate.*
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-324](#mt-324), [MT-325](#mt-325) and [MT-326](#mt-326), one outcome each.
 
 ---
 
@@ -678,7 +713,7 @@ I added a locomotive named a,P[)(] and it went trough.  So, make sure this doesn
 
 ### MT-271 - 2026-09-04 - Two messages only a real failure can show you
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** FR3-C2, DAY-C3
 
 **Written:** 2026-09-04
@@ -700,6 +735,10 @@ stopped itself and Start really is what puts it back. If both cases say the same
 chooses between them is being read after the stop has already cleared it.
 
 *Run against the next release candidate.*
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-327](#mt-327) and [MT-328](#mt-328), one outcome each.
 
 ---
 
@@ -13769,7 +13808,7 @@ The name survives everywhere the locomotive is not.
 
 ### MT-243 - 2026-08-31 - Upgrading a 2.7.4c autonomy.json keeps its settings and leaves the routes alone
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** RGN-A1, IPR-A1
 **Written:** 2026-08-31
 
@@ -13833,6 +13872,8 @@ turned. Both questions are asked of the same copy now.
 Step 7 is a gap this morning's change opened rather than one it found. One home per platform used to
 be enforced by the field itself, because a Point holds one home; two copies are two fields.
 
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-296](#mt-296), [MT-297](#mt-297) and [MT-298](#mt-298), one outcome each.
+
 ---
 
 <a id="mt-244"></a>
@@ -13895,7 +13936,7 @@ make a test case for this. in my testing, it loaded OK.
 
 ### MT-245 - 2026-08-31 - A home on a main-line platform, and it is still there next start
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** DAY-B3
 
 **Written:** 2026-08-31
@@ -13951,13 +13992,17 @@ non-auto stations should still be manually selectable.  and trains should be all
 
 *Run against commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-299](#mt-299), [MT-300](#mt-300), [MT-301](#mt-301) and [MT-302](#mt-302), one outcome each.
+
+**Step 5 changed meaning and is worth reading rather than re-running.** It asked you to check that an all-turning platform is still REFUSED to a locomotive that cannot reverse. That rule went on 2026-09-04. [MT-302](#mt-302) carries what happens instead.
+
 ---
 
 <a id="mt-246"></a>
 
 ### MT-246 - 2026-08-31 - Signals stay put, and a non-reversing train backs into its home
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-166
 
 **Written:** 2026-08-31
@@ -14085,6 +14130,10 @@ question for a train that will not move, and the semi-autonomous destination lis
 **What still needs you:** re-run the homing half. Set a home from the track diagram, check the Return
 Home item lights up, close the application, reopen it and check the home is still there.
 
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-303](#mt-303) and [MT-304](#mt-304), one outcome each.
+
+**Steps 6 and 7 changed meaning**, for the same reason: they asked for a train turned round on the way and an impossibility report, which was `mustBackIn`. [MT-304](#mt-304) asks for what the railway does now.
+
 ---
 
 
@@ -14126,7 +14175,7 @@ in its comment instead.
 
 ### MT-248 - 2026-09-01 - The length notice and the guard it is meant to arm
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** FX2-3, TCX-B2, SVN-B1
 
 **Written:** 2026-09-01
@@ -14182,6 +14231,10 @@ saying it is unsound until you rule.
 
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-305](#mt-305), [MT-306](#mt-306) and [MT-307](#mt-307), one outcome each.
+
 ---
 
 <a id="mt-249"></a>
@@ -14222,7 +14275,7 @@ addressed offline
 
 ### MT-250 - 2026-09-01 - Homing a train that is already standing on a reversing point
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** D24-B1
 
 **Written:** 2026-09-01
@@ -14335,6 +14388,12 @@ ruled - allow it into its HOME, where it is meant to sit, and keep the rule for 
 and that is a small change from here.
 
 *Run against commit 409d4ce8, build\classes, compiled 04 Sep 01:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-308](#mt-308) and [MT-309](#mt-309), one outcome each.
+
+**Step 4 changed meaning:** it asked you to confirm that a non-reversible locomotive homed at a terminus with no reversing point on the way is still reported as impossible. That is the rule you removed, and [MT-309](#mt-309) is the case you reported here, re-asked against it.
 
 ---
 
@@ -14630,7 +14689,7 @@ fails another.
 
 ### MT-257 - 2026-09-02 - Five things the review round wants you to rule on
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** RG3, DY3
 
 **Written:** 2026-09-02
@@ -14700,13 +14759,19 @@ Say which and it is a small addition.
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 02:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-310](#mt-310), one outcome each.
+
+Four of its five items were ruled on and built - items 1, 3 and 4 as MT-258, now [MT-311](#mt-311), [MT-312](#mt-312) and [MT-313](#mt-313); item 2 needed no work. Item 5 was the only thing still waiting on you.
+
 ---
 
 <a id="mt-258"></a>
 
 ### MT-258 - 2026-09-02 - Bulk tools, the import's log, and Control+S
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** MT-257 items 1, 3 and 4
 
 **Written:** 2026-09-02
@@ -14767,6 +14832,10 @@ feeds those variables, because drags and pastes read them.
 above have not been reported on either way.
 
 *Item 4 to be run again against a build after this commit.*
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-311](#mt-311), [MT-312](#mt-312) and [MT-313](#mt-313), one outcome each.
 
 ---
 
@@ -15205,7 +15274,7 @@ narrowing below and is built - the count was already in the popup, the list is n
 
 ### MT-261 - 2026-09-02 - Four things the C sweep needs you to choose
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** R28-C2, R28-C3, R28-C5, V31-C2
 
 **Written:** 2026-09-02
@@ -15312,6 +15381,12 @@ And the viewer no longer draws them.  The preference was asked and the WINDOW wa
 4. **Turn the grey grid on and off** with the numbers showing, and check they stay over their squares
    both ways - that is the case that was broken, and the one an eye can check in a second.
 5. **Look at the running diagram.**  No numbers there.
+
+#### Comments
+
+**Claude, 2026-09-07.** Split, at Adam's request: *"make each MT be one test, not a laundry list of different things, so that I can provide clear feedback."* Taken over by [MT-314](#mt-314), [MT-315](#mt-315), [MT-316](#mt-316) and [MT-317](#mt-317), one outcome each.
+
+Item 2 has moved on since it was written: the home assignment IS drawn now, on the Text Labels dropdown's **Home Locs** option. [MT-315](#mt-315) asks whether that is the shape you wanted.
 
 ---
 
@@ -16027,6 +16102,829 @@ Both carry the **" -"** mark. It means "you may send it here yourself, autonomy 
 
 Two of the five reasons were missing from that mark, and one of them is how a parking berth is stored
 - so a berth was listed with no mark at all, which is the one case the mark exists for.
+
+---
+
+<a id="mt-296"></a>
+
+### MT-296 - 2026-09-07 - A 2.7.4c import brings the autonomy settings across
+
+**Disposition:** needs test
+**From:** RGN-A1, IPR-A1 (split from MT-243)
+
+**Written:** 2026-09-07
+
+**Back up first.** File > Backup TrainControl Data, and keep the zip.
+
+**Steps**
+
+1. Import `config/autonomy_legacy/autonomy.json` from the autonomy menu, into a fresh configuration.
+2. Open the autonomy settings.
+3. Right-click a station that had a length limit in the old file.
+
+**Expected**
+
+Ten settings match the old file rather than the defaults - pace, default speed, how many trains may
+run, the arrival and departure function switches, the pre-arrival slowing. The station's **maximum
+train length** is the number the old file gave it, and the square's own **track length** is untouched.
+
+Those two were confused before: a station's capacity was written into the square's length, which is
+what the shortest-track and longest-track routing rules are computed from.
+
+---
+
+<a id="mt-297"></a>
+
+### MT-297 - 2026-09-07 - Importing a graph does not switch your routes off
+
+**Disposition:** needs test
+**From:** RGN-A1 (split from MT-243)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Note which routes are enabled.
+2. Import a 2.7.4c `autonomy.json`.
+3. Open the Routes tab.
+4. Run the setup, and look again - the disabling used to happen on load rather than on import, so it
+   has to be checked after autonomy has actually parsed the configuration.
+
+**Expected**
+
+Every route that was enabled is still enabled, both times. Nothing about importing a graph should
+switch a route off.
+
+---
+
+<a id="mt-298"></a>
+
+### MT-298 - 2026-09-07 - A second import fills gaps and does not overwrite
+
+**Disposition:** needs test
+**From:** IPR-A1 (split from MT-243)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Import a 2.7.4c `autonomy.json`.
+2. Change one setting by hand.
+3. Import the same file again.
+
+**Expected**
+
+Your change survives. The import fills what is missing; it does not replace what is there.
+
+---
+
+<a id="mt-299"></a>
+
+### MT-299 - 2026-09-07 - A home on a split square is still there next start
+
+**Disposition:** needs test
+**From:** DAY-B3 (split from MT-245)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Assign a home to a locomotive on **BottomMainC** - one of the ten squares the setup draws as more
+   than one arrival side.
+2. Save, close TrainControl, and open it again.
+
+**Expected**
+
+The home is still there, and the log carries no line about the square being drawn as more than one
+place.
+
+This is the half that was broken: the editor accepted a home on a split square and the LOADER dropped
+it, with a log line as the only notice - so a home could be set, look right, and be gone at the next
+start.
+
+---
+
+<a id="mt-300"></a>
+
+### MT-300 - 2026-09-07 - Return Home reaches a split platform from either direction
+
+**Disposition:** needs test
+**From:** DAY-B3 (split from MT-245)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. With a home assigned on a split platform, drive the train away and press **Return Home**.
+2. If your layout allows it, send it home again from the other direction.
+
+**Expected**
+
+It goes back both times, arriving from whichever side the route takes. Your ruling: *"the home should
+just be the logical point, and the direction is wherever the locomotive was facing when it started
+moving."*
+
+---
+
+<a id="mt-301"></a>
+
+### MT-301 - 2026-09-07 - One platform, one home
+
+**Disposition:** needs test
+**From:** DAY-B3 (split from MT-245)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Assign a home to a locomotive on one side of a split platform.
+2. Assign a second locomotive to the other side of the same platform.
+
+**Expected**
+
+The first gives it up. Both homed on one piece of track is a state nothing could ever satisfy.
+
+---
+
+<a id="mt-302"></a>
+
+### MT-302 - 2026-09-07 - A non-reversible train and an all-turning platform - what happens now
+
+**Disposition:** needs test
+**From:** DAY-B3 (split from MT-245)
+
+**Written:** 2026-09-07
+
+**This step changed meaning after you ruled on it, which is why it is on its own.**
+
+MT-245 asked you to check that a platform where every copy is a turning berth is **refused** to a
+locomotive that cannot reverse. That was `mustBackIn`, and you removed it on 2026-09-04: *"Return Home
+is manual operation."*
+
+**Steps**
+
+1. Give a non-reversible locomotive a home at a platform where every copy is a turning berth.
+2. Drive it away and press **Return Home**.
+
+**Expected**
+
+It goes, and arrives **nose first**. It then has to be backed out by hand to leave, and the only place
+that says so is the warning in the autonomy editor's findings list.
+
+Tell me if that warning is enough, or whether being driven somewhere it cannot leave unaided should
+still be refused.
+
+---
+
+<a id="mt-303"></a>
+
+### MT-303 - 2026-09-07 - Signals stay where you put them
+
+**Disposition:** needs test
+**From:** OB-166 (split from MT-246)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Set **signal 64** red by hand, with nothing standing at TopMainR2 and nothing running.
+2. Send a train from **BottomInnerOtherside** to **BottomInner**.
+3. Start full autonomy with a train standing somewhere protected.
+4. Watch a route activate over a protected platform.
+
+**Expected**
+
+Signal 64 is still red after step 2, and no signal moves in step 3 until a route actually activates
+over it. Step 4 must still work: a train arriving turns its signal red, leaving turns it green.
+
+**What this gives up:** a train you place BY HAND at a protected platform while nothing is running now
+keeps whatever aspect its signal already showed, and is no longer protected the moment a run starts.
+If that matters more than the unnecessary commands did, say so and the sweep goes back for occupied
+platforms only.
+
+---
+
+<a id="mt-304"></a>
+
+### MT-304 - 2026-09-07 - A non-reversible train goes home nose first
+
+**Disposition:** needs test
+**From:** OB-166 (split from MT-246)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Take a locomotive that is not reversible and give it a home at a parking terminus -
+   TunnelLeftPark, or whichever you tried on MT-245.
+2. Drive it away and press **Return Home**.
+3. Try the same with a terminus that has no reversing point anywhere on the way to it.
+
+**Expected**
+
+Both go, and both arrive **nose first**; neither is reported as impossible.
+
+MT-246 asked for the opposite - turned round on the way, backing in, and an impossibility report - and
+that was `mustBackIn`, removed on 2026-09-04 when Return Home became manual operation. See
+[MT-250](#mt-250).
+
+---
+
+<a id="mt-305"></a>
+
+### MT-305 - 2026-09-07 - The reversal-length notices: a useful prompt, or noise
+
+**Disposition:** needs test
+**From:** FX2-3, TCX-B2 (split from MT-248)
+
+**Written:** 2026-09-07
+
+**A decision, not a pass or fail.**
+
+**Steps**
+
+1. Open the autonomy editor and count the notices asking for track lengths.
+
+**Expected**
+
+Roughly twenty, on a railway with about 23 squares where trains turn round and six measured tiles.
+
+**The question:** is that a useful prompt or a wall of noise? If it is noise, say so and I will scope
+it - to one page, to squares with a home on them, or to nothing until you ask for it.
+
+---
+
+<a id="mt-306"></a>
+
+### MT-306 - 2026-09-07 - Setting a length clears its notice
+
+**Disposition:** needs test
+**From:** FX2-3 (split from MT-248)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Set the track length on one square a notice names.
+
+**Expected**
+
+That notice goes, and no other changes.
+
+---
+
+<a id="mt-307"></a>
+
+### MT-307 - 2026-09-07 - A train too long for a berth is refused
+
+**Disposition:** needs test
+**From:** TCX-B2, SVN-B1 (split from MT-248)
+
+**Written:** 2026-09-07
+
+**Two of the six tiles that carry a recorded length are reversal squares on `1 - Main`, so this guard
+is already live on your railway:** `BottomMainB` (4 units) and `BottomMainC` (2 units, and EN57-947's
+home). EN57-947 itself is exempt - it has no train length set, and the guard only applies to a
+locomotive that has one. 42 of the 54 locomotives that do carry a length are longer than 2.
+
+**Steps**
+
+1. Send one of those 42 into **BottomMainC** - by hand, or by giving it that home and pressing Return
+   Home.
+
+**Expected**
+
+Refused, with a message about the train being too long.
+
+**Two questions in one:** is that the behaviour you want on this berth, or is two units simply the
+wrong number for it?
+
+**A known gap, worth trying if you have such a berth:** where more than one edge leads in, the train
+will NOT be refused. The notice asks for the reversing square's length and the guard needs every
+segment of the run-in measured (`FV2-C3`).
+
+---
+
+<a id="mt-308"></a>
+
+### MT-308 - 2026-09-07 - Homing a train that is already standing on a reversing point
+
+**Disposition:** needs test
+**From:** D24-B1 (split from MT-250)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Put a non-reversible locomotive on a reversing point - a headshunt or a shunting neck.
+2. Give it a home at a parking terminus reachable from there.
+3. Press **Return Home**.
+
+**Expected**
+
+It plans and goes. It used to report that the locomotive could not reach its home at all: two searches
+inside the planner disagreed about whether a train standing on a reversing point has already turned,
+and the one that said no was the one used to prove impossibility.
+
+---
+
+<a id="mt-309"></a>
+
+### MT-309 - 2026-09-07 - EN57-203 can get back to TunnelLongPark
+
+**Disposition:** needs test
+**From:** D24-B1 (split from MT-250)
+
+**Written:** 2026-09-07
+
+**The case you reported on MT-250:** *"In the current setup, I can't get EN57-203 back to its home of
+TunnelLongPark."*
+
+**Measured then:** `TunnelLongPark` is authored `mustReverse`, so the builder emits it as a terminus;
+the planner would let a non-reversible train end at a terminus only if the route turned it round on
+the way; your railway has exactly one reversing point and it is not on the way. Setting
+`EN57-203.reversible` true and re-planning gave `READY`, so that one flag was the whole of it.
+
+**That rule is gone** - you removed it on 2026-09-04.
+
+**Steps**
+
+1. Press **Return Home** for EN57-203, homed at TunnelLongPark.
+
+**Expected**
+
+It plans and goes, arriving nose first.
+
+---
+
+<a id="mt-310"></a>
+
+### MT-310 - 2026-09-07 - Test Connection has no successor that works without a train
+
+**Disposition:** needs test
+**From:** RG3, DY3 (split from MT-257, item 5)
+
+**Written:** 2026-09-07
+
+**A question, and the last thing outstanding from MT-257.**
+
+The old point-to-point path diagnostic answered *"can a train get from here to there"* with nothing
+standing anywhere. Nothing in the editor does that now.
+
+You asked: *"why can't it keep working without a train, between stations?"*
+
+**What I need from you:** where it should live and what it should say. A right-click "can a train get
+from here to..." on the autonomy editor, answering for an empty railway, is the obvious shape - but it
+is your control and the wording matters more than the mechanism.
+
+---
+
+<a id="mt-311"></a>
+
+### MT-311 - 2026-09-07 - Bulk Tools clears placements and keeps the homes
+
+**Disposition:** needs test
+**From:** MT-257 item 1 (split from MT-258)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Right-click any square in the autonomy editor. **Bulk Tools** is under Set Length, after a rule.
+2. Check the counts on the two items against what the diagram shows.
+3. **Clear All Locomotives**, and confirm.
+4. Press **Cancel** on the editor.
+
+**Expected**
+
+Every train comes off the setup and the home assignments stay. Each item carries its own count and
+greys itself when that count is zero. Both confirm first, and neither writes to disk - Cancel puts
+everything back.
+
+---
+
+<a id="mt-312"></a>
+
+### MT-312 - 2026-09-07 - The import says what it left behind
+
+**Disposition:** needs test
+**From:** MT-257 item 3 (split from MT-258)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Import your own `autonomy_legacy/autonomy.json` into a spare configuration.
+2. Open the log.
+
+**Expected**
+
+The summary ends with a line saying how many things were deliberately not imported, and the log names
+each with a count and a reason. On your file that is 69 connections with accessory commands, 30 with a
+length, a 36-entry timetable, and the route activations.
+
+---
+
+<a id="mt-313"></a>
+
+### MT-313 - 2026-09-07 - Control+S names the square under the pointer
+
+**Disposition:** needs test
+**From:** MT-257 item 4 (split from MT-258)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Hover a square in the **autonomy editor** and press **Control+S**.
+2. Press it over an empty square, and over a page you have excluded.
+3. Press it in the **track diagram editor**, where it is not bound.
+
+**Expected**
+
+The naming prompt opens on the hovered square - the same thing **Rename** on the right-click menu
+does. Step 2 does something sensible rather than nothing at all, and step 3 does nothing unexpected.
+
+You reported this as not firing on 2026-09-02 and it was fixed the same day.
+
+---
+
+<a id="mt-314"></a>
+
+### MT-314 - 2026-09-07 - Should a square's settings be copyable to another square
+
+**Disposition:** needs test
+**From:** R28-C2 (split from MT-261)
+
+**Written:** 2026-09-07
+
+**A decision.**
+
+At 2.8.1, "Copy Outgoing Edge..." duplicated one connection's whole configuration onto another pair of
+points. Most of what it copied is derived from the diagram now. What is still authored, and still has
+to be set one square at a time, is the **tile length**, the **direction restrictions**, the
+**protecting signals**, the **maximum train length** and the **priority**.
+
+**The question:** do you want "copy these settings to another square" on the autonomy editor's
+right-click menu, and if so which of those five? Length alone would cover most of the typing; all five
+would make a platform reproducible in two clicks.
+
+---
+
+<a id="mt-315"></a>
+
+### MT-315 - 2026-09-07 - Where the home assignment should be drawn
+
+**Disposition:** needs test
+**From:** R28-C3 (split from MT-261)
+
+**Written:** 2026-09-07
+
+**A decision.**
+
+2.8.1 drew the home locomotive on its point in the graph window, behind a **Show home locomotives**
+toggle. 3.0.0 now has the **Home Locs** option on the Text Labels dropdown, which draws the home
+locomotive's name in place of the station's.
+
+**The question:** is that the right shape, or do you want a badge on the square, or the name beside
+the station's rather than instead of it? The dropdown makes the four options exclusive, so "as well
+as" is a different control.
+
+---
+
+<a id="mt-316"></a>
+
+### MT-316 - 2026-09-07 - Which keys for the s88 address and the home locomotive
+
+**Disposition:** needs test
+**From:** R28-C5 (split from MT-261)
+
+**Written:** 2026-09-07
+
+**A decision.**
+
+Setting a point's **s88 address** and its **home locomotive** both had keyboard shortcuts on the graph
+window; both survive as right-click menu items with no key. Control+S is taken - it names a square -
+and Control+G, Control+L, Control+D and Control+K are the four that show and hide things.
+
+**The question:** which keys? Control+8 and Control+H would be free and roughly mnemonic, but they are
+your fingers.
+
+---
+
+<a id="mt-317"></a>
+
+### MT-317 - 2026-09-07 - Should the switch keyboard ask about the power
+
+**Disposition:** needs test
+**From:** V31-C2 (split from MT-261)
+
+**Written:** 2026-09-07
+
+**A decision.**
+
+The switch keyboard now asks the two questions the diagram tile and the route door ask - a turnout on
+a locked path, and a signal about to be set green over an occupied platform - and puts the button back
+if you say no.
+
+**Steps**
+
+1. With the power off and autonomy running, click a switch on the keyboard tab.
+
+**The question:** it does not ask about the power. Should it? It is a frequently used control and every
+prompt is an interruption; you are the one who uses it.
+
+---
+
+<a id="mt-318"></a>
+
+### MT-318 - 2026-09-07 - Undoing a shut link opens both halves, across pages
+
+**Disposition:** needs test
+**From:** SVN-B8 (split from MT-265)
+
+**Written:** 2026-09-07
+
+**The order matters, and it is not the obvious one:** the link checkbox pushes no undo point of its
+own, so the snapshot has to be taken first.
+
+**Steps**
+
+1. `1:10,9` and `5:15,5` on your railway are already a pair. In the **track diagram editor**, on the
+   page holding the near half, make any small edit - that is what takes the undo point.
+2. Shut the link.
+3. Press **Ctrl+Z**.
+
+**Expected**
+
+The link is **open** again at both ends. Before this the undo dropped the near half, left the far one
+behind, and the link stayed shut with nothing on screen saying so.
+
+*Doing it the other way round - toggle, then edit, then Ctrl+Z - is not this test and will leave the
+link shut, correctly.*
+
+---
+
+<a id="mt-319"></a>
+
+### MT-319 - 2026-09-07 - A column that is cut, undone and pasted back keeps its setup
+
+**Disposition:** needs test
+**From:** SVN-B11 (split from MT-265)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. In the layout editor, pick a column carrying a station and cut it.
+2. Press **Ctrl+Z** so the track comes back.
+3. Paste it somewhere else once.
+4. Paste it back over the column it came from.
+
+**Expected**
+
+The station is still there. Before this the paste in the middle used up the cut, and the paste back
+forgot the setup on every square it landed on.
+
+Worth trying with a single square as well as a column - they failed for two different reasons and are
+two separate fixes.
+
+---
+
+<a id="mt-320"></a>
+
+### MT-320 - 2026-09-07 - A route condition with a bracket that is not at the start
+
+**Disposition:** needs test
+**From:** IPR-B2 (split from MT-265)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. If you have a route written in the old text editor whose condition reads like `3 or ((1 or 2) and
+   4)` - a bracket anywhere but the first thing - open it in the route editor.
+2. Read the sentence under the table.
+
+**Expected**
+
+It says what you wrote. Before this the AND became an OR, nothing was flagged red, the Test button
+evaluated the wrong expression, and saving wrote it back.
+
+**If you have no such route, say so and this one is done** - the check that mattered is that the
+editor cannot build the shape itself, and that has a test.
+
+---
+
+<a id="mt-321"></a>
+
+### MT-321 - 2026-09-07 - Cropping a large photograph at full zoom-out
+
+**Disposition:** needs test
+**From:** IPR-B4 (split from MT-265)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Set a locomotive icon from the biggest picture you have, and zoom the crop dialog all the way out.
+2. Drag the crop box.
+
+**Expected**
+
+The box follows the pointer and the crop lands where the box was.
+
+---
+
+<a id="mt-322"></a>
+
+### MT-322 - 2026-09-07 - The axis numbers survive switching between the editors
+
+**Disposition:** needs test
+**From:** OB-172 (split from MT-268)
+
+**Written:** 2026-09-07
+
+**You reported:** *"some axis labels vanish when switching between track diagram editor and autonomy
+editor - 1 and 3 in my case. they reappear if the grid setting is cycled."*
+
+**What it does now.** The ruler used to position every column's number from exactly one square - the
+one in the top row - and skip a number whose square is missing or has no size yet. It now looks in the
+first three rows for a column and the first three columns for a row, and takes the first with a real
+size.
+
+**Steps**
+
+1. Switch between the two editors several times, on `1 - Main` and on a page with an untidy top row.
+2. Cycle the grid checkbox, which is what used to bring them back.
+
+**Expected**
+
+Every column and row number stays put, and step 2 changes nothing because nothing was missing.
+
+**If any still vanishes, say which and on which page** - that tells me it is a repaint rather than a
+measurement, and I will go after it differently.
+
+---
+
+<a id="mt-323"></a>
+
+### MT-323 - 2026-09-07 - The numbers appear only with the grid
+
+**Disposition:** needs test
+**From:** OB-172, OB-179 (split from MT-268)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. Turn the grid off.
+2. Turn it back on.
+
+**Expected**
+
+The numbers go and come back with it. You asked to *"tie the appearance of the numbers to the
+enablement of the grid, so we only see the axis labels if the grid is also on"*, and there is no
+coordinates setting left to touch - the menu item is gone (OB-179).
+
+---
+
+<a id="mt-324"></a>
+
+### MT-324 - 2026-09-07 - Should closing the track diagram editor stop the trains
+
+**Disposition:** needs test
+**From:** ACC-B2 (split from MT-269)
+
+**Written:** 2026-09-07
+
+**A ruling I did not want to make for you.**
+
+When `VD11-A2` stopped the emergency stop firing on every setup edit, its comment listed the callers
+that reach that code. **It listed four and there are five.** The one it missed is the reload after the
+track diagram editor closes, and that path arrives with the stop skipped.
+
+That path is different in kind: the geometry itself was just edited and every layout object replaced,
+which is much closer to *choosing a different railway* - what the stop is for - than to typing a
+display name, which is what the narrowing was argued from. **2.8.1 through rc11 stopped trains there
+and rc12 does not.**
+
+**Steps**
+
+1. Drive a locomotive by hand.
+2. Open the track diagram editor, change something, and close it.
+
+**Expected today:** it keeps rolling.
+
+**The question:** should it? My view is that it should stop - a hand-throttled train keeps rolling
+while the new layout believes everything is parked - but you built that narrowing for a reason and the
+boundary is yours.
+
+---
+
+<a id="mt-325"></a>
+
+### MT-325 - 2026-09-07 - The import names the hand-written locks it cannot reproduce
+
+**Disposition:** needs test
+**From:** ACC-B1 (split from MT-269)
+
+**Written:** 2026-09-07
+
+A 2.8.1 connection could lock other connections by hand. The new model works locks out from the track
+diagram - two connections sharing a square lock each other - which reproduces most of them and cannot
+reproduce a lock between connections that share no square: parallel tracks, an electrical section, a
+clearance rule. Your own legacy file carries **116 such references across 50 of its 90 connections**.
+
+**Steps**
+
+1. Import a 2.7.4c/2.8.1 `autonomy.json` and read the line about locks.
+
+**Expected**
+
+It names them, with a count, as it already names the four other things it drops. The import used to be
+silent about all 116.
+
+**What to do with it:** think about whether any of those locks was doing work the geometry does not
+do. I deliberately have NOT worked out which of the 116 are already covered - that needs the derived
+graph, and a report naming a lock that turns out to be reproduced is wrong in the safe direction.
+
+---
+
+<a id="mt-326"></a>
+
+### MT-326 - 2026-09-07 - A declined setup edit survives quitting
+
+**Disposition:** needs test
+**From:** ACC-B3 (split from MT-269)
+
+**Written:** 2026-09-07
+
+When a setup edit cannot be applied because autonomy is running, the message says *"it will be picked
+up the next time the setup is loaded"*. That was not true on its own: the save on the way out folds the
+running layout back over the configuration and removes what the layout does not carry - and the layout
+was built before the edit. Exiting deleted the edit, silently, on the path the message called safe.
+
+**Steps**
+
+1. Edit the setup while autonomy is running, and let the edit be declined.
+2. Stop autonomy and quit.
+3. Restart.
+
+**Expected**
+
+The edit is there, and the log says the exit save was skipped.
+
+**The cost:** this session's train positions are not remembered, which the next run re-establishes -
+against authored data that nothing else would bring back.
+
+---
+
+<a id="mt-327"></a>
+
+### MT-327 - 2026-09-07 - A hand dispatch that fails with autonomy stopped
+
+**Disposition:** needs test
+**From:** FR3-C2, DAY-C3 (split from MT-271)
+
+**Written:** 2026-09-07
+
+**A sentence you will only ever see when something has gone wrong**, which is why it needs you:
+reaching it from a test means making a dispatch fail on purpose.
+
+**Steps**
+
+1. With autonomy **not** running, send a train somewhere from the track diagram's right-click menu or
+   the commands panel, and arrange for it to fail - the likeliest way is an accessory that has gone
+   missing, or a decoder that does not answer.
+
+**Expected**
+
+The log says autonomy was not running and there is nothing to restart, and tells you to check where
+that locomotive is standing. It used to say *"Autonomy has stopped itself so the railway can be parked
+and started again"*, which sent you to press Start over something that was never running.
+
+---
+
+<a id="mt-328"></a>
+
+### MT-328 - 2026-09-07 - The same failure with autonomy running still says to restart
+
+**Disposition:** needs test
+**From:** FR3-C2 (split from MT-271)
+
+**Written:** 2026-09-07
+
+**Steps**
+
+1. With autonomy **running**, make a dispatch fail the same way as [MT-327](#mt-327).
+
+**Expected**
+
+The old sentence: the run really has stopped itself, and Start really is what puts it back.
+
+If both cases say the same thing, the flag that chooses between them is being read after the stop has
+already cleared it.
 
 ---
 

@@ -52,6 +52,25 @@ tracked in the wrong place, or replaced by a later entry that covers the same gr
 is hard or unwelcome. Say which entry or receipt took it over, by tag, in the Comments. If nothing
 took it over, it is not superseded; it is outstanding.
 
+**ONE TEST PER ENTRY.** Adam, 2026-09-07: *"make each MT be one test, not a laundry list of different
+things, so that I can provide clear feedback. Update current MTs to each have one set of steps and one
+outcome being checked. More MTs is OK."*
+
+He had said it before - 2026-08-23, on MT-119: *"031, 030, 036 - file under new MTs. One test per MT
+ticket."* - and it drifted back within a fortnight, because a day's work naturally arrives as a list
+and writing it as one entry is less effort for the writer. It is more effort for the reader, and the
+reader is the one who has to run it: **a bundle has one disposition, so a verdict on any item is a
+verdict on all of them.** MT-119 sat at "does not work" for three fixes that worked, and told nobody
+which two did not.
+
+An entry has one set of steps and one thing being checked. Where several things must be true for one
+outcome, that is one entry; where several outcomes can be judged apart, that is several. A question
+for Adam to rule on is an entry too, and says so at the top.
+
+Splitting an existing bundle does not rewrite it: it goes to **superseded** with a note naming its
+replacements, exactly as rule 4 provides for, and the replacements are appended at the bottom with new
+tags.
+
 **5. Append only.** Entries are never deleted, never reordered, and their instructions are never
 rewritten. Two things may change on an existing entry: its **Disposition** line, and its **Comments**
 section, which is added to at the bottom. Everything else is history.
