@@ -119,7 +119,7 @@ public class testTheGoldenLayoutHoldsTogether
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        pages = support.LayoutSandbox.wired(model, parser);
 
         store = new AutonomyCompanionStore(working);
 

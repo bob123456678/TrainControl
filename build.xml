@@ -163,6 +163,7 @@
         <test-one-class class="testALocomotiveDoesNotEvictItself"/>
         <test-one-class class="testThePlaceholderLocomotive"/>
         <test-one-class class="testDiagramLooksRight"/>
+        <test-one-class class="testTheShadingIsRedrawnWhenATrainMoves"/>
         <test-one-class class="testSidebarIcons"/>
         <test-one-class class="testTheWaitMarkIsAnHourglass"/>
         <test-one-class class="testTheRebuildIsOnePass"/>
@@ -339,11 +340,13 @@
         <test-one-class class="testADirectionChangeIsNotSwallowed"/>
         <test-one-class class="testAPastedTrainKeepsItsDirection"/>
         <test-one-class class="testATrainCoversTheTrackBehindIt"/>
+        <test-one-class class="testOneChangeSticks"/>
         <test-one-class class="testATrainTooLongIsRefusedTheBerth"/>
         <test-one-class class="testDismissingTheReversalPromptKeepsTheDirection"/>
         <test-one-class class="testLengthRulesUnderRandomLayouts"/>
         <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
         <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
+        <test-one-class class="testTheShadingFollowsTheTrain"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

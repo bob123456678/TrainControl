@@ -109,7 +109,7 @@ public class testAutonomyDiagramSampleLayout
 
         // This layout has no magnetartikel.cs2 - it ships only the diagram and its autonomy file - and
         // the accessory list is used solely to pick a decoder protocol, so an empty one is correct here.
-        pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        pages = support.LayoutSandbox.wired(model, parser);
 
         wireAccessories();
 

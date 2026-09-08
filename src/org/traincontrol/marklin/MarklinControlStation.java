@@ -588,6 +588,156 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
 
+    /**
+     * Wires one parsed page to the accessories, feedbacks and routes its tiles name.
+     *
+     * **Parsing does not do this, and that is not obvious.** `CS2File.parseLayout` reads the files and
+     * builds the components; what attaches a component to a live `Accessory` - creating one from the
+     * tile's own address when this station has none - is this loop, which used to be buried inside
+     * `syncLayouts`. A caller that parses the same files with its own `CS2File` gets a complete-looking
+     * diagram in which every switch and signal has a null accessory.
+     *
+     * That is exactly what twenty test classes were doing (2026-09-08). `TileGraph` reports
+     * `errorTileHasNoAddress` for an unwired switch and refuses to trace through it, so a railway of
+     * about ninety connections reduced to eighteen edges and built to five, with 51 of 59 points
+     * isolated - and the tests standing on it passed, because an assertion about a square with no edges
+     * is usually an assertion about null.
+     *
+     * Public for that reason: the alternative was a second copy of this loop in the test support, which
+     * is the kind of copy this codebase keeps paying for.
+     *
+     * @param l the page
+     * @param feedbackAddresses collects the s88 addresses seen, for the caller's pruning; may be null
+     */
+    public void wireComponents(LayoutDiagram l, List<Integer> feedbackAddresses)
+    {
+        if (l == null) return;
+
+        List<Integer> seen = feedbackAddresses == null ? new LinkedList<Integer>() : feedbackAddresses;
+
+        for (LayoutDiagramComponent c : l.getAll())
+        {
+            if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+            {                            
+                int newAddress = c.getAddress() - 1;                    
+                int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, c.getProtocol());
+                
+                // Make sure all components are added
+                if (!this.accDB.hasId(targetAddress) ||
+                    // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
+                   (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
+                        
+                    // Create / convert the second accessory to switch if needed
+                    c.isThreeWay() && (
+                        !this.accDB.hasId(targetAddress + 1) ||
+                        (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
+                    )
+                )
+                {
+                    // Skip components without a digital address
+                    if (c.getAddress() <= 0)
+                    {
+                        this.logf("layout.invalidAccessoryAddress", c.getTypeName(), c.getAddress(), c.getX(), c.getY());
+                        continue;
+                    }
+                    
+                    if (c.isSwitch() || c.isUncoupler())
+                    {
+                        newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getPrimaryDriveState());
+
+                        if (c.isThreeWay())
+                        {
+                            newAccessory(c.getAddress() + 1, newAddress + 1, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getSecondaryDriveState());                                            
+                        }
+                    }
+                    else if (c.isSignal())
+                    {
+                        newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getPrimaryDriveState());
+                    }
+
+                    this.logf("acc.adding", this.accDB.getById(targetAddress).getName());
+                }
+                else
+                {            
+                    // Actually not needed, since the station
+                    // only updates its file on boot...
+                    /*int cState = c.getState();
+                    boolean state = this.accDB.getById(targetAddress).isSwitched();
+
+                    // Ensure our state is synchronized
+                    if (c.isThreeWay())
+                    {
+                        boolean state2 = this.accDB.getById(targetAddress + 1).isSwitched();
+
+                        if (cState == 1 && state == true)
+                        {
+                            this.accDB.getById(targetAddress).setSwitched(false);
+                            this.accDB.getById(targetAddress + 1).setSwitched(false);
+                        }
+
+                        if (cState == 2 && state2 != true)
+                        {
+                            this.accDB.getById(targetAddress).setSwitched(false);
+                            this.accDB.getById(targetAddress + 1).setSwitched(true);
+                        }
+
+                        if (cState == 0 && state == false)
+                        {
+                            this.accDB.getById(targetAddress).setSwitched(true);
+                        }
+
+                        if (cState == 0 && state2 == true)
+                        {
+                            this.accDB.getById(targetAddress + 1).setSwitched(false);
+                        }
+                    }
+                    else if (c.isSwitch() || c.isSignal())
+                    {
+                        if (cState == 1)
+                        {
+                            this.accDB.getById(targetAddress).setSwitched(false);
+                        }
+
+                        if (cState == 0)
+                        {
+                            this.accDB.getById(targetAddress).setSwitched(true);
+                        }   
+                    }*/
+                }  
+
+                c.setAccessory(this.accDB.getById(targetAddress));
+
+                if (c.isThreeWay())
+                {
+                    c.setAccessory2(this.accDB.getById(targetAddress + 1));
+                }
+            }
+            else if (c.isFeedback())
+            {                            
+                if (!this.feedbackDB.hasId(c.getRawAddress()))
+                {
+                    newFeedback(c.getRawAddress(), null);   
+                }
+
+                // CS2 gives us no state info :(
+                c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
+                
+                seen.add(c.getRawAddress());
+            }   
+            else if (c.isRoute())
+            {
+                MarklinRoute r = this.routeDB.getById(c.getAddress());
+                
+                if (r == null)
+                {
+                    this.logf("layout.routeButtonMissingRoute", c.getAddress(), c.getX(), c.getY());
+                }
+                
+                c.setRoute(r);
+            }
+        }
+    }
+
     private void syncLayouts() throws Exception
     {
         // Prune stale feedbacks
@@ -648,127 +798,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             this.logf("layout.imported", l.getName());
 
-            for (LayoutDiagramComponent c : l.getAll())
-            {
-                if (c.isSwitch() || c.isSignal() || c.isUncoupler())
-                {                            
-                    int newAddress = c.getAddress() - 1;                    
-                    int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, c.getProtocol());
-                    
-                    // Make sure all components are added
-                    if (!this.accDB.hasId(targetAddress) ||
-                        // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                       (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
-                            
-                        // Create / convert the second accessory to switch if needed
-                        c.isThreeWay() && (
-                            !this.accDB.hasId(targetAddress + 1) ||
-                            (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
-                        )
-                    )
-                    {
-                        // Skip components without a digital address
-                        if (c.getAddress() <= 0)
-                        {
-                            this.logf("layout.invalidAccessoryAddress", c.getTypeName(), c.getAddress(), c.getX(), c.getY());
-                            continue;
-                        }
-                        
-                        if (c.isSwitch() || c.isUncoupler())
-                        {
-                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getPrimaryDriveState());
-
-                            if (c.isThreeWay())
-                            {
-                                newAccessory(c.getAddress() + 1, newAddress + 1, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getSecondaryDriveState());                                            
-                            }
-                        }
-                        else if (c.isSignal())
-                        {
-                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getPrimaryDriveState());
-                        }
-
-                        this.logf("acc.adding", this.accDB.getById(targetAddress).getName());
-                    }
-                    else
-                    {            
-                        // Actually not needed, since the station
-                        // only updates its file on boot...
-                        /*int cState = c.getState();
-                        boolean state = this.accDB.getById(targetAddress).isSwitched();
-
-                        // Ensure our state is synchronized
-                        if (c.isThreeWay())
-                        {
-                            boolean state2 = this.accDB.getById(targetAddress + 1).isSwitched();
-
-                            if (cState == 1 && state == true)
-                            {
-                                this.accDB.getById(targetAddress).setSwitched(false);
-                                this.accDB.getById(targetAddress + 1).setSwitched(false);
-                            }
-
-                            if (cState == 2 && state2 != true)
-                            {
-                                this.accDB.getById(targetAddress).setSwitched(false);
-                                this.accDB.getById(targetAddress + 1).setSwitched(true);
-                            }
-
-                            if (cState == 0 && state == false)
-                            {
-                                this.accDB.getById(targetAddress).setSwitched(true);
-                            }
-
-                            if (cState == 0 && state2 == true)
-                            {
-                                this.accDB.getById(targetAddress + 1).setSwitched(false);
-                            }
-                        }
-                        else if (c.isSwitch() || c.isSignal())
-                        {
-                            if (cState == 1)
-                            {
-                                this.accDB.getById(targetAddress).setSwitched(false);
-                            }
-
-                            if (cState == 0)
-                            {
-                                this.accDB.getById(targetAddress).setSwitched(true);
-                            }   
-                        }*/
-                    }  
-
-                    c.setAccessory(this.accDB.getById(targetAddress));
-
-                    if (c.isThreeWay())
-                    {
-                        c.setAccessory2(this.accDB.getById(targetAddress + 1));
-                    }
-                }
-                else if (c.isFeedback())
-                {                            
-                    if (!this.feedbackDB.hasId(c.getRawAddress()))
-                    {
-                        newFeedback(c.getRawAddress(), null);   
-                    }
-
-                    // CS2 gives us no state info :(
-                    c.setFeedback(this.feedbackDB.getById(c.getRawAddress()));
-                    
-                    feedbackAddresses.add(c.getRawAddress());
-                }   
-                else if (c.isRoute())
-                {
-                    MarklinRoute r = this.routeDB.getById(c.getAddress());
-                    
-                    if (r == null)
-                    {
-                        this.logf("layout.routeButtonMissingRoute", c.getAddress(), c.getX(), c.getY());
-                    }
-                    
-                    c.setRoute(r);
-                }
-            }
+            // EACH COMPONENT WIRED TO WHAT IT STANDS FOR - and this is a method so that the test
+            // suite can reach it (2026-09-08).  See its javadoc: parsing does not wire anything, and
+            // twenty test classes were building their pages with a second parser and getting a
+            // railway with no accessories on it at all.
+            this.wireComponents(l, feedbackAddresses);
         }
         
         // Prune stale feedback - but only when the whole railway was read (RC-A3).

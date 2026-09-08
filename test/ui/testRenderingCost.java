@@ -63,7 +63,7 @@ public class testRenderingCost
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        parsed = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        parsed = support.LayoutSandbox.wired(model, parser);
 
         // The same wiring and the same exclusions testAutonomyDiagramSampleLayout uses.
         //
@@ -355,7 +355,7 @@ public class testRenderingCost
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<LayoutDiagram> fresh = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        List<LayoutDiagram> fresh = support.LayoutSandbox.wired(model, parser);
 
         // Wired by ADDRESS, one accessory object however many tiles carry it - which is what
         // MarklinControlStation.syncLayouts does through accDB.getById

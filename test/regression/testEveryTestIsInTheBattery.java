@@ -141,6 +141,86 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
+     * NO TEST BUILDS ITS PAGES WITHOUT WIRING THEM.
+     *
+     * `CS2File.parseLayout` reads the files and builds the components. What attaches a component to a
+     * live `Accessory` - creating one from the tile's own address when the station has none - is
+     * `MarklinControlStation.wireComponents`, in a loop after the parse. A test that constructs its own
+     * parser and calls `parseLayout` directly skips that loop, and every switch and signal comes back
+     * with a null accessory.
+     *
+     * `TileGraph` reports `errorTileHasNoAddress` for an unwired switch and refuses to trace through
+     * it, so the railway falls to pieces. Measured on the sample layout, 2026-09-08:
+     *
+     * | | re-parsed | wired |
+     * |---|---|---|
+     * | switches and signals with an accessory | 0 of 222 | 221 of 222 |
+     * | reduced edges | 18 | 128 |
+     * | built points / edges | 59 / 5 | 96 / 149 |
+     * | isolated points | 51 | 3 |
+     *
+     * **Twenty test classes were doing it**, and they passed - an assertion about a square with no
+     * edges is usually an assertion about null. Converting them turned up ten failures, including a
+     * class written for the paste-direction defects that could not reach the code it was about.
+     *
+     * `support.LayoutSandbox.wired(model, parser)` is the recipe. This guard exists because the wrong
+     * one looks completely reasonable and produces a green suite.
+     *
+     * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside
+     * the excused list fails this.
+     *
+     * @throws Exception on a failure to read the tests
+     */
+    @Test
+    public void testNoTestParsesALayoutWithoutWiringIt() throws Exception
+    {
+        // `testParseCS2Layout` is excused because it is testing the PARSER. An unwired parse is what
+        // that class is about, and wiring would change the thing under test.
+        // THE GUARD SEARCHES FOR A CALL AND CANNOT SEE CONTEXT, so three files are excused by name.
+        //
+        // `testParseCS2Layout` is testing the PARSER: an unwired parse is the thing under test there,
+        // and wiring it would change what it measures.
+        //
+        // `LayoutSandbox` is the CURE - the wiring helper contains the call by definition, and its
+        // javadoc quotes the wrong form to explain it. This file quotes it too, in the search below.
+        // Both were flagged by the first version of this guard, which is the ordinary way a source
+        // rule catches itself: the comment above it predicted exactly that and it happened anyway.
+        java.util.List<String> excused = java.util.Arrays.asList(
+            "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java");
+
+        java.util.List<String> unwired = new java.util.ArrayList<String>();
+
+        for (File folder : new File("test").listFiles())
+        {
+            if (!folder.isDirectory()) continue;
+
+            File[] files = folder.listFiles();
+
+            if (files == null) continue;
+
+            for (File file : files)
+            {
+                if (!file.getName().endsWith(".java")) continue;
+
+                if (excused.contains(file.getName())) continue;
+
+                String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+                // The call, not the words: LayoutSandbox.wired contains this text itself, inside the
+                // helper that does the wiring, and naming it here would report the cure as the disease.
+                if (source.contains(".parseLayout(new LinkedList<MarklinAccessory>())")
+                    || source.contains(".parseLayout(new LinkedList<>())"))
+                {
+                    unwired.add(folder.getName() + "/" + file.getName());
+                }
+            }
+        }
+
+        assertTrue(unwired.isEmpty(),
+            "these tests parse a layout and never wire its tiles to their accessories, so they run against a railway with almost no edges in it and pass by asserting about null. Use support.LayoutSandbox.wired(model, parser): " + unwired);
+    }
+    /**
      * Every test-SHAPED method carries an annotation, not just the class (TST-C2).
      *
      * The check above answers "is this FILE in the battery", by whether `@Test` appears in it

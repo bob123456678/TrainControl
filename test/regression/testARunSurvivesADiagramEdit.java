@@ -474,7 +474,7 @@ public class testARunSurvivesADiagramEdit
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        return parser.parseLayout(new LinkedList<MarklinAccessory>());
+        return support.LayoutSandbox.wired(model, parser);
     }
 
     private static File aWorkingCopy() throws Exception

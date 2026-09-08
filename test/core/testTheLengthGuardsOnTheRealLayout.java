@@ -69,7 +69,7 @@ public class testTheLengthGuardsOnTheRealLayout
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
         // THE SWITCHES HAVE TO BE WIRED BEFORE THE DIAGRAM IS REDUCED, and forgetting it is why every
         // probe written against this layout today reported "no path".

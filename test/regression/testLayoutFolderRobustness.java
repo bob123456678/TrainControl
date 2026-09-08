@@ -118,7 +118,7 @@ public class testLayoutFolderRobustness
             CS2File parser = new CS2File(path, model);
             parser.setLayoutDataLoc(path);
 
-            List<LayoutDiagram> loaded = parser.parseLayout(new LinkedList<MarklinAccessory>());
+            List<LayoutDiagram> loaded = support.LayoutSandbox.wired(model, parser);
 
             assertNotNull(loaded, "a missing page took the whole layout down");
 

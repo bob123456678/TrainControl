@@ -522,6 +522,42 @@ when a train is manually moved to a new station in the track digram viewer using
 
 when copy and pasting, the right click menu direction still doesn't match the shown direction.  moving a train in the track diagram editor from tunnelleftpark (EN 57-203) to bottommaina showed its direction as eastbound in its station label, but westbound in the right click menu.  also, its "arrived from" is not set, even though it is forced.
 
+### OB-182 - 2026-09-08 - arrival direction prompt error
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 01:00  
+**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+placing a train on bottommainc asks about arrival from the west or the north, whereas it should be east or west.
+
+### OB-183 - 2026-09-08 - changing home inconsistency
+
+**Kind:** bug  
+**Raised from:** MT-300 (Return Home reaches a split platform from either direction)  
+**Filed:** 2026-09-08 01:04  
+**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Changing a home can teleport a current locomotive's location on the digram/graph.
+
+### OB-184 - 2026-09-08 - home planner bug
+
+**Kind:** bug  
+**Raised from:** MT-300 (Return Home reaches a split platform from either direction)  
+**Filed:** 2026-09-08 01:04  
+**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The home planner does not consider blocks due to the length of a train, i.e. a train that blocks edges behind it.
+
+### OB-185 - 2026-09-08 - every click is a flicker
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 01:05  
+**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+changing any pathing arrow in the track autonomy editor makes the whole screen flicker.  warning updates can be deferred a few seconds later if needed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

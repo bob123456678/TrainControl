@@ -61,7 +61,7 @@ public class testTracedPathIsContinuous
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
         session = new AutonomySession(folder);
         session.open(pages);
@@ -104,6 +104,16 @@ public class testTracedPathIsContinuous
                 if (previous.equals(here)) continue;
 
                 if (TileGraph.gridSideTowards(previous, here) != null) continue;
+
+                // A PORTAL IS NOT A GAP.  A link or a tunnel joins two squares that are deliberately
+                // not neighbours - usually on different pages - and a train crossing one continues at
+                // its partner. There is no line to draw between them and none is missing: each page
+                // gets its own end of the run.
+                //
+                // Checked through the store's own pairing rather than assumed from "both ends are
+                // links". Two unrelated links that happened to be consecutive would be a real break,
+                // and "they are both links" would wave it through.
+                if (here.equals(session.getStore().getPortalPartner(previous))) continue;
 
                 breaks.add(previous + " -> " + here + " (" + describe(previous)
                     + " to " + describe(here) + ")");

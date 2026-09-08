@@ -124,6 +124,39 @@ public final class LayoutSandbox
     }
 
     /**
+     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does.
+     *
+     * Written to be a one-word change at each call site - `parser.parseLayout(new LinkedList<>())`
+     * becomes `LayoutSandbox.wired(model, parser)` - so each class keeps its own folder logic and the
+     * only thing that changes is that the pages come back attached to something.
+     *
+     * Parsing alone leaves every switch and signal with a null accessory. `TileGraph` reports
+     * `errorTileHasNoAddress` for each and refuses to trace through it, so this railway reduced to 18
+     * edges and built to 5, with 51 of 59 points isolated. See `wiredPages` for both columns.
+     *
+     * `wireComponents` is the application's own loop, made reachable rather than copied here.
+     *
+     * @param model the control station whose accessory, feedback and route databases to wire against
+     * @param parser the parser, already pointed at a layout folder
+     * @return the pages, wired
+     * @throws Exception if the folder cannot be read
+     */
+    public static java.util.List<org.traincontrol.base.LayoutDiagram> wired(
+        org.traincontrol.marklin.MarklinControlStation model,
+        org.traincontrol.marklin.file.CS2File parser) throws Exception
+    {
+        java.util.List<org.traincontrol.base.LayoutDiagram> pages = parser.parseLayout(
+            new java.util.LinkedList<org.traincontrol.marklin.MarklinAccessory>());
+
+        for (org.traincontrol.base.LayoutDiagram page : pages)
+        {
+            model.wireComponents(page, null);
+        }
+
+        return pages;
+    }
+
+    /**
      * The pages the MODEL parsed, wired to their accessories - not a second parse of the same files.
      *
      * **Measured 2026-09-08, and this is the difference between a railway and a skeleton.** Every

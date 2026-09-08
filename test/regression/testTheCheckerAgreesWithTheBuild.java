@@ -114,7 +114,7 @@ public class testTheCheckerAgreesWithTheBuild
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
         wireAccessories(pages);
 

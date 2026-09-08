@@ -63,7 +63,7 @@ public class testFacingFollowsTheTrack
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<LayoutDiagram> pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+        List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
         // A throwaway copy, not the tracked fixture itself (TST-C17). `session.open` runs
         // `migrateStationLabels`, which calls `store.save()` and `page.saveChanges(...)` the moment a
@@ -115,11 +115,16 @@ public class testFacingFollowsTheTrack
      * code.  Each line reads: the square, the track on it, and where a train standing there can be
      * pointing.  The derivation, in full, for the first line - the curve MT-125 was reported about:
      *
-     *   `1 - Main:0,11` carries one piece of track, joining its NORTH side to its EAST side.  Only one
-     *   of those two ends is reachable in the reduced graph - the north one - so the only train that
-     *   can be standing here came in by the north.  It came down the north leg and round the curve, so
-     *   its front is at the east end: it is pointing EAST.  It is not pointing south, and south is the
-     *   answer the compass rule gives; there is no track at all on the south side of this square.
+     *   `1 - Main:0,11` carries one piece of track, joining its NORTH side to its EAST side.  A train
+     *   that came down the north leg and round the curve has its front at the east end: it is pointing
+     *   EAST.  One that came in by the east is pointing NORTH.  **What it is never pointing is SOUTH**,
+     *   which is the answer the compass rule gives, and there is no track at all on that side.  That is
+     *   the whole of MT-125 and it is what this line pins.
+     *
+     *   The line used to expect EAST alone, on the grounds that only the north end was reachable. That
+     *   was a fact about a graph with eighteen edges in it - the suite was building its pages with a
+     *   parser that wired no accessories, so most of the railway was missing (2026-09-08). On the real
+     *   reduction both ends are reachable and both answers are right.
      *
      * The straights are here for the same reason a control is: on `1 - Main:0,3` the two rules agree,
      * and a table containing only curves would not notice a change that broke straights.  `6,1` is
@@ -145,12 +150,28 @@ public class testFacingFollowsTheTrack
         // square, the track on it, where a train standing on it can be pointing
         Object[][] expected =
         {
-            {"1 - Main:0,11", "N-E", Arrays.asList(Side.E)},
-            {"1 - Main:12,9", "S-W", Arrays.asList(Side.W)},
-            {"1 - Main:0,3",  "N-S", Arrays.asList(Side.N)},
+            // BOTH ENDS, since 2026-09-08.  The line used to read `Arrays.asList(Side.E)`, derived
+            // from "only the north end is reachable in the reduced graph" - see the javadoc. That was
+            // true of a graph with 18 edges in it, which is what this suite was building before the
+            // fixture recipe was fixed. On the real reduction the east end is reachable too, so a
+            // train here can have come in either way and can be pointing either way.
+            {"1 - Main:0,11", "N-E", Arrays.asList(Side.E, Side.N)},
+            // Reachable from 11,7 and from 16,10 - two directions, so both ends of the S-W track are
+            // arrival sides and both are facings.  Same correction as the line above.
+            {"1 - Main:12,9", "S-W", Arrays.asList(Side.W, Side.S)},
+            // A STRAIGHT, and the control for the two curves above: reached from 0,11 and from 2,1,
+            // so both ends again - and on a straight both rules agree, which is the point of having it.
+            {"1 - Main:0,3",  "N-S", Arrays.asList(Side.S, Side.N)},
+            // **THE LINE THAT STILL DISCRIMINATES.**  Reached only from 6,1 - one arrival side - so a
+            // train here has one possible heading.  The mutation this class was written against
+            // (offer every end of every route, regardless of which side the train arrived by) makes
+            // this square offer both, and the other four lines can no longer catch it: on the real
+            // railway they are reachable from both ends, so both answers are correct there.
             {"1 - Main:2,1",  "E-W", Arrays.asList(Side.W)},
             {"1 - Main:6,1",  "E-W", Arrays.asList(Side.W, Side.E)}
         };
+
+        java.util.List<String> disagreed = new java.util.ArrayList<>();
 
         for (Object[] line : expected)
         {
@@ -167,12 +188,20 @@ public class testFacingFollowsTheTrack
             assertEquals(describe(session.getRoutes(tile)), line[1],
                 name + " no longer carries the track the expected facing was worked out from");
 
-            assertEquals(session.facingChoices(tile), line[2],
-                name + " offers " + session.facingChoices(tile) + " where a train on its track can "
-                + "only be pointing " + line[2] + ".  A facing is the OTHER end of the piece of track "
-                + "the train is standing on - never the side it came in by, and only on a straight the "
-                + "opposite compass point (MT-125)");
+            // EVERY LINE, not the first one that disagrees.  A loop that fails on line one hides the
+            // other four, and the four are where a change is diagnosed: one wrong square is a square,
+            // five wrong squares is a rule.
+            if (!session.facingChoices(tile).equals(line[2]))
+            {
+                disagreed.add(name + " offers " + session.facingChoices(tile)
+                    + " and the table says " + line[2]);
+            }
         }
+
+        assertTrue(disagreed.isEmpty(),
+            "a facing is the OTHER end of the piece of track the train is standing on - never the side"
+            + " it came in by, and only on a straight the opposite compass point (MT-125). These"
+            + " squares disagree with the table: " + disagreed);
     }
 
     /**

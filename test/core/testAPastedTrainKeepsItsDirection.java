@@ -174,16 +174,47 @@ public class testAPastedTrainKeepsItsDirection
 
             if (held.isEmpty()) continue;
 
-            assertEquals(held.size(), 1,
-                station.getName() + " is a terminus, so there is one way to stand there: " + held);
+            // A TERMINUS IS NOT ALWAYS ONE COPY, which is what this used to assert (2026-09-08).
+            //
+            // The builder emits a node per (arrival side x reverse), and "terminus" here means a
+            // square where trains must turn - authored `mustReverse` - not necessarily a dead end. A
+            // turning station reachable from two directions therefore builds to FOUR:
+            // `BottomMainPost {southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}`.
+            //
+            // The old expectation of one copy was true of a fixture that was missing most of its
+            // railway - the suite parsed its pages without wiring their accessories, so nothing was
+            // reachable from more than one direction and no square ever split.
+            //
+            // The property worth pinning is the one Adam asked for and it does not depend on the
+            // count: **a train put down here takes a heading the square can hold, whatever it arrived
+            // doing** - "for terminuses, they must reverse on paste".
+            Side arriving = opposite(held.values().iterator().next());
 
-            Side only = held.values().iterator().next();
+            Side afterwards = AutonomySession.facingAfterAPaste(held, arriving, station.getName());
 
-            // Arriving the other way round - which is what makes this a reversal rather than a
-            // placement that happened to agree.
-            assertEquals(AutonomySession.facingAfterAPaste(held, opposite(only), station.getName()),
-                only,
-                station.getName() + " did not turn a train that arrived facing " + opposite(only));
+            if (held.size() == 1)
+            {
+                // One way to stand there, so that is the answer whatever the train was doing - the
+                // reversal proper.
+                assertEquals(afterwards, held.values().iterator().next(),
+                    station.getName() + " has one copy and did not turn a train that arrived facing "
+                    + arriving);
+            }
+            else if (held.containsValue(arriving))
+            {
+                // Several copies and one of them can hold what the train is doing: the heading
+                // survives, which is the other half of the same rule.
+                assertEquals(afterwards, arriving,
+                    station.getName() + " turned a train it had a copy for: " + held);
+            }
+            else
+            {
+                // Several copies and none of them can hold it. Nothing here knows which the operator
+                // meant, so the value is cleared rather than invented - SPEC-A1.
+                assertNull(afterwards,
+                    station.getName() + " invented a heading for a train none of its copies can hold: "
+                    + held);
+            }
 
             checked.add(station.getName());
         }
@@ -268,27 +299,27 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
-     * What this layout can and cannot prove, measured rather than assumed.
+     * SQUARES DO SPLIT ON THIS RAILWAY, and that retires a caveat four review findings were argued from.
      *
-     * **Deleted twice by accident, restored twice (CONF-B5).**  Both times a script sliced from one
-     * method to an anchor below it and took this with it, and both times nothing broke - it is the
-     * one method here that nothing else references, so the only symptom was the count going down by
-     * one.  Worth saying out loud, because it is the only measurement backing a caveat that appears in
-     * every review report of the day: four findings had their severity argued from it.
+     * This method used to assert the opposite - every named square builds to exactly ONE copy - and it
+     * said in its own words what to do on the day it went red: *"that is the day the controls those
+     * findings wanted become writable."* That day is 2026-09-08, and nothing about the railway changed.
+     * The suite had been parsing its pages without wiring their accessories, so `TileGraph` refused to
+     * trace through 222 switches and signals and the railway reduced to eighteen edges. Nothing was
+     * reachable from two directions, so nothing ever split.
      *
-     * Every named square on this railway builds to exactly ONE copy, even after being marked
-     * may-reverse - which is the instruction to split.  Two things follow:
+     * With the pages wired, `BottomMainPost` builds to four copies -
+     * `{southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}` - and so does
+     * `RampDown`. Every caveat of the form "no test on this layout can show a facing PICKING between
+     * copies" is void, and `testAPlacementLandsOnTheCopyItsFacingNames` below is the control.
      *
-     * - No test run against this layout can show a facing PICKING between copies, so the reversal Adam
-     *   reported is the recorded value rather than a different copy being chosen.
-     * - A compulsory turn produces no turning copy here either, so the shape `REG6-A1` needs cannot be
-     *   built on this railway - which is why `testACompulsoryTurnIsNotAQuestion` checks the removed
-     *   clause as source beside its behavioural assertion.
+     * MUTATION: a fixture that stops wiring its accessories fails this, which is the point - it is the
+     * one assertion in the suite that notices the railway has gone missing.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testEverySquareOnThisLayoutBuildsToOneCopy() throws Exception
+    public void testThisRailwayHasSquaresThatSplit() throws Exception
     {
         java.util.List<String> split = new LinkedList<>();
 
@@ -311,12 +342,88 @@ public class testAPastedTrainKeepsItsDirection
 
         assertTrue(named >= 2, "no named square was reached, so this measured nothing");
 
-        // Not a requirement - a record.  The day a square DOES build to more than one copy, this goes
-        // red, and that is the day the controls those findings wanted become writable.
-        assertTrue(split.isEmpty(),
-            "a square now builds to more than one copy, so the facing can finally be shown to pick"
-            + " between them - write that control now, and re-read the reachability caveats in the"
-            + " review reports, which all assumed this could not happen: " + split);
+        assertFalse(split.isEmpty(),
+            "not one square on this railway builds to more than one copy. That is not what this layout"
+            + " looks like - it is what a layout looks like when the fixture parsed its pages without"
+            + " wiring their accessories, which cuts the reduction to eighteen edges and leaves nothing"
+            + " reachable from two directions. Check LayoutSandbox.wired is being used");
+    }
+
+    /**
+     * A PLACEMENT LANDS ON THE COPY ITS FACING NAMES - the control the method above asked for.
+     *
+     * A square that splits is several `Point`s, one per (arrival side x reverse), and **which one a
+     * train is on IS its direction**. `AutonomyBuilder.placementCopy` picks between them by the stored
+     * facing and falls through to COPY 0 when nothing matches - and copy 0 is whichever the builder
+     * happened to emit first, which is not a direction anybody chose. That fall-through is the
+     * mechanism behind the "the menu disagrees with the train" reports on this project, and until the
+     * fixture was fixed there was no square in the suite where it could be exercised at all.
+     *
+     * So: record each facing the square can hold in turn, build, and ask which copy the train is on.
+     * The answer must be the copy that holds that facing - for every one of them, not just the first,
+     * because a fall-through to copy 0 agrees with the answer exactly once.
+     *
+     * MUTATION: making `placementCopy` ignore the stored facing fails this on every copy but one.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAPlacementLandsOnTheCopyItsFacingNames() throws Exception
+    {
+        TileKey square = null;
+        Map<String, Side> copies = null;
+
+        for (Point station : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(station.getName());
+
+            if (key == null) continue;
+
+            Map<String, Side> held = session.facingsFor(key);
+
+            // A square whose copies face DIFFERENT ways.  Four copies that between them hold only two
+            // headings still offer two answers, and picking by facing cannot distinguish the two that
+            // share one - so the set of distinct sides is what has to be bigger than one.
+            if (new java.util.LinkedHashSet<Side>(held.values()).size() > 1)
+            {
+                square = key;
+                copies = held;
+
+                break;
+            }
+        }
+
+        assertNotNull(square,
+            "no square on this railway builds to copies facing different ways, so the fall-through this"
+            + " pins cannot be reached and the test proves nothing");
+
+        java.util.Set<Side> tried = new java.util.LinkedHashSet<Side>();
+
+        for (Side facing : copies.values())
+        {
+            if (!tried.add(facing)) continue;
+
+            putDown(square, session.getStationIndex().pointNamesAt(square).get(0), facing);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Point landed = occupiedCopyOf(square);
+
+            assertNotNull(landed,
+                "no copy of " + square + " holds the train after recording a facing of " + facing);
+
+            assertEquals(copies.get(landed.getName()), facing,
+                "a train recorded as facing " + facing + " was built onto " + landed.getName()
+                + ", which faces " + copies.get(landed.getName()) + ". placementCopy falls through to"
+                + " the first copy when nothing matches, and the next capture writes that"
+                + " copy's"
+                + " side back as though the operator had chosen it - which is why the menu and the"
+                + " train disagree (SPEC-A1). Copies here: " + copies);
+        }
+
+        assertTrue(tried.size() > 1, "only one distinct facing was tried, so nothing was picked between");
+
+        lift(square);
     }
 
     /**
@@ -508,12 +615,15 @@ public class testAPastedTrainKeepsItsDirection
         // RECORDED -> BUILT -> READ OFF THE RAILWAY.
         model.parseAuto(session.buildConfiguration());
 
-        Point built = model.getAutoLayout().getPoint(pointName);
+        assertNotNull(model.getAutoLayout().getPoint(pointName) != null ? pointName : null,
+            "the point did not survive the build under its own name, so the square is not built at all");
 
-        assertNotNull(built, "the point did not survive the build");
+        // THE COPY HOLDING THE TRAIN, which on a split square is not the base-named one.
+        Point built = occupiedCopyOf(square);
 
-        assertNotNull(built.getCurrentLocomotive(),
-            "the train did not survive the build, so nothing below can be wiped by placing it");
+        assertNotNull(built,
+            "no copy of this square holds the train after the build, so nothing below can be wiped by"
+            + " placing it");
 
         assertEquals(built.getArrivedFrom(), side,
             "the arrival side was recorded and the railway does not have it (REG8-A1)");
@@ -607,13 +717,16 @@ public class testAPastedTrainKeepsItsDirection
 
         model.parseAuto(session.buildConfiguration());
 
-        Point built = model.getAutoLayout().getPoint(pointName);
+        assertNotNull(model.getAutoLayout().getPoint(pointName) != null ? pointName : null,
+            "the point did not survive the build, so nothing below is about the side");
 
-        assertNotNull(built, "the point did not survive the build, so nothing below is about the side");
+        // THE COPY HOLDING THE TRAIN - see occupiedCopyOf. Placing the train is what used to wipe the
+        // side, so the assertion has to be made where the train actually is.
+        Point built = occupiedCopyOf(square);
 
-        assertNotNull(built.getCurrentLocomotive(),
-            "the train did not survive the build - and it is placing the train that wipes the side,"
-            + " so without it this test cannot fail");
+        assertNotNull(built,
+            "no copy of this square holds the train after the build - and it is placing the train that"
+            + " wipes the side, so without it this test cannot fail");
 
         assertEquals(built.getArrivedFrom(), side,
             "the railway forgot which side the train came in by during the build. It was applied while"
@@ -655,6 +768,35 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     // ---------------------------------------------------------------- the door, and the shared parts
+
+    /**
+     * The built Point on this square that is actually holding the train.
+     *
+     * **A square is not a Point, and on this railway it often is not one Point either.** The builder
+     * emits a node per (arrival side x reverse), so `BottomMainPost` builds to four:
+     * `{southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}`. `getPoint(baseName)`
+     * then finds either a copy that is empty or nothing at all, and a test asserting on it reads "the
+     * train did not survive the build" when the train is standing perfectly happily on a sibling.
+     *
+     * That is not a hypothetical: these assertions were written against a fixture in which no square
+     * ever split - the suite parsed its pages without wiring their accessories, so most of the railway
+     * was missing and every station reduced to a single copy (2026-09-08). Asking the station index
+     * which copies exist and which one has the locomotive is the question that survives both.
+     *
+     * @param square the diagram square
+     * @return the occupied copy, or null when no copy of it holds a train
+     */
+    private static Point occupiedCopyOf(TileKey square)
+    {
+        for (String name : session.getStationIndex().pointNamesAt(square))
+        {
+            Point one = model.getAutoLayout().getPoint(name);
+
+            if (one != null && one.getCurrentLocomotive() != null) return one;
+        }
+
+        return null;
+    }
 
     /**
      * What `TrainControlUI.rememberPlacement` does, which is the door Adam pastes through.

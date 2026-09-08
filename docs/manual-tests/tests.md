@@ -16226,6 +16226,15 @@ It goes back both times, arriving from whichever side the route takes. Your ruli
 just be the logical point, and the direction is wherever the locomotive was facing when it started
 moving."*
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+Works: return home from either site.
+But additional bugs are filed.
+
+Filed from this test: OB-183 (bug - changing home inconsistency), OB-184 (bug - home planner bug).  They are in `issues.md` until they are picked up.
+
+*Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-301"></a>
@@ -16789,6 +16798,10 @@ The numbers go and come back with it. You asked to *"tie the appearance of the n
 enablement of the grid, so we only see the axis labels if the grid is also on"*, and there is no
 coordinates setting left to touch - the menu item is gone (OB-179).
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-324"></a>
@@ -16821,6 +16834,12 @@ and rc12 does not.**
 **The question:** should it? My view is that it should stop - a hand-throttled train keeps rolling
 while the new layout believes everything is parked - but you built that narrowing for a reason and the
 boundary is yours.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+Allow it to keep rolling.  The editor should not be openable when autonomy is running.  If trains are being controlled manually, then the track diagram isn't relevant.
+
+*Run against commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
