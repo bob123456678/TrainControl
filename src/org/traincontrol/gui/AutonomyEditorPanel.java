@@ -4645,7 +4645,24 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptNameFor(TileKey tile)
     {
-        if (tile != null) promptName(tile);
+        if (canBeNamed(tile)) promptName(tile);
+    }
+
+    /**
+     * Whether this square is one that can be named.
+     *
+     * **The right-click menu's own question**, so the key and the menu cannot disagree about it.
+     * The menu offers Rename only inside `if (isPoint)`; Control+S reached `promptNameFor`, which
+     * asked only whether the tile was null - so the key named plain track that has nothing to hold
+     * a name, and MT-313 is Adam finding it: *"it works on any tile in the autonomy editor, not
+     * just sensors."*
+     *
+     * @param tile the square
+     * @return whether naming it means anything
+     */
+    public boolean canBeNamed(TileKey tile)
+    {
+        return session != null && session.canBeNamed(tile);
     }
 
     private void promptName(TileKey tile)

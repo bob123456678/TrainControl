@@ -4639,6 +4639,26 @@ public class AutonomySession
     }
 
     /**
+     * Whether this square is one that can hold a name.
+     *
+     * A name belongs to a Point - a square the reduced graph knows, which is to say one with a
+     * sensor. The right-click menu has always asked this before offering Rename; Control+S did
+     * not, and named plain track instead, which is MT-313: *"it works on any tile in the autonomy
+     * editor, not just sensors."* A name written on track the reducer has no Point for is held by
+     * nothing and read by nobody.
+     *
+     * @param tile the square
+     * @return whether naming it means anything
+     */
+    public boolean canBeNamed(TileKey tile)
+    {
+        // THE REDUCER, which is where "is this a Point" lives.  The right-click menu has always
+        // asked exactly this before offering Rename; the key asked nothing, and the two doors
+        // disagreed about one question.
+        return tile != null && getReducer() != null && getReducer().getPoints().containsKey(tile);
+    }
+
+    /**
      * Puts a locomotive on a point without disturbing anything else known about it.
      *
      * parseAuto RESETS whatever a placement omits - train length to zero, reversible to false, the

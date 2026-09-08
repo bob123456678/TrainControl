@@ -191,6 +191,7 @@
         <test-one-class class="testAReversalCommandIsEmitted"/>
         <test-one-class class="testTheReversalReachesTheTracks"/>
         <test-one-class class="testTheTurnRuleDoesNotChangeTheRealRailway"/>
+        <test-one-class class="testControlSNamesOnlyASensor"/>
         <test-one-class class="testDataSafetyRoundTrips"/>
         <test-one-class class="testEditorSwitchClearsPageState"/>
         <test-one-class class="testLocomotiveAddressRules"/>
