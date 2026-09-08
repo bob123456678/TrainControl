@@ -87,6 +87,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
+| [MT-329](#mt-329) | 2026-09-08 | The shading clears from where a train used to be | needs test | OB-180 |
+| [MT-330](#mt-330) | 2026-09-08 | The direction and the arrival side after a paste - the case that is still open | needs test | OB-181 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -16925,6 +16927,72 @@ The old sentence: the run really has stopped itself, and Start really is what pu
 
 If both cases say the same thing, the flag that chooses between them is being read after the stop has
 already cleared it.
+
+---
+
+<a id="mt-329"></a>
+
+### MT-329 - 2026-09-08 - The shading clears from where a train used to be
+
+**Disposition:** needs test
+**From:** OB-180
+
+**Written:** 2026-09-08
+
+**Steps**
+
+1. Stand a train with a length on a platform whose approach is measured, so the track behind it greys.
+2. Cut it with **Control+X** and paste it onto another station with **Control+V** - the case reported
+   was EN57-203 from BottomMainA back to TunnelLeftPark.
+
+**Expected**
+
+The grey clears from the track behind where it used to stand, at the same moment it appears behind
+where it now is.
+
+The set of covered squares was always right; nothing redrew the tiles. A tile decides its shading when
+it is drawn, and tiles are drawn when their own accessory, feedback or route changes - so a train
+moving, which changes nothing about any of those, left the old squares grey until something unrelated
+repainted them.
+
+---
+
+<a id="mt-330"></a>
+
+### MT-330 - 2026-09-08 - The direction and the arrival side after a paste - the case that is still open
+
+**Disposition:** needs test
+**From:** OB-181
+
+**Written:** 2026-09-08
+
+**This is where OB-181 got to, and it needs something from you before it can be finished.**
+
+**What you reported:** moving EN57-203 from TunnelLeftPark to BottomMainA showed its direction as
+eastbound in the station label and westbound in the right-click menu, and its arrival side was not set
+even though it is forced.
+
+**Why there is no fix here yet.** I could not reproduce it, and the reason turned out to matter more
+than the defect: the test fixture that stands in for your railway **does not build your railway**.
+`cs2_sample_layout/config` has no `magnetartikel.cs2`, so the accessory database is empty and 79 tiles
+cannot resolve an address. The chains through them break. What the tests actually see:
+
+| | |
+|---|---|
+| the reduction | 58 points, **18 edges** |
+| the built layout | 59 points, **5 edges** |
+| isolated points | **51 of 59** |
+
+A railway with about ninety connections arrives as a five-edge skeleton, and BottomMainA - the square
+you moved the train to - has no edges at all in it, so it has no arrival sides and no facings and
+every question about it answers null. That is not your railway; it is the fixture.
+
+**What I need from you:** a copy of `magnetartikel.cs2` in `cs2_sample_layout/config/`. File > Backup
+TrainControl Data writes one into the zip, so it can come from there. I will not write to that folder
+myself.
+
+With it, the sandbox tests build the railway you actually have, and OB-181 can be reproduced, fixed and
+pinned rather than reasoned about.
 
 ---
 
