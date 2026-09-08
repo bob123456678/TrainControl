@@ -4298,6 +4298,26 @@ public class Layout
      *
      * @param end the candidate station
      * @return true when nothing standing bars it
+     *
+     * **IT DOES NOT ASK `isDestination()`, and that is deliberate (MON-C5).**
+     *
+     * A review flagged the asymmetry: `isSendableDestination` has that clause and this does not, so on
+     * a square that is not a destination the two answer opposite things - which is the shape that
+     * turned into MON-B1 elsewhere, where a copy of a rule quietly lost a limb.
+     *
+     * Checked, and the clause is not added, because the two are different questions. This one is "will
+     * autonomy ever pick this SQUARE", asked by things that already know they are holding one: the
+     * diagram's captions walk the copies of a named station, and the right-click menu asks it about the
+     * end of a path, which `getPossiblePaths` has already required to be a destination. Adding the
+     * clause would change nothing for either of them.
+     *
+     * And at the caption door it would change the wrong thing. Its comment records the first version of
+     * that code asking `isDestination` and Adam seeing no effect: an inactive terminus passes that flag
+     * and is exactly what he wanted gone. The question there is about the standing bars - inactive,
+     * reversing, not an automatic destination - which is what `barredFromAutonomy` is.
+     *
+     * So: same rule, narrower question, and a caller that hands this a square autonomy has no business
+     * stopping at is asking the wrong method rather than finding a gap in this one.
      */
     synchronized public boolean isChoosableByAutonomy(Point end)
     {
