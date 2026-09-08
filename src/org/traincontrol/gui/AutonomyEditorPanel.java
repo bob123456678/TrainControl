@@ -6438,7 +6438,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // A path existing and a train being sent along it are different facts, and the check reported
         // only the first.  `stationsAutonomyWillNotChoose` is the runtime's own rule asked of the
-        // diagram - `Layout:3576` refuses a destination that is reversing or not an auto destination
+        // diagram - `Layout.isSendableDestination` refuses a destination that is reversing or not an auto destination
         // before it is a candidate at all - so on Auto a station in that set is somewhere autonomy can
         // reach and will never pick, which is exactly the state somebody opens this panel to explain.
         //

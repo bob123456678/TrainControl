@@ -1794,7 +1794,7 @@ public class testAutonomyDiagramSession
      * a notice is the one severity that can afford that.
      *
      * **The finding.** The check counted any STATION as somewhere to go. The runtime does not:
-     * `Layout:3576` requires `!isReversing() && isAutoDestination()` before autonomy will pick a
+     * `Layout.isSendableDestination` requires `!isReversing() && isAutoDestination()` before autonomy will pick a
      * destination at all. So a reversing point whose only reachable station is a parking berth read as
      * healthy in the editor and was useless in the run - a train sent there turns round, and there is
      * still nowhere for autonomy to send it next.

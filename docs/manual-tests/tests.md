@@ -17502,5 +17502,11 @@ window title the way FlatLaf prefers.
 this. Nothing else changes with it, which is the point of it being a constant rather than an accident of
 when the look and feel happens to be installed.
 
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+I like it.  Looks good, I will move around some menus later to make more room.
+
+*Run against commit 409d4ce8, build\classes, compiled 08 Sep 06:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 

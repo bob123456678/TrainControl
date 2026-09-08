@@ -77,16 +77,25 @@ its direction**. Three kinds of square matter:
 **A terminus is a station; a compulsory turn is not.** The distinction is what each is *for*, and it
 decides whether trains are sent there:
 
-| | trains are sent to it | every arrival turns | it is a destination |
-|---|---|---|---|
-| **Terminus** | yes - it is the end of a line, and somewhere to go | yes | **necessarily** |
-| **Compulsory turn** (`mustReverse`) | no | yes | no |
-| **May-reverse** | yes, if it is also a destination | only when chosen | independently |
+| | autonomy sends trains to it | every arrival turns | `isDestination` | `isAutoDestination` |
+|---|---|---|---|---|
+| **Terminus** | yes - it is the end of a line, and somewhere to go | yes | **necessarily** | yes |
+| **Compulsory turn** (`mustReverse`) | **no** | yes | **yes** | **no** |
+| **May-reverse** | yes, if it is also a destination | only when chosen | independently | independently |
 
-The code enforces the first row in both directions: a terminus **must** be a destination, so
+**The compulsory-turn row said "not a destination" until 2026-09-08, and that was wrong** - it named
+the wrong one of two flags that sound alike (MON-C14). Measured on Adam's railway: every
+compulsory-turn square he has builds to `terminus=true`, which makes it a destination, and that is
+right. They are his parking berths. He sends trains to them by hand and homes locomotives there.
+
+What a compulsory turn must not be is somewhere **autonomy** chooses, and that is `isAutoDestination`.
+`isDestination` means "a place trains stop". The same two flags were confused in code one finding
+earlier the same day (MON-C5), which is a fair warning about how easily they read as synonyms.
+
+The code enforces the terminus row in both directions: a terminus **must** be a destination, so
 `setDestination(false)` clears `isTerminus` and a copy trains may not arrive at is emitted as a plain
-reversing point rather than as a terminus. A compulsory turn is a place the track turns trains round -
-a headshunt, a reversing loop - and nothing is ever routed *to* it.
+reversing point rather than as a terminus. Nothing is ever routed *automatically* to a compulsory
+turn; `testACompulsoryTurnStationIsNotEmittedAsADestination` holds that against the real railway.
 
 **Which matters for length** (§5): the track-room rule gates on terminus-**or**-reversing and has no
 destination requirement, so a compulsory turn a train does not physically fit into is still refused.
@@ -357,6 +366,25 @@ The rest of this section is about the **first** rule.
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
+
+**And two the room sum is known to get wrong**, both found the day it was written, both left because
+fixing either changes what the railway does and that is Adam's to decide. They lived only in a comment
+at `Layout.isPathClear` until 2026-09-08, against this document's own promise at the top that a known
+limit is stated here (MON-C13):
+
+1. **A positive length does not mean a measured one.** On a diagram-built graph an edge's length is the
+   sum of `max(0, tileLength)` over the tiles it spans, so one measured tile out of five gives a
+   positive number and the sum reads it as a measured segment. The total then under-counts and refuses
+   trains that fit - the same failure the total-of-what-is-measured ruling removed, one layer further
+   down.
+2. **It may be summing the wrong segments.** It adds the whole path. Where a train backs in after
+   turning part way along, the track it comes to rest on is only the part after the reversal - so a
+   10 + 1 + 2 path admits an eight-unit train into three units of room. Adam's words were "sum the
+   track segments leading up to it"; whether *it* means the reversal or the berth is the question that
+   has to go back to him.
+
+The first refuses trains that would fit, which is safe and annoying. The second admits trains that do
+not, which is neither - it is the one of the pair worth ruling on first.
 
 ---
 

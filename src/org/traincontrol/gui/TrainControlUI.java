@@ -10574,6 +10574,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // Declining to act and claiming to have acted are different things, and this map is the
             // record of the second.
+            //
+            // **WHAT IS SWALLOWED NOW IS SWALLOWED ON PURPOSE** (MON-C15).  The paragraph above
+            // describes the state before `bc6120f1`, when swallowing a mid-run change was the defect.
+            // Adam then ruled the other way - *"if a manual command is sent, ignore it, as this is
+            // likely corrective by the user"* - so a direction command arriving mid-run IS ignored,
+            // deliberately, and the baseline is brought level when the railway goes idle so nothing is
+            // left behind to be replayed.
+            //
+            // The ordering this comment defends is still exactly right, and for the same reason: the
+            // window must not RECORD having acted on something it declined to act on.  What changed is
+            // that declining is now the intended answer rather than the fault.
             if (this.model == null || !this.model.hasAutoLayout()
                 || this.model.getAutoLayout().isRunning()
                 || getAutonomySession() == null)

@@ -108,7 +108,7 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
             if (square == null) continue;
 
-            // The railway's own rule, quoted rather than paraphrased: `Layout:3576` refuses a
+            // The railway's own rule, quoted rather than paraphrased: `Layout.isSendableDestination` refuses a
             // destination that is reversing or is not an auto destination.
             boolean thisCopy = !point.isReversing() && point.isAutoDestination();
 

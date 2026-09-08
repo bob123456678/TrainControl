@@ -299,6 +299,80 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
+     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO (MON-C14).
+     *
+     * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and
+     * observed that the choice is made by whether anything ARRIVES at the copy, not by whether turning
+     * is compulsory. So a square marked compulsory-turn AND station should emit `terminus`, which is a
+     * destination, where `behaviour.md` says a compulsory turn is never one.
+     *
+     * It was filed at C with "not demonstrated reachable... filed for a fixture to settle", and the
+     * fixture it wanted did not exist: every hand-built layout in this suite was a straight chain, and
+     * the real-layout fixture was building a five-edge skeleton in which no square split at all.
+     *
+     * It exists now, and the answer is: **the branch IS reached, and `behaviour.md` was the wrong half.**
+     * Every compulsory-turn square on this railway builds to `terminus=true`, and a terminus is a
+     * destination. Those squares are Adam's parking berths - he sends trains to them by hand and homes
+     * locomotives there - so being a destination is exactly right.
+     *
+     * What a compulsory turn must not be is somewhere AUTONOMY chooses, which is a different flag.
+     * `behaviour.md` said "never a destination" and now says which one it means. That is the second
+     * finding in this family in one sitting: MON-C5 was the same two flags being confused in code.
+     *
+     * MUTATION: none needed - this is a measurement with an assertion attached. If the railway stops
+     * having a compulsory-turn station the precondition fails rather than the test passing quietly.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testACompulsoryTurnStationIsNotEmittedAsADestination() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        java.util.List<String> compulsory = new LinkedList<>();
+        java.util.List<String> alsoDestinations = new LinkedList<>();
+
+        for (TileKey square : session.getReducer().getPoints().keySet())
+        {
+            if (!session.isMustTurnAround(square)) continue;
+
+            for (String name : session.getStationIndex().pointNamesAt(square))
+            {
+                Point built = model.getAutoLayout().getPoint(name);
+
+                if (built == null) continue;
+
+                compulsory.add(name);
+
+                // AUTO-DESTINATION, NOT DESTINATION, and the difference is the whole answer (MON-C14).
+                //
+                // Measured 2026-09-08: every compulsory-turn square on this railway - TunnelLeftPark,
+                // TunnelLongPark, TopR1ParkLong and the rest of the parking berths - builds to
+                // `terminus=true`, and a terminus IS a destination. So the branch the review read is
+                // reached, on this railway, today.
+                //
+                // It is `behaviour.md` that was wrong rather than the builder. Those berths are where
+                // Adam parks trains and sends them home by hand; what a compulsory turn must not be is
+                // somewhere AUTONOMY chooses, which is `isAutoDestination`. `isDestination` means "a
+                // place trains stop" - the same two flags MON-C5 had to be told apart, one finding
+                // earlier, in the same family.
+                if (built.isAutoDestination()) alsoDestinations.add(name + " (terminus="
+                    + built.isTerminus() + ")");
+            }
+        }
+
+        assertFalse(compulsory.isEmpty(),
+            "no square on this railway is marked as one trains MUST turn at, so the branch this is"
+            + " about was not reached and the finding is still unsettled rather than answered");
+
+        assertTrue(alsoDestinations.isEmpty(),
+            "a square marked compulsory-turn is one AUTONOMY may choose: " + alsoDestinations
+            + ". Turning round is what those squares are for, and a train sent to one by the dispatcher"
+            + " arrives somewhere it has to reverse out of - which is the whole reason the flag exists"
+            + " (MON-C14)");
+    }
+
+    /**
      * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).
      *
      * Adam: **"Changing a home can teleport a current locomotive's location on the diagram/graph."**

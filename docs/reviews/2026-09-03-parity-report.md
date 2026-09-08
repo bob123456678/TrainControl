@@ -28,6 +28,23 @@ Reversing points are not counted against 3.0.0 as destinations, being parking.
 | PARITY-903 | BottomMainC | BottomSecondary | 2 of 2 variant(s) gone |
 | PARITY-904 | BottomInner | Tunnel | 1 of 2 variant(s) gone |
 
+**Adjudicated 2026-09-08 (MON-C16).**  The four rows sat here unexplained for five days, which is
+exactly as useful as no report: a parity regression list whose exceptions are unread cannot tell you
+whether the railway lost something.
+
+- **PARITY-901, 902, 903 - `BottomMain*` to `BottomSecondary`: EXPECTED, and the point of the exercise.**
+  Adam ruled 2.8.1 wrong to offer exactly this, and the ruling is written down at
+  `2026-08-18-manual-test-plan.md:178`: *"it should NOT - a red signal after the end requires a stop at
+  TopMainR1 or TopMainR2, a constraint that lived in the hand-authored edge config commands and that the
+  derivation cannot currently express."*  He called it "the clearest example of the gap, and worth
+  reporting first" - so 3.0.0 not offering it is the fix, not the regression.  Three rows, one ruling.
+- **PARITY-904 - `BottomInner` to `Tunnel`, one variant of two: UNEXPLAINED, and the only one that is.**
+  Nothing in `docs/` accounts for it.  The other variant survives, so the destination is still
+  reachable and no train is stranded, which is why this is worth a question rather than an alarm.
+  **What would settle it:** name the two 2.8.1 variants and diff their edge lists - if the lost one is
+  the one through a square 3.0.0 now treats as a compulsory turn or a shut arm, it is the same class as
+  the three above and equally intended.
+
 3.0.0 additionally offers 28 route(s) 2.8.1 did not, which is allowed.
 
 ## 3. Concurrency

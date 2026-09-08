@@ -3443,7 +3443,7 @@ public class AutonomySession
     /**
      * The stations autonomy may never choose for itself (V36-C4).
      *
-     * The runtime's own rule is `Layout:3576` - `!end.isReversing() && end.isAutoDestination()` before
+     * The runtime's own rule is `Layout.isSendableDestination` - `!end.isReversing() && end.isAutoDestination()` before
      * a destination is a candidate at all - and `isAutoDestination` here is the same switch under a
      * different name, so this is that clause asked of the diagram.
      *
@@ -3461,7 +3461,7 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            // BOTH HALVES OF THE RUNTIME RULE (CONF-B6).  `Layout:3576` refuses a destination that
+            // BOTH HALVES OF THE RUNTIME RULE (CONF-B6).  `Layout.isSendableDestination` refuses a destination that
             // is reversing OR is not an auto destination, and this had only the second half - so a
             // station the railway turns every train at was reported as somewhere autonomy would
             // happily go.  It passed unnoticed because no station on the sample layout is a

@@ -1217,7 +1217,7 @@ public class GraphReducer
         //
         // This UNDER-states the room by however much is unmeasured, and that is the safe direction:
         // it refuses a train that might have fitted rather than admitting one that does not.  The
-        // editor already names the unmeasured tiles - `unmeasuredTilesInTheStretch`, just below - so
+        // editor already names the unmeasured tiles - `unmeasuredAfterTheLastSwitch`, just below - so
         // the way to a bigger number is to measure them.
         int atTheEnd = authored.getTileLength(end);
 
