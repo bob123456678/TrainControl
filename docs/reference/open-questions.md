@@ -204,23 +204,40 @@ than three.
 **Why it matters more than it looks:** every A-grade finding of the last three days was an instance
 of this — a guard and its affordance asking different questions, a rule enforced at one door of two.
 
-## 2b. Tests that do not test what they claim
+## 2b. Tests that do not test what they claim - CLOSED 2026-09-07, except one
 
-- ~~**`TA-A1`**~~ — **closed** (`156ab1dd`). `testPageIdsAreDurable` now asserts the accented page's
-  own id, so a decoder that mangles the name is caught rather than renumbering every page unnoticed.
-  There is no open A-grade row anywhere.
-- Tests whose oracle is built from the subject (`TA-B8`, `TA-C3`), assertions that cannot fail
-  (`TA-B5`, `TA-C1`), tests green because their input is absent (`TS-C3`), unseeded randomness
-  (`TS-C2`).
-- **`TS-C1`** — no automated test drives a train through the runtime reversal mechanics. Known, and
-  partly by design: a test that drives a train through `executePath` hangs the suite. The reversal
-  rules are covered as rules and as source ordering instead.
-- **`DD-B6`** — no test harness: 47 copies of the control-station init.
+Audited finding by finding against the code. **Seven of the eight were already fixed or were fixed
+today**, which is the same shape the package sweeps had: the work was done and the index lagged it.
 
-**This session added four more instances of the same shape**, all caught by their own controls: a
-paste test that could not fail, a routing test that passed with the rule unwired, a guard that read
-its own explanation as code, and a spec test comparing per-Point against a per-square answer. That is
-the argument for `TA-*` being worth a pass rather than grandfathered away.
+| | what it was | state |
+|---|---|---|
+| `TA-A1` | the encoding guard never asserted the accented page's id | **closed** `156ab1dd` |
+| `TA-B5` | four defects in `testMockCentralStation`'s sync-safety block | **closed** - all four: the timeout assertion now uses a non-routable address with the bound the reviewer prescribed; the cumulative counter uses the `before` pattern; the class's false premise is corrected and `testAGarbledRouteFileDoesNotDeleteTheRoutes` covers the risk it named - a sync deletes ROUTES, not locomotives; and the parity comparison covers address and decoder type rather than sorted names |
+| `TA-B8` | `testFacingFollowsTheTrack`'s oracle built from the subject's own map | **closed by `DR-B6`** - `facingChoices` reads the builder now, so the premise and the answer come from different places |
+| `TA-C1` | `!= IMPOSSIBLE` cannot tell a refusal from a success | **fixed today** - asserts `READY`, and that the plan moves both named locomotives |
+| `TA-C3` | `testAnUnmarkedLayoutIsUntouched` compared the builder to itself | **closed** by `TCX-B5`, which added the live control |
+| `TS-C1` | nothing drove a train through the reversal mechanics | **partly answered** - `testAutonomySimulationSanity` now runs real journeys that arrive, which the note said could not be done |
+| `TS-C2` | three suites rolled unseeded dice | **closed** - all three carry explicit seeds |
+| `TS-C3` | six tests green when their input is absent | **fixed today**, and worse than filed: three of the inputs live in `tc_backup/`, which is gitignored with zero files tracked, so those tests passed on every machine but Adam's without reading anything. `SkipException` now, which the bar counts - Failures: 0 **and** Skips: 0 |
+
+**Still open: `DD-B6`**, the 47 copies of the control-station init - now **90 test files**. I would
+leave it. It buys consistency rather than correctness, it is the largest-blast-radius change in this
+part, and nothing in the four days of defects traces to it.
+
+**What the audit found that the list did not.** Six defects reported on 2026-09-07 all had green tests
+over them, and not one was a test that lied about its assertions - which is what this section is about.
+They were:
+
+- **an unexamined layer** - nothing in the suite looks at what a Swing component draws, so three
+  reports about the covered-track wash were invisible;
+- **fixture monoculture** - every hand-built layout is a straight chain of two or three points, so no
+  fixture has a switch (no lock edges) or a curve (where the side a rail leaves by differs from the
+  direction of the neighbouring point). Two defects hid there, and `VAL8-A1` hid there before them;
+- **a guard asking the wrong question about the right thing** - the two-menus test asks whether they
+  NAME a square alike, not whether either exists, so a menu missing from one surface is invisible to it.
+
+**One fixture with a curve and a switch** would have caught two of the six outright. That is the next
+piece of test work worth doing, ahead of anything left in this section.
 
 ## 2c. Structure
 
