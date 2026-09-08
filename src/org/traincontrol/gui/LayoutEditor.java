@@ -1520,6 +1520,14 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
         if (this.minusButton != null) this.minusButton.setVisible(session == null);
 
+        // AND THE TEXT LABELS BOX, which the autonomy caption choice subsumes (FR-061).
+        //
+        // Its None option IS this switch turned off, so showing both would be two controls for one
+        // decision - and the one that is only a switch cannot express the other three options. Hidden
+        // rather than removed: it belongs to the generated form, it is the plain editor's control, and
+        // Control+L still reaches it in both.
+        if (this.showTextCheckbox != null) this.showTextCheckbox.setVisible(session == null);
+
         if (session == null)
         {
             if (autonomyPanel != null)
@@ -1735,34 +1743,34 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(autonomyPanel.getShowLengths());
 
-                // What the captions say, beside the other two view switches (FR-030).
+                // WHAT THE CAPTIONS SAY, as one choice (FR-061).
                 //
-                // Off by default: this window is where a railway is named, so the captions name
-                // stations. Ticked, they name whichever train is parked there, which is what the
-                // running diagram shows and what this editor used to show.
-                autonomyPanel.getShowParkedTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
-                visibility.add(autonomyPanel.getShowParkedTrains());
-
-                // AND WHERE EACH TRAIN LIVES (MT-261 ruling 2, R28-C3).
+                // Adam: "add a Text Labels label and dropdown right above Track Directions, with the
+                // following options: Station Names, Parked Locomotives, Home Locomotives, and None."
                 //
-                // Adam asked for this as a display option under Preferences - Autonomy.  It is here
-                // instead, beside the two switches that decide the same thing this one does, because
-                // that tab is laid out by the GUI builder and adding a control to it means editing the
-                // .form, which is a standing rule against.  Say the word and it moves.
-                autonomyPanel.getShowHomeLocomotives().setAlignmentX(
-                    java.awt.Component.LEFT_ALIGNMENT);
-
-                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
-                visibility.add(autonomyPanel.getShowHomeLocomotives());
-
-                // A label, because unlike its neighbours this one is a choice rather than a switch and
-                // "All" alone does not say what it is about.
+                // It replaces two tick boxes and the form's own Text Labels switch, which were not
+                // independent: ticking either box while the text was off changed nothing anybody could
+                // see, so each box turned the text on for you (OB-174). Four options that exclude one
+                // another cannot be in a state that needs correcting, which is what "fully address it"
+                // means here.
                 //
-                // In the window's own heading style, copied off jLabel1 rather than restated, so it
-                // reads as a heading of the same kind as every other one here - and so it follows if
-                // that style is ever changed in the form.
+                // In the window's own heading style, copied off jLabel1 rather than restated, like the
+                // Track Directions heading below it.
+                javax.swing.JLabel captionsLabel =
+                    new javax.swing.JLabel(I18n.t("layout.ui.textLabels"));
+                captionsLabel.setFont(this.jLabel1.getFont());
+                captionsLabel.setForeground(this.jLabel1.getForeground());
+                captionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                captionsLabel.setBorder(
+                    javax.swing.BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+
+                visibility.add(captionsLabel);
+
+                javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
+                captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                captionChoice.setMaximumSize(new java.awt.Dimension(200, 24));
+
+                visibility.add(captionChoice);
                 javax.swing.JLabel directionsLabel =
                     new javax.swing.JLabel(I18n.t("autosetup.ui.labelDirections"));
                 directionsLabel.setFont(this.jLabel1.getFont());
@@ -4899,6 +4907,21 @@ public class LayoutEditor extends PositionAwareJFrame
     public void showTextLabels()
     {
         if (!this.layout.getEditHideText()) return;
+
+        toggleText();
+    }
+
+    /**
+     * Hides the captions, idempotently - the other half of the pair (FR-061).
+     *
+     * The autonomy editor's caption choice includes None, and None is this. Written as a twin of
+     * `showTextLabels` rather than as a call to `toggleText`, for the reason given there: a flip is the
+     * wrong verb for a caller that needs a particular state, and would turn the text back ON for
+     * somebody who already had it off.
+     */
+    public void hideTextLabels()
+    {
+        if (this.layout.getEditHideText()) return;
 
         toggleText();
     }

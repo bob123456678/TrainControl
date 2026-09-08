@@ -224,6 +224,33 @@ public class AutonomyEditorPanel extends JPanel
     private static final String PREF_CAPTION_TRAINS = "autonomyEditorCaptionTrains";
 
     /**
+     * What the captions say, as one choice rather than three switches (FR-061).
+     *
+     * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following
+     * options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be
+     * default, with the setting remembered between open."*
+     *
+     * It replaces a master switch and two tick boxes that were not independent of it. OB-174 was the
+     * symptom: ticking "Show parked trains" while Text Labels was off changed nothing anybody could
+     * see, so the boxes were wired to turn the master on for you - a coupling that had to be
+     * remembered at every door that touched either. Four mutually exclusive options cannot be in a
+     * state that needs correcting.
+     */
+    private static final String PREF_CAPTION_MODE = "autonomyEditorCaptionMode";
+
+    /** Captions name the station.  The default, because this window is where a railway is named. */
+    public static final int CAPTIONS_STATIONS = 0;
+
+    /** Captions name whichever train is parked there (FR-030). */
+    public static final int CAPTIONS_PARKED = 1;
+
+    /** Captions name the locomotive that lives there (MT-261 ruling 2, R28-C3). */
+    public static final int CAPTIONS_HOMES = 2;
+
+    /** No captions at all - what the editor's Text Labels box used to say when unticked. */
+    public static final int CAPTIONS_NONE = 3;
+
+    /**
      * Whether captions name each square's HOME locomotive (MT-261 ruling 2).
      *
      * Adam: "add a display option ... ('show home locomotives').  If set, labels show the home
@@ -263,6 +290,23 @@ public class AutonomyEditorPanel extends JPanel
      */
     private final JCheckBox showHomeLocomotives =
         new JCheckBox(I18n.t("autosetup.ui.btnShowHomeLocomotives"), false);
+
+    /**
+     * The one control that decides what a caption says (FR-061).
+     *
+     * The two boxes above are kept as the INTERNAL representation, because everything that draws a
+     * caption already asks them and the question they answer has not changed - only how the operator
+     * sets it.  They are no longer mounted anywhere; this is.
+     *
+     * Order matters and matches the constants: the index IS the mode, which is what gets remembered.
+     */
+    private final javax.swing.JComboBox<String> captions = new javax.swing.JComboBox<>(new String[]
+    {
+        I18n.t("autosetup.ui.captionsStations"),
+        I18n.t("autosetup.ui.captionsParked"),
+        I18n.t("autosetup.ui.captionsHomes"),
+        I18n.t("autosetup.ui.captionsNone")
+    });
 
 
     // Built in the constructor, mounted by the window across the bottom of the diagram
@@ -591,11 +635,21 @@ public class AutonomyEditorPanel extends JPanel
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
 
-        showParkedTrains.setSelected(VIEW_PREFS.getBoolean(PREF_CAPTION_TRAINS, false));
-        showParkedTrains.setFocusable(false);
+        // ONE REMEMBERED SETTING, and the two boxes follow it (FR-061).
+        //
+        // Station Names by default, as asked. The two older preferences are deliberately not read:
+        // between them they could describe states this control cannot be in - both on, or a caption
+        // choice with the text switched off - and migrating a contradiction produces a window that
+        // disagrees with itself on the first open.
+        captions.setSelectedIndex(Math.max(CAPTIONS_STATIONS, Math.min(CAPTIONS_NONE,
+            VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS))));
 
-        showHomeLocomotives.setSelected(VIEW_PREFS.getBoolean(PREF_CAPTION_HOMES, false));
+        captions.setFocusable(false);
+
+        showParkedTrains.setFocusable(false);
         showHomeLocomotives.setFocusable(false);
+
+        applyCaptionMode(false);
 
         // Not focusable, like every other control in this window (OB-019).
         //
@@ -617,40 +671,13 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        showHomeLocomotives.addActionListener(e ->
+        captions.addActionListener(e ->
         {
-            VIEW_PREFS.putBoolean(PREF_CAPTION_HOMES, showHomeLocomotives.isSelected());
+            VIEW_PREFS.putInt(PREF_CAPTION_MODE, captions.getSelectedIndex());
 
-            // The same as its neighbour, and swept at the same time (OB-174).  This also changes what
-            // a caption says, so it is equally invisible with the text switched off - and a fix
-            // applied to one of a pair is how this codebase acquires its next finding.
-            if (showHomeLocomotives.isSelected()) turnTextLabelsOn();
+            applyCaptionMode(true);
 
-            // The GRID, for the reason the neighbour below gives: a caption's text is decided when the
-            // diagram is built.
-            if (onDiagramChanged != null) onDiagramChanged.run();
-        });
-
-        showParkedTrains.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_CAPTION_TRAINS, showParkedTrains.isSelected());
-
-            // AND THE TEXT HAS TO BE ON, or ticking this does nothing anybody can see (OB-174).
-            //
-            // Adam: "if checked, 'Show parked trains' should auto check 'text labels' if 'text
-            // labels' is unchecked."
-            //
-            // This switch changes what a caption SAYS; the other one decides whether captions are
-            // drawn at all.  With text off, ticking this is a setting that takes effect at some
-            // unrelated moment in the future - which is indistinguishable from a broken switch.
-            //
-            // Only ON, and only upwards: unticking this must not take the text away again, because by
-            // then the operator may be reading it for its own sake.
-            if (showParkedTrains.isSelected()) turnTextLabelsOn();
-
-            // The GRID, not a repaint.  A caption's text is decided when the grid is built - it is
-            // part of the tile art, as the note on setOnDiagramChanged says - so this switch changes
-            // nothing until the diagram is built again.
+            // The GRID, not just a repaint: a caption's text is decided when the diagram is built.
             if (onDiagramChanged != null) onDiagramChanged.run();
         });
 
@@ -5186,6 +5213,47 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Makes the window agree with the caption choice (FR-061).
+     *
+     * The two boxes are the internal representation - everything that draws a caption asks them, and
+     * that has not changed - so this sets them from the one control the operator sees. They are
+     * mutually exclusive here by construction, which is what retires OB-174: there is no longer a
+     * state where somebody has asked for parked trains while the text is off.
+     *
+     * **Text on for the three that say something, off for None.** That is the master switch the
+     * dropdown subsumes, and driving it from here is why the two boxes no longer need to reach for it
+     * themselves.
+     *
+     * @param interactive whether this is the operator changing it, rather than the window opening;
+     *        the text switch is only touched when it is, so opening a setup never overrides a choice
+     *        somebody made in the plain editor
+     */
+    private void applyCaptionMode(boolean interactive)
+    {
+        int mode = captions.getSelectedIndex();
+
+        showParkedTrains.setSelected(mode == CAPTIONS_PARKED);
+        showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
+
+        if (!interactive) return;
+
+        if (mode == CAPTIONS_NONE) turnTextLabelsOff();
+        else turnTextLabelsOn();
+    }
+
+    /**
+     * The way to say None, which is the editor's own text switch turned off (FR-061).
+     *
+     * The twin of `turnTextLabelsOn`, and idempotent for the same reason: `toggleText` flips, which is
+     * the wrong verb for a caller that needs a particular state.
+     */
+    private void turnTextLabelsOff()
+    {
+        java.awt.Component where = owner();
+
+        if (where instanceof LayoutEditor) ((LayoutEditor) where).hideTextLabels();
+    }
+    /**
      * Turns the diagram's text labels on, if this panel is in an editor that has them (OB-174).
      *
      * The caption switches in this column decide what a caption SAYS.  Whether captions are drawn at
@@ -7361,7 +7429,15 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * @return the parked-train toggle, for the window's visibility box (FR-030)
+     * @return the caption choice, for the window's visibility box (FR-061)
+     */
+    public javax.swing.JComboBox<String> getCaptionChoice()
+    {
+        return captions;
+    }
+
+    /**
+     * @return the parked-train toggle, no longer mounted - the internal half of the choice (FR-061)
      */
     public JCheckBox getShowParkedTrains()
     {

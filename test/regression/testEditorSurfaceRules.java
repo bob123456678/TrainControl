@@ -1375,6 +1375,91 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * What a caption says is one choice, not three switches (FR-061).
+     *
+     * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following
+     * options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be
+     * default, with the setting remembered between open."*
+     *
+     * The point is that the four options **exclude one another**, which is what finishes OB-174.
+     * Before this there was a master switch and two tick boxes that were not independent of it:
+     * ticking either while the text was off changed nothing anybody could see, so each box turned the
+     * master on for you. That coupling had to be remembered at every door that touched either box, and
+     * this codebase's way of forgetting such a thing is to fix one of a pair.
+     *
+     * Checked on the CONTROL rather than by opening a window: the four states, the default, and the
+     * fact that the two internal flags can never both be set. Where the label sits is asserted by
+     * source order below, because "right above Track Directions" is a fact about the sidebar that no
+     * headless assertion can see.
+     *
+     * MUTATION: making CAPTIONS_PARKED the default fails the second assertion; setting both flags in
+     * applyCaptionMode fails the exclusivity one.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testWhatACaptionSaysIsOneChoice() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
+            StandardCharsets.UTF_8));
+
+        for (String key : new String[] { "captionsStations", "captionsParked", "captionsHomes",
+            "captionsNone" })
+        {
+            assertTrue(panel.contains("autosetup.ui." + key),
+                "the caption choice does not offer " + key + ". Adam named all four options, and one"
+                + " missing is a state the operator can no longer ask for");
+        }
+
+        assertTrue(panel.contains("PREF_CAPTION_MODE"),
+            "the caption choice is not remembered between opens, which Adam asked for explicitly");
+
+        assertTrue(panel.contains("VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS)"),
+            "the caption choice does not default to Station Names. This window is where a railway is"
+            + " named, and Adam asked for that default by name");
+
+        // THE TWO INTERNAL FLAGS ARE EXCLUSIVE BY CONSTRUCTION, which is what retires OB-174.
+        String applier = bodyOf(panel, "private void applyCaptionMode(boolean interactive)");
+
+        assertNotEquals(applier, "",
+            "applyCaptionMode has gone, so nothing turns the one choice into what the drawing code"
+            + " reads and this test checked nothing");
+
+        assertTrue(applier.contains("showParkedTrains.setSelected(mode == CAPTIONS_PARKED)")
+            && applier.contains("showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES)"),
+            "the two caption flags are not set from the mode, so they can both be on at once - which"
+            + " is a state the dropdown cannot show and the operator cannot get out of (FR-061)");
+
+        assertTrue(applier.contains("turnTextLabelsOff()") && applier.contains("turnTextLabelsOn()"),
+            "the choice does not drive the text switch both ways. None must turn captions off, and the"
+            + " other three must turn them on - otherwise picking one changes nothing anybody can see,"
+            + " which is the defect OB-174 reported");
+
+        // AND THE OLD COUPLING IS GONE.  Leaving it would be harmless today and would be the thing a
+        // future reader copies.
+        assertFalse(panel.contains("if (showParkedTrains.isSelected()) turnTextLabelsOn()")
+            || panel.contains("if (showHomeLocomotives.isSelected()) turnTextLabelsOn()"),
+            "a tick box still reaches for the text switch on its own. That coupling is what the one"
+            + " choice replaces, and two mechanisms for it is worse than the one it had");
+
+        // WHERE IT SITS: right above Track Directions, in the window that mounts it.
+        String editor = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")),
+            StandardCharsets.UTF_8));
+
+        int captionsAt = editor.indexOf("visibility.add(captionChoice)");
+        int directionsAt = editor.indexOf("visibility.add(directionsLabel)");
+
+        assertTrue(captionsAt > 0 && directionsAt > 0,
+            "the sidebar no longer mounts both controls, so the ordering below is comparing this test"
+            + " to itself");
+
+        assertTrue(captionsAt < directionsAt,
+            "the caption choice is not above Track Directions, which is where Adam asked for it");
+    }
+
+    /**
      * The tail can be set, and not un-set (Adam, 2026-09-07).
      *
      * Annotating the behaviour reference beside the paragraph on `arrivedFrom`: **"Given the other
