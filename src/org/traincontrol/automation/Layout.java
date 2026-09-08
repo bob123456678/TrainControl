@@ -2443,6 +2443,35 @@ public class Layout
         {
             Locomotive lyingAcross = coveredTrack.get(e);
 
+            // AND THE TRACK IT SHARES WITH SOMETHING COVERED.
+            //
+            // Adam, 2026-09-07: EN57-203 "is allowed to traverse a blocked/shaded switch (60) to get
+            // from TunnelLeftPark to BottomMainC, even though it should not be possible."
+            //
+            // Coverage is recorded per EDGE and drawn per SQUARE, and the two are not the same thing
+            // at a switch: a train lying across switch 60 covers the edge it arrived along, while a
+            // route taking the other pair of arms is a different Edge that was never in the covered
+            // set. The picture was right and the railway was not - the worst way round for them to
+            // disagree, and the same asymmetry VAL8-A1 found between the two directions of one rail.
+            //
+            // Lock edges are exactly the relation needed and already exist: GraphReducer derives them
+            // from SHARED TILES - "which edges cannot run at the same time as which". If a train is
+            // lying across an edge, every edge sharing metal with it is fouled too.
+            if (lyingAcross == null)
+            {
+                for (Edge sharing : e.getLockEdges())
+                {
+                    Locomotive onShared = coveredTrack.get(sharing);
+
+                    if (onShared != null && !onShared.equals(loc))
+                    {
+                        lyingAcross = onShared;
+
+                        break;
+                    }
+                }
+            }
+
             if (lyingAcross == null || lyingAcross.equals(loc)) continue;
 
             logPathError(

@@ -2930,8 +2930,10 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return null;
 
+        // THE BUILD'S SIDES (issue 5, 2026-09-07).  The geometric form answers with the direction of
+        // the neighbouring POINT, which on a curve is not the side the metal leaves by.
         java.util.List<String> sides =
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(running, point);
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(session.arrivalSides(target));
 
         if (sides.isEmpty()) return null;
 

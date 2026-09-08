@@ -57,11 +57,16 @@ public class ArrivalSidePrompt
      * @return the side, or null when it cannot be worked out and was not answered
      */
     public static String forPlacement(Layout layout, Point at, String facing, boolean mayReverse,
-        Component parent)
+        Component parent,
+        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
     {
         if (layout == null || at == null) return null;
 
-        List<String> sides = sidesOf(layout, at);
+        // THE BUILD'S SIDES when the caller has them, which every caller in the application does.
+        // The geometric fallback is for a caller with no session - the tests that build a Layout by
+        // hand - and it is wrong on a curve, which is what made this worth changing.
+        List<String> sides = arrivalSides == null || arrivalSides.isEmpty()
+            ? sidesOf(layout, at) : sidesOf(arrivalSides);
 
         // NOTHING TO CHOOSE BETWEEN. A terminus has one way in, and a square with no track at all has
         // none - both answer themselves, and asking would be a dialog with one button.
@@ -97,11 +102,15 @@ public class ArrivalSidePrompt
      * @param mayReverse whether the operator marked this square as one trains may turn at
      * @return whether a dialog would be shown
      */
-    public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse)
+    public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse,
+        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
     {
         if (!mayReverse || layout == null || at == null) return false;
 
-        return sidesOf(layout, at).size() > 1;
+        // The same sides forPlacement would offer, by construction: this has to agree with it or the
+        // paste door reads a null as a dismissal when no question was ever put (IND9-B5).
+        return (arrivalSides == null || arrivalSides.isEmpty()
+            ? sidesOf(layout, at) : sidesOf(arrivalSides)).size() > 1;
     }
 
     /**
@@ -200,6 +209,41 @@ public class ArrivalSidePrompt
         }
 
         return new ArrayList<>(sides);
+    }
+
+    /**
+     * The sides track actually reaches this square by, as the BUILD has them.
+     *
+     * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
+     * the west, rather than the north or the south."
+     *
+     * The geometric form above answers with the compass direction of the neighbouring POINT, and a
+     * Point is the far end of a reduced edge that may run several tiles and turn corners on the way.
+     * A rail leaving north and curving east reaches a neighbour that lies east, so the geometry says
+     * "E" while the metal leaves by "N". On a straight the two agree, which is why this survived
+     * everywhere anybody looked.
+     *
+     * The builder already knows the answer and splits the square on it: `arrivalSides` goes to
+     * `StationIndex` to `AutonomyBuilder.arrivalSidesOf`, which reads each reduced edge's ENTRY SIDE -
+     * the side the track comes in by. That is the same door `facingChoices` was moved onto (DR-B6),
+     * for the same reason: a second author computing what the builder already decided.
+     *
+     * @param sides the arrival sides from the session, as the build split them
+     * @return their names, in the build's own order
+     */
+    public static List<String> sidesOf(List<org.traincontrol.automationui.TilePorts.Side> sides)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        if (sides != null)
+        {
+            for (org.traincontrol.automationui.TilePorts.Side side : sides)
+            {
+                if (side != null) out.add(side.name());
+            }
+        }
+
+        return new ArrayList<>(out);
     }
 
     /**

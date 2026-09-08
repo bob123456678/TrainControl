@@ -1003,14 +1003,17 @@ public final class LayoutLabel extends JLabel
                         //
                         // Laid over `lastIcon` rather than replacing it, so the tile is still readable
                         // underneath: the operator needs to see what the track IS while knowing it is
-                        // spoken for.  And AFTER the plain icon is set, so the temporary click
-                        // highlight below still restores to the ungreyed one - a wash that outlived
-                        // the train would be worse than none.
-                        if (this.square != null && this.tcUI != null
-                            && this.tcUI.isTrackCovered(this.square))
-                        {
-                            this.setIcon(ImageUtil.addCoveredOverlay((ImageIcon) lastIcon));
-                        }
+                        // spoken for.
+                        //
+                        // THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in
+                        // the autonomy or diagram editor, only the track diagram viewer"). An editor is
+                        // where the railway is arranged, and what happens to be standing on it while
+                        // you arrange it is a fact about right now rather than about the drawing - the
+                        // same reasoning that made station names the default caption there.
+                        boolean covered = !edit && this.square != null && this.tcUI != null
+                            && this.tcUI.isTrackCovered(this.square);
+
+                        if (covered) this.setIcon(ImageUtil.addCoveredOverlay((ImageIcon) lastIcon));
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
@@ -1025,7 +1028,25 @@ public final class LayoutLabel extends JLabel
                             {
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
-                                    this.setIcon(lastIcon);
+                                    // BACK TO THE WASH, not to the bare tile.
+                                    //
+                                    // Adam, 2026-09-07: "shaded tiles get overwritten if an accessory
+                                    // change highlights the same square". `lastIcon` is the UNGREYED
+                                    // icon - the comment above this block used to defend restoring to
+                                    // it, on the grounds that a wash outliving the train would be
+                                    // worse than none. That is a real hazard and this is not the way
+                                    // to avoid it: the wash was simply lost, permanently, the first
+                                    // time anything flashed that square.
+                                    //
+                                    // Asked again rather than remembered, which handles the hazard the
+                                    // old comment was worried about: the train may have moved while the
+                                    // highlight was showing, and re-asking gives the answer as it is
+                                    // when the tile is redrawn rather than as it was when it flashed.
+                                    boolean stillCovered = !edit && this.square != null
+                                        && this.tcUI != null && this.tcUI.isTrackCovered(this.square);
+
+                                    this.setIcon(stillCovered
+                                        ? ImageUtil.addCoveredOverlay((ImageIcon) lastIcon) : lastIcon);
                                 }
                             });
 

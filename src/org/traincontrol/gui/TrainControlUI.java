@@ -6037,10 +6037,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 facingAtTheLanding == null ? null : facingAtTheLanding.name(),
-                mayTurnHere(aimed), this);
+                mayTurnHere(aimed), this,
+                getAutonomySession() == null ? null : getAutonomySession().arrivalSides(aimed));
 
             if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
-                this.model == null ? null : this.model.getAutoLayout(), point, mayTurnHere(aimed)))
+                this.model == null ? null : this.model.getAutoLayout(), point,
+                mayTurnHere(aimed), getAutonomySession() == null
+                    ? null : getAutonomySession().arrivalSides(aimed)))
             {
                 // Nothing moved, and the clipboard still holds it, so the next square accepts the
                 // same paste.  A dismissed question leaves the railway exactly as it was.

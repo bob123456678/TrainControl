@@ -209,7 +209,18 @@ public class ImageUtil
      * standing there and the track behind it is spoken for.  The tile stays readable underneath
      * because the operator still needs to see what the track IS while knowing it is unavailable.
      */
-    private static final Color COVERED = new Color(90, 90, 90, 120);
+    /**
+     * The wash over track a standing train is lying across.
+     *
+     * Lighter than it was (Adam, 2026-09-07: "make the shading be slightly lighter"). It marks track
+     * that is spoken for, not track that is gone - the tile underneath still has to be readable, which
+     * is why this is a wash at all rather than a replacement icon.
+     *
+     * Lightened by raising the grey rather than by dropping the alpha alone: at a low alpha a dark grey
+     * reads as a smudge on a pale tile and as nothing at all on a dark one, while a pale grey at a
+     * modest alpha reads the same over both.
+     */
+    private static final Color COVERED = new Color(140, 140, 140, 95);
 
     /**
      * Greys a tile to show a standing train is lying across it.

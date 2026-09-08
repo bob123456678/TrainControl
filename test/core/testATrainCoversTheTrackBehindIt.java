@@ -108,24 +108,24 @@ public class testATrainCoversTheTrackBehindIt
             + " cannot be exercised");
 
         // NOT MARKED: never asked, whatever the geometry offers.
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, false),
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, false, null),
             "a square the operator has not marked as one trains may turn at is never asked about - the"
             + " side is assumed from the facing. Answering true here makes the paste door abandon"
             + " placements onto ordinary track");
 
         // MARKED, and there is a choice: asked.
-        assertTrue(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, true),
+        assertTrue(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, true, null),
             "a marked square with several arrival sides is exactly the case the question exists for,"
             + " and wouldAsk says it would not be asked - so a dismissal there is read as \"nothing to"
             + " record\" and the paste goes ahead against the operator (VAL9-B4)");
 
         // MARKED, but nothing to choose between: not asked, and a null from the prompt means only
         // that there was nothing to record.
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, buffer, true),
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, buffer, true, null),
             "a marked square with one way in or none has no question to put, and saying otherwise"
             + " refuses every paste onto it - silently and permanently, which is IND9-B5 restored");
 
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, null, true),
+        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, null, true, null),
             "a null point must not be reported as askable");
     }
 
@@ -447,7 +447,7 @@ public class testATrainCoversTheTrackBehindIt
         // to ask about.  Passing null for the parent proves it: a dialog would have to be shown on
         // something, and this returns without one.
         assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, buffer, "E", true,
-            null), "W",
+            null, null), "W",
             "a terminus with one way in did not force the arrival side, so the operator is being asked"
             + " a question with a single possible answer");
     }
@@ -487,16 +487,16 @@ public class testATrainCoversTheTrackBehindIt
         // Two ways in, so the answer is not forced - and not asked either, because this square is not
         // one trains turn at.  Facing east means it came from the west.
         assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "E", false,
-            null), "W",
+            null, null), "W",
             "a train facing east on an ordinary station was not assumed to have come from the west,"
             + " so its tail is being put in front of it");
 
         assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "W", false,
-            null), "E", "and the other way about");
+            null, null), "E", "and the other way about");
 
         // Nobody has said which way it faces, so nothing can be assumed and nothing is recorded.
         assertNull(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, null, false,
-            null),
+            null, null),
             "a facing nobody has set was turned into an arrival side anyway, which blocks track on"
             + " no evidence at all");
     }
