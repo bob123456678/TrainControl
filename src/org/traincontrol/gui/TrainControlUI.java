@@ -3788,6 +3788,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.repaintTimetable();
             this.repaintAutoLocListLite();
+
+            // AND THE GRAPH, WHENEVER A RUN ENDS (W7-A2).
+            //
+            // `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`, which is the
+            // only thing that writes a reversal the railway made at a destination into the setup.  It
+            // refuses while anything is moving, on purpose - a train between two copies is meant to
+            // disagree with the graph - so what it needs is a refresh AFTER the railway has gone idle.
+            //
+            // `OB-189` gave it one at the two hand-driven doors, by pasting the call at each caller,
+            // and the timetable button and Return Home - the other two doors onto the same shared
+            // arrival path - never got a copy.  That is `fix-one-site-sweep-the-siblings`, and the
+            // remedy is the door every run already passes through rather than a fourth copy:
+            // `Layout.announceRunFinished()` fires when the last locomotive thread goes, which for a
+            // hand dispatch is the journey returning, and a timetable now announces again once its
+            // completion wait has seen the railway stop.
+            //
+            // Cheap enough to sit beside the two above: `DiagramMonitorDriver` already calls this on
+            // the event thread every monitor tick during a run, and a path start or end is far rarer
+            // than that.  `getPoints()` is deliberately unsynchronized, so this takes no Layout
+            // monitor and cannot make the AB-BA deadlock that method's comment describes.
+            this.updateVisiblePoints();
         });
     }
 

@@ -204,6 +204,23 @@ while it is still running, and the levelling then wipes the evidence. The physic
 reversed, the graph would say otherwise, and the next dispatch would offer paths for the wrong
 heading.
 
+**"The next time the railway is idle" is a moment something has to bring about, and for two of the
+four doors nothing did.** The graph is written by `reconcileFacingWhenIdle`, which is reached only
+from a diagram refresh and deliberately refuses while anything is moving - so a run's turns wait for
+a refresh made after it has stopped. Autonomy refreshes constantly, and the two hand-driven doors
+were given a refresh when their journey returned; the timetable button and Return Home were not, and
+Return Home is the one that backs trains into their home berths and turns them. So a Return Home run
+ended with every returned train still drawn facing the way it set off, a dispatch made before any
+unrelated repaint was offered paths for the wrong heading, and exiting wrote the un-reconciled facing
+to disk. It self-healed on the next refresh that happened for some other reason, which is what made
+it intermittent.
+
+The rule now has one mechanism rather than a copy per door: **a run announces that it has finished,
+and the window's single refresh callback tells the graph when it does.** A hand dispatch announces
+when the last locomotive thread goes; a timetable announces again once its completion wait has seen
+the railway stop, because until then `running` is still set and every announcement it makes is one
+the levelling refuses.
+
 ---
 
 ## 4. Which way a train is pointing, and where its tail is

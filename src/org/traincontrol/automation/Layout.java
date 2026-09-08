@@ -5275,6 +5275,35 @@ public class Layout
             }
         }
 
+        // AND NOW THE RAILWAY IS IDLE, SO SAY SO (W7-A2).
+        //
+        // Every other announcement a timetable makes is made while it is still running.  The arrival
+        // callback fires from inside `executePathInternal`, before `executePath`'s finally has
+        // decremented the thread count; the count reaching zero between two legs happens while
+        // `running` is still set for the length of the run; and the last leg's own thread clears
+        // `running` only AFTER its `executePath` has returned and announced.  So nothing was ever
+        // announced with `isRunning()` false, and the one thing that waits for exactly that - the
+        // loop directly above - said nothing when it finished waiting.
+        //
+        // What that cost: `TrainControlUI.reconcileFacingWhenIdle` is the only thing that writes a
+        // reversal the railway made into the setup, it is reached only from a diagram refresh, and it
+        // deliberately refuses while anything is moving.  A train that backs into its home berth on a
+        // Return Home run - which is a timetable, see `loadReturnToHomeTimetable` - turns on the
+        // shared arrival path and toggles `reversedOnArrival`; with no idle announcement the turn
+        // stayed pending, the diagram went on drawing the train facing the way it set off, a dispatch
+        // made before any unrelated repaint was offered paths for the wrong heading, and the exit
+        // capture wrote the un-reconciled facing to disk.
+        //
+        // ONE PLACE RATHER THAN A FOURTH COPY.  `OB-189` fixed the same omission by pasting a refresh
+        // at the two hand-driven doors, and these two - the timetable button and Return Home - are the
+        // siblings that were not swept (W7-C2).  Those doors already reach `announceRunFinished()`
+        // when their journey returns and the thread count falls to zero, with nothing running, so
+        // announcing here - where a TIMETABLE becomes idle - is the one addition that covers all four.
+        //
+        // Not gated on `abandoned`: a run that gave up part way still moved trains, and the turns they
+        // made on the way are exactly as pending as a completed run's.
+        announceRunFinished();
+
         return !abandoned.get();
     }
     

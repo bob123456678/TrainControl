@@ -1086,22 +1086,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                             locomotive.getPreferredSpeed(), null,
                             answered);
 
-                        // AND THE GRAPH IS TOLD, which is the other half of what Adam asked for
-                        // (2026-09-08, OB-189): **"if yes, emit reversal command and update on
-                        // the graph."**
+                        // AND THE GRAPH IS TOLD WHERE EVERY RUN ENDS, WHICH IS NOT HERE (W7-A2).
                         //
-                        // A destination reversal is recorded by toggling the locomotive's name
-                        // into `Layout.reversedOnArrival`, and the window writes it to the setup
-                        // in `reconcileFacingWhenIdle` - which is only reached from a diagram
-                        // refresh.  Autonomy refreshes constantly so its turns land within a
-                        // tick; nothing refreshed when a HAND-DRIVEN journey ended, so the facing
-                        // sat pending and the diagram went on showing the train pointing the way
-                        // it set off.  The command had been sent and the railway had obeyed it.
+                        // This door and its twin each carried a copy of the same comment and the same
+                        // `updateVisiblePoints()` call, and the two doors that were NOT swept - the
+                        // timetable button and Return Home - drive trains over the same shared arrival
+                        // path and so end with the same reversals pending.  The per-caller shape is
+                        // what left them out.
                         //
-                        // Safe from here because `reconcileFacingWhenIdle` refuses while anything
-                        // is moving - a train between two copies is MEANT to disagree with the
-                        // graph - and this runs after the journey has returned.
-                        javax.swing.SwingUtilities.invokeLater(() -> { if (this.parent != null) this.parent.updateVisiblePoints(); });
+                        // `executePath` above announces the run finished when its thread count falls
+                        // to zero, which is this journey returning with nothing else running, and the
+                        // window's single refresh callback tells the graph when it does.  One place,
+                        // all four doors.
 
                         if (!success)
                         {

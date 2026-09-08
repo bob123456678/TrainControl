@@ -266,6 +266,13 @@ D1-D13	2026-09-02-regression-vs-2.8.1-review.md	Closed	verification of `R28`'s o
 D1-D16	2026-09-04-regression-sweep-3.0.0.md	Closed	corrections to prior findings, the downgrade matrix, and the successor census
 D1-D7	2026-09-05-fable-regression.md	Closed	the three measurements made and clean, the `357cdc40` review, and the re-verified baseline
 D1-D8	2026-08-31-regression-review.md	Closed	checks that came back clean
+D2-A1	D2-two-day-review.md	-	-
+D2-B1	D2-two-day-review.md	-	-
+D2-C1	D2-two-day-review.md	-	-
+D2-C2	D2-two-day-review.md	-	-
+D2-D1	D2-two-day-review.md	-	-
+D2-D2	D2-two-day-review.md	-	-
+D2-D3	D2-two-day-review.md	-	-
 D24-A1	2026-09-01-last-day-review.md	Closed	ALREADY RECORDED - open, restated as a release gate
 D24-B1	2026-09-01-fanout-index.md	Closed	`9f1b80c8`
 D24-B1	2026-09-01-last-day-review.md	Closed	open
@@ -761,6 +768,31 @@ IND9-C2	IND9-independent-2026-09-07.md	Closed	Open
 IND9-C3	IND9-independent-2026-09-07.md	Closed	Open
 IND9-C4	IND9-independent-2026-09-07.md	Closed	Open
 IND9-C5	IND9-independent-2026-09-07.md	Closed	Open
+IND9X-A1	IND-independent-review.md	-	-
+IND9X-A2	IND-independent-review.md	-	-
+IND9X-B1	IND-independent-review.md	-	-
+IND9X-B2	IND-independent-review.md	-	-
+IND9X-B3	IND-independent-review.md	-	-
+IND9X-B4	IND-independent-review.md	-	-
+IND9X-B5	IND-independent-review.md	-	-
+IND9X-B6	IND-independent-review.md	-	-
+IND9X-C1	IND-independent-review.md	-	-
+IND9X-C2	IND-independent-review.md	-	-
+IND9X-C3	IND-independent-review.md	-	-
+IND9X-C4	IND-independent-review.md	-	-
+IND9X-C5	IND-independent-review.md	-	-
+IND9X-C6	IND-independent-review.md	-	-
+IND9X-C7	IND-independent-review.md	-	-
+IND9X-C8	IND-independent-review.md	-	-
+IND9X-C9	IND-independent-review.md	-	-
+IND9X-D1	IND-independent-review.md	-	-
+IND9X-D2	IND-independent-review.md	-	-
+IND9X-D3	IND-independent-review.md	-	-
+IND9X-D4	IND-independent-review.md	-	-
+IND9X-D5	IND-independent-review.md	-	-
+IND9X-D6	IND-independent-review.md	-	-
+IND9X-D7	IND-independent-review.md	-	-
+IND9X-D8	IND-independent-review.md	-	-
 IP-A1	2026-08-21-independent-pass.md	Closed	Fixed 2026-08-21
 IP-B1	2026-08-21-independent-pass.md	Closed	Open
 IP-B2	2026-08-21-independent-pass.md	Closed	Open
@@ -2194,6 +2226,13 @@ VLD-C5	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-C6	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-C7	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-D1	2026-09-05-single-pass-validation.md	Closed	-
+W7-A1	W7-seven-day-review.md	-	-
+W7-A2	W7-seven-day-review.md	-	-
+W7-B1	W7-seven-day-review.md	-	-
+W7-B2	W7-seven-day-review.md	-	-
+W7-C1	W7-seven-day-review.md	-	-
+W7-C2	W7-seven-day-review.md	-	-
+W7-D1	W7-seven-day-review.md	-	-
 WK-B1	2026-08-28-week-review.md	Closed	open
 WK-B2	2026-08-28-week-review.md	Closed	open
 WK-C1	2026-08-28-week-review.md	Closed	open
