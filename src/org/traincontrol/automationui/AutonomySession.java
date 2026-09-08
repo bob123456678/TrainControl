@@ -2703,6 +2703,76 @@ public class AutonomySession
     }
 
     /**
+     * Squares the build emits with an arrival that can go nowhere (DD-A7).
+     *
+     * A copy IS an arrival - the builder emits one Point per side a train can come in by - so a copy
+     * with no outgoing edge is a train that arrived and cannot leave.  That is the same sentence the
+     * walk this replaced was trying to write, and the builder had already written it.
+     *
+     * Every point, not only the stations: `badCopies` asks about destinations because being sent
+     * somewhere and stranded is the serious case, while a plain point trains only pass through gets the
+     * same finding at INFO.  `checkTrappedArrivals` makes that distinction; this only finds them.
+     *
+     * Empty when the setup will not build, deliberately - see `builtForInspection`.
+     *
+     * @param built the inspected configuration, or null
+     * @param named the builder's own name-to-tile mapping
+     * @return the squares
+     */
+    private Set<TileKey> tilesWithATrappedArrival(org.json.JSONObject built,
+        java.util.Map<String, TileKey> named)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (built == null || !built.has("points") || !built.has("edges")) return out;
+
+        java.util.Set<String> hasOut = new java.util.HashSet<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            hasOut.add(edges.getJSONObject(i).getString("start"));
+        }
+
+        // The builder's own mapping, for the reason given in badCopies: taking a copy name apart by
+        // hand works only on a square somebody has named, and reported clean on a broken fixture.
+        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            String name = points.getJSONObject(i).getString("name");
+
+            if (hasOut.contains(name)) continue;
+
+            TileKey tile = byName.get(name);
+
+            if (tile == null) continue;
+
+            // A square the operator has said trains may turn round at is not trapped: turning IS the
+            // way out, and the builder expresses that by emitting the turning copy.
+            if (isTurnAround(tile)) continue;
+
+            // AND A SQUARE THAT WAS NEVER SPLIT HAS NO ARRIVAL TO TRAP.
+            //
+            // `splitSides` emits a tile whole when an edge reaches it by no side of the grid - a link,
+             // which lands a train nowhere the compass can name - and a whole tile with no way out is a
+            // dead end in the track rather than a trapped arrival. Three such squares on the sample
+            // layout, and reporting them would tell the operator to fix something that is not there.
+            //
+            // Found by `testTheCheckerAgreesWithTheBuild`, on the change meant to make that test
+            // redundant: my first version of this derivation left the filter out.
+            if (arrivalSides(tile).isEmpty()) continue;
+
+            out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
      * The built graph as JSON, or null when the setup will not build.
      *
      * FOR INSPECTION, which is what the copy checks are.  buildConfiguration() answers for a
@@ -4222,50 +4292,34 @@ public class AutonomySession
             if (everyArrivalMustTurn(graph, reducer, tile)) pointless.add(tile);
         }
 
+        // Built once, up here, because the checks below are ABOUT the build (DD-A7).
+        //
+        // `AutonomyChecks` is a predictor, not a second authority: its whole job is to tell the
+        // operator what the railway will do before they trust trains to it, so where the build can
+        // answer, the build's answer is the right one and a second derivation can only be a chance to
+        // disagree.  `AutonomySession.check` used to work several of these out for itself by walking
+        // the reduction, which is the family DD-A7 named.
+        //
+        // The line is drawn by severity, and it is not arbitrary: an ERROR says the setup will not
+        // build at all, so there is no build to inspect and those checks must reason about the diagram.
+        // Everything softer describes a railway that WILL exist, and asks it.
+        org.json.JSONObject inspected = builtForInspection();
+
+        java.util.Map<String, TileKey> namesForInspection =
+            inspected == null ? null : builder(null).tilesByName();
+
         // Squares a train can reach and then not leave: it arrived by one side, the only way on is back
         // out of that same side, and nobody has said trains may turn round there.
-        Set<TileKey> trapped = new LinkedHashSet<>();
-
-        for (TileKey tile : reducer.getPoints().keySet())
-        {
-            if (isTurnAround(tile)) continue;
-
-            // Departures are still gathered here: the split is about ARRIVALS, so there is no door to
-            // ask for the other half, and the builder gathers them the same way in departureSides.
-            Set<Side> departures = new LinkedHashSet<>();
-
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-            {
-                if (edge.getStart().equals(tile) && edge.getExitSide() != null)
-                {
-                    departures.add(edge.getExitSide());
-                }
-            }
-
-            for (Side arrival : arrivalSides(tile))
-            {
-                // The track the train is standing on, not every side the square has.
-                //
-                // The builder asks this question through the arriving ROUTE, and hands the answer here
-                // when it decides to emit a Point with no way out - so asking it a different way meant
-                // the one case the builder explicitly delegates could go unreported: a double curve
-                // whose one track dead-ends while the other carries traffic looked fine, because the
-                // other curve's departures counted as somewhere to go.
-                Set<Side> onwards = new LinkedHashSet<>();
-
-                for (TileGraph.Exit exit : graph.exits(tile, arrival))
-                {
-                    if (exit.getSide() != null && departures.contains(exit.getSide()))
-                    {
-                        onwards.add(exit.getSide());
-                    }
-                }
-
-                onwards.remove(arrival);
-
-                if (onwards.isEmpty()) trapped.add(tile);
-            }
-        }
+        //
+        // Read off the built graph rather than walked here.  The two agreed - `testTheCheckerAgreesWith
+        // TheBuild` says so - but they agreed by having been written to agree, and the walk carried
+        // three careful comments about matching what the builder does, each of which is a note that the
+        // two could come apart.  Now there is one answer.
+        //
+        // Nothing is reported when the setup will not build, which is the same rule the copy checks
+        // already follow: a setup that will not build has louder problems than a trapped arrival, and
+        // every one of them is already on the list.
+        Set<TileKey> trapped = tilesWithATrappedArrival(inspected, namesForInspection);
 
         // Captions the user’s own writing is sitting on top of.
         //
@@ -4289,11 +4343,6 @@ public class AutonomySession
             if (!component.getLabel().trim().isEmpty()) covered.put(caption.getKey(), caption.getValue());
         }
 
-        // Built once here rather than three times below (D3F-C6).
-        org.json.JSONObject inspected = builtForInspection();
-
-        java.util.Map<String, TileKey> namesForInspection =
-            inspected == null ? null : builder(null).tilesByName();
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),

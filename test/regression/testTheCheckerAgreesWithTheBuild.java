@@ -58,6 +58,19 @@ import org.traincontrol.marklin.file.CS2File;
  * itself: `Layout.getNeighbors` knows nothing about arrival sides, entry sides or turn sets, only about
  * the edges the builder chose to write down.
  *
+ * **What this still guards, after the DD-A7 tier split (2026-09-07).** The trapped-arrival clause no
+ * longer has two authors: `AutonomySession.check` reads the built graph rather than walking the
+ * reduction, so that half is now true by construction and this asserts it only against the oracle's
+ * own filters. The reachability and facing clauses still compare two derivations and are where the
+ * value is.
+ *
+ * **It earned its keep on the change meant to retire it.** The first version of the build-derived
+ * derivation dropped the "never split, so no arrival to trap" filter and reported three squares on the
+ * sample layout that have no arrival at all - squares a link reaches by no side of the grid. This test
+ * failed, named all three, and the fix was to put the filter back. A guard written against an
+ * independent oracle catches the mistake made while removing its subject, which a guard written
+ * against the thing under test cannot.
+ *
  * The fixture is `test/test_layout`, frozen, wired the way `testAutonomyDiagramSampleLayout` wires it - a
  * diagram parsed on its own has addresses on its tiles but no Accessory objects behind them, and
  * without them two thirds of the track does not connect.
