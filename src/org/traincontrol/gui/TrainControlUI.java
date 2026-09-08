@@ -640,6 +640,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     };
         
     /**
+     * Whether the menu bar is drawn INSIDE the window title bar, FlatLaf-style.
+     *
+     * **False, by Adam's word of 2026-09-08:** *"the production app now also has a different menu bar,
+     * specifically the flatlaf menus in window titles.  I'd like that toggled off for now with an easy
+     * way to restore it if desired."*  Set this to true and the modern look comes back; nothing else
+     * has to change.
+     *
+     * **It appeared by accident and that is worth writing down.** `FlatLightLaf.setup()` used to be the
+     * first statement of this class's CONSTRUCTOR - which runs after `JFrame`'s own constructor, so the
+     * frame was already built by the time the look and feel arrived and FlatLaf never got the chance to
+     * decorate it.  Moving the install into `MarklinControlStation.init`, so that the test suite gets
+     * the same program the operator runs, also moved it in front of the frame - and FlatLaf decorated
+     * the window it was now early enough to see.
+     *
+     * So the appearance was never chosen: it was a side effect of when a line happened to run.  Saying
+     * it here makes it a decision, and one that no longer depends on construction order.
+     */
+    public static final boolean MENUS_IN_THE_TITLE_BAR = false;
+
+    /**
+     * How much larger the menus are than the rest of the interface.
+     *
+     * Adam, 2026-09-08: *"the JMenu font size restored to 1 bigger."*
+     *
+     * **Zero, because the shrinking is a symptom rather than a setting.**  The menu font got smaller
+     * when FlatLaf began drawing the menu bar inside the title bar, where it uses the title's smaller
+     * text - so turning that off above should restore the size on its own, and a bump on top of the
+     * restoration would overshoot.
+     *
+     * **If it is still small, set this to 1** - and know what it costs, because it was measured:
+     * `testEveryLanguageFits` reports the French, Spanish and Italian menu bars overflowing the window
+     * at one point larger ("Fonctions" 568px and "Funciones" 650px against 555px of room).  The English
+     * bar fits.  So this is a knob with a known price rather than a free improvement.
+     */
+    public static final int MENU_FONT_STEP = 0;
+
+    /**
      * Installs the application's look and feel.
      *
      * **A method rather than three lines in the constructor, because a window is not the only thing
@@ -660,12 +697,58 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static void installLookAndFeel()
     {
+        // BEFORE setup(), because FlatLaf reads these when it installs itself - afterwards is too late
+        // for the window decorations, which are decided once.
+        if (!MENUS_IN_THE_TITLE_BAR)
+        {
+            System.setProperty("flatlaf.useWindowDecorations", "false");
+            System.setProperty("flatlaf.menuBarEmbedded", "false");
+        }
+
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
+
+        // AND AGAIN AS A UI DEFAULT.  The system properties above are read at install time; this key is
+        // what a re-installed look and feel consults, and `setup()` may be called more than once - init
+        // asks for it, and so does the constructor.
+        javax.swing.UIManager.put("TitlePane.menuBarEmbedded", MENUS_IN_THE_TITLE_BAR);
 
         // Makes tabs narrower
         javax.swing.UIManager.put("TabbedPane.tabWidthMode", "compact");
         javax.swing.UIManager.put("TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
+
+        enlargeTheMenus();
+    }
+
+    /**
+     * Gives the menus a point more than everything else (Adam, 2026-09-08).
+     *
+     * Every menu class, not just `Menu`: a menu bar whose headings are one size and whose items are
+     * another reads as a mistake, and the tick-box and radio items are separate keys again.
+     *
+     * Derived from whatever the look and feel chose rather than a number written here, so it follows the
+     * theme and the operator's own display scaling instead of overriding them.
+     */
+    private static void enlargeTheMenus()
+    {
+        if (MENU_FONT_STEP == 0) return;
+
+        String[] keys =
+        {
+            "Menu.font", "MenuBar.font", "MenuItem.font",
+            "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font"
+        };
+
+        for (String key : keys)
+        {
+            java.awt.Font was = javax.swing.UIManager.getFont(key);
+
+            if (was == null) continue;
+
+            javax.swing.UIManager.put(key,
+                new javax.swing.plaf.FontUIResource(was.deriveFont((float) was.getSize()
+                    + MENU_FONT_STEP)));
+        }
     }
 
     /**

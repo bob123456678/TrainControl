@@ -92,6 +92,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
 | [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | needs test | OB-183 |
 | [MT-338](#mt-338) | 2026-09-08 | The station label and the facing menu say the same thing | needs test | OB-181 |
+| [MT-339](#mt-339) | 2026-09-08 | The menu bar, the menu font and the start button | needs test | OB-186 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -17331,6 +17332,57 @@ has no train whose direction it could be. The WRITE was already shared: both go 
 
 **Also worth a look while you are there:** with nothing recorded, the menu used to tick the FIRST
 facing in the list, which is a guess shown as a fact. It now ticks what the train is actually doing.
+
+---
+
+<a id="mt-339"></a>
+
+### MT-339 - 2026-09-08 - The menu bar, the menu font and the start button
+
+**Disposition:** needs test
+**From:** OB-186
+
+**Written:** 2026-09-08
+
+**Three things you reported after the look-and-feel change, and one of them I need you to confirm.**
+
+**Steps**
+
+1. Start TrainControl.
+2. Look at the menu bar, the menu font, and the **Start Autonomous Operation** button above the track
+   diagram.
+
+**Expected**
+
+- The menus are on their own bar again, **not inside the window title**.
+- The menu text is back to the size it was.
+- The button has its padding above and below the text back.
+
+**What happened, because it explains why all three arrived together.** `FlatLightLaf.setup()` used to be
+the first statement of the `TrainControlUI` CONSTRUCTOR - which runs after `JFrame`'s own constructor, so
+the frame was already built by the time the look and feel arrived and FlatLaf never got the chance to
+decorate it. Moving the install into `MarklinControlStation.init`, so the test suite would stop running
+against a program drawn in Metal, also moved it in front of the frame. FlatLaf then decorated a window it
+was finally early enough to see, and the title bar swallowed the menu bar.
+
+So the old appearance was never chosen - it was a side effect of when a line happened to run. It is a
+declared decision now: `TrainControlUI.MENUS_IN_THE_TITLE_BAR`, set to false, and setting it true brings
+the modern look back with nothing else to change. **On the font, I did not do what you asked and here is why.** You asked for it one point bigger. The
+shrinking is a SYMPTOM of the title-bar embedding - the menu bar drawn in the title uses the title's
+smaller text - so turning that off should restore the size on its own, and adding a point on top would
+overshoot. `MENU_FONT_STEP` is there at zero if I am wrong: set it to 1 and it applies.
+
+It has a measured price, which is why it is a knob rather than a default. At one point larger,
+`testEveryLanguageFits` reports the French, Spanish and Italian menu bars overflowing the window -
+"Fonctions" at 568px and "Funciones" at 650px against 555px of room. The English bar fits. **So if you
+do want it bigger, those three languages lose menu text**, and it would be worth deciding that
+deliberately.
+
+**The one to check carefully: the button.** The menu bar and the font are certain. The button's padding I
+have attributed to the same cause - the window decorations changed the top of the frame - and I have not
+been able to see it. **If it is still flat after this, say so** and I will set its margin explicitly
+instead; the button lives in the generated block, so that has to be done from outside it and I would
+rather not double the padding by guessing.
 
 ---
 
