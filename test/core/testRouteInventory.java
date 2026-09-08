@@ -38,6 +38,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * railway.  Nothing here is worth reading unless the edge count is plausible.
  *
  * @author Adam
+ *
+ * <p><b>A missing input is a SKIP, not a pass (TS-C3).</b> Three of the bundles below live in
+ * {@code tc_backup/}, which is <i>gitignored</i> - zero files tracked - so on every machine but the
+ * owner's these tests were reading nothing and reporting green. A pass that means "did not run" is the
+ * one result a suite cannot afford, because it is indistinguishable from the thing it was written to
+ * prove.
+ *
+ * <p>{@code SkipException} is what the neighbours use and what this project counts: the bar is
+ * <b>Failures: 0 AND Skips: 0</b>, so a skipped test is visible in the same line that reports a
+ * failure. A bare {@code return} is invisible in exactly that line.
  */
 public class testRouteInventory
 {
@@ -87,7 +97,10 @@ public class testRouteInventory
     {
         File bundle = new File("tc_backup/Autonomy 1b.json");
 
-        if (!bundle.isFile()) return;
+        if (!bundle.isFile())
+        {
+            throw new org.testng.SkipException("no tc_backup/Autonomy 1b.json to read");
+        }
 
         RouteInventoryResult result = report("2-stuck-1b", build(bundle));
 
@@ -99,7 +112,10 @@ public class testRouteInventory
     {
         File bundle = new File("tc_backup/Autonomy 1d.json");
 
-        if (!bundle.isFile()) return;
+        if (!bundle.isFile())
+        {
+            throw new org.testng.SkipException("no tc_backup/Autonomy 1d.json to read");
+        }
 
         RouteInventoryResult result = report("4-bundle-1d", build(bundle));
 
@@ -111,7 +127,10 @@ public class testRouteInventory
     {
         File bundle = new File("tc_backup/Autonomy 1e.json");
 
-        if (!bundle.isFile()) return;
+        if (!bundle.isFile())
+        {
+            throw new org.testng.SkipException("no tc_backup/Autonomy 1e.json to read");
+        }
 
         RouteInventoryResult result = report("5-bundle-1e", build(bundle));
 
@@ -123,7 +142,10 @@ public class testRouteInventory
     {
         File hand = new File("test/test_layout/config/autorun/autonomy.json");
 
-        if (!hand.isFile()) return;
+        if (!hand.isFile())
+        {
+            throw new org.testng.SkipException("no test/test_layout/config/autorun/autonomy.json to read");
+        }
 
         RouteInventoryResult result = report("3-hand-authored-2.8.1",
             new String(Files.readAllBytes(hand.toPath()), StandardCharsets.UTF_8));

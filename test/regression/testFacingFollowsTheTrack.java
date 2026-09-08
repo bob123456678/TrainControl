@@ -96,13 +96,20 @@ public class testFacingFollowsTheTrack
     /**
      * The facings offered on five named squares, written out by hand from the track under them.
      *
-     * TA-B8 of the 2026-08-24 test suite audit: the rule test below checks that every facing offered
-     * is a side `session.getRoutes(tile)` uses - and `onwardFrom`, which produces the facings, reads
-     * that same map to produce them.  Every answer the real branch gives satisfies that oracle by
-     * construction, so the test could only ever fail on the compass fallback.  In particular a version
-     * that offered BOTH ends of every route across the square - including the side the train arrived
-     * by, which is MT-125's own defect class turned round - passed it, because the arrival side is
-     * track too.
+     * TA-B8 of the 2026-08-24 test suite audit, and the reason this table exists: the RULE test below
+     * checks that every facing offered is a side `session.getRoutes(tile)` uses, and at the time
+     * `onwardFrom` - which produced the facings - read that same map. Every answer the real branch
+     * gave satisfied that oracle by construction, so the test could only fail on the compass fallback.
+     * A version that offered BOTH ends of every route across the square - including the side the train
+     * arrived by, which is MT-125's own defect class turned round - passed it, because the arrival
+     * side is track too.
+     *
+     * **That circularity is gone as of DR-B6 (2026-09-07)**, and by a route nobody planned: the facing
+     * menu no longer works its own answer out, it reads `facingsFor`, which is the BUILDER's
+     * `facingByName`. So the premise below (`getRoutes` - what track is on the square) and the answer
+     * below it (what the build says a train there can face) now come from different places, and the
+     * two assertions are independent. The hand-written table is still the point: it is written from
+     * the LAYOUT, so it holds whichever component is asked.
      *
      * So this is a table of answers, and it is written down from the LAYOUT rather than taken from the
      * code.  Each line reads: the square, the track on it, and where a train standing there can be

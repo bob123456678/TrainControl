@@ -2173,12 +2173,35 @@ public class testHomeStaging
 
         HomeStaging.Plan plan = layout.planReturnToHome();
 
-        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
-            "the planner called a movable blocker a proof of impossibility. B is standing on the "
-            + "square that holds A's home back, and B is being staged to HS C - so the first move of "
-            + "the plan clears it. IMPOSSIBLE is presented to the operator as a proof, with the "
-            + "locomotives named, and it skips the search that would have found the two-move answer "
-            + "(FBR-B1).  Got: " + plan.getOutcome());
+        // THE OUTCOME, not merely "not IMPOSSIBLE" (TA-C1).
+        //
+        // `assertNotEquals(IMPOSSIBLE)` is satisfied by five other outcomes, three of which mean the
+        // planner did nothing: NO_LOCOMOTIVES, NO_HOMES, and the search-limit answer. A planner with
+        // its search removed passes it, which is the reviewer's receipt for this finding.
+        //
+        // What this test is about is that a movable blocker does not stop a plan being FOUND, so the
+        // outcome it means is READY and the proof is the moves.
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "the planner did not find the two-move answer. B is standing on the square that holds A's"
+            + " home back, and B is itself being staged to HS C - so the first move of the plan clears"
+            + " it. IMPOSSIBLE is presented to the operator as a proof, with the locomotives named, and"
+            + " it skips the search that would have found this (FBR-B1). Got: " + plan.getOutcome());
+
+        // AND THE PLAN ACTUALLY MOVES BOTH, which READY alone does not promise: an empty plan is a
+        // plan. Named rather than counted, so a plan that moves one train twice cannot pass.
+        java.util.Set<String> moved = new java.util.LinkedHashSet<>();
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            if (move.getLocomotive() != null) moved.add(move.getLocomotive().getName());
+        }
+
+        assertTrue(moved.contains(LOC_B),
+            "the plan does not move the blocker, so whatever it found is not the answer this test is"
+            + " about: B leaving HS D is what frees A's home. Moved: " + moved);
+
+        assertTrue(moved.contains(LOC_A),
+            "the plan frees A's home and then leaves A where it is. Moved: " + moved);
 
         assertFalse(plan.getBlocked().contains(loc(LOC_A)),
             "and A must not be named as blocked when what is in its way is about to leave");
