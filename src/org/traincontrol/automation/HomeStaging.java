@@ -86,6 +86,29 @@ public final class HomeStaging
     private final Map<String, List<Point>> pointsBySensor;
 
     /**
+     * The track the trains were lying across when the snapshot was taken, and who is lying across it.
+     *
+     * Adam, OB-184: **"The home planner does not consider blocks due to the length of a train, i.e. a
+     * train that blocks edges behind it."**
+     *
+     * The class comment above states the planner's model of occupancy: *"a locomotive at rest occupies
+     * exactly its own station's sensor"*. That is half of it. A train longer than the track it is
+     * standing on protrudes onto the track BEHIND it, which belongs to no sensor at all - which is
+     * exactly Adam's ruling when the runtime learned this: *"edges, because the points are technically
+     * unoccupied"*. `Layout.isPathClear` has consulted it since; this planner never did, so it routed a
+     * train through a switch another train is lying across and the runtime refused the move.
+     *
+     * **Only for a train that has not moved yet, and that is a real limit rather than laziness.** The
+     * planner reasons about hypothetical futures, and where a train's tail lies after a move depends on
+     * the side it arrives by - which nothing here models. So a train still standing where it started
+     * blocks what it really blocks, and one the plan has already moved blocks nothing extra. That
+     * under-claims, which is the safe direction for a plan: the runtime refuses what it must, and a
+     * planner that over-refused would report a railway as impossible that is not.
+     */
+    private final Map<Edge, Locomotive> coveredAtStart;
+
+
+    /**
      * Which points are copies of one square, which is what the RUNTIME means by "the same piece of
      * track" - `Point.getBlockLocomotive` asks the block and nothing else.
      *
@@ -107,6 +130,13 @@ public final class HomeStaging
         this.launchPads = launchPads;
         this.layout = layout;
         this.start = start;
+
+        // TAKEN ONCE, with everything else about the starting state.  Asking the live layout during the
+        // search would be asking about a railway that has moved on - and would be a different answer on
+        // every expansion, which is not a thing a search can reason with.
+        this.coveredAtStart = layout == null
+            ? java.util.Collections.<Edge, Locomotive>emptyMap()
+            : layout.edgesCoveredByStandingTrains();
         this.homes = homes;
         this.stations = stations;
         this.sensorsSet = sensorsSet;
@@ -1013,6 +1043,14 @@ public final class HomeStaging
 
                 if (!canEnter(next, loc, blocked, state)) continue;
 
+                // AND THE TRACK A STANDING TRAIN IS LYING ACROSS (OB-184).
+                //
+                // `canEnter` asks about the POINT this edge leads to; this asks about the EDGE itself,
+                // because a train longer than its berth protrudes onto track that belongs to no sensor
+                // and no point reports it. That is the rule `Layout.isPathClear` enforces, and a plan
+                // that ignores it is a plan the runtime refuses on the first move.
+                if (!passesTheTailsOfTrainsThatHaveNotMoved(e, loc, state)) continue;
+
                 // Lock edges are deliberately NOT consulted here.
                 //
                 // They used to be, by the rule the runtime used at the time: an edge counted as
@@ -1215,6 +1253,42 @@ public final class HomeStaging
         }
 
         return false;
+    }
+
+    /**
+     * Whether this edge is free of the tails of trains that are still where they started (OB-184).
+     *
+     * A train never blocks ITSELF - its own tail is behind it by definition, and pulling forward off it
+     * is the ordinary way a train leaves a berth. `Layout.isPathClear` says the same thing in the same
+     * words, and the two rules have to agree or the planner offers what the runtime refuses.
+     *
+     * **The "has not moved" test is what keeps this sound.** `coveredAtStart` describes the railway as
+     * it was. Once the plan has moved a train, that record is about track it has left - blocking on it
+     * would refuse routes that are genuinely clear, and Adam's standing preference is no check over an
+     * over-strict one. Where the train has not moved, the record is exactly true.
+     *
+     * @param edge the edge being entered
+     * @param mover the locomotive being routed
+     * @param state the arrangement being considered
+     * @return true when nothing standing is lying across it
+     */
+    private boolean passesTheTailsOfTrainsThatHaveNotMoved(Edge edge, Locomotive mover,
+        Map<Point, Locomotive> state)
+    {
+        Locomotive lyingAcross = this.coveredAtStart.get(edge);
+
+        if (lyingAcross == null || lyingAcross.equals(mover)) return true;
+
+        // Still where it was?  Its tail is where it was too.
+        for (Map.Entry<Point, Locomotive> was : this.start.entrySet())
+        {
+            if (!lyingAcross.equals(was.getValue())) continue;
+
+            return !lyingAcross.equals(state.get(was.getKey()));
+        }
+
+        // Covering track without a starting station of its own - nothing to compare, so nothing claimed.
+        return true;
     }
 
     /**

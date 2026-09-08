@@ -178,6 +178,112 @@ public class testHomeStaging
     }
 
     /**
+     * The planner will not route a train through track another train is lying across (OB-184).
+     *
+     * Adam: **"The home planner does not consider blocks due to the length of a train, i.e. a train
+     * that blocks edges behind it."**
+     *
+     * The class this tests states its model of occupancy out loud: *"a locomotive at rest occupies
+     * exactly its own station's sensor"*. That is half of it. A train longer than the track it stands
+     * on protrudes onto the track BEHIND it, and that track belongs to no sensor - which is Adam's own
+     * ruling from when the runtime learned this: *"edges, because the points are technically
+     * unoccupied"*. `Layout.isPathClear` has enforced it since; the planner had never heard of it, so
+     * it produced plans the runtime refused on their first move.
+     *
+     * **The fixture is a corridor, not a ring**, so there is exactly one way through and the tail
+     * cannot be routed around. A ring would let the planner take the long way and pass for the wrong
+     * reason.
+     *
+     * MUTATION: removing the `passesTheTailsOfTrainsThatHaveNotMoved` call from the route search makes
+     * this pass a plan the runtime would refuse.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAPlanDoesNotRouteThroughTrackATrainIsLyingAcross() throws Exception
+    {
+        // A SIDING OFF A THROUGH ROAD, one way in, so the tail is the only thing that can refuse.
+        //
+        // HS F (the traveller) -> HS N -> HS B, with the blocker standing at HS B, and HS N -> HS H
+        // where the traveller is homed. The blocker's berth is NOT on the traveller's route, which is
+        // what makes this about the tail rather than about a station being occupied - the first version
+        // of this test made the route pass through the blocker's own platform and was refused for that
+        // reason with the fix removed.
+        //
+        // ONE WAY into HS N as well, and that matters: the tail walk stops at a fork, because the graph
+        // cannot say which way a tail lies when several roads lead back. With a return edge from B the
+        // tail would stop at N and never reach the traveller's road at all.
+        String corridor = json("{'points': ["
+            + station("HS F", 0, TEST_LOCS[0]) + ","
+            + "{'name': 'HS N', 'station': false, 's88': " + (S88_BASE + 1) + "},"
+            + station("HS B", 2, TEST_LOCS[1]) + ","
+            + station("HS H", 3, null)
+            + "],'edges': ["
+            + "{'start': 'HS F', 'end': 'HS N', 'length': 1, 'entrySide': 'W'},"
+            + "{'start': 'HS N', 'end': 'HS B', 'length': 1, 'entrySide': 'W'},"
+            + "{'start': 'HS N', 'end': 'HS H', 'length': 1, 'entrySide': 'N'}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+        model.parseAuto(corridor);
+
+        Layout layout = model.getAutoLayout();
+
+        Locomotive blocker = model.getLocByName(TEST_LOCS[1]);
+        Locomotive traveller = model.getLocByName(TEST_LOCS[0]);
+
+        assertNotNull(blocker, "the fixture locomotives are not on this railway");
+        assertNotNull(traveller, "the fixture locomotives are not on this railway");
+
+        Integer wasLength = blocker.getTrainLength();
+
+        try
+        {
+            // LONGER THAN ITS BERTH, so its tail lies back down the only corridor - and it has to have
+            // arrived by a side, or the walk that works tails out finds nothing and this proves nothing.
+            blocker.setTrainLength(9);
+
+            layout.getPoint("HS B").setArrivedFrom(
+                layout.entrySideOf(layout.getEdge("HS N", "HS B"), layout.getPoint("HS B")));
+
+            // THE EDGE THE TRAVELLER NEEDS, named.  "Something is covered" is satisfied by the siding
+            // itself, which is on nobody else's road - and a premise the irrelevant half satisfies
+            // proves nothing about the relevant one.
+            assertTrue(layout.edgesCoveredByStandingTrains().containsKey(
+                layout.getEdge("HS F", "HS N")),
+                "the blocking train's tail does not reach the through road, so the traveller's route is"
+                + " genuinely clear and the planner is right to offer it. Covered: "
+                + layout.edgesCoveredByStandingTrains().keySet());
+
+            // Home the traveller at the far end, which can only be reached through the blocked track.
+            layout.setHomeLocomotive("HS H", traveller.getName());
+
+            HomeStaging.Plan blocked = layout.planReturnToHome();
+
+            // THE CONTROL, and the first version of this test had no such thing and passed with the
+            // fix removed (2026-09-08).  "The planner did not say READY" is satisfied by every other
+            // reason it might refuse - an unreachable home, a berth the train may not rest on - so on
+            // its own it says nothing about tails at all.  Shortening the SAME train on the SAME
+            // railway changes exactly one thing.
+            blocker.setTrainLength(1);
+
+            HomeStaging.Plan clear = layout.planReturnToHome();
+
+            assertEquals(clear.getOutcome(), HomeStaging.Outcome.READY,
+                "with a short train in the way the planner still will not route past it, so this"
+                + " railway refuses for some reason other than the tail and the assertion below would"
+                + " pass whatever the planner knew about lengths");
+
+            assertNotEquals(blocked.getOutcome(), HomeStaging.Outcome.READY,
+                "the planner produced a plan that drives " + traveller.getName() + " through track"
+                + " " + blocker.getName() + " is lying across - the same railway it correctly refused"
+                + " once the train was shortened. The runtime refuses that on the first move, so the"
+                + " plan is one the railway cannot execute (OB-184)");
+        }
+        finally
+        {
+            blocker.setTrainLength(wasLength == null ? 0 : wasLength);
+        }
+    }
+    /**
      * And a placement that DOES carry a value still applies it.
      *
      * The other half, and the reason the fix is "absent means not stated" rather than "never write":
