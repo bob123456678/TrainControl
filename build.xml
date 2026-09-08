@@ -353,6 +353,7 @@
         <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
         <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
         <test-one-class class="testTheShadingFollowsTheTrain"/>
+        <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

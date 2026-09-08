@@ -3573,6 +3573,32 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * How far apart the picker's shortcut buttons stand.
+     *
+     * Adam, OB-188: *"add some spacing between the two buttons, as they currently touch (in the set
+     * home locomotive popup)."*  Two buttons drawn edge to edge read as one wide control with a line
+     * down the middle, and these two answer different questions.
+     */
+    private static final int SHORTCUT_GAP = 8;
+
+    /**
+     * The strip the picker's shortcut buttons sit on.
+     *
+     * A method rather than a line inside `pickLocomotive` so the spacing can be measured without
+     * opening a modal dialog on somebody's screen, which is a thing the test suite is not allowed to
+     * do.
+     *
+     * Public because the test that measures the spacing lives outside this package, as the other
+     * tests of this panel's rules do.
+     *
+     * @return an empty row, laid out left to right with a gap between whatever is added to it
+     */
+    public static javax.swing.JPanel shortcutRow()
+    {
+        return new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, SHORTCUT_GAP, 0));
+    }
+
+    /**
      * Asks for one locomotive from a list, with a box to narrow it down.
      *
      * FR-010 and FR-011. Both places that ask this question used `JOptionPane.showInputDialog` with a
@@ -3680,7 +3706,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // Each is offered only when its locomotive is actually in the list, so neither button can pick
         // something the list would refuse.
-        JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        JPanel row = shortcutRow();
 
         if (useParked != null && names.contains(useParked))
         {
