@@ -685,11 +685,17 @@ public class testSwitchingToACentralStationLayout
         // both written for OB-180 - a defect no assertion about the model could see, because the
         // covered set was right the whole time and nothing repainted the tiles.
         //
+        // TWENTY-THREE since 2026-09-08, and the one that arrived is
+        // `regression.testTheMenusComeBackAtOneMoment`, written for OB-187.  It builds a window
+        // because the defect is about the order start-up puts the menu bar together in - the bar is
+        // greyed before the autonomy menu is added to it - and only a real `setViewListener` runs
+        // that order.  Its sandbox is opened before the model, as the rule above requires.
+        //
         // The number is deliberately a hard count rather than a floor: a class that builds a window
         // opens the operator's railway if it gets the sandbox wrong, so each new one is worth a moment
         // of somebody's attention rather than a silently rising number.
-        assertEquals(checked, 22,
-            checked + " test classes were found to build a window, not the 22 there were when this "
+        assertEquals(checked, 23,
+            checked + " test classes were found to build a window, not the 23 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

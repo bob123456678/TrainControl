@@ -89,7 +89,13 @@ public class AutonomyMenu extends JMenu
         // every autonomy gesture came back having done nothing and the captions never appeared.
         boolean local = ui.canUseAutonomy();
 
-        setEnabled(hasLayout && local);
+        // AND NOT WHILE THE WINDOW IS STILL CONNECTING (OB-187).
+        //
+        // This menu is mounted from `setViewListener`, so it arrives on a bar every other menu of
+        // which `showConnecting` has already greyed - and it arrived enabled, which is Adam's "the
+        // menu options ungrey at different times".  `ungreyTheMenus` asks this method again at the
+        // one moment the hold comes off, so nothing is lost by waiting.
+        setEnabled(hasLayout && local && !ui.menusAreHeldByTheNotice());
 
         setToolTipText(AutonomyEditorPanel.wrapped(!hasLayout ? I18n.t("autosetup.ui.tooltipNoLayout")
             : !local ? I18n.t("autosetup.ui.tooltipNeedsLocalLayout") : null));

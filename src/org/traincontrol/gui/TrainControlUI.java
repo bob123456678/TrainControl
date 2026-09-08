@@ -8277,6 +8277,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final java.util.List<javax.swing.JMenu> menusGreyedByTheNotice = new java.util.ArrayList<>();
 
     /**
+     * Whether the connecting notice still has the menu bar (OB-187).
+     *
+     * Adam, MT-264: *"when the loading finishes, the menu options ungrey at different times."*  The
+     * bar is greyed before it has finished being built - `mountAutonomyControls` adds the autonomy
+     * menu from `setViewListener`, which runs during the connect - so a menu that arrived after the
+     * walk was never taken and came back at its own moment, several seconds before the rest.
+     *
+     * One question, asked by anything that decides a menu's enabled state while the window is still
+     * connecting; `ungreyTheMenus` is the one moment they all come back at.
+     *
+     * @return true while the notice is holding the bar
+     */
+    boolean menusAreHeldByTheNotice()
+    {
+        return theNoticeHoldsTheMenus;
+    }
+
+    /** Whether the menus are being held - see menusAreHeldByTheNotice. */
+    private boolean theNoticeHoldsTheMenus;
+
+    /**
      * Greys out the menu bar for as long as the connecting notice is up.
      *
      * **Each menu, not the bar.**  `JMenuBar.setEnabled(false)` leaves its menus drawn in their
@@ -8292,6 +8313,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void greyTheMenus()
     {
+        // ABOVE the bar, because the hold is about the notice rather than about what is on the bar
+        // now: a menu mounted during the connect asks this after this method has run (OB-187).
+        theNoticeHoldsTheMenus = true;
+
         javax.swing.JMenuBar bar = getJMenuBar();
 
         if (bar == null) return;
@@ -8314,12 +8339,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void ungreyTheMenus()
     {
+        // FIRST, because the menus asked below read it.  A menu that decides its own enabled state
+        // would put itself straight back into the hold if it were asked while this were still true.
+        theNoticeHoldsTheMenus = false;
+
         for (javax.swing.JMenu menu : menusGreyedByTheNotice)
         {
             menu.setEnabled(true);
         }
 
         menusGreyedByTheNotice.clear();
+
+        // AND THE MENUS THAT WERE NOT ON THE BAR WHEN IT WAS GREYED (OB-187).
+        //
+        // The list above holds what `greyTheMenus` took, and it cannot hold the autonomy menu: that
+        // menu is created and added by `mountAutonomyControls`, from `setViewListener`, which runs
+        // while the notice is up.  It is asked here rather than added to the list because its answer
+        // is a rule about the layout - `refreshEnabled` - and enabling it blindly would switch it on
+        // for a Central Station diagram that cannot hold a setup at all.
+        if (autonomyMenu != null) autonomyMenu.refreshEnabled();
     }
 
     /**
