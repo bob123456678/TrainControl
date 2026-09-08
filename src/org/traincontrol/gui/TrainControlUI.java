@@ -5806,11 +5806,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void putTheTrainsBack(java.util.Map<String, String[]> standing)
     {
-        if (standing == null || standing.isEmpty()) return;
-
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
-        org.traincontrol.automation.Layout built = this.model.getAutoLayout();
+        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log);
+    }
+
+    /**
+     * The same, over a layout handed in, so it can be tested without a window (MT-337).
+     *
+     * Its only coverage was a source-shape guard asserting that `whereTheTrainsAre` is read before
+     * the load and applied after it. That ordering is right and was never the question - the guard
+     * passed through the whole of the defect this was reported as, because reading the order of two
+     * statements cannot say what they do to a train.
+     *
+     * @param built the layout the rebuild just produced
+     * @param standing what `whereTheTrainsAre` recorded before it
+     * @param log where to say that one train could not be put back
+     */
+    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log)
+    {
+        if (standing == null || standing.isEmpty()) return;
+
+        if (built == null) return;
 
         for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
         {
@@ -5820,11 +5838,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (back == null) continue;
 
-                if (back.getCurrentLocomotive() == null
-                    || !was.getKey().equals(back.getCurrentLocomotive().getName()))
+                // WHERE THE REBUILD PUT IT, which is where the SETUP says it is.
+                //
+                // A rebuild is only ever asked for because the setup just changed, so where the
+                // rebuild has an answer for a train, that answer is the newer of the two and this
+                // record is the older. Writing over it undoes the edit that asked for the rebuild.
+                //
+                // That is MT-337: `AutonomySession.placeLocomotive` - the autonomy editor's
+                // placement door - writes `loc` into the setup, so the rebuild carried it and this
+                // put it straight back. Adam: **"placing locomotives via the editor does not seem
+                // to work at all - nothing happens. it only works if placing via the track
+                // diagram."** The diagram's door writes to the running layout, which is what
+                // `whereTheTrainsAre` reads, so its placements agree with the record and survive.
+                //
+                // The comment that used to sit here said a placement is safe to carry across
+                // because "nobody chose it in the editor". Somebody can.
+                org.traincontrol.automation.Point now = null;
+
+                for (org.traincontrol.automation.Point each : built.getPoints())
                 {
-                    built.moveLocomotive(was.getKey(), was.getValue()[0], false);
+                    if (each.getCurrentLocomotive() != null
+                        && was.getKey().equals(each.getCurrentLocomotive().getName()))
+                    {
+                        now = each;
+
+                        break;
+                    }
                 }
+
+                if (now != null)
+                {
+                    // ONLY THE ARRIVAL SIDE, and only where it did not move. `Point.setLocomotive`
+                    // clears `arrivedFrom` whenever the occupant changes, which is right for a
+                    // different train arriving and wrong for the same train being rebuilt onto the
+                    // square it was already on - and without it the tail blocking switches itself
+                    // off on every rebuild, which is the half of OB-183 that is not the placement.
+                    if (now == back && was.getValue()[1] != null)
+                    {
+                        back.setArrivedFrom(was.getValue()[1]);
+                    }
+
+                    continue;
+                }
+
+                // NO OPINION: the setup could not say where this train is, so the running railway's
+                // answer is the only one there is. This is OB-183 proper - a run moves trains and
+                // `currentLoc` is the only place that lives.
+                built.moveLocomotive(was.getKey(), was.getValue()[0], false);
 
                 if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
             }
@@ -5833,7 +5893,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // ONE TRAIN, NOT THE REBUILD.  A locomotive that cannot be put back is worth saying
                 // out loud - it is standing somewhere the diagram no longer has - and it is not a
                 // reason to abandon the others.
-                this.model.log(cannotPutItBack.getMessage());
+                if (log != null) log.accept(cannotPutItBack.getMessage());
             }
         }
     }

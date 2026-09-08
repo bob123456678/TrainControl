@@ -574,6 +574,33 @@ Raised by Adam in MT-170 on 2026-08-24, in the note attached to a Works verdict,
 
 Raised by Adam in MT-264 on 2026-09-06, in the note attached to a Works verdict, and never filed on its own: *"Looks good, but when the loading finishes, the menu options ungrey at different times."* MT-264 tested the window while it is connecting and passed; this is the follow-up it raised, filed so MT-264 can be closed without losing it.
 
+### OB-188 - 2026-09-08 - use current vs use active buttons
+
+**Kind:** bug  
+**Raised from:** MT-334 (Changing a pathing arrow no longer flickers the diagram)  
+**Filed:** 2026-09-08 09:17  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+add some spacing between the two buttons, as they currently touch (in the set home locomotive popup)
+
+### OB-189 - 2026-09-08 - trains don't reverse.
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 09:26  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+I send EN57-203 from BottomMainA to BottomMainPost.  I say to No to keep current direction, but it does not reverse on arrival.
+
+### FR-063 - 2026-09-08 - local locomotive icons
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 09:40  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+right clicking a local locomotive icon should provide a clear option to clear it and change it, rather than opening an editor without context.  create a dropdown for this in 3.1.0 when the icon is clicked.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

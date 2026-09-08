@@ -187,6 +187,8 @@
         <test-one-class class="testEveryCitationResolves"/>
         <test-one-class class="testAutonomyLabelShowsLocomotiveName"/>
         <test-one-class class="testCancelRestoresPlacements"/>
+        <test-one-class class="testAnEditedPlacementSurvivesTheRebuild"/>
+        <test-one-class class="testAReversalCommandIsEmitted"/>
         <test-one-class class="testDataSafetyRoundTrips"/>
         <test-one-class class="testEditorSwitchClearsPageState"/>
         <test-one-class class="testLocomotiveAddressRules"/>

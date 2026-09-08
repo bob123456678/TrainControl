@@ -16615,6 +16615,12 @@ does. Step 2 does something sensible rather than nothing at all, and step 3 does
 
 You reported this as not firing on 2026-09-02 and it was fixed the same day.
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+it works on any tile in the autonomy editor, not just sensors. fix that.  correctly does not fire outside of the autonomy editor.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-314"></a>
@@ -16637,6 +16643,12 @@ to be set one square at a time, is the **tile length**, the **direction restrict
 right-click menu, and if so which of those five? Length alone would cover most of the typing; all five
 would make a platform reproducible in two clicks.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+this is no longer necessary due to how autonomy is constructed.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-315"></a>
@@ -16658,6 +16670,12 @@ locomotive's name in place of the station's.
 the station's rather than instead of it? The dropdown makes the four options exclusive, so "as well
 as" is a different control.
 
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+draw on the designated label, or on the station if no label is set.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-316"></a>
@@ -16677,6 +16695,12 @@ and Control+G, Control+L, Control+D and Control+K are the four that show and hid
 
 **The question:** which keys? Control+8 and Control+H would be free and roughly mnemonic, but they are
 your fingers.
+
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+this is already implemented as control+H and
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16701,6 +16725,12 @@ if you say no.
 
 **The question:** it does not ask about the power. Should it? It is a frequently used control and every
 prompt is an interruption; you are the one who uses it.
+
+**Adam, 2026-09-08 (triage).** Does not work.
+
+yes, parity with the track diagram
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16757,6 +16787,10 @@ forgot the setup on every square it landed on.
 Worth trying with a single square as well as a column - they failed for two different reasons and are
 two separate fixes.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-320"></a>
@@ -16782,6 +16816,12 @@ evaluated the wrong expression, and saving wrote it back.
 **If you have no such route, say so and this one is done** - the check that mattered is that the
 editor cannot build the shape itself, and that has a test.
 
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+i have no such route- these can no longer be opened, anyway.  make sure such examples can be properly represented.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-321"></a>
@@ -16801,6 +16841,10 @@ editor cannot build the shape itself, and that has a test.
 **Expected**
 
 The box follows the pointer and the crop lands where the box was.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16832,6 +16876,10 @@ Every column and row number stays put, and step 2 changes nothing because nothin
 
 **If any still vanishes, say which and on which page** - that tells me it is a repaint rather than a
 measurement, and I will go after it differently.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -17052,6 +17100,10 @@ it is drawn, and tiles are drawn when their own accessory, feedback or route cha
 moving, which changes nothing about any of those, left the old squares grey until something unrelated
 repainted them.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-330"></a>
@@ -17182,6 +17234,10 @@ stopped the tail blocking working at all - the value it stored was then one the 
 matched. The builder now writes the entry side into the configuration and everything reads that one
 value, so the label and the protection cannot disagree.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-333"></a>
@@ -17234,6 +17290,14 @@ have that deferred a few seconds; I have not, because a list that disagrees with
 second after every click is the kind of small lie this panel has been bitten by. If it still drags,
 say so and that is the next thing to spend.
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+it still flickers, but less
+
+Filed from this test: OB-188 (bug - use current vs use active buttons).  They are in `issues.md` until they are picked up.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-335"></a>
@@ -17260,6 +17324,12 @@ behind it, so it produced plans the runtime refused on the first move.
 train's tail lies after a move depends on the side it arrives by, which the planner does not model -
 so it under-claims rather than over-refuses. If you see a plan that is still refused at execution
 because of a tail, that is this limit and it is worth reporting.
+
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+worked, 2-8-4 was moved away from its home at bottommainb so that en57-203 could go to its home at bottommainc.  however, the app froze at that point.  2-8-4 was at rampdown.  I ran it again, and that time it did not freeze.  I had no logs, unfortunately.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -17351,6 +17421,19 @@ deleted a declined edit once (ACC-B3): the capture removes what the layout does 
 layout at that moment is the one built before your edit. So an authored setting still comes from the
 setup, and only where the trains are comes from the railway.
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+1. placing locomotives via the editor does not seem to work at all - nothing happens.  it only works if placing via the track diagram.
+2. if a station label is offset from the station, the home label is duplicated on the station's square, and on ethe one with the label
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Does not work.
+
+editing placements in the autonomy editor doesn't seem to work at all.  and locomotives aren't on the correct labels.  if a station has an offset label, the current home loc is shown twice (once on the tile itself, once on the offset label)
+
+*Run against commit 22f3d302.*
+
 ---
 
 <a id="mt-338"></a>
@@ -17386,6 +17469,14 @@ has no train whose direction it could be. The WRITE was already shared: both go 
 
 **Also worth a look while you are there:** with nothing recorded, the menu used to tick the FIRST
 facing in the list, which is a guess shown as a fact. It now ticks what the train is actually doing.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302.*
 
 ---
 
