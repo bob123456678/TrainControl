@@ -95,9 +95,14 @@ public class testTheAutoTierScopeMatchesTheRuntime
         // has a turning copy the railway refuses and a plain copy it accepts; the diagram has one
         // answer for the square, and the honest one is "can autonomy choose ANY copy of this".
         //
-        // It passed anyway, because no square on this layout is split - which is exactly the kind of
-        // agreement that means nothing, and `testEverySquareOnThisLayoutBuildsToOneCopy` is the
-        // record of why.
+        // THE REASON THIS COMMENT USED TO GIVE WAS WRONG (corrected 2026-09-08).  It said the first
+        // version "passed anyway, because no square on this layout is split", citing a test called
+        // `testEverySquareOnThisLayoutBuildsToOneCopy` that did not exist.  When that census was
+        // finally written - `core.testEverySquareBuildsToTheCopiesTheSetupImplies` - it reported 30 of
+        // this railway's 58 squares split, and 13 of its 33 stations, including four emitted as four
+        // Points each.  So the squares WERE split, and the first version passed for some other reason
+        // or by luck.  The per-square reading below is right on its own terms: the diagram has one
+        // answer per square, and the honest question is whether autonomy may choose ANY copy of it.
         java.util.Map<TileKey, Boolean> railwayWillChoose = new java.util.LinkedHashMap<>();
 
         for (Point point : built.getPoints())

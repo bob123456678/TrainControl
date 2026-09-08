@@ -8,21 +8,43 @@ This is the evaluation. **Nothing has been changed.**
 
 ---
 
-## The headline, and it is a measurement rather than an argument
+## The headline was wrong, and this is the corrected measurement (2026-09-08)
 
-**On your railway, the split does not fire.** `testEverySquareOnThisLayoutBuildsToOneCopy` walks every
-named square in your actual configuration and records how many copies each builds to. Every one builds
-to **exactly one** — including the squares marked may-reverse.
+**What this document said until 2026-09-08:** *"On your railway, the split does not fire.
+`testEverySquareOnThisLayoutBuildsToOneCopy` walks every named square in your actual configuration and
+records how many copies each builds to. Every one builds to exactly one — including the squares marked
+may-reverse."* The complexity, it concluded, is paid entirely in the code and your graph does not carry
+it today.
 
-The reason is specific and worth knowing: a may-reverse square on your layout is a **dead end**, and
-`nodesFor` deliberately does not emit a plain copy where an arriving train's only track ahead is the
-track it came in on. It would be a Point that can be reached and never left, and — being a station —
-one autonomy could pick as a destination, after which the train's day is over. So the turning copy is
-emitted alone.
+**That number was measured on a railway in pieces, and the real one is nothing like it.** Now that
+`core.testEverySquareBuildsToTheCopiesTheSetupImplies` exists and walks the wired reduction, the census
+is:
 
-**The complexity you are noticing is real, and it is paid entirely in the code.** Your graph does not
-carry it today. That changes the question from "is this worth simplifying" to "is this worth
-simplifying *now*, before anything on the railway needs it".
+| | |
+|---|---|
+| squares in the reduction | 58 |
+| squares emitted as MORE than one Point | **30** |
+| stations | 33 |
+| stations emitted as more than one Point | **13** |
+| squares emitted as FOUR Points | BottomMainB, BottomMainC, BottomMainPost, RampDown |
+
+**How the old number came about.** Every sandbox test built its pages with a bare
+`CS2File.parseLayout`, which reads the drawing but does not attach an `Accessory` to any switch.
+`TileGraph` refuses to trace through a switch it cannot command, so the railway falls from 128 reduced
+edges to 18, nearly every square is left with a single arrival side — and a single arrival side is a
+single copy. The same census on that skeleton returns **1 split square out of 58**: a clean, plausible
+number that reads exactly like a real one. `LayoutSandbox.wiredPages` records the recipe defect and the
+day it was found, which is the day *after* this document was written.
+
+The old headline's mechanism was wrong in the same direction. A may-reverse square here is *sometimes*
+a dead end — the seventeen parking berths are, and each is emitted as one turning copy, which is the
+paragraph below working exactly as described. But `BottomMainB`, `BottomMainC`, `BottomMainPost` and
+`RampDown` each have two arrival sides and a turn at each, so they are emitted as **four** Points; and
+`LowerFront` is a may-reverse square with somewhere to go, emitted as two.
+
+**So the complexity is not paid entirely in the code. Your graph carries it now.** That is a change to
+the premise of reason 1 below, not to reasons 2 and 3, and **what to do about it is your call** — see
+"The honest recommendation", which has been marked up rather than rewritten.
 
 ---
 
@@ -78,17 +100,25 @@ still exist in some form. What would go is the specific failure mode of picking 
 
 ## The honest recommendation
 
-**Don't do it now, and don't rule it out.** Three reasons, in order:
+**Don't do it now, and don't rule it out.** Three reasons, in order — the first of which no longer
+holds:
 
-1. **It buys nothing on your railway today.** Every square builds to one copy. The bugs it would
-   prevent are bugs in code paths your graph does not currently exercise.
+1. ~~**It buys nothing on your railway today.** Every square builds to one copy. The bugs it would
+   prevent are bugs in code paths your graph does not currently exercise.~~
+
+   **Withdrawn, 2026-09-08.** Thirty of your fifty-eight squares split, thirteen of your thirty-three
+   stations do, and four stations are four Points each. The code paths this would remove are ones your
+   graph exercises every day, and the four facing defects of that week were in them. **This reason is
+   gone; whether it changes the decision is yours, and nothing has been done about it.**
 2. **It is a change to the thing every feature stands on.** Locking, blocking, length, destinations and
    placement all read the graph. This is a bigger blast radius than `DD-C1`, which is at least only a
-   file.
-3. **The day it becomes worth doing is knowable, and there is already a tripwire for it.**
-   `testEverySquareOnThisLayoutBuildsToOneCopy` goes red the first time a square genuinely builds to
-   more than one copy. That is the day the cost starts being paid on the railway rather than in the
-   source, and the day to re-read this document.
+   file. *(Unaffected by the correction above, and now the strongest reason to wait.)*
+3. **The day it becomes worth doing is knowable, and there is now a tripwire for it.**
+   `core.testEverySquareBuildsToTheCopiesTheSetupImplies` pins the census above and goes red when it
+   moves in either direction. Named as `testEverySquareOnThisLayoutBuildsToOneCopy` here until
+   2026-09-08 — a test that did not exist, cited four times across two documents and one test, which is
+   how the wrong number stood unchallenged. The day to re-read this document is the day the split
+   count moves.
 
 If it is ever done, do it in the order: teach the search to carry the arrival side; make the graph
 emit one node per square behind a flag; run both and compare the paths they produce on your real
@@ -96,4 +126,6 @@ layout, square by square, before deleting anything.
 
 ---
 
-*Written 2026-09-07, at Adam's request, on the annotation that asked for it. No code was changed.*
+*Written 2026-09-07, at Adam's request, on the annotation that asked for it. No code was changed. Its
+headline measurement was corrected on 2026-09-08, when the test it cites was finally written; see the
+top of this file. Still no code has been changed.*

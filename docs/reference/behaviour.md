@@ -118,20 +118,26 @@ a turn at a may-reverse square, because the operator said no.
 be done more easily by simply following the edges? Don’t implement until evaluating."* The evaluation
 is written, in [`two-copies-evaluation.md`](two-copies-evaluation.md), and nothing has been changed.
 
-Its headline: **on this railway the split does not fire.** Every named square builds to exactly one
-copy, may-reverse ones included, because a may-reverse square here is a dead end and the plain copy of
-a dead end is deliberately not emitted. The complexity is paid in the code and not in the graph.
-Following the edges is a real option - it moves the same state from the graph into the search - but it
-would not remove the facing property, only the specific failure of picking the wrong copy, and it
-touches everything that reads the graph. Recommendation: not now, not ruled out.
+Its headline said *"on this railway the split does not fire"* - every named square building to exactly
+one copy - **and that was measured on a diagram whose switches had no accessories, so the railway was
+in pieces** (corrected 2026-09-08). On the wired reduction, **30 of the 58 squares build to more than
+one Point and 13 of the 33 stations do**; `BottomMainB`, `BottomMainC`, `BottomMainPost` and `RampDown`
+are four Points each. `core.testEverySquareBuildsToTheCopiesTheSetupImplies` is the census and the
+tripwire.
 
-**And the tripwire named for it does not exist** (checked 2026-09-08).
-`testEverySquareOnThisLayoutBuildsToOneCopy` is cited as the guard here, in
-`docs/reference/two-copies-evaluation.md` twice, and in
-`test/core/testTheAutoTierScopeMatchesTheRuntime.java`, and there is no such class or method anywhere
+What survives the correction: following the edges is a real option - it moves the same state from the
+graph into the search - but it would not remove the facing property, only the specific failure of
+picking the wrong copy, and it touches everything that reads the graph. What does not survive is the
+evaluation's first reason for waiting, *"it buys nothing on your railway today"*. **Whether that
+changes the recommendation is Adam's call and nothing has been done about it.**
+
+**The tripwire was cited four times before it was written** (found 2026-09-08).
+`testEverySquareOnThisLayoutBuildsToOneCopy` was named as the guard here, twice in
+`docs/reference/two-copies-evaluation.md`, and once in
+`test/core/testTheAutoTierScopeMatchesTheRuntime.java`, and there was no such class or method anywhere
 under `test/`. `regression.testEveryCitationResolves` resolves review-finding ids and not test names,
-so nothing caught it. Until somebody writes it, nothing says when a square on this railway starts
-building to two copies - which is the one measurement the decision above rests on.
+so nothing caught it - and the first thing the real test did when it was written was disagree with the
+number all four sentences were repeating.
 
 ### The question, and when it is asked
 
