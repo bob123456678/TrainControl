@@ -88,7 +88,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 | [MT-329](#mt-329) | 2026-09-08 | The shading clears from where a train used to be | needs test | OB-180 |
-| [MT-330](#mt-330) | 2026-09-08 | The direction and the arrival side after a paste - the case that is still open | needs test | OB-181 |
+| [MT-331](#mt-331) | 2026-09-08 | OB-181, and the five-edge railway every test was standing on | needs test | OB-181 |
 
 Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
 area changes again.  (8 superseded, 2 fixed but not yet validated.)
@@ -16961,7 +16961,7 @@ repainted them.
 
 ### MT-330 - 2026-09-08 - The direction and the arrival side after a paste - the case that is still open
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** OB-181
 
 **Written:** 2026-09-08
@@ -16993,6 +16993,57 @@ myself.
 
 With it, the sandbox tests build the railway you actually have, and OB-181 can be reproduced, fixed and
 pinned rather than reasoned about.
+
+#### Comments
+
+**Claude, 2026-09-08 - this entry was wrong and is replaced by [MT-331](#mt-331).**
+
+It asked Adam for a copy of `magnetartikel.cs2`. Nothing is missing from his folder. Attaching a tile
+to its accessory happens in `MarklinControlStation.syncLayouts`, after the parse, and the test recipe
+built its pages with a second parser that never reaches that loop. His railway is fine; the fixture
+recipe was not.
+
+---
+
+<a id="mt-331"></a>
+
+### MT-331 - 2026-09-08 - OB-181, and the five-edge railway every test was standing on
+
+**Disposition:** needs test
+**From:** OB-181
+
+**Written:** 2026-09-08
+
+**OB-181 is not fixed, and the reason it was never caught is now measured.**
+
+**What you reported:** moving EN57-203 from TunnelLeftPark to BottomMainA showed its direction as
+eastbound in the station label and westbound in the right-click menu, and its arrival side was not set
+even though it is forced.
+
+**Why no test caught it.** Every sandbox test built its pages with a second `CS2File` parser, which
+never reaches the loop in `MarklinControlStation.syncLayouts` that attaches each tile to its accessory.
+So the tests were running against this:
+
+| | re-parsed | the model's own pages |
+|---|---|---|
+| switches and signals with an accessory | 0 of 222 | 221 of 222 |
+| reduced edges | 18 | 128 |
+| built points / edges | 59 / 5 | 96 / 149 |
+| isolated points | 51 | 3 |
+
+**A railway of ninety-odd connections arrived as five edges.** `LayoutSandbox.wiredPages` is the
+correct recipe now; one of the twenty affected files has been moved onto it.
+
+**What that immediately showed.** `testAPastedTrainKeepsItsDirection` - written for exactly the
+paste-direction defects you keep reporting - fails 4 of 9 on the real railway. Its own note said *"the
+day a square DOES build to more than one copy, this goes off"*, and it has: **BottomMainPost builds to
+four copies**, `{southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}`, and so does
+RampDown. Every rule about split squares - `placementCopy` falling through to copy 0,
+`facingAfterAPaste`'s multi-copy branches, which copy a paste lands on - has been reasoned about and
+never once run.
+
+**Nothing to do here yet.** This entry exists so the state is written down. The decision it needs is in
+the report: convert the other nineteen files and fix what turns red now, or after the release.
 
 ---
 
