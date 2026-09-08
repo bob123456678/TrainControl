@@ -1277,6 +1277,35 @@ public final class HomeStaging
     {
         Locomotive lyingAcross = this.coveredAtStart.get(edge);
 
+        // AND THE TRACK IT SHARES METAL WITH, which is where this actually bites (OB-184).
+        //
+        // A tail lying directly on the edge being entered is the easy half and the rarer one: the walk
+        // that works tails out STOPS at a fork, so a tail only extends along a linear stretch - and for
+        // another train to want that stretch it would have to be heading into the blocked train's own
+        // berth, which is refused as occupied anyway.
+        //
+        // What Adam reported is the other half: a train protruding across a SWITCH. The switch's tiles
+        // belong to every road through it, so the tail fouls roads that are not the edge it lies on.
+        // `Layout.isPathClear` reads that through `getLockEdges`, restricted to SYMMETRIC partners -
+        // sharing a tile is mutual, while the builder's one-directional travel restrictions live in the
+        // same collection and must not be swept (RGD-B2). The same rule asked the same way, because a
+        // planner that asks a different question offers plans the runtime refuses.
+        if (lyingAcross == null)
+        {
+            for (Edge sharing : edge.getLockEdges())
+            {
+                Locomotive onShared = this.coveredAtStart.get(sharing);
+
+                if (onShared == null || onShared.equals(mover)) continue;
+
+                if (!sharing.getLockEdges().contains(edge)) continue;
+
+                lyingAcross = onShared;
+
+                break;
+            }
+        }
+
         if (lyingAcross == null || lyingAcross.equals(mover)) return true;
 
         // Still where it was?  Its tail is where it was too.

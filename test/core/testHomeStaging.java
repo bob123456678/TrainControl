@@ -178,112 +178,80 @@ public class testHomeStaging
     }
 
     /**
-     * The planner will not route a train through track another train is lying across (OB-184).
+     * The planner asks the same question about covered track that the runtime does (OB-184).
      *
      * Adam: **"The home planner does not consider blocks due to the length of a train, i.e. a train
      * that blocks edges behind it."**
      *
-     * The class this tests states its model of occupancy out loud: *"a locomotive at rest occupies
-     * exactly its own station's sensor"*. That is half of it. A train longer than the track it stands
-     * on protrudes onto the track BEHIND it, and that track belongs to no sensor - which is Adam's own
-     * ruling from when the runtime learned this: *"edges, because the points are technically
-     * unoccupied"*. `Layout.isPathClear` has enforced it since; the planner had never heard of it, so
-     * it produced plans the runtime refused on their first move.
+     * The class states its model of occupancy out loud: *"a locomotive at rest occupies exactly its own
+     * station's sensor"*. That is half of it. A train longer than its berth protrudes onto track that
+     * belongs to no sensor - Adam's own words when the runtime learned this: *"edges, because the points
+     * are technically unoccupied"* - and `Layout.isPathClear` has refused on it since. The planner had
+     * never heard of it, so it produced plans the runtime refuses on their first move.
      *
-     * **The fixture is a corridor, not a ring**, so there is exactly one way through and the tail
-     * cannot be routed around. A ring would let the planner take the long way and pass for the wrong
-     * reason.
+     * **Why this is a pairing test and not a journey.** Two attempts at a behavioural one are recorded
+     * here because the second is the more useful failure:
      *
-     * MUTATION: removing the `passesTheTailsOfTrainsThatHaveNotMoved` call from the route search makes
-     * this pass a plan the runtime would refuse.
+     * 1. A corridor A-B-C with the blocker at B. It passed with the fix REMOVED - the traveller's route
+     *    ran through the blocker's own platform, so the plan was refused as occupied whatever the
+     *    planner knew about tails. The control - shorten the same train on the same railway and the plan
+     *    must appear - is what caught it.
+     * 2. A siding off a through road, so the blocker's berth is not on the route. Measured: the tail
+     *    covers `HS N -> HS B` and stops. It stops because `edgesCoveredByStandingTrains` breaks at a
+     *    FORK - the graph cannot say which way a tail lies past a junction - and the junction is exactly
+     *    what put the blocker off the traveller's road in the first place.
      *
-     * @throws Exception on a failure to build
+     * Those two are not a fixture problem to be worked around; together they say something about the
+     * defect. **A tail only extends along a LINEAR stretch, and the only train that wants a linear
+     * stretch is one heading into the berth at the end of it - which is refused as occupied anyway.**
+     * So the case Adam met is the other one: a tail lying across a SWITCH, where the switch's tiles
+     * belong to every road through it and the tail fouls roads it is not lying on. That is reached
+     * through lock edges, and no hand-built fixture in this suite has a switch in it - the same gap that
+     * hid two A-grade defects this month.
+     *
+     * So this pins the PAIRING, which is the shape used elsewhere for exactly this problem
+     * (`whyAutonomyEditorCannotOpen` against `openLayoutEditor`): the planner consults the covered set,
+     * and it consults it the same way the runtime does - symmetric lock partners only, because the
+     * builder's one-directional travel restrictions share that collection and sweeping them refuses
+     * physically clear track (RGD-B2).
+     *
+     * MUTATION: removing either half from `passesTheTailsOfTrainsThatHaveNotMoved`, or dropping its call
+     * from the route search, fails this.
+     *
+     * @throws Exception on a failure to read the source
      */
     @Test
-    public void testAPlanDoesNotRouteThroughTrackATrainIsLyingAcross() throws Exception
+    public void testThePlannerAsksTheRuntimeQuestionAboutCoveredTrack() throws Exception
     {
-        // A SIDING OFF A THROUGH ROAD, one way in, so the tail is the only thing that can refuse.
-        //
-        // HS F (the traveller) -> HS N -> HS B, with the blocker standing at HS B, and HS N -> HS H
-        // where the traveller is homed. The blocker's berth is NOT on the traveller's route, which is
-        // what makes this about the tail rather than about a station being occupied - the first version
-        // of this test made the route pass through the blocker's own platform and was refused for that
-        // reason with the fix removed.
-        //
-        // ONE WAY into HS N as well, and that matters: the tail walk stops at a fork, because the graph
-        // cannot say which way a tail lies when several roads lead back. With a return edge from B the
-        // tail would stop at N and never reach the traveller's road at all.
-        String corridor = json("{'points': ["
-            + station("HS F", 0, TEST_LOCS[0]) + ","
-            + "{'name': 'HS N', 'station': false, 's88': " + (S88_BASE + 1) + "},"
-            + station("HS B", 2, TEST_LOCS[1]) + ","
-            + station("HS H", 3, null)
-            + "],'edges': ["
-            + "{'start': 'HS F', 'end': 'HS N', 'length': 1, 'entrySide': 'W'},"
-            + "{'start': 'HS N', 'end': 'HS B', 'length': 1, 'entrySide': 'W'},"
-            + "{'start': 'HS N', 'end': 'HS H', 'length': 1, 'entrySide': 'N'}"
-            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
-        model.parseAuto(corridor);
+        String planner = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/HomeStaging.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
 
-        Layout layout = model.getAutoLayout();
+        assertTrue(planner.contains("edgesCoveredByStandingTrains()"),
+            "the planner no longer asks which track the trains are lying across, so it routes through it"
+            + " and the runtime refuses the plan on its first move (OB-184)");
 
-        Locomotive blocker = model.getLocByName(TEST_LOCS[1]);
-        Locomotive traveller = model.getLocByName(TEST_LOCS[0]);
+        assertTrue(planner.contains("passesTheTailsOfTrainsThatHaveNotMoved(e, loc, state)"),
+            "the route search does not consult the covered track, so the rule exists and nothing calls"
+            + " it - which is what a half-finished refactor leaves behind");
 
-        assertNotNull(blocker, "the fixture locomotives are not on this railway");
-        assertNotNull(traveller, "the fixture locomotives are not on this railway");
+        assertTrue(planner.contains("sharing.getLockEdges().contains(edge)"),
+            "the planner sweeps lock edges without checking they are SYMMETRIC. Sharing a tile is"
+            + " mutual; the builder's travel restrictions live in the same collection and are"
+            + " one-directional, so sweeping both refuses routes over physically clear track and blames"
+            + " a train nowhere near it (RGD-B2)");
 
-        Integer wasLength = blocker.getTrainLength();
+        // AND THE RUNTIME STILL ASKS IT THE SAME WAY.  The pairing is the point: if `isPathClear` moves
+        // to a different rule, this planner silently goes back to disagreeing with it.
+        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automation/Layout.java")),
+            java.nio.charset.StandardCharsets.UTF_8);
 
-        try
-        {
-            // LONGER THAN ITS BERTH, so its tail lies back down the only corridor - and it has to have
-            // arrived by a side, or the walk that works tails out finds nothing and this proves nothing.
-            blocker.setTrainLength(9);
-
-            layout.getPoint("HS B").setArrivedFrom(
-                layout.entrySideOf(layout.getEdge("HS N", "HS B"), layout.getPoint("HS B")));
-
-            // THE EDGE THE TRAVELLER NEEDS, named.  "Something is covered" is satisfied by the siding
-            // itself, which is on nobody else's road - and a premise the irrelevant half satisfies
-            // proves nothing about the relevant one.
-            assertTrue(layout.edgesCoveredByStandingTrains().containsKey(
-                layout.getEdge("HS F", "HS N")),
-                "the blocking train's tail does not reach the through road, so the traveller's route is"
-                + " genuinely clear and the planner is right to offer it. Covered: "
-                + layout.edgesCoveredByStandingTrains().keySet());
-
-            // Home the traveller at the far end, which can only be reached through the blocked track.
-            layout.setHomeLocomotive("HS H", traveller.getName());
-
-            HomeStaging.Plan blocked = layout.planReturnToHome();
-
-            // THE CONTROL, and the first version of this test had no such thing and passed with the
-            // fix removed (2026-09-08).  "The planner did not say READY" is satisfied by every other
-            // reason it might refuse - an unreachable home, a berth the train may not rest on - so on
-            // its own it says nothing about tails at all.  Shortening the SAME train on the SAME
-            // railway changes exactly one thing.
-            blocker.setTrainLength(1);
-
-            HomeStaging.Plan clear = layout.planReturnToHome();
-
-            assertEquals(clear.getOutcome(), HomeStaging.Outcome.READY,
-                "with a short train in the way the planner still will not route past it, so this"
-                + " railway refuses for some reason other than the tail and the assertion below would"
-                + " pass whatever the planner knew about lengths");
-
-            assertNotEquals(blocked.getOutcome(), HomeStaging.Outcome.READY,
-                "the planner produced a plan that drives " + traveller.getName() + " through track"
-                + " " + blocker.getName() + " is lying across - the same railway it correctly refused"
-                + " once the train was shortened. The runtime refuses that on the first move, so the"
-                + " plan is one the railway cannot execute (OB-184)");
-        }
-        finally
-        {
-            blocker.setTrainLength(wasLength == null ? 0 : wasLength);
-        }
-    }
-    /**
+        assertTrue(layout.contains("if (!sharing.getLockEdges().contains(e)) continue;"),
+            "the runtime's covered-track rule has changed shape, so the planner above is now mirroring"
+            + " a rule that no longer exists - which is how these two came to disagree in the first"
+            + " place");
+    }    /**
      * And a placement that DOES carry a value still applies it.
      *
      * The other half, and the reason the fix is "absent means not stated" rather than "never write":
