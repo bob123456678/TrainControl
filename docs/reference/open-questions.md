@@ -166,15 +166,32 @@ asks the graph, which are different questions in different domains.
 **Still open.**
 
 - **`DD-B9`, reachability.** Two walks over two graphs: `GraphReducer.reachableTiles` over the drawn
-  diagram, and `Layout`'s walk over the built one. **This is the same tier question `DD-A7` just
-  settled** - the checker's station-reachability findings predict the build and should ask it, and
-  build-derived equivalents already sit beside them in `copiesReachingNoStation`. The editor's *test a
-  path* tool is the exception and should keep the diagram walk: it runs while drawing, on a setup that
-  may not build yet.
+  diagram, and the runtime's over the built one. The checker's copy re-applies the four authored sets
+  - may-turn, must-turn, barred arrivals, closed squares - by hand to imitate what the builder already
+  did when it chose which Points and Edges to emit.
 
-  Not merely theoretical. `GraphReducer`'s own javadoc records the two drifting once already - one
-  gained a `closed` set and its sibling three lines away did not - measured as *"the tool drew a route
-  the runtime refuses"*.
+  Not theoretical: `GraphReducer`'s own javadoc records `reachableTiles` and the editor's path test
+  drifting once already - one gained a `closed` set and its sibling three lines away did not - measured
+  at the time as *"the tool drew a route the runtime refuses"*.
+
+  **Attempted 2026-09-07 and backed out.** Swapping the source the way `DD-A7`'s trapped-arrival check
+  was swapped does not work, for two reasons the tests found:
+
+  1. **Reachability is per-COPY, not per-square.** A square can hold a station copy that reaches
+     nothing and a plain copy that reaches plenty. Unioning the copies - the obvious way to answer a
+     question the operator asks about squares - reports the square as fine when a train standing *at
+     the station* is stranded. The cross-test caught exactly this, one square each way on the sample
+     layout, and its oracle has the right semantics.
+  2. **An incomplete build is worse than an absent one.** The trapped-arrival check is safe because a
+     missing answer means one finding goes unsaid. Reachability is a global claim: a build that emits
+     few edges - which is what a half-drawn diagram, or one whose accessories are not yet wired, does -
+     makes every station look unreachable and floods the panel while somebody is still drawing. Two
+     session tests failed on exactly that, on small fixtures.
+
+  **So the shape is:** walk per copy, aggregate the way the finding is worded, and gate on the build
+  being complete rather than merely present - `session.getReducer().getEdges().size()` against what the
+  build emitted would do it. The editor's *test a path* tool keeps the diagram walk regardless: it runs
+  while drawing, on a setup that may not build at all.
 
 **Ruled, not a defect.** The three TIERS answering "where may a train be sent" differently is
 deliberate, and section 1 of [`behaviour.md`](behaviour.md) records why: `isAutoDestination` appears
