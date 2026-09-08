@@ -1384,7 +1384,12 @@ public class AutonomyViewerPanel extends JPanel
     {
         try
         {
-            // DR-B10: the answer is shown rather than dropped.
+            // The reconciliation the save returns is SHOWN, not dropped (DR-B10).
+            //
+            // A save reconciles the setup against the diagram and reports what it had to let go - a
+            // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,
+            // those changes happen silently and the operator finds out later from a railway that behaves
+            // differently, with nothing connecting it to the edit that caused it.
             AutonomyReport.show(this, session().save());
         }
         catch (IOException e)
