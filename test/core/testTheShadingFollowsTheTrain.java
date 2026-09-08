@@ -627,6 +627,17 @@ public class testTheShadingFollowsTheTrain
      * The one kept is the first one found standing somewhere that records which way it came in - the
      * tail walk needs that side to choose its first hop, and a train nobody has told the railway about
      * covers nothing at all.
+     *
+     * AND THAT ACTUALLY COVERS SOMETHING, which recording an arrival side turns out not to guarantee
+     * (2026-09-08).  This class went red on a fixture it had never been changed against: Adam placed a
+     * locomotive at `1 - Main:0,11`, that Point sorted first among those with an `arrivedFrom`, and the
+     * side it records leaves by track the graph cannot follow - so the railway covered NO edge at all
+     * and stage 1 failed saying nothing was shaded.  Diagnosed by reverting this class's subject to
+     * HEAD and watching it fail identically.
+     *
+     * A test that picks its subject out of the operator's live railway has to pick one that can answer
+     * the question, and "records an arrival side" was a proxy for that rather than the thing itself.
+     * The railway is simply asked - with the length this class uses, because coverage depends on it.
      */
     private static void oneTrainOnly()
     {
@@ -634,9 +645,24 @@ public class testTheShadingFollowsTheTrain
 
         for (Point point : layout.getPoints())
         {
-            if (point.getCurrentLocomotive() == null) continue;
+            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
 
-            if (keep == null && point.getArrivedFrom() != null) keep = point;
+            Locomotive candidate = point.getCurrentLocomotive();
+
+            Integer was = candidate.getTrainLength();
+
+            candidate.setTrainLength(TRAIN_LENGTH);
+
+            boolean coversTrack = layout.edgesCoveredByStandingTrains().containsValue(candidate);
+
+            candidate.setTrainLength(was);
+
+            if (coversTrack)
+            {
+                keep = point;
+
+                break;
+            }
         }
 
         if (keep == null) return;

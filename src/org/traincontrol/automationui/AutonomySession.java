@@ -4936,8 +4936,31 @@ public class AutonomySession
      * Adam's ruling is about the track between: *"edges, because the points are technically
      * unoccupied"*.
      *
+     * **AS FAR BACK AS THE TRAIN REACHES, AND NO FURTHER (MT-309).**
+     *
+     * Adam, 2026-09-08: *"after the parking completed, all of bottommaina stayed shaded, which it
+     * shouldn't as I set the length of EN57-203 to 1."*
+     *
+     * The railway's answer is per EDGE, deliberately - a train lying across any part of a segment
+     * makes the whole segment impassable, which is what a routing guard needs to know.  A DIAGRAM
+     * needs something else: an edge is one hop between two sensors and can be a dozen squares long,
+     * its length is the sum of the lengths assigned to those squares, and painting all of them washed
+     * a whole run of track for a train one square long.  Measured on his railway: seventeen squares
+     * for a train of length 1.
+     *
+     * So the squares are walked one at a time from where the train stands, each one paying its own
+     * length, and the walk stops when the train has been used up.  What comes back is a SUBSET of
+     * what the railway holds covered - which is the safe direction, and the only direction available:
+     * a picture claiming more blocked track than the railway holds is the failure mode
+     * `Layout.edgesCoveredByStandingTrains` was widened to avoid.  Nothing here changes what the
+     * railway blocks or what any guard reading it decides.
+     *
+     * That is the indicator saying WHERE THE TRAIN IS rather than what is unavailable, which is what
+     * Adam asked it to mean in the same message: *"we need to draw a line ... to show that the train
+     * is there."*
+     *
      * @param running the layout, which is what knows where the trains are
-     * @return the squares to draw as blocked, empty when nothing is
+     * @return the squares to draw as covered, empty when nothing is
      */
     public Set<TileKey> tilesCoveredByStandingTrains(org.traincontrol.automation.Layout running)
     {
@@ -4945,36 +4968,170 @@ public class AutonomySession
 
         if (running == null || reducer == null || getStationIndex() == null) return out;
 
-        for (org.traincontrol.automation.Edge covered
-            : running.edgesCoveredByStandingTrains().keySet())
-        {
-            if (covered.getStart() == null || covered.getEnd() == null) continue;
+        // Grouped by TRAIN, because the walk below is a walk backwards from one train and the map the
+        // railway hands back has thrown that away - it answers "is this edge covered", which is the
+        // routing question rather than the drawing one.
+        Map<org.traincontrol.base.Locomotive, Set<TileKey>> reach = new LinkedHashMap<>();
 
-            TileKey from = getStationIndex().squareOf(covered.getStart().getName());
-            TileKey to = getStationIndex().squareOf(covered.getEnd().getName());
+        for (Map.Entry<org.traincontrol.automation.Edge, org.traincontrol.base.Locomotive> covered
+            : running.edgesCoveredByStandingTrains().entrySet())
+        {
+            org.traincontrol.automation.Edge edge = covered.getKey();
+
+            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
+
+            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
+            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
 
             if (from == null || to == null) continue;
 
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            Set<TileKey> squares = reach.get(covered.getValue());
+
+            if (squares == null)
             {
-                boolean sameWay = from.equals(edge.getStart()) && to.equals(edge.getEnd());
-                boolean otherWay = to.equals(edge.getStart()) && from.equals(edge.getEnd());
+                squares = new LinkedHashSet<>();
 
-                if (!sameWay && !otherWay) continue;
-
-                for (GraphReducer.TileStep step : edge.getPath())
-                {
-                    if (step.getTile() == null) continue;
-
-                    // The squares at either end are where trains STAND, not track lying under one.
-                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                    out.add(step.getTile());
-                }
+                reach.put(covered.getValue(), squares);
             }
+
+            // Both ends, so the chain below can be followed by SQUARE.  The railway records each rail
+            // twice, once per direction, and matching by square rather than by Edge identity makes the
+            // pair one hop rather than two.
+            squares.add(from);
+            squares.add(to);
+        }
+
+        for (Map.Entry<org.traincontrol.base.Locomotive, Set<TileKey>> train : reach.entrySet())
+        {
+            walkBackFrom(running, train.getKey(), train.getValue(), out);
         }
 
         return out;
+    }
+
+    /**
+     * Paints one train's own length back along the track it is covering (MT-309).
+     *
+     * Walks square by square from where the train stands, deducting each square's assigned length,
+     * and stops the moment the train has been used up.  Only squares the RAILWAY already holds
+     * covered are ever reached: the chain is followed through the endpoints of the covered edges, so
+     * this can only ever draw a subset of them.
+     *
+     * A square with no length assigned costs nothing, which is the same convention every other length
+     * rule here uses - `getTileLength` answers 0 for unmeasured, and "only positive lengths are
+     * determinate".  An unmeasured square is therefore drawn and the walk carries on; it cannot run
+     * away, because it can only go as far as the covered edges reach.
+     *
+     * @param running the layout
+     * @param train the locomotive
+     * @param covered the endpoint squares of every edge this train covers
+     * @param out the squares to draw, added to
+     */
+    private void walkBackFrom(org.traincontrol.automation.Layout running,
+        org.traincontrol.base.Locomotive train, Set<TileKey> covered, Set<TileKey> out)
+    {
+        if (train == null || train.getTrainLength() == null) return;
+
+        int remaining = train.getTrainLength();
+
+        if (remaining <= 0) return;
+
+        org.traincontrol.automation.Point standing = running.getLocomotiveLocation(train);
+
+        if (standing == null) return;
+
+        TileKey at = getStationIndex().squareOf(standing.getName());
+
+        if (at == null) return;
+
+        Set<TileKey> walked = new LinkedHashSet<>();
+
+        walked.add(at);
+
+        while (remaining > 0)
+        {
+            TileKey next = null;
+
+            // The next covered square along, which is one of the endpoints the caller collected.  The
+            // walk cannot double back: `walked` holds every square already passed, which is the same
+            // guard `Layout`'s own tail walk uses against a loop of track.
+            for (TileKey candidate : covered)
+            {
+                if (walked.contains(candidate)) continue;
+
+                if (pathBetween(at, candidate) == null) continue;
+
+                next = candidate;
+
+                break;
+            }
+
+            if (next == null) return;
+
+            List<TileKey> between = pathBetween(at, next);
+
+            for (TileKey step : between)
+            {
+                out.add(step);
+
+                remaining -= store.getTileLength(step);
+
+                if (remaining <= 0) return;
+            }
+
+            // The far end's own length counts, and its square does not get drawn: a train standing
+            // there would be shown standing there.  `GraphReducer` builds an edge's length the same
+            // way - the path plus the square it arrives at.
+            remaining -= store.getTileLength(next);
+
+            walked.add(next);
+
+            at = next;
+        }
+    }
+
+    /**
+     * The squares between two Points, in the order a train travelling from one to the other crosses
+     * them, or null when the reduction knows of no edge joining them.
+     *
+     * Both directions are matched and the reversed one is reversed, because a covered edge is covered
+     * whichever way the train came - and the ORDER is what this method exists for: the walk above
+     * spends the train's length square by square, so a path handed back the wrong way round would
+     * draw the far end of the segment and leave the square beside the train clear.
+     *
+     * @param from the square walked from
+     * @param to the square walked to
+     * @return the squares between, endpoints excluded, or null when they are not joined
+     */
+    private List<TileKey> pathBetween(TileKey from, TileKey to)
+    {
+        if (from == null || to == null || reducer == null) return null;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            boolean sameWay = from.equals(edge.getStart()) && to.equals(edge.getEnd());
+            boolean otherWay = to.equals(edge.getStart()) && from.equals(edge.getEnd());
+
+            if (!sameWay && !otherWay) continue;
+
+            List<TileKey> tiles = new ArrayList<>();
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (step.getTile() == null) continue;
+
+                // The squares at either end are where trains STAND, not track lying under one.
+                if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
+
+                tiles.add(step.getTile());
+            }
+
+            if (otherWay) java.util.Collections.reverse(tiles);
+
+            return tiles;
+        }
+
+        return null;
     }
 
     /**
