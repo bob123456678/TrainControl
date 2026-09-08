@@ -70,7 +70,16 @@ public class testTheGraphIsToldWhenARunEnds
         // than to add it to the list.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        // DEBUG, because one of the tests below needs `Layout.setSimulate(true)` and that refuses
+        // outside debug mode - `(!control.isDebug() || control.getNetworkCommState())` - so a hand
+        // dispatch could never reach its destination without it.  The flag adds logging and nothing
+        // else; `testAutonomySimulationSanity`, which is the other class that drives a path to its
+        // arrival, is built the same way.
+        model = init(null, true, false, false, true);
+
+        // And the network is explicitly down, which is the other half of that condition.
+        model.setNetworkCommState(false);
+
         model.stop();
     }
 
@@ -237,6 +246,152 @@ public class testTheGraphIsToldWhenARunEnds
         {
             Layout.TIMETABLE_STUCK_MS = was;
             layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * A HAND DISPATCH announces once its journey is over, with nothing running.
+     *
+     * This is the door OB-189 was reported at, and the one `759aabda` left standing on an argument.
+     * That commit deleted the explicit `updateVisiblePoints()` call from both hand-driven doors -
+     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favour of `announceRunFinished()`
+     * plus the window's single refresh callback, on the reasoning that *"a hand dispatch's
+     * announceRunFinished() already fires with the thread count at zero and nothing running, so the
+     * two pasted copies are deleted rather than joined by a third"*. That sentence was true. Nothing
+     * asserted it: the only behavioural test drove the TIMETABLE door, and the hand-driven door was
+     * covered by a source grep and the paragraph above.
+     *
+     * It is not a small assumption. `isRunning()` is three things ORed together - `running`, a
+     * non-empty `activeLocomotives`, and a positive thread count - and the announcement has to land
+     * after ALL THREE have gone. The end-of-path callback a few lines earlier does not qualify: it
+     * fires with `activeLocomotives` already emptied but the dispatching thread still counted, so a
+     * test that accepted any announcement at the end of a journey would pass with
+     * `announceRunFinished()` deleted. So this counts the two separately and asserts the idle one.
+     *
+     * **A real journey, not a refusal.** `executePath` also reaches its `finally` when it turns a
+     * dispatch away at one of its eight entry checks, and an announcement made there says nothing
+     * about a run that ENDED. This one runs in simulate mode from one sensor to the next and asserts
+     * it arrived before asking anything about the end of it.
+     *
+     * **And autonomy is never started.** `runLocomotives()` would set `running`, and `running` is not
+     * cleared by a path completing - so `isRunning()` would answer true at every announcement and the
+     * assertion would be about the wrong thing entirely.
+     *
+     * MUTATION this catches: removing `announceRunFinished()` from `executePath`'s `finally` leaves
+     * the announcements from the path's own start, milestone and end - all of them made while the
+     * dispatching thread is still counted - and none with the railway idle.
+     *
+     * @throws Exception on a failure to run the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testAHandDispatchTellsTheGraphWhenItsJourneyEnds() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        // In the database, because `moveLocomotive` - the door every hand placement goes through -
+        // resolves by name against the control station.  Removed again in the finally.
+        MarklinLocomotive loc = model.newMM2Locomotive("W7A2 hand dispatch", 231);
+
+        assertNotNull(loc, "the fixture locomotive could not be created");
+
+        java.util.concurrent.ExecutorService watchdog =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+
+        try
+        {
+            // The same two sensors `testAutonomySimulationSanity` uses, primed the same way: a sensor
+            // nobody has reported does not default to clear, and an occupied destination is refused
+            // before the run starts.
+            if (!model.isFeedbackSet("47411")) model.newFeedback(47411, null);
+            if (!model.isFeedbackSet("47412")) model.newFeedback(47412, null);
+
+            model.setFeedbackState("47411", false);
+            model.setFeedbackState("47412", false);
+
+            // AND THE LAYOUT SIMULATES.  Without this nothing ever sets the destination sensor and the
+            // run waits on it forever - a railway event wait is deliberately unbounded.
+            layout.setMaxDelay(0);
+            layout.setMinDelay(0);
+            layout.setSimulate(true);
+
+            layout.createPoint("W7A2 start", true, "47411");
+            layout.createPoint("W7A2 end", true, "47412");
+
+            List<Edge> path = Arrays.asList(layout.createEdge("W7A2 start", "W7A2 end"));
+
+            assertTrue(layout.moveLocomotive("W7A2 hand dispatch", "W7A2 start", false),
+                "precondition: the locomotive must be standing at the start of the path");
+
+            final AtomicInteger announcements = new AtomicInteger();
+            final AtomicInteger whileIdle = new AtomicInteger();
+
+            // SAMPLED WHERE THE ANNOUNCEMENT IS MADE, for the reason the timetable test above gives at
+            // length: `AutonomyRefreshCallback` posts to the event thread, so asking `isRunning()`
+            // inside it asks whenever the queue gets round to it, which is the "self-heals on the next
+            // unrelated refresh" that makes this defect intermittent in the first place.
+            layout.setCallback("W7A2HandProbe",
+                new Layout.TriFunction<List<Edge>, org.traincontrol.base.Locomotive, Boolean, Void>()
+            {
+                @Override
+                public Void apply(List<Edge> edges, org.traincontrol.base.Locomotive who,
+                    Boolean locked)
+                {
+                    announcements.incrementAndGet();
+
+                    if (!layout.isRunning()) whileIdle.incrementAndGet();
+
+                    return null;
+                }
+            });
+
+            AutonomyRefreshCallback.attach(layout, () -> { });
+
+            // NOT `runLocomotives()`.  This is the hand-driven door - the diagram's right-click menu
+            // and the Locomotive commands tab both call executePath on a bare thread with autonomy
+            // stopped - and starting autonomy would set `running`, which a finished path does not
+            // clear.
+            assertFalse(layout.isAutoRunning(),
+                "precondition: autonomy must NOT be running, or every announcement below is made"
+                + " while isRunning() is true for a reason that has nothing to do with this dispatch");
+
+            java.util.concurrent.Future<Boolean> run =
+                watchdog.submit(() -> layout.executePath(path, loc, 30, null));
+
+            try
+            {
+                assertTrue(run.get(30, java.util.concurrent.TimeUnit.SECONDS),
+                    "the hand dispatch reported failure rather than completing, so nothing below is"
+                    + " about a journey that ended");
+            }
+            catch (java.util.concurrent.TimeoutException wedged)
+            {
+                layout.stopLocomotives();
+
+                fail("the hand dispatch never reached its destination, so this test never exercised"
+                    + " the end of a run");
+            }
+
+            assertTrue(announcements.get() > 0,
+                "the journey ran and announced nothing at all, so the probe is not attached and"
+                + " neither assertion here means anything");
+
+            assertTrue(whileIdle.get() > 0,
+                "the hand dispatch finished and nothing was told with the railway idle - "
+                + announcements.get() + " announcement(s), " + whileIdle.get() + " of them while"
+                + " nothing was running.  Every announcement a path makes on its own - the start, each"
+                + " milestone, the end - is made while the dispatching thread is still counted, so"
+                + " isRunning() is true at all of them and reconcileFacingWhenIdle refuses at all of"
+                + " them.  Only announceRunFinished(), from executePath's finally after the count"
+                + " reaches zero, lands with the railway idle.  Without it a train that turned at its"
+                + " destination goes on being drawn facing the way it set off until something"
+                + " unrelated repaints, and exiting writes the un-reconciled facing to disk (OB-189,"
+                + " W7-A2)");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+            watchdog.shutdownNow();
+            model.deleteLoc("W7A2 hand dispatch");
         }
     }
 
