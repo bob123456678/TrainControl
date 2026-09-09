@@ -66,8 +66,10 @@ public class ArrivalSidePrompt
         if (layout == null || at == null) return null;
 
         // THE BUILD'S SIDES when the caller has them, which every caller in the application does.
-        // The geometric fallback is for a caller with no session - the tests that build a Layout by
-        // hand - and it is wrong on a curve, which is what made this worth changing.
+        // The fallback is for a caller with no session - the tests that build a Layout by hand - and
+        // it is no longer a second opinion: since REV9-B3 it reads `Layout.entrySideOf` too, which is
+        // the build's own answer where an edge carries one and the compass geometry where it does
+        // not.  A hand-built Layout carries none, so those tests get exactly what they always got.
         List<String> sides = arrivalSides == null || arrivalSides.isEmpty()
             ? sidesOf(layout, at) : sidesOf(arrivalSides);
 
