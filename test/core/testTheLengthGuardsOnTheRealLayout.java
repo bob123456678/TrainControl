@@ -43,7 +43,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * is not a railway anybody would build, and it is the only way to be sure the refusal comes from the
  * measurement rather than from the guard never being reached.
  *
- * Everything happens in a `LayoutSandbox` copy (OB-111).  His railway is never written to.
+ * **ON THE FROZEN RAILWAY, AND WITH THE TRAIN PUT WHERE IT IS WANTED.**  The shape is what this class
+ * is about - a real throat, real platforms, real switches - and that shape is the same in
+ * `test/layouts/live-snapshot` as it is on the layout Adam operates.  Where his trains happen to be
+ * standing is not part of the subject, and reading it off the live folder made this class say
+ * something different every time he ran a train: the 2-8-4 was at BottomMainB when this was written
+ * and is at BottomMainA now, so the class was red for a reason that has nothing to do with any guard.
+ *
+ * Everything happens in a `LayoutSandbox` copy of that snapshot (OB-111).  His railway is neither read
+ * nor written.
  */
 public class testTheLengthGuardsOnTheRealLayout
 {
@@ -59,7 +67,18 @@ public class testTheLengthGuardsOnTheRealLayout
     @BeforeClass
     public static void setUp() throws Exception
     {
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
+        //
+        // This opened `cs2_sample_layout` - his real railway, in the shape it is in right now.  The
+        // shape is the same; where the trains are standing is not, and this class asserted that the
+        // 2-8-4 stood at BottomMainB.  It is at BottomMainA today, so the class was RED, and it would
+        // have gone red again on its own at the next shunt whatever anybody did to the code.
+        //
+        // `live-snapshot` is the same railway with the clock stopped, taken from `git show HEAD:`
+        // rather than from the working tree, so it cannot move under a test.  And the placement this
+        // class needs is made in code below rather than read off the fixture, so it does not depend on
+        // where the snapshot's trains stand either.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
 
@@ -605,17 +624,19 @@ public class testTheLengthGuardsOnTheRealLayout
 
         engine.setTrainLength(4);
 
-        Point platform = null;
+        // PUT THERE, NOT FOUND THERE.
+        //
+        // This used to walk the Points for whichever one had the 2-8-4 on it and then assert that it
+        // was BottomMainB.  That is an assertion about where Adam last left a train, and it went red
+        // the first time he shunted it - it is at BottomMainA today.  What the test is about is a tail
+        // lying across the throat behind a platform, and the platform is named here.
+        Point platform = placeAt(built, engine, new TileKey(MAIN, 20, 13));
 
-        for (Point p : built.getPoints())
-        {
-            if (engine.equals(p.getCurrentLocomotive())) platform = p;
-        }
+        assertNotNull(platform, "there is no platform at 1 - Main:20,13 to put the 2-8-4 on");
 
-        assertNotNull(platform, "the 2-8-4 is not standing anywhere");
-
-        assertTrue(platform.getName().startsWith("BottomMainB"),
-            "the 2-8-4 is at " + platform.getName() + " rather than BottomMainB");
+        assertEquals(session.getStationIndex().baseNameOf(platform.getName()), "BottomMainB",
+            "1 - Main:20,13 is called " + platform.getName() + " on this railway rather than"
+            + " BottomMainB, so the throat this test walks is not the one it was written about");
 
         // NOTHING RECORDED YET: the walk cannot tell which way the tail lies, and says so by
         // blocking nothing.  This is the control - without it the assertion below could pass on a
@@ -692,6 +713,42 @@ public class testTheLengthGuardsOnTheRealLayout
         }
 
         for (TileKey tile : everyTile) session.setTileLength(tile, units);
+    }
+
+    /**
+     * Puts a locomotive on a named square, and answers the copy it went onto.
+     *
+     * A square is several Points - one per side a train can arrive by - and only some of them are
+     * places a train may stand, so this takes the first copy that is a destination.  Every other copy
+     * of the square is cleared first: a locomotive is one train, and leaving it recorded on two copies
+     * of one platform would block twice as much track as it can lie across.
+     *
+     * @param built the running layout
+     * @param engine the train
+     * @param square the platform to put it on
+     * @return the copy it is standing on, or null when the square has no copy that can hold it
+     */
+    private Point placeAt(Layout built, Locomotive engine, TileKey square)
+    {
+        // OFF WHEREVER IT WAS FIRST.  The snapshot has it standing somewhere already, and moveLocomotive
+        // fills the target without emptying the old square when the two are different Points.
+        for (Point p : built.getPoints())
+        {
+            if (engine.equals(p.getCurrentLocomotive())) built.moveLocomotive(null, p.getName(), true);
+        }
+
+        for (String name : session.getStationIndex().pointNamesAt(square))
+        {
+            Point copy = built.getPoint(name);
+
+            if (copy == null || !copy.isDestination()) continue;
+
+            built.moveLocomotive(engine.getName(), copy.getName(), false);
+
+            return copy;
+        }
+
+        return null;
     }
 
     private Layout rebuild() throws Exception

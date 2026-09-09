@@ -62,11 +62,20 @@ before anything reads it, so the checked-in fixture is never written to either.
 
 ## Used by
 
+- `core.testACompulsoryTurnIsNotAQuestion`
+- `core.testAPastedTrainKeepsItsDirection`
+- `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`
+- `core.testTheLengthGuardsOnTheRealLayout`
 - `core.testTheShadingFollowsTheTrain`
+- `regression.testControlSNamesOnlyASensor`
 - `regression.testEscapeClosesTheEditor`
+- `regression.testOneChangeSticks`
+- `regression.testTheDiagramIsNotRebuiltForAnArrow`
 - `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway`
 - `regression.testTheGreyDoesNotRebuildTheDiagram`
+- `regression.testTheHomeLabelIsDrawnOnce`
+- `regression.testTheTurnAtTheDestinationReachesTheDiagram`
 - `regression.testTheWashIsNoLongerThanTheTrain`
 - `ui.testBlockedTrackIsGreyWhileAutonomyRuns`
 - `ui.testTheShadingIsRedrawnWhenATrainMoves`
