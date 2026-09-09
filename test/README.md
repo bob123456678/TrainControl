@@ -42,7 +42,7 @@ that rule is called from. A test is filed by what it is about.
 
 ---
 
-## Two things that are easy to get wrong
+## Three things that are easy to get wrong
 
 **They are in packages now.** Every file starts `package core;`, `package ui;` or `package regression;`.
 A class in a named package **cannot see a class in the default package**, which is why the two fixtures
@@ -53,6 +53,15 @@ UDP port and only one control station can exist per JVM. The macro matches on `*
 folders do not change those entries - but a new test still has to be added there or it will not run.
 That is not a formality: 35 of 76 classes were missing from that list until 2026-08-22, including the
 matrix test written specifically to catch this project's commonest bug class.
+
+**The power state is set by an ECHO, not by `go()`.** `model.go()` and `model.stop()` send a command and
+return; the flag is written when the reply comes back, and `receiveMessage` hands that to `locMessageProcessor` -
+a different thread. So `model.go(); assertTrue(model.getPowerState())` is a race, and a read taken outside
+the model's monitor has no happens-before with the write in any case. It passes on an idle machine and fails
+in a battery: `testAConflictSkipsOnlyTheSwitchUnderTheTrain` was green run alone and red in the suite for
+exactly this, always in whichever method runs straight after the one whose route cuts the power. Use the
+railway's own bounded wait - `model.waitForPowerState(true, ms)` - in both directions, including before
+SAMPLING the power after a route that carries a stop.
 
 ---
 

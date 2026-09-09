@@ -60,6 +60,14 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     private static MarklinControlStation model;
 
     /**
+     * How long the power is given to come back on after a `go()`.
+     *
+     * An acknowledgement rather than a railway event, so it is bounded - `waitForPowerState` says why
+     * at length.  Generous, because what this waits out is a busy machine.
+     */
+    private static final long POWER_PATIENCE_MS = 15000;
+
+    /**
      * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
      *
      * `init` reads the layout preference and loads whatever it names, which on Adam's machine is his
@@ -234,7 +242,24 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
 
         model.go();
 
-        assertTrue(model.getPowerState(),
+        // WAITED FOR, NOT READ AT ONCE (2026-09-09).
+        //
+        // `go()` SENDS a command and returns; the power flag is written by the ECHO, which
+        // `receiveMessage` hands to `locMessageProcessor` - so it is set on another thread, some time
+        // after the call, and a read taken here has no happens-before with that write at all.  On an
+        // idle machine the echo always landed first and this line was a formality; in a battery it did
+        // not, and the class was green run alone and red in the suite.
+        //
+        // WHAT TURNS THE POWER OFF IS THIS CLASS, in the method before: a route carrying an emergency
+        // stop, restored by a `model.go()` in a `finally` which is asynchronous in exactly the same
+        // way.  So the state this precondition is about is established by this class and read before
+        // it has arrived - not left behind by anything else.  Every test class runs in its own JVM,
+        // and `init(simulate)` turns the power on, so no earlier class can be reaching this one.
+        //
+        // `waitForPowerState` is the railway's own wait for precisely this: it waits on the monitor
+        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgement of a
+        // command TrainControl itself just sent either comes back in milliseconds or is not coming.
+        assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off");
 
         final Outcome outcome = new Outcome();
@@ -272,6 +297,21 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
 
             outcome.heldWasSwitched = held.isSwitched();
             outcome.clearWasSwitched = clear.isSwitched();
+
+            // THE SAME WAIT, THE OTHER WAY ROUND.  The stop's echo is delivered on the same worker
+            // as the go's, so `settle`'s fixed 600ms is a guess about how long that thread takes to
+            // get to it - and a sample taken too early reports a route that DID cut the power as one
+            // that did not.  That is this class's own precondition flake, mirrored: bounded, so a
+            // route that really never cut the power still fails, only more slowly.
+            try
+            {
+                model.waitForPowerState(false, POWER_PATIENCE_MS);
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
             outcome.powerStillOn = model.getPowerState();
 
             return null;
