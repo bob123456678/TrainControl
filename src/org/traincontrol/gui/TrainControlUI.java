@@ -10517,26 +10517,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Waits until the caption answer has landed, for tests that then read what is on screen.
-     *
-     * @param patienceMs how long to wait at most
-     * @return whether the answer had landed by then
-     */
-    boolean awaitCaptionVisibility(long patienceMs) throws InterruptedException
-    {
-        long until = System.currentTimeMillis() + patienceMs;
-
-        while (captionVisibilityInFlight.get() || captionVisibilityDirty.get())
-        {
-            if (System.currentTimeMillis() > until) return false;
-
-            Thread.sleep(10);
-        }
-
-        return true;
-    }
-
-    /**
      * Whether the routing dropdown is being put back by us rather than chosen by a person (RC-B11).
      *
      * A JComboBox fires an ActionEvent from setSelectedIndex, so restoring the control re-enters the

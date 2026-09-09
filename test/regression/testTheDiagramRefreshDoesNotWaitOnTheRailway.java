@@ -480,14 +480,15 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         build.setAccessible(true);
 
         // OFF THE EVENT THREAD, on this one, which is the whole arrangement being tested.
+        //
+        // The square is resolved first, as `showFor` resolves it - on the event thread, because that
+        // lookup goes through the lazy session builder.  What the worker is handed is a Point.
         java.lang.reflect.Method gather = menu.getDeclaredMethod("gatherPathOptions",
-            TrainControlUI.class,
-            org.traincontrol.automationui.TileGraph.TileKey.class,
-            org.traincontrol.automationui.TileGraph.TileKey.class);
+            TrainControlUI.class, org.traincontrol.automation.Point.class);
 
         gather.setAccessible(true);
 
-        final Object answers = gather.invoke(null, ui, occupied, occupied);
+        final Object answers = gather.invoke(null, ui, ui.getAutonomyPointForTile(occupied));
 
         assertNotNull(answers,
             "the gather found nothing to offer for a square with a train standing on it, so the path"

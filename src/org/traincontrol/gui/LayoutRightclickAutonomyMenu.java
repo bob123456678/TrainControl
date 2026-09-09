@@ -81,9 +81,21 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // The menu therefore appears a moment later than the click when the railway is busy.  That is
         // the trade, and it is the right way round: a popup that arrives late is a popup, and a frozen
         // window is a fault.
+        // THE SQUARE IS RESOLVED HERE, ON THE EVENT THREAD, and not on the worker below.
+        //
+        // `getAutonomyPointForTile` goes through `getAutonomySession()` - the LAZY builder that parses
+        // every page, can write to disk and can raise a dialog (SV-B2).  None of that belongs on a raw
+        // thread, and moving the path search off the event thread would have been a poor trade for
+        // putting a modal dialog on one.  The constructor builds the session on this thread anyway, so
+        // this costs nothing that was not already being paid here.
+        //
+        // What crosses to the worker is the Point, which is a value.
+        final Point standing = ui != null && ui.getModel() != null && ui.getModel().hasAutoLayout()
+            ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
+
         Thread gathering = new Thread(() ->
         {
-            final PathOptions options = gatherPathOptions(ui, station, here);
+            final PathOptions options = gatherPathOptions(ui, standing);
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
@@ -160,13 +172,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * section, which is what it had in those cases before.
      *
      * @param ui the application
-     * @param station the sensor the caption is about, or null
-     * @param here the square that was clicked, or null
+     * @param current the Point standing on the clicked square, resolved by `showFor` on the event
+     *        thread, or null where there is none
      * @return the answers, or null when this square has no paths to offer
      */
-    private static PathOptions gatherPathOptions(TrainControlUI ui,
-        org.traincontrol.automationui.TileGraph.TileKey station,
-        org.traincontrol.automationui.TileGraph.TileKey here)
+    private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)
     {
         // THE SAME GATES THE CONSTRUCTOR APPLIES, in the same order, because a gather that ran where
         // the menu will not draw would take the railway's monitor for an answer nobody reads.
@@ -175,15 +185,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // between here and the build the operator can start a run, and a list gathered a moment before
         // that must not appear on a menu whose other items already know.  The constructor refuses the
         // options in that case and the section is simply absent, which is what it was.
-        if (ui == null || ui.isLayoutEditorOpen()) return null;
+        if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
 
         if (ui.getModel() == null || !ui.getModel().hasAutoLayout()) return null;
 
         if (ui.isAutonomyBusy()) return null;
-
-        Point current = ui.getAutonomyPointForTile(station != null ? station : here);
-
-        if (current == null) return null;
 
         if (!current.isDestination() && current.getCurrentLocomotive() == null) return null;
 
