@@ -15,85 +15,62 @@ replies are under **Comments** rather than mixed into the instruction.
 
 ## Ledger - where your attention is needed
 
-Everything NOT in **fixed validated**. This is the whole of the outstanding work, in tag order.
+Everything still asking you for something - **needs test** and **fixed unvalidated**, in tag
+order.  **Superseded** is off it as well as **fixed validated**: nobody ran a superseded entry
+and nothing was proved, but it is not outstanding either, and this is a list of what is
+outstanding.
+
+GENERATED from the store by `triagedb.regenerate_ledger` - do not hand-edit it, because the
+next regeneration cannot know what you meant.  Adam, 2026-09-09: *"regenerate it based on
+authoritative data."*  A note you want kept against an entry belongs in that entry's Comments,
+which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
-| [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | needs test | FR-020 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
-| [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | needs test | FX2-2, SVN-A4 |
+| [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
-| [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | needs test | OB-171 |
+| [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | fixed unvalidated | OB-171 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
-| [MT-264](#mt-264) | 2026-09-03 | The window while it is connecting | needs test | OB-170 follow-ups |
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
-| [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | needs test | RGN-C3 |
-| [MT-272](#mt-272) | 2026-09-04 | A route you edit stays switched on for autonomy | needs test | AC2-A1 |
-| [MT-276](#mt-276) | 2026-09-07 | Control+K draws the grid and the numbers together | needs test | OB-179 (split from MT-274) |
+| [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | fixed unvalidated | RGN-C3 |
 | [MT-277](#mt-277) | 2026-09-07 | One menu carries both the facing and the arrival side | needs test | FR-057 (split from MT-274) |
 | [MT-278](#mt-278) | 2026-09-07 | The covered-track shading survives a flash | needs test | OB-175 follow-up (split from MT-274) |
 | [MT-279](#mt-279) | 2026-09-07 | The covered-track shading is on the viewer only | needs test | OB-175 follow-up (split from MT-274) |
 | [MT-280](#mt-280) | 2026-09-07 | Nothing may be sent across covered track | needs test | OB-175 follow-up (split from MT-274) |
-| [MT-282](#mt-282) | 2026-09-07 | Home Locs draws nothing where no home is assigned | needs test | FR-061 (split from MT-274) |
 | [MT-283](#mt-283) | 2026-09-07 | The Text Labels dropdown fits the sidebar | needs test | FR-061 (split from MT-274) |
 | [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
 | [MT-285](#mt-285) | 2026-09-07 | A page whose top row is empty still numbers its axis | needs test | OB-172 (split from MT-274) |
 | [MT-286](#mt-286) | 2026-09-07 | The editor comes to the front on the first open | needs test | OB-173 (split from MT-274) |
 | [MT-287](#mt-287) | 2026-09-07 | The incoming arrow on a curved sensor tile is clear of the track | needs test | OB-175 (split from MT-274) |
-| [MT-288](#mt-288) | 2026-09-07 | The track-length box is ready to type in | needs test | OB-176 (split from MT-274) |
 | [MT-289](#mt-289) | 2026-09-07 | The facing menu ticks a facing the square cannot hold | needs test | OB-177 (split from MT-274) |
-| [MT-290](#mt-290) | 2026-09-07 | A route with auto-fire unchecked and a blank s88 saves | needs test | OB-178 (split from MT-274) |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-292](#mt-292) | 2026-09-07 | A remembered None comes back with the captions actually off | needs test | RGD-C3 (split from MT-275) |
-| [MT-293](#mt-293) | 2026-09-07 | Control+L moves the caption dropdown with it | needs test | RGD-C3 (split from MT-275) |
 | [MT-294](#mt-294) | 2026-09-07 | A recorded arrival side the menu cannot offer is shown, not offered | needs test | RGD-C4 (split from MT-275) |
-| [MT-295](#mt-295) | 2026-09-07 | The dash marks every station autonomy will not choose | needs test | MON-B1 (split from MT-275) |
 | [MT-296](#mt-296) | 2026-09-07 | A 2.7.4c import brings the autonomy settings across | needs test | RGN-A1, IPR-A1 (split from MT-243) |
 | [MT-297](#mt-297) | 2026-09-07 | Importing a graph does not switch your routes off | needs test | RGN-A1 (split from MT-243) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
-| [MT-299](#mt-299) | 2026-09-07 | A home on a split square is still there next start | needs test | DAY-B3 (split from MT-245) |
-| [MT-301](#mt-301) | 2026-09-07 | One platform, one home | needs test | DAY-B3 (split from MT-245) |
-| [MT-302](#mt-302) | 2026-09-07 | A non-reversible train and an all-turning platform - what happens now | needs test | DAY-B3 (split from MT-245) |
-| [MT-303](#mt-303) | 2026-09-07 | Signals stay where you put them | needs test | OB-166 (split from MT-246) |
 | [MT-304](#mt-304) | 2026-09-07 | A non-reversible train goes home nose first | needs test | OB-166 (split from MT-246) |
-| [MT-305](#mt-305) | 2026-09-07 | The reversal-length notices: a useful prompt, or noise | needs test | FX2-3, TCX-B2 (split from MT-248) |
-| [MT-306](#mt-306) | 2026-09-07 | Setting a length clears its notice | needs test | FX2-3 (split from MT-248) |
-| [MT-307](#mt-307) | 2026-09-07 | A train too long for a berth is refused | needs test | TCX-B2, SVN-B1 (split from MT-248) |
-| [MT-308](#mt-308) | 2026-09-07 | Homing a train that is already standing on a reversing point | needs test | D24-B1 (split from MT-250) |
-| [MT-309](#mt-309) | 2026-09-07 | EN57-203 can get back to TunnelLongPark | needs test | D24-B1 (split from MT-250) |
-| [MT-310](#mt-310) | 2026-09-07 | Test Connection has no successor that works without a train | needs test | RG3, DY3 (split from MT-257, item 5) |
-| [MT-311](#mt-311) | 2026-09-07 | Bulk Tools clears placements and keeps the homes | needs test | MT-257 item 1 (split from MT-258) |
+| [MT-309](#mt-309) | 2026-09-07 | EN57-203 can get back to TunnelLongPark | fixed unvalidated | D24-B1 (split from MT-250) |
 | [MT-312](#mt-312) | 2026-09-07 | The import says what it left behind | needs test | MT-257 item 3 (split from MT-258) |
-| [MT-313](#mt-313) | 2026-09-07 | Control+S names the square under the pointer | needs test | MT-257 item 4 (split from MT-258) |
-| [MT-314](#mt-314) | 2026-09-07 | Should a square's settings be copyable to another square | needs test | R28-C2 (split from MT-261) |
-| [MT-315](#mt-315) | 2026-09-07 | Where the home assignment should be drawn | needs test | R28-C3 (split from MT-261) |
-| [MT-316](#mt-316) | 2026-09-07 | Which keys for the s88 address and the home locomotive | needs test | R28-C5 (split from MT-261) |
-| [MT-317](#mt-317) | 2026-09-07 | Should the switch keyboard ask about the power | needs test | V31-C2 (split from MT-261) |
+| [MT-313](#mt-313) | 2026-09-07 | Control+S names the square under the pointer | fixed unvalidated | MT-257 item 4 (split from MT-258) |
 | [MT-318](#mt-318) | 2026-09-07 | Undoing a shut link opens both halves, across pages | needs test | SVN-B8 (split from MT-265) |
-| [MT-319](#mt-319) | 2026-09-07 | A column that is cut, undone and pasted back keeps its setup | needs test | SVN-B11 (split from MT-265) |
-| [MT-320](#mt-320) | 2026-09-07 | A route condition with a bracket that is not at the start | needs test | IPR-B2 (split from MT-265) |
-| [MT-321](#mt-321) | 2026-09-07 | Cropping a large photograph at full zoom-out | needs test | IPR-B4 (split from MT-265) |
-| [MT-322](#mt-322) | 2026-09-07 | The axis numbers survive switching between the editors | needs test | OB-172 (split from MT-268) |
 | [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
-| [MT-329](#mt-329) | 2026-09-08 | The shading clears from where a train used to be | needs test | OB-180 |
-| [MT-332](#mt-332) | 2026-09-08 | The arrival prompt names the sides the track really has | needs test | OB-182 |
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
-| [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | needs test | OB-185 |
-| [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | needs test | OB-184 |
-| [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | needs test | OB-183 |
-| [MT-338](#mt-338) | 2026-09-08 | The station label and the facing menu say the same thing | needs test | OB-181 |
-| [MT-340](#mt-340) | 2026-09-08 | The menu bar in the window title, to look at | needs test | OB-186 |
+| [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | fixed unvalidated | OB-185 |
+| [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
+| [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | fixed unvalidated | OB-183 |
 
-Everything else - 235 of 262 - is **fixed validated** and needs nothing from you unless the
-area changes again.  (8 superseded, 2 fixed but not yet validated.)
+Everything else - 299 of 340 - needs nothing from you unless the area changes again:
+270 **fixed validated** and 29 **superseded**.
 
 ---
 

@@ -88,8 +88,19 @@ At the top of the file, a table of every entry NOT in **fixed validated** and no
 it, its disposition and where it came from. That is the whole of the outstanding work in one place,
 and it is where to start.
 
-Claude regenerates the ledger whenever a disposition changes. It is editable - crossing something out
-or adding a note to it is fine, and Claude will not overwrite a note it did not write.
+**It is GENERATED, from the store, and it is no longer editable** (Adam, 2026-09-09: *"regenerate it
+based on authoritative data."*). `py -3 docs\manual-tests\triagedb.py regenerate-ledger` writes it,
+and every column is copied from the entry itself.
+
+It used to say "Claude regenerates the ledger whenever a disposition changes. It is editable -
+crossing something out or adding a note to it is fine, and Claude will not overwrite a note it did
+not write." Both halves failed together: because a note might be there, `verify-ledger` was read-only
+and the regeneration was somebody's discipline rather than a command — and by 2026-09-09 the table
+carried **31 rows that were no longer open and 8 whose disposition had drifted**, which is a list of
+what needs your attention that had stopped being one.
+
+A note you want kept against an entry goes in that entry's **Comments**, which is where
+`verify-ledger` reads the truth from in any case.
 
 ---
 
@@ -222,7 +233,8 @@ typed by hand would take. Anything else noticed, and everything from **New issue
 structured `OB-###` (bug) or `FR-###` (feature request) item in [issues.md](issues.md),
 cross-referenced back to the test it came from if it came from one.
 
-**What it deliberately never writes: the Disposition line, or the ledger.** Rule 4 above says the
+**What it deliberately never writes: the Disposition line, or the ledger.** The ledger is generated
+by `triagedb.py regenerate-ledger`; rule 4 above says the
 disposition is Claude's to set, and that stays true whether the comment arrived by hand or through the
 app - the app records what Adam said, nothing more, and the next round reads it the same way it reads
 anything typed directly into the file.
@@ -258,10 +270,14 @@ ledger rows no longer belong there, and where a row's Disposition, Date, What or
 the entry itself - plus a duplicate `MT-###`/issue ref anywhere in either file, a duplicate ledger row,
 a ledger link whose href doesn't point at the tag it names, a Disposition that isn't one of rule 4's
 four words, a malformed ledger row, an Inbox entry with no Kind, and a `tests.md` entry with no rule-3
-separator. It does not rewrite the table - the ledger allows hand notes on individual rows (crossing
-something out, adding a comment), and a wholesale regeneration would erase them. Use it to know exactly
-what to change, then change it the same way as always. Exits 3, not 1, when the ledger merely isn't
-clean - kept apart from 1 (an actual error running the check) so a script can tell the two apart.
+separator. It does not rewrite the table; `triagedb.py regenerate-ledger` is what does that, and it
+verifies the store still renders `tests.md` byte for byte before it reports success. Use `verify-ledger`
+to know whether the table is clean, and `regenerate-ledger` to make it so. Exits 3, not 1, when the
+ledger merely isn't clean - kept apart from 1 (an actual error running the check) so a script can tell
+the two apart.
+
+(It was read-only *because* a ledger row was allowed to carry a hand note. It is still read-only, and
+the note convention is gone: see "The ledger" above for why both halves failed together.)
 
 Also undocumented above: `tests` takes an optional `TAG` positional to look up one entry (same as
 `test TAG`, from the CLI's `tests --open`/`--all` list), `tests --full`/`--brief` toggles whether body

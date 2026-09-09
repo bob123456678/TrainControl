@@ -24,7 +24,8 @@ What it writes, and where:
 It also has a query API: run it with an argument (stats, tests, test TAG, issues, verify-ledger) and
 it prints JSON to stdout and exits, no window involved.  See --help.
 
-What it deliberately does NOT write: the **Disposition** line, and the ledger.  Rule 4 in README.md
+What it deliberately does NOT write: the **Disposition** line, and the ledger.  The ledger is
+generated - `triagedb.py regenerate-ledger` - and rule 4 in README.md
 says dispositions are Claude's to set and only Claude's, and that rule is the reason the file is
 worth anything - it is the difference between "Adam says it works" and "somebody marked it done".
 So this app records what you said and leaves the bookkeeping where it belongs.  Your rows keep

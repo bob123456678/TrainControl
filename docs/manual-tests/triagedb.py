@@ -594,6 +594,157 @@ def render_tests(conn):
     return row["head"] + "".join(blocks)
 
 
+LEDGER_HEADING = "## Ledger - where your attention is needed"
+
+LEDGER_INTRO = (
+    "Everything still asking you for something - **needs test** and **fixed unvalidated**, in tag\n"
+    "order.  **Superseded** is off it as well as **fixed validated**: nobody ran a superseded entry\n"
+    "and nothing was proved, but it is not outstanding either, and this is a list of what is\n"
+    "outstanding.\n"
+    "\n"
+    "GENERATED from the store by `triagedb.regenerate_ledger` - do not hand-edit it, because the\n"
+    "next regeneration cannot know what you meant.  Adam, 2026-09-09: *\"regenerate it based on\n"
+    "authoritative data.\"*  A note you want kept against an entry belongs in that entry's Comments,\n"
+    "which is where `triage.py verify-ledger` reads the truth from anyway."
+)
+
+LEDGER_COLUMNS = "| Tag | Date | What | Disposition | From |\n|---|---|---|---|---|"
+
+
+def _ledger_cell(text):
+    """One table cell's worth of text, with anything that would break the row escaped.
+
+    A pipe inside a title would split the row into six cells, and triage.py's own ledger parser
+    COUNTS cells - so such a row would be reported as malformed rather than as wrong, which is a
+    worse answer. Newlines cannot appear in a row at all.
+
+    :param text: the field
+    :return: the cell body
+    """
+
+    return (text or "").replace("|", "\\|").replace("\r", " ").replace("\n", " ").strip()
+
+
+def _tag_order(tag):
+    """Sort key putting MT-9 before MT-10, which a string sort does not.
+
+    :param tag: MT-###
+    :return: (prefix, number)
+    """
+
+    match = re.match(r"([A-Za-z]+)-0*(\d+)$", tag or "")
+
+    return (match.group(1).upper(), int(match.group(2))) if match else (tag or "", 0)
+
+
+def render_ledger(conn):
+    """The Ledger section as the store says it should be, heading to closing rule.
+
+    THE SHAPE IS triage.py's LEDGER PARSER'S, and that is the point of writing it here rather than by
+    hand: five cells, the href exactly '#' plus the lowercased tag, and the What and From columns
+    copied VERBATIM from the entry rather than shortened. `verify-ledger` tolerates a shortened What -
+    README.md calls the column "one line about it" - and a generator has no business spending that
+    tolerance, because a generated line that merely passes the check is a line nobody can trust.
+
+    :param conn: an open connection
+    :return: the section text, beginning with a newline and ending with the closing rule
+    """
+
+    rows = [dict(r) for r in conn.execute(
+        "SELECT tag, date, title, disposition, origin FROM test")]
+
+    open_rows = sorted(
+        (r for r in rows if (r["disposition"] or "").strip().lower()
+         not in (triage.VALIDATED, triage.SUPERSEDED)),
+        key=lambda r: _tag_order(r["tag"]))
+
+    lines = []
+
+    for r in open_rows:
+        lines.append("| [%s](#%s) | %s | %s | %s | %s |" % (
+            r["tag"],
+            r["tag"].lower(),
+            _ledger_cell(r["date"]),
+            _ledger_cell(r["title"]),
+            _ledger_cell(r["disposition"]),
+            _ledger_cell(r["origin"]),
+        ))
+
+    validated = sum(1 for r in rows
+                    if (r["disposition"] or "").strip().lower() == triage.VALIDATED)
+    superseded = sum(1 for r in rows
+                     if (r["disposition"] or "").strip().lower() == triage.SUPERSEDED)
+
+    # COUNTED, NOT COPIED. The sentence this replaces said "235 of 262" against a file holding 340
+    # entries, and read as though the superseded ones were still on the list. Every number here is a
+    # count of the rows the table above was built from.
+    summary = ("Everything else - %d of %d - needs nothing from you unless the area changes again:\n"
+               "%d **fixed validated** and %d **superseded**." % (
+                   validated + superseded, len(rows), validated, superseded))
+
+    return "\n%s\n\n%s\n\n%s\n%s\n\n%s\n\n---\n" % (
+        LEDGER_HEADING, LEDGER_INTRO, LEDGER_COLUMNS, "\n".join(lines), summary)
+
+
+def regenerate_ledger(conn, tests_path=TESTS_FILE, write=True):
+    """Rewrites the Ledger table from the store, and writes tests.md.
+
+    Adam, 2026-09-09: *"regenerate it based on authoritative data."*  `triage.py verify-ledger`
+    reported 31 stale rows and 8 disposition drifts against a hand-maintained table, and that command
+    is deliberately READ-ONLY: a ledger row was allowed to carry a hand note, and a wholesale rewrite
+    would erase one without knowing it was there. This is the other half - the rewrite, done from the
+    store - and it retires the hand-note convention in the intro it writes rather than silently
+    breaking it.
+
+    THE LEDGER LIVES IN THE HEAD. `render_tests` is `head + "".join(blocks)` and the Ledger is part of
+    the head, so this updates the doc row and re-renders. That is what keeps `verify`'s byte-for-byte
+    guarantee true afterwards: the file and the store agree because the file was written from the
+    store.
+
+    :param conn: an open connection
+    :param tests_path: tests.md
+    :param write: False to change the store only, for a caller that wants to look first
+    :return: a dict saying what changed
+    """
+
+    row = conn.execute("SELECT head FROM doc WHERE name = 'tests'").fetchone()
+
+    if row is None:
+        raise IOError("the store has no tests document - run build first")
+
+    head = row["head"]
+
+    start = head.find("\n## Ledger")
+    end = head.find("\n## The tests")
+
+    if start < 0 or end < 0 or end <= start:
+        raise IOError("cannot find the Ledger section in the head of tests.md"
+                      " (looked for '## Ledger' followed later by '## The tests')")
+
+    was = head[start:end]
+    now = render_ledger(conn)
+
+    conn.execute("UPDATE doc SET head = ? WHERE name = 'tests'",
+                 (head[:start] + now + head[end:],))
+    conn.commit()
+
+    if write:
+        render_to_disk(conn, tests_path)
+
+    def _tags(section):
+        return set(re.findall(r"^\| \[([A-Za-z]+-\d+)\]", section, re.M))
+
+    before, after = _tags(was), _tags(now)
+
+    return {
+        "rows_before": len(before),
+        "rows_after": len(after),
+        "removed": sorted(before - after, key=_tag_order),
+        "added": sorted(after - before, key=_tag_order),
+        "changed": was != now,
+    }
+
+
 def verify(conn, tests_path=TESTS_FILE):
     """Proves the store can reproduce the file it was built from, byte for byte.
 
@@ -987,6 +1138,35 @@ def selftest(tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
         check_that("rendering an unchanged store does not touch a byte",
                    io.open(tests, "rb").read() == original)
 
+        # THE LEDGER IS GENERATED, and generating it must leave the store able to render.
+        #
+        # This is the operation with the widest blast radius in the module: it rewrites the HEAD
+        # of tests.md, which is the half `render_tests` does not reconstruct from blocks, so a
+        # mistake here is not one entry but the whole document.
+        #
+        # Asserted against the store rather than against a copy of what it wrote: the count of
+        # rows in the table has to equal the count of entries that are neither fixed validated
+        # nor superseded, which is what the ledger IS.
+        moved = regenerate_ledger(conn, tests)
+
+        outstanding = sum(1 for r in check(conn)
+                          if r["disposition"] not in ("fixed validated", "superseded"))
+
+        check_that("the regenerated ledger has a row per open entry (%d)" % outstanding,
+                   moved["rows_after"] == outstanding)
+
+        regenerated_ok, regenerated_why = verify(conn, tests)
+
+        check_that("and the store still renders after it - " +
+                   regenerated_why.splitlines()[0], regenerated_ok)
+
+        # AND IT IS IDEMPOTENT.  A generator whose second run differs from its first turns every
+        # later commit into a whole-file diff, which is the same complaint the unchanged-render
+        # check above exists for.
+        again = regenerate_ledger(conn, tests)
+
+        check_that("running it twice changes nothing the second time", not again["changed"])
+
         # A disposition change reaches the file, the row, AND still renders.
         subject = check(conn)[0]["tag"]
 
@@ -1087,6 +1267,8 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("sync", help="rebuild the store from the markdown and verify it renders back")
+    sub.add_parser("regenerate-ledger",
+                   help="rewrite the Ledger table in tests.md from the store")
     sub.add_parser("verify", help="prove the store renders the markdown byte for byte")
     sub.add_parser("selftest", help="exercise the whole store against copies of the real record")
 
@@ -1136,6 +1318,30 @@ def main(argv=None):
         tests, items = sync(conn)
         print("%d tests, %d issues; renders back byte for byte" % (tests, items))
         return 0
+
+    if args.command == "regenerate-ledger":
+        # AND VERIFIED, in the same breath.  This writes tests.md from the store, so the one way
+        # it could go wrong is writing a file the store can no longer reproduce - which would
+        # make the next update overwrite the record.  Saying "regenerated" without checking that
+        # is exactly the claim `verify` exists to stop anybody making.
+        changed = regenerate_ledger(conn)
+
+        ok, message = verify(conn)
+
+        print("ledger: %d rows -> %d rows" % (changed["rows_before"], changed["rows_after"]))
+
+        if changed["removed"]:
+            print("  no longer open: %s" % ", ".join(changed["removed"]))
+
+        if changed["added"]:
+            print("  newly open:     %s" % ", ".join(changed["added"]))
+
+        if not changed["changed"]:
+            print("  (already up to date)")
+
+        print(message)
+
+        return 0 if ok else 1
 
     if args.command == "selftest":
         passed, lines = selftest()
