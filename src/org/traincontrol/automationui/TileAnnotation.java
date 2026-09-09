@@ -462,11 +462,35 @@ public class TileAnnotation
          */
         private final boolean forward;
 
+        /**
+         * Whether the station this leg ENDS at is one full autonomy will never choose for itself -
+         * a parking berth, or a square that turns every train it takes.
+         *
+         * A property of the leg's destination rather than of this square: every segment of the run
+         * carries it, because what the reader is being told is where the line goes, and that has to
+         * be readable from any part of it rather than only from the end.
+         */
+        private final boolean manualOnly;
+
         public Trace(Side from, Side to, boolean forward)
+        {
+            this(from, to, forward, false);
+        }
+
+        public Trace(Side from, Side to, boolean forward, boolean manualOnly)
         {
             this.from = from;
             this.to = to;
             this.forward = forward;
+            this.manualOnly = manualOnly;
+        }
+
+        /**
+         * @return whether this leg ends somewhere only a person may send a train
+         */
+        public boolean isManualOnly()
+        {
+            return manualOnly;
         }
 
         @Override
@@ -476,20 +500,22 @@ public class TileAnnotation
 
             Trace other = (Trace) o;
 
-            return from == other.from && to == other.to && forward == other.forward;
+            return from == other.from && to == other.to && forward == other.forward
+                && manualOnly == other.manualOnly;
         }
 
         @Override
         public int hashCode()
         {
             return (from == null ? 0 : from.ordinal() * 31)
-                + (to == null ? 0 : to.ordinal() * 7) + (forward ? 1 : 0);
+                + (to == null ? 0 : to.ordinal() * 7) + (forward ? 1 : 0)
+                + (manualOnly ? 2 : 0);
         }
 
         @Override
         public String toString()
         {
-            return (forward ? "->" : "<-") + from + ":" + to;
+            return (forward ? "->" : "<-") + from + ":" + to + (manualOnly ? " (manual only)" : "");
         }
     }
 
@@ -1256,7 +1282,11 @@ public class TileAnnotation
 
             if (!drawn.add(at)) continue;
 
-            g.setColor(Boolean.TRUE.equals(shared.get(at)) ? TRACE
+            // WHERE THE LINE GOES BEATS WHICH WAY IT IS RUNNING.  A leg ending somewhere autonomy
+            // will never choose is drawn in its own colour whichever direction it is - the reader is
+            // being told about the destination, and the chevrons already say the direction.
+            g.setColor(trace.manualOnly ? TRACE_MANUAL
+                : Boolean.TRUE.equals(shared.get(at)) ? TRACE
                 : trace.forward ? TRACE : TRACE_RETURN);
 
             // A square crossed more than once - a switch a route passes through on its way out and
@@ -1498,6 +1528,30 @@ public class TileAnnotation
      * colour turns an out-and-back into what looks like one circuit.
      */
     private static final Color TRACE_RETURN = new Color(255, 150, 40);
+
+    /**
+     * A leg that ends somewhere full autonomy will never choose: a parking berth, or a square that
+     * turns every train it takes.
+     *
+     * Adam asked for it as "a different color going to manual-only points", after narrowing an earlier
+     * request that had been about the arrival chevrons: "I was likely talking about the simulated paths
+     * drawn in the autonomy editor... yellow is currently forward, and orange is backwards - path, not
+     * the chevron arrows."  The two questions a tested route answers - can a train get there, and would
+     * autonomy send one - were being answered by one line.
+     *
+     * **MAGENTA, and it is the only strong hue this diagram had left.**  The vocabulary already spoken
+     * here is warm for paths and parking - yellow out, orange back, orange again for the badge on a
+     * square autonomy leaves alone, and the same orange for the train mark - with green and red for
+     * the one-way arrows and blue for a point autonomy uses.  A fourth warm shade would read as a
+     * third kind of path; a green or a red would read as a direction; a blue would read as the badge.
+     * Magenta is none of those, is far enough from the red arrowhead and the blue badge to be told
+     * apart at tile size, and is dark enough that the chevrons drawn on top of it still show.
+     *
+     * NOT orange, which is what Adam first suggested: orange is this painter's RETURN leg, so an
+     * outbound run to a parking berth would have been drawn as a run coming back.  His clarification
+     * names that colour as taken in the same sentence.
+     */
+    private static final Color TRACE_MANUAL = new Color(190, 40, 160);
 
     /** The chevrons on it, dark enough to read against the yellow they sit on. */
     private static final Color TRACE_CHEVRON = new Color(120, 80, 0);

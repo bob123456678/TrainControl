@@ -606,6 +606,13 @@ which is the state somebody opens the panel to explain. The route is still drawn
 is passable and reporting "no path" would be a lie about the railway to make a point about the
 settings.
 
+**And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
+on the way out and orange on the way back; a leg whose **destination** is a station autonomy will
+never choose — a parking berth, or a square that turns every train it takes — is drawn in magenta
+instead, whichever direction it runs. Adam: *"just use a different color going to manual-only points.
+yellow is currently forward, and orange is backwards — path, not the chevron arrows."* The colour is
+about the destination, so every square of that leg carries it; the chevrons still say the direction.
+
 ---
 
 ## 7a. A route that meets a train

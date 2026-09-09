@@ -6300,7 +6300,7 @@ public class AutonomyEditorPanel extends JPanel
                     // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
                     // (DIR-B1).
                     trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
-                        session.shutTiles()), tile, true);
+                        session.shutTiles()), tile, true, where);
                 }
             }
             else
@@ -6539,8 +6539,12 @@ public class AutonomyEditorPanel extends JPanel
         // Both directions, each as its own line.  A direction with no path draws nothing, so the two
         // questions the test answers - can it get there, can it get back - are read off the track
         // rather than out of a sentence, and a one-way route is visibly one line.
-        trace(there, testFrom, true);
-        trace(back, tile, false);
+        // Each leg is told where it ENDS, which is what decides its colour: a run to a station
+        // autonomy will never choose is drawn in a third shade (Adam, 2026-09-09).  The two legs end
+        // at opposite squares, so on a route between an ordinary station and a parking berth they are
+        // deliberately not the same colour.
+        trace(there, testFrom, true, tile);
+        trace(back, tile, false, testFrom);
 
         // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
         //
@@ -6586,10 +6590,29 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.testLegReachable", run.size());
     }
 
+    /**
+     * Lays one leg of a tested route onto the squares it crosses.
+     *
+     * @param run the reduced path, or null when there is no route that way
+     * @param from the square it leaves
+     * @param forward whether this is the outbound leg
+     * @param to the square it ENDS at, which decides whether the leg is drawn as manual-only
+     */
     private void trace(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
-        TileKey from, boolean forward)
+        TileKey from, boolean forward, TileKey to)
     {
         if (run == null) return;
+
+        // ASKED ONCE, FOR THE WHOLE LEG.  Every square of the run carries the answer, because what it
+        // says is where the line goes - and a colour that only appeared on the last square would be
+        // invisible on a route that runs off the edge of the page.
+        //
+        // `stationsAutonomyWillNotChoose` is the runtime's own rule asked of the diagram, the same set
+        // the Path Type note below reads: `Layout.isSendableDestination` refuses a destination that is
+        // reversing or is not an auto destination before it is a candidate at all.  So this is not a
+        // second opinion about which stations those are.
+        final boolean manualOnly = to != null && session != null
+            && session.stationsAutonomyWillNotChoose().contains(to);
 
         // The squares in order, which the reduction does not hand over as one list: each edge carries
         // the track BETWEEN its two Points, so the Points themselves have to be put back between them.
@@ -6627,7 +6650,8 @@ public class AutonomyEditorPanel extends JPanel
                 traces.put(at, here);
             }
 
-            here.add(new org.traincontrol.automationui.TileAnnotation.Trace(in, out, forward));
+            here.add(new org.traincontrol.automationui.TileAnnotation.Trace(in, out, forward,
+                manualOnly));
         }
     }
 

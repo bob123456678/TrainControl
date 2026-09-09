@@ -343,6 +343,7 @@
         <test-one-class class="testTileSelection"/>
         <test-one-class class="testTimetableOnDerivedGraph"/>
         <test-one-class class="testTracedPathIsContinuous"/>
+        <test-one-class class="testManualOnlyPathsAreADifferentColour"/>
         <test-one-class class="testUiStateIsNotLostWhenUnreadable"/>
         <test-one-class class="testWhyStuck"/>
         <test-one-class class="testACompulsoryTurnIsNotAQuestion"/>
