@@ -4370,4 +4370,91 @@ public class testEditorSurfaceRules
             "the sendable-destination conjunction is written out " + conjunctions + " times in Layout."
             + " There must be exactly one, inside isSendableDestination");
     }
+    /**
+     * The three gestures that change what track is blocked each tell the diagram (W7B-B1).
+     *
+     * Adam, 2026-09-09: *"yes, this greyout should appear at idle and be regenerated if a placement or
+     * train/track length is changed."*
+     *
+     * **Why this is a source-level check and the behaviour is tested elsewhere.**  Two of the three
+     * gestures are pinned by driving them: `ui.testTheGreyAppearsAtIdleToo` presses the diagram's own
+     * Delete key for a placement and rebuilds the setup for a tile length, and both claims fail if the
+     * mark does not follow.  The third cannot be driven - `promptTrainLength` opens a modal, and a
+     * test cannot answer one without a robot - so the half after the dialog was lifted into
+     * `applyTrainLength`, which that class DOES drive.
+     *
+     * **And extracting a rule moves the bug to the call.**  A door that stops calling
+     * `applyTrainLength` and sets the length itself passes every behavioural test there is, because
+     * the extracted method still works.  This is the part that only the source can say.
+     *
+     * The fence is checked here too, in the one place that decided it, because a fence is a line that
+     * can come back in a merge and every claim about the idle grey is silently about the running case
+     * once it does.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testEveryDoorThatChangesWhatIsBlockedTellsTheDiagram() throws Exception
+    {
+        java.io.File file = new java.io.File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(file.isFile(),
+            "cannot find " + file.getAbsolutePath() + " - a test that reads the source cannot pass by"
+            + " not finding it");
+
+        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            StandardCharsets.UTF_8);
+
+        // THE FENCE IS GONE, and this is the one place that decided it.
+        String worker = bodyOf(source, "private void workOutCoveredTrack()");
+
+        assertFalse(worker.isEmpty(),
+            "workOutCoveredTrack is not declared that way any more, so this checked nothing");
+
+        assertFalse(worker.contains("greyed = isAutonomyBusy()"),
+            "the grey wash is fenced on a running railway again.  The refusal it draws is not:"
+            + " Layout.isPathClear sweeps the covered edges in every tier at every time, so at idle a"
+            + " manual send is refused over track the diagram paints as free (W7B-B1).  Adam: \"yes,"
+            + " this greyout should appear at idle\"");
+
+        // THE LENGTH DOOR ASKS FOR THE MARKS AGAIN.
+        String apply = bodyOf(source, "public void applyTrainLength(Locomotive l, int units)");
+
+        assertFalse(apply.isEmpty(),
+            "applyTrainLength is not declared that way any more, so this checked nothing");
+
+        assertTrue(apply.contains("blockedTrackChanged()"),
+            "setting a train's length no longer asks the diagram to work the marks out again.  How far"
+            + " a tail reaches is the length in hops, and Layout.edgesCoveredByStandingTrains reads it"
+            + " off the locomotive every time - so the railway refuses different track the instant"
+            + " this returns, with no rebuild to tell the drawing.  Adam: \"be regenerated if a"
+            + " placement or train/track length is changed\"");
+
+        // AND THE DIALOG STILL GOES THROUGH IT, which is the half the behavioural test cannot see.
+        String prompt = bodyOf(source, "public void promptTrainLength(Locomotive l, MouseEvent evt)");
+
+        assertFalse(prompt.isEmpty(),
+            "promptTrainLength is not declared that way any more, so this checked nothing");
+
+        assertTrue(prompt.contains("applyTrainLength("),
+            "the train-length dialog no longer ends in applyTrainLength.  Everything that has to"
+            + " happen once a length is chosen lives there - the findings, the log line and the grey -"
+            + " and a door that writes the number itself gets none of it while every test of"
+            + " applyTrainLength goes on passing");
+
+        assertFalse(prompt.contains("l.setTrainLength("),
+            "promptTrainLength writes the length itself as well as calling applyTrainLength, which is"
+            + " two doors onto one field again - the shape MT-246 and OB-039 were both filed for");
+
+        // AND THE PLACEMENT DOORS, which reach the marks through updateVisiblePoints.
+        String gesture = bodyOf(source,
+            "private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
+
+        assertFalse(gesture.isEmpty(),
+            "locomotiveGestureOnDiagram is not declared that way any more, so this checked nothing");
+
+        assertTrue(gesture.contains("this.updateVisiblePoints();"),
+            "the diagram's Control+X / Control+V / Delete door no longer refreshes the marks, so a"
+            + " train moved from the keyboard leaves its old squares greyed - which is OB-180 exactly");
+    }
 }

@@ -50,9 +50,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * - grey and no orange - track a train's presence has made unusable;
  * - neither - free.
  *
- * **And the grey is bounded to while autonomy is running.**  Blocked track is a fact about routing,
- * and nothing is routing when nothing is running - so a stopped railway shows the line alone, exactly
- * as it did before this change.
+ * **And the grey is NOT bounded to while autonomy is running, which it was until W7B-B1.**  The
+ * bound was Adam's own - *"while autonomy is running"* - and the refusal it draws never had one, so a
+ * stopped railway refused manual sends over track this drew as free.  Adam, 2026-09-09: *"yes, this
+ * greyout should appear at idle and be regenerated if a placement or train/track length is changed."*
+ * This class keeps its name and its subject - while autonomy runs, blocked track is grey - and
+ * `ui.testTheGreyAppearsAtIdleToo` carries the idle half.
  *
  * **The blocked extent is worked out here from the railway rather than asked of the window**, which
  * is deliberate: the claim is that what is drawn is what `Layout.edgesCoveredByStandingTrains`
@@ -65,8 +68,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * is decided when the tile is PAINTED; every model-level assertion available answers identically with
  * the grey present and absent, which is the lesson OB-180 and `support.Rendered` were written for.
  *
- * MUTATION: draw the wash unconditionally, and `testAStoppedRailwayShowsNoGreyAtAll` fails.  Draw it
- * only where the line is drawn - the state before this change - and
+ * MUTATION: fence the wash on `isAutonomyBusy()` again and `testAStoppedRailwayShowsTheSameGrey`
+ * fails.  Draw it only where the line is drawn - the state before the grey came back - and
  * `testBlockedTrackIsGreyedWhileAutonomyRuns` fails.  Draw the wash OVER the line and
  * `testASquareWithATrainOnItIsStillOrange` fails.  Wash the whole page and
  * `testFreeTrackIsNotTouched` fails.
@@ -167,7 +170,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         blockedTile = drawnTileFor(blockedSquare);
         freeTile = drawnTileFor(freeSquare);
 
-        // STOPPED, with the train exactly where it is.  The line is drawn and nothing else should be.
+        // STOPPED, with the train exactly where it is.  Both marks are drawn (W7B-B1).
         setRunning(false);
 
         refreshCoveredTrack();
@@ -262,16 +265,42 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * Nothing is greyed while nothing is running - the mark is bounded to a running railway.
+     * And a stopped railway shows exactly the same grey - the mark is NOT bounded to a run (W7B-B1).
+     *
+     * **This test asserted the opposite until 2026-09-09, and the reversal is the point of it.**  The
+     * bound was Adam's own sentence - *"can we just grey out the tiles just like blocked edges while
+     * autonomy is running?"* - and the reasoning written down for it was that blocked track is a fact
+     * about routing, and nothing is routing when nothing is running.
+     *
+     * That reasoning is wrong about this railway, and the review that found it says how: the REFUSAL
+     * was never fenced.  `Layout.isPathClear` sweeps the covered edges in every tier at every time,
+     * correctly, because a tail lying across the rail is physical.  So at idle a right-click manual
+     * send across a parked train's tail was refused over track this drew as free - which is the same
+     * complaint that brought the grey back for the running case, arriving through the other door.
+     *
+     * Adam, asked about the idle case directly, 2026-09-09: *"yes, this greyout should appear at idle
+     * and be regenerated if a placement or train/track length is changed."*
+     *
+     * **What this class still claims** is its own name: while autonomy runs, blocked track is grey.
+     * That was true before and is true now.  What has gone is the word ONLY.
+     * `ui.testTheGreyAppearsAtIdleToo` carries the idle half, including the regeneration Adam asked
+     * for in the same sentence.
      */
     @Test
-    public void testAStoppedRailwayShowsNoGreyAtAll()
+    public void testAStoppedRailwayShowsTheSameGrey()
     {
-        assertTrue(support.Rendered.same(stoppedBlocked, bareBlocked),
-            "the square " + blockedSquare + " is drawn differently with a train blocking it and "
-            + "autonomy STOPPED than it is with no train at all, so the grey is showing when nothing "
-            + "is routing. Adam: \"grey out the tiles just like blocked edges WHILE AUTONOMY IS "
-            + "RUNNING\"");
+        assertTrue(support.Rendered.same(stoppedBlocked, runningBlocked),
+            "the square " + blockedSquare + " is drawn differently with autonomy stopped than with it "
+            + "running, though the train has not moved and the railway refuses the same track either "
+            + "way.  The grey is fenced on a running railway again, and at idle the operator is "
+            + "offered a destination the send will refuse (W7B-B1).  Adam: \"yes, this greyout should "
+            + "appear at idle\"");
+
+        assertTrue(brightness(stoppedBlocked) < brightness(bareBlocked) - 2.0,
+            "the square " + blockedSquare + " is drawn no darker with a train blocking it and "
+            + "autonomy STOPPED (" + brightness(stoppedBlocked) + ") than with no train at all ("
+            + brightness(bareBlocked) + "), so nothing on a stopped railway says the track is "
+            + "unusable");
     }
 
     /**
@@ -303,10 +332,16 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test(dependsOnMethods = "testTheOrangeLineIsDrawnEitherWay")
     public void testASquareWithATrainOnItIsStillOrange()
     {
-        assertTrue(brightness(runningCovered) < brightness(stoppedCovered) - 2.0,
-            "the square the train stands on is drawn no darker while autonomy runs ("
-            + brightness(runningCovered) + ") than while it is stopped ("
-            + brightness(stoppedCovered) + "), so the square carrying the train is the one square "
+        // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one (W7B-B1).
+        //
+        // While the grey was fenced on a running railway, "stopped" was the same square with no wash
+        // on it and that comparison said what this claim means.  The fence is gone: the two pictures
+        // are now identical by design, and the difference this looked for could only ever be zero.
+        // The square with nothing standing anywhere is the picture that has no wash on it now.
+        assertTrue(brightness(runningCovered) < brightness(bareCovered) - 2.0,
+            "the square the train stands on is drawn no darker while a train covers it ("
+            + brightness(runningCovered) + ") than with nothing standing anywhere ("
+            + brightness(bareCovered) + "), so the square carrying the train is the one square "
             + "that does not say it is blocked");
 
         assertTrue(orangePixels(runningCovered) > 0,

@@ -49,6 +49,23 @@ public final class CoveredMarks
         refresh.setAccessible(true);
         refresh.invoke(ui);
 
+        settle(ui);
+    }
+
+    /**
+     * WAITS for a refresh somebody else asked for, without asking for one.
+     *
+     * The wait half of `refresh`, on its own, for the tests that drive a production DOOR and then want
+     * to know what the window made of it.  Those tests must NOT call `refresh`: it invokes the
+     * window's own recompute, so a class that called it after the gesture would prove that the
+     * recompute works - which is a different claim from "the door asked for it", and the only one that
+     * can fail if the door is silent.
+     *
+     * @param ui the window
+     * @throws Exception on a reflection failure, or if the refresh never landed
+     */
+    public static void settle(TrainControlUI ui) throws Exception
+    {
         Method settled = TrainControlUI.class.getDeclaredMethod("awaitCoveredTrack", long.class);
 
         settled.setAccessible(true);

@@ -379,6 +379,7 @@
         <test-one-class class="testTheDiagramIsNotRebuiltForAnArrow"/>
         <test-one-class class="testTheTrainIsShownAsALine"/>
         <test-one-class class="testBlockedTrackIsGreyWhileAutonomyRuns"/>
+        <test-one-class class="testTheGreyAppearsAtIdleToo"/>
         <test-one-class class="testTheGreyDoesNotRebuildTheDiagram"/>
         <test-one-class class="testTheDiagramRefreshDoesNotWaitOnTheRailway"/>
         <test-one-class class="testNothingOnTheEventThreadTakesTheRailwaysMonitor"/>

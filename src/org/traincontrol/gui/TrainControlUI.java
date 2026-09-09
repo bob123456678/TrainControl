@@ -6820,8 +6820,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> coveredTrack = java.util.Collections.emptyMap();
 
     /**
-     * The diagram squares standing trains have BLOCKED, as of the last refresh - and empty whenever
-     * autonomy is not running (Adam, 2026-09-09).
+     * The diagram squares standing trains have BLOCKED, as of the last refresh.
      *
      * *"'train is here' should also mean 'track is blocked' - that is the whole point.  it's the same
      * as greying out edges, just in a different way."*  `coveredTrack` above says where a train IS and
@@ -6829,11 +6828,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * which is what `Layout.edgesCoveredByStandingTrains` actually refuses.  Drawn, the two together
      * make the picture and the guard agree again.
      *
-     * **EMPTY WHEN NOTHING IS RUNNING**, which is the second half of his instruction: *"can we just
-     * grey out the tiles just like blocked edges while autonomy is running?"*  Blocked track is a fact
-     * about routing and nothing is routing when nothing is running, so the fence is applied HERE
-     * rather than in the tile - one place decides it, and the tiles that have to be redrawn when the
-     * answer changes are the ones this set gained or lost.
+     * **AT IDLE AS WELL AS DURING A RUN** (W7B-B1, Adam 2026-09-09: *"yes, this greyout should appear
+     * at idle and be regenerated if a placement or train/track length is changed."*).  This was empty
+     * whenever autonomy was stopped, on his earlier sentence *"while autonomy is running"* - and the
+     * refusal it draws was never fenced that way, so a stopped railway refused manual sends over
+     * track this said was free.  `workOutCoveredTrack` holds the argument.
      *
      * Cached, volatile and replaced wholesale, for the reasons the covered set gives above.
      */
@@ -6843,8 +6842,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a standing train has blocked this square, so the diagram can grey it.
      *
-     * False whenever autonomy is not running: the set behind this is emptied then, deliberately, and
-     * the tile does not have to know why.
+     * Answered the same way whether or not anything is running (W7B-B1): the set behind this used to
+     * be emptied at idle, and the refusal it draws never was.
      *
      * @param square the tile
      * @return true when the track is blocked and worth saying so
@@ -6961,6 +6960,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * A gesture has changed what track a standing train blocks, so the marks are worked out again.
+     *
+     * **THE NARROW DOOR ONTO `refreshCoveredTrack`, for a caller that has changed one of the three
+     * things the marks depend on and nothing else** (W7B-B1, Adam 2026-09-09: *"yes, this greyout
+     * should appear at idle and be regenerated if a placement or train/track length is changed."*).
+     *
+     * The marks used to be refreshed only by `updateVisiblePoints`, which also reconciles facings and
+     * rewrites every station label - the right thing on a railway event, and far more than a length
+     * dialog has any business asking for.  This is the same recompute without the rest of it.
+     *
+     * **It does not rebuild anything**, which is the constraint this codebase has already paid for
+     * twice: `refreshCoveredTrack` diffs the two sets and repaints only the squares whose mark
+     * changed, and `regression.testTheGreyDoesNotRebuildTheDiagram` measures a full rebuild as the
+     * failure - what it looks like is the page flickering (MT-334).
+     *
+     * **And it does not run here**: the work goes to `CoveredTrackRenderer`, for the reason
+     * `refreshCoveredTrack` sets out at length - the answer comes from `Layout`'s own monitor, and
+     * asking for it on the event thread is a deadlock rather than a slow refresh (OB-192).  So this is
+     * safe to call from a menu action, and the mark lands a beat later.
+     */
+    public void blockedTrackChanged()
+    {
+        refreshCoveredTrack();
+    }
+
+    /**
      * Puts one worker on the job, unless one is already on it.
      *
      * COALESCED, AND THE LAST ASK ALWAYS LANDS.  The refresh runs on every monitor tick of a run and at
@@ -7023,23 +7048,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         found = ask.setup.routesCoveredByStandingTrains(ask.railway);
 
-                        // THE GREY IS BOUNDED TO A RUNNING RAILWAY, and this is the one place that
-                        // decides it.
+                        // THE GREY IS NOT BOUNDED TO A RUNNING RAILWAY, and this is the one place
+                        // that decides it (W7B-B1).
                         //
-                        // `isAutonomyBusy` rather than the layout's own flag: a staging run spends its
-                        // planning phase with nothing dispatched, and its trains block track throughout.
-                        // It is the predicate every other surface that asks "is autonomy doing
-                        // anything" uses here, and rebuilding the disjunction is how a new surface comes
-                        // to be missing half of it.
+                        // It WAS, on Adam's own sentence - *"can we just grey out the tiles just like
+                        // blocked edges while autonomy is running?"* - and the reasoning written here
+                        // was that blocked track is a fact about routing and nothing is routing when
+                        // nothing is running.  That reasoning is wrong about this railway: the
+                        // REFUSAL has never been fenced.  `Layout.isPathClear` sweeps the covered
+                        // edges in every tier at every time, correctly, because a tail lying across
+                        // the rail is a physical fact rather than a preference.  So at idle a
+                        // right-click manual send across a parked train's tail was refused over track
+                        // this drew as free - which is exactly the complaint that brought the grey
+                        // back for the running case, arriving through the other door.
                         //
-                        // ASKED HERE rather than captured with the railway above, and that is not
-                        // tidiness: starting and stopping autonomy is the gesture that changes this
-                        // answer and nothing else, so a value captured by an ask that a later one
-                        // overtook would grey a stopped railway or leave a running one bare.  It costs
-                        // nothing to ask - two volatile reads and no monitor.
-                        greyed = isAutonomyBusy()
-                            ? ask.setup.tilesBlockedByStandingTrains(ask.railway)
-                            : java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet();
+                        // Adam, 2026-09-09, asked about the idle case directly: *"yes, this greyout
+                        // should appear at idle and be regenerated if a placement or train/track
+                        // length is changed."*  The guard and the affordance ask one question
+                        // (OB-057/OB-090), and the affordance is now asking the guard's own.
+                        //
+                        // Nothing else about the mark changes: the extent is still the covered EDGES,
+                        // the two sets are still computed together and diffed together, and
+                        // `repaintTheWashWhereItChanged` still redraws only the squares that changed.
+                        greyed = ask.setup.tilesBlockedByStandingTrains(ask.railway);
                     }
                 }
                 catch (Exception cannotWorkItOut)
@@ -26259,13 +26290,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // this field says "not set".
         if (answer == null) return;
 
-        l.setTrainLength(Integer.parseInt(answer));
+        applyTrainLength(l, Integer.parseInt(answer));
+    }
 
-        this.model.logf("autolayout.infoSetTrainLength", answer, l.getName());
+    /**
+     * Records a train's length, and tells everything that draws or refuses from it.
+     *
+     * **EVERYTHING THE DIALOG ABOVE DOES ONCE IT HAS AN ANSWER**, lifted out so that it can be
+     * driven - `promptTrainLength` opens a modal, and a test cannot answer one without a robot, so
+     * the half worth testing was unreachable.  `regression.testEditorSurfaceRules` pins the call site,
+     * because an extracted rule leaves the CALL as the only uncovered part.
+     *
+     * **AND THE GREY ON THE DIAGRAM FOLLOWS THE NUMBER** (W7B-B1, Adam 2026-09-09: *"yes, this greyout
+     * should appear at idle and be regenerated if a placement or train/track length is changed."*).
+     *
+     * How far a standing train's tail reaches is `getTrainLength()` hops of measured track, and
+     * `Layout.edgesCoveredByStandingTrains` reads that off the locomotive every time it is asked - so
+     * a length typed here changes what the railway refuses IMMEDIATELY, with no rebuild in between.
+     * The drawing had no way to know: this door refreshed the findings and nothing else, so the wash
+     * went on describing the length before last until something unrelated repainted the page.
+     *
+     * The two other gestures Adam named reach the marks by paths that already existed - a placement
+     * through `updateVisiblePoints` at each of the diagram's placement doors, a tile length through
+     * the setup rebuild, which it needs anyway because edge lengths are baked into the built `Layout`.
+     * A train length is the one that needs nothing rebuilt and therefore had nothing telling the
+     * diagram at all.
+     *
+     * @param l the locomotive
+     * @param units how long the train is, where zero means "not set"
+     */
+    public void applyTrainLength(Locomotive l, int units)
+    {
+        if (l == null) return;
+
+        l.setTrainLength(units);
+
+        this.model.logf("autolayout.infoSetTrainLength", String.valueOf(units), l.getName());
 
         // The findings follow the number: FR-046 warns about a train with no length, and that warning
         // has to go when the length arrives rather than at the next rebuild.
         refreshAutonomyPrompt();
+
+        // And so does the grey wash, which is what this length decides the extent of.
+        blockedTrackChanged();
     }
 
     /**
