@@ -182,7 +182,26 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * And it is a LINE - most of the square is drawn exactly as it is with nothing there.
+     * And the TRAIN mark is a LINE - it covers a small part of the square, not the whole of it.
+     *
+     * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (W7B-B1, 2026-09-09).
+     *
+     * The square this class chooses is a covered one, and a covered square that is an intermediate
+     * tile of a covered edge is also a BLOCKED one - so it now carries the grey wash as well as the
+     * line. The wash was fenced on a running railway and this class runs at idle, so counting every
+     * pixel that differs from the bare square used to count the line alone. It counts both now: 900 of
+     * 900, and the class reported that the train was being drawn as a wash. It is not; there are two
+     * marks and this one is still a line.
+     *
+     * Adam's complaint that MT-309 fixed is about the TRAIN mark specifically - *"instead of shading
+     * the entire tiles, we need to draw a line (let's say in orange) to show that the train is there.
+     * graying makes it look confusing on double curve tiles"* - because a double curve carries two
+     * roads and a fill says the train is on both. So the population to measure is the orange, which is
+     * what that complaint is about, rather than everything that changed.
+     *
+     * The wash is not unmeasured as a result: `ui.testBlockedTrackIsGreyWhileAutonomyRuns` and
+     * `ui.testTheGreyAppearsAtIdleToo` both assert that it covers the whole square, and the second
+     * asserts that the line survives underneath it.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheMarkIsALineAndNotAWash()
@@ -193,11 +212,13 @@ public class testTheTrainIsShownAsALine
 
         assertTrue(changed > 0, "the two pictures are identical, so nothing marks the square at all");
 
-        assertTrue(changed < all / 2,
-            changed + " of the tile's " + all + " pixels change when a train stands behind this "
-            + "square, which is a wash over the whole of it rather than a line along the track. Adam: "
-            + "\"instead of shading the entire tiles, we need to draw a line ... graying makes it look "
-            + "confusing on double curve tiles\"");
+        int line = orangePixels(withTheTrain);
+
+        assertTrue(line < all / 2,
+            line + " of the tile's " + all + " pixels are orange when a train is lying across this "
+            + "square, which is the train drawn as a wash over the whole of it rather than as a line "
+            + "along the track. Adam: \"instead of shading the entire tiles, we need to draw a line "
+            + "... graying makes it look confusing on double curve tiles\"");
     }
 
     /**
