@@ -1195,6 +1195,15 @@ REL-D6	2026-09-03-release-review.md	Closed	`AutonomySession.java:4394`
 REL-D7	2026-09-03-release-review.md	Closed	`HomeStaging.java:1063, 699`
 REL-D8	2026-09-03-release-review.md	Closed	`AutonomySession.java:2143`
 REL-D9	2026-09-03-release-review.md	Closed	-
+REV9-A1	REV-reversal-mechanics-review.md	-	-
+REV9-B1	REV-reversal-mechanics-review.md	-	-
+REV9-B2	REV-reversal-mechanics-review.md	-	-
+REV9-B3	REV-reversal-mechanics-review.md	-	-
+REV9-C1	REV-reversal-mechanics-review.md	-	-
+REV9-C2	REV-reversal-mechanics-review.md	-	-
+REV9-C3	REV-reversal-mechanics-review.md	-	-
+REV9-D1	REV-reversal-mechanics-review.md	-	-
+REV9-D2	REV-reversal-mechanics-review.md	-	-
 RG3-B1	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02 (`11e06d6d`, committed `76d7bb70`)
 RG3-B2	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
 RG3-C1	2026-09-02-regression-vs-2.8.1-review.md	Closed	FIXED 2026-09-02
