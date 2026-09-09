@@ -104,7 +104,7 @@ area changes again.  (8 superseded, 2 fixed but not yet validated.)
 
 ### MT-262 - 2026-09-03 - The reversal-length notices, counted on your own railway
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-171
 
 **Written:** 2026-09-03
@@ -146,6 +146,10 @@ and there is no notice that can help state/ debug this.
 also, that path is not shown in the "why not moving" view.  We should draw arrows to manual-only destinations in a different color, like orange.
 
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+The room rule existed but was fenced behind terminus-or-reversing, so a plain through platform was never judged on the track leading into it. Measured on your railway: `75 407 DB` at BottomMainPost was offered `BottomMainA (eastbound)` with ONE measured unit behind it. Both length rules are one predicate now, `whyTooLongForTheBerth`, which returns the berth, the room found and the train's length, and it reaches the why-not-moving view. Commit `716cf3f5`. **Two things to know.** The fence removal means the rule binds on AUTONOMY too - a census over your railway says 880 journeys of 1,848 routable are newly refused, all arriving at the four berths you named, each at one unit. And part (c), the orange arrows to manual-only destinations, is NOT done: orange already means two things on the running diagram and there is no drawing whose subject is arrows to destinations, so it needs your ruling - see `docs/for-adam-2026-09-09.md`.
 
 ---
 
@@ -652,7 +656,7 @@ edit touched, which is more bookkeeping and more ways to be wrong.
 
 ### MT-270 - 2026-09-04 - Brackets in a locomotive name
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** RGN-C3
 
 **Written:** 2026-09-04
@@ -710,6 +714,10 @@ the text form survives. Nothing parses those back, so it is a cosmetic quirk - s
 I added a locomotive named a,P[)(] and it went trough.  So, make sure this doesn't blow things up elsewhere.
 
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+The comma is refused at the door that NAMES a locomotive - commit `a0512166`, made on 2026-09-06, the same day you tested, so you were probably on the older build. Your remaining ask was that a bracketed name not break things elsewhere; brackets are allowed by your own ruling and the condition parser no longer stores conditions as text. **To re-test:** add a locomotive with a comma (refused) and one with brackets (allowed, and usable in a route command).
 
 ---
 
@@ -14145,7 +14153,7 @@ Home item lights up, close the application, reopen it and check the home is stil
 
 ### MT-247 - 2026-09-01 - A refused route still cuts the power at the two human doors
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** FX2-2, SVN-A4
 
 **Written:** 2026-09-01
@@ -14172,6 +14180,10 @@ in its comment instead.
 2. if the route is auto triggered: popup, just a notification in the log.  don't run the conflicting switch commends, but do run the power off and others.  make test cases for this.
 
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+`execRoute` read your ruling as being about the whole accessory GROUP: it asked once, before the loop, for the FIRST held command, then skipped every accessory. One turnout under a train dropped every other turnout in the route. Each accessory is asked about immediately before it goes out now, and only the held one is skipped. The emergency-stop carve-out is untouched. Commit `c22c9d90`, and the rule is written down in behaviour.md section 7a. **To re-test:** a route with a switch under a train and other switches elsewhere - the others should throw.
 
 ---
 
@@ -15669,6 +15681,10 @@ no separate coordinates setting anywhere - the numbers are drawn exactly when th
 *If Control+K does nothing here, the shortcut guard shared with Control+G, L and D is the place to
 look: the code says it covers both editors and nobody has watched it.*
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-277"></a>
@@ -15827,6 +15843,10 @@ broke.
 
 Nothing is drawn there - not the station name. That was your ruling, and it is the one behaviour in
 the caption work that changed after you first saw it.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -15991,6 +16011,10 @@ cannot hold.
 
 It saves, with no complaint about the empty s88 - the field only matters when auto-fire is on.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-291"></a>
@@ -16068,6 +16092,12 @@ not Station Names.
 The Text Labels tick box is hidden in autonomy mode - the dropdown's None is that switch - but
 Control+L still reaches it, so it used to empty the diagram under a control still naming a caption.
 
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+This works.  At the time of testing, TopMainR2 still shows two labels, but this is still pending being worked.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-294"></a>
@@ -16134,6 +16164,10 @@ Both carry the **" -"** mark. It means "you may send it here yourself, autonomy 
 
 Two of the five reasons were missing from that mark, and one of them is how a parking berth is stored
 - so a berth was listed with no mark at all, which is the one case the mark exists for.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16234,6 +16268,10 @@ This is the half that was broken: the editor accepted a home on a split square a
 it, with a log line as the only notice - so a home could be set, look right, and be gone at the next
 start.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-300"></a>
@@ -16295,6 +16333,10 @@ planner does not consider track blocked by a train's own length).
 
 The first gives it up. Both homed on one piece of track is a state nothing could ever satisfy.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-302"></a>
@@ -16325,6 +16367,10 @@ that says so is the warning in the autonomy editor's findings list.
 Tell me if that warning is enough, or whether being driven somewhere it cannot leave unaided should
 still be refused.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-303"></a>
@@ -16352,6 +16398,10 @@ over it. Step 4 must still work: a train arriving turns its signal red, leaving 
 keeps whatever aspect its signal already showed, and is no longer protected the moment a run starts.
 If that matters more than the unnecessary commands did, say so and the sweep goes back for occupied
 platforms only.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16416,6 +16466,10 @@ Fewer measured tiles means MORE notices, not fewer, since a notice is raised for
 run-in is not fully measured. So the wall is if anything taller than when the question was asked. Count
 what you see rather than checking it against the twenty.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-306"></a>
@@ -16434,6 +16488,10 @@ what you see rather than checking it against the twenty.
 **Expected**
 
 That notice goes, and no other changes.
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16471,6 +16529,10 @@ in.*
 berth where the guard binds rather than naming one, and asserts the boundary. What this entry adds is
 the refusal you actually see on screen, which no test looks at.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-308"></a>
@@ -16494,13 +16556,19 @@ It plans and goes. It used to report that the locomotive could not reach its hom
 inside the planner disagreed about whether a train standing on a reversing point has already turned,
 and the one that said no was the one used to prove impossibility.
 
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+works, but make sure direction commands are correctly emitted to match the direction of the train
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-309"></a>
 
 ### MT-309 - 2026-09-07 - EN57-203 can get back to TunnelLongPark
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** D24-B1 (split from MT-250)
 
 **Written:** 2026-09-07
@@ -16522,6 +16590,18 @@ the way; your railway has exactly one reversing point and it is not on the way. 
 **Expected**
 
 It plans and goes, arriving nose first.
+
+**Adam, 2026-09-08 (triage).** Does not work.
+
+the parking itself worked.  but for clarity, instead of shading the entire tiles, we need to draw a line (let's say in orange) to show that the train is there.  graying makes it look confusing on double curve tiles.
+
+also, after the parking completed, all of bottommaina stayed shaded, which it shouldn't as I set the length of EN57-203 to 1.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+Both halves. (1) The wash is replaced by an orange line along the road the train is on, which is your double-curve complaint answered directly - commit `e2d6e4de`. (2) The shading that would not clear was recomputed to the wrong answer, not left stale: coverage is per EDGE, and an edge is one hop between sensors, so a train of length 1 washed seventeen squares. It walks square by square now - commit `6bb0a0fc`. **To re-test:** park EN57-203 and confirm the mark is one square long.
 
 ---
 
@@ -16597,7 +16677,7 @@ length, a 36-entry timetable, and the route activations.
 
 ### MT-313 - 2026-09-07 - Control+S names the square under the pointer
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** MT-257 item 4 (split from MT-258)
 
 **Written:** 2026-09-07
@@ -16620,6 +16700,10 @@ You reported this as not firing on 2026-09-02 and it was fixed the same day.
 it works on any tile in the autonomy editor, not just sensors. fix that.  correctly does not fire outside of the autonomy editor.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+Control+S asked whether the tile was null and nothing else, so it named plain track. The right-click menu's own question - is this a Point the reducer knows - is now `AutonomySession.canBeNamed` and both doors ask it. Commit `8f277e8e`. **To re-test:** Control+S over a sensor square still names it; over plain track it does nothing.
 
 ---
 
@@ -17270,7 +17354,7 @@ the bug.
 
 ### MT-334 - 2026-09-08 - Changing a pathing arrow no longer flickers the diagram
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-185
 
 **Written:** 2026-09-08
@@ -17297,6 +17381,10 @@ it still flickers, but less
 Filed from this test: OB-188 (bug - use current vs use active buttons).  They are in `issues.md` until they are picked up.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+The whole diagram redrew because the light redraw door added for OB-185 was wired to ONE caller, the One-Way tool. The four ordinary ways to change a direction - including left-clicking track, the gesture you reported - still went through the door that rebuilds every label. Measured: 384 of 384 tiles destroyed and rebuilt for one arrow. Commit `26375f83`. **To re-test:** change a pathing arrow and watch for the flicker.
 
 ---
 
@@ -17391,7 +17479,7 @@ Built, and [MT-337](#mt-337) is the test. This entry was the question, and the q
 
 ### MT-337 - 2026-09-08 - A train you moved by hand stays put when a home changes
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-183
 
 **Written:** 2026-09-08
@@ -17433,6 +17521,10 @@ setup, and only where the trains are comes from the railway.
 editing placements in the autonomy editor doesn't seem to work at all.  and locomotives aren't on the correct labels.  if a station has an offset label, the current home loc is shown twice (once on the tile itself, once on the offset label)
 
 *Run against commit 22f3d302.*
+
+**Claude, 2026-09-08.**
+
+Both halves. (1) Placing from the editor did nothing because the editor writes the placement into the setup, and closing the editor put the running layout's older placements back over it - commit `1728986e`, corrected again in `74015c16` after two reviewers found the first fix let a STALE setup win at the viewer's right-click door. (2) A station captioned on its own square and on an offset one wrote its home twice; a self-caption now gives way - commit `05c7f48e`. **To re-test:** place a locomotive from the autonomy editor and confirm it stays; check a station with an offset label shows its home once.
 
 ---
 
