@@ -426,8 +426,26 @@ public class AutonomyEditorPanel extends JPanel
 
         add(buildTools(), BorderLayout.NORTH);
 
-        // After buildTools, which is what fills toolButtons (OB-119).
-        installEscape();
+        // ESCAPE IS NOT BOUND HERE ANY MORE, and removing it is deliberate (FR-065, B5).
+        //
+        // It was `registerKeyboardAction(..., WHEN_IN_FOCUSED_WINDOW)`, and the review's B5 records
+        // that the binding never fires in this window: `LayoutEditor` makes every control
+        // `setFocusable(false)` so that the FRAME keeps the keyboard, and for a heavyweight focus owner
+        // the manager walks a parent chain that a top-level frame does not have.  That window's own
+        // comment has said so since the selection shortcuts were moved into its `KeyListener` for
+        // exactly this reason.
+        //
+        // What settles it is not that it was dead but that it cannot be made live ALONGSIDE the frame's
+        // handler.  Escape now has two jobs there - put the tools down, or close the editor when there
+        // is nothing to put down - and `formKeyPressed` does all of its work inside an `invokeLater`.
+        // So a binding here would run FIRST, disarm the tool, and the frame's deferred branch would
+        // then find nothing armed and close the window: one press doing both, which is precisely the
+        // outcome the ordering exists to prevent.  Measured, before the frame's branch was written:
+        // dispatching Escape at the frame put the tools down through this binding while
+        // `formKeyPressed` was still queued.
+        //
+        // `putToolsDown` stays public and `LayoutEditor.letGoOfWhateverIsHeld` calls it.  One key, one
+        // handler, in the one place that provably runs.
 
         // The findings are built here but mounted by the WINDOW, across the bottom and the full width.
         // In this column they were a narrow box with sentences wrapped to four words a line, beside a
@@ -755,10 +773,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void cancelPendingGesture()
     {
-        boolean pending = tool != Tool.NONE || testFrom != null || oneWayFrom != null
-            || pendingPortal != null || signalFor != null || blockingFor != null;
-
-        if (!pending) return;
+        if (!anythingIsArmed()) return;
 
         tool = Tool.NONE;
         testFrom = null;
@@ -861,9 +876,19 @@ public class AutonomyEditorPanel extends JPanel
      * half of Escape nobody asks for" - and a tool left looking armed while the panel thinks nothing is
      * armed is worse still: the next click falls through to `cycle()`, which CHANGES a square, so a
      * read-only inspection tool that appeared to be armed would silently edit the railway.
+     *
+     * **AND IT SAYS WHETHER THERE WAS ANYTHING TO PUT DOWN** (FR-065).  Escape has two jobs in this
+     * window now - let go of the gesture, or close the editor when there is no gesture to let go of -
+     * and the caller decides between them from this answer.  Returning it, rather than asking
+     * `anythingIsArmed` at the call site and then calling this, keeps the question and the act in one
+     * place: two callers asking separately is how one of them comes to ask it differently.
+     *
+     * @return whether anything was armed, and is not any more
      */
-    public void putToolsDown()
+    public boolean putToolsDown()
     {
+        if (!anythingIsArmed()) return false;
+
         for (JToggleButton other : toolButtons)
         {
             other.setSelected(false);
@@ -876,23 +901,23 @@ public class AutonomyEditorPanel extends JPanel
         say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
 
         refresh();
+
+        return true;
     }
 
     /**
-     * Binds Escape to putting the tools down.
+     * Whether a tool is armed or a two-click gesture is half made.
      *
-     * WHEN_IN_FOCUSED_WINDOW, because the click that armed the tool leaves focus on the diagram rather
-     * than on this panel - a binding that needed focus here would work only if the user had happened to
-     * click a control in this column first, which is the opposite of what a get-me-out key is for.
+     * ONE DEFINITION, asked by `putToolsDown` and by `cancelPendingGesture`.  It was written out twice
+     * and the two would have come apart at the next tool: a gesture missing from one list is a gesture
+     * that survives being cancelled, and the click after it goes somewhere the user did not intend.
      *
-     * Dialogs are separate windows and register their own Escape on their own root panes, so this
-     * cannot reach inside one of them.
+     * @return whether this panel is holding anything
      */
-    private void installEscape()
+    private boolean anythingIsArmed()
     {
-        registerKeyboardAction(e -> putToolsDown(),
-            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
-            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+        return tool != Tool.NONE || testFrom != null || oneWayFrom != null
+            || pendingPortal != null || signalFor != null || blockingFor != null;
     }
 
     private JScrollPane buildFindings()

@@ -6190,6 +6190,63 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     /**
      * If there are unsaved changes, checks with the user prior to closng the window
      */
+    /**
+     * What Escape does: let go of whatever is being held, and close only when there is nothing left.
+     *
+     * **TWO REQUESTS, ONE KEY, AND THE ORDER IS THE ANSWER TO BOTH.**  FR-065 asks that Escape close
+     * the editor - Adam, 2026-09-08: *"escape closes autonomy/track editor - same as closing via
+     * button, with warning shown as needed."*  The 2026-09-09 independent review's B5 asks that Escape
+     * put an armed tool down, which nothing reachable did.
+     *
+     * Closing outright would answer the first and lose the second, and lose it expensively: a user who
+     * armed the wrong tool, or picked the wrong squares, presses Escape to think again - and would get
+     * the window shut, through `mayLeave`, which asks whether to throw their unsaved work away.  A key
+     * that means "undo what I just started" cannot also mean "and discard the afternoon".
+     *
+     * Letting go first costs one extra press in the case where something is held, and nothing at all
+     * in the case FR-065 is about: an editor holding nothing closes on the first Escape, which is
+     * almost always the state it is in.  It is also what every other editor does.
+     *
+     * `confirmExit` and not `dispose`, so this is the button's own path - the unsaved-work prompt, the
+     * autonomy-mode branch, and the undo of autonomy edits all come with it.  That is the "same as
+     * closing via button" half of the request, and it is why this method does not repeat any of it.
+     */
+    private void escapePressed()
+    {
+        if (letGoOfWhateverIsHeld()) return;
+
+        confirmExit();
+    }
+
+    /**
+     * Drops the gesture in progress, and says whether there was one.
+     *
+     * Each mode has its own idea of what it is holding, and each already has one method that lets go
+     * of all of it - so this asks rather than reimplements.
+     *
+     * The track editor's list is the one its Escape has always carried: *"the picked squares, the
+     * copied group, the armed tool - and the picking MODE, which stayed on afterwards with its button
+     * still pressed.  Letting go of the squares but not of the mode is the half of Escape nobody asks
+     * for."*  `resetClipboard` is what takes the tool flag and the group with it.
+     *
+     * @return whether anything was let go of
+     */
+    private boolean letGoOfWhateverIsHeld()
+    {
+        if (isAutonomyMode()) return autonomyPanel.putToolsDown();
+
+        boolean holding = !this.selection.isEmpty() || this.hasGroupClipboard()
+            || this.hasToolFlag() || this.isSelectMode();
+
+        if (!holding) return false;
+
+        this.clearSelection();
+        this.resetClipboard();
+        this.setSelectMode(false);
+
+        return true;
+    }
+
     private void confirmExit()
     {
         if (!mayLeave()) return;
@@ -6962,6 +7019,21 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 }
             }
 
+            // ESCAPE SITS ABOVE THE GUARD, with Control+G, L, D and K, and for a reason of its own
+            // (FR-065, and the review's B5).
+            //
+            // Adam: "escape closes autonomy/track editor - same as closing via button, with warning
+            // shown as needed."  Below the guard it did nothing whatever in autonomy mode - the branch
+            // was never reached - and `AutonomyEditorPanel`'s own Escape binding could not cover for
+            // it, for the reason the paragraph below this guard spells out about key bindings in this
+            // window.
+            if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+            {
+                escapePressed();
+
+                return;
+            }
+
             // Every shortcut below places, cuts, rotates or retextures a tile.  None of them mean
             // anything while setting autonomy up, and all of them would edit the diagram silently.
             if (isAutonomyMode()) return;
@@ -7055,16 +7127,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 {
                     this.delete(getLastHoveredLabel());
                 }
-            }
-            else if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
-            {
-                // Escape lets go of everything the editor is holding, which is what a user pressing it
-                // means: the picked squares, the copied group, the armed tool - and the picking MODE,
-                // which stayed on afterwards with its button still pressed.  Letting go of the
-                // squares but not of the mode is the half of Escape nobody asks for.
-                this.clearSelection();
-                this.resetClipboard();
-                this.setSelectMode(false);
             }
         });
     }//GEN-LAST:event_formKeyPressed

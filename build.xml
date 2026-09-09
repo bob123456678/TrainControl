@@ -379,6 +379,7 @@
         <test-one-class class="testBlockedTrackIsGreyWhileAutonomyRuns"/>
         <test-one-class class="testTheGreyDoesNotRebuildTheDiagram"/>
         <test-one-class class="testTheDiagramRefreshDoesNotWaitOnTheRailway"/>
+        <test-one-class class="testEscapeClosesTheEditor"/>
         <test-one-class class="testTheWhyAnswerIsOnScreen"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
     </target>

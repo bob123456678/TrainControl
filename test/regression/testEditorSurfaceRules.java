@@ -2713,13 +2713,22 @@ public class testEditorSurfaceRules
      * be armed would silently edit the railway. That exact fault has been fixed here once already, when
      * a second tool button arrived without a button group.
      *
-     * Read rather than run: the panel needs a session, a page and a live diagram to stand up, and the
-     * binding is WHEN_IN_FOCUSED_WINDOW so there is no component to send a key to in a headless test.
-     * What this catches is the parts being separated - the binding removed, or the buttons stopped
-     * being cleared with the tool.
+     * **WHERE ESCAPE IS BOUND MOVED, and this test moved with it (FR-065).**  It used to pin
+     * `installEscape` - a `WHEN_IN_FOCUSED_WINDOW` binding on this panel - including an assertion that
+     * it was WHEN_IN_FOCUSED_WINDOW, on the reasoning that the click which armed the tool leaves focus
+     * on the diagram.  The 2026-09-09 review's B5 measured what that actually meant: bindings of that
+     * kind are never consulted in this window at all, because `LayoutEditor` makes every control
+     * `setFocusable(false)` so the FRAME keeps the keyboard, and a top-level frame has no parent chain
+     * for the focus manager to walk.  Escape lives in `LayoutEditor.escapePressed` now, reached from
+     * the frame's own `KeyListener`, and `testEscapeClosesTheEditor` presses the key and looks at the
+     * window.
      *
-     * MUTATION: dropping the `setSelected(false)` loop from `putToolsDown`, or the `installEscape()`
-     * call from the constructor, each fails one of these.
+     * So what is left here is the half that is still a property of THIS file: that putting the tools
+     * down puts all of them down, and brings their buttons up.  Read rather than run, because the
+     * panel needs a session, a page and a live diagram to stand up.
+     *
+     * MUTATION: dropping the `setSelected(false)` loop from `putToolsDown`, or its early return, each
+     * fails one of these.
      */
     @Test
     public void testEscapePutsTheAutonomyToolsDown() throws Exception
@@ -2728,25 +2737,7 @@ public class testEditorSurfaceRules
             "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        String install = withoutComments(bodyOf(panel, "private void installEscape()"));
-
-        assertTrue(install.contains("VK_ESCAPE"),
-            "the autonomy editor no longer binds Escape at all");
-
-        assertTrue(install.contains("putToolsDown()"),
-            "Escape is bound to something other than putting the tools down");
-
-        assertTrue(install.contains("WHEN_IN_FOCUSED_WINDOW"),
-            "Escape is bound only while this panel has focus. The click that armed the tool leaves "
-            + "focus on the diagram, so the key would work only if the user had happened to click a "
-            + "control in this column first");
-
-        // And that anybody installs it.
-        assertTrue(withoutComments(bodyOf(panel, "public AutonomyEditorPanel(")).contains(
-            "installEscape()"),
-            "nothing calls installEscape, so the binding exists and is never made");
-
-        String down = withoutComments(bodyOf(panel, "public void putToolsDown()"));
+        String down = withoutComments(bodyOf(panel, "public boolean putToolsDown()"));
 
         assertTrue(down.contains("setSelected(false)"),
             "the tool buttons are left looking pressed after Escape. The panel then thinks no tool is "
@@ -2758,6 +2749,27 @@ public class testEditorSurfaceRules
         assertTrue(down.contains("clearGesture()"),
             "a half-finished gesture survives Escape - a one-way run waiting for its far end would "
             + "swallow the next click anywhere on the diagram");
+
+        assertTrue(down.contains("anythingIsArmed()") && down.contains("return false"),
+            "putToolsDown no longer says whether there was anything to put down. LayoutEditor's Escape "
+            + "decides from that answer whether to let go of the gesture or to close the editor, so "
+            + "without it one press would do both");
+
+        // ONE DEFINITION OF ARMED, asked by both the methods that let go.  Written out twice they come
+        // apart at the next tool, and a gesture missing from one list survives being cancelled.
+        assertTrue(withoutComments(bodyOf(panel, "private void cancelPendingGesture()")).contains(
+            "anythingIsArmed()"),
+            "cancelPendingGesture has its own copy of what 'armed' means again");
+
+        String armed = withoutComments(bodyOf(panel, "private boolean anythingIsArmed()"));
+
+        for (String held : new String[] { "tool != Tool.NONE", "testFrom", "oneWayFrom",
+            "pendingPortal", "signalFor", "blockingFor" })
+        {
+            assertTrue(armed.contains(held),
+                "anythingIsArmed does not count " + held + ", so a gesture waiting on it survives "
+                + "Escape and swallows the next click anywhere on the diagram");
+        }
     }
 
     /**

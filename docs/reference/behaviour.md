@@ -625,6 +625,27 @@ differently and none of them can wait on the railway to find out.
 
 ## 6a. Editing the setup while the railway is using it
 
+**Escape lets go of what the editor is holding, and closes it when there is nothing left to let go
+of** (FR-065). Adam: *"escape closes autonomy/track editor - same as closing via button, with warning
+shown as needed."* One press with nothing armed closes the window down the same path its Cancel button
+takes, unsaved-work prompt included - and that is the state an editor is in almost all the time. One
+press with something armed drops that instead: an armed tool or a half-made two-click gesture in the
+autonomy editor, and the picked squares, the copied group and the picking mode in the track editor.
+A second press then closes it.
+
+The order is what makes both requests answerable with one key. Closing outright would take a
+half-finished gesture with it, and take it through the prompt that asks whether to throw the
+afternoon's edits away - so a user who armed the wrong tool and pressed Escape to think again would be
+asked to discard their work. Pressing Escape twice costs nothing; there is no way back from a window
+that closed.
+
+It is handled in the editor frame's own key listener, and nowhere else. The autonomy column used to
+bind Escape as well, `WHEN_IN_FOCUSED_WINDOW`, which never fired: every control in that window is made
+unfocusable so the frame keeps the keyboard, and a top-level frame has no parent chain for the focus
+manager to walk. Two handlers could not be kept, either - the frame's runs its work deferred, so a
+binding would have disarmed the tool first and left the frame's branch finding nothing armed and
+closing the window: one press doing both.
+
 **Nothing that changes the shape of the graph may run while trains are moving or a plan is being
 made.** Renaming a point, deleting a point and deleting an edge all refuse while `isRunning()` or
 `isStagingInProgress()`. A rename mutates a `Point` under live visited sets; a delete removes the
