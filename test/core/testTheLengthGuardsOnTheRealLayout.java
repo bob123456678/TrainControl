@@ -21,6 +21,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -64,6 +65,47 @@ public class testTheLengthGuardsOnTheRealLayout
     /** The page his main railway is on, which the setup names rather than numbers. */
     private static final String MAIN = "1 - Main";
 
+    /**
+     * The train this class asks with, made here rather than borrowed.
+     *
+     * Adam, 2026-09-09: *"generate trains programmatically in the tests, and give them semantic
+     * names."*  Every claim that used to ask `anyPlacedLocomotive` - "whatever is standing" - was
+     * asserting about ONE square, chosen by the order the layout enumerates its Points in, while
+     * reading as an assertion about the whole railway.  Two of them were false from a different square
+     * and green from that one.
+     *
+     * Deleted in `tearDown`.  `MarklinControlStation.init` opens Adam's real locomotive database rather
+     * than an empty one - the layout sandbox copies the layout folder and nothing else - so a train
+     * left behind here is a train on his railway.
+     */
+    private static final String OUR_TRAIN = "length guard probe";
+
+    /**
+     * Its address, chosen only so that a stray one left behind by a crash is identifiable.
+     *
+     * Addresses are not unique in this database and several test classes already share one, so what
+     * this needs to be is nobody else's rather than free.
+     */
+    private static final int OUR_ADDRESS = 61;
+
+    private static MarklinLocomotive ourTrain;
+
+    /**
+     * The square this class starts its train from, and what it is called.
+     *
+     * `1 - Main:20,13` is BottomMainB - the platform Adam names in the ruling this class was rewritten
+     * for, and the one square whose measured approach the snapshot actually carries a length on.
+     */
+    private static final TileKey BOTTOM_MAIN_B = new TileKey(MAIN, 20, 13);
+
+    /**
+     * The tile the whole of Adam's 2026-09-09 ruling turns on.
+     *
+     * `1 - Main:22,7` is the last unswitched square before BottomMainPost, and one of only three tiles
+     * the snapshot measures at all.  Adam: *"I see no tracks with a defined length except for 22,7."*
+     */
+    private static final TileKey TWENTY_TWO_SEVEN = new TileKey(MAIN, 22, 7);
+
     @BeforeClass
     public static void setUp() throws Exception
     {
@@ -81,6 +123,12 @@ public class testTheLengthGuardsOnTheRealLayout
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
+
+        // THIS CLASS'S OWN TRAIN, before anything is measured or placed.
+        ourTrain = model.newMM2Locomotive(OUR_TRAIN, OUR_ADDRESS);
+
+        assertNotNull(ourTrain, "the class could not create its own train, so every claim below would"
+            + " be about whichever of Adam's engines the snapshot happens to have standing first");
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -119,153 +167,416 @@ public class testTheLengthGuardsOnTheRealLayout
     {
         giveTheLengthsBack();
 
+        // Each on its own, so a failure to remove the train still puts the preference back.
+        if (model != null)
+        {
+            try
+            {
+                model.deleteLoc(OUR_TRAIN);
+            }
+            catch (Exception alreadyGone)
+            {
+            }
+        }
+
         if (sandbox != null) sandbox.close();
     }
 
     /*
-     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY, AND WHY IT HAS NOT BEEN GIVEN ITS OWN TRAINS.
+     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY, AND WHAT IT STOPPED BORROWING ON 2026-09-09.
      *
-     * Adam, 2026-09-09: *"generate trains programmatically in the tests, and give them semantic
-     * names."*  Done for `core.testTheRoomRuleCensusOnTheRealLayout`, which pinned a set of lengths
-     * harvested from his database.  It was ATTEMPTED here and reverted, and the reason is a finding
-     * rather than a difficulty, so it is written down.
+     * Adam: *"generate trains programmatically in the tests, and give them semantic names."*
      *
-     * This class borrows in two ways: by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one,
-     * each with an `assertNotNull` saying the engine "is not on this railway any more" - and by
-     * WHATEVER IS STANDING, through `anyPlacedLocomotive`.
+     * It borrows by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one, each with an
+     * `assertNotNull` saying the engine "is not on this railway any more" - and those sites stay, with
+     * `borrowTheLengthOf` and `giveTheLengthsBack` putting every length back.
      *
-     * The by-name half is easy to replace: make two locomotives, place them into the SETUP - a
-     * placement on the running layout does not survive `rebuild()`, which every claim here does at
-     * least once - and delete them in `tearDown`.  That was built and it works.
+     * **What it no longer borrows is "whatever is standing".**  `anyPlacedLocomotive` returned the
+     * first occupied Point the layout enumerates, and three claims asked it for a train.  That made
+     * every one of them an assertion about ONE START SQUARE while reading as an assertion about the
+     * whole railway - and the note that used to be here recorded two questions about it, both of which
+     * are now answered by measurement rather than left open.
      *
-     * **THE OTHER HALF DOES NOT SURVIVE IT, AND THAT IS THE FINDING.**
-     * `testALongTrainIsOfferedNoBerthWhenEverySectionIsOneUnit` asks `anyPlacedLocomotive` for a train
-     * and asserts that, with every section measured at one unit, a nine-unit train is offered NO berth
-     * it would have to come to rest inside.  Its own javadoc says the claim is about the rule rather
-     * than about one pair: *"this asserts it of every berth on the railway at once, which cannot be
-     * satisfied by getting one pair right."*
+     * **THE FIRST QUESTION: is the guard refusing from some start squares and not others?**  No.  It
+     * refuses on the room behind the BERTH, which is a property of the berth and of the last part of
+     * the approach to it, so different starts reach different berths and get different answers.  That
+     * is the rule working, not a hole in it: `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost`
+     * pins it in three measurements at one berth, and `testWhyRampDownIsOffered` pins why a berth eight
+     * edges away is not governed by the same tile.
      *
-     * It is satisfied by getting one START square right.  MEASURED 2026-09-09, by placing a train of
-     * this class's own on each of two squares the snapshot's engines occupy, and running it:
-     *
-     *   - from `1 - Main:14,3`  the nine-unit train is offered `BottomMainC (eastbound, reverse)`;
-     *   - from `1 - Main:20,13` it is offered `RampDown (southbound, reverse)`.
-     *
-     * Both red, and in each case the sibling assertion reported the room at that berth as ONE.  The
-     * class is green today because `anyPlacedLocomotive` returns the first occupied `Point` the layout
-     * enumerates, and from THAT square nothing is offered.
-     *
-     * Two questions underneath, and neither is a fixture question:
-     *
-     *   1. is the length guard refusing from some start squares and not from others, which would be a
-     *      hole in it; or
-     *   2. does `roomTheGuardSees` - which this class computes for the assertion message - answer a
-     *      different question from `Layout.measuredRoomAtTheBerth`, which walks back along the PATH
-     *      and is therefore start-dependent by construction?
-     *
-     * Until one of those is answered, giving this class its own trains turns a green claim red without
-     * anybody knowing which of the two it has found - so it goes on borrowing, and this says what it
-     * is borrowing and what that is hiding.  The lengths it sets are put back at every site now, which
-     * is the half that was doing real harm.
+     * **THE SECOND QUESTION: does `roomTheGuardSees` answer a different question from
+     * `Layout.measuredRoomAtTheBerth`?**  Yes, and it is the helper that is loose.  It takes the
+     * LARGEST `getRoomAtTheEnd` of any edge ending at a station of that name, over every copy of it and
+     * every approach; the guard uses the room on the path in hand.  Where a station is reached by more
+     * than one approach the two are different numbers, and the note that used to be here reported "the
+     * room at that berth is ONE" for RampDown on a path whose last edge crosses no switch at all and
+     * has no such number.  It is still used - by `testExactlyFitsIsAdmittedAndOneMoreIsNot`, which
+     * searches for a berth where the guard binds and then verifies the refusal itself, so a loose
+     * number there costs a candidate rather than a wrong verdict.
      */
 
     /**
-     * With every section one unit long, a long train is offered nothing it has to reverse into.
+     * ONE TILE, THREE MEASUREMENTS, AND THE BERTH IT ACTUALLY GOVERNS.
      *
-     * Adam's case generalised. He named BottomMainPost to TunnelLongPark; the guard is not about that
-     * pair, it is about a train being longer than the room at the far end - so this asserts it of every
-     * berth on the railway at once, which cannot be satisfied by getting one pair right.
+     * Adam, 2026-09-09: **"Make sure you add a test case to confirm this pathing IS possible if no
+     * lengths are set anywhere, and if those lengths are set to 9."**  Both of his cases are here, with
+     * the case that separates them in the middle.
+     *
+     * `1 - Main:22,7` is the last unswitched square before BottomMainPost, so it is the room a train
+     * coming to rest there has:
+     *
+     *   - nothing measured anywhere - BottomMainPost is offered.  Adam, on an unmeasured run in:
+     *     *"generally, allow it."*  Unmeasured is unknown, not zero.
+     *   - 22,7 measured at ONE - a nine-unit train is refused.  One unit of berth cannot hold nine
+     *     units of train, and the train would come to rest lying across the switch behind it.
+     *   - 22,7 measured at NINE - offered again, and exactly-fits is admitted.  Adam: *"if we made both
+     *     lengths 4, would it then be accepted?  That should be the minimum acceptable length."*
+     *
+     * **Nothing but that one number changes between the three.**  Same railway, same train, same start
+     * square, opposite answers - which is the shape the claim this replaced could not have, because it
+     * asserted about every berth at once on a fixture that measures three tiles.
+     *
+     * MUTATION, run: `>=` for `>` at `Layout.whyTooLongForTheBerth` fails the third case (nine into
+     * nine is refused); widening the comparison by any constant fails the second.
+     *
+     * @throws Exception on a failure to build
      */
     @Test
-    public void testALongTrainIsOfferedNoBerthWhenEverySectionIsOneUnit() throws Exception
+    public void testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost() throws Exception
     {
-        measureEverythingAs(1);
+        ourTrain.setTrainLength(9);
 
-        Layout built = rebuild();
+        measureOnlyTheSnapshotsThreeAs(0);
 
-        Locomotive longTrain = anyPlacedLocomotive(built);
+        Set<String> unmeasured = destinationsFromBottomMainB();
 
-        assertNotNull(longTrain, "no locomotive is standing on the railway, so nothing was asked");
+        measureOnlyTheSnapshotsThreeAs(1);
 
-        longTrain.setTrainLength(9);
+        Set<String> atOne = destinationsFromBottomMainB();
 
-        Set<String> offered = berthsOfferedTo(built, longTrain);
+        measureOnlyTheSnapshotsThreeAs(9);
 
-        assertTrue(offered.isEmpty(),
-            "a nine-unit train is still offered " + offered + " with every section measured at one"
-            + " unit. The room at the end of each of those is 1, so every one of them is a refusal the"
-            + " guard did not make");
+        Set<String> atNine = destinationsFromBottomMainB();
+
+        assertTrue(reaches(unmeasured, "BottomMainPost"),
+            "with nothing measured anywhere, BottomMainPost is not offered to a nine-unit train - so"
+            + " the guard is refusing on the ABSENCE of a measurement, which makes every unmeasured"
+            + " layout unusable and is what Adam's \"generally, allow it\" forbids. Offered: "
+            + unmeasured);
+
+        assertFalse(reaches(atOne, "BottomMainPost"),
+            "one unit of room at BottomMainPost still admits a nine-unit train. It comes to rest eight"
+            + " units across the switch behind it, which is the state Adam's covered-track rule already"
+            + " refuses to route anything else over. Offered: " + atOne);
+
+        assertTrue(reaches(atNine, "BottomMainPost"),
+            "nine units of room REFUSED a nine-unit train, so exactly-fits is being refused and every"
+            + " berth measured to the train that lives in it becomes unusable - Adam: \"that should be"
+            + " the minimum acceptable length\". Offered: " + atNine);
     }
 
     /**
-     * And the control: the same railway, a train that fits, is offered somewhere.
+     * And the control: the same one unit of room, a train that fits, is still welcome.
      *
-     * Without this the assertion above passes on a railway that offers nothing to anybody - which is
-     * exactly the state the first version of this file was in, and the reason it needed measuring
-     * rather than assuming.
+     * Without this the refusal above passes on a railway that offers BottomMainPost to nobody - and the
+     * claim this file used to make had no control of that kind at the berth it was about, which is how
+     * it stayed green while being false.
+     *
+     * @throws Exception on a failure to build
      */
     @Test
-    public void testAShortTrainIsStillOfferedSomewhere() throws Exception
+    public void testAOneUnitTrainIsStillAdmittedToTheOneUnitBerth() throws Exception
     {
-        measureEverythingAs(1);
+        measureOnlyTheSnapshotsThreeAs(1);
 
-        Layout built = rebuild();
+        ourTrain.setTrainLength(1);
 
-        Locomotive shortTrain = anyPlacedLocomotive(built);
+        Set<String> offered = destinationsFromBottomMainB();
 
-        assertNotNull(shortTrain, "no locomotive is standing on the railway");
-
-        shortTrain.setTrainLength(1);
-
-        Set<String> offered = berthsOfferedTo(built, shortTrain);
-
-        assertFalse(offered.isEmpty(),
-            "a one-unit train is offered no reversing berth at all on a railway measured at one unit"
-            + " per section, so the refusal in the test above says nothing about lengths - it says"
-            + " this railway offers nothing to anybody, which is the state this file was in until the"
-            + " accessories were wired");
+        assertTrue(reaches(offered, "BottomMainPost"),
+            "a ONE-unit train is refused a berth measured at one unit, so the refusal in the test above"
+            + " says nothing about lengths - it says this berth is closed to everybody, which is a"
+            + " different fault and would hide the guard entirely. Offered: " + offered);
     }
 
     /**
      * Turn the measurements up and the same long train becomes welcome again.
      *
-     * The strongest form of the control: one railway, one train, two measurements, opposite answers.
-     * Nothing but the lengths changed between them.
+     * The whole-railway form of the control: not one tile but every one of them, which is the closest
+     * this fixture can come to the claim it used to make.  **It is not the same claim**: measuring
+     * every TILE at one unit does not make every SECTION one unit, because a section here is many
+     * tiles - the run into RampDown is eighteen of them.  So this asserts it of the berth whose
+     * approach really is short, and `core.testALongTrainIsOfferedNothingOnAOneUnitRailway` makes the
+     * every-section claim on `single-switch`, where a section is two to four tiles and the claim is
+     * true from every square.
+     *
+     * @throws Exception on a failure to build
      */
     @Test
     public void testTheSameTrainIsAdmittedOnceThereIsRoom() throws Exception
     {
+        ourTrain.setTrainLength(9);
+
         measureEverythingAs(1);
 
-        Layout tight = rebuild();
-
-        Locomotive train = anyPlacedLocomotive(tight);
-
-        assertNotNull(train, "no locomotive is standing on the railway");
-
-        train.setTrainLength(9);
-
-        Set<String> whenTight = berthsOfferedTo(tight, train);
+        Set<String> whenTight = destinationsFromBottomMainB();
 
         measureEverythingAs(50);
 
-        Layout roomy = rebuild();
+        Set<String> whenRoomy = destinationsFromBottomMainB();
 
-        Locomotive again = anyPlacedLocomotive(roomy);
+        assertFalse(reaches(whenTight, "BottomMainPost"),
+            "the nine-unit train was admitted to BottomMainPost with every tile on its approach"
+            + " measured at one unit. Offered: " + whenTight);
 
-        assertNotNull(again, "the locomotive is no longer placed after remeasuring");
+        assertTrue(reaches(whenRoomy, "BottomMainPost"),
+            "the same train is refused BottomMainPost even with fifty units in every tile, so the guard"
+            + " is refusing for a reason that has nothing to do with length and the test above passes"
+            + " for that reason too. Offered: " + whenRoomy);
+    }
 
-        again.setTrainLength(9);
+    /**
+     * WHY RampDown IS OFFERED, AND WHY 22,7 CANNOT BE THE REASON IT IS NOT.
+     *
+     * Adam, 2026-09-09, on being shown that a nine-unit train standing at BottomMainB is offered
+     * `RampDown (southbound, reverse)`: **"technically incorrect to say there is a path since we pass
+     * the track of length 1 at 22,7 to get there, then nothing."**
+     *
+     * **The first half of that is right and the conclusion does not follow, and this test is the
+     * measurement that says so.**  The route really does cross 22,7 - it is the first edge of it - and
+     * after that nothing on the way to RampDown is measured.  But 22,7 is not on RampDown's approach in
+     * the sense the room rule uses, and the geometry is the whole answer:
+     *
+     *   - RampDown is at `1 - Main:21,6`, BottomMainPost at `22,6`.  They are adjacent squares on the
+     *     drawing and there is NO edge between them: the reduction connects RampDown only to
+     *     TopMainPost at `7,2`.
+     *   - So the route from BottomMainB runs BottomMainB - BottomMainPost - `7,1` - RampUp - down the
+     *     ramp - TopMainR2 - TopMainPost - RampDown: NINE edges, the long way round, with three
+     *     switch-crossing edges between 22,7 and the berth.
+     *   - The last of those nine crosses no switch at all and is eighteen tiles long.  `roomAtTheEnd`
+     *     is what bounds a berth, and this edge has none to bound it with.
+     *
+     * `Layout.measuredRoomAtTheBerth` walks BACKWARDS from the berth and stops at the last switch -
+     * Adam's own ruling of 2026-09-02, *"between the switch and the station, the length must be >=
+     * length of the train"* - so it stops seven edges short of 22,7 and could not reach it.  The one
+     * unit at 22,7 measures the room at BOTTOMMAINPOST, which the train passes through and does not
+     * stop at, and `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost` is that tile doing exactly its
+     * job.
+     *
+     * **This is a pin, not a complaint.**  If somebody later decides a route must also fit between the
+     * switches at the points it merely passes through, this test is the one that will go red, and its
+     * message says which claim was traded for which.  `configureAndLockPath` locks the whole route
+     * before the train moves, so nothing stops it at BottomMainPost as things stand.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testWhyRampDownIsOffered() throws Exception
+    {
+        ourTrain.setTrainLength(9);
 
-        Set<String> whenRoomy = berthsOfferedTo(roomy, again);
+        measureOnlyTheSnapshotsThreeAs(1);
 
-        assertTrue(whenTight.isEmpty(),
-            "the nine-unit train was offered " + whenTight + " on one-unit sections");
+        Layout built = rebuild();
 
-        assertFalse(whenRoomy.isEmpty(),
-            "the same train is offered nothing even with fifty units in every section, so the guard is"
-            + " refusing for a reason that has nothing to do with length and both other tests pass"
-            + " for that reason too");
+        List<Edge> route = onlyOurTrainAtBottomMainB(built) == null ? null : theRouteTo(built,
+            "RampDown");
+
+        assertNotNull(route,
+            "a nine-unit train standing at BottomMainB is offered no route to RampDown at all with the"
+            + " snapshot's three tiles measured at one unit. Adam's ruling is about that route being"
+            + " offered, so if it has gone the ruling has been overtaken and this test is the record of"
+            + " what it used to say");
+
+        // THE TILE IS ON THE FIRST EDGE, MEASURING THE ROOM AT BOTTOMMAINPOST.
+        assertEquals(route.get(0).getEnd().getName().split(" ")[0], "BottomMainPost",
+            "the route from BottomMainB to RampDown no longer starts by running to BottomMainPost, so"
+            + " the tile at 22,7 is somewhere else on it and the reasoning below does not hold. It runs:"
+            + " " + namesOf(route));
+
+        assertEquals(route.get(0).getRoomAtTheEnd(), 1,
+            "the first edge of the route measures " + route.get(0).getRoomAtTheEnd() + " units after"
+            + " its last switch rather than the one unit at 22,7, so that tile is not where this test"
+            + " believes it is");
+
+        // AND THE BERTH'S OWN APPROACH HAS NOTHING TO BOUND IT WITH.
+        Edge last = route.get(route.size() - 1);
+
+        assertFalse(last.crossesASwitch(),
+            "the last edge into RampDown crosses a switch now, so it DOES bound where the train may"
+            + " come to rest and the guard has a number to judge with. That is a different railway from"
+            + " the one this test was measured on");
+
+        assertEquals(last.getLength(), 0,
+            "the last edge into RampDown is measured at " + last.getLength() + " units, so the snapshot"
+            + " has grown a measurement on it and the \"then nothing\" in Adam's ruling is no longer"
+            + " true of it");
+
+        // SWITCHES IN BETWEEN, which is what stops the walk long before 22,7.
+        int switchesBetween = 0;
+
+        for (int i = 1; i < route.size(); i++)
+        {
+            if (route.get(i).crossesASwitch()) switchesBetween++;
+        }
+
+        assertTrue(switchesBetween > 0,
+            "there is no switch anywhere between BottomMainPost and RampDown, so the room walk would"
+            + " run all the way back and 22,7 WOULD bound the berth. It runs: " + namesOf(route));
+
+        assertEquals(Layout.measuredRoomAtTheBerth(route, ourTrain), null,
+            "the guard now measures " + Layout.measuredRoomAtTheBerth(route, ourTrain) + " units at"
+            + " RampDown where it used to decline to judge, so something has been given a length or the"
+            + " walk has been changed");
+
+        // AND ADAM'S TWO CASES: unmeasured and at nine, the route is offered either way.
+        measureOnlyTheSnapshotsThreeAs(0);
+
+        assertTrue(reaches(destinationsFromBottomMainB(), "RampDown"),
+            "with no lengths set anywhere, RampDown is not offered - Adam asked for this case by name");
+
+        measureOnlyTheSnapshotsThreeAs(9);
+
+        assertTrue(reaches(destinationsFromBottomMainB(), "RampDown"),
+            "with the snapshot's three tiles measured at nine, RampDown is not offered - Adam asked for"
+            + " this case by name");
+    }
+
+    /**
+     * Clears every measurement and gives the three tiles the snapshot carries the same length.
+     *
+     * Those three - `19,12`, `14,13` and `22,7` - are the whole of what `live-snapshot` measures, and
+     * Adam's ruling is stated in terms of them: *"we only gave 3 tracks artificially low lengths."*
+     * Setting them here rather than reading them keeps the two halves of every claim below symmetrical,
+     * and follows his rule for the scenario library - hand-authored for topology, lengths in code.
+     *
+     * @param units the length to give each of the three
+     */
+    private void measureOnlyTheSnapshotsThreeAs(int units)
+    {
+        measureEverythingAs(0);
+
+        session.setTileLength(new TileKey(MAIN, 19, 12), units);
+        session.setTileLength(new TileKey(MAIN, 14, 13), units);
+        session.setTileLength(TWENTY_TWO_SEVEN, units);
+    }
+
+    /**
+     * Stands this class's train at BottomMainB, alone, and answers where the railway will send it.
+     *
+     * **Alone on purpose.**  Every other train is taken off first, so what is offered depends on the
+     * measurements and on nothing else - where the snapshot's engines happen to stand is not part of
+     * the subject, and reading it off the fixture is what made three claims in this file say something
+     * different depending on which square was enumerated first.
+     *
+     * @return the names of every destination offered
+     * @throws Exception on a failure to build
+     */
+    private Set<String> destinationsFromBottomMainB() throws Exception
+    {
+        Layout built = rebuild();
+
+        assertNotNull(onlyOurTrainAtBottomMainB(built),
+            "there is no copy of 1 - Main:20,13 a train may stand on, so nothing was asked");
+
+        Set<String> out = new LinkedHashSet<>();
+
+        List<List<Edge>> paths = built.getPossiblePaths(ourTrain, true);
+
+        if (paths == null) return out;
+
+        for (List<Edge> path : paths)
+        {
+            if (!path.isEmpty()) out.add(path.get(path.size() - 1).getEnd().getName());
+        }
+
+        return out;
+    }
+
+    /**
+     * Empties the railway and puts this class's train on BottomMainB.
+     *
+     * @param built the running layout
+     * @return the copy it is standing on, or null when the square has no copy that can hold it
+     */
+    private Point onlyOurTrainAtBottomMainB(Layout built)
+    {
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null)
+            {
+                built.moveLocomotive(null, point.getName(), true);
+            }
+        }
+
+        Point at = placeAt(built, ourTrain, BOTTOM_MAIN_B);
+
+        if (at != null)
+        {
+            assertEquals(session.getStationIndex().baseNameOf(at.getName()), "BottomMainB",
+                "1 - Main:20,13 is called " + at.getName() + " on this railway rather than BottomMainB,"
+                + " so the start square these claims are written about is not the one they name");
+        }
+
+        return at;
+    }
+
+    /**
+     * The route the railway offers this train to a named station, or null when it offers none.
+     *
+     * @param built the running layout
+     * @param station the destination's base name
+     * @return the edges in order, or null
+     */
+    private List<Edge> theRouteTo(Layout built, String station)
+    {
+        List<List<Edge>> paths = built.getPossiblePaths(ourTrain, true);
+
+        if (paths == null) return null;
+
+        for (List<Edge> path : paths)
+        {
+            if (path.isEmpty()) continue;
+
+            if (path.get(path.size() - 1).getEnd().getName().startsWith(station)) return path;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether any of these destination names is a copy of the named station.
+     *
+     * A station is emitted as several Points - one per side a train can arrive by, and a turning copy
+     * beside each - so `BottomMainPost` is offered as `BottomMainPost (northbound)` or
+     * `BottomMainPost (northbound, reverse)`, and a claim that asked for the bare name would never
+     * match.
+     *
+     * @param offered what the railway offered
+     * @param station the station's base name
+     * @return true when at least one copy of it was offered
+     */
+    private boolean reaches(Set<String> offered, String station)
+    {
+        for (String name : offered)
+        {
+            if (name.startsWith(station)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param route the edges
+     * @return their names, for a failure message
+     */
+    private String namesOf(List<Edge> route)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (Edge edge : route) out.append(" ").append(edge.getName());
+
+        return out.toString();
     }
 
     /**
@@ -825,33 +1136,6 @@ public class testTheLengthGuardsOnTheRealLayout
         return built;
     }
 
-    /**
-     * Whatever is standing on the railway, with its length remembered before a caller writes over it.
-     *
-     * EVERY CALLER SETS A LENGTH ON WHAT THIS RETURNS, and none of them put it back - so a run of this
-     * class left a nine or a one on one of Adam's trains, and which train depended on the order the
-     * layout enumerates its Points in. `giveTheLengthsBack` in `tearDown` is the other half.
-     *
-     * See the note beside `tearDown` for why this still borrows rather than using a train of the
-     * class's own.
-     *
-     * @param built the running layout
-     * @return the first train standing anywhere, or null
-     */
-    private Locomotive anyPlacedLocomotive(Layout built)
-    {
-        for (Point point : built.getPoints())
-        {
-            if (point.getCurrentLocomotive() != null)
-            {
-                borrowTheLengthOf(point.getCurrentLocomotive());
-
-                return point.getCurrentLocomotive();
-            }
-        }
-
-        return null;
-    }
     /**
      * The lengths this class has changed on Adam's own locomotives, and what they were.
      *
