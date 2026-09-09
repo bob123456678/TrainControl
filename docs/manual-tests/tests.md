@@ -16792,7 +16792,7 @@ this is already implemented as control+H and
 
 ### MT-317 - 2026-09-07 - Should the switch keyboard ask about the power
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** V31-C2 (split from MT-261)
 
 **Written:** 2026-09-07
@@ -16815,6 +16815,10 @@ prompt is an interruption; you are the one who uses it.
 yes, parity with the track diagram
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-08.**
+
+Adam, 2026-09-09: **mark as done.** The power question was already implemented when this ticket was written - added 2026-09-02, five days earlier, and present in the build the triage names. The keyboard asks it first with the same three choices, the same wording and the same Escape handling as the diagram tile, and every one of the 64 keyboard buttons goes through that one guarded path. testEditorSurfaceRules pins it, so a regression would be caught.
 
 ---
 
