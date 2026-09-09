@@ -460,20 +460,35 @@ not, which is neither - it is the one of the pair worth ruling on first.
 (MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever
 either bullet gets wrong, it gets wrong everywhere rather than at a handful of reversal squares.
 
-**Measured on the operator's own railway, 2026-09-08**, because "everywhere" is not a number. Across
-all 3488 ordered station pairs, with each of the six train lengths in his database in turn: the room
-rule declines to judge almost all of them - the railway carries only a few measurements - and the
-journeys it newly refuses are 332, all of them arriving at the same four through berths, each measured
-at ONE unit of room:
+**Measured on the operator's own railway**, because "everywhere" is not a number. The census is
+`core.testTheRoomRuleCensusOnTheRealLayout`, which runs in the battery: for every ordered pair of
+station Points it searches a path, then asks each of the train lengths in his database in turn whether
+the widened rule refuses it and the fence it replaced - `isTerminus() || isReversing()` - would not
+have.
 
-    BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound)
+| | |
+|---|---|
+| ordered station pairs | 1980 (45 destination Points, each against the other 44) |
+| of those, routable | 1848 |
+| train lengths in the database | 1, 2, 3, 4, 5, 6 |
+| journeys the widening NEWLY refuses | **880** |
+| every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
 
-Those are the berths Adam named himself, with the number he gave: *"bottommainb, which has a length of
-1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered *"with ONE
-measured unit of room behind it"*. So the widening is refusing the journeys he asked to have refused,
-at the squares he was looking at, and not - on this railway, today - a wider set that bullet 1 has
-under-counted. A layout with lengths scattered over more of its track would be a different answer, and
-the way to find out is to run that census again rather than to reason about it.
+The room rule declines to judge almost everything else: the railway carries only a few measurements.
+
+Those four are the berths Adam named himself, with the number he gave: *"bottommainb, which has a
+length of 1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered
+*"with ONE measured unit of room behind it"*. So the widening is refusing the journeys he asked to have
+refused, at the squares he was looking at, and not - on this railway, today - a wider set that bullet 1
+has under-counted. A layout with lengths scattered over more of its track would be a different answer,
+and the way to find out is to run that census again rather than to reason about it. **Now it can be
+run.**
+
+**This paragraph said 332 of 3488 until 2026-09-08**, from a probe that was never committed. When the
+census was written as something that could be re-run it found 1980 pairs and 880 refusals, and the
+earlier probe's population cannot be recovered to say where the difference came from - which is the
+whole argument for committing it. The four berths and the one unit of room reproduced exactly, and
+they are what this section reasons from.
 
 ---
 

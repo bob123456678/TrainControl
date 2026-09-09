@@ -356,6 +356,7 @@
         <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
         <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
         <test-one-class class="testEverySquareBuildsToTheCopiesTheSetupImplies"/>
+        <test-one-class class="testTheRoomRuleCensusOnTheRealLayout"/>
         <test-one-class class="testTheShadingFollowsTheTrain"/>
         <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
         <test-one-class class="testTheHomeLabelIsDrawnOnce"/>
