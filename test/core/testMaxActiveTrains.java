@@ -150,6 +150,75 @@ public class testMaxActiveTrains
     }
 
     /**
+     * AND IT BINDS ONLY WHILE THE RAILWAY IS RUNNING ITSELF - a hand dispatch is exempt (Adam,
+     * 2026-09-09: the cap "stays enforced only under full autonomy").
+     *
+     * The guard is `maxActiveTrains > 0 && isAutoRunning() && trainsUnderway() >= maxActiveTrains`,
+     * and the middle clause is the whole of this claim.  `isAutoRunning()` is the flag
+     * `runLocomotives()` sets and `stopLocomotives()` clears; a right-click "-> somewhere" from the
+     * diagram sets nothing, so a train dispatched by hand is neither counted nor refused.
+     *
+     * **That is deliberate, and it is the shape behaviour.md section 1 gives the tiers**: autonomy is
+     * the stricter tier, and a cap is a preference about how much railway the operator wants moving at
+     * once rather than a fact about what the track will hold.  A person who has just clicked a
+     * destination is looking at the railway and has said what they want.  It is the same reasoning
+     * that puts the FR-001 occupancy restrictions behind full autonomy and NOT the reasoning behind
+     * the length rules, which are physical and bind in every tier.
+     *
+     * **"ONLY UNDER FULL AUTONOMY" IS NOT WHAT THE FENCE SAYS, and the difference is a tier.**  The
+     * occupancy restrictions ask `isFullAutonomyRunning()`, which is "running, with no timetable
+     * driving it"; this asks `isAutoRunning()`, and `executeTimetableInternal` sets `running` too - so
+     * a timetable, and Return Home, which IS a timetable, are capped where the restrictions do not
+     * reach them.  No test can tell those two apart from here, because both set one flag, so the claim
+     * below is the one that can be made: nothing running means no cap.  The wording is Adam's to
+     * settle; `docs/reference/behaviour.md` section 1 records both the fence and the question.
+     *
+     * **It was in no document until 2026-09-09** - the cap appears nowhere in behaviour.md - and in no
+     * test either: every claim above starts by calling `runLocomotives()`, so all three would go on
+     * passing with the `isAutoRunning()` clause deleted and the cap silently refusing hand dispatches
+     * for ever.
+     *
+     * MUTATION: take `this.isAutoRunning() &&` out of the guard in `Layout.isPathClear` and this is
+     * the only test in the class that fails - measured, not assumed.
+     *
+     * @throws Exception if the fixture cannot be built
+     */
+    @Test
+    public void testTheCapDoesNotBindAHandDispatch() throws Exception
+    {
+        Layout layout = twoSeparateRoutes();
+
+        layout.setMaxActiveTrains(1);
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        // NOT RUNNING, and that is the whole fixture.  Nothing else differs from
+        // testATrainThatHasClaimedARouteCounts, which is the same arrangement with the run started
+        // and which asserts the opposite answer.
+        assertFalse(layout.isAutoRunning(),
+            "the layout came up already running, so this is the autonomy case again and the claim"
+            + " below is a copy of testATrainThatHasClaimedARouteCounts asserting the reverse");
+
+        try
+        {
+            assertTrue(layout.configureAndLockPath(routeOne(layout), first),
+                "the first train's route should lock");
+
+            assertTrue(layout.isPathClear(routeTwo(layout), second, false),
+                "a second HAND dispatch was refused by the concurrency cap, which is enforced only"
+                + " under full autonomy.  The cap is a preference about how much the operator wants"
+                + " moving at once, and somebody who has clicked a destination is looking at the"
+                + " railway and has said what they want - the same reasoning that puts the occupancy"
+                + " restrictions behind full autonomy");
+        }
+        finally
+        {
+            layout.unlockPath(routeOne(layout), first);
+        }
+    }
+
+    /**
      * Four points and two edges that share nothing.
      */
     private static Layout twoSeparateRoutes() throws Exception

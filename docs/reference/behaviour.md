@@ -50,6 +50,30 @@ running flag, and a Return Home run *is* a timetable, so a rule fenced behind th
 Return Home as well — which is how the planner and the railway came to disagree about this one. The
 fence asks `Layout.isFullAutonomyRunning` now: running, with no timetable driving it.
 
+**How many trains may be out at once is a cap, and it binds only while the railway is running
+itself** (Adam, 2026-09-09: it *"stays enforced only under full autonomy"* — no change asked for).
+The Autonomy tab has a slider, `Layout.maxActiveTrains`, from 0 to 20; **0 means no cap**, which is
+the default. A path is refused with `errorMaxActiveTrainsExceeded` when the number of distinct
+locomotives underway has already reached it — counted as the UNION of the registered ones and the
+ones that have claimed a path but not yet set off, because the gap between claiming and being
+registered is a per-accessory wait seconds wide and two trains crossed it together.
+
+- **A hand dispatch is exempt.** Right-clicking a destination sets no running flag, so it is neither
+  counted nor refused, however many trains a run already has out. That is the tiering above: the cap
+  is a preference about how much railway the operator wants moving at once — what a booster will
+  carry, or how much they want to watch — rather than a fact about what the track will hold. The
+  anti-collision guarantees are the edge locks and the length rules of §5, which every tier obeys.
+- **The fence is `isAutoRunning`, which is wider than "full autonomy".** `executeTimetableInternal`
+  sets the same flag, and a Return Home run *is* a timetable, so **a timetable and Return Home ARE
+  capped** — where the occupancy restrictions above, asking `isFullAutonomyRunning`, are not. The two
+  fences answer the same-sounding question differently, and this is written down rather than left to
+  be rediscovered: if Adam's *"only under full autonomy"* is meant literally, the fence is the thing
+  to change, and that is a behaviour change nobody has asked for. **A question for him**, not a
+  defect.
+- `core.testMaxActiveTrains` is the class, and
+  `core.testMaxActiveTrains.testTheCapDoesNotBindAHandDispatch` is the one that goes red when the
+  fence is removed; the other three all start by running the railway and would not notice.
+
 **One difference remains between Return Home and a manual send**, and it is deliberate (confirmed
 2026-09-07): Return Home refuses to start a train standing on an **inactive** square, where a manual
 send allows it. The exemption exists for a person who has looked at the railway and decided to move
