@@ -614,6 +614,17 @@ The rest of this section is about the **first** rule.
   statement in `AutonomyBanner.CentredButNeverTaller`, because settings that have to be read together
   are settings that come apart.
 
+  **And it is worked out on a worker, not on the click** (D3-C1). The answer comes from
+  `Layout.explainDestinations`, which takes the railway's monitor and walks the graph, and then a
+  reduced-path search for every station the railway offers - so asking for it on the event thread is
+  the rule below being broken by the one tool a stuck railway sends people to. The click captures the
+  layout and the station index, says *"Working out the reasons..."*, and the report and its lines are
+  painted when they land. Two clicks in a row are two searches and the later one wins: an answer to a
+  question the user has moved on from is discarded rather than painted over the one they are waiting
+  for. It was never a live freeze - the editor cannot be open while autonomy is running (OB-047) - and
+  it is moved anyway. Adam: *"I would rather take it off EDT. It's not critical now, but we want to
+  avoid these pitfalls."*
+
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
@@ -726,11 +737,17 @@ a guard with no way past is one people delete. What it cannot do is prove a thre
 `testTheDiagramRefreshDoesNotWaitOnTheRailway` still *measures* the doors that matter with the monitor
 actually held. The census says which doors exist; the measurement says two of them are shut.
 
-The two most recent to be shut are the diagram's **right-click menu**, which gathers its path list on
-a worker before the menu is built (D3-A1), and the **station captions**, whose "can autonomy choose
+The three most recent to be shut are the diagram's **right-click menu**, which gathers its path list
+on a worker before the menu is built (D3-A1); the **station captions**, whose "can autonomy choose
 this square" answer is worked out on `CoveredTrackRenderer` and read from a field — so a page change
 or a Show Inactive Labels toggle during a run costs a set lookup rather than the rest of somebody's
-departure (D3-B1).
+departure (D3-B1); and the editor's **"why is this train not moving"** tool, which asks the railway on
+its own worker and paints the report when it lands (D3-C1).
+
+**There is no `ON THE EVENT THREAD` allowance left for a graph walk.** Every one that remains is a
+change of state the operator has just confirmed, or a read made when nothing else can be holding the
+monitor; the last search was the why tool's, and it was moved because a rule with one standing
+exception is a rule with a way in.
 
 ---
 

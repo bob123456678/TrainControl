@@ -6231,6 +6231,28 @@ public class AutonomyEditorPanel extends JPanel
      * Against the layout as last LOADED, which while this editor is open is the last saved
      * configuration. Unsaved edits are not in it, and the hint says so rather than letting the user
      * assume otherwise - an explanation that quietly describes a different railway is worse than none.
+     *
+     * **NOT ON THE EVENT THREAD ANY MORE** (D3-C1, Adam 2026-09-09: *"I would rather take it off EDT.
+     * It's not critical now, but we want to avoid these pitfalls."*).  The answer comes from
+     * `Layout.explainDestinations`, which is `synchronized` on the `Layout` - the monitor a dispatch
+     * holds for the whole of `configureAndLockPath`, and the one `AutoLocomotiveStatus.findPaths`
+     * holds for a whole-graph search with nothing running at all.  Asking for it here parked the
+     * event thread on that monitor, which is OB-192, and it was the last standing exception in
+     * `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor`.
+     *
+     * It was never a live freeze - the editor cannot be open while autonomy runs (OB-047) - and it is
+     * moved anyway, because a rule with one exception is a rule with a way in.  The sibling question
+     * in `AutoLocomotiveStatus` was moved off the event thread twice, for OB-079; this is that sweep
+     * reaching the copy it missed.
+     *
+     * **WHAT STAYS HERE IS WHAT MUST.**  `layoutSource.get()` is `getModel().getAutoLayout()`, which
+     * BUILDS a `Layout` when there is none, and `getStationIndex` DERIVES the square-to-Point
+     * translation when nothing has yet - the same reason `refreshCoveredTrack` captures its railway
+     * and its session on the caller's thread rather than letting the worker ask for them.  So both
+     * are captured here and handed over, and the worker asks nothing that can build anything.
+     *
+     * @param tile the square that was clicked
+     * @param component what is drawn on it
      */
     private void applyWhy(TileKey tile, LayoutDiagramComponent component)
     {
@@ -6249,14 +6271,105 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Captured on the event thread, for the reason the javadoc gives: this derives when nothing
+        // has yet, and the session's own comment says that derivation belongs to the thread holding
+        // the setup rather than to whichever reader asks first.
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        // SAID NOW, because the answer lands a beat later and a tool that goes quiet on a click reads
+        // as a tool that did nothing.  The key is the locomotive panel's - the same question, asked
+        // there, and moved off the event thread before this one.
+        say(hint, I18n.t("autolayout.ui.whyWorking"));
+
+        // WHICH ASK THIS IS.  Two clicks in a row are two searches, and the first one to be started is
+        // not necessarily the first one to finish - so the answer carries the number of the ask it is
+        // about and `paintWhy` throws away anything that is not the latest.  Without it a slow answer
+        // to an abandoned question paints over the one the user is waiting for.
+        long asked = whyAsked.incrementAndGet();
+
+        whyWorking.incrementAndGet();
+
+        try
+        {
+            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, tile));
+        }
+        catch (RuntimeException refused)
+        {
+            // Counted down before it is thrown on, so a refusal cannot leave `awaitWhy` waiting for an
+            // answer nobody is working on.  Thrown on because the caller catches it and puts it in a
+            // dialog, which is what happened to every failure of this tool before it had a worker.
+            settleWhy();
+
+            throw refused;
+        }
+    }
+
+    /**
+     * Works the answer out, off the event thread, and hands it to the event thread to paint.
+     *
+     * The shape `CoveredTrackRenderer` and `ReturnHomeTriageRenderer` use, and for their reason: the
+     * question takes the railway's monitor, the painting takes the event thread, and the two are done
+     * in that order by two threads rather than in one place by the thread that draws the window.
+     *
+     * @param asked which ask this is, so a stale answer can be discarded
+     * @param layout the railway, captured on the event thread
+     * @param index the square-to-Point translation, captured with it
+     * @param tile the square that was clicked
+     */
+    private void workOutWhy(long asked, org.traincontrol.automation.Layout layout,
+        org.traincontrol.automationui.StationIndex index, TileKey tile)
+    {
+        try
+        {
+            WhyAnswer answer;
+
+            try
+            {
+                answer = composeWhy(layout, index, tile);
+            }
+            catch (RuntimeException failed)
+            {
+                // SAID, NOT SWALLOWED.  This ran inside the click dispatcher's own try/catch until it
+                // had a worker, and that catch put the message in a dialog; an exception on a worker
+                // reaches no catch at all, and what the user would be left looking at is "Working out
+                // the reasons..." for ever.  The layout being rebuilt underneath the pass is the way
+                // this happens, and saying so is the whole of what the dialog did.
+                answer = new WhyAnswer(String.valueOf(failed.getMessage()), false, null);
+            }
+
+            WhyAnswer painted = answer;
+
+            javax.swing.SwingUtilities.invokeLater(() -> paintWhy(asked, painted));
+        }
+        finally
+        {
+            settleWhy();
+        }
+    }
+
+    /**
+     * The old body of `applyWhy`, on a worker thread, composing an answer rather than painting one.
+     *
+     * NOTHING ABOUT THE ANSWER CHANGES - the same stations, the same reasons, the same traces, in the
+     * same order, from the same one pass over `explainDestinations`.  What changes is that the report
+     * and the lines are built into a value object and handed over, instead of being written into the
+     * banner and into `traces` from here.  `traces` is read by the paint, so a worker writing into it
+     * would be drawing on the diagram from the wrong thread.
+     *
+     * @param layout the railway
+     * @param index the square-to-Point translation
+     * @param tile the square that was clicked
+     * @return what to say and what to draw
+     */
+    private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
+        org.traincontrol.automationui.StationIndex index, TileKey tile)
+    {
         // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
         // the layout's opinion of where trains are that decides what runs.
         org.traincontrol.base.Locomotive standing = null;
 
         // Through StationIndex, which is the one place that knows a square is several Points and which
         // ones.  Asking the builder again would be a second opinion about the same thing.
-        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
-
         for (String pointName : index.pointNamesAt(tile))
         {
             org.traincontrol.automation.Point p = layout.getPoint(pointName);
@@ -6270,21 +6383,24 @@ public class AutonomyEditorPanel extends JPanel
 
         if (standing == null)
         {
-            say(hint, I18n.t("autosetup.ui.whyNoTrainHere"));
-            return;
+            // NOTHING DRAWN AND NOTHING CLEARED, which is what a null trace map means.  The three
+            // answers that are not about a train leave whatever was on the diagram alone, exactly as
+            // they did when this ran on the event thread and never reached `traces.clear()`.
+            return new WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false, null);
         }
 
-        traces.clear();
+        // The lines this answer draws, built here and installed by the paint.  Empty rather than null
+        // from this point on: every answer below is about a train, and an answer about a train that
+        // draws nothing has to TAKE the previous answer's lines off the diagram.
+        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
+            drawn = new java.util.LinkedHashMap<>();
 
         String cannotStart = layout.explainCannotStart(standing);
 
         if (cannotStart != null)
         {
-            sayRich(hint, I18n.f("autosetup.ui.whyCannotStart",
-                escape(standing.getName()), escape(cannotStart)) + unsavedWarning());
-
-            refresh();
-            return;
+            return new WhyAnswer(I18n.f("autosetup.ui.whyCannotStart",
+                escape(standing.getName()), escape(cannotStart)) + unsavedWarning(), true, drawn);
         }
 
         java.util.Map<String, String> reasons = layout.explainDestinations(standing);
@@ -6324,7 +6440,7 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
                     // (DIR-B1).
-                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
+                    trace(drawn, session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
                         session.shutTiles()), tile, true, where);
                 }
             }
@@ -6383,10 +6499,182 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
-        sayRich(hint, I18n.f("autosetup.ui.whyReport", escape(standing.getName()),
-            going, detail + unsavedWarning()));
+        return new WhyAnswer(I18n.f("autosetup.ui.whyReport", escape(standing.getName()),
+            going, detail + unsavedWarning()), true, drawn);
+    }
+
+    /**
+     * Puts the worker's answer in the banner and its lines on the diagram, on the event thread.
+     *
+     * ONLY THE LATEST ANSWER PAINTS.  A second click starts a second search, and an answer to a
+     * question the user has moved on from must not replace the one they are waiting for - which is
+     * `paintReturnHomeFromTheAnswer`'s rule about a Layout that has been replaced, arriving here as a
+     * rule about a question that has been.
+     *
+     * @param asked which ask this answer is about
+     * @param answer what to say and what to draw
+     */
+    private void paintWhy(long asked, WhyAnswer answer)
+    {
+        if (asked != whyAsked.get()) return;
+
+        if (answer.drawn != null)
+        {
+            traces.clear();
+            traces.putAll(answer.drawn);
+        }
+
+        if (answer.rich) sayRich(hint, answer.message);
+        else say(hint, answer.message);
 
         refresh();
+    }
+
+    /** Gives the why job up, from wherever it ended, and tells anybody waiting. */
+    private void settleWhy()
+    {
+        synchronized (whySettled)
+        {
+            whyWorking.decrementAndGet();
+
+            whySettled.notifyAll();
+        }
+    }
+
+    /**
+     * Waits until every "why is this train not moving" ask already started has been worked out.
+     *
+     * The answer is worked out on a worker now, so asking and reading it are two moments rather than
+     * one, and anything that wants to read what it said - which in practice is a test - has to wait in
+     * between.  `TrainControlUI.awaitCoveredTrack` is the same method for the same reason.
+     *
+     * IT WAITS FOR THE ANSWER, NOT FOR THE PAINT.  The paint is an `invokeLater` queued before the
+     * worker gives the job up, so a caller that wants to read the banner flushes the event queue after
+     * this - and one that calls this ON the event thread waits for a paint that cannot run.
+     *
+     * BOUNDED, and it says which it did: an unbounded wait here would turn a worker that has died into
+     * a hung window rather than a stale answer.
+     *
+     * @param millis how long to wait at most
+     * @return true when nothing is outstanding, false when the wait ran out
+     */
+    boolean awaitWhy(long millis)
+    {
+        long deadline = System.currentTimeMillis() + millis;
+
+        synchronized (whySettled)
+        {
+            while (whyWorking.get() > 0)
+            {
+                long left = deadline - System.currentTimeMillis();
+
+                if (left <= 0) return false;
+
+                try
+                {
+                    whySettled.wait(left);
+                }
+                catch (InterruptedException stopped)
+                {
+                    Thread.currentThread().interrupt();
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * What one "why is this train not moving" ask worked out: a message, and the lines to draw.
+     *
+     * A value object handed from the worker to the event thread, which is what makes the move safe:
+     * everything the answer is made of is finished before the event thread sees any of it.
+     */
+    private static final class WhyAnswer
+    {
+        /** The report, mark-up included when `rich`, plain text otherwise. */
+        private final String message;
+
+        /** Whether the message carries mark-up this class composed, or is a plain sentence. */
+        private final boolean rich;
+
+        /**
+         * The lines to lay on the diagram, or null to leave whatever is drawn there alone.
+         *
+         * Null is not the same as empty.  An answer about a train replaces the traces, and an answer
+         * that is not about one - no railway, not a station, no train standing here - leaves them,
+         * which is what this tool did when it ran on the event thread and returned before it reached
+         * `traces.clear()`.
+         */
+        private final java.util.Map<TileKey,
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn;
+
+        private WhyAnswer(String message, boolean rich, java.util.Map<TileKey,
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn)
+        {
+            this.message = message;
+            this.rich = rich;
+            this.drawn = drawn;
+        }
+    }
+
+    /**
+     * The one thread the "why is this train not moving" answer is worked out on.
+     *
+     * DAEMON, and it goes away when it is idle.  `TrainControlUI`'s two renderers belong to the one
+     * window and live as long as it does; this panel is built and thrown away every time the editor is
+     * opened, and every tile menu builds one - so a core thread held for the life of each would be a
+     * thread per editor opened, for a tool most of them never use.  `allowCoreThreadTimeOut` means the
+     * pool costs nothing until somebody asks the question and nothing again a few seconds later.
+     *
+     * NOT COALESCED, unlike the window's renderers.  Those refresh on every railway event and their
+     * asks arrive faster than they can be served; this one is a click, and two clicks are two
+     * questions - the second of which must win, which is what `whyAsked` decides.
+     */
+    private final java.util.concurrent.ThreadPoolExecutor WhyRenderer = whyRenderer();
+
+    /** Which ask is the current one, so a slow answer to an abandoned question is discarded. */
+    private final java.util.concurrent.atomic.AtomicLong whyAsked =
+        new java.util.concurrent.atomic.AtomicLong();
+
+    /** How many asks have been started and not yet worked out, for `awaitWhy`. */
+    private final java.util.concurrent.atomic.AtomicInteger whyWorking =
+        new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * Announced on whenever an ask is finished with, for `awaitWhy`.
+     *
+     * The count is changed under this monitor, so a waiter cannot read the count, find an ask
+     * outstanding, and go to sleep in the instant between the worker clearing it and announcing it.
+     */
+    private final Object whySettled = new Object();
+
+    /**
+     * Builds the pool above.
+     *
+     * A method rather than an initialiser, because `allowCoreThreadTimeOut` has to be called on the
+     * pool after it is constructed and a field initialiser has nowhere to put that line.
+     *
+     * @return the pool
+     */
+    private static java.util.concurrent.ThreadPoolExecutor whyRenderer()
+    {
+        java.util.concurrent.ThreadPoolExecutor pool = new java.util.concurrent.ThreadPoolExecutor(
+            1, 1, 10, java.util.concurrent.TimeUnit.SECONDS,
+            new java.util.concurrent.LinkedBlockingQueue<Runnable>(), runnable ->
+            {
+                Thread worker = new Thread(runnable, "WhyRenderer");
+
+                worker.setDaemon(true);
+
+                return worker;
+            });
+
+        pool.allowCoreThreadTimeOut(true);
+
+        return pool;
     }
 
     /**
@@ -6568,8 +6856,8 @@ public class AutonomyEditorPanel extends JPanel
         // autonomy will never choose is drawn in a third shade (Adam, 2026-09-09).  The two legs end
         // at opposite squares, so on a route between an ordinary station and a parking berth they are
         // deliberately not the same colour.
-        trace(there, testFrom, true, tile);
-        trace(back, tile, false, testFrom);
+        trace(traces, there, testFrom, true, tile);
+        trace(traces, back, tile, false, testFrom);
 
         // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
         //
@@ -6618,12 +6906,21 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Lays one leg of a tested route onto the squares it crosses.
      *
+     * **INTO A MAP IT IS GIVEN**, rather than into `traces` (D3-C1).  The "why is this train not
+     * moving" tool works its answer out on a worker now, and `traces` is read by the paint - so a
+     * caller on a worker builds its lines in a map of its own and the event thread installs them.  The
+     * path test, which is still a straight-through gesture on the event thread, passes `traces` itself
+     * and nothing about it changes.
+     *
+     * @param into where the lines go
      * @param run the reduced path, or null when there is no route that way
      * @param from the square it leaves
      * @param forward whether this is the outbound leg
      * @param to the square it ENDS at, which decides whether the leg is drawn as manual-only
      */
-    private void trace(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
+    private void trace(java.util.Map<TileKey,
+        java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> into,
+        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
         TileKey from, boolean forward, TileKey to)
     {
         if (run == null) return;
@@ -6667,12 +6964,12 @@ public class AutonomyEditorPanel extends JPanel
             org.traincontrol.automationui.TilePorts.Side out =
                 i == seq.size() - 1 ? null : towards(at, seq.get(i + 1));
 
-            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here = traces.get(at);
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here = into.get(at);
 
             if (here == null)
             {
                 here = new java.util.ArrayList<>();
-                traces.put(at, here);
+                into.put(at, here);
             }
 
             here.add(new org.traincontrol.automationui.TileAnnotation.Trace(in, out, forward,

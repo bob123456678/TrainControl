@@ -141,6 +141,12 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the `new Thread` this action starts; only the export is on it, and"
             + " the window it feeds is built inside an invokeLater (OB-137)");
 
+        ALLOWED.put("AutonomyEditorPanel.java#composeWhy",
+            "OFF THE EVENT THREAD: WhyRenderer, submitted by applyWhy - which captures the Layout and"
+            + " the station index on the event thread first, because both of those BUILD, and paints"
+            + " the answer in an invokeLater.  This was the last ON THE EVENT THREAD allowance for a"
+            + " graph walk (D3-C1, Adam 2026-09-09: \"I would rather take it off EDT\")");
+
         ALLOWED.put("AutonomySession.java#routesCoveredByStandingTrains",
             "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
             + " CoveredTrackRenderer");
@@ -160,13 +166,6 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("AutoLocomotiveStatus.java#timetableStart",
             "ON THE EVENT THREAD: the same fallback, for the same reason - findPaths gathers this on"
             + " the worker and stamps it, and this reads the Layout only when nothing gathered");
-
-        ALLOWED.put("AutonomyEditorPanel.java#applyWhy",
-            "ON THE EVENT THREAD, KNOWN AND OPEN (D3-C1): the editor's why-is-it-not-moving tool walks"
-            + " the graph on the click.  No dispatch can hold the monitor here - the editor cannot be"
-            + " open while autonomy runs (OB-047) - but AutoLocomotiveStatus.findPaths can, so this is"
-            + " a stall of a graph search rather than of a dispatch.  The sibling question was moved"
-            + " off the event thread twice in AutoLocomotiveStatus; this copy has not been swept");
 
         ALLOWED.put("AutonomyViewerPanel.java#load",
             "ON THE EVENT THREAD: loading a configuration captures the outgoing one first, and"

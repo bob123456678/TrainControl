@@ -508,6 +508,328 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
+     * The sixth door: the autonomy editor's "why is this train not moving" tool.
+     *
+     * D3-C1, and the last `ON THE EVENT THREAD` allowance in
+     * `testNothingOnTheEventThreadTakesTheRailwaysMonitor`.  `AutonomyEditorPanel.applyWhy` asked
+     * `Layout.explainDestinations` - `synchronized`, and a walk of the whole graph once per candidate -
+     * straight from the click that started it, and then ran `GraphReducer.findPath` once more for
+     * every station the railway offered.
+     *
+     * **IT WAS NOT A LIVE FREEZE, AND IT IS MOVED ANYWAY.**  The editor cannot be open while autonomy
+     * is running (OB-047), so no dispatch can be holding that monitor while this tool is used - but
+     * `AutoLocomotiveStatus.findPaths` can, with nothing running at all, which is the state this
+     * fixture is in and the state the held monitor below stands for.  Adam, 2026-09-09: *"I would
+     * rather take it off EDT.  It's not critical now, but we want to avoid these pitfalls."*  A rule
+     * with one standing exception is a rule with a way in.
+     *
+     * The question goes to `WhyRenderer` now and the answer is painted by an `invokeLater`, which is
+     * the shape `refreshCoveredTrack` and `refreshReturnHomeButton` already use.  What stays on the
+     * event thread is the capture: `layoutSource.get()` BUILDS a `Layout` when there is none and
+     * `getStationIndex` DERIVES the square-to-Point translation when nothing has yet, so neither may
+     * be asked for on a worker.
+     *
+     * MUTATION: call `composeWhy` directly from `applyWhy` instead of submitting it, and this times
+     * out with the event thread parked on `Layout.explainDestinations`.
+     */
+    @Test
+    public void testTheWhyToolDoesNotWaitOnTheRailway() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+
+        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
+
+        final java.lang.reflect.Method why = theWhyTool();
+
+        whileTheRailwayIsHeld("AutonomyEditorPanel.applyWhy", () ->
+        {
+            try
+            {
+                why.invoke(panel, occupied, drawn);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by an `applyWhy`
+        // that does nothing at all - "did not block" is true of a method with an empty body, and this
+        // tool being silently blank is OB-191, which is the other way it has been broken.
+        assertTrue(awaitWhy(panel), "the why answer never landed, so nothing was ever painted from it");
+
+        pump();
+
+        String said = whatTheEditorSays(panel);
+
+        assertFalse(said.trim().isEmpty(),
+            "the why tool painted nothing at all - the banner is empty, which is OB-191");
+
+        assertFalse(said.contains(org.traincontrol.util.I18n.t("autolayout.ui.whyWorking")),
+            "the banner still says the answer is being worked out, so the worker's answer never"
+            + " replaced the message `applyWhy` puts up while it waits.  What it says: " + said);
+    }
+
+    /**
+     * And what it says is the railway's own answer, not a shape that happens to be there.
+     *
+     * OB-191 was this tool painting the paths and saying nothing - *"the banner expands, but I see no
+     * text"* - so "it answered" has to mean the answer is READ BACK and checked against the railway,
+     * which is the only thing that can tell a report from an empty strip.
+     *
+     * **THE RAILWAY IS THE ORACLE, ASKED FROM THIS THREAD.**  `explainCannotStart` and
+     * `explainDestinations` are asked here, off the event thread, where blocking is allowed - and the
+     * report must agree with them about the two things it can be: a train that cannot start at all
+     * names the reason it cannot, and a train that can names either the stations it may go to or the
+     * fact that there are none.  Nothing here re-implements the panel's collapse of Points onto
+     * squares; it compares against the answers the panel was composed from.
+     *
+     * **AND THE LINES ARE THE OTHER HALF.**  A train with somewhere to go draws its routes on the
+     * diagram, and those are built on the worker now and installed by the paint - so where the
+     * reduction can find a run to a station the railway offers, `traces` must not be empty.  That is
+     * the assertion a `paintWhy` that dropped the worker's map would fail.
+     */
+    @Test
+    public void testTheWhyToolSaysWhatTheRailwaySays() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+
+        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
+
+        final java.lang.reflect.Method why = theWhyTool();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                why.invoke(panel, occupied, drawn);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(awaitWhy(panel), "the why answer never landed");
+
+        pump();
+
+        String said = whatTheEditorSays(panel);
+
+        // WHICH TRAIN THE REPORT IS ABOUT.  Every point of the square is asked, because a square is
+        // several Points and which copy holds the locomotive is the session's business, not this
+        // test's - so the report has to name one of the trains standing there, and the message says
+        // which ones those were.
+        java.util.List<String> standing = new java.util.ArrayList<>();
+
+        for (String pointName : session.getStationIndex().pointNamesAt(occupied))
+        {
+            org.traincontrol.automation.Point at = layout.getPoint(pointName);
+
+            if (at != null && at.getCurrentLocomotive() != null)
+            {
+                standing.add(at.getCurrentLocomotive().getName());
+            }
+        }
+
+        assertFalse(standing.isEmpty(),
+            "no train is standing on " + occupied + " any more, so the report cannot be about one and"
+            + " this test is measuring the empty case");
+
+        boolean named = false;
+
+        for (String train : standing)
+        {
+            if (said.contains(train.replace("&", "&amp;").replace("<", "&lt;"))) named = true;
+        }
+
+        assertTrue(named,
+            "the report does not name any of the trains standing on " + occupied + " " + standing
+            + ", so it is not about the train that was clicked.  What it says: " + said);
+
+        // THE RAILWAY'S OWN TWO ANSWERS, asked from this thread, where waiting for its monitor is
+        // allowed.
+        org.traincontrol.base.Locomotive train = null;
+
+        for (String pointName : session.getStationIndex().pointNamesAt(occupied))
+        {
+            org.traincontrol.automation.Point at = layout.getPoint(pointName);
+
+            if (at != null && at.getCurrentLocomotive() != null)
+            {
+                train = at.getCurrentLocomotive();
+                break;
+            }
+        }
+
+        String cannotStart = layout.explainCannotStart(train);
+
+        if (cannotStart != null)
+        {
+            assertTrue(said.contains(cannotStart.replace("&", "&amp;").replace("<", "&lt;")),
+                "the railway says " + train.getName() + " cannot be sent anywhere because \""
+                + cannotStart + "\", and the report does not say so.  What it says: " + said);
+
+            return;
+        }
+
+        java.util.Map<String, String> reasons = layout.explainDestinations(train);
+
+        boolean somewhereToGo = reasons.containsValue(null);
+
+        String nowhere = org.traincontrol.util.I18n.t("autosetup.ui.whyNowhere");
+
+        assertEquals(!said.contains(nowhere), somewhereToGo,
+            "the railway offers " + (somewhereToGo ? "at least one" : "no") + " destination to "
+            + train.getName() + ", and the report says the opposite.  `explainDestinations` came back"
+            + " with " + reasons.size() + " station(s), of which " + (somewhereToGo ? "some" : "none")
+            + " were available.  What the report says: " + said);
+
+        if (!somewhereToGo || session.getReducer() == null) return;
+
+        // AND THE LINES, where the reduction can draw one.  Asked of the reducer directly rather than
+        // inferred from the report: a station the running graph offers need not be reachable across
+        // the DIAGRAM, and this test may only demand a line where one can be drawn.
+        boolean aRunExists = false;
+
+        for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
+        {
+            if (entry.getValue() != null) continue;
+
+            org.traincontrol.automationui.TileGraph.TileKey where =
+                session.getStationIndex().squareOf(entry.getKey());
+
+            if (where == null) continue;
+
+            if (session.getReducer().findPath(occupied, where, session.mayTurnTiles(),
+                session.mandatoryTurnTiles(), session.barredArrivals(), session.shutTiles()) != null)
+            {
+                aRunExists = true;
+                break;
+            }
+        }
+
+        if (!aRunExists) return;
+
+        java.lang.reflect.Field traces =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("traces");
+
+        traces.setAccessible(true);
+
+        assertFalse(((java.util.Map<?, ?>) traces.get(panel)).isEmpty(),
+            "the reduction can draw a run from " + occupied + " to a station the railway offers, and"
+            + " the editor drew nothing.  The traces are built on the worker now and installed by the"
+            + " paint, so an answer whose lines are dropped on the way looks exactly like this");
+    }
+
+    /**
+     * An autonomy editor panel wired to this fixture's railway, built on the event thread.
+     *
+     * A null page, which is how `TrainControlUI` builds this panel for the tile menus: the square is
+     * handed straight to the tool, so there is no diagram for it to name.
+     *
+     * @return the panel
+     * @throws Exception when the event thread refuses to build it
+     */
+    private static org.traincontrol.gui.AutonomyEditorPanel aWhyPanel() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel[] built =
+            new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+
+            built[0].setLayoutSource(() -> layout);
+        });
+
+        assertNotNull(built[0], "the editor panel was not built");
+
+        return built[0];
+    }
+
+    /**
+     * What is drawn on a square, which the tool refuses to answer about unless it is a sensor.
+     *
+     * @param square the station's square
+     * @return the tile
+     */
+    private static org.traincontrol.base.LayoutDiagramComponent theSquareItself(
+        org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        org.traincontrol.base.LayoutDiagramComponent drawn = session.getGraph().getTiles().get(square);
+
+        assertNotNull(drawn, "the graph has no tile at " + square + ", so the tool would refuse");
+
+        assertTrue(drawn.isFeedback(),
+            square + " is not a sensor, so the why tool answers `labelPointNotStation` and never"
+            + " reaches the railway at all - this test would measure the refusal");
+
+        return drawn;
+    }
+
+    /**
+     * The tool itself, which is private and reached from a mouse listener.
+     *
+     * @return the method
+     * @throws Exception when it is no longer there under that name
+     */
+    private static java.lang.reflect.Method theWhyTool() throws Exception
+    {
+        java.lang.reflect.Method why = org.traincontrol.gui.AutonomyEditorPanel.class
+            .getDeclaredMethod("applyWhy", org.traincontrol.automationui.TileGraph.TileKey.class,
+                org.traincontrol.base.LayoutDiagramComponent.class);
+
+        why.setAccessible(true);
+
+        return why;
+    }
+
+    /**
+     * Waits for every why ask this test has started to be worked out.
+     *
+     * @param panel the editor
+     * @return true when nothing is outstanding
+     * @throws Exception when the panel no longer offers the wait
+     */
+    private static boolean awaitWhy(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Method waiting =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
+
+        waiting.setAccessible(true);
+
+        return (Boolean) waiting.invoke(panel, 60000L);
+    }
+
+    /**
+     * What the editor's hint line says, with its mark-up left in.
+     *
+     * The panel is built here without a banner, so `say` and `sayRich` both write into the hint label
+     * - which is the fallback the panel documents for a panel mounted without one.
+     *
+     * @param panel the editor
+     * @return the text
+     * @throws Exception when the label is no longer there
+     */
+    private static String whatTheEditorSays(org.traincontrol.gui.AutonomyEditorPanel panel)
+        throws Exception
+    {
+        java.lang.reflect.Field label =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+
+        label.setAccessible(true);
+
+        String said = ((javax.swing.JLabel) label.get(panel)).getText();
+
+        return said == null ? "" : said;
+    }
+
+    /**
      * A station square with a locomotive standing on it, placing one if the snapshot has none there.
      *
      * @return the square
