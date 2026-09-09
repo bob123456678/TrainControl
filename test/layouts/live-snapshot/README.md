@@ -68,6 +68,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testTheFrozenRailwayIsStillTheRailway`
 - `core.testTheLengthGuardsOnTheRealLayout`
 - `core.testTheShadingFollowsTheTrain`
+- `regression.testAPendingTurnSurvivesTheRebuild`
 - `regression.testControlSNamesOnlyASensor`
 - `regression.testEscapeClosesTheEditor`
 - `regression.testOneChangeSticks`
