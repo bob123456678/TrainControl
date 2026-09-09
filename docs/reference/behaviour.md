@@ -258,6 +258,13 @@ Three consequences worth stating, because each was a defect:
   train is standing where it turned and the graph has not been told*; once it has run on, the arrival
   has already placed it on the copy its journey ended at.
 - **The running layout is moved too, and the tail goes with it** — see §4.
+- **And what is owed survives a setup rebuild** (D3-C5). The record lives on the `Layout`, and a
+  rebuild replaces that object wholesale — so before this, any right-click gesture on the diagram
+  between a turn and its successful write discarded it silently: a home, a direction, a caption.
+  That defeated the first bullet in exactly the case it was written for, because a turn that has
+  already declined to write once has nothing but its retries. `rebuildRunningLayoutFromSetup` now
+  carries the owed turns across the same way it carries placements and `arrivedFrom`, and puts them
+  onto the new layout only where it has no newer record of its own.
 
 **"The next time the railway is idle" is a moment something has to bring about, and for two of the
 four doors nothing did.** The graph is written by `reconcileFacingWhenIdle`, which is reached only

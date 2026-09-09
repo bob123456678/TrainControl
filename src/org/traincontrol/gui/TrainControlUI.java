@@ -5871,6 +5871,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The destination turns the railway has made and not yet written into the setup (D3-C5).
+     *
+     * DRAINED rather than copied, because the Layout this reads from is about to be thrown away and a
+     * record left on it is a record nobody will ever see again.  The pair with
+     * `putThePendingTurnsBack` is `whereTheTrainsAre`/`putTheTrainsBack` for the same reason and in
+     * the same place.
+     *
+     * @return the locomotive names against the Points they turned at, never null
+     */
+    private java.util.Map<String, String> takeThePendingTurns()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return java.util.Collections.emptyMap();
+
+        return this.model.getAutoLayout().takeReversalsOnArrival();
+    }
+
+    /**
+     * Puts those turns onto whatever Layout the rebuild produced (D3-C5).
+     *
+     * `restoreReversalsOnArrival` puts each back only IF ABSENT, which is what makes this safe to do
+     * after the load rather than before it: a train that has turned again on the new railway in the
+     * meantime has a newer record naming a different square, and this must not overwrite it with the
+     * square it has since left.  That rule is stated on the Layout, where it is enforced, rather than
+     * copied here.
+     *
+     * @param turns what `takeThePendingTurns` drained, may be null or empty
+     */
+    private void putThePendingTurnsBack(java.util.Map<String, String> turns)
+    {
+        if (turns == null || turns.isEmpty()) return;
+
+        if (this.model == null || !this.model.hasAutoLayout()) return;
+
+        this.model.getAutoLayout().restoreReversalsOnArrival(turns);
+    }
+
+    /**
      * Puts each train back where it was standing before the rebuild (OB-183).
      *
      * **Only where the point still exists.** An edit that renamed or removed a square is an edit about
@@ -6168,9 +6205,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // above states the default and stays true.
             java.util.Map<String, String[]> standing = whereTheTrainsAre();
 
-            getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
+            // AND THE TURNS NOBODY HAS MANAGED TO WRITE DOWN YET (D3-C5).
+            //
+            // `Layout.reversedOnArrival` holds the reversals the railway made at a destination and has
+            // not yet drained into the setup.  It lives on the Layout, and the load below replaces the
+            // Layout wholesale - so every pending turn died here, silently, on any setup gesture at
+            // all: a home set from the diagram's right-click menu, a direction, a caption.
+            //
+            // That is the retry case RGD-C7 went to some trouble to preserve.  A turn that DECLINED to
+            // write once - no session, a store that threw part way through - is put back into the map
+            // and tried again at the next idle refresh; a rebuild between the turn and a successful
+            // write destroyed those retries, and the next dispatch is then offered paths for the wrong
+            // heading, which is OB-189 through a third door.  `restoreReversalsOnArrival`'s own javadoc
+            // named this hole: *"not a cure for a configuration RELOAD between the turn and the write -
+            // that swaps this object entirely and the pending records go with it."*
+            //
+            // Carried the same way the placements above are, and for the same reason: what the railway
+            // did is a fact, and the file is a record of it.
+            java.util.Map<String, String> pendingTurns = takeThePendingTurns();
 
-            putTheTrainsBack(standing, placementsJustEdited);
+            try
+            {
+                getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
+
+                putTheTrainsBack(standing, placementsJustEdited);
+            }
+            finally
+            {
+                // IN A `finally`, because the drain above has already emptied the old map.  A load that
+                // throws part way through would otherwise lose the turns as surely as the rebuild did -
+                // which is the shape of the defect being fixed, arriving by the failure path.
+                putThePendingTurnsBack(pendingTurns);
+            }
         }
     }
 
