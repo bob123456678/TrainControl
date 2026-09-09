@@ -114,28 +114,59 @@ its direction**. Three kinds of square matter:
   journey ending at a terminus is not asked about at all, and `ManualReversalPrompt.forJourney`
   returns before the dialog for one.
 
-**A terminus is a station; a compulsory turn is not.** The distinction is what each is *for*, and it
-decides whether trains are sent there:
+**A terminus is where a line ends; a compulsory turn is a rule about what happens on arrival.** The
+distinction is what each is *for*, and only one of the two says anything about who may send a train
+there:
 
 | | autonomy sends trains to it | every arrival turns | `isDestination` | `isAutoDestination` |
 |---|---|---|---|---|
 | **Terminus** | yes - it is the end of a line, and somewhere to go | yes | **necessarily** | yes |
-| **Compulsory turn** (`mustReverse`) | **no** | yes | **yes** | **no** |
+| **Compulsory turn** (`mustReverse`) | **yes, unless the square is ALSO marked one autonomy may not choose** | yes | **yes** | **independently** |
 | **May-reverse** | yes, if it is also a destination | only when chosen | independently | independently |
 
-**The compulsory-turn row said "not a destination" until 2026-09-08, and that was wrong** - it named
-the wrong one of two flags that sound alike (MON-C14). Measured on Adam's railway: every
-compulsory-turn square he has builds to `terminus=true`, which makes it a destination, and that is
-right. They are his parking berths. He sends trains to them by hand and homes locomotives there.
+**This row has been wrong twice, in opposite directions, and Adam settled it on 2026-09-09.**
 
-What a compulsory turn must not be is somewhere **autonomy** chooses, and that is `isAutoDestination`.
-`isDestination` means "a place trains stop". The same two flags were confused in code one finding
-earlier the same day (MON-C5), which is a fair warning about how easily they read as synonyms.
+It said "not a destination" until 2026-09-08, which named the wrong one of two flags that sound alike
+(MON-C14). Measured on Adam's railway: every compulsory-turn square he has builds to `terminus=true`,
+which makes it a destination, and that is right. They are his parking berths. He sends trains to them
+by hand and homes locomotives there.
+
+It then said a compulsory turn is never somewhere **autonomy** chooses. **The code does not say that
+and was never asked to.** `AutonomyBuilder` writes `autoDestination:false` for exactly one marking -
+the parking one (`manualOnly`) - and for nothing else; a compulsory turn that stops is emitted as a
+terminus, and `Layout.isSendableDestination` (`isDestination && isActive && isAutoDestination &&
+!isReversing`) admits a terminus. So autonomy leaves Adam's parking berths alone because **he marked
+them parking**, not because they turn trains. His ruling:
+
+> Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one
+> there.
+
+**Keeping the two separate is deliberate.** They answer different questions and a layout may want
+either without the other: a turning square autonomy is welcome to use is one marking, and a berth
+autonomy must leave alone is the other. Where both are wanted - which is every square on Adam's
+railway that turns trains - both markings are made, and that is why the ledger has looked as though
+one implied the other.
+
+`isDestination` means "a place trains stop"; `isAutoDestination` means "a place autonomy may pick".
+The same two flags were confused in code one finding earlier on 2026-09-08 (MON-C5), which is a fair
+warning about how easily they read as synonyms.
 
 The code enforces the terminus row in both directions: a terminus **must** be a destination, so
 `setDestination(false)` clears `isTerminus` and a copy trains may not arrive at is emitted as a plain
-reversing point rather than as a terminus. Nothing is ever routed *automatically* to a compulsory
-turn; `testACompulsoryTurnStationIsNotEmittedAsADestination` holds that against the real railway.
+reversing point rather than as a terminus.
+
+**One surface is wider than this, on purpose or not (OB-195).**
+`AutonomySession.stationsAutonomyWillNotChoose` - which decides the magenta leg colour and the Auto
+tier's "reachable and never chosen" notice, both in section 7 - counts a compulsory turn as one
+autonomy will never choose whether or not it is also parking. That is wider than
+`isSendableDestination`, and its own comment claimed to BE `isSendableDestination` until this ruling.
+The comment now says what the set is; whether the editor should narrow or the builder widen is filed
+as OB-195 and is Adam's to settle. On his railway the two cannot disagree, because he has no
+compulsory turn that is not also parking - which is exactly why it went unnoticed.
+
+`testACompulsoryTurnStationIsNotEmittedAsADestination` measures that last fact against the real
+railway: every compulsory-turn copy on it has `isAutoDestination` false. It is a statement about how
+Adam has marked his berths, not about what the flag implies.
 
 **Which matters for length** (§5): the track-room rule has no terminus requirement and no
 destination requirement, so a compulsory turn a train does not physically fit into is still refused.

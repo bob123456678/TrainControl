@@ -323,9 +323,22 @@ public class testAPastedTrainKeepsItsDirection
      * destination. Those squares are Adam's parking berths - he sends trains to them by hand and homes
      * locomotives there - so being a destination is exactly right.
      *
-     * What a compulsory turn must not be is somewhere AUTONOMY chooses, which is a different flag.
-     * `behaviour.md` said "never a destination" and now says which one it means. That is the second
-     * finding in this family in one sitting: MON-C5 was the same two flags being confused in code.
+     * **WHAT THIS TEST PINS IS HOW ADAM HAS MARKED HIS BERTHS, NOT WHAT THE FLAG IMPLIES** (his
+     * ruling, 2026-09-09). It reads as though a compulsory turn were never an auto-destination, and
+     * the code says no such thing: `AutonomyBuilder` writes `autoDestination:false` for the PARKING
+     * marking and for nothing else, and `Layout.isSendableDestination` admits a terminus. Adam:
+     *
+     * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may
+     * > send one there.*
+     *
+     * So every copy here comes back with `isAutoDestination` false because every compulsory turn on
+     * this railway is ALSO marked parking - both markings, made deliberately, on the same squares.
+     * That is worth pinning: it is the fact the magenta colouring and the Auto tier notice are true
+     * of, and if a berth ever loses its parking marking this is where it shows up.
+     *
+     * It is NOT evidence about the two flags being one flag, and `behaviour.md` section 3 now says so
+     * in the row this test used to be cited under. The editor's own set disagrees with the runtime on
+     * exactly this point and is filed as OB-195.
      *
      * MUTATION: none needed - this is a measurement with an assertion attached. If the railway stops
      * having a compulsory-turn station the precondition fails rather than the test passing quietly.
@@ -359,11 +372,10 @@ public class testAPastedTrainKeepsItsDirection
                 // `terminus=true`, and a terminus IS a destination. So the branch the review read is
                 // reached, on this railway, today.
                 //
-                // It is `behaviour.md` that was wrong rather than the builder. Those berths are where
-                // Adam parks trains and sends them home by hand; what a compulsory turn must not be is
-                // somewhere AUTONOMY chooses, which is `isAutoDestination`. `isDestination` means "a
-                // place trains stop" - the same two flags MON-C5 had to be told apart, one finding
-                // earlier, in the same family.
+                // AND THE REASON THEY ARE NOT AUTO-DESTINATIONS IS THE PARKING MARKING, not the
+                // compulsory turn (Adam's ruling, 2026-09-09). The builder writes
+                // `autoDestination:false` for `manualOnly` and for nothing else. So what this counts
+                // is squares Adam marked BOTH ways, which is every one of his.
                 if (built.isAutoDestination()) alsoDestinations.add(name + " (terminus="
                     + built.isTerminus() + ")");
             }
@@ -374,10 +386,11 @@ public class testAPastedTrainKeepsItsDirection
             + " about was not reached and the finding is still unsettled rather than answered");
 
         assertTrue(alsoDestinations.isEmpty(),
-            "a square marked compulsory-turn is one AUTONOMY may choose: " + alsoDestinations
-            + ". Turning round is what those squares are for, and a train sent to one by the dispatcher"
-            + " arrives somewhere it has to reverse out of - which is the whole reason the flag exists"
-            + " (MON-C14)");
+            "a compulsory-turn square on this railway is one AUTONOMY may choose: " + alsoDestinations
+            + ". That is not a code fault - the compulsory-turn marking says nothing about who may send"
+            + " a train here (Adam, 2026-09-09) - it means one of Adam's parking berths has LOST its"
+            + " parking marking, which is the marking that keeps autonomy away. Check the setup before"
+            + " the builder (MON-C14, OB-195)");
     }
 
     /**

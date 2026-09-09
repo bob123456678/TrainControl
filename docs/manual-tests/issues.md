@@ -772,6 +772,49 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
+### OB-195 - 2026-09-09 - The editor says autonomy will never choose a compulsory turn; the runtime would
+
+**Kind:** bug  
+**Raised from:** Adam's compulsory-turn ruling of 2026-09-09  
+**Filed:** 2026-09-09  
+
+Adam, 2026-09-09, ruling on the compulsory-turn row in `behaviour.md` section 3:
+
+> Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one
+> there.
+
+His ruling is that the CODE is right and the table overstated it. `AutonomyBuilder` writes
+`autoDestination:false` for exactly one marking - the parking one (`manualOnly`) - and for nothing
+else. A compulsory turn that stops is emitted with `terminus:true`, and `Layout.isSendableDestination`
+(`isDestination && isActive && isAutoDestination && !isReversing`) admits a terminus. So autonomy may
+choose a compulsory turn, and on Adam's railway it does not only because every one of his is ALSO
+marked parking.
+
+**The editor does not agree with that.** `AutonomySession.stationsAutonomyWillNotChoose` adds a
+station when `!isAutoDestination(tile) || isMustTurnAround(tile)` - so a compulsory turn counts as one
+autonomy will never choose whether or not it is parking. That set decides two visible things: the
+magenta colour on a tested path's leg (section 7 of `behaviour.md`) and the Auto tier's "reachable and
+never chosen" notice. Its own comment claimed to be "that clause asked of the diagram", which is what
+made the disagreement invisible; the comment has been corrected to say the set is wider, but the
+behaviour has not been changed.
+
+**What it costs, today:** nothing on Adam's railway, because he has no compulsory turn that is not
+also parking. On any railway that has one, the diagram says autonomy will never send a train there and
+autonomy sends trains there. `guard-and-affordance-same-question`.
+
+**Two ways to settle it, and it is Adam's to choose:**
+
+1. narrow the editor - drop the `isMustTurnAround` clause, so the notice and the colour say exactly
+   what the runtime does. A compulsory turn autonomy may choose is then drawn like any other station;
+2. widen the runtime - have the builder write `autoDestination:false` for a compulsory turn as well,
+   which is the rule the table used to claim and which his ruling has just declined.
+
+(1) matches the ruling. (2) is a behaviour change to the running railway and would need a test at the
+dispatcher.
+
+Not urgent, and not a symptom anybody has seen. Filed so that the divergence is written down rather
+than living in a code comment.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

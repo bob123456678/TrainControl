@@ -3542,17 +3542,36 @@ public class AutonomySession
     }
 
     /**
-     * The stations autonomy may never choose for itself (V36-C4).
+     * The stations this editor will report as ones autonomy never chooses (V36-C4).
      *
-     * The runtime's own rule is `Layout.isSendableDestination` - `!end.isReversing() && end.isAutoDestination()` before
-     * a destination is a candidate at all - and `isAutoDestination` here is the same switch under a
-     * different name, so this is that clause asked of the diagram.
+     * **WIDER THAN THE RUNTIME RULE, and this said it WAS the runtime rule until 2026-09-09.**  The
+     * runtime is `Layout.isSendableDestination` - `isDestination() && isActive() &&
+     * isAutoDestination() && !isReversing()` - and the second clause below is not in it.
      *
-     * Written for `checkReversingGoesSomewhere`, which counted any station as somewhere to go and so
-     * passed a reversing point whose only reachable station is a parking berth. Adam, 2026-09-04:
-     * *"Make it a notice."*
+     * `isAutoDestination` really is the same switch under a different name, so the first clause is
+     * that rule asked of the diagram.  `isMustTurnAround` is an addition.  A compulsory-turn square
+     * that stops trains is emitted by `AutonomyBuilder` with `terminus:true`, and a terminus has
+     * `isReversing()` false, so the runtime WOULD choose it - `autoDestination:false` is written for
+     * the parking marking (`manualOnly`) and for nothing else.
      *
-     * @return the tiles that are stations but not automatic destinations
+     * Adam settled what the two markings mean on 2026-09-09: **marking a square as a compulsory turn
+     * says what happens when a train ARRIVES, not who may send one there.**  So the two are
+     * independent, and this method's extra clause makes a claim the running railway does not honour.
+     * `docs/reference/behaviour.md` section 3 carries the ruling.
+     *
+     * **It costs nothing on Adam's railway and is left alone deliberately.**  Every compulsory turn he
+     * has is also a parking berth, so the first clause already catches all of them and the two
+     * spellings cannot disagree.  Narrowing this to match the runtime, or widening the builder to
+     * match this, is a decision rather than a repair, and it is filed as OB-195.  What is corrected
+     * here is the CLAIM: a comment that says "this is the runtime rule" is what stopped anybody
+     * noticing that it is not.
+     *
+     * Two readers depend on the width: the magenta leg colour and the Auto tier's "reachable and never
+     * chosen" notice.  `AutonomyChecks.checkReversingGoesSomewhere` is the third and the one it was
+     * written for - it counted any station as somewhere to go, and so passed a reversing point whose
+     * only reachable station is a parking berth.  Adam, 2026-09-04: *"Make it a notice."*
+     *
+     * @return the tiles that are stations and either not automatic destinations or compulsory turns
      */
     public Set<TileKey> stationsAutonomyWillNotChoose()
     {
@@ -3562,16 +3581,17 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            // BOTH HALVES OF THE RUNTIME RULE (CONF-B6).  `Layout.isSendableDestination` refuses a destination that
-            // is reversing OR is not an auto destination, and this had only the second half - so a
-            // station the railway turns every train at was reported as somewhere autonomy would
-            // happily go.  It passed unnoticed because no station on the sample layout is a
-            // compulsory turn; the Path Type check reads this, and would have said the opposite of
-            // what autonomy does on any railway that has one.
+            // THE SECOND CLAUSE IS THIS EDITOR'S, NOT THE RUNTIME'S - see the javadoc, and OB-195.
+            //
+            // It arrived as CONF-B6, which read `Layout.isSendableDestination`'s `!isReversing()`
+            // clause and spelled it here as `isMustTurnAround`.  The two are not the same thing: a
+            // compulsory turn that stops is built as a TERMINUS, whose `isReversing()` is false.  What
+            // this clause does is refuse a square the runtime would accept, which is the safe
+            // direction for a notice and the wrong direction for a claim about what autonomy does.
             //
             // `isMustTurnAround`, not `isTurnAround`: a MAY-reverse square keeps a plain copy, and
             // autonomy can choose that one perfectly well.  Only a square where every copy turns is
-            // one it can never pick.
+            // reported here at all.
             if (store.isStation(tile)
                 && (!isAutoDestination(tile) || isMustTurnAround(tile))) out.add(tile);
         }
