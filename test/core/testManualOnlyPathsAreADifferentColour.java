@@ -71,12 +71,34 @@ public class testManualOnlyPathsAreADifferentColour
     /** The station switched to manual-only for the wiring test, put back afterwards. */
     private static TileKey parked;
 
+    /** The copy of the fixture the layout preference is pointed at, opened before the model. */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // BEFORE init, and this is the whole reason the order is written out (OB-111).
+        //
+        // `MarklinControlStation.init` reads the layout preference and loads whatever railway it
+        // names.  That preference is machine-global and on Adam's machine it names his real,
+        // unrecoverable layout - so this class opened HIS railway on every run, including under a
+        // battery, while every line below it worked on the fixture and looked entirely careful.
+        // Nothing in the suite names his folder; the path is in his preferences, which is why the
+        // redirection has to happen before the call that reads it rather than anywhere after it.
+        //
+        // Found by `regression.testSwitchingToACentralStationLayout.testNoTestOpensTheOperatorsRailway`,
+        // which counted this class as the fifty-sixth model built without a sandbox.  The pin was NOT
+        // raised: its own comment says to give the class a sandbox instead, and that is this.
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, false);
 
-        File folder = new File("test/test_layout");
+        // THE SANDBOX'S COPY, not the checked-in fixture.
+        //
+        // It holds the same files - `LayoutSandbox.open()` copies `test/test_layout` - so nothing
+        // below sees a different railway.  What changes is that the session, which writes, can only
+        // ever reach the copy, so a tracked fixture cannot be dirtied by a run of this class either.
+        File folder = sandbox.getFolder();
 
         assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
 
@@ -100,6 +122,12 @@ public class testManualOnlyPathsAreADifferentColour
         // Nothing is saved, but the session outlives this class in the same JVM under a battery, and a
         // station left marked as parking would change what every later class sees.
         if (session != null && parked != null) session.setAutoDestination(parked, true);
+
+        // AND THE PREFERENCE GOES BACK, whatever happened above.  A sandbox left open has changed
+        // which railway the application opens the next time Adam starts it, to a folder under %TEMP%
+        // - which is worse than the churn the sandbox exists to remove.  `alwaysRun` on this method
+        // is what makes that true even when the set-up itself threw.
+        if (sandbox != null) sandbox.close();
     }
 
     // ---------------------------------------------------------------------------------------------
