@@ -117,8 +117,57 @@ public class testTheLengthGuardsOnTheRealLayout
     @AfterClass(alwaysRun = true)
     public static void tearDown() throws Exception
     {
+        giveTheLengthsBack();
+
         if (sandbox != null) sandbox.close();
     }
+
+    /*
+     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY, AND WHY IT HAS NOT BEEN GIVEN ITS OWN TRAINS.
+     *
+     * Adam, 2026-09-09: *"generate trains programmatically in the tests, and give them semantic
+     * names."*  Done for `core.testTheRoomRuleCensusOnTheRealLayout`, which pinned a set of lengths
+     * harvested from his database.  It was ATTEMPTED here and reverted, and the reason is a finding
+     * rather than a difficulty, so it is written down.
+     *
+     * This class borrows in two ways: by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one,
+     * each with an `assertNotNull` saying the engine "is not on this railway any more" - and by
+     * WHATEVER IS STANDING, through `anyPlacedLocomotive`.
+     *
+     * The by-name half is easy to replace: make two locomotives, place them into the SETUP - a
+     * placement on the running layout does not survive `rebuild()`, which every claim here does at
+     * least once - and delete them in `tearDown`.  That was built and it works.
+     *
+     * **THE OTHER HALF DOES NOT SURVIVE IT, AND THAT IS THE FINDING.**
+     * `testALongTrainIsOfferedNoBerthWhenEverySectionIsOneUnit` asks `anyPlacedLocomotive` for a train
+     * and asserts that, with every section measured at one unit, a nine-unit train is offered NO berth
+     * it would have to come to rest inside.  Its own javadoc says the claim is about the rule rather
+     * than about one pair: *"this asserts it of every berth on the railway at once, which cannot be
+     * satisfied by getting one pair right."*
+     *
+     * It is satisfied by getting one START square right.  MEASURED 2026-09-09, by placing a train of
+     * this class's own on each of two squares the snapshot's engines occupy, and running it:
+     *
+     *   - from `1 - Main:14,3`  the nine-unit train is offered `BottomMainC (eastbound, reverse)`;
+     *   - from `1 - Main:20,13` it is offered `RampDown (southbound, reverse)`.
+     *
+     * Both red, and in each case the sibling assertion reported the room at that berth as ONE.  The
+     * class is green today because `anyPlacedLocomotive` returns the first occupied `Point` the layout
+     * enumerates, and from THAT square nothing is offered.
+     *
+     * Two questions underneath, and neither is a fixture question:
+     *
+     *   1. is the length guard refusing from some start squares and not from others, which would be a
+     *      hole in it; or
+     *   2. does `roomTheGuardSees` - which this class computes for the assertion message - answer a
+     *      different question from `Layout.measuredRoomAtTheBerth`, which walks back along the PATH
+     *      and is therefore start-dependent by construction?
+     *
+     * Until one of those is answered, giving this class its own trains turns a green claim red without
+     * anybody knowing which of the two it has found - so it goes on borrowing, and this says what it
+     * is borrowing and what that is hiding.  The lengths it sets are put back at every site now, which
+     * is the half that was doing real harm.
+     */
 
     /**
      * With every section one unit long, a long train is offered nothing it has to reverse into.
@@ -583,11 +632,21 @@ public class testTheLengthGuardsOnTheRealLayout
 
         assertNotNull(train, "75 407 DB is not on this railway any more");
 
-        train.setTrainLength(4);
+        // PUT BACK, like the other two sites that borrow this engine.  This one kept the length.
+        Integer was = train.getTrainLength();
 
-        assertFalse(offers(train, "TunnelLongPark"),
-            "with only the two one-unit segments he measured, a four-unit train is still offered"
-            + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
+        try
+        {
+            train.setTrainLength(4);
+
+            assertFalse(offers(train, "TunnelLongPark"),
+                "with only the two one-unit segments he measured, a four-unit train is still offered"
+                + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
+        }
+        finally
+        {
+            train.setTrainLength(was == null ? 0 : was);
+        }
     }
 
     /**
@@ -621,6 +680,10 @@ public class testTheLengthGuardsOnTheRealLayout
         Locomotive engine = model.getLocByName("2-8-4 3505 SP");
 
         assertNotNull(engine, "2-8-4 3505 SP is not on this railway any more");
+
+        // BORROWED, AND GIVEN BACK in tearDown.  This site kept the length; the rest of the method
+        // moves the train about, so a try/finally round it would have to be round the whole claim.
+        borrowTheLengthOf(engine);
 
         engine.setTrainLength(4);
 
@@ -762,15 +825,85 @@ public class testTheLengthGuardsOnTheRealLayout
         return built;
     }
 
+    /**
+     * Whatever is standing on the railway, with its length remembered before a caller writes over it.
+     *
+     * EVERY CALLER SETS A LENGTH ON WHAT THIS RETURNS, and none of them put it back - so a run of this
+     * class left a nine or a one on one of Adam's trains, and which train depended on the order the
+     * layout enumerates its Points in. `giveTheLengthsBack` in `tearDown` is the other half.
+     *
+     * See the note beside `tearDown` for why this still borrows rather than using a train of the
+     * class's own.
+     *
+     * @param built the running layout
+     * @return the first train standing anywhere, or null
+     */
     private Locomotive anyPlacedLocomotive(Layout built)
     {
         for (Point point : built.getPoints())
         {
-            if (point.getCurrentLocomotive() != null) return point.getCurrentLocomotive();
+            if (point.getCurrentLocomotive() != null)
+            {
+                borrowTheLengthOf(point.getCurrentLocomotive());
+
+                return point.getCurrentLocomotive();
+            }
         }
 
         return null;
     }
+    /**
+     * The lengths this class has changed on Adam's own locomotives, and what they were.
+     *
+     * `MarklinControlStation.init` opens his real locomotive database rather than an empty one, and
+     * the layout sandbox does not freeze it - it copies the layout folder and nothing else. So a
+     * length set on a borrowed train is a change to his railway that outlives the run.
+     *
+     * A map rather than a field per site, because what gets borrowed here is "whatever is standing",
+     * and how many that is depends on the snapshot.
+     */
+    private static final java.util.Map<org.traincontrol.base.Locomotive, Integer> LENGTHS_WE_CHANGED =
+        new java.util.LinkedHashMap<>();
+
+    /**
+     * Remembers a borrowed train's length before this class writes over it.
+     *
+     * FIRST VALUE WINS: a train measured twice in one run must go back to what it was before the
+     * FIRST change, not to what the previous claim left on it.
+     *
+     * @param loc the borrowed train
+     */
+    private static void borrowTheLengthOf(org.traincontrol.base.Locomotive loc)
+    {
+        if (loc == null || LENGTHS_WE_CHANGED.containsKey(loc)) return;
+
+        LENGTHS_WE_CHANGED.put(loc, loc.getTrainLength());
+    }
+
+    /**
+     * Puts every borrowed length back.
+     *
+     * Each on its own, so one failure does not keep the others borrowed. A length left behind is
+     * silent: nothing on screen says a train is measured at fifty, and the next thing to read it is
+     * the anti-collision rule.
+     */
+    private static void giveTheLengthsBack()
+    {
+        for (java.util.Map.Entry<org.traincontrol.base.Locomotive, Integer> was
+             : LENGTHS_WE_CHANGED.entrySet())
+        {
+            try
+            {
+                was.getKey().setTrainLength(was.getValue() == null ? 0 : was.getValue());
+            }
+            catch (Exception cannotPutItBack)
+            {
+            }
+        }
+
+        LENGTHS_WE_CHANGED.clear();
+    }
+
 
     /**
      * The berths this train is offered that it would have to come to rest inside - terminus or

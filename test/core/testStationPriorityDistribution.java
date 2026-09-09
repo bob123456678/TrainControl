@@ -96,10 +96,67 @@ public class testStationPriorityDistribution
     @AfterClass(alwaysRun = true)
     public void disconnect() throws Exception
     {
+        // PUT BACK. `init()` opens Adam's own locomotive database rather than an empty one, so the
+        // length this class sets on whatever the snapshot parks at FROM was a change to one of his
+        // trains that outlived the run.
+        giveTheLengthsBack();
+
         if (model != null) model.stop();
 
         if (sandbox != null) sandbox.close();
     }
+    /**
+     * The lengths this class has changed on Adam's own locomotives, and what they were.
+     *
+     * `MarklinControlStation.init` opens his real locomotive database rather than an empty one, and
+     * the layout sandbox does not freeze it - it copies the layout folder and nothing else. So a
+     * length set on a borrowed train is a change to his railway that outlives the run.
+     *
+     * A map rather than a field per site, because what gets borrowed here is "whatever is standing",
+     * and how many that is depends on the snapshot.
+     */
+    private static final java.util.Map<org.traincontrol.base.Locomotive, Integer> LENGTHS_WE_CHANGED =
+        new java.util.LinkedHashMap<>();
+
+    /**
+     * Remembers a borrowed train's length before this class writes over it.
+     *
+     * FIRST VALUE WINS: a train measured twice in one run must go back to what it was before the
+     * FIRST change, not to what the previous claim left on it.
+     *
+     * @param loc the borrowed train
+     */
+    private static void borrowTheLengthOf(org.traincontrol.base.Locomotive loc)
+    {
+        if (loc == null || LENGTHS_WE_CHANGED.containsKey(loc)) return;
+
+        LENGTHS_WE_CHANGED.put(loc, loc.getTrainLength());
+    }
+
+    /**
+     * Puts every borrowed length back.
+     *
+     * Each on its own, so one failure does not keep the others borrowed. A length left behind is
+     * silent: nothing on screen says a train is measured at fifty, and the next thing to read it is
+     * the anti-collision rule.
+     */
+    private static void giveTheLengthsBack()
+    {
+        for (java.util.Map.Entry<org.traincontrol.base.Locomotive, Integer> was
+             : LENGTHS_WE_CHANGED.entrySet())
+        {
+            try
+            {
+                was.getKey().setTrainLength(was.getValue() == null ? 0 : was.getValue());
+            }
+            catch (Exception cannotPutItBack)
+            {
+            }
+        }
+
+        LENGTHS_WE_CHANGED.clear();
+    }
+
 
     /**
      * A rule that respects priority never leaves the highest band that has somewhere to go (OB-156).
@@ -347,6 +404,8 @@ public class testStationPriorityDistribution
         //
         // One, not zero: zero means "unknown length", which the rule waves through entirely, and a
         // fixture that turns a rule off tests less than one that satisfies it.
+        borrowTheLengthOf(standing);
+
         standing.setTrainLength(1);
 
         return standing;

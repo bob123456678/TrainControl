@@ -81,8 +81,45 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int PAIRS_WITH_A_PATH = 1848;
     private static final int NEWLY_REFUSED = 880;
 
-    /** The train lengths recorded in his database - section 5b's "six train lengths", as a set. */
+    /**
+     * The lengths this census is over - and they are THIS TEST'S, not a reading of Adam's database.
+     *
+     * Adam, 2026-09-09: *"for the pinned train lengths - yes, generate trains programmatically in the
+     * tests, and give them semantic names."*
+     *
+     * They used to be harvested: `trainLengths()` walked `model.getLocomotives()` - the real
+     * locomotive database, which `init()` restores and which the layout sandbox does NOT freeze - and
+     * collected the distinct positive lengths it found. Six of them, 1 to 6, which is what section 5b
+     * says. **The census then had a population nobody in this file chose.** Adam measuring one of his
+     * own trains, or buying one, or driving a length back to zero, moves the set and this class goes
+     * red about a railway that has not changed. The reverse is worse: a length he happens to add can
+     * change `newlyRefused` without anything here saying why.
+     *
+     * So the six trains are made here, with the lengths written down, and deleted again in
+     * `tearDownClass`. The numbers below are unchanged, because these are the same six lengths - which
+     * is the point: the census is over the same population it was over when section 5b was written,
+     * and now it will stay over it.
+     */
     private static final Integer[] LENGTHS = {1, 2, 3, 4, 5, 6};
+
+    /**
+     * What each census train is called, and it says what it is for.
+     *
+     * A name like "census 3-unit" says the whole of it: this train exists so that the census can ask
+     * the room rule about three units. `newlyRefuses` reads exactly one thing off a locomotive -
+     * `getTrainLength` - so the name is for whoever is reading a failure, and a borrowed engine's
+     * name told them nothing about why it was in the census.
+     */
+    private static final String CENSUS_NAME = "census %d-unit";
+
+    /**
+     * The address the first census train takes; the others follow it.
+     *
+     * Any address will do - locomotive addresses are not unique in this database and several test
+     * classes already share one - and 51 is chosen only because no other test class uses that band,
+     * so a stray one left behind by a crash is identifiable.
+     */
+    private static final int FIRST_CENSUS_ADDRESS = 51;
 
     /**
      * Where every newly refused journey arrives, and the room measured behind each.
@@ -115,6 +152,21 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
         model = init(null, true, false, false, false);
 
+        // THE CENSUS'S OWN TRAINS, before anything is measured.
+        //
+        // Deleted in tearDownClass. `init()` opens Adam's real locomotive database rather than an
+        // empty one, so a train left behind here is a train on his railway.
+        for (Integer units : LENGTHS)
+        {
+            MarklinLocomotive train = model.newMM2Locomotive(
+                String.format(CENSUS_NAME, units), FIRST_CENSUS_ADDRESS + units);
+
+            assertNotNull(train, "the census could not create its " + units + "-unit train, so the"
+                + " population below would be short one length and every count wrong");
+
+            train.setTrainLength(units);
+        }
+
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
 
@@ -132,11 +184,29 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * Puts the layout preference back.
+     * Takes the census's trains off Adam's railway, and puts the layout preference back.
+     *
+     * `alwaysRun`, and each deletion on its own, so that a failure part way through the six still
+     * removes the other five. A locomotive left in his database is the exact harm this migration was
+     * asked for.
      */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
+        if (model != null)
+        {
+            for (Integer units : LENGTHS)
+            {
+                try
+                {
+                    model.deleteLoc(String.format(CENSUS_NAME, units));
+                }
+                catch (Exception alreadyGone)
+                {
+                }
+            }
+        }
+
         if (sandbox != null) sandbox.close();
     }
 
@@ -170,8 +240,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
         System.out.println("  arriving at             : " + census.berths);
 
         assertEquals(census.lengths, java.util.Arrays.asList(LENGTHS),
-            "the train lengths in the database are now " + census.lengths + ".  Section 5b's census is"
-            + " over each of them in turn, so the count below is over a different set of journeys");
+            "the census ran over " + census.lengths + " rather than " + java.util.Arrays.asList(LENGTHS)
+            + ".  These are this class's OWN trains now, not a reading of Adam's database, so this is"
+            + " a broken fixture rather than a railway that has changed - and the count below would be"
+            + " over a different set of journeys either way");
 
         assertEquals(census.orderedPairs, ORDERED_PAIRS,
             "this railway now has " + census.orderedPairs + " ordered station pairs on it rather than "
@@ -234,17 +306,19 @@ public class testTheRoomRuleCensusOnTheRealLayout
     {
         Census census = new Census();
 
-        for (Integer length : trainLengths())
-        {
-            census.lengths.add(length);
-        }
+        // THE CENSUS'S OWN TRAINS, in length order.
+        //
+        // This used to build the list out of `model.getLocomotives()` and drive a throwaway
+        // `MarklinLocomotive` round the loop with its length reset each time. The throwaway was right
+        // about the hazard it named - "a length left behind on a real train is a change to his
+        // railway" - and it only covered half of it: the LENGTHS were still his, so the census was
+        // over whatever set his database happened to hold. Now the trains are ours and so is the set.
+        List<Locomotive> trains = censusTrains();
 
-        // NOT ONE OF ADAM'S LOCOMOTIVES, whose length this would otherwise have to change and change
-        // back - and a length left behind on a real train is a change to his railway.  The room rule
-        // reads exactly one thing off the locomotive, `getTrainLength`, so a throwaway that is not in
-        // the database answers the question identically.
-        MarklinLocomotive probe = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
-            "Room census probe");
+        for (Locomotive train : trains)
+        {
+            census.lengths.add(train.getTrainLength());
+        }
 
         List<Point> stations = new ArrayList<>();
 
@@ -269,17 +343,15 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
                 census.pairsWithAPath++;
 
-                for (Integer length : census.lengths)
+                for (Locomotive train : trains)
                 {
-                    probe.setTrainLength(length);
-
-                    if (!newlyRefuses(path, probe)) continue;
+                    if (!newlyRefuses(path, train)) continue;
 
                     census.newlyRefused++;
 
                     Point ending = path.get(path.size() - 1).getEnd();
 
-                    Integer room = Layout.measuredRoomAtTheBerth(path, probe);
+                    Integer room = Layout.measuredRoomAtTheBerth(path, train);
 
                     census.berths.put(ending.getName(), room);
                 }
@@ -312,24 +384,33 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * The distinct train lengths recorded in the operator's locomotive database, shortest first.
+     * The six trains `setUpClass` made, shortest first.
      *
-     * Section 5b's census is over "each of the six train lengths in his database in turn", which is
-     * the set rather than the count - two locomotives of the same length ask the same question twice.
+     * Looked up by name rather than held in a field, so that a train that failed to be created, or was
+     * removed by something else during the run, is a loud failure here rather than a silently shorter
+     * census. That is the shape the old harvester could not have: reading the database gave whatever
+     * was in it, and "whatever was in it" has no wrong answer to notice.
      *
-     * @return the lengths, each once
+     * @return the census trains
      */
-    private static List<Integer> trainLengths()
+    private static List<Locomotive> censusTrains()
     {
-        TreeSet<Integer> lengths = new TreeSet<>();
+        List<Locomotive> trains = new ArrayList<>();
 
-        for (Locomotive loc : model.getLocomotives())
+        for (Integer units : new TreeSet<>(java.util.Arrays.asList(LENGTHS)))
         {
-            Integer length = loc.getTrainLength();
+            Locomotive train = model.getLocByName(String.format(CENSUS_NAME, units));
 
-            if (length != null && length > 0) lengths.add(length);
+            assertNotNull(train, "the census's " + units + "-unit train is not in the database, so"
+                + " this run is over a shorter population than the one section 5b states");
+
+            assertEquals(train.getTrainLength(), units,
+                "the census's " + units + "-unit train measures " + train.getTrainLength()
+                + " units, so the population is not the one the counts below were measured over");
+
+            trains.add(train);
         }
 
-        return new ArrayList<>(lengths);
+        return trains;
     }
 }

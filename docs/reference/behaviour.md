@@ -649,15 +649,21 @@ either bullet gets wrong, it gets wrong everywhere rather than at a handful of r
 
 **Measured on the operator's own railway**, because "everywhere" is not a number. The census is
 `core.testTheRoomRuleCensusOnTheRealLayout`, which runs in the battery: for every ordered pair of
-station Points it searches a path, then asks each of the train lengths in his database in turn whether
-the widened rule refuses it and the fence it replaced - `isTerminus() || isReversing()` - would not
-have.
+station Points it searches a path, then asks each of six trains of its own, one to six units long, in
+turn whether the widened rule refuses it and the fence it replaced - `isTerminus() || isReversing()` -
+would not have.
+
+**Those six lengths were read out of his locomotive database until 2026-09-09**, and are the class's
+own now (Adam: *"generate trains programmatically in the tests, and give them semantic names"*). The
+set is the same, so every number below is unchanged - and it is now a set this file chose. Measuring
+one of his trains, or buying one, used to move the population the census is over and could change
+the count below with nothing saying why.
 
 | | |
 |---|---|
 | ordered station pairs | 1980 (45 destination Points, each against the other 44) |
 | of those, routable | 1848 |
-| train lengths in the database | 1, 2, 3, 4, 5, 6 |
+| train lengths asked, the census's own | 1, 2, 3, 4, 5, 6 |
 | journeys the widening NEWLY refuses | **880** |
 | every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
 
