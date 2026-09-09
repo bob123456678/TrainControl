@@ -600,6 +600,15 @@ they are what this section reasons from.
   the railway carries it out.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
 
+**Whether it is on offer is asked once, off the event thread** (OB-192, second round). "Is anything
+away from home" is cheap but not free of a lock: it builds a `HomeStaging.snapshot`, which calls
+`Layout.getHomeStations` - `synchronized` on the `Layout`, the same monitor a dispatch holds for the
+whole of `configureAndLockPath` and a path search holds for the whole of `getPossiblePaths`. Asked
+from the event thread, as the button refresh, the diagram's right-click menu and the click handler
+each did, that is the freeze of §5c by a second door. There is one asker now, on a worker; the button
+it paints is what every other surface reads, so no two surfaces can describe the situation
+differently and none of them can wait on the railway to find out.
+
 ---
 
 ## 6a. Editing the setup while the railway is using it

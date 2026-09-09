@@ -63,3 +63,10 @@ before anything reads it, so the checked-in fixture is never written to either.
 ## Used by
 
 - `core.testTheFrozenRailwayIsStillTheRailway`
+- `core.testTheShadingFollowsTheTrain`
+- `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway`
+- `regression.testTheGreyDoesNotRebuildTheDiagram`
+- `regression.testTheWashIsNoLongerThanTheTrain`
+- `ui.testBlockedTrackIsGreyWhileAutonomyRuns`
+- `ui.testTheShadingIsRedrawnWhenATrainMoves`
+- `ui.testTheTrainIsShownAsALine`

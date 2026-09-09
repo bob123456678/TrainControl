@@ -22880,16 +22880,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // Answered before the confirmation below: asking whether to discard the timetable only makes
-        // sense if a run is going to happen, and "everything is already home" is knowable without
-        // planning.  The expensive half - can it actually be arranged - still waits until after.
-        HomeStaging.Outcome trivial = layout.triageReturnToHome();
-
-        if (trivial != null)
-        {
-            JOptionPane.showMessageDialog(this, describeStagingOutcome(trivial, null));
-            return;
-        }
+        // THE CHEAP TRIAGE IS NOT ASKED HERE ANY MORE (OB-192, second round).
+        //
+        // It used to be, and this is the event thread: `triageReturnToHome` builds a
+        // `HomeStaging.snapshot`, which calls `Layout.getHomeStations`, `synchronized` on the `Layout`
+        // - so pressing this button while anything held that monitor froze the window rather than
+        // answering.  `refreshReturnHomeButton` says at length why that monitor is not the event
+        // thread's to wait for.
+        //
+        // NOTHING IS LOST BY DROPPING IT.  The reason it was asked here has already gone: the comment
+        // it carried - "asking whether to discard the timetable only makes sense if a run is going to
+        // happen" - describes a confirmation that no longer exists, because the timetable is borrowed
+        // and handed back rather than replaced.  What is left is the message, and the same message
+        // still arrives: `plan()` delegates to `triage()` and returns the trivial outcome as a Plan, so
+        // the block below reports it through `describeStagingPlan` - the same sentence from the same
+        // method, a moment later and off this thread.
+        //
+        // And the button that started this was enabled by that very answer, so reaching here at all
+        // means the railway had work to do the last time anybody asked.
 
         // Borrowed, not replaced.  The staging plan occupies the timetable only while it runs and the
         // original goes back afterwards - on success, on failure, and on a graceful stop alike - so
@@ -23106,8 +23114,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * locomotive list is repainted - that is what runs when a locomotive is placed or arrives, which is
      * exactly when "is anything away from home" changes its answer.
      *
-     * Only the cheap half of the question is asked: whether a plan exists needs a search, and this runs
-     * on the EDT.
+     * Only the cheap half of the question is asked: whether a plan exists needs a search.
+     *
+     * **AND THE CHEAP HALF IS STILL NOT ASKED HERE (OB-192, second round).**  This method runs on the
+     * event thread - `repaintAutoLocListLite` and `repaintAutoLocListFull` both call it from inside
+     * their `invokeLater`, which is what runs on every arrival, every departure and every placement -
+     * and `Layout.triageReturnToHome` builds a `HomeStaging.snapshot`, which calls
+     * `Layout.getHomeStations`, `synchronized` on the `Layout`.  Same monitor, same thread, same
+     * freeze as the covered marks: `refreshCoveredTrack` says at length why the event thread must
+     * never queue for that monitor, and this was the sibling nobody swept.
+     *
+     * **`isAutonomyBusy` DOES NOT COVER IT**, which is what made this look safe.  That guard asks
+     * `Layout.isRunning`, and `isRunning` counts `locomotiveThreads` - incremented in `executePath`
+     * before `configureAndLockPath` is reached - so it IS true for a hand dispatch as well as for
+     * autonomy, and a dispatch cannot get past it.  What it says nothing about is every OTHER holder
+     * of that monitor with no train moving at all.  The nearest one is in this very refresh:
+     * `repaintAutoLocListLite` submits `AutoLocomotiveStatus.findPaths` to `AutonomyRenderer`, which
+     * calls `getPossiblePaths` - `synchronized`, and a search of the whole graph, once per panel.  So
+     * the event thread and that worker raced for the railway's monitor on every refresh, with the
+     * railway standing still.  Measured, not argued: the reproduction holds the monitor with nothing
+     * running and the event thread parks at `Layout.getHomeStations`.
+     *
+     * So the question goes to a worker and the answer comes back to be painted.  Nothing about WHAT
+     * the button says changes; only where it is worked out.
+     *
+     * @see #askForReturnHomeTriage(org.traincontrol.automation.Layout)
      */
     void refreshReturnHomeButton()
     {
@@ -23134,7 +23165,120 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        HomeStaging.Outcome nothingToDo = layout.triageReturnToHome();
+        // BOTH ANSWERED HERE, on the event thread, because neither costs a monitor: `isAutonomyBusy`
+        // reads two flags and a ConcurrentHashMap.  Only the third question goes away.
+        askForReturnHomeTriage(layout);
+    }
+
+    /**
+     * Puts one worker on "is there anything to send home", unless one is already on it.
+     *
+     * COALESCED, AND THE LAST ASK ALWAYS LANDS, for the reason `askForCoveredTrack` gives in full: the
+     * refresh runs on every arrival and departure, the answer can take as long as somebody is holding
+     * the railway's monitor, and dropping the extra asks outright is what leaves a stale answer on
+     * screen.  The flag says the answer is out of date and the worker keeps going until it is not.
+     *
+     * @param railway the layout to ask, captured on the caller's thread
+     */
+    private void askForReturnHomeTriage(final Layout railway)
+    {
+        returnHomeTriageSubject = railway;
+
+        returnHomeTriageDirty.set(true);
+
+        if (!returnHomeTriageInFlight.compareAndSet(false, true)) return;
+
+        try
+        {
+            ReturnHomeTriageRenderer.submit(this::workOutReturnHomeTriage);
+        }
+        catch (Exception refused)
+        {
+            // Submitting can be refused - the pool is shut down when the window closes - and the flag
+            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
+            settleReturnHomeTriage();
+        }
+    }
+
+    /**
+     * Asks the railway, off the event thread, and sends the answer back to be painted.
+     *
+     * @see #refreshReturnHomeButton()
+     */
+    private void workOutReturnHomeTriage()
+    {
+        try
+        {
+            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
+            // that arrives while this one is computing sets it again and is served by the next turn of
+            // this loop rather than being lost to it.
+            while (returnHomeTriageDirty.compareAndSet(true, false))
+            {
+                Layout asked = returnHomeTriageSubject;
+
+                if (asked == null) continue;
+
+                HomeStaging.Outcome answer;
+
+                try
+                {
+                    answer = asked.triageReturnToHome();
+                }
+                catch (RuntimeException replaced)
+                {
+                    // The layout is being rebuilt underneath this pass; the next ask catches up.  Not
+                    // logged: this runs on every arrival, and a burst would fill the log with one
+                    // moment.
+                    continue;
+                }
+
+                // DISCARDED IF THE RAILWAY MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
+                // answer about the graph that has just been thrown away must not paint the button for
+                // the one that replaced it.
+                if (asked != returnHomeTriageSubject) continue;
+
+                returnHomeTriage = answer;
+
+                javax.swing.SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
+            }
+        }
+        finally
+        {
+            settleReturnHomeTriage();
+
+            // AN ASK THAT ARRIVED IN THE GAP - between the loop reading the flag for the last time and
+            // the line above giving the job up.  `workOutCoveredTrack` says why this matters: on the
+            // last refresh of a run there is nothing else coming to pick it up.
+            if (returnHomeTriageDirty.get() && returnHomeTriageSubject != null)
+            {
+                askForReturnHomeTriage(returnHomeTriageSubject);
+            }
+        }
+    }
+
+    /**
+     * Puts the worker's answer on the button, on the event thread.
+     *
+     * THE GUARDS ARE ASKED AGAIN, because this runs a beat after they were.  A run can have started
+     * between the ask and the answer, and an answer computed against a standing railway must not
+     * re-enable the button for one that is now moving - which is the state `refreshReturnHomeButton`'s
+     * own `isAutonomyBusy` branch exists to describe.
+     *
+     * @param asked the layout the answer was computed against
+     */
+    private void paintReturnHomeFromTheAnswer(Layout asked)
+    {
+        if (this.returnHomeButton == null) return;
+
+        if (this.model == null || this.model.getAutoLayout() != asked) return;
+
+        if (this.isAutonomyBusy())
+        {
+            this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
+            return;
+        }
+
+        HomeStaging.Outcome nothingToDo = returnHomeTriage;
 
         this.returnHomeButton.setEnabled(nothingToDo == null);
 
@@ -23143,6 +23287,125 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? I18n.t("ui.main.tooltip.returnHome")
             : describeStagingOutcome(nothingToDo, null));
     }
+
+    /**
+     * Says the job is given up, and wakes anybody waiting for the answer.
+     *
+     * Both under the one monitor `awaitReturnHomeTriage` waits on, so a waiter cannot check the flags,
+     * find an ask outstanding, and go to sleep in the instant between this clearing them and
+     * announcing it.
+     */
+    private void settleReturnHomeTriage()
+    {
+        synchronized (returnHomeTriageSettled)
+        {
+            returnHomeTriageInFlight.set(false);
+
+            returnHomeTriageSettled.notifyAll();
+        }
+    }
+
+    /**
+     * Waits until every return-home ask already made has landed.
+     *
+     * BOUNDED, ALWAYS, and this is the only wait a caller on the event thread is allowed to make about
+     * this question: it is a wait on THIS window's own object, which nothing holds for longer than it
+     * takes to set two fields - never on the `Layout` monitor, which a dispatch holds across a
+     * `CONFIGURE_SLEEP` per accessory of a path.  That distinction is the whole of OB-192.
+     *
+     * @param millis how long to wait at most
+     * @return true when the answer is up to date, false when the wait ran out
+     */
+    boolean awaitReturnHomeTriage(long millis)
+    {
+        long deadline = System.currentTimeMillis() + millis;
+
+        synchronized (returnHomeTriageSettled)
+        {
+            while (returnHomeTriageInFlight.get() || returnHomeTriageDirty.get())
+            {
+                long left = deadline - System.currentTimeMillis();
+
+                if (left <= 0) return false;
+
+                try
+                {
+                    returnHomeTriageSettled.wait(left);
+                }
+                catch (InterruptedException stopped)
+                {
+                    Thread.currentThread().interrupt();
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether Return Home is on offer right now, and why not when it is not.
+     *
+     * **THE BUTTON IS THE ANSWER, and that is the point of these two.**  Every surface that offers
+     * this action used to ask the railway for itself - the button here, the diagram's right-click
+     * menu, and the click handler - which is three chances to describe one situation three ways, and
+     * three doors onto the railway's monitor from the event thread.  There is one asker now,
+     * `refreshReturnHomeButton`, and the button it maintains is what the others read.  They cannot
+     * disagree with it, because there is nothing left for them to disagree with.
+     *
+     * @return true when the action can be taken
+     */
+    boolean isReturnHomeOffered()
+    {
+        return this.returnHomeButton != null && this.returnHomeButton.isEnabled();
+    }
+
+    /**
+     * The reason Return Home is unavailable, as the button already states it.
+     *
+     * @return the sentence, or null when there is no button yet
+     * @see #isReturnHomeOffered()
+     */
+    String whyReturnHomeIsNotOffered()
+    {
+        return this.returnHomeButton == null ? null : this.returnHomeButton.getToolTipText();
+    }
+
+    /** What the railway last said about sending trains home; null means there is work to do. */
+    private volatile HomeStaging.Outcome returnHomeTriage = null;
+
+    /** Which layout the next ask is about, replaced by every ask. */
+    private volatile Layout returnHomeTriageSubject = null;
+
+    /** Whether the answer is out of date - set by an ask, cleared by the pass that answers it. */
+    private final java.util.concurrent.atomic.AtomicBoolean returnHomeTriageDirty
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /** Whether a worker is already on the job, so a burst of asks makes one pass rather than many. */
+    private final java.util.concurrent.atomic.AtomicBoolean returnHomeTriageInFlight
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /** Announced on whenever the job is given up, for `awaitReturnHomeTriage`. */
+    private final Object returnHomeTriageSettled = new Object();
+
+    /**
+     * The one thread "is there anything to send home" is worked out on.
+     *
+     * ITS OWN POOL, for the reason `CoveredTrackRenderer` gives: `AutonomyRenderer` deliberately sleeps
+     * `REPAINT_ROUTE_INTERVAL` before every route repaint, and a single-threaded pool would put this
+     * answer behind that sleep on every arrival.
+     *
+     * DAEMON, so a window closed with an ask outstanding cannot keep the process alive.
+     */
+    private final ExecutorService ReturnHomeTriageRenderer = Executors.newFixedThreadPool(1, runnable ->
+    {
+        Thread worker = new Thread(runnable, "ReturnHomeTriageRenderer");
+
+        worker.setDaemon(true);
+
+        return worker;
+    });
 
     /**
      * Greys the return home button and says why.

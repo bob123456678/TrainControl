@@ -260,6 +260,309 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         driving.join(TimeUnit.SECONDS.toMillis(30));
     }
 
+    /**
+     * The Return Home button is refreshed on the event thread while a driving thread holds the
+     * railway's monitor.
+     *
+     * THE SECOND DOOR, and the one the OB-192 fix left standing.  `refreshReturnHomeButton` runs on
+     * the event thread - `repaintAutoLocListLite` and `repaintAutoLocListFull` both call it from
+     * inside their `invokeLater`, which is what runs on every arrival, every departure and every
+     * placement - and it asks `Layout.triageReturnToHome`, which builds a `HomeStaging.snapshot` and
+     * so calls `Layout.getHomeStations`, `synchronized` on the `Layout`.  Same monitor, same thread,
+     * same freeze as the covered marks.
+     *
+     * **AND `isAutonomyBusy` DOES NOT COVER IT.**  That guard was believed to: it asks
+     * `Layout.isRunning`, which counts `locomotiveThreads` and so is true for a hand dispatch as well
+     * as for autonomy.  What it does not cover is every OTHER holder of that monitor with no train
+     * moving at all - `AutoLocomotiveStatus.findPaths` calls `getPossiblePaths`, which is
+     * `synchronized` and searches the whole graph, once per panel, on the `AutonomyRenderer` worker
+     * this same refresh has just submitted to.  So the event thread and that worker race for the
+     * railway's monitor on every refresh, with autonomy stopped, which is the state this fixture is
+     * in.
+     */
+    @Test
+    public void testTheReturnHomeButtonDoesNotWaitOnTheRailway() throws Exception
+    {
+        assertFalse(layout.isRunning(),
+            "nothing is running on this snapshot, so `refreshReturnHomeButton` reaches the railway"
+            + " rather than returning at its guard - if that has changed this test is measuring the"
+            + " guard and not the door");
+
+        whileTheRailwayIsHeld("refreshReturnHomeButton", () ->
+        {
+            try
+            {
+                java.lang.reflect.Method door =
+                    TrainControlUI.class.getDeclaredMethod("refreshReturnHomeButton");
+
+                door.setAccessible(true);
+
+                door.invoke(ui);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by a
+        // `refreshReturnHomeButton` that does nothing at all - "did not block" is true of a method
+        // with an empty body, and the button greying itself correctly is the whole point of it.
+        java.lang.reflect.Method waiting =
+            TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
+
+        waiting.setAccessible(true);
+
+        assertTrue((Boolean) waiting.invoke(ui, 30000L),
+            "the return-home triage never landed, so the button is never painted from it");
+
+        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("returnHomeButton");
+
+        button.setAccessible(true);
+
+        javax.swing.JButton offered = (javax.swing.JButton) button.get(ui);
+
+        // The railway asked directly, from THIS thread - which may block, and is allowed to, because
+        // this is not the event thread.
+        final boolean somethingToDo = layout.triageReturnToHome() == null;
+
+        pump();
+
+        assertEquals(offered.isEnabled(), somethingToDo,
+            "the button says " + (offered.isEnabled() ? "there is" : "there is nothing")
+            + " to send home, and the railway says the opposite.  The answer is worked out on a"
+            + " worker now, and this is the assertion that it is still the railway's answer");
+    }
+
+    /**
+     * The third door: the diagram's right-click menu asks the same question while it is being built.
+     *
+     * `HomeLocomotiveMenu.addReturnHomeItem` greys the "Return Locomotives Home" item and says why,
+     * and it reaches `triageReturnToHome` to find out.  A popup menu is built on the event thread by
+     * definition, so this is the same wait with a mouse button behind it rather than an arrival.
+     */
+    @Test
+    public void testTheReturnHomeMenuDoesNotWaitOnTheRailway() throws Exception
+    {
+        whileTheRailwayIsHeld("HomeLocomotiveMenu.addReturnHomeItem", () ->
+        {
+            try
+            {
+                Class<?> menu = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu");
+
+                java.lang.reflect.Method door = menu.getDeclaredMethod("addReturnHomeItem",
+                    javax.swing.JComponent.class, TrainControlUI.class);
+
+                door.setAccessible(true);
+
+                door.invoke(null, new javax.swing.JPanel(), ui);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+    }
+
+    /**
+     * Nothing on the event thread asks the railway whether anything is away from home.
+     *
+     * **A TRIPWIRE, because the three tests above cannot be the whole guard.**  They measure the three
+     * doors that existed when this was written; a fourth surface that wants to grey a control - and
+     * this question has grown one roughly every fortnight - would reach `triageReturnToHome` on the
+     * event thread and no test above would notice.  That is exactly how this defect arrived: the first
+     * OB-192 fix moved `refreshCoveredTrack` off the event thread and left these three, because the
+     * sentence saying the event thread must not take the railway's monitor was a comment.
+     *
+     * So the rule is stated as a property of the source instead.  `Layout.triageReturnToHome` builds a
+     * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized` on the `Layout` -
+     * and every user interface class runs on the event thread unless it has gone to some trouble not
+     * to.  Two methods have gone to that trouble, and they are named below.  Every other surface reads
+     * the button the first of them paints, through `isReturnHomeOffered`.
+     *
+     * **WHAT IT CANNOT SEE, said out loud.**  Source cannot tell which thread a line runs on, so this
+     * is a list of methods rather than a proof.  Its value is that a NEW call site cannot be added
+     * without somebody reading this and answering the question - which is one more reading than the
+     * three call sites this defect was made of ever got.
+     *
+     * THE WAY PAST IS A LINE, not a rewrite: a surface that must genuinely ask for itself puts its own
+     * method here with the thread it is on.  A check with no way past is one people delete.
+     *
+     * MUTATION: put `layout.triageReturnToHome()` back at the top of `refreshReturnHomeButton` and this
+     * fails, quoting the line and naming the method it is in.
+     */
+    @Test
+    public void testNothingOnTheEventThreadAsksWhetherAnythingIsAwayFromHome() throws Exception
+    {
+        java.io.File gui = new java.io.File("src/org/traincontrol/gui");
+
+        assertTrue(gui.isDirectory(),
+            "run this from the project root - " + gui.getAbsolutePath() + " is not there");
+
+        for (java.io.File source : gui.listFiles())
+        {
+            if (!source.getName().endsWith(".java")) continue;
+
+            String code = withoutComments(read(source));
+
+            if (!code.contains(ASKS)) continue;
+
+            assertEquals(source.getName(), "TrainControlUI.java",
+                source.getName() + " asks the railway whether anything is away from home.  Only"
+                + " TrainControlUI may, and only from the two methods named in this test - that call"
+                + " reaches `Layout.getHomeStations`, which is `synchronized` on the `Layout`, and a"
+                + " user interface class is on the event thread unless it has arranged not to be."
+                + "  Read `TrainControlUI.isReturnHomeOffered` instead: it is the button the one"
+                + " asker paints, so a surface that reads it cannot disagree with the button either");
+
+            // Both spans, and BOTH ARE OFF THE EVENT THREAD - which is the whole content of this list:
+            //
+            //   `workOutReturnHomeTriage` runs on `ReturnHomeTriageRenderer`, a daemon thread of its
+            //   own, and is the ask that paints the button every surface then reads.
+            //
+            //   `requestReturnToHome` asks once more at the END of a staging run, from inside the
+            //   `new Thread` it has already started - the same thread that has been blocking on
+            //   `executeTimetable` - to find out whether everybody actually got home.  Its own comment
+            //   says why it is asked rather than deduced from the return value.
+            java.util.List<int[]> allowed = new java.util.ArrayList<>();
+
+            allowed.add(spanOf(code, "private void workOutReturnHomeTriage()"));
+            allowed.add(spanOf(code, "public void requestReturnToHome()"));
+
+            for (int at = code.indexOf(ASKS); at >= 0; at = code.indexOf(ASKS, at + 1))
+            {
+                boolean inside = false;
+
+                for (int[] span : allowed)
+                {
+                    if (at >= span[0] && at < span[1]) inside = true;
+                }
+
+                assertTrue(inside,
+                    "the railway is asked whether anything is away from home outside the two methods"
+                    + " that are allowed to ask it, at:\n    " + lineAround(code, at)
+                    + "\n\nThat call reaches `Layout.getHomeStations`, which is `synchronized` on the"
+                    + " `Layout`, and on the event thread waiting for that monitor is OB-192: a"
+                    + " dispatch holds it across a CONFIGURE_SLEEP per accessory of a path, and"
+                    + " `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph with"
+                    + " nothing running at all.  Read `isReturnHomeOffered`, or - if this really must"
+                    + " ask for itself, from a thread of its own - add the method to the list in this"
+                    + " test saying which thread that is");
+            }
+        }
+    }
+
+    /**
+     * Where one method begins and the next member's javadoc starts.
+     *
+     * @param code the source, comments already out
+     * @param declaration the method's declaration, exactly as written
+     * @return the half-open span
+     */
+    private static int[] spanOf(String code, String declaration)
+    {
+        int from = code.indexOf(declaration);
+
+        assertTrue(from >= 0, "`" + declaration + "` is gone, and this test names it as one of the two"
+            + " places allowed to ask the railway whether anything is away from home");
+
+        // A comment-stripped file has one blank line where each javadoc was, so the next member is the
+        // next declaration at class indent - which is what a line starting with four spaces and a
+        // non-space, after the closing brace of this one, is.
+        int to = code.indexOf("\n    }\n", from);
+
+        return new int[] { from, to < 0 ? code.length() : to };
+    }
+
+    /**
+     * The line an offending call is on, for a message somebody can act on.
+     *
+     * @param code the source
+     * @param at where the call is
+     * @return that line, trimmed
+     */
+    private static String lineAround(String code, int at)
+    {
+        int from = code.lastIndexOf('\n', at) + 1;
+
+        int to = code.indexOf('\n', at);
+
+        return code.substring(from, to < 0 ? code.length() : to).trim();
+    }
+
+    /** What asking the railway whether anything is away from home looks like in the source. */
+    private static final String ASKS = ".triageReturnToHome(";
+
+    /**
+     * A file, as text.
+     *
+     * @param source the file
+     * @return its content
+     */
+    private static String read(java.io.File source) throws Exception
+    {
+        byte[] raw = java.nio.file.Files.readAllBytes(source.toPath());
+
+        return new String(raw, "UTF-8");
+    }
+
+    /**
+     * The same source with its comments taken out.
+     *
+     * Necessary rather than tidy: this rule is written out at length in the javadoc of every method
+     * that used to break it, so counting raw occurrences would count the explanations.
+     *
+     * @param code the source
+     * @return the code alone
+     */
+    private static String withoutComments(String code)
+    {
+        StringBuilder out = new StringBuilder(code.length());
+
+        boolean block = false;
+        boolean line = false;
+        boolean quoted = false;
+
+        for (int at = 0; at < code.length(); at++)
+        {
+            char here = code.charAt(at);
+            char next = at + 1 < code.length() ? code.charAt(at + 1) : '\0';
+
+            if (block)
+            {
+                if (here == '*' && next == '/') { block = false; at++; }
+
+                continue;
+            }
+
+            if (line)
+            {
+                if (here == '\n') { line = false; out.append(here); }
+
+                continue;
+            }
+
+            if (quoted)
+            {
+                if (here == '\\') { at++; continue; }
+
+                if (here == '"' || here == '\n') quoted = false;
+
+                continue;
+            }
+
+            if (here == '/' && next == '*') { block = true; at++; continue; }
+
+            if (here == '/' && next == '/') { line = true; at++; continue; }
+
+            if (here == '"') { quoted = true; continue; }
+
+            out.append(here);
+        }
+
+        return out.toString();
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /**
@@ -302,19 +605,109 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
+     * Holds the railway's monitor and asserts one door of the window still answers on the event
+     * thread.
+     *
+     * ONE BODY FOR EVERY DOOR, because there is one rule: nothing the event thread does may wait on
+     * the `Layout` monitor.  Written out once per door, the fourth door would be measured slightly
+     * differently from the first three, and the difference is where a real wait hides.
+     *
+     * The free cost is measured for THIS door first, so a red result is attributable - a door that is
+     * slow on its own would otherwise time out here for a reason that has nothing to do with a
+     * monitor.
+     *
+     * @param door what is being called, for the message
+     * @param job the call, made on the event thread
+     */
+    private static void whileTheRailwayIsHeld(String door, Runnable job) throws Exception
+    {
+        long free = onTheEventThread(job);
+
+        assertTrue(free < PATIENCE_MS,
+            door + " costs " + free + "ms with nothing held at all, which is already more than the "
+            + PATIENCE_MS + "ms this test allows - so a red result below would say nothing about"
+            + " monitors.  Raise PATIENCE_MS or find out why it is this slow");
+
+        CountDownLatch taken = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        Thread driving = holdsTheRailway(taken, release);
+
+        try
+        {
+            assertTrue(taken.await(30, TimeUnit.SECONDS),
+                "the helper never got the railway's monitor, so nothing was tested");
+
+            long took;
+
+            try
+            {
+                took = onTheEventThread(job, PATIENCE_MS);
+            }
+            catch (TimeoutException stuck)
+            {
+                fail("THE EVENT THREAD IS BLOCKED ON THE RAILWAY'S MONITOR - this is OB-192, at `"
+                    + door + "`.  It costs " + free + "ms with that monitor free and has now been"
+                    + " waiting more than " + PATIENCE_MS + "ms, purely because another thread is"
+                    + " inside `synchronized (layout)`.  That thread is a dispatch inside"
+                    + " `configureAndLockPath`, holding it across a CONFIGURE_SLEEP per accessory of"
+                    + " the path - or `AutoLocomotiveStatus.findPaths` inside `getPossiblePaths`,"
+                    + " searching the whole graph with nothing running at all.  Either way the window"
+                    + " stops repainting and stops answering.  Where it is parked:\n"
+                    + whereTheEventThreadIs());
+
+                return;
+            }
+
+            assertTrue(took < PATIENCE_MS,
+                door + " took " + took + "ms with the railway's monitor held, against " + free
+                + "ms with it free.  The event thread is waiting on a lock another thread holds");
+        }
+        finally
+        {
+            release.countDown();
+
+            driving.join(TimeUnit.SECONDS.toMillis(30));
+        }
+    }
+
+    /**
      * Runs one diagram refresh on the event thread and says what it cost, waiting as long as it takes.
      *
      * @return the milliseconds it took
      */
     private static long refreshOnTheEventThread() throws Exception
     {
+        return onTheEventThread(() -> ui.updateVisiblePoints());
+    }
+
+    /**
+     * The same, given only so long.
+     *
+     * @param patience how long to wait
+     * @return the milliseconds it took
+     * @throws TimeoutException when the event thread did not finish in time
+     */
+    private static long refreshOnTheEventThread(long patience) throws Exception
+    {
+        return onTheEventThread(() -> ui.updateVisiblePoints(), patience);
+    }
+
+    /**
+     * Runs anything on the event thread and says what it cost, waiting as long as it takes.
+     *
+     * @param job what to run there
+     * @return the milliseconds it took
+     */
+    private static long onTheEventThread(Runnable job) throws Exception
+    {
         try
         {
-            return refreshOnTheEventThread(TimeUnit.MINUTES.toMillis(2));
+            return onTheEventThread(job, TimeUnit.MINUTES.toMillis(2));
         }
         catch (TimeoutException nothingIsHeld)
         {
-            fail("a refresh with nothing locked took over two minutes: " + whereTheEventThreadIs());
+            fail("a call with nothing locked took over two minutes: " + whereTheEventThreadIs());
 
             return -1;
         }
@@ -326,11 +719,12 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * The wait is made from a THIRD thread rather than by this one calling `invokeAndWait`, because
      * `invokeAndWait` has no timeout: were the event thread wedged, this test would be too.
      *
+     * @param job what to run there
      * @param patience how long to wait
      * @return the milliseconds it took
      * @throws TimeoutException when the event thread did not finish in time
      */
-    private static long refreshOnTheEventThread(long patience) throws Exception
+    private static long onTheEventThread(Runnable job, long patience) throws Exception
     {
         ExecutorService watchdog = Executors.newSingleThreadExecutor(runnable ->
         {
@@ -347,7 +741,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             {
                 long began = System.nanoTime();
 
-                SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+                SwingUtilities.invokeAndWait(job);
 
                 return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - began);
             });
