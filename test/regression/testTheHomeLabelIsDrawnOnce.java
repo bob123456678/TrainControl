@@ -63,6 +63,22 @@ public class testTheHomeLabelIsDrawnOnce
     /** The page everything below is arranged on */
     private static final String PAGE = "1 - Main";
 
+    /**
+     * The station OB-193 is about, which the frozen railway carries already captioned twice.
+     *
+     * Adam, on MT-293: *"At the time of testing, TopMainR2 still shows two labels."*
+     * `live-snapshot`'s setup captions `5:6,4` on `5:6,4` AND on `5:6,5` - the state
+     * `migrateStationLabels` can produce without anybody asking for it - and `1 - Main:6,4` is
+     * TopMainR2.  It is the very square `TrainControlUI.autonomyCaptionAt`'s own comment names.
+     *
+     * **Held out of the arrangement below**, so the three stations this class builds its cases on can
+     * never be this one.  Two reasons, and the second is the one that matters: a square already
+     * doubly captioned would be captioned a THIRD time by the arrangement, and the doubled case's own
+     * precondition asserts a count of two - so the class would fail for a reason that has nothing to
+     * do with the rule.
+     */
+    private static final TileKey OB193 = new TileKey(PAGE, 6, 4);
+
     /** Captioned on its own square AND on a neighbour - the defect */
     private static TileKey doubled;
 
@@ -132,6 +148,10 @@ public class testTheHomeLabelIsDrawnOnce
         for (Map.Entry<TileKey, TileKey> caption : session.getCaptions().entrySet())
         {
             if (!PAGE.equals(caption.getKey().getPage())) continue;
+
+            // NOT the square OB-193 is about - see the field.  It is captioned twice already, so
+            // arranging on it would produce a third caption and fail this class's own precondition.
+            if (OB193.equals(caption.getKey())) continue;
 
             if (caption.getKey().equals(caption.getValue())
                 && freeNeighbour(page, caption.getKey()) != null)
@@ -287,6 +307,51 @@ public class testTheHomeLabelIsDrawnOnce
         assertEquals(times(caption(offsetHome)), 1,
             "the home locomotive of " + offsetOnly + " is drawn " + times(caption(offsetHome))
             + " times, and it should be drawn once - on the square beside it");
+    }
+
+    /**
+     * OB-193: TopMainR2, which really is captioned twice on this railway, draws ONE label.
+     *
+     * Adam, on MT-293 (2026-09-08): *"This works. At the time of testing, TopMainR2 still shows two
+     * labels, but this is still pending being worked."*  He ruled it fixed on 2026-09-09, and this is
+     * the check rather than the belief.
+     *
+     * **Every other claim in this class arranges its own state**, deliberately - a test that depends
+     * on which square Adam's doubled caption is on breaks the next time he moves a label.  This one is
+     * the exception and can be, because `live-snapshot` is frozen: it is taken from `git show HEAD:`
+     * rather than from the working tree, so the caption pair below cannot move under it.  What it
+     * costs is that it pins the FIXTURE as well as the rule, which is why it says so here.
+     *
+     * The state is not contrived: `5:6,4` is captioned on `5:6,4` and on `5:6,5` in the snapshot's
+     * `setup.json`, and `AutonomySession.migrateStationLabels` is how it got there - it writes through
+     * the raw store door, which does not sweep, so a station already captioned on its own square gains
+     * a second caption the moment a legacy `Point:` label is migrated off the page beside it.
+     *
+     * If this ever fails, either the fix at `TrainControlUI.autonomyCaptionAt` has been lost or the
+     * snapshot has been re-taken from a railway whose labels have moved.  The precondition tells the
+     * two apart before the claim runs.
+     */
+    @Test
+    public void testTopMainR2DrawsOneLabelOnTheFrozenRailway()
+    {
+        assertEquals(session.getStore().getPointName(OB193), "TopMainR2",
+            "1 - Main:6,4 is called " + session.getStore().getPointName(OB193) + " on this snapshot"
+            + " rather than TopMainR2, so the square OB-193 was reported about is somewhere else and"
+            + " this claim is about the wrong one");
+
+        assertEquals(session.captionsFor(OB193).size(), 2,
+            "precondition: TopMainR2 is meant to be captioned on its own square AND beside it - that"
+            + " doubling is what Adam was looking at - and this snapshot captions it on "
+            + session.captionsFor(OB193) + ". Nothing below is being tested");
+
+        assertNull(ui.autonomyCaptionAt(OB193),
+            "TopMainR2 is still drawing a caption on its own square while 1 - Main:6,5 is already"
+            + " naming it, so the two labels Adam reported are both there (OB-193)");
+
+        assertEquals(ui.autonomyCaptionAt(new TileKey(PAGE, 6, 5)), OB193,
+            "the label beside TopMainR2 stopped naming it, so the ONE label that survives is not the"
+            + " one somebody placed - and with the self-caption suppressed as well the station would"
+            + " have no name at all");
     }
 
     /**

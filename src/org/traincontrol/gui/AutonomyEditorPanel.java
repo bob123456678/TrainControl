@@ -1994,8 +1994,14 @@ public class AutonomyEditorPanel extends JPanel
             I18n.f("autolayout.ui.menuClearLocomotives", placed), () -> clearAllPlacements());
 
         clearLocs.setEnabled(placed > 0);
+
+        // THE SAME SENTENCE THE DIALOG WILL SHOW, from the same builder (OB-194).
+        //
+        // A tooltip that says less than the confirmation is a tooltip that has to be kept in step with
+        // it by somebody remembering, and this pair had already drifted once - the tooltip named no
+        // count while the menu label did.
         clearLocs.setToolTipText(wrapped(placed > 0
-            ? I18n.t("autolayout.ui.confirmClearLocomotives")
+            ? clearLocomotivesWarning()
             : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
 
         bulk.add(clearLocs);
@@ -2011,6 +2017,21 @@ public class AutonomyEditorPanel extends JPanel
         bulk.add(clearHomesItem);
 
         return bulk;
+    }
+
+    /**
+     * For tests: the Bulk Tools menu as the right-click menu builds it (OB-194).
+     *
+     * A tooltip is a property the menu ITEM carries rather than something the panel keeps, so the only
+     * way to ask whether the warning reaches the menu is to build the menu.  Through `bulkTools()`
+     * itself, for `clickCommandMarkForTest`'s reason: a second construction could agree with itself
+     * while the real one is wrong.
+     *
+     * @return the menu, freshly built
+     */
+    public javax.swing.JMenu buildBulkMenuForTest()
+    {
+        return bulkTools();
     }
 
     // Which square the open right-click menu is acting on
@@ -8042,6 +8063,47 @@ public class AutonomyEditorPanel extends JPanel
      * Nothing is written to disk.  Like every other decision in this window it waits for Save, so a
      * mistaken press is undone by Cancel.
      */
+    /**
+     * What the bulk clear says before it takes every locomotive off (OB-194).
+     *
+     * Adam, on MT-311, 2026-09-08: **"bug: clearning locomotives in the autonomy editor cannot be
+     * undone by a cancel.  Make this clear in the popup."**  His ruling of 2026-09-09 was for the
+     * warning rather than a real undo: *"Warning if using the bulk tool."*
+     *
+     * **Why Cancel does not put them back**, which is the part worth saying out loud rather than
+     * simply asserting.  MT-311's own expectation reads *"neither writes to disk - Cancel puts
+     * everything back"*, and that was true until OB-183.  Adam, 2026-09-08: *"Where a train IS is a
+     * fact, and where the file thinks it is is a record."*  Placements are carried ACROSS a rebuild
+     * now (`TrainControlUI.putTheTrainsBack`) rather than regenerated from the setup, so Cancel
+     * restores the FILE and the railway is what the placements come from.  Nothing was broken; the
+     * two halves of one sentence stopped agreeing.
+     *
+     * **It names them**, because a bulk gesture is an answer about every one of them at once and a
+     * count is not something anybody can check.  The same reason `placementChanged` is given the list
+     * it lifted rather than being left to work it out afterwards.
+     *
+     * One builder, used by the confirmation AND by the menu item's tooltip, so the warning cannot be
+     * shown in one place and not the other.
+     *
+     * @return the warning, already translated
+     */
+    public String clearLocomotivesWarning()
+    {
+        if (session == null) return I18n.t("autosetup.ui.infoNoLocomotivesToClear");
+
+        StringBuilder names = new StringBuilder();
+
+        for (String name : placedLocomotives())
+        {
+            if (names.length() > 0) names.append(", ");
+
+            names.append(name);
+        }
+
+        return I18n.f("autolayout.ui.confirmClearLocomotives",
+            session.tilesWithALocomotive().size(), names.toString());
+    }
+
     private void clearAllPlacements()
     {
         java.util.List<TileKey> placed = session.tilesWithALocomotive();
@@ -8053,7 +8115,7 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.t("autolayout.ui.confirmClearLocomotives"),
+            clearLocomotivesWarning(),
             I18n.f("autolayout.ui.menuClearLocomotives", placed.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)

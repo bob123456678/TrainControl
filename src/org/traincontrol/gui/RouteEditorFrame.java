@@ -1451,6 +1451,28 @@ public class RouteEditorFrame extends JFrame
         conditions.removeAt(row);
     }
 
+    /**
+     * For tests: move one condition row in or out, through the same door the indent marks use.
+     *
+     * Written for FR-068 - Adam, 2026-09-09, on a condition with a bracket that is not the first
+     * term: *"it should be representable already in the UI, right?"*  That question is not about
+     * whether `ConditionOutline` can HOLD the shape, which `core.testConditionOutline` has covered
+     * since IPR-B2; it is about whether the indent marks can REACH it from a list somebody typed.
+     * Only this method can answer it, because the rule that decides - a row may be at most one level
+     * deeper than the row above it - lives in `ConditionTable.indent` and nowhere else.
+     *
+     * Through the private method the mark's click handler calls, for `clickCommandMarkForTest`'s
+     * reason: a second implementation of indenting could agree with itself while the real one is
+     * wrong.
+     *
+     * @param row which line - conditions and joining words alike, since both carry a depth
+     * @param by 1 to indent, -1 to outdent
+     */
+    public void indentConditionForTest(int row, int by)
+    {
+        conditions.indent(row, by);
+    }
+
     /** The marks, so a test names them the way the table does */
     public static String markMoveUp() { return MOVE_UP; }
 

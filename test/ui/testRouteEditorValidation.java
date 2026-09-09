@@ -301,6 +301,135 @@ public class testRouteEditorValidation
     }
 
     /**
+     * FR-068: a nested group that is NOT the first term can be built here, by indenting.
+     *
+     * Adam, 2026-09-09: **"it should be representable already in the UI, right?"**  The question came
+     * out of MT-320, which was about the editor MISREADING `3 or ((1 or 2) and 4)` when a route
+     * already had it.  This is the other half: can somebody who has no such route make one?
+     *
+     * **Yes, and this is the gesture.**  Seven lines are typed flat - which is what the plus does,
+     * every new condition arriving at the depth of the one above - and then indented, twice for the
+     * innermost pair.  Nothing else is used: no file, no capture, no loading.
+     *
+     * The condition built is `3 or (4 and (1 or 2))`, which is Adam's condition with the AND's two
+     * sides the other way round.  That is not a dodge and it is not an accident either, so it is
+     * written down: **a line may be at most one level deeper than the line above it**
+     * (`ConditionTable.indent`), and the outline `ConditionOutline.of` writes for a group in the
+     * AND's LEFT position steps from depth 0 straight to depth 2 - the OR at 0, the AND at 1, the
+     * bracket at 2, with no depth-1 line in front of the bracket to indent from.  Written with the
+     * group on the RIGHT, every step is one, and AND means the same thing either way round.
+     *
+     * So the shape is available; the particular ORDER the loader writes it in is not typeable, and a
+     * route that arrives carrying it opens and reads correctly, which is what MT-320 settled.
+     *
+     * MUTATION: dropping `ConditionTable.indent`'s one-level rule does not fail this (it only ever
+     * admits more); forcing every indent to be refused does, at the first assertion.
+     */
+    @Test
+    public void testANestedGroupThatIsNotTheFirstTermCanBeBuilt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            // FLAT, which is the only shape the plus can produce: a new condition takes the depth of
+            // the line above it, and the first line is always at the outermost level.
+            java.util.List<org.traincontrol.base.ConditionOutline.Row> typed =
+                new java.util.ArrayList<>();
+
+            typed.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(3)));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.OR));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(4)));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.AND));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.OR));
+            typed.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(2)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
+
+            // PRECONDITION: typed flat, it is one level that disagrees with itself - an OR and an AND
+            // side by side - which is exactly the state the editor draws in red and refuses to save.
+            // Indenting is the way out of it, and that is what this test is about.
+            assertFalse(org.traincontrol.base.ConditionOutline.problems(
+                frame.conditionRowsForTest()).isEmpty(),
+                "seven lines typed flat with both words on them should be flagged as a level that "
+                + "disagrees with itself, and were not - so the indenting below is not resolving "
+                + "anything and this test would pass on an outline that never needed it");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                // The AND and everything after it, one level in: "4 and 1 or 2" becomes the group
+                // that the leading OR joins to sensor 3.
+                frame.indentConditionForTest(2, 1);
+                frame.indentConditionForTest(3, 1);
+                frame.indentConditionForTest(4, 1);
+                frame.indentConditionForTest(5, 1);
+                frame.indentConditionForTest(6, 1);
+
+                // And the innermost pair one level further, which is the bracket after the start.
+                frame.indentConditionForTest(4, 1);
+                frame.indentConditionForTest(5, 1);
+                frame.indentConditionForTest(6, 1);
+            });
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(
+                frame.conditionRowsForTest()).isEmpty(),
+                "the indented outline is still flagged, so the editor would refuse to save the very "
+                + "shape this test says it can build: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest())
+                + " in " + depths(frame));
+
+            // AND THE RULE THAT DECIDES WHICH ORDER IS TYPEABLE, measured rather than claimed in
+            // prose above.  Line 2 sits immediately after the outer OR, which is at depth 0, so it
+            // can never be deeper than 1 - and depth 2 is exactly where `ConditionOutline.of` puts
+            // the bracket when the group is the AND's LEFT child.  That is the whole reason the
+            // group is built on the right here.
+            final String before = depths(frame);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionForTest(2, 1));
+
+            assertEquals(depths(frame), before,
+                "a line immediately after a depth-0 joiner was allowed to jump to depth 2, so the "
+                + "one-level rule has gone - which would make the outline able to draw a nesting "
+                + "with a hole in the middle. Depths: " + depths(frame));
+
+            assertEquals(reads(frame), "Or(x,Group(And(x,Group(Or(x,x)))))",
+                "the outline built by indenting does not mean \"3 or (4 and (1 or 2))\". Depths: "
+                + depths(frame) + ", meaning: " + reads(frame) + ". FR-068 asks whether a bracket "
+                + "that is not the first term can be built at all, and this is the gesture that "
+                + "does it");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * The depths of the outline, for a failure message.
+     *
+     * A condition outline that has gone wrong has gone wrong in its INDENTATION, and the meaning
+     * alone does not say where.
+     */
+    private static String depths(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (org.traincontrol.base.ConditionOutline.Row row : frame.conditionRowsForTest())
+        {
+            out.append(" ").append(row.getDepth())
+               .append(row.isJoiner() ? String.valueOf(row.getJoiner()) : "?");
+        }
+
+        return out.toString();
+    }
+
+    /**
      * The SHAPE of the expression the outline currently means - "And(Or(x,x),x)".
      *
      * The class name of the top node alone is not enough: `(A or B) and C` is a NodeAnd whichever way
