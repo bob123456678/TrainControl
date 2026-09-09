@@ -44,3 +44,4 @@ It also produces something else the suite has never had by hand: **a split squar
 ## Used by
 
 - `core.testTwoRoutesShareOneSwitch`
+- `core.testACoveredSwitchClosesTheOtherRoad`

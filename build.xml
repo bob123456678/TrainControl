@@ -250,6 +250,7 @@
              as he operates it.  The last of these is the guard that stops a scenario going orphan
              or a scenario README going stale about who uses it. -->
         <test-one-class class="testTwoRoutesShareOneSwitch"/>
+        <test-one-class class="testACoveredSwitchClosesTheOtherRoad"/>
         <test-one-class class="testACurvedPlatformRecordsASideTheBuildUses"/>
         <test-one-class class="testTheFrozenRailwayIsStillTheRailway"/>
         <test-one-class class="testEveryScenarioIsUsedAndSaysSo"/>

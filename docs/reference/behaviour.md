@@ -465,6 +465,19 @@ The rest of this section is about the **first** rule.
   several means the graph cannot say which.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
+- **And the track it shares metal with is closed too, which is the anti-collision rule at a switch.**
+  Adam, 2026-09-07: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
+  TunnelLeftPark to BottomMainC, even though it should not be possible."* Coverage is recorded per
+  EDGE; a train lying across one pair of a switch's arms fouls the other pair, and the other pair is a
+  different Edge that was never in the covered set. So a path is refused over any edge that shares
+  metal with a covered one — the lock-edge relation `GraphReducer` derives from shared tiles. Told
+  apart from an FR-001 occupancy restriction, which uses the same list, by **symmetry**: sharing a
+  tile is mutual and the reducer records both directions, while a restriction is one-directional.
+  Known limit, written down rather than left to be rediscovered: two stations each holding the other
+  back are symmetric by coincidence, and this over-refuses there.
+  `core.testACoveredSwitchClosesTheOtherRoad` is the test that goes red when the rule is removed —
+  it needs a turnout to express, so it runs on `test/layouts/single-switch`; the two older
+  covered-track classes stayed fully green with the rule disabled (AUT9-B2).
 - **Two marks, and they say different things** (Adam, 2026-09-09: *"'train is here' should also mean
   'track is blocked' - that is the whole point. it's the same as greying out edges, just in a
   different way."*). A square with **orange** on it is where a train IS. A square that is **grey and
