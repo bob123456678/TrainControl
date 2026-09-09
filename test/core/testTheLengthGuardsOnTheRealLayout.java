@@ -351,8 +351,12 @@ public class testTheLengthGuardsOnTheRealLayout
      *     drawing and there is NO edge between them: the reduction connects RampDown only to
      *     TopMainPost at `7,2`.
      *   - So the route from BottomMainB runs BottomMainB - BottomMainPost - `7,1` - RampUp - down the
-     *     ramp - TopMainR2 - TopMainPost - RampDown: NINE edges, the long way round, with three
-     *     switch-crossing edges between 22,7 and the berth.
+     *     ramp - one of the TopMainR roads - TopMainPost - RampDown: NINE edges, the long way
+     *     round, with three switch-crossing edges between 22,7 and the berth.  WHICH of the two
+     *     roads is not fixed - the search takes R1 with the snapshot's three tiles measured and R2
+     *     with every tile measured - and it does not matter to this: the count of edges and of
+     *     switches between them is the same either way, which is why the test asserts those
+     *     rather than the names.
      *   - The last of those nine crosses no switch at all and is eighteen tiles long.  `roomAtTheEnd`
      *     is what bounds a berth, and this edge has none to bound it with.
      *

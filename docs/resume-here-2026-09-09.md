@@ -3,7 +3,12 @@
 Everything is committed on `autonomy-diagram-r0`. `git status` is clean apart from the files under
 `cs2_sample_layout/` that your own running TrainControl rewrites.
 
-**Battery: 195 classes green, 0 failures, 0 skips** (one documented skip needs a Central Station).
+**Battery: 196 classes green, 1 with a failure, 0 that tested nothing** (plus the one documented skip
+that needs a Central Station). The one is `core.testTimetableCaptureThroughARealRun`, and it is the
+flake its own comment describes: *"it ran out twice in two consecutive batteries on a machine that was
+also being used - and passed on its own both times, immediately, in the quiet between them."* Same
+again - 480 seconds with nothing dispatched under a full battery, green on its own in seconds
+afterwards. Nothing in today's changes goes near autonomy starting.
 
 | | |
 |---|---|
@@ -38,9 +43,9 @@ is exactly what it turned out to be, and the measurement is worth having:
 **RampDown is not 22,7's business, and this is why.** RampDown is `1 - Main:21,6` and BottomMainPost is
 `22,6` - adjacent on the drawing, with **no edge between them**. So the route from BottomMainB reaches
 RampDown the long way round: nine edges, up the 22 column, west along row 1, down the ramp through
-TopMainR2 and TopMainPost. `22,7` is on the FIRST of those nine, three switch-crossing edges away from
-the berth, and it measures the room at **BottomMainPost** - a square the train passes through and does
-not stop at. The room rule walks back from the berth and stops at the last switch, which is your ruling
+one of the TopMainR roads and TopMainPost. `22,7` is on the FIRST of those nine, three switch-crossing
+edges away from the berth, and it measures the room at **BottomMainPost** - a square the train passes
+through and does not stop at. The room rule walks back from the berth and stops at the last switch, which is your ruling
 of 2026-09-02, so it stops seven edges short of that tile and could not reach it.
 
 **Where the guard does bind, it binds exactly as you asked.** With `22,7` at one unit a nine-unit train
