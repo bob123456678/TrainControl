@@ -190,6 +190,7 @@
         <test-one-class class="testCancelRestoresPlacements"/>
         <test-one-class class="testAnEditedPlacementSurvivesTheRebuild"/>
         <test-one-class class="testTheGraphIsToldWhenARunEnds"/>
+        <test-one-class class="testTheTurnAtTheDestinationReachesTheDiagram"/>
         <test-one-class class="testAReversalCommandIsEmitted"/>
         <test-one-class class="testTheReversalReachesTheTracks"/>
         <test-one-class class="testTheTurnRuleDoesNotChangeTheRealRailway"/>

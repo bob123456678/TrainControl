@@ -120,24 +120,26 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * Two turns in one session cancel; they do not add up to one (VAL9-A1).
+     * Two turns in one session do not add up to a flip of anything: the record names the LAST one.
      *
-     * The record of a turn at the destination is a **net flip owed to the graph**, not a log of events,
-     * and getting that wrong made the fix worse than the defect it replaced.
+     * **This test used to assert that they cancel** (VAL9-A1), and that was right for a record whose
+     * membership was a parity - because the window applied each entry by FLIPPING the facing the setup
+     * had stored, and two flips undo each other. `REV9-A1` took the flip away: the setup's stored
+     * facing is stale at exactly the moment the drain reads it (behaviour.md 6a), so the window now
+     * writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
      *
-     * The arrival block is shared: it records autonomy's reversals as well as the manual ones the
-     * ruling was about, because `shouldReverseAt` answers `isReversing()` whenever there is no prompt
-     * policy. And an autonomy session is `isRunning()` from end to end, while the drain only happens
-     * once the railway is idle - so a whole session's reversals reach the drain together.
+     * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
+     * shuttle that turned at both ends came back facing the way it started and had its facing flipped
+     * once"* - cannot arise from an absolute write, which says the same thing however many times it is
+     * applied; and cancelling would now be the defect, because it would leave the graph with nothing
+     * to say about a train standing at the far end of the shuttle having turned there.
      *
-     * A plain set collapsed them to one name. **A shuttle that turned at both ends came back facing the
-     * way it started and had its facing flipped once** - which is worse than the stale graph this was
-     * fixing, because a stale graph was at least right about a train that had turned an even number of
-     * times.
+     * So what this runs is the same shuttle, and what it asserts is that the record follows the train:
+     * after the outward leg it names the east end, after the return it names the west end, and never
+     * two entries for one locomotive.
      *
-     * So membership toggles. This runs the shuttle out and back and asserts there is nothing owed.
-     *
-     * MUTATION: `reversedOnArrival.add(name)` in place of the toggle fails this.
+     * MUTATION: keeping the old toggle - removing the name on the second turn - fails the last
+     * assertion, which is the same journey the parity version measured, read the other way round.
      *
      * @throws Exception on a failure to run
      */
@@ -187,20 +189,28 @@ public class testAutonomySimulationSanity
 
             run(watchdog, layout, java.util.Arrays.asList(out), loc, "out");
 
-            // ONE LEG, ONE FLIP OWED.  Read WITHOUT draining, or the second leg starts from a clean
-            // slate and the cancellation below is never exercised - the test would pass because
-            // nothing accumulated rather than because two turns cancelled.
-            assertTrue(owed(layout).contains(loc.getName()),
-                "after one turn the graph is owed a flip, and it is not. The rest of this test cannot"
-                + " tell cancellation from nothing ever being recorded");
+            // ONE LEG, ONE TURN RECORDED, AT THE END IT REACHED.  Read WITHOUT draining, or the second
+            // leg starts from a clean slate and the assertion below is about nothing ever having been
+            // recorded rather than about the second turn replacing the first.
+            assertEquals(owed(layout).get(loc.getName()), "B4 east",
+                "after the outward leg the graph is owed the turn at the east end, and it is not. The"
+                + " rest of this test cannot tell a record that follows the train from one that was"
+                + " never made");
 
             run(watchdog, layout, java.util.Arrays.asList(back), loc, "back");
 
-            assertFalse(layout.takeReversalsOnArrival().contains(loc.getName()),
-                "the shuttle turned at both ends and came back facing the way it started, and the"
-                + " graph is still owed a flip. A record of EVENTS collapses to one name and flips the"
-                + " facing once - which is worse than the stale graph this was fixing, because a stale"
-                + " graph was right about a train that turned an even number of times (VAL9-A1)");
+            java.util.Map<String, String> after = layout.takeReversalsOnArrival();
+
+            assertEquals(after.get(loc.getName()), "B4 west",
+                "the shuttle turned at both ends and the graph is owed nothing, or is owed the end it"
+                + " left. The record names WHERE a train turned so the window can write the facing"
+                + " absolutely - the side it came in by, at the square it is standing on - and a"
+                + " record that cancels leaves the train at the far end with nothing said about it"
+                + " (REV9-A1, replacing the parity of VAL9-A1)");
+
+            assertEquals(after.size(), 1,
+                "one locomotive has two turns owed at once, so one of them names a square it has"
+                + " already left: " + after);
         }
         finally
         {
@@ -217,17 +227,17 @@ public class testAutonomySimulationSanity
      * state the next leg has to cancel.
      *
      * @param layout the layout
-     * @return the names owed a flip
+     * @return the names owed a facing, against the Point each turned at
      * @throws Exception on a reflection failure
      */
     @SuppressWarnings("unchecked")
-    private static java.util.Set<String> owed(Layout layout) throws Exception
+    private static java.util.Map<String, String> owed(Layout layout) throws Exception
     {
         java.lang.reflect.Field f = Layout.class.getDeclaredField("reversedOnArrival");
 
         f.setAccessible(true);
 
-        return new java.util.HashSet<>((java.util.Set<String>) f.get(layout));
+        return new java.util.LinkedHashMap<>((java.util.Map<String, String>) f.get(layout));
     }
 
     /**
@@ -286,7 +296,7 @@ public class testAutonomySimulationSanity
      * The drain is asserted too: a record read without clearing is re-applied on every refresh, which
      * turns one reversal into a metronome.
      *
-     * MUTATION: removing the `reversedOnArrival.add` at the arrival fails the first assertion; making
+     * MUTATION: removing the `reversedOnArrival.put` at the arrival fails the first assertion; making
      * `takeReversalsOnArrival` a plain getter fails the last.
      *
      * @throws Exception on a failure to run
@@ -368,13 +378,15 @@ public class testAutonomySimulationSanity
                 fail("the run never reached its destination, so this test never exercised the arrival");
             }
 
-            java.util.Set<String> turned = layout.takeReversalsOnArrival();
+            java.util.Map<String, String> turned = layout.takeReversalsOnArrival();
 
-            assertTrue(turned.contains(loc.getName()),
-                "the railway turned the train round at its destination and recorded nothing. Neither"
-                + " of the two paths that follow a direction change can see this one - the echo"
-                + " arrives while the run is still going, and the idle reconcile then levels the"
-                + " baseline - so the graph never learns it (IND9-B4)");
+            assertEquals(turned.get(loc.getName()), "B4 end",
+                "the railway turned the train round at its destination and recorded nothing, or"
+                + " recorded it against the wrong square. Neither of the two paths that follow a"
+                + " direction change can see this one - the echo arrives while the run is still going,"
+                + " and the idle reconcile then levels the baseline - so the graph never learns it"
+                + " (IND9-B4). The SQUARE is part of the record because the window writes the facing"
+                + " absolutely from the side the train came in by there (REV9-A1)");
 
             assertTrue(layout.takeReversalsOnArrival().isEmpty(),
                 "the record was not drained, so the same reversal is written to the graph again on"
@@ -388,7 +400,7 @@ public class testAutonomySimulationSanity
             // certain" is for.
             layout.restoreReversalsOnArrival(turned);
 
-            assertTrue(layout.takeReversalsOnArrival().contains(loc.getName()),
+            assertTrue(layout.takeReversalsOnArrival().containsKey(loc.getName()),
                 "a drained reversal that was never written to the graph cannot be put back, so every"
                 + " way of failing to write one - no session, a throwing flip - loses the turn the"
                 + " railway actually made (RGD-C7)");

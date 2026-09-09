@@ -6649,17 +6649,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND FORGOTTEN ONLY ONCE WRITTEN (RGD-C7).  The drain happens before any of these reach
             // the graph, so every way of not reaching it - no session to write to, a store that throws
             // on the second of three - used to lose the turn for good. The remainder goes back.
-            java.util.Set<String> turnedRound = built.takeReversalsOnArrival();
+            java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
 
             try
             {
                 if (session != null)
                 {
-                    for (java.util.Iterator<String> pending = turnedRound.iterator(); pending.hasNext();)
+                    for (java.util.Iterator<java.util.Map.Entry<String, String>> pending
+                        = turnedRound.entrySet().iterator(); pending.hasNext();)
                     {
-                        String turned = pending.next();
+                        java.util.Map.Entry<String, String> turned = pending.next();
 
-                        session.flipFacing(turned, built);
+                        // THE WAY IT CAME IN, NOT THE OTHER OF WHAT THE SETUP REMEMBERS (REV9-A1).
+                        //
+                        // This used to call `flipFacing`, which pivots on `getFacing(tile)` - the
+                        // SETUP's stored facing for the arrival square.  behaviour.md 6a says that
+                        // record is stale at exactly this moment, as a rule: a run moves trains and
+                        // nothing writes where they ended up back to the setup.  So the pivot was
+                        // either missing, and the turn was written nowhere, or it belonged to the
+                        // square's previous occupant, and the turn was written BACKWARDS - with
+                        // `moveOntoFacingCopy` then standing the train on the wrong copy.  That is
+                        // OB-190 from the inside.
+                        //
+                        // What the railway does know is which Point the train turned at and which side
+                        // it came in by, both written by the arrival itself; and behaviour.md 4 says a
+                        // train that has been turned round faces the way it came in.  So the answer is
+                        // read off the railway rather than derived from a record that has to have been
+                        // in sync first.
+                        if (session.faceTheWayItCameIn(turned.getKey(),
+                            built.getPoint(turned.getValue()), built) == null)
+                        {
+                            // NOT WRITTEN, SO NOT FORGOTTEN.  The old code removed the record whether
+                            // or not anything had been written, and its comment said "written, and
+                            // only now forgotten" - which was false at every one of `flipFacing`'s
+                            // four ways of declining.  A turn destroyed here never self-heals, because
+                            // there is nothing left to try again with.
+                            //
+                            // Safe to retry precisely because the write is absolute: applying it a
+                            // second time writes the same side again rather than flipping it back.
+                            continue;
+                        }
 
                         // Written, and only now forgotten.
                         pending.remove();

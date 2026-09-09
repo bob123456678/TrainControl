@@ -645,10 +645,26 @@ public class Layout
     private int maxActiveTrains = 0;
 
     /**
-     * Locomotives owed a NET facing flip, from turns this railway made at their destinations.
+     * Where each locomotive was standing when this railway last turned it round at a destination.
      *
-     * Membership is a parity, not a count of events: a locomotive that turned twice is not in here at
-     * all, because two turns leave it facing the way it started (VAL9-A1).
+     * **The SQUARE, not a flip owed (REV9-A1).**  This used to be a set of names whose membership was
+     * a parity - two turns cancelling, because the window applied each one by FLIPPING the facing the
+     * setup had recorded.  That pivot is unsound at the only moment it is ever read: behaviour.md 6a
+     * says a run moves trains and nothing writes where they ended up back to the setup, so at the
+     * arrival square the recorded facing is absent or belongs to the previous occupant.  A flip of it
+     * lost the turn or wrote it backwards, and OB-190 is what that looks like from the outside.
+     *
+     * Naming the Point makes the answer ABSOLUTE instead: a train that has just turned faces the way
+     * it came in (behaviour.md 4), the arrival wrote that side onto this very Point before turning it,
+     * and applying it twice writes the same thing twice.  So there is nothing for a parity to protect
+     * against, and the shuttle that turned at both ends - which the parity existed for - is simply
+     * written from the end it is standing at.
+     *
+     * **Dropped when the train arrives somewhere without turning**, which is the other half of making
+     * this absolute.  A record only means anything while the train is still standing where it turned;
+     * once it has run on, the arrival has placed it on the copy its journey ended at and the graph is
+     * already right.  Without the drop, an autonomy session that turned a train at a terminus and then
+     * ran it on somewhere else would hand the drain a square the train had left.
      *
      * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same
      * as always."**
@@ -667,8 +683,8 @@ public class Layout
      *
      * Concurrent because driver threads write it and the event thread drains it.
      */
-    private final java.util.Set<String> reversedOnArrival = java.util.Collections.newSetFromMap(
-        new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
+    private final java.util.Map<String, String> reversedOnArrival =
+        new java.util.concurrent.ConcurrentHashMap<>();
     
     // Route-related settings
     private boolean activateRoutes = false;
@@ -3044,17 +3060,26 @@ public class Layout
     /**
      * The locomotives turned round at their destination since this was last asked, and forgets them.
      *
-     * Drained rather than read, so one reversal is written to the graph once.  A caller that read
-     * without clearing would re-flip the facing on every refresh, which turns a record into a
-     * metronome.
+     * Each name against the Point it was standing on when the turn happened, which is what makes the
+     * write absolute rather than a flip of whatever the setup last recorded (REV9-A1).
      *
-     * @return the names, possibly empty, never null
+     * Drained rather than read, so the drain has an end: the caller puts back whatever it could not
+     * write, and a record nothing ever manages to write is retried rather than accumulated twice.
+     *
+     * **Removed by KEY AND VALUE**, so a turn made by another driver thread between the copy and the
+     * removal is not swallowed by a drain that never saw it (REV9-D2, in the shape this record has
+     * now: the newer entry names a different square and must survive).
+     *
+     * @return the names against the Points they turned at, possibly empty, never null
      */
-    public java.util.Set<String> takeReversalsOnArrival()
+    public java.util.Map<String, String> takeReversalsOnArrival()
     {
-        java.util.Set<String> taken = new java.util.HashSet<>(this.reversedOnArrival);
+        java.util.Map<String, String> taken = new java.util.LinkedHashMap<>(this.reversedOnArrival);
 
-        this.reversedOnArrival.removeAll(taken);
+        for (java.util.Map.Entry<String, String> turn : taken.entrySet())
+        {
+            this.reversedOnArrival.remove(turn.getKey(), turn.getValue());
+        }
 
         return taken;
     }
@@ -3067,22 +3092,25 @@ public class Layout
      * through a list. The names were gone and the turn they described was lost, which is the opposite
      * of what this record is for - it exists so a turn made at a destination is durable (RGD-C7).
      *
-     * `add` is the whole implementation because membership here is a PARITY, not an event: putting a
-     * name back restores exactly the state the drain took away. Anything already turned again in the
-     * meantime keeps its own answer, which is why this cannot simply assign.
+     * `putIfAbsent` is the whole implementation: putting a record back restores exactly the state the
+     * drain took away, and a train that has arrived somewhere else in the meantime has a NEWER record
+     * which this must not overwrite with the square it has since left.
      *
      * Not a cure for a configuration RELOAD between the turn and the write - that swaps this object
-     * entirely and the pending names go with it. That one needs the record to outlive the layout.
+     * entirely and the pending records go with it. That one needs the record to outlive the layout.
      *
-     * @param unwritten the names the caller did not manage to write, may be null or empty
+     * @param unwritten the turns the caller did not manage to write, may be null or empty
      */
-    public void restoreReversalsOnArrival(java.util.Collection<String> unwritten)
+    public void restoreReversalsOnArrival(java.util.Map<String, String> unwritten)
     {
         if (unwritten == null) return;
 
-        for (String name : unwritten)
+        for (java.util.Map.Entry<String, String> turn : unwritten.entrySet())
         {
-            if (name != null) this.reversedOnArrival.add(name);
+            if (turn.getKey() != null && turn.getValue() != null)
+            {
+                this.reversedOnArrival.putIfAbsent(turn.getKey(), turn.getValue());
+            }
         }
     }
 
@@ -5289,7 +5317,7 @@ public class Layout
         // reversal the railway made into the setup, it is reached only from a diagram refresh, and it
         // deliberately refuses while anything is moving.  A train that backs into its home berth on a
         // Return Home run - which is a timetable, see `loadReturnToHomeTimetable` - turns on the
-        // shared arrival path and toggles `reversedOnArrival`; with no idle announcement the turn
+        // shared arrival path and records it in `reversedOnArrival`; with no idle announcement the turn
         // stayed pending, the diagram went on drawing the train facing the way it set off, a dispatch
         // made before any unrelated repaint was offered paths for the wrong heading, and the exit
         // capture wrote the un-reconciled facing to disk.
@@ -6789,6 +6817,12 @@ public class Layout
 
         // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
         // may-reverse ruling of 2026-09-06).
+        //
+        // ASKED ONCE, in one expression, and the `else` below is how the record says the same thing
+        // this branch did.  Not hoisted into a local: `testNonReversibleTrains.testTheRunAsksThatRule`
+        // reads this file as a string and asserts this exact statement, which is a fair guard - the
+        // defect it pins is the arrival deciding a reversal WITHOUT the policy - and a shape it does
+        // not recognise reads to it as the rule having gone.
         if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))
         {
             this.control.logf(
@@ -6801,21 +6835,31 @@ public class Layout
             // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
             // direction change can pick this one up.
             //
-            // TOGGLED, NOT ADDED (VAL9-A1).  This block is on the shared arrival path, so it records
-            // autonomy's reversals too - and an autonomy session is `isRunning()` from end to end,
-            // while the drain only happens once the railway is idle.  So the reversals of a whole
-            // session arrive at the drain together, and a plain set collapsed them to one name: a
-            // shuttle that turned at both ends came back facing the way it started and had its facing
-            // flipped once, which is wrong in a way the stale-graph defect this fixes was not.
+            // AND WHERE, NOT JUST WHO (REV9-A1).  This used to toggle the name into a set, on the
+            // reasoning that what is pending is a NET flip and two turns cancel.  That reasoning
+            // belongs to a window that applies the record by FLIPPING the facing the setup has stored,
+            // and the setup's facing is stale at exactly the moment the drain reads it - so the flip
+            // lost the turn where nothing was recorded and reversed it where something was.
             //
-            // What is pending is a NET flip, so membership toggles.  Two turns cancel; three leave one.
-            // Set.add answers false when the name is already there, which makes the toggle one
-            // statement - and one locomotive's reversals all happen on its own driver thread, so
-            // nothing races for a given key.
-            if (loc.getName() != null && !this.reversedOnArrival.add(loc.getName()))
-            {
-                this.reversedOnArrival.remove(loc.getName());
-            }
+            // The Point is the whole repair.  A train that has just turned faces the way it came in,
+            // and the line above wrote that side onto this Point before the turn - so the window can
+            // write the answer ABSOLUTELY and does not care how many times the train turned on the
+            // way here.  Two turns no longer need to cancel, because applying an absolute answer twice
+            // says the same thing twice.
+            //
+            // One locomotive's arrivals all happen on its own driver thread, so nothing races for a
+            // given key.
+            if (loc.getName() != null) this.reversedOnArrival.put(loc.getName(), arrived.getName());
+        }
+        else if (loc.getName() != null)
+        {
+            // AND AN ARRIVAL THAT DID NOT TURN CLEARS IT.  The record means "this train is standing
+            // where it turned and the graph has not been told"; once it has run on, this arrival has
+            // placed it on the copy its journey ended at and the graph is already right about it.
+            // Left behind, a turn made earlier in an autonomy session would be applied to the square
+            // the train has since left - or worse, to the square it is standing on now, as though it
+            // had turned there.
+            this.reversedOnArrival.remove(loc.getName());
         }
         
         if (loc.hasCallback(CB_ROUTE_END))
@@ -7018,6 +7062,19 @@ public class Layout
             // A locomotive placed by hand claims this station if it has no home and the station is
             // free of claims.  Placing an already-homed locomotive somewhere else does not re-home it.
             this.claimHome(l, target);
+
+            // AND A HAND PLACEMENT SUPERSEDES A TURN THE WINDOW HAS NOT WRITTEN YET (REV9-A1).
+            //
+            // `reversedOnArrival` says "this train is standing where the railway turned it and the
+            // graph has not been told", and the window applies it by writing the side that Point was
+            // arrived by.  Somebody putting the train down is a newer answer about both facts than
+            // any of that - it is the same ruling as OB-183's exception, one door further on - and a
+            // record left behind would be applied to a placement the operator chose, on a square they
+            // may have chosen it for.
+            //
+            // A no-op on a REBUILD, which is the other caller: `parseAuto` replaces this whole object,
+            // so the layout being placed into has an empty record of its own.
+            this.reversedOnArrival.remove(locomotive);
 
             result = true;
         }

@@ -221,6 +221,32 @@ while it is still running, and the levelling then wipes the evidence. The physic
 reversed, the graph would say otherwise, and the next dispatch would offer paths for the wrong
 heading.
 
+**What is recorded is the SQUARE the train turned at, and what is written is the way it came in.**
+Both halves were different until 2026-09-09, and between them they are OB-190. The record was a set of
+names whose membership was a *parity* — two turns cancelling — because the window applied each one by
+**flipping** the facing the setup had stored for that square. §6a says as a rule that the stored
+facing is stale at exactly that moment: a run moves trains, and nothing writes where they ended up
+back to the setup. So the pivot was either missing, and the turn was written nowhere, or it was the
+previous occupant’s answer, and the turn was written **backwards** — with the train then stood on the
+copy for a facing it does not have.
+
+The answer that needs nothing to be in sync first is the train’s own arrival side. **A train that has
+just been turned round faces the way it came in** (§4), the arrival wrote that side onto that very
+`Point` before turning it, and the window now writes it as it stands rather than deriving it from a
+record. An absolute answer applied twice says the same thing twice, so there is nothing left for a
+parity to protect: a shuttle that turns at both ends is simply written from the end it is standing at.
+
+Three consequences worth stating, because each was a defect:
+
+- **Nothing is forgotten until it is written.** A turn the window could not apply — no setup open, a
+  square the build has no copies for, a train the running layout no longer carries — stays owed and is
+  tried again on the next refresh. It used to be dropped either way, which made the turn unrecoverable
+  rather than merely late.
+- **The record is dropped when that train next arrives somewhere without turning.** It means *this
+  train is standing where it turned and the graph has not been told*; once it has run on, the arrival
+  has already placed it on the copy its journey ended at.
+- **The running layout is moved too, and the tail goes with it** — see §4.
+
 **"The next time the railway is idle" is a moment something has to bring about, and for two of the
 four doors nothing did.** The graph is written by `reconcileFacingWhenIdle`, which is reached only
 from a diagram refresh and deliberately refuses while anything is moving - so a run's turns wait for
@@ -271,6 +297,13 @@ turned round the two point the same way while the carriages have not moved.
   leaves only one way back, the walk still follows it, because that answer is forced rather than
   guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
   (Corrected 2026-09-07 after `VAL8-C1` — the earlier wording claimed less than the code does.)
+
+- **It survives a train being re-stood on a sibling copy.** When the window writes a destination turn
+  it also moves the locomotive onto the copy for its new facing, and that is two changes of occupant —
+  which is what `Point.setLocomotive` drops the side on. Right for a different train arriving, wrong
+  here: this is the *same* train on another copy of *one* square, and turning it did not move its
+  carriages. So the side is carried across the move, and exactly the train that turned no longer loses
+  the record of the track it is lying across.
 
 **When would it not be known?** Adam asked, and it is a fair question given the two rules above.
 Three cases, all narrow:
@@ -522,9 +555,14 @@ the two agree.
 **Every setup edit regenerates the running layout from the setup, and where the two disagree about a
 train the railway wins.** A run moves trains, where they ended up lives only in the running layout,
 and nothing writes it back to the setup when the run ends - so a setup that has not been captured
-since is stale about exactly those trains. Regenerating from it would put each one back where it set
-off, in the model and then on disk, and occupancy is the model's own record rather than the sensors:
-the next dispatch could then be routed into a block that is physically occupied.
+since is stale about exactly those trains. **That applies to the recorded facing as well as to the
+placement**, and it is why nothing that runs when a run ends may work out an answer by *changing* what
+the setup records - see §3. A recorded facing is also never cleared, so an empty square still carries
+the last occupant's, which makes "there is a value here" no evidence that it is this train's.
+
+Regenerating from it would put each one back where it set off, in the model and then on disk, and
+occupancy is the model's own record rather than the sensors: the next dispatch could then be routed
+into a block that is physically occupied.
 
 **The one exception is a train whose placement the edit was about**, and the doors that make such an
 edit say which train it is. Placing a locomotive from the autonomy editor, taking one off a square,

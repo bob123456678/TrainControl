@@ -1416,6 +1416,8 @@ public class AutonomySession
 
         org.traincontrol.automation.Point onto = null;
 
+        org.traincontrol.automation.Point from = null;
+
         java.util.List<org.traincontrol.automation.Point> here = new java.util.ArrayList<>();
 
         for (Map.Entry<String, Side> copy : facingsFor(tile).entrySet())
@@ -1432,6 +1434,8 @@ public class AutonomySession
                 && locomotive.equals(point.getCurrentLocomotive().getName()))
             {
                 train = point.getCurrentLocomotive();
+
+                from = point;
             }
         }
 
@@ -1439,6 +1443,22 @@ public class AutonomySession
         if (onto == null || train == null) return;
 
         if (onto.getCurrentLocomotive() == train) return;
+
+        // AND THE TAIL COMES WITH IT (REV9-B1).
+        //
+        // `Point.setLocomotive` clears `arrivedFrom` on every change of occupant - *"a different
+        // occupant did not come in that way"* - and both calls below are changes of occupant, so the
+        // side went out with the old copy and the new copy was never given it.  That is right for a
+        // different train arriving and wrong for THIS move, which is the same train being re-stood on
+        // a sibling copy of one square: behaviour.md 4 - *"turning the train round at the platform
+        // does not move its tail: the carriages stay where they stopped"*.
+        //
+        // So exactly the train whose turn was just written lost the record of which track it is lying
+        // across, and the switch it is fouling was offered to the next route.  Saved and put back, the
+        // way `TrainControlUI.putTheTrainsBack` does either side of its own re-placement.
+        //
+        // Read from the copy it was ON, because that is the one the arrival wrote it to.
+        final String tail = from == null ? null : from.getArrivedFrom();
 
         // CLEARED FIRST, so the train is never on two copies of one square at once - which is the
         // state `DIR-C3` is about and which the checks report.
@@ -1448,6 +1468,87 @@ public class AutonomySession
         }
 
         onto.setLocomotive(train);
+
+        // Not overwritten where the destination copy already knows: a value written by an arrival on
+        // this very copy is the newer of the two.
+        if (tail != null && onto.getArrivedFrom() == null) onto.setArrivedFrom(tail);
+    }
+
+    /**
+     * Faces a train the way it came in, because the railway has just turned it round there (REV9-A1).
+     *
+     * **The answer is absolute, and that is the whole point of it.**  `flipFacing` is relative - it
+     * takes what the setup has recorded for the square and writes the other choice - and the drain in
+     * `TrainControlUI.reconcileFacingWhenIdle` used it at the one moment that record cannot be
+     * trusted.  behaviour.md 6a states the reason as a rule: *"a run moves trains, where they ended up
+     * lives only in the running layout, and nothing writes it back to the setup when the run ends"* -
+     * and `captureFromLayout` never clears `FACING`, so an arrival square carries either nothing or
+     * the previous occupant's answer.  Flipping nothing wrote nothing and the turn was lost; flipping
+     * the previous occupant's answer wrote the turn backwards and moved the train off the copy that
+     * was right.  Adam met both as OB-190.
+     *
+     * What IS reliable is the side the train came in by.  behaviour.md 4: *"a train faces the way it
+     * will leave; once it has been turned round the two point the same way while the carriages have
+     * not moved."*  So the facing of a train that has just turned at its destination is its
+     * `arrivedFrom` - which the arrival wrote onto this very Point, before turning it, from the last
+     * edge of the path it drove.  Nothing has to be in sync first, and applying it a second time
+     * writes the same thing again rather than undoing it.
+     *
+     * **Both records, as `flipFacing` does** (DIR-B3, Adam 2026-09-06: *"flipFacing should also update
+     * the running layout"*).  Which copy a train stands on IS its direction, so a setup written
+     * correctly and a running layout left on the old copy still offers paths for the old heading.
+     *
+     * **Quiet where it cannot answer, and it says so by returning null** - a Point that is not this
+     * square's, a square the build has no copies for, an arrival side no copy of the square can face.
+     * The caller keeps the record when this returns null, so the turn is retried on the next refresh
+     * rather than forgotten.
+     *
+     * @param locomotive the locomotive that was turned
+     * @param turnedAt the Point it was standing on when it turned, from the record the arrival made
+     * @param running the running layout, or null to write the setup only
+     * @return the square whose facing was written, or null when nothing was
+     */
+    public TileKey faceTheWayItCameIn(String locomotive, org.traincontrol.automation.Point turnedAt,
+        org.traincontrol.automation.Layout running)
+    {
+        if (locomotive == null || turnedAt == null || getStationIndex() == null) return null;
+
+        // STILL STANDING WHERE IT TURNED.  A hand placement, a paste or a rebuild between the arrival
+        // and the drain replaces this fact with somebody's own answer, and that answer is the newer
+        // one - so this writes nothing rather than turning a train the operator has just put down.
+        if (turnedAt.getCurrentLocomotive() == null
+            || !locomotive.equals(turnedAt.getCurrentLocomotive().getName()))
+        {
+            return null;
+        }
+
+        String came = turnedAt.getArrivedFrom();
+
+        if (came == null) return null;
+
+        Side arrived = null;
+
+        for (Side side : Side.values())
+        {
+            if (side.name().equals(came)) arrived = side;
+        }
+
+        if (arrived == null) return null;
+
+        TileKey tile = getStationIndex().squareOf(turnedAt.getName());
+
+        if (tile == null) return null;
+
+        // A SIDE NO COPY OF THIS SQUARE CAN FACE is the state `OB-177` taught the menu to show and
+        // `flipFacing` gives up on in silence (DIR-C4).  Writing it would record a facing the build
+        // cannot hold and `moveOntoFacingCopy` would find nothing to stand the train on.
+        if (!facingChoices(tile).contains(arrived)) return null;
+
+        setFacing(tile, arrived);
+
+        moveOntoFacingCopy(running, locomotive, tile, arrived);
+
+        return tile;
     }
     /**
      * Turns a placed locomotive round on the graph, because the railway turned it (Adam, 2026-09-06).
