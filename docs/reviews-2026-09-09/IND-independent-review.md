@@ -34,11 +34,12 @@ Verified against source by me personally:
   (LayoutLabel.java:1001-1500; MarklinRoute.java:500-760);
 - the cross-checks between `findings.tsv`, `issues.md` and `open-questions.md` reported under B3.
 
-Four read-only sub-reviews were dispatched to cover the rest of the surface. **Two returned** — the
-§§2/5/6/6a length-and-blocking verification, and the GUI trivial-bug sweep — and their load-bearing
-claims were spot-checked by me before inclusion (one mechanism was corrected on re-reading: see C1).
-**Two did not return**: the §§3/4 reversal-mechanics verification and the drawing/geometry blind-spot
-audit. Those areas went unread, and the final section says exactly what that leaves unchecked.
+Four read-only sub-reviews were dispatched to cover the rest of the surface. **Three returned** — the
+§§2/5/6/6a length-and-blocking verification, the GUI trivial-bug sweep, and the drawing/geometry
+blind-spot audit (the layer test/README.md says no fixture can see) — and their load-bearing claims
+were spot-checked by me against the source before inclusion (one mechanism was corrected on
+re-reading: see C1). **One did not return**: the §§3/4 reversal-mechanics verification. That area went
+unread at the code level, and the final section says exactly what that leaves unchecked.
 
 **What held up well, stated so the findings below are in proportion:** every length, inactivity,
 tail-blocking and edit-guard rule read against behaviour.md §§2, 5, 6 and 6a agrees with the code, and
@@ -84,6 +85,43 @@ shorter than the track the railway actually refuses, and files the difference as
 **Remedy:** rewrite §5c's drawing paragraphs to the 2026-09-08 ruling (line not wash, per road not per
 square, marks the train's extent while refusal keeps the lock-edge extent) and record the
 claims-less-than-enforced asymmetry as a stated limit, per the document's own promise at line 13.
+
+### A2 - the room-after-the-last-switch walk does not stop at a permanently-set turnout, admitting a train whose tail fouls it
+
+**GraphReducer.java:1226-1243 (`roomAfterTheLastSwitch`) and :1272-1281
+(`unmeasuredAfterTheLastSwitch`) vs LayoutDiagramComponent.java:221-230 (`isSwitch()`).**
+Found by the returned geometry sub-review; both code sites re-verified by me.
+
+The berth-room walk (behaviour.md §5a: room is measured "**from the last switch** to the berth",
+because a train that does not fit "comes to rest standing on the switch") walks the run-in backwards
+and stops at the first tile where `component.isSwitch()`. `isSwitch()` names SWITCH_LEFT/RIGHT/
+CROSSING/THREE/Y and CUSTOM_SCISSORS — and **not** `CUSTOM_PERM_LEFT/RIGHT/Y/THREEWAY`, the
+permanently-set (defective) turnouts that `TilePorts` maps as trailing-only points
+(TilePorts.java:316-325). So for a berth approached over a permanently-set turnout:
+
+- the walk counts track on the far side of the turnout as room, and `measuredRoomAtTheBerth` can
+  **admit a train whose tail comes to rest on the turnout's merge** — the exact outcome the
+  last-switch rule exists to prevent, at the one turnout type that can never be commanded clear;
+- an edge whose only turnout is a CUSTOM_PERM reports `crossesASwitch() == false`, so the caller
+  keeps accumulating room straight across the points;
+- the editor's "measure these tiles" prompt (`unmeasuredAfterTheLastSwitch`, same test) asks the user
+  to measure tiles on the wrong side of the turnout.
+
+This is the over-admission direction — the one behaviour.md:399 calls "neither [safe nor annoying]"
+and worth ruling on first. Partial runtime mitigation: once the train is standing, the §5c tail walk
+covers the edge over the turnout and its shared-metal lock partners, so conflicting routes are then
+refused — but the admission itself, and the train left standing across an un-throwable junction, are
+already wrong by the documented rule. No fixture contains any switch (test/README.md C20), so no test
+can distinguish "switch" from "permanently-set switch" here.
+
+**Failure scenario:** a four-unit train is sent to a two-unit berth reached over a `CUSTOM_PERM_LEFT`;
+the guard counts the track beyond the turnout, admits it, and the train comes to rest fouling the
+merge of a junction that no command can clear.
+
+**Remedy needs Adam's ruling on one point:** whether a permanently-set turnout counts as "the last
+switch" (physically it is shared metal; topologically it is not a choice). If yes, the fix is adding
+the CUSTOM_PERM types to the stop test in both walks — and deciding whether `isSwitch()` itself should
+answer true for them, which has other callers and needs the sibling sweep.
 
 ---
 
@@ -207,6 +245,27 @@ creates — precisely inverted from intended.
 Escape. The button stays pressed, the tool stays armed, and the next diagram click is swallowed by the
 gesture — the exact hazard the panel's own javadoc at :860-864 names.
 
+### B6 - a highlight flash that outlives a switch actuation restores the OLD position's icon, and the diagram stays wrong
+
+**LayoutLabel.java:1125-1157 (`flashHighlight`) vs :952-1083 (`setImageOnEDT`) and the change test at
+:1585.** Found by the geometry sub-review; the restore mechanism re-verified by me.
+
+`flashHighlight` captures `flashRestore = getIcon()` and a timer puts it back when the hold ends. If
+the accessory changes state during the hold — the route editor flashes what a route commands, then the
+route executes, or the Central Station echoes a throw — `setImageOnEDT` installs the new-position icon
+and updates `imageName`, but never touches `flashRestore` or the pending timer. The timer then fires
+and restores the **old position's icon**; and because `imageName` already names the new image,
+`updateImage`'s no-change test skips subsequent refreshes. **The diagram shows the switch in the wrong
+position until the accessory is physically actuated again.**
+
+Switch position on the operating view is a thing the operator reads before sending a train, which is
+what lifts this above cosmetic.
+
+**Failure scenario:** the user plays a route from the route editor (which flashes the tiles it
+commands); the route throws one of those switches during the flash hold; the flash ends and the tile
+reverts to the pre-route position and stays there. The operator later reads the diagram, believes the
+switch is set the old way, and hand-drives accordingly.
+
 ---
 
 ## C - low
@@ -295,6 +354,35 @@ From the returned §§2/5/6/6a verification, both confirmed as absences by searc
   is unambiguous. §4:236-239 says the walk still follows a forced answer; a stale side defeats that,
   and no document states it.
 
+### C8 - a station caption's rotation depends on what was standing on the sensor when the layout was saved
+
+**LayoutGrid.java:488-511 (`runsNorthSouth`) vs LayoutDiagramComponent.java:92 and the documented
+sibling fix at AutonomySession.java:2236-2240.** (Geometry sub-review; call site re-verified by me.)
+
+`runsNorthSouth` asks `TilePorts.ports(type, orientation, **state**)`, and a FEEDBACK tile's `state`
+is the `zustand` saved by the Central Station — 1 if the s88 happened to be occupied at export. For
+state 1 the port table answers empty (past the one state a feedback tile has), so a vertical sensor
+square reads as not-north-south and its caption is drawn unrotated, as though the track ran east-west
+— persistently, per file, and differently for two identical vertical stations. The `catch` fallback's
+comment blames "a tile type the port table does not describe"; the real failure returns empty and
+never throws. `AutonomySession.labelSides` documents this exact trap and asks `graph.getRoutes(tile)`
+instead — `runsNorthSouth` is the surviving sibling of that fix. No fixture can see it: every
+hand-built fixture is orientation-0 horizontal with state 0 (test/README.md C17).
+
+### C9 - the two independent arms of a double-curve tile are locked as one piece of metal
+
+**GraphReducer.java:1392-1408 (`locationsOf`) and :1336-1374 (`deriveLocks`) vs the walks' own
+treatment at :580-585.** (Geometry sub-review.)
+
+`DOUBLE_CURVE` carries two routes with no connection between them — the path walks all keep the arms
+apart, and the code says so — but lock derivation keys a step by bare tile for every type except
+OVERPASS, so two edges through the two separate arms of one double-curve square are locked against
+each other. On a double-track corner drawn with parallel-curve tiles (their normal use), autonomy
+serializes every pair of simultaneous runs through that corner: two trains on physically separate
+tracks refuse each other. Safe direction, but squarely the over-strictness class Adam has ruled
+against before (a guard that refuses more than the railway does), and invisible to the suite — no
+fixture has a curve.
+
 ---
 
 ## D - minor
@@ -343,6 +431,24 @@ the corrected 2026-09-08 table — while its name says "Destination". The body's
 calls the two flags reading as synonyms the trap (MON-C14, MON-C5); the name is now an instance of it.
 behaviour.md:98 cites the test by this name, so a rename must touch both.
 
+### D7 - the MT-309 train mark has a gap on every route-button square it crosses
+
+**LayoutLabel.java:1507-1533 (`coveredRoads`) vs TileGraph.java:1386-1389.** (Geometry sub-review.)
+A transparent ROUTE-button tile's step is recorded with a synthetic `transparentRouteId` that only
+`TileGraph.getRoutes` can resolve; the paint path resolves against `TilePorts`, whose ROUTE entry has
+zero routes, so the guard skips the step every time — by construction, not by the staleness the
+comment attributes it to. A standing train's orange line breaks for one square at every route button
+its tail crosses, and the gap reads as "the train ends here". Layouts thread buttons through running
+lines routinely (the port map's own comment counts 43 on the sample layout).
+
+### D8 - the tail mark can be drawn along the wrong arm of an equal-length passing loop
+
+**AutonomySession.java:5143-5172 (`pathBetween`) with the directed dedup at
+GraphReducer.java:1052-1070.** (Geometry sub-review.) The covered-edge answer is direction-specific,
+but the redraw flattens to endpoint squares and takes the first edge matching in either direction;
+after dedup, A→B and B→A can keep different arms of an equal-length loop, so the mark can be laid
+along the arm the train is not on. Display only, narrow preconditions.
+
 ---
 
 ## Is this acceptable?
@@ -350,23 +456,32 @@ behaviour.md:98 cites the test by this name, so a rename must touch both.
 **Close, and not today.** The core of what this railway does — where a train may be sent, whether it
 fits, what its tail blocks, what may be edited while it runs, and whether the user's data survives an
 exit — held up under adversarial reading better than most codebases I have reviewed: rules match the
-document, the tests genuinely pin them, and the persistence layer is defended in depth. Nothing found
-here loses data or moves a train unsafely.
+document, the tests genuinely pin them, and the persistence layer is defended in depth. The geometry
+audit also verified the things most worth verifying in the untested layer: one consistent orientation
+convention at every rotation site, page-portal contraction that unions lock sets and sums lengths
+correctly, crossings and overpasses classified correctly for locking, and no
+concurrent-modification path in paint. Nothing found here loses a user's data.
 
-What blocks acceptance is Adam's own criterion: *the behaviour needs to be documented and tested.*
+What blocks acceptance is Adam's own criterion — *the behaviour needs to be documented and tested* —
+plus two code defects the untested layer was hiding (A2, B6), one of which admits a train the
+documented rule refuses.
 
 I would insist on, before calling v3.0.0 accepted:
 
-1. **Re-sync behaviour.md with the 2026-09-08 rulings and the unwritten rules** — §5c's covered-track
+1. **Rule on and fix A2** — whether a permanently-set turnout is "the last switch". Until then the
+   berth-room guard admits trains that come to rest fouling an un-throwable junction, which is the
+   over-admission direction behaviour.md itself says to rule on first.
+2. **Re-sync behaviour.md with the 2026-09-08 rulings and the unwritten rules** — §5c's covered-track
    description (A1), an FR-001 section with its tier answer (B1), and the MT-247 route-conflict rule
    (B2). These are hours of writing, not code.
-2. **Make open-questions.md and the issues Inbox tell the truth** (B3), and put OB-190's
+3. **Make open-questions.md and the issues Inbox tell the truth** (B3), and put OB-190's
    net-reversal question in front of Adam explicitly — it is the one open item that makes a documented
    promise ("Yes = keep the current direction") false in a case an operator will hit.
-3. **Fix B4 and B5** — one `setFocusable(false)` and one relocated Escape branch. Small fixes, but a
-   shortcut layer that dies on the first click of the findings list is exactly the "trivial bug" class
-   Adam spent a day reporting.
-4. **Adam's hands-on pass over the "fixed unvalidated" receipts** (OB-184/185/186 et al.) and the
+4. **Fix B4, B5 and B6** — one `setFocusable(false)`, one relocated Escape branch, and cancelling or
+   re-capturing the flash restore on a state change. Small fixes; B4/B5 are exactly the "trivial bug"
+   class Adam spent a day reporting, and B6 leaves the diagram showing a switch position the railway
+   is not in.
+5. **Adam's hands-on pass over the "fixed unvalidated" receipts** (OB-184/185/186 et al.) and the
    19-test manual checklist — several September fixes have never been driven on the real railway.
 
 The C and D items can ride behind the release without endangering it.
@@ -377,10 +492,7 @@ The C and D items can ride behind the release without endangering it.
   default-and-dismiss semantics, the `putIfAbsent`/`reconcileFacingWhenIdle` mid-run direction
   handling, `arrivedFrom` capture order, and the paste walk. The sub-review dispatched for it did not
   return. B3's OB-190 finding touches this area from the documents side only; the code went unread.
-- **The unexamined layer named in test/README.md** — what the Swing components draw, orientation
-  arithmetic on curves, the lock-edge derivation at real switches and crossings, and page-portal
-  contraction. The sub-review dispatched for it did not return. This is the layer test/README.md says
-  defects hide in by construction, and this review adds no assurance about it.
+  This is the largest unread area, and it covers the newest behaviour in the release.
 - **Anything about the last two and seven days of commits as changes** — deliberately out of scope;
   the diff reviewers own it.
 - **Any runtime behaviour.** Nothing was executed: no tests, no application launch, no probes. Every
