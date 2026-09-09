@@ -674,6 +674,38 @@ So the open question is which chord, and that is Adam's to say. The rest is smal
 knows which square the pointer is over (`TrainControlUI.hoveredDiagramTile`), and the dialog is
 `AutonomyEditorPanel.applyLength`.
 
+**Claude, 2026-09-09: CONTROL+D IS NOT FREE EITHER, and it is taken TWICE.** Adam suggested it after
+being told Control+T was taken. In the track diagram editor it toggles the addresses drawn on the
+tiles - `LayoutEditor.formKeyPressed`, `VK_D` to `toggleAddresses()` - and in the main window it opens
+the locomotive adder, `TrainControlUI.getLocAdder().setVisible(true)`. Neither is a chord this can
+share: one is about what the diagram draws and the other opens a window.
+
+**No key is picked here.** That is Adam's to say, as the paragraph above already records, and what was
+missing was the list to choose from rather than the choice. So, measured from the two key handlers
+rather than remembered:
+
+| | taken by | free |
+|---|---|---|
+| **the track diagram editor** (`LayoutEditor.formKeyPressed`) | A C D G H I K L R S T V X Y Z | **B E F J M N O P Q U W** |
+| **the main window** (`TrainControlUI`) | A C D F L M N R S V X | B E G H I J K O P Q T U W Y Z |
+| **free in BOTH** | | **B E J O P Q U W** |
+
+**Both matter, not just the editor.** The dialog is opened from the autonomy editor, but the square
+the pointer is over is `TrainControlUI.hoveredDiagramTile` and the track diagram viewer borrows the
+same tile menu - so a chord that works in one window and not the other is a shortcut people will find
+once and then stop trusting. The last row is the set with no collision anywhere.
+
+**Which of them say "length" out loud**, since a chord nobody can guess is a chord nobody uses:
+
+- **U** for *units*, which is the word the dialog and the guard both use for what is being set. Free in
+  both windows.
+- **E** for the *e* in l**e**ngth, which is how Control+X gets to mean cut. Free in both windows.
+- **M** for *measure* - the best of the three as a word, and the one this table exists to warn about:
+  it is free in the editor and TAKEN in the main window (`VK_M`), so it would work over the diagram in
+  one window and do something else in the other.
+
+Nothing else in the free set is a mnemonic for anything: B, J, O, P, Q and W are simply unused.
+
 ### OB-193 - 2026-09-09 - TopMainR2 shows two labels
 
 **Kind:** bug  
