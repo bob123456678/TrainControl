@@ -252,6 +252,7 @@
              or a scenario README going stale about who uses it. -->
         <test-one-class class="testTwoRoutesShareOneSwitch"/>
         <test-one-class class="testACoveredSwitchClosesTheOtherRoad"/>
+        <test-one-class class="testALongTrainIsOfferedNothingOnAOneUnitRailway"/>
         <test-one-class class="testACurvedPlatformRecordsASideTheBuildUses"/>
         <test-one-class class="testTheFrozenRailwayIsStillTheRailway"/>
         <test-one-class class="testEveryScenarioIsUsedAndSaysSo"/>
@@ -375,6 +376,7 @@
         <test-one-class class="testTheShadingFollowsTheTrain"/>
         <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
         <test-one-class class="testTheHomeLabelIsDrawnOnce"/>
+        <test-one-class class="testTheBulkClearWarnsThatCancelWillNotUndoIt"/>
         <test-one-class class="testTheWashIsNoLongerThanTheTrain"/>
         <test-one-class class="testTheDiagramIsNotRebuiltForAnArrow"/>
         <test-one-class class="testTheTrainIsShownAsALine"/>

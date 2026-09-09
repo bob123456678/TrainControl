@@ -8048,22 +8048,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Takes every locomotive off the setup (MT-257 item 1).
-     *
-     * Adam: **"Yes, I want it back."**  2.8.1 had it on the graph window's own menu, and it went with
-     * the window - `git show master:.../GraphRightClickGeneralMenu.java:111`.
-     *
-     * That version walked the RUNNING layout and called `moveLocomotive(null, ...)`, skipping
-     * reversing points and non-destinations.  This one is the editor's, so it goes through
-     * `placeLocomotive(tile, null)` - the same door the per-square "Remove" item uses, which also
-     * clears the facing the placement left behind.  No skipping: a placement the editor can show is a
-     * placement the editor can clear, and the 2.8.1 filter was about which squares the running model
-     * would accept a MOVE to rather than about which ones may be emptied.
-     *
-     * Nothing is written to disk.  Like every other decision in this window it waits for Save, so a
-     * mistaken press is undone by Cancel.
-     */
-    /**
      * What the bulk clear says before it takes every locomotive off (OB-194).
      *
      * Adam, on MT-311, 2026-09-08: **"bug: clearning locomotives in the autonomy editor cannot be
@@ -8104,6 +8088,24 @@ public class AutonomyEditorPanel extends JPanel
             session.tilesWithALocomotive().size(), names.toString());
     }
 
+    /**
+     * Takes every locomotive off the setup (MT-257 item 1).
+     *
+     * Adam: **"Yes, I want it back."**  2.8.1 had it on the graph window's own menu, and it went with
+     * the window - `git show master:.../GraphRightClickGeneralMenu.java:111`.
+     *
+     * That version walked the RUNNING layout and called `moveLocomotive(null, ...)`, skipping
+     * reversing points and non-destinations.  This one is the editor's, so it goes through
+     * `placeLocomotive(tile, null)` - the same door the per-square "Remove" item uses, which also
+     * clears the facing the placement left behind.  No skipping: a placement the editor can show is a
+     * placement the editor can clear, and the 2.8.1 filter was about which squares the running model
+     * would accept a MOVE to rather than about which ones may be emptied.
+     *
+     * **Nothing is written to disk, AND CANCEL DOES NOT PUT THEM BACK** - which is not the same thing,
+     * and this said it was until OB-194.  A placement is read from the running railway rather than
+     * regenerated from the setup since OB-183, so Cancel restores the FILE and the trains stay lifted.
+     * `clearLocomotivesWarning` is what tells the operator that before they answer.
+     */
     private void clearAllPlacements()
     {
         java.util.List<TileKey> placed = session.tilesWithALocomotive();

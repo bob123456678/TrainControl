@@ -710,8 +710,15 @@ public class testSwitchingToACentralStationLayout
         //   window and the window then has to be asked whether it closed.  It builds a `LayoutEditor`
         //   per test, on `live-snapshot` through `Scenario.folderFor`, with the sandbox opened before
         //   the model as the rule above requires.
-        assertEquals(checked, 26,
-            checked + " test classes were found to build a window, not the 26 there were when this "
+        //
+        // TWENTY-SEVEN since 2026-09-09, and the one that arrived is
+        // `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` (OB-194).  A tooltip is a property
+        // of the menu ITEM rather than of the panel, so the only way to ask whether the warning
+        // reaches the Bulk Tools menu is to build the menu - which needs the editor, which needs a
+        // window.  Its sandbox is `live-snapshot` through `Scenario.folderFor`, opened before the
+        // model, as the rule above requires.
+        assertEquals(checked, 27,
+            checked + " test classes were found to build a window, not the 27 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 
