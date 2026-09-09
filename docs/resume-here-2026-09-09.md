@@ -1,64 +1,115 @@
 # Where we stopped — 2026-09-09
 
-Everything is committed and pushed on `autonomy-diagram-r0`, HEAD `f26cb43b`. `git status` is clean
-apart from the three files under `cs2_sample_layout/` that your own running TrainControl rewrites.
+Everything is committed on `autonomy-diagram-r0`. `git status` is clean apart from the files under
+`cs2_sample_layout/` that your own running TrainControl rewrites.
 
 **Battery: 195 classes green, 0 failures, 0 skips** (one documented skip needs a Central Station).
 
 | | |
 |---|---|
 | manual tests awaiting you | 29 |
-| open issues in the Inbox | 23 |
+| open issues in the Inbox | 21 |
 | open review findings | 30 |
 
-## Answer these first when we resume
+## What you answered, and where each answer went
 
-### 1. The concurrency cap does not match your words
+The four questions on this page have all been answered. What is left of each is the ruling and what it
+cost; the questions themselves are in `git log` if anybody wants them.
 
-You ruled the `maxActiveTrains` cap applies **"only under full autonomy"**. The fence in the code is
-`isAutoRunning()`, and `executeTimetableInternal` sets that same flag — so **a timetable and Return
-Home are capped too**. Meanwhile the occupancy restrictions you ruled on earlier use a *narrower*
-test that excludes them. Two rules, two meanings of "autonomy is running".
+### 1. The concurrency cap — leave it
 
-Either the cap should move to the narrow test to match your sentence, or your sentence meant the
-broad one. Nothing was changed; it is documented as a question.
+Your ruling: **"OK as is for reasons noted in the for-adam file."** The `maxActiveTrains` cap stays
+fenced behind `isAutoRunning()`, so a timetable and a Return Home run are capped along with full
+autonomy, and the occupancy restrictions keep the narrower fence. `behaviour.md` §1 says both, and says
+that the two flags are different on purpose rather than by oversight.
 
-### 2. A length-guard test that is right about the rule and wrong about the railway
+### 2. The length-guard test — settled, and it was the test rather than the guard
 
-`testALongTrainIsOfferedNoBerthWhenEverySectionIsOneUnit` claims a nine-unit train is offered no
-reversing berth anywhere. It turns out to depend on **where the train starts**:
+Your analysis was that `testALongTrainIsOfferedNoBerthWhenEverySectionIsOneUnit` was *"a poor test, and
+an even worse layout config to test with, since we only gave 3 tracks artificially low lengths."* That
+is exactly what it turned out to be, and the measurement is worth having:
 
-- from `1 - Main:14,3` it is offered `BottomMainC (eastbound, reverse)`
-- from `1 - Main:20,13` it is offered `RampDown (southbound, reverse)`
+- **A section is not a tile.** The test set every TILE to one unit, and the run into RampDown is
+  eighteen tiles, so "every section is one unit" produced eighteen-unit sections. A nine-unit train
+  fits in eighteen and was correctly offered.
+- **It was start-dependent.** It asked whatever train happened to be standing for a destination, so it
+  asserted about one square while reading as an assertion about the whole railway.
 
-and in both cases the sibling assertion reports the room at that berth as **one unit**. So either the
-guard refuses from some start squares and not others, or the helper that reports the room disagrees
-with the rule that enforces it — which walks back along the path and so is start-dependent by
-construction.
+**RampDown is not 22,7's business, and this is why.** RampDown is `1 - Main:21,6` and BottomMainPost is
+`22,6` - adjacent on the drawing, with **no edge between them**. So the route from BottomMainB reaches
+RampDown the long way round: nine edges, up the 22 column, west along row 1, down the ramp through
+TopMainR2 and TopMainPost. `22,7` is on the FIRST of those nine, three switch-crossing edges away from
+the berth, and it measures the room at **BottomMainPost** - a square the train passes through and does
+not stop at. The room rule walks back from the berth and stops at the last switch, which is your ruling
+of 2026-09-02, so it stops seven edges short of that tile and could not reach it.
 
-This was **reverted rather than resolved**, because turning a green claim red without knowing which
-half is wrong would hide it. It needs a real investigation, and it touches the anti-collision guard.
+**Where the guard does bind, it binds exactly as you asked.** With `22,7` at one unit a nine-unit train
+is refused BottomMainPost; with it at nine the same train is admitted, exactly-fits; with nothing
+measured anywhere it is admitted, *"generally, allow it"*. Both of the cases you asked for are pinned,
+with the refusal between them.
 
-### 3. The viewer editability assessment is written and waiting
+The every-section claim moved to `single-switch`, where a section really is two to four tiles, and is
+asserted from every one of the five squares a train may stand on.
 
-`docs/reference/viewer-editability.md`. The short answer to your question is **no** — removing options
-would not reduce complexity, because 23 of the 25 gestures are not copies of the editor's menu, they
-*are* it, one object. What actually costs is that **the viewer path never captures the running
-layout**: OB-144, OB-183, D2-A1, D3-C5 and REV-B2 all landed there, and three separate mechanisms
-exist only to stand in for the missing capture.
+**Nothing was changed in the guard.** Extending the room rule to the points a route merely passes
+through would refuse legitimate through moves everywhere on your railway, and `configureAndLockPath`
+locks the whole route before the train moves, so nothing stops it at BottomMainPost as things stand.
+`testWhyRampDownIsOffered` is the test that goes red if anybody decides otherwise, and its message says
+which claim was traded for which.
 
-Recommendation: give the viewer path the capture (one change against five findings), remove four
-gestures that do not belong in a one-tile menu, and fix two asymmetries. Your call.
+### 3. The viewer editability assessment — accepted, and these are the four
 
-### 4. Four filed issues that need a decision, not work
+You asked: **"OK, which four to remove?"** From `docs/reference/viewer-editability.md`, and all four
+are gestures where the viewer's missing capture is a hazard rather than a nuisance:
 
-- **FR-066** — a shortcut to set a square's length. **Control+T is taken** (it edits a square's text)
-  and so is Control+G. Which key?
-- **OB-193** — TopMainR2 shows two labels. May already be fixed by the 09-08 label work; worth
-  checking before anyone spends time on it.
-- **OB-194** — clearing locomotives cannot be undone by Cancel. Do you want a warning before the
-  action, or a real undo?
-- **FR-068** — whether that condition shape can be represented at all, or should be refused explicitly.
+1. **Changing Direction ▸ Never / May / Must**
+2. **Trains May Arrive… ▸ From the N/E/S/W**
+
+   Both change how many copies a square becomes and what those copies are called. From that moment the
+   running layout holds names the setup no longer knows: captions go blank, and the right-click menu
+   finds no Point to place a locomotive on. That is what `autonomyEditorClosed` rebuilds on close to
+   avoid. The editor is where you are when you are thinking about the shape of a station; the viewer is
+   where you are while trains are standing on it.
+
+3. **Bulk Tools ▸ Clear All Locomotives**
+4. **Bulk Tools ▸ Clear All Home Locomotives**
+
+   Neither is about the square under the pointer. They act on the whole setup from a menu opened by
+   right-clicking one tile, and they are reachable even on a page autonomy ignores, where that menu is
+   otherwise a single item.
+
+Plus the two to fix rather than remove: **Place / Edit Locomotive…** does not call `setupChanged()`
+where its editor twin does, and **Remove {loc}** and **Place {loc}** never reach disk - the exact shape
+of MT-246, at doors nobody swept.
+
+**Not done yet** - this is work rather than a record, and it is in the list below.
+
+### 4. The four filed issues
+
+- **FR-066**, the set-length shortcut. **Control+D is taken twice**: the editor uses it to toggle
+  addresses, the main window to open the locomotive adder. No key has been picked - that is still
+  yours - but the list to choose from is on the issue now, measured from the two key handlers:
+  **B E J O P Q U W** are free in both windows, and of those **U** (units) and **E** (the e in length)
+  are mnemonic. **M** for measure is free in the editor and taken in the main window, which is exactly
+  the trap worth knowing about.
+- **OB-193**, TopMainR2's two labels. **Closed.** You were right that it was fixed: `05c7f48e` on the
+  08th, and `1 - Main:6,4` is TopMainR2, the very square that fix was made for. The suite now names it.
+- **OB-194**, clearing locomotives. **Closed** with the warning you asked for, tested three ways.
+- **FR-068**, the bracket that is not the first term. **Closed** - it is already representable, and the
+  gesture that builds it is now a test.
+
+## Still to do
+
+1. **The manual-only wash** (your ruling on the orange arrows): *"make the tiles transparent just like
+   when we block edges."* Nothing draws it today - the grey is computed for track a train covers, and
+   neither `LayoutGrid` nor `LayoutLabel` asks about the parking marking.
+2. **The viewer's missing capture**, and then the four removals and two fixes above. One change against
+   five findings (OB-144, OB-183, D2-A1, D3-C5, REV-B2).
+3. **OB-195** - the editor says autonomy will never choose a compulsory turn and the runtime would.
+   Narrow the editor or widen the builder; it costs nothing on your railway either way.
+4. **Question 1 on the for-adam page** - your answer (a) disagrees with the ruling that shipped an hour
+   after that question was written. Worth two minutes of your time before anybody acts on either.
+5. **The remaining live-railway tests onto the snapshot.**
 
 ## What changed today
 
@@ -81,12 +132,14 @@ placement, a train length or a tile length changes.
 **Your railway is out of the test path.** Nine classes moved to a frozen snapshot; several had been
 *skipping* rather than failing, which reads as green. Tests build their own locomotives with semantic
 names now, and three classes that were writing lengths onto your engines and keeping them now put them
-back.
+back. The length-guard class joined them today - it has its own train and stands it alone on
+BottomMainB, so it no longer depends on where your engines happen to be.
 
 **The fixture library exists** — `test/layouts/` with `single-switch`, `curve-into-platform` and
 `live-snapshot`, plus `support.Scenario.open(name)`. Its first use found a real defect on a curve, and
 the switch fixture is what finally made the anti-collision rule at a switch testable: it had been
-green under mutation in all three classes that were supposed to cover it.
+green under mutation in all three classes that were supposed to cover it. It is now also where the
+one-unit-railway claim lives, because it is the only fixture that can express it.
 
 **Three reviewers ran** — three days, the week, and autonomy — this time able to execute tests rather
 than only read, which is why they found a deadlock the previous read-only round missed. Both A-grade
