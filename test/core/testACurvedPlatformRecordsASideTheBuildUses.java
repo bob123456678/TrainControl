@@ -23,34 +23,49 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * A train put down by hand on a CURVED station has its tail recorded on a side no track enters by
  * (REV9-B3).
  *
- * **This is an OPEN finding, and this class is expected to be RED until it is fixed.**  It is written
- * that way on purpose: `docs/reviews-2026-09-09/REV-reversal-mechanics-review.md` B3 was found by
- * reading, and a defect found by reading is a claim until something executes it.  Two of its four
- * methods are the CONTROL - the same code path over a straight platform - and those pass, which is what
- * makes the other two a statement about the curve rather than about this test.
+ * **FIXED 2026-09-08, and this class was written RED first.**
+ * `docs/reviews-2026-09-09/REV-reversal-mechanics-review.md` B3 was found by reading, and a defect
+ * found by reading is a claim until something executes it - so this ran against the unrepaired door
+ * and failed in its own words, on exactly the two methods about the curve, while the two CONTROL
+ * methods over a straight platform passed.  That split is what makes it a statement about the curve
+ * rather than about this test.  `tests-red-before-green`.
  *
- * **The defect.**  `ArrivalSidePrompt.forPlacement` answers an ordinary (non-may-reverse) station with
- * the compass OPPOSITE of the train's facing, on the reasoning that a train faces the way it will leave
- * and arrived from behind.  That is true on a straight and false on a curve.  OB-182 moved the offered
+ * MUTATION, 2026-09-08: put `forPlacement`'s ordinary-station branch back to `opposite(facing)` and
+ * `testTheCurvedPlatformIsAnsweredWithASideTheBuildUses` and `testTheTailIsBlockedBehindTheCurvedPlatform`
+ * fail again, in these words - "recorded as arriving from \"W\", and the build enters that square only
+ * by [N, E]", and "blocks no rail touching the square it is standing on ... what is blocked is []".
+ * The other three stay green.
+ *
+ * **The defect that was.**  `ArrivalSidePrompt.forPlacement` answered an ordinary (non-may-reverse)
+ * station with the compass OPPOSITE of the train's facing, on the reasoning that a train faces the way
+ * it will leave and arrived from behind.  That is true on a straight and false on a curve.  OB-182 moved the offered
  * sides, the written arrival sides and the tail walk's comparison onto the BUILD's entry sides -
  * `Layout.entrySideOf` - precisely because compass and metal differ on a curve; the non-may-reverse
  * branch of `forPlacement` was not swept with them.
  *
- * On `curve-into-platform`'s CurvedPlatform the build enters the square by N and by E.  A train that
- * arrived by E faces N, so the door records `arrivedFrom = "S"` - a side the build enters that square
- * by nowhere.  `Layout.edgesCoveredByStandingTrains` then matches no candidate on its first hop and
- * takes the `segment == null -> break` exit, whose comment attributes that state to "a stale value
- * after an edit".  Here the placement door manufactures it every time, and the track behind a standing
- * train is silently left open.
+ * On `curve-into-platform`'s CurvedPlatform the build enters the square by N and by E.  The copy
+ * `CurvedPlatform (southbound)` faces E, so the door recorded `arrivedFrom = "W"` - a side the build
+ * enters that square by nowhere.  `Layout.edgesCoveredByStandingTrains` then matched no candidate on
+ * its first hop and took the `segment == null -> break` exit, whose comment attributes that state to
+ * "a stale value after an edit".  The placement door was manufacturing it every time, and the track
+ * behind a standing train was silently left open.  Measured, not argued: with the door unrepaired a
+ * 4-length train on that square blocked `[]`.
  *
  * **Why it needed a new fixture.**  Every tail test in this suite ran on a straight chain of ordinary
  * points - `testATrainCoversTheTrackBehindIt` is all "E" and "W" on one row - where the two vocabularies
  * agree and the bug cannot appear.  `test/README.md` recorded that blind spot as MON-C17 before this
  * defect walked through it.  `test/layouts/curve-into-platform` is the shape, and this is its first use.
  *
- * The fix, when it is made, is the one already made twice at the sibling sites: the OTHER of the
- * square's build arrival sides, not the compass opposite.  Nothing here needs changing when it lands -
- * these assertions are what correct behaviour looks like.
+ * **The fix**, which is the one already made twice at the sibling sites: the sides are given and the
+ * FACING chooses between them, rather than the compass answering on its own.  `ArrivalSidePrompt`
+ * gained `arrivedFrom`, which takes the one side of the square the train is not pointing at; where
+ * several are left behind it - three ways in - the documented compass assumption picks between them,
+ * but only where the build really does enter by that side, and otherwise nothing is recorded at all.
+ * A null arrival side narrows the tail walk; a wrong one sends it down track the train is not on.
+ * `behaviour.md` §4 states the rule in those terms.
+ *
+ * Nothing here changed when it landed - these assertions are what correct behaviour looks like, and
+ * they were written before it did.
  *
  * @author Adam
  */

@@ -294,9 +294,26 @@ turned round the two point the same way while the carriages have not moved.
 - **Autonomy writes it on arrival**, which is the only moment anything knows it for certain — and
   before any reversal at the platform, because turning a train does not move its carriages.
 - **A hand placement works it out**: a terminus forces it (one way in); an ordinary station assumes
-  the opposite of the facing (a train that has not been turned drove in forwards); **a may-reverse
+  the train drove in forwards, so its tail is on the side it is **not** pointing at; **a may-reverse
   square asks**, because turning round is what those squares are for and the train is as likely to
   have backed in as driven in.
+- **"Behind it" is chosen from the square's own sides, not from the compass** (`REV9-B3`, corrected
+  2026-09-08). This rule used to be written as "the opposite of the facing", and it was computed that
+  way: facing N gave S, whatever track the square had. That is the same answer on a straight and a
+  different one on a curve, where the build enters a square by, say, N and E and no rail lies to the
+  south at all. The side recorded then named no edge, the tail walk matched nothing on its first hop,
+  and **nothing was blocked** — a protection reporting itself as present while doing nothing. The
+  sides are now given first and the facing picks between them:
+  - one side left once the facing's own is taken out — the whole answer on a two-sided square,
+    straight or curved. On a straight it is still the compass opposite; on a curve it is the side
+    that exists.
+  - several left — three ways in — and the compass assumption picks between them, but only where the
+    build really does enter by that side.
+  - otherwise **nothing is recorded**. A missing arrival side narrows the walk; a wrong one sends it
+    down track the train is not on. Claiming least is the same answer a dismissed dialog gives.
+
+  Tested by `core.testACurvedPlatformRecordsASideTheBuildUses` on the `curve-into-platform` scenario,
+  with a straight platform in the same fixture as the control.
 - It can be **set** afterwards from inside the **"<locomotive> is facing"** menu, on both the editor
   and the track diagram. Not cleared - see below. The two questions live in one menu under separate
   headings because they are opposite ends of one train, and because a second submenu is what gave the
@@ -318,12 +335,19 @@ turned round the two point the same way while the carriages have not moved.
   the record of the track it is lying across.
 
 **When would it not be known?** Adam asked, and it is a fair question given the two rules above.
-Three cases, all narrow:
 
 - a setup saved before the field existed;
 - a square whose **occupant changed** - `Point.setLocomotive` drops the side, because the new train
   did not arrive the way the old one did;
-- a square with no named copies at all, where there is no side to record.
+- a square with no named copies at all, where there is no side to record;
+- a square with **three or more ways in** where the facing cannot separate them and the build does
+  not enter by the compass opposite either - see the rule above. Deliberate: nothing is recorded
+  rather than a side guessed.
+- and one that is **not** narrow and is a defect rather than a design: the **right-click "Place
+  locomotive"** item and the **graph window's assign** both place a train without working the side
+  out at all (`REV9-B2`, open). Only the diagram drag/paste door implements the rules above. A train
+  put down by either of the other two lands with no tail recorded, so nothing behind it is blocked,
+  while the identical placement by drag asks the question and blocks it.
 
 **Clearing is not offered.** Adam, 2026-09-07: *"clearing should not be possible, only setting."* The
 menu used to carry a "Not known" option, on the argument that a mistaken answer would otherwise be

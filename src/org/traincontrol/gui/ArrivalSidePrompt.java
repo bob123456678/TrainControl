@@ -25,8 +25,11 @@ import org.traincontrol.util.I18n;
  * - **A terminus** has one way in, so there is nothing to ask.  Whatever the train is doing, it came
  *   from the only direction that exists.
  * - **An ordinary station** is answered by the heading: a train faces the way it will leave and arrived
- *   from behind, so the tail is on the opposite side.  That is an assumption rather than a fact, and it
- *   is the right one - it is what a train that has not been turned round is doing.
+ *   from behind, so the tail is on the side it is not pointing at.  That is an assumption rather than a
+ *   fact, and it is the right one - it is what a train that has not been turned round is doing.  The
+ *   side it names is one of the square's OWN, never a compass point the railway does not have there:
+ *   "behind" and "the opposite of the facing" are the same square on a straight and different squares
+ *   on a curve, and it is the first that this is about.  See `arrivedFrom`.
  * - **A may-reverse station** is where that assumption stops holding, and it is the reason this class
  *   exists.  Turning round is what those squares are FOR, so a train standing on one is as likely to
  *   have backed in as to have driven in, and the two put its tail on opposite sides.  Guessing there
@@ -75,11 +78,77 @@ public class ArrivalSidePrompt
         if (sides.size() == 1) return sides.get(0);
 
         // THE ASSUMPTION, on a station where it holds: a train faces the way it will leave, so it came
-        // from behind.
-        if (!mayReverse) return opposite(facing);
+        // from behind.  Answered out of THE SIDES THIS SQUARE ACTUALLY HAS rather than off the
+        // compass - see `arrivedFrom` for why those are not the same question on a curve (REV9-B3).
+        if (!mayReverse) return arrivedFrom(sides, facing);
 
         // AND THE QUESTION, on the squares where the assumption does not hold.
         return ask(parent, at, sides);
+    }
+
+    /**
+     * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.
+     *
+     * **REV9-B3.  "The opposite of the facing" is a compass answer, and everything else now speaks the
+     * build's sides.**  §4's rule - *"an ordinary station assumes the opposite of the facing"* - is
+     * about where the train is relative to itself, and on a straight the compass says the same thing.
+     * On a curve it does not.  A rail that leaves a square northwards and turns east reaches a
+     * neighbour lying east; the build enters that square by N and by E, and a train facing E did not
+     * come from W, because there is no W.
+     *
+     * OB-182 moved the offered sides, the written arrival side and the walk's own comparison onto the
+     * build's entry sides for exactly that reason.  This branch was not swept with them, so it went on
+     * manufacturing a side no edge carries: `Layout.edgesCoveredByStandingTrains` then matched no
+     * candidate on its first hop and took its `segment == null -> break` exit - whose comment blames
+     * "a stale value after an edit", while this door was writing one on every such placement.  The
+     * track behind a standing train was left open and the picture said it was protected.
+     *
+     * **So the sides are given, and the facing chooses between them.**  Not the other way about.
+     *
+     * - **One way in that is not the way it is pointing** - the ordinary case, and the whole of the
+     *   answer on a two-sided square, straight or curved.  On a straight it is the compass opposite;
+     *   on a curve it is the side that exists.
+     * - **Otherwise the compass assumption, but only where the build agrees with it.**  A square with
+     *   three ways in leaves two candidates behind the train and the facing cannot separate them; the
+     *   documented assumption - it drove straight through - picks the one opposite its nose, and it is
+     *   taken only when the build really does enter by that side.
+     * - **Otherwise nothing**, which is the important half.  A NULL arrival side narrows the walk - it
+     *   falls through to the deterministic rule and blocks less - while a WRONG one sends it down
+     *   track the train is not on, or, as here, down no track at all.  Claiming least is the answer
+     *   this class already gives a dismissed dialog, for the same reason.
+     *
+     * @param sides the sides track reaches this square by - the build's where the caller has them
+     * @param facing which way its front points, or null when nobody has said
+     * @return the side to record, or null when this cannot be worked out
+     */
+    private static String arrivedFrom(List<String> sides, String facing)
+    {
+        // A facing nobody has set is no evidence at all, and blocking track on it would be a guess
+        // wearing a measurement's clothes.
+        if (facing == null || sides == null) return null;
+
+        String front = facing.toUpperCase();
+
+        List<String> behind = new ArrayList<>();
+
+        for (String side : sides)
+        {
+            if (side != null && !side.equalsIgnoreCase(front)) behind.add(side);
+        }
+
+        if (behind.size() == 1) return behind.get(0);
+
+        String opposite = opposite(front);
+
+        if (opposite != null)
+        {
+            for (String side : sides)
+            {
+                if (opposite.equalsIgnoreCase(side)) return opposite;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -186,10 +255,19 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The compass sides this point actually has track on.
+     * The sides this point actually has track on, asked of the graph rather than of the compass.
      *
      * Both directions, because a tail is not directional - the train lies across that rail whether the
      * graph runs traffic into this point along it or out.
+     *
+     * **Through `Layout.entrySideOf`, which is the ONE definition** (REV9-B3).  This read
+     * `sideTowards` - where the neighbouring POINT lies - and a Point is the far end of a reduced edge
+     * that may run several tiles and turn corners on the way, so on a curve it named a side the metal
+     * does not leave by.  `entrySideOf` is the build's own answer where the edge carries one and that
+     * same geometry where it does not, so a hand-built `Layout` - which is every layout in the tests
+     * that construct one - gets exactly the answer it got before, and a real railway gets the sides
+     * the tail walk is comparing against.  The walk reads `entrySideOf` too; a list assembled any
+     * other way is a second author computing what the builder already decided.
      *
      * @param layout the layout
      * @param at the point
@@ -201,9 +279,7 @@ public class ArrivalSidePrompt
 
         for (Edge edge : layout.getNeighborsAndIncoming(at))
         {
-            Point other = edge.getStart() == at ? edge.getEnd() : edge.getStart();
-
-            String side = layout.sideTowards(at, other);
+            String side = layout.entrySideOf(edge, at);
 
             if (side != null) sides.add(side);
         }
