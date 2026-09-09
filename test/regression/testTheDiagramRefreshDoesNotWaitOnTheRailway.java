@@ -61,6 +61,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * - and `testTheDiagramRefreshDoesNotWaitOnTheRailway` goes red, timing out with the event thread
  * parked on `Layout.edgesCoveredByStandingTrains`.
  *
+ * **THE MEASURED DOORS ARE HERE; THE CENSUS IS NEXT DOOR.**  This class holds a monitor and times a
+ * call, which is the only thing that can prove a door is shut - but it can only do that for the doors
+ * somebody has written a test for, and this defect has arrived through seven of them in two rounds.
+ * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the other half: it reads the list of
+ * `synchronized` methods out of `Layout.java` and requires every call to one of them from a
+ * user-interface class to be written down with the thread it is on.  A source guard that used to live
+ * in this file pinned a single method name against a rule its own failure message stated generally,
+ * and reported clean about four doors; it has been deleted rather than kept beside the general one.
+ *
  * @author Adam
  */
 public class testTheDiagramRefreshDoesNotWaitOnTheRailway
@@ -365,202 +374,177 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * Nothing on the event thread asks the railway whether anything is away from home.
+     * The fourth door: the caption rule asks the railway whether autonomy can choose each station.
      *
-     * **A TRIPWIRE, because the three tests above cannot be the whole guard.**  They measure the three
-     * doors that existed when this was written; a fourth surface that wants to grey a control - and
-     * this question has grown one roughly every fortnight - would reach `triageReturnToHome` on the
-     * event thread and no test above would notice.  That is exactly how this defect arrived: the first
-     * OB-192 fix moved `refreshCoveredTrack` off the event thread and left these three, because the
-     * sentence saying the event thread must not take the railway's monitor was a comment.
+     * D3-B1.  `captionIsActive` reached `Layout.isChoosableByAutonomy` - `synchronized` on the
+     * `Layout` - once per captioned square, and it is asked from three places that all run on the
+     * event thread: the grid build inside `repaintLayout`'s `invokeLater`, the overlay toggle, and
+     * `refreshCaptionVisibility`.  So switching diagram pages during a run froze the window for the
+     * remainder of somebody else's departure.  `updateVisiblePoints` was fixed for exactly this and
+     * its own comment now says the old reasoning "surveyed one of the two things this method does";
+     * the caption path is the thing it did not survey either.
      *
-     * So the rule is stated as a property of the source instead.  `Layout.triageReturnToHome` builds a
-     * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized` on the `Layout` -
-     * and every user interface class runs on the event thread unless it has gone to some trouble not
-     * to.  Two methods have gone to that trouble, and they are named below.  Every other surface reads
-     * the button the first of them paints, through `isReturnHomeOffered`.
+     * The answer is worked out on `CoveredTrackRenderer` now and read off a volatile field, so this
+     * costs a set lookup whoever is holding the railway.
      *
-     * **WHAT IT CANNOT SEE, said out loud.**  Source cannot tell which thread a line runs on, so this
-     * is a list of methods rather than a proof.  Its value is that a NEW call site cannot be added
-     * without somebody reading this and answering the question - which is one more reading than the
-     * three call sites this defect was made of ever got.
-     *
-     * THE WAY PAST IS A LINE, not a rewrite: a surface that must genuinely ask for itself puts its own
-     * method here with the thread it is on.  A check with no way past is one people delete.
-     *
-     * MUTATION: put `layout.triageReturnToHome()` back at the top of `refreshReturnHomeButton` and this
-     * fails, quoting the line and naming the method it is in.
+     * MUTATION: put the `for (Point point : ...) if (railway.isChoosableByAutonomy(point))` loop back
+     * into `captionIsActive` and this times out with the event thread parked on the railway's monitor.
      */
     @Test
-    public void testNothingOnTheEventThreadAsksWhetherAnythingIsAwayFromHome() throws Exception
+    public void testTheCaptionRuleDoesNotWaitOnTheRailway() throws Exception
     {
-        java.io.File gui = new java.io.File("src/org/traincontrol/gui");
+        // The setting off, or the rule short-circuits on its first line and nothing is measured.
+        final java.util.prefs.Preferences prefs =
+            java.util.prefs.Preferences.userNodeForPackage(TrainControlUI.class);
 
-        assertTrue(gui.isDirectory(),
-            "run this from the project root - " + gui.getAbsolutePath() + " is not there");
+        final boolean was = prefs.getBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF,
+            TrainControlUI.SHOW_INACTIVE_LABELS_DEFAULT);
 
-        for (java.io.File source : gui.listFiles())
+        prefs.putBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, false);
+
+        try
         {
-            if (!source.getName().endsWith(".java")) continue;
+            final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod(
+                "captionIsActive", org.traincontrol.automationui.TileGraph.TileKey.class);
 
-            String code = withoutComments(read(source));
+            rule.setAccessible(true);
 
-            if (!code.contains(ASKS)) continue;
+            final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> squares =
+                new java.util.ArrayList<>(session.getStationIndex().squares());
 
-            assertEquals(source.getName(), "TrainControlUI.java",
-                source.getName() + " asks the railway whether anything is away from home.  Only"
-                + " TrainControlUI may, and only from the two methods named in this test - that call"
-                + " reaches `Layout.getHomeStations`, which is `synchronized` on the `Layout`, and a"
-                + " user interface class is on the event thread unless it has arranged not to be."
-                + "  Read `TrainControlUI.isReturnHomeOffered` instead: it is the button the one"
-                + " asker paints, so a surface that reads it cannot disagree with the button either");
+            assertFalse(squares.isEmpty(),
+                "the snapshot has no station squares, so the caption rule was never asked and this"
+                + " test measured nothing");
 
-            // Both spans, and BOTH ARE OFF THE EVENT THREAD - which is the whole content of this list:
-            //
-            //   `workOutReturnHomeTriage` runs on `ReturnHomeTriageRenderer`, a daemon thread of its
-            //   own, and is the ask that paints the button every surface then reads.
-            //
-            //   `requestReturnToHome` asks once more at the END of a staging run, from inside the
-            //   `new Thread` it has already started - the same thread that has been blocking on
-            //   `executeTimetable` - to find out whether everybody actually got home.  Its own comment
-            //   says why it is asked rather than deduced from the return value.
-            java.util.List<int[]> allowed = new java.util.ArrayList<>();
-
-            allowed.add(spanOf(code, "private void workOutReturnHomeTriage()"));
-            allowed.add(spanOf(code, "public void requestReturnToHome()"));
-
-            for (int at = code.indexOf(ASKS); at >= 0; at = code.indexOf(ASKS, at + 1))
+            whileTheRailwayIsHeld("TrainControlUI.captionIsActive", () ->
             {
-                boolean inside = false;
-
-                for (int[] span : allowed)
+                try
                 {
-                    if (at >= span[0] && at < span[1]) inside = true;
+                    // EVERY square, because the defect was one monitor acquisition PER CAPTION - the
+                    // three doors all walk the whole diagram, and one lucky square proves nothing.
+                    for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
+                    {
+                        rule.invoke(ui, square);
+                    }
                 }
-
-                assertTrue(inside,
-                    "the railway is asked whether anything is away from home outside the two methods"
-                    + " that are allowed to ask it, at:\n    " + lineAround(code, at)
-                    + "\n\nThat call reaches `Layout.getHomeStations`, which is `synchronized` on the"
-                    + " `Layout`, and on the event thread waiting for that monitor is OB-192: a"
-                    + " dispatch holds it across a CONFIGURE_SLEEP per accessory of a path, and"
-                    + " `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph with"
-                    + " nothing running at all.  Read `isReturnHomeOffered`, or - if this really must"
-                    + " ask for itself, from a thread of its own - add the method to the list in this"
-                    + " test saying which thread that is");
-            }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
         }
-    }
-
-    /**
-     * Where one method begins and the next member's javadoc starts.
-     *
-     * @param code the source, comments already out
-     * @param declaration the method's declaration, exactly as written
-     * @return the half-open span
-     */
-    private static int[] spanOf(String code, String declaration)
-    {
-        int from = code.indexOf(declaration);
-
-        assertTrue(from >= 0, "`" + declaration + "` is gone, and this test names it as one of the two"
-            + " places allowed to ask the railway whether anything is away from home");
-
-        // A comment-stripped file has one blank line where each javadoc was, so the next member is the
-        // next declaration at class indent - which is what a line starting with four spaces and a
-        // non-space, after the closing brace of this one, is.
-        int to = code.indexOf("\n    }\n", from);
-
-        return new int[] { from, to < 0 ? code.length() : to };
-    }
-
-    /**
-     * The line an offending call is on, for a message somebody can act on.
-     *
-     * @param code the source
-     * @param at where the call is
-     * @return that line, trimmed
-     */
-    private static String lineAround(String code, int at)
-    {
-        int from = code.lastIndexOf('\n', at) + 1;
-
-        int to = code.indexOf('\n', at);
-
-        return code.substring(from, to < 0 ? code.length() : to).trim();
-    }
-
-    /** What asking the railway whether anything is away from home looks like in the source. */
-    private static final String ASKS = ".triageReturnToHome(";
-
-    /**
-     * A file, as text.
-     *
-     * @param source the file
-     * @return its content
-     */
-    private static String read(java.io.File source) throws Exception
-    {
-        byte[] raw = java.nio.file.Files.readAllBytes(source.toPath());
-
-        return new String(raw, "UTF-8");
-    }
-
-    /**
-     * The same source with its comments taken out.
-     *
-     * Necessary rather than tidy: this rule is written out at length in the javadoc of every method
-     * that used to break it, so counting raw occurrences would count the explanations.
-     *
-     * @param code the source
-     * @return the code alone
-     */
-    private static String withoutComments(String code)
-    {
-        StringBuilder out = new StringBuilder(code.length());
-
-        boolean block = false;
-        boolean line = false;
-        boolean quoted = false;
-
-        for (int at = 0; at < code.length(); at++)
+        finally
         {
-            char here = code.charAt(at);
-            char next = at + 1 < code.length() ? code.charAt(at + 1) : '\0';
+            prefs.putBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, was);
+        }
+    }
 
-            if (block)
+    /**
+     * The fifth door: the diagram's right-click menu is built on the event thread.
+     *
+     * D3-A1.  The menu's constructor asked `Layout.getPossiblePaths` - `synchronized`, and itself a
+     * search of the whole graph - and then `isOfferableToOperator` and `isChoosableByAutonomy` once per
+     * candidate path, all inside `showFor`'s `invokeLater`.  Right-clicking an idle train while another
+     * one was mid-dispatch parked the event thread on the railway's monitor for the length of that
+     * train's switch-throwing, which is the most ordinary gesture there is.
+     *
+     * `showFor` gathers the answers on a worker now and hands them to the constructor, so what is
+     * measured here is the constructor: it must build a menu about a square with a train on it without
+     * asking the railway anything.
+     *
+     * A TRAIN IS PLACED FIRST rather than hoped for.  The path section only exists for a square with a
+     * locomotive standing on it, so a fixture that happens to have none would measure the empty case
+     * and report clean - which is the shape of a guard that passes because it never ran.
+     *
+     * AND THE GATHERED ANSWERS ARE REAL ONES, for the same reason.  Handing the constructor a null - the
+     * "nothing to offer" case - would skip the whole path section, and a search put back INSIDE it
+     * would be invisible here.  So `gatherPathOptions` is called first, on this thread, which is
+     * exactly what `showFor`'s worker does; only the drawing is then timed on the event thread.
+     *
+     * MUTATION: move the `getPossiblePaths` call back out of `gatherPathOptions` into the constructor
+     * and this times out.
+     */
+    @Test
+    public void testTheRightClickMenuDoesNotWaitOnTheRailway() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
+
+        Class<?> menu = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+        final java.lang.reflect.Constructor<?> build = menu.getDeclaredConstructors()[0];
+
+        assertEquals(build.getParameterCount(), 4,
+            "the menu's constructor no longer takes the gathered answers as its fourth argument, so"
+            + " either it is asking the railway itself again or this test is building the wrong thing");
+
+        build.setAccessible(true);
+
+        // OFF THE EVENT THREAD, on this one, which is the whole arrangement being tested.
+        java.lang.reflect.Method gather = menu.getDeclaredMethod("gatherPathOptions",
+            TrainControlUI.class,
+            org.traincontrol.automationui.TileGraph.TileKey.class,
+            org.traincontrol.automationui.TileGraph.TileKey.class);
+
+        gather.setAccessible(true);
+
+        final Object answers = gather.invoke(null, ui, occupied, occupied);
+
+        assertNotNull(answers,
+            "the gather found nothing to offer for a square with a train standing on it, so the path"
+            + " section would be absent and this test would measure the empty menu");
+
+        whileTheRailwayIsHeld("LayoutRightclickAutonomyMenu's constructor", () ->
+        {
+            try
             {
-                if (here == '*' && next == '/') { block = false; at++; }
-
-                continue;
+                build.newInstance(ui, occupied, occupied, answers);
             }
-
-            if (line)
+            catch (Exception failed)
             {
-                if (here == '\n') { line = false; out.append(here); }
-
-                continue;
+                throw new RuntimeException(failed);
             }
+        });
+    }
 
-            if (quoted)
-            {
-                if (here == '\\') { at++; continue; }
+    /**
+     * A station square with a locomotive standing on it, placing one if the snapshot has none there.
+     *
+     * @return the square
+     */
+    private static org.traincontrol.automationui.TileGraph.TileKey squareWithATrainOnIt()
+    {
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> squares =
+            new java.util.ArrayList<>(session.getStationIndex().squares());
 
-                if (here == '"' || here == '\n') quoted = false;
+        assertFalse(squares.isEmpty(), "the snapshot has no station squares to right-click");
 
-                continue;
-            }
+        for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
+        {
+            org.traincontrol.automation.Point at = ui.getAutonomyPointForTile(square);
 
-            if (here == '/' && next == '*') { block = true; at++; continue; }
-
-            if (here == '/' && next == '/') { line = true; at++; continue; }
-
-            if (here == '"') { quoted = true; continue; }
-
-            out.append(here);
+            if (at != null && at.getCurrentLocomotive() != null) return square;
         }
 
-        return out.toString();
+        // NONE STANDING, so one is put down.  The first square whose Point is a destination, and the
+        // first locomotive the setup means to run.
+        for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
+        {
+            org.traincontrol.automation.Point at = ui.getAutonomyPointForTile(square);
+
+            if (at == null || !at.isDestination()) continue;
+
+            for (org.traincontrol.base.Locomotive loc : layout.getLocomotivesToRun())
+            {
+                layout.moveLocomotive(loc.getName(), at.getName(), false);
+
+                return square;
+            }
+        }
+
+        fail("no square on this snapshot can hold a train, so the right-click menu's path section was"
+            + " never reachable and this test would have measured the empty case");
+
+        return null;
     }
 
     // ---------------------------------------------------------------- the fixture

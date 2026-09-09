@@ -64,21 +64,211 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     static void showFor(TrainControlUI ui, org.traincontrol.automationui.TileGraph.TileKey station, org.traincontrol.automationui.TileGraph.TileKey here,
         final java.awt.Component at, final int x, final int y)
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
+        // THE RAILWAY IS ASKED FIRST, AND NOT ON THE EVENT THREAD (D3-A1).
+        //
+        // The path section below used to be built inside the `invokeLater`: `getPossiblePaths` -
+        // `synchronized` on the `Layout`, and a search of the whole graph - then `isOfferableToOperator`
+        // and `isChoosableByAutonomy` once per candidate, all on the thread that draws the application.
+        // A dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory of a path, so
+        // right-clicking an idle train during somebody else's departure froze the whole window for the
+        // length of the switch-throwing.  That is OB-192 by the next door along, on the most ordinary
+        // gesture there is.
+        //
+        // Same shape as `CoveredTrackRenderer` and `ReturnHomeTriageRenderer`: the questions go to a
+        // worker, the answers come back, and the menu is built from them.  A thread rather than a pool
+        // because this is one short-lived answer per right-click and there is nothing to coalesce.
+        //
+        // The menu therefore appears a moment later than the click when the railway is busy.  That is
+        // the trade, and it is the right way round: a popup that arrives late is a popup, and a frozen
+        // window is a fault.
+        Thread gathering = new Thread(() ->
         {
-            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here);
+            final PathOptions options = gatherPathOptions(ui, station, here);
 
-            // An empty menu is not worth showing.
-            if (menu.getComponentCount() > 0)
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // AFTER the count, and deliberately.  A heading is not an item, and putting one on
-                // first would turn "nothing to offer here" into a grey box with a station name in it -
-                // which is the fault the check above exists to prevent, arriving by a new road.
-                menu.headline();
+                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here, options);
 
-                menu.show(at, x, y);
+                // An empty menu is not worth showing.
+                if (menu.getComponentCount() > 0)
+                {
+                    // AFTER the count, and deliberately.  A heading is not an item, and putting one on
+                    // first would turn "nothing to offer here" into a grey box with a station name in it -
+                    // which is the fault the check above exists to prevent, arriving by a new road.
+                    menu.headline();
+
+                    // STILL ON SCREEN.  There is now a gap between the click and the menu, and
+                    // `JPopupMenu.show` asks its invoker where it is on screen - which throws on a
+                    // component that has been taken off it.  A page change or a grid rebuild in that
+                    // gap is ordinary, so this is a real case rather than a defensive line.
+                    if (at.isShowing()) menu.show(at, x, y);
+                }
+            });
+        }, "LayoutRightclickAutonomyMenu options");
+
+        gathering.setDaemon(true);
+
+        gathering.start();
+    }
+
+    /**
+     * What the paths section of this menu needs from the railway, gathered off the event thread.
+     *
+     * Every field here is an answer, not a question: the menu builds itself from these and asks the
+     * `Layout` nothing.  That is the whole point - see `showFor` for why.
+     */
+    static final class PathOptions
+    {
+        /**
+         * The train these paths belong to.
+         *
+         * Kept so the menu can tell that the answer is about the train it is now drawing.  The gather
+         * and the build are on different threads with a gap between them, and a train can be moved or
+         * removed in that gap; an answer about a different locomotive is not a stale list, it is the
+         * wrong list.
+         */
+        final Locomotive locomotive;
+
+        /** Offerable, and a square autonomy would choose: the top-level list. */
+        final List<List<Edge>> shown;
+
+        /** Offerable, but never chosen by autonomy: More Destinations. */
+        final List<List<Edge>> other;
+
+        /** Everything possible, counted before anything at all was left out. */
+        final int possible;
+
+        private PathOptions(Locomotive locomotive, List<List<Edge>> shown, List<List<Edge>> other,
+            int possible)
+        {
+            this.locomotive = locomotive;
+            this.shown = shown;
+            this.other = other;
+            this.possible = possible;
+        }
+    }
+
+    /**
+     * Asks the railway everything the paths section needs, on the caller's thread.
+     *
+     * MUST NOT BE CALLED ON THE EVENT THREAD, which is what `showFor` exists to arrange and what
+     * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` checks: every call in here is
+     * `synchronized` on the `Layout`.
+     *
+     * Answers null wherever there is nothing to list - no setup, an open editor, a busy railway, no
+     * train on the square, or a train that is already running.  The menu then simply has no paths
+     * section, which is what it had in those cases before.
+     *
+     * @param ui the application
+     * @param station the sensor the caption is about, or null
+     * @param here the square that was clicked, or null
+     * @return the answers, or null when this square has no paths to offer
+     */
+    private static PathOptions gatherPathOptions(TrainControlUI ui,
+        org.traincontrol.automationui.TileGraph.TileKey station,
+        org.traincontrol.automationui.TileGraph.TileKey here)
+    {
+        // THE SAME GATES THE CONSTRUCTOR APPLIES, in the same order, because a gather that ran where
+        // the menu will not draw would take the railway's monitor for an answer nobody reads.
+        //
+        // They are asked twice rather than once, and the constructor's copy is the one that decides:
+        // between here and the build the operator can start a run, and a list gathered a moment before
+        // that must not appear on a menu whose other items already know.  The constructor refuses the
+        // options in that case and the section is simply absent, which is what it was.
+        if (ui == null || ui.isLayoutEditorOpen()) return null;
+
+        if (ui.getModel() == null || !ui.getModel().hasAutoLayout()) return null;
+
+        if (ui.isAutonomyBusy()) return null;
+
+        Point current = ui.getAutonomyPointForTile(station != null ? station : here);
+
+        if (current == null) return null;
+
+        if (!current.isDestination() && current.getCurrentLocomotive() == null) return null;
+
+        Locomotive locomotive = current.getCurrentLocomotive();
+
+        if (locomotive == null) return null;
+
+        // If we want to view paths, locomotive must not be running.  See the constructor for OB-164,
+        // which is why this is a per-locomotive gate rather than isAutoRunning().
+        if (ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive)) return null;
+
+        List<List<Edge>> paths = withoutGoingNowhere(ui,
+            ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true));
+
+        paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
+
+        // EVERYTHING THAT IS POSSIBLE, counted before anything is left out.
+        //
+        // What "more options than are shown" means has to include the ones this menu decides not to
+        // show, not only the ones the cap cuts off - otherwise the ellipsis is a statement about the
+        // cap rather than about the list.
+        final int possible = paths.size();
+
+        // SWITCHED-OFF SQUARES ARE NOT ON THIS MENU (Adam, 2026-09-01).
+        //
+        // "make the inactive stations disappear from the track diagram menu - they should only be
+        // visible in the autonomy tab."  This menu is the quick way to send a train somewhere ordinary;
+        // a square that has been deliberately taken out of use is not that, and listing it here puts
+        // the least likely destinations among the most likely ones.
+        //
+        // Filtered rather than greyed: a greyed item still costs a line and still has to be read past.
+        // They remain reachable - the autonomy tab lists everything, which is what the ellipsis is for.
+        List<List<Edge>> shownPaths = new java.util.ArrayList<>();
+
+        // AND THE ONES AUTONOMY WOULD NEVER CHOOSE GO IN THEIR OWN SUBMENU (FR-058).
+        //
+        // Adam: "show only active stations that can be chosen in full autonomy.  add a menu called More
+        // Destinations and in there, list the points that cannot be chosen in full autonomy but are
+        // still valid.  the current setup lists both in one flat list, which truncates active stations,
+        // which I don't like".
+        //
+        // The cap is the reason this matters rather than tidiness: a parking track that autonomy will
+        // never pick used to cost one of the twelve lines an ordinary platform wanted, and the ellipsis
+        // appeared with real destinations behind it.
+        //
+        // Asked through `isChoosableByAutonomy`, which is the same predicate the "no available paths"
+        // window and the diagram's caption rule ask - its own javadoc is about not having two answers
+        // to this question, so this does not become a third.
+        List<List<Edge>> otherPaths = new java.util.ArrayList<>();
+
+        for (List<Edge> path : paths)
+        {
+            Point end = path.get(path.size() - 1).getEnd();
+
+            // OFF THIS MENU ALTOGETHER: switched off, or excluded for this train.
+            //
+            // The rule is named on the layout rather than written out here, because this class is
+            // package-private and a rule nothing can reach is a rule nothing can test - which is how
+            // the terminus went in and out of it twice.  Its javadoc carries both rulings.
+            //
+            // These still count towards `possible`, so the ellipsis offers the autonomy tab, which
+            // lists everything.
+            if (!ui.getModel().getAutoLayout().isOfferableToOperator(end, locomotive))
+            {
+                continue;
             }
-        });
+
+            // WHICH OF THE TWO LISTS, asked about the square and deliberately not about this train
+            // (Adam, 2026-09-04).
+            //
+            // `isOfferableToOperator` above has already asked everything that is about the train.  What
+            // is left is a property of the square - a reversing point, a square marked as not an
+            // automatic destination - and the square form is the same predicate the "no available
+            // paths" window and the diagram's captions ask, which is what that javadoc is for.
+            if (ui.getModel().getAutoLayout().isChoosableByAutonomy(end))
+            {
+                shownPaths.add(path);
+            }
+            else
+            {
+                otherPaths.add(path);
+            }
+        }
+
+        return new PathOptions(locomotive, shownPaths, otherPaths, possible);
     }
 
     /**
@@ -117,10 +307,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      *        caption says, so resolving one by its text found nothing and the menu silently lost every
      *        item below the lookup.
      * @param here the square that was clicked, or null where the click was not on one
+     * @param options what the railway answered about this square's paths, gathered off the event
+     *        thread by `showFor`, or null where there is nothing to list.  NOTHING IN THIS
+     *        CONSTRUCTOR MAY ASK THE RAILWAY ITSELF - see `showFor` for what that cost.
      */
     private LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
-        org.traincontrol.automationui.TileGraph.TileKey here)
+        org.traincontrol.automationui.TileGraph.TileKey here,
+        PathOptions options)
     {
         this.ui = ui;
         this.station = station;
@@ -281,87 +475,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     //
                     // Left here so the next reader who notices the two surfaces disagree finds the
                     // ruling rather than re-opening it.
-                    if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
+                    //
+                    // AND THE ANSWER IS THE ONE GATHERED FOR THIS TRAIN, never a fresh question.
+                    // `gatherPathOptions` applied the running test off the event thread; equality here
+                    // is what says the answer is about the locomotive standing here now rather than the
+                    // one that was standing here when the right-click landed.
+                    if (locomotive != null && options != null && locomotive.equals(options.locomotive))
                     {
-                        List<List<Edge>> paths = withoutGoingNowhere(ui,
-                            ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true));
+                        List<List<Edge>> paths = options.shown;
 
-                        paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
+                        final int possible = options.possible;
 
-                        // EVERYTHING THAT IS POSSIBLE, counted before anything is left out.
-                        //
-                        // What "more options than are shown" means has to include the ones this menu
-                        // decides not to show, not only the ones the cap cuts off - otherwise the
-                        // ellipsis is a statement about the cap rather than about the list.
-                        final int possible = paths.size();
-
-                        // SWITCHED-OFF SQUARES ARE NOT ON THIS MENU (Adam, 2026-09-01).
-                        //
-                        // "make the inactive stations disappear from the track diagram menu - they
-                        // should only be visible in the autonomy tab."  This menu is the quick way to
-                        // send a train somewhere ordinary; a square that has been deliberately taken
-                        // out of use is not that, and listing it here puts the least likely
-                        // destinations among the most likely ones.
-                        //
-                        // Filtered rather than greyed: a greyed item still costs a line and still has
-                        // to be read past.  They remain reachable - the autonomy tab lists everything,
-                        // which is what the ellipsis below is for.
-                        List<List<Edge>> shownPaths = new java.util.ArrayList<>();
-
-                        // AND THE ONES AUTONOMY WOULD NEVER CHOOSE GO IN THEIR OWN SUBMENU (FR-058).
-                        //
-                        // Adam: "show only active stations that can be chosen in full autonomy.  add a
-                        // menu called More Destinations and in there, list the points that cannot be
-                        // chosen in full autonomy but are still valid.  the current setup lists both in
-                        // one flat list, which truncates active stations, which I don't like".
-                        //
-                        // The cap is the reason this matters rather than tidiness: a parking track that
-                        // autonomy will never pick used to cost one of the twelve lines an ordinary
-                        // platform wanted, and the ellipsis appeared with real destinations behind it.
-                        //
-                        // Asked through `isChoosableByAutonomy`, which is the same predicate the
-                        // "no available paths" window and the diagram's caption rule ask - its own
-                        // javadoc is about not having two answers to this question, so this does not
-                        // become a third.
-                        List<List<Edge>> otherPaths = new java.util.ArrayList<>();
-
-                        for (List<Edge> path : paths)
-                        {
-                            Point end = path.get(path.size() - 1).getEnd();
-
-                            // OFF THIS MENU ALTOGETHER: switched off, or excluded for this train.
-                            //
-                            // The rule is named on the layout rather than written out here, because
-                            // this class is package-private and a rule nothing can reach is a rule
-                            // nothing can test - which is how the terminus went in and out of it
-                            // twice.  Its javadoc carries both rulings.
-                            //
-                            // These still count towards `possible` below, so the ellipsis offers the
-                            // autonomy tab, which lists everything.
-                            if (!ui.getModel().getAutoLayout().isOfferableToOperator(end, locomotive))
-                            {
-                                continue;
-                            }
-
-                            // WHICH OF THE TWO LISTS, asked about the square and deliberately not
-                            // about this train (Adam, 2026-09-04).
-                            //
-                            // `isOfferableToOperator` above has already asked everything that is
-                            // about the train.  What is left is a property of the square - a
-                            // reversing point, a square marked as not an automatic destination - and
-                            // the square form is the same predicate the "no available paths" window
-                            // and the diagram's captions ask, which is what that javadoc is for.
-                            if (ui.getModel().getAutoLayout().isChoosableByAutonomy(end))
-                            {
-                                shownPaths.add(path);
-                            }
-                            else
-                            {
-                                otherPaths.add(path);
-                            }
-                        }
-
-                        paths = shownPaths;
+                        List<List<Edge>> otherPaths = options.other;
 
                         if (!paths.isEmpty())
                         {
@@ -614,34 +739,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
                         );
-                        menuItem.addActionListener(event ->
-                        {
-                            // PURGE, as the editor's own Remove does (C15).
-                            //
-                            // The two doors that take a train off a square passed different answers to
-                            // the same question. Without the purge the locomotive stays in the list of
-                            // trains to run while standing nowhere: it goes on showing in the Autonomy
-                            // tab, and runLocomotives logs it as started and spawns a thread that idles
-                            // for the rest of the session. Nothing stalls - it has no destination to
-                            // yield to anybody - but the railway is keeping a place for a train that is
-                            // not on it.
-                            ui.getModel().getAutoLayout().moveLocomotive(
-                                null,
-                                current.getName(),
-                                true
-                            );
-
-                            // The setup as well, or the next build puts the train back: the
-                            // configuration still records it standing here, and the running layout is
-                            // rebuilt from the configuration.  The facing goes with it - it belonged
-                            // to that train, not to the square.
-                            if (session != null) session.placeLocomotive(station, null);
-
-                            ui.repaintAutoLocList(false);
-
-                            // The label still says the locomotive's name until something rewrites it
-                            ui.updateVisiblePoints();
-                        });
+                        // A METHOD RATHER THAN A LAMBDA HERE, so that this constructor asks the
+                        // railway nothing at all (D3-A1).  `moveLocomotive` is `synchronized` on the
+                        // `Layout`; written out here it is one more line of this constructor that
+                        // reaches the monitor, and the guard would have to allow the constructor as a
+                        // whole - which would then also allow the next path search somebody adds to it.
+                        menuItem.addActionListener(event -> removeLocomotiveHere(current));
 
                         add(menuItem); 
                     }
@@ -1138,5 +1241,42 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         });
 
         return item;
+    }
+
+    /**
+     * Takes the standing train off this square, and off the setup with it.
+     *
+     * ON THE EVENT THREAD, deliberately and knowingly (D3-C4).  `moveLocomotive` is `synchronized` on
+     * the `Layout`, so this can queue behind a holder of that monitor - but it is a menu item the
+     * operator has just clicked, it is offered only when `isAutonomyBusy()` is false, and what it does
+     * is change the railway rather than ask it a question.  Bouncing a change of state off to a worker
+     * would mean the repaint below runs before the change it is repainting.
+     *
+     * @param current the Point the train is standing on
+     */
+    private void removeLocomotiveHere(Point current)
+    {
+        // PURGE, as the editor's own Remove does (C15).
+        //
+        // The two doors that take a train off a square passed different answers to the same question.
+        // Without the purge the locomotive stays in the list of trains to run while standing nowhere:
+        // it goes on showing in the Autonomy tab, and runLocomotives logs it as started and spawns a
+        // thread that idles for the rest of the session. Nothing stalls - it has no destination to
+        // yield to anybody - but the railway is keeping a place for a train that is not on it.
+        ui.getModel().getAutoLayout().moveLocomotive(
+            null,
+            current.getName(),
+            true
+        );
+
+        // The setup as well, or the next build puts the train back: the configuration still records it
+        // standing here, and the running layout is rebuilt from the configuration.  The facing goes
+        // with it - it belonged to that train, not to the square.
+        if (session != null) session.placeLocomotive(station, null);
+
+        ui.repaintAutoLocList(false);
+
+        // The label still says the locomotive's name until something rewrites it
+        ui.updateVisiblePoints();
     }
 }

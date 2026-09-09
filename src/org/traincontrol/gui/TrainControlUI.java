@@ -1411,21 +1411,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reason a few thousand lines away.
         if (this.autonomySession == null) return true;
 
-        // Any copy of this square autonomy could choose is enough: a square split into several Points
-        // is one place to the person looking at it, and hiding its name because one of its directions
-        // is barred would be a lie about the other.
+        // AND THE RAILWAY IS NOT ASKED HERE (D3-B1).
         //
-        // isChoosableByAutonomy, NOT isDestination - which was the first version of this and the
-        // reason Adam saw no effect. isDestination is a different flag; the question "will autonomy
-        // ever pick this" is answered by the standing bars in barredFromAutonomy: inactive, reversing,
-        // not an auto destination. An inactive terminus passes isDestination and is exactly what he
-        // wanted gone.
-        for (org.traincontrol.automation.Point point : getAutonomyPointsForTile(station))
-        {
-            if (this.model.getAutoLayout().isChoosableByAutonomy(point)) return true;
-        }
+        // This used to walk the square's Points calling `Layout.isChoosableByAutonomy`, which is
+        // `synchronized` on the `Layout`.  Cheap inside, and that is not the cost: this runs on the
+        // event thread once per captioned square while the grid is built, again for every caption when
+        // the overlay is toggled, and again for every caption in `refreshCaptionVisibility` - and a
+        // dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory of a path.  So changing
+        // diagram pages during a run froze the window for the rest of somebody's departure.  That is
+        // OB-192, and `refreshCoveredTrack` says at length why the event thread must never queue for
+        // that monitor.
+        //
+        // So the answer is worked out on a worker and read here.  `workOutCaptionVisibility` holds the
+        // rule; only where it is asked has changed.
+        //
+        // THE HIDE-LIST RATHER THAN THE SHOW-LIST, and that is not a detail.  A square the worker has
+        // not heard of - registered since the last pass, or before the first one - must show its name:
+        // an unanswerable question is not grounds for hiding anything, which is the same answer the
+        // null-session line above gives for the same reason.  A show-list would have made every new
+        // caption invisible until a worker caught up.
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> hidden =
+            this.captionsAutonomyCannotChoose;
 
-        return false;
+        return hidden == null || !hidden.contains(station);
     }
 
     /**
@@ -1434,25 +1442,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * getAutonomyOccupantsForTile answers about TRAINS; this answers about the square, which is what
      * deciding whether to draw its name needs.
      *
+     * HANDED THE RAILWAY AND THE SETUP rather than reading the fields, because the only caller is now
+     * `workOutCaptionVisibility` on a worker thread, and the two must be the pair that ask was made
+     * with.  Reading `this.autonomySession` there would let a pass answer about a session that
+     * replaced the one it started on.  The field-not-the-lazy-getter rule that used to be written here
+     * has moved to `refreshCaptionVisibility`, which is where the capture now happens (SV-B2).
+     *
+     * @param railway the running layout, captured by the ask
+     * @param session the setup, captured by the same ask
      * @param station the sensor's square
      * @return the Points, empty when the square is not in the running layout
      */
-    private java.util.List<org.traincontrol.automation.Point> getAutonomyPointsForTile(
+    private static java.util.List<org.traincontrol.automation.Point> autonomyPointsForTile(
+        org.traincontrol.automation.Layout railway,
+        org.traincontrol.automationui.AutonomySession session,
         org.traincontrol.automationui.TileGraph.TileKey station)
     {
         java.util.List<org.traincontrol.automation.Point> out = new java.util.ArrayList<>();
 
-        if (station == null || this.model == null || !this.model.hasAutoLayout()) return out;
-
-        // The FIELD, never the lazy getter: this is asked once per label while the grid is being
-        // built, and getAutonomySession parses every page and can raise a dialog (SV-B2).
-        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-        if (session == null) return out;
+        if (station == null || railway == null || session == null) return out;
 
         for (String name : session.getStationIndex().pointNamesAt(station))
         {
-            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(name);
+            org.traincontrol.automation.Point point = railway.getPoint(name);
 
             if (point != null) out.add(point);
         }
@@ -10254,24 +10266,208 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The squares autonomy can NOT choose, worked out off the event thread (D3-B1).
+     *
+     * Null until a pass has answered, and every reader treats null as "show the caption" - see
+     * `captionIsActive`, which explains why this is the hide-list and not its complement.
+     *
+     * Replaced wholesale rather than mutated, so a reader on the event thread sees one pass's answer
+     * or the previous one's, never half of each.
+     */
+    private volatile java.util.Set<org.traincontrol.automationui.TileGraph.TileKey>
+        captionsAutonomyCannotChoose = null;
+
+    /** What the next caption pass is to be computed against, replaced by every ask. */
+    private volatile CoveredTrackAsk captionVisibilitySubject = null;
+
+    /** Whether the caption answer is out of date - set by an ask, cleared by the pass answering it. */
+    private final java.util.concurrent.atomic.AtomicBoolean captionVisibilityDirty
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /** Whether a worker is already on the job, so a burst of asks makes one pass rather than many. */
+    private final java.util.concurrent.atomic.AtomicBoolean captionVisibilityInFlight
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /**
      * Re-applies the caption rule to every label the diagram currently holds.
      *
      * Visibility is normally decided once, as each label is registered. This is for the moments when
      * the ANSWER changes without the labels being rebuilt - the setting being toggled, and a
      * configuration being loaded or unloaded, which changes which stations autonomy can choose.
+     *
+     * **THE ANSWER IS WORKED OUT ON A WORKER AND PAINTED WHEN IT LANDS** (D3-B1).  The rule reaches
+     * `Layout.isChoosableByAutonomy`, `synchronized` on the `Layout`, once per captioned square - and
+     * this was an `invokeLater` loop over every registered station, so a page change or a toggle
+     * during a run parked the event thread on the railway's monitor for the length of a dispatch.
+     * `refreshCoveredTrack` is the same fix for the same reason, and this is its sibling.
      */
     void refreshCaptionVisibility()
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>
-                square : layoutStations.entrySet())
-            {
-                boolean visible = captionShouldShow(square.getKey());
+        // CAPTURED HERE, ON THE CALLER'S THREAD, for the reason `refreshCoveredTrack` gives in full:
+        // both getters BUILD when there is nothing yet, and neither belongs on a worker.
+        //
+        // The session comes off the FIELD rather than the lazy getter - `getAutonomySession` parses
+        // every page and can raise a dialog (SV-B2) - which is the rule `captionIsActive` has always
+        // followed and which moves here with the capture.
+        org.traincontrol.automation.Layout railway =
+            this.model != null && this.model.hasAutoLayout() ? this.model.getAutoLayout() : null;
 
-                for (JLabel label : square.getValue()) label.setVisible(visible);
+        captionVisibilitySubject = new CoveredTrackAsk(railway, this.autonomySession);
+
+        captionVisibilityDirty.set(true);
+
+        askForCaptionVisibility();
+    }
+
+    /**
+     * Puts one worker on "which squares can autonomy choose", unless one is already on it.
+     *
+     * COALESCED, AND THE LAST ASK ALWAYS LANDS, for the reason `askForCoveredTrack` gives.
+     *
+     * ON `CoveredTrackRenderer` rather than a pool of its own, and that is deliberate: this answer
+     * changes when the SETUP changes - a square switched off, a destination flag cleared, a
+     * configuration loaded - which is a handful of times a session, not once a tick.  A fourth pool
+     * for it would be a fourth thing to shut down and a fourth place to get the coalescing wrong.
+     */
+    private void askForCaptionVisibility()
+    {
+        if (!captionVisibilityInFlight.compareAndSet(false, true)) return;
+
+        try
+        {
+            CoveredTrackRenderer.submit(this::workOutCaptionVisibility);
+        }
+        catch (Exception refused)
+        {
+            // Submitting can be refused - the pool is shut down when the window closes - and the flag
+            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
+            settleCaptionVisibility();
+        }
+    }
+
+    /**
+     * Asks the railway which squares autonomy can choose, off the event thread, and paints the answer.
+     *
+     * THE RULE ITSELF IS UNCHANGED and lives here now.  Any copy of a square autonomy could choose is
+     * enough: a square split into several Points is one place to the person looking at it, and hiding
+     * its name because one of its directions is barred would be a lie about the other.
+     *
+     * `isChoosableByAutonomy`, NOT `isDestination` - which was the first version of this rule and the
+     * reason Adam saw no effect.  `isDestination` is a different flag; the question "will autonomy
+     * ever pick this" is answered by the standing bars in `barredFromAutonomy`: inactive, reversing,
+     * not an auto destination.  An inactive terminus passes `isDestination` and is exactly what he
+     * wanted gone.
+     *
+     * @see #refreshCaptionVisibility()
+     */
+    private void workOutCaptionVisibility()
+    {
+        try
+        {
+            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
+            // that arrives while this one is computing sets it again and is served by the next turn of
+            // this loop rather than being lost to it.
+            while (captionVisibilityDirty.compareAndSet(true, false))
+            {
+                CoveredTrackAsk ask = captionVisibilitySubject;
+
+                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> cannot = null;
+
+                if (ask != null && ask.railway != null && ask.setup != null)
+                {
+                    java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> found =
+                        new java.util.HashSet<>();
+
+                    try
+                    {
+                        for (org.traincontrol.automationui.TileGraph.TileKey square
+                            : ask.setup.getStationIndex().squares())
+                        {
+                            boolean choosable = false;
+
+                            for (org.traincontrol.automation.Point point
+                                : autonomyPointsForTile(ask.railway, ask.setup, square))
+                            {
+                                if (ask.railway.isChoosableByAutonomy(point))
+                                {
+                                    choosable = true;
+                                    break;
+                                }
+                            }
+
+                            if (!choosable) found.add(square);
+                        }
+                    }
+                    catch (RuntimeException replaced)
+                    {
+                        // The layout or the setup is being rebuilt underneath this pass; the next ask
+                        // catches up.  Not logged: a burst would fill the log with one moment.
+                        continue;
+                    }
+
+                    cannot = java.util.Collections.unmodifiableSet(found);
+                }
+
+                // DISCARDED IF THE SETUP MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
+                // answer about the graph that has just been thrown away must not hide captions on the
+                // one that replaced it.
+                if (ask != captionVisibilitySubject) continue;
+
+                captionsAutonomyCannotChoose = cannot;
+
+                javax.swing.SwingUtilities.invokeLater(this::paintCaptionsFromTheAnswer);
             }
-        });
+        }
+        finally
+        {
+            settleCaptionVisibility();
+
+            // AN ASK THAT ARRIVED IN THE GAP - between the loop reading the flag for the last time and
+            // the line above giving the job up.  `workOutCoveredTrack` says why this matters.
+            if (captionVisibilityDirty.get()) askForCaptionVisibility();
+        }
+    }
+
+    /** Gives the caption job up, from wherever it ended. */
+    private void settleCaptionVisibility()
+    {
+        captionVisibilityInFlight.set(false);
+    }
+
+    /**
+     * Puts the worker's answer on every caption the diagram currently holds, on the event thread.
+     *
+     * This is the loop `refreshCaptionVisibility` used to be, with the question already answered.
+     */
+    private void paintCaptionsFromTheAnswer()
+    {
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>
+            square : layoutStations.entrySet())
+        {
+            boolean visible = captionShouldShow(square.getKey());
+
+            for (JLabel label : square.getValue()) label.setVisible(visible);
+        }
+    }
+
+    /**
+     * Waits until the caption answer has landed, for tests that then read what is on screen.
+     *
+     * @param patienceMs how long to wait at most
+     * @return whether the answer had landed by then
+     */
+    boolean awaitCaptionVisibility(long patienceMs) throws InterruptedException
+    {
+        long until = System.currentTimeMillis() + patienceMs;
+
+        while (captionVisibilityInFlight.get() || captionVisibilityDirty.get())
+        {
+            if (System.currentTimeMillis() > until) return false;
+
+            Thread.sleep(10);
+        }
+
+        return true;
     }
 
     /**

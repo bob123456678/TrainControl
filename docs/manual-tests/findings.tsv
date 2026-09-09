@@ -157,6 +157,12 @@ AU-D5	2026-08-25-autonomous-round.md	Closed	-
 AU-D6	2026-08-25-autonomous-round.md	Closed	-
 AU-D7	2026-08-25-autonomous-round.md	Closed	-
 AU-D8	2026-08-25-autonomous-round.md	Closed	-
+AUT9-B1	AUT-autonomy-review.md	-	-
+AUT9-B2	AUT-autonomy-review.md	-	-
+AUT9-C1	AUT-autonomy-review.md	-	-
+AUT9-C2	AUT-autonomy-review.md	-	-
+AUT9-D1	AUT-autonomy-review.md	-	-
+AUT9-D2	AUT-autonomy-review.md	-	-
 B4-B7	2026-08-17-unread-half-review.md	Closed	-
 BR-B1	2026-08-17-v2.8.1-backport-review.md	Closed	Fixed (stated in the body)
 BR-C1	2026-08-17-v2.8.1-backport-review.md	Closed	Open
@@ -300,6 +306,16 @@ D24-D5	2026-09-01-last-day-review.md	Closed	handled
 D24-D6	2026-09-01-last-day-review.md	Closed	unreachable
 D24-D7	2026-09-01-last-day-review.md	Closed	the operator's own state
 D24-D8	2026-09-01-last-day-review.md	Closed	it does not
+D3-A1	D3-three-day-review.md	-	-
+D3-B1	D3-three-day-review.md	-	-
+D3-B2	D3-three-day-review.md	-	-
+D3-C1	D3-three-day-review.md	-	-
+D3-C2	D3-three-day-review.md	-	-
+D3-C3	D3-three-day-review.md	-	-
+D3-C4	D3-three-day-review.md	-	-
+D3-C5	D3-three-day-review.md	-	-
+D3-D1	D3-three-day-review.md	-	-
+D3-D2	D3-three-day-review.md	-	-
 D3F-B1	2026-09-02-three-days-review.md	Closed	open
 D3F-C1	2026-09-02-three-days-review.md	Closed	open
 D3F-C2	2026-09-02-three-days-review.md	Closed	open
@@ -2242,6 +2258,12 @@ W7-B2	W7-seven-day-review.md	-	-
 W7-C1	W7-seven-day-review.md	-	-
 W7-C2	W7-seven-day-review.md	-	-
 W7-D1	W7-seven-day-review.md	-	-
+W7B-A1	W7B-week-review.md	-	-
+W7B-A2	W7B-week-review.md	-	-
+W7B-B1	W7B-week-review.md	-	-
+W7B-C1	W7B-week-review.md	-	-
+W7B-D1	W7B-week-review.md	-	-
+W7B-D2	W7B-week-review.md	-	-
 WK-B1	2026-08-28-week-review.md	Closed	open
 WK-B2	2026-08-28-week-review.md	Closed	open
 WK-C1	2026-08-28-week-review.md	Closed	open

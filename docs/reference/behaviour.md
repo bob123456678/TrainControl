@@ -621,6 +621,34 @@ each did, that is the freeze of §5c by a second door. There is one asker now, o
 it paints is what every other surface reads, so no two surfaces can describe the situation
 differently and none of them can wait on the railway to find out.
 
+**THE RULE IS GENERAL, AND IT IS NOW A CENSUS RATHER THAN A HABIT** (D3-B2). The two paragraphs above
+are the same sentence about two doors, and the freeze has arrived through seven of them in two rounds
+— each time found by reading, each time one more caller than the last sweep knew about. The rule
+itself is one line:
+
+> **Nothing on the event thread may call a `synchronized` method of `Layout`.**
+
+They all take one monitor. A dispatch holds it for the whole of `configureAndLockPath` — a sleep per
+accessory of the path — and `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph
+on every panel refresh with nothing running at all. Waiting for it on the event thread is a window
+that does not repaint and controls that do not answer while the trains go on running, which is what
+Adam reported twice as OB-192.
+
+`testNothingOnTheEventThreadTakesTheRailwaysMonitor` reads the list of `synchronized` methods out of
+`Layout.java` and requires **every** call to one of them from `gui/` or `automationui/` to be written
+down with the thread it is on. The way past is a line in that list, and it must say either
+`OFF THE EVENT THREAD:` and name the thread, or `ON THE EVENT THREAD:` and give the reason — a menu
+item the operator has just clicked and a placement made from a modal dialog are both legitimate, and
+a guard with no way past is one people delete. What it cannot do is prove a thread, so
+`testTheDiagramRefreshDoesNotWaitOnTheRailway` still *measures* the doors that matter with the monitor
+actually held. The census says which doors exist; the measurement says two of them are shut.
+
+The two most recent to be shut are the diagram's **right-click menu**, which gathers its path list on
+a worker before the menu is built (D3-A1), and the **station captions**, whose "can autonomy choose
+this square" answer is worked out on `CoveredTrackRenderer` and read from a field — so a page change
+or a Show Inactive Labels toggle during a run costs a set lookup rather than the rest of somebody's
+departure (D3-B1).
+
 ---
 
 ## 6a. Editing the setup while the railway is using it
