@@ -378,6 +378,7 @@
         <test-one-class class="testTheTrainIsShownAsALine"/>
         <test-one-class class="testBlockedTrackIsGreyWhileAutonomyRuns"/>
         <test-one-class class="testTheGreyDoesNotRebuildTheDiagram"/>
+        <test-one-class class="testTheDiagramRefreshDoesNotWaitOnTheRailway"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
     </target>
     <target name="package-for-store" depends="jar">

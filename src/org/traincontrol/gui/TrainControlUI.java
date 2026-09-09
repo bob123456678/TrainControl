@@ -3806,8 +3806,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // Cheap enough to sit beside the two above: `DiagramMonitorDriver` already calls this on
             // the event thread every monitor tick during a run, and a path start or end is far rarer
-            // than that.  `getPoints()` is deliberately unsynchronized, so this takes no Layout
-            // monitor and cannot make the AB-BA deadlock that method's comment describes.
+            // than that.
+            //
+            // THIS USED TO SAY it took no Layout monitor, because `getPoints()` is deliberately
+            // unsynchronized - and that was FALSE when it was written (OB-192).  `updateVisiblePoints`
+            // also calls `refreshCoveredTrack`, which reached `Layout.edgesCoveredByStandingTrains`,
+            // which is `synchronized` on the Layout; so this line put the event thread on that monitor
+            // while it held this window's, which is exactly the AB-BA `Layout.getEdges`'s comment
+            // describes, and the freeze Adam reported the same evening.  The sentence surveyed one of
+            // the two things this method does.  It is true now because the covered marks are worked
+            // out on a worker - see `refreshCoveredTrack` - and not because of `getPoints()`.
             this.updateVisiblePoints();
         });
     }
@@ -6820,76 +6828,293 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Recomputes both of the marks a standing train puts on the diagram.
+     * Asks for both of the marks a standing train puts on the diagram to be worked out again.
      *
-     * Asks the RAILWAY which edges are covered and the session to turn them into squares - one
-     * statement of the rule, translated, rather than a second implementation that could drift.
+     * **NOT ON THE EVENT THREAD, EVER (OB-192).**  Adam, 2026-09-09: *"starting autonomous operation
+     * from the current track state... makes the UI unresponsive.  Trains still run, but nothing is
+     * repainted, and controls are stuck."*  Trains moving with nothing repainting is the event thread
+     * blocked, and this is where it was blocked: the answer comes from
+     * `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`, and a dispatch
+     * holds that same monitor for the whole of `configureAndLockPath` - a `CONFIGURE_SLEEP` per
+     * accessory of the path.
      *
-     * **Two answers, one refresh** (Adam, 2026-09-09: *"That plus the line, drawn and refreshed
-     * carefully, should do the trick."*).  `coveredTrack` is where the trains are, drawn always;
-     * `blockedTrack` is what they have made unusable, drawn only while autonomy is running.  They are
-     * computed together and diffed together on purpose: a second refresh path for the second mark
-     * would be a second thing to forget to call, and the two would come apart on exactly the move that
-     * changes both.
+     * It is worse than a stall, and `Layout.getEdges`'s own comment already spells the shape out.  The
+     * opposite order exists and cannot be removed: a driving thread inside that monitor commands an
+     * accessory, and `MarklinAccessory.setSwitched` calls `repaintSwitch`, which is `synchronized` on
+     * this window.  So a window that takes the railway's monitor while holding its own - which is what
+     * `updateVisiblePoints` did, on the event thread, every monitor tick of a run and at both ends of
+     * every path - is AB-BA and unrecoverable.  That comment forbids exactly this and was written
+     * about `getPoints()`; the covered marks walked in through a different door.
+     *
+     * THE SAME ANSWER AS BEFORE, WORKED OUT SOMEWHERE ELSE.  Nothing about the two marks changes: the
+     * grey is still bounded to a running railway, the two sets are still computed together and diffed
+     * together, and `repaintTheWashWhereItChanged` still redraws only the squares that changed.  Only
+     * the thread is different - which is the third time this window has moved exactly this work off
+     * the event thread, after `repaintAutoLocListLite` and `repaintAutoLocListFull`, and for the
+     * reason both of them state: "on the EDT that stalls the interface, and lets it block on a monitor
+     * a driving thread holds."
+     *
+     * SAFE TO DO OFF THE EVENT THREAD, and that is a claim about three things rather than a hope.
+     * `coveredTrack` and `blockedTrack` are volatile and replaced wholesale.  `DiagramTileRegistry` is
+     * built on `ConcurrentHashMap` and `labelsFor` hands back a copy.  And `refreshCoveredMark` is a
+     * `repaint()`, which Swing documents as callable from any thread.
+     *
+     * AND IN THE RAILWAY'S OWN LOCK ORDER.  The worker takes the `Layout` monitor and gives it back
+     * before it touches anything of this window's, so it can never hold one and want the other - it is
+     * the driving threads' order, not the reverse the event thread was taking.
+     *
+     * @see #awaitCoveredTrack(long) for waiting until the answer has landed
      */
     private void refreshCoveredTrack()
     {
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = coveredTrack;
+        // CAPTURED HERE, ON THE CALLER'S THREAD.  Both getters BUILD when there is nothing yet -
+        // `getAutoLayout()` constructs a `Layout` and `getAutonomySession()` opens the setup off disk -
+        // and neither belongs on a worker.  `hasAutoLayout` rather than `getAutoLayout` for the same
+        // reason `isAutonomyBusy` gives: a question about what is covered must not bring a railway into
+        // being to answer it.
+        org.traincontrol.automation.Layout railway =
+            this.model != null && this.model.hasAutoLayout() ? this.model.getAutoLayout() : null;
 
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked = blockedTrack;
+        coveredTrackSubject = new CoveredTrackAsk(railway, railway == null ? null : getAutonomySession());
+
+        coveredTrackDirty.set(true);
+
+        askForCoveredTrack();
+    }
+
+    /**
+     * Puts one worker on the job, unless one is already on it.
+     *
+     * COALESCED, AND THE LAST ASK ALWAYS LANDS.  The refresh runs on every monitor tick of a run and at
+     * both ends of every path, and the answer can take as long as a dispatch is holding the railway's
+     * monitor - so asks arrive faster than they can be served.  Dropping the extra ones outright is
+     * what leaves a stale mark on the diagram, which is OB-180 exactly; instead the flag says "the
+     * answer is out of date" and the worker keeps going until it is not.
+     *
+     * A flag rather than a queue of tasks, and cleared in a `finally` - `repaintAutoLocList` says why
+     * at length: a task that never completes must not be able to suppress every later refresh for the
+     * rest of the session.
+     */
+    private void askForCoveredTrack()
+    {
+        if (!coveredTrackInFlight.compareAndSet(false, true)) return;
 
         try
         {
-            if (this.model == null || !this.model.hasAutoLayout() || getAutonomySession() == null)
-            {
-                coveredTrack = java.util.Collections.emptyMap();
-                blockedTrack = java.util.Collections.emptySet();
-
-                return;
-            }
-
-            coveredTrack = getAutonomySession()
-                .routesCoveredByStandingTrains(this.model.getAutoLayout());
-
-            // THE GREY IS BOUNDED TO A RUNNING RAILWAY, and this is the one place that decides it.
-            //
-            // `isAutonomyBusy` rather than the layout's own flag: a staging run spends its planning
-            // phase with nothing dispatched, and its trains block track throughout.  It is the
-            // predicate every other surface that asks "is autonomy doing anything" uses here, and
-            // rebuilding the disjunction is how a new surface comes to be missing half of it.
-            blockedTrack = isAutonomyBusy()
-                ? getAutonomySession().tilesBlockedByStandingTrains(this.model.getAutoLayout())
-                : java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet();
+            CoveredTrackRenderer.submit(this::workOutCoveredTrack);
         }
-        catch (Exception cannotWorkItOut)
+        catch (Exception refused)
         {
-            // NOTHING MARKED rather than a broken diagram.  This runs inside a refresh that also
-            // redraws the whole railway, and a picture nobody can read is worse than a protection
-            // nobody can see.
-            coveredTrack = java.util.Collections.emptyMap();
-            blockedTrack = java.util.Collections.emptySet();
+            // Submitting can be refused - the pool is shut down when the window closes - and the flag
+            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
+            settleCoveredTrack();
+        }
+    }
+
+    /**
+     * The old body of `refreshCoveredTrack`, on a worker thread.
+     *
+     * @see #refreshCoveredTrack()
+     */
+    private void workOutCoveredTrack()
+    {
+        try
+        {
+            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
+            // that arrives while this one is computing sets it again and is served by the next turn of
+            // this loop rather than being lost to it.
+            while (coveredTrackDirty.compareAndSet(true, false))
+            {
+                CoveredTrackAsk ask = coveredTrackSubject;
+
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> found =
+                    java.util.Collections.emptyMap();
+
+                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyed =
+                    java.util.Collections.emptySet();
+
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = coveredTrack;
+
+                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked = blockedTrack;
+
+                try
+                {
+                    if (ask != null && ask.railway != null && ask.setup != null)
+                    {
+                        found = ask.setup.routesCoveredByStandingTrains(ask.railway);
+
+                        // THE GREY IS BOUNDED TO A RUNNING RAILWAY, and this is the one place that
+                        // decides it.
+                        //
+                        // `isAutonomyBusy` rather than the layout's own flag: a staging run spends its
+                        // planning phase with nothing dispatched, and its trains block track throughout.
+                        // It is the predicate every other surface that asks "is autonomy doing
+                        // anything" uses here, and rebuilding the disjunction is how a new surface comes
+                        // to be missing half of it.
+                        //
+                        // ASKED HERE rather than captured with the railway above, and that is not
+                        // tidiness: starting and stopping autonomy is the gesture that changes this
+                        // answer and nothing else, so a value captured by an ask that a later one
+                        // overtook would grey a stopped railway or leave a running one bare.  It costs
+                        // nothing to ask - two volatile reads and no monitor.
+                        greyed = isAutonomyBusy()
+                            ? ask.setup.tilesBlockedByStandingTrains(ask.railway)
+                            : java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet();
+                    }
+                }
+                catch (Exception cannotWorkItOut)
+                {
+                    // NOTHING MARKED rather than a broken diagram.  A picture nobody can read is worse
+                    // than a protection nobody can see.
+                    found = java.util.Collections.emptyMap();
+                    greyed = java.util.Collections.emptySet();
+                }
+
+                coveredTrack = found;
+                blockedTrack = greyed;
+
+                // AND THE TILES THAT CHANGED ARE REDRAWN (OB-180).
+                //
+                // Updating the set is not showing it.  The wash is decided when a tile is DRAWN, and a
+                // tile is only drawn when its own accessory, feedback or route changes - so moving a
+                // train, which changes which squares its tail covers and nothing else, left the old
+                // squares grey until something unrelated repainted them. Adam: "when a train is
+                // manually moved to a new station in the track diagram viewer using control+X and V,
+                // its former shaded icons are not reset."
+                //
+                // Reached on every path out of the computation above, including the failed one:
+                // everything ungreying is exactly the case where the old tiles most need repainting.
+                //
+                // Only what CHANGED, which is usually a handful of squares out of hundreds. Repainting
+                // the whole diagram here would run on every refresh, and the refresh runs whenever
+                // anything about a train changes.
+                repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack);
+            }
         }
         finally
         {
-            // AND THE TILES THAT CHANGED ARE REDRAWN (OB-180).
-            //
-            // Updating the set is not showing it.  The wash is decided when a tile is DRAWN, and a
-            // tile is only drawn when its own accessory, feedback or route changes - so moving a train,
-            // which changes which squares its tail covers and nothing else, left the old squares grey
-            // until something unrelated repainted them. Adam: "when a train is manually moved to a new
-            // station in the track diagram viewer using control+X and V, its former shaded icons are
-            // not reset."
-            //
-            // In a finally, because the catch above is a real outcome: everything ungreying is exactly
-            // the case where the old tiles most need repainting.
-            //
-            // Only what CHANGED, which is usually a handful of squares out of hundreds. Repainting the
-            // whole diagram here would run on every refresh, and the refresh runs whenever anything
-            // about a train changes.
-            repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack);
+            settleCoveredTrack();
+
+            // AN ASK THAT ARRIVED IN THE GAP.  Between the loop reading the flag for the last time and
+            // the line above giving the job up, an ask can set the flag and find a worker still in
+            // flight - so it neither runs now nor is picked up, and the marks stay as they were until
+            // something else asks.  On the last refresh of a run there is nothing else.
+            if (coveredTrackDirty.get()) askForCoveredTrack();
         }
     }
+
+    /**
+     * Says the job is given up, and wakes anybody waiting for the marks to have caught up.
+     *
+     * Both under the one monitor `awaitCoveredTrack` waits on, so a waiter cannot check the flags,
+     * find a refresh outstanding, and go to sleep in the instant between this clearing them and
+     * announcing it.
+     */
+    private void settleCoveredTrack()
+    {
+        synchronized (coveredTrackSettled)
+        {
+            coveredTrackInFlight.set(false);
+
+            coveredTrackSettled.notifyAll();
+        }
+    }
+
+    /**
+     * Waits until every covered-track refresh already asked for has landed.
+     *
+     * The marks are worked out on a worker now (OB-192), so asking for them and looking at them are two
+     * moments rather than one.  Anything that wants to READ `coveredTrack` or `blockedTrack` right
+     * after asking for them - which in practice is a test - has to wait for the worker in between.
+     *
+     * BOUNDED, and it says which it did.  A wait with no deadline here would turn a worker that has
+     * died into a hung window rather than a stale mark.
+     *
+     * @param millis how long to wait at most
+     * @return true when the marks are up to date, false when the wait ran out
+     */
+    boolean awaitCoveredTrack(long millis)
+    {
+        long deadline = System.currentTimeMillis() + millis;
+
+        synchronized (coveredTrackSettled)
+        {
+            while (coveredTrackInFlight.get() || coveredTrackDirty.get())
+            {
+                long left = deadline - System.currentTimeMillis();
+
+                if (left <= 0) return false;
+
+                try
+                {
+                    coveredTrackSettled.wait(left);
+                }
+                catch (InterruptedException stopped)
+                {
+                    Thread.currentThread().interrupt();
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The railway and the setup one covered-track refresh is to be computed against.
+     *
+     * Captured together, because they have to agree: `parseAuto` replaces the `Layout` wholesale and
+     * the session is what translates its edges into squares, so a worker that read one field after the
+     * other could be handed a new railway and an old index.
+     */
+    private static final class CoveredTrackAsk
+    {
+        private final org.traincontrol.automation.Layout railway;
+
+        private final org.traincontrol.automationui.AutonomySession setup;
+
+        private CoveredTrackAsk(org.traincontrol.automation.Layout railway,
+            org.traincontrol.automationui.AutonomySession setup)
+        {
+            this.railway = railway;
+            this.setup = setup;
+        }
+    }
+
+    /** What the next covered-track refresh is to be computed against, replaced by every ask. */
+    private volatile CoveredTrackAsk coveredTrackSubject = null;
+
+    /** Whether the marks are out of date - set by an ask, cleared by the pass that answers it. */
+    private final java.util.concurrent.atomic.AtomicBoolean coveredTrackDirty
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /** Whether a worker is already on the job, so a burst of asks makes one pass rather than many. */
+    private final java.util.concurrent.atomic.AtomicBoolean coveredTrackInFlight
+        = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /** Announced on whenever the job is given up, for `awaitCoveredTrack`. */
+    private final Object coveredTrackSettled = new Object();
+
+    /**
+     * The one thread the covered and blocked marks are worked out on.
+     *
+     * ITS OWN POOL rather than `AutonomyRenderer`, which is the other worker this window computes
+     * autonomy answers on: that one deliberately sleeps `REPAINT_ROUTE_INTERVAL` before every route
+     * repaint, and a single-threaded pool would make the diagram's marks queue behind that sleep.
+     *
+     * DAEMON, so a window closed with a refresh outstanding cannot keep the process alive.
+     */
+    private final ExecutorService CoveredTrackRenderer = Executors.newFixedThreadPool(1, runnable ->
+    {
+        Thread worker = new Thread(runnable, "CoveredTrackRenderer");
+
+        worker.setDaemon(true);
+
+        return worker;
+    });
 
     /**
      * Redraws the squares whose covered state is not what it was (OB-180).
@@ -7633,12 +7858,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public DiagramTileRegistry getDiagramTileRegistry()
     {
-        if (diagramTileRegistry == null) diagramTileRegistry = new DiagramTileRegistry();
-
         return diagramTileRegistry;
     }
 
-    private DiagramTileRegistry diagramTileRegistry;
+    /**
+     * EAGER AND FINAL, which is the same correction `imageCache` above carries
+     * (OB-192).
+     *
+     * The lazy version was correct while only the event thread asked for it, and since OB-192 the
+     * covered and blocked marks are worked out on `CoveredTrackRenderer` - which reaches this through
+     * `repaintTheWashWhereItChanged`.  A check-then-assign getter called from two threads at once hands
+     * one of them a registry nothing is registered in, so a diff would silently redraw no tiles at all.
+     *
+     * Nothing is lost by building it here: the constructor assigns two empty maps.
+     */
+    private final DiagramTileRegistry diagramTileRegistry = new DiagramTileRegistry();
 
     public static Map<String,Image> getImageCache()
     {

@@ -101,7 +101,18 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         // The operator's own railway, COPIED (OB-111): the wash is a product of the diagram, so a
         // hand-built graph has no tiles for it to be drawn on.
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
+        //
+        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
+        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
+        // working tree where every train had been driven away, and a class that skips everything reads
+        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
+        // which is the state these assertions were written against.
+        //
+        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
+        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
+        // what it names before anything reads it.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because the subject is what is drawn.  debug on, so the simulated Central Station
         // echoes the accessory commands a path configuration waits for.
@@ -269,14 +280,15 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         train.setTrainLength(squares);
 
-        // The recompute the window does on every refresh of a running layout.  Called rather than
-        // waited for: a length is not a movement, so nothing fires the monitor's callback, and what
-        // this test is about is the ANSWER rather than which door asks for it.
-        java.lang.reflect.Method refresh =
-            TrainControlUI.class.getDeclaredMethod("refreshCoveredTrack");
-
-        refresh.setAccessible(true);
-        refresh.invoke(ui);
+        // The recompute the window does on every refresh of a running layout.  Asked for directly:
+        // a length is not a movement, so nothing fires the monitor's callback, and what this test
+        // is about is the ANSWER rather than which door asks for it.
+        //
+        // AND WAITED FOR (OB-192).  The window works the marks out on a worker now, because asking
+        // for them on the event thread meant waiting on the `Layout` monitor a dispatch holds - so
+        // asking and reading are two moments, and `support.CoveredMarks` is the one place that knows
+        // it.
+        support.CoveredMarks.refresh(ui);
 
         pump();
     }

@@ -137,7 +137,18 @@ public class testTheShadingFollowsTheTrain
     {
         // BEFORE init, because showUI below opens whatever the layout preference names and that is
         // Adam's real railway on his machine (OB-111).  The sandbox redirects the preference to a copy.
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
+        //
+        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
+        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
+        // working tree where every train had been driven away, and a class that skips everything reads
+        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
+        // which is the state these assertions were written against.
+        //
+        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
+        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
+        // what it names before anything reads it.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because the defect is in the drawing.  debug on, so the simulated Central Station
         // echoes back the accessory commands a path configuration waits for.
@@ -503,11 +514,11 @@ public class testTheShadingFollowsTheTrain
      */
     private static Set<TileKey> washAsDrawn() throws Exception
     {
-        java.lang.reflect.Method refresh =
-            TrainControlUI.class.getDeclaredMethod("refreshCoveredTrack");
-
-        refresh.setAccessible(true);
-        refresh.invoke(ui);
+        // AND WAITED FOR (OB-192).  The window works the marks out on a worker now, because asking
+        // for them on the event thread meant waiting on the `Layout` monitor a dispatch holds - so
+        // asking and reading are two moments, and `support.CoveredMarks` is the one place that knows
+        // it.
+        support.CoveredMarks.refresh(ui);
 
         // The labels repaint themselves through invokeLater, so nothing on screen has changed until the
         // event thread has run.  invokeAndWait behind them is the queue emptying, not a sleep.

@@ -496,6 +496,15 @@ The rest of this section is about the **first** rule.
 - **Both are refreshed together, and only where they changed.** One pass recomputes both answers and
   repaints exactly the squares whose line or wash differs from what it was. The whole diagram is
   never rebuilt for either: that is MT-334, and what it looks like is the page flickering.
+- **And never on the event thread** (OB-192). Both answers come from
+  `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout` - the same monitor a
+  dispatch holds for the whole of `configureAndLockPath`, a sleep per accessory of the path. Asked
+  from the event thread that is not a slow refresh but a deadlock: a driving thread inside that
+  monitor commands an accessory and `MarklinAccessory.setSwitched` calls `repaintSwitch`, which is
+  `synchronized` on the window. Adam, 2026-09-09: *"starting autonomous operation ... makes the UI
+  unresponsive. Trains still run, but nothing is repainted, and controls are stuck."* So the pass runs
+  on a worker and the marks land a beat after they are asked for. Nothing about **what** is drawn
+  changes; only where the work happens.
 - **WHAT IS DRAWN IS WHAT IS REFUSED, once both marks are counted.** The grey is the covered EDGES -
   the whole hop between two sensors, which is what `Layout.edgesCoveredByStandingTrains` makes
   unavailable - so blocked track that no train is drawn on is visible as blocked track.

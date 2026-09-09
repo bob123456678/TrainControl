@@ -7165,6 +7165,15 @@ public class Layout
      * and it would have looked exactly like the deadlock Adam reported from a build that did not have
      * it.
      *
+     * **AND THEN IT HAPPENED, BY A DIFFERENT DOOR (OB-192, 2026-09-09).** This paragraph was written
+     * about `getPoints()` and read as being about `getPoints()`. `updateVisiblePoints` was already
+     * taking this monitor while holding the window's - not through `getPoints()`, but through
+     * `refreshCoveredTrack` -> `AutonomySession.routesCoveredByStandingTrains` ->
+     * `edgesCoveredByStandingTrains`, which is `synchronized` here. Adam: *"I am now seeing autonomy
+     * freeze on every run, with the UI completely unresponsive... Things still seem to run in the
+     * background, just not the UI."* The rule this paragraph states is right; what it could not do was
+     * name every way of breaking it. The covered marks are computed on a worker now.
+     *
      * THIRD, these are called from inside this class's own loops - `deleteEdge` walks every edge to
      * strip lock references while removing one - so a copy per call turns a linear sweep into a
      * quadratic one on a layout of any size.
