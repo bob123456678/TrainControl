@@ -705,8 +705,13 @@ public class testSwitchingToACentralStationLayout
         //   assertion is object identity across a real editor's tiles.
         //
         // Both open their sandbox before the model, as the rule above requires.
-        assertEquals(checked, 25,
-            checked + " test classes were found to build a window, not the 25 there were when this "
+        //
+        // - `regression.testEscapeClosesTheEditor` (FR-065) - Escape has to be pressed on a real
+        //   window and the window then has to be asked whether it closed.  It builds a `LayoutEditor`
+        //   per test, on `live-snapshot` through `Scenario.folderFor`, with the sandbox opened before
+        //   the model as the rule above requires.
+        assertEquals(checked, 26,
+            checked + " test classes were found to build a window, not the 26 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

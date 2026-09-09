@@ -6188,9 +6188,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * If there are unsaved changes, checks with the user prior to closng the window
-     */
-    /**
      * What Escape does: let go of whatever is being held, and close only when there is nothing left.
      *
      * **TWO REQUESTS, ONE KEY, AND THE ORDER IS THE ANSWER TO BOTH.**  FR-065 asks that Escape close
@@ -6247,6 +6244,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         return true;
     }
 
+    /**
+     * If there are unsaved changes, checks with the user prior to closng the window
+     */
     private void confirmExit()
     {
         if (!mayLeave()) return;
