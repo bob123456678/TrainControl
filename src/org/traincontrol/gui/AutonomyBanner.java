@@ -169,28 +169,38 @@ public class AutonomyBanner extends JPanel
 
         scroller.getVerticalScrollBar().setUnitIncrement(16);
 
-        // CENTRED IN THE BAND, not resting on the top of it (OB-151).
+        // CENTRED IN THE BAND, not resting on the top of it (OB-151), AND NEVER SHRUNK BELOW IT
+        // (OB-191).
         //
         // Adam: "center them vertically within their shaded backgrounds."  The band has a height floor
-        // so that messages coming and going do not move the diagram, and a BorderLayout centre stretches
-        // its child to fill - so a one-line message sat at the top of a taller band with the slack
-        // underneath it.
+        // so that messages coming and going do not move the diagram, and it is taller again while the
+        // offer button is showing - so a BorderLayout centre, which stretches its child to fill, left a
+        // one-line message resting on the top with the slack underneath it.
         //
-        // GridBag with weighty and a horizontal fill gives the scroller its PREFERRED height and puts
-        // the leftover space equally above and below. A long message still fills and still scrolls,
-        // because GridBag shrinks a child to the space available rather than letting it overflow.
-        javax.swing.JPanel centred = new javax.swing.JPanel(new java.awt.GridBagLayout());
+        // THAT WAS FIRST DONE WITH `GridBagLayout`, and the comment here said "a long message still
+        // fills and still scrolls, because GridBag shrinks a child to the space available rather than
+        // letting it overflow."  It does shrink - but toward the child's MINIMUM, not to the space
+        // available, and a `JScrollPane`'s minimum is a few pixels.  Measured on a twelve-station
+        // answer to "why is it not moving", in the mounting `LayoutEditor` gives this banner: the strip
+        // was 879x260 with a band of 252, the scroll pane wanted 260, and `GridBagLayout` laid it out
+        // FIVE PIXELS TALL at y=123.  Five pixels of a 260-pixel document, taken from the top, is the
+        // document's own margin - so the strip stood open at its full height with nothing in it.
+        //
+        // Adam, 2026-09-08 (OB-191): "'why not moving' in the autonomy editor correctly paints the
+        // paths, but it does not show the list of reasons in the top banner - the banner expands, but I
+        // see no text."  The banner expanding IS the height cap being reached, and the cap being
+        // reached is exactly what makes the band shorter than the message wants.
+        //
+        // What is wanted cannot be said in a `GridBagConstraints` at all: it is `min(preferred, band)`,
+        // centred in whatever is left.  A fill of BOTH would give the whole band to a one-line notice
+        // and bring OB-151 back; a fill of HORIZONTAL is what this was.  So it is written out below
+        // instead, which also makes the two rules one statement rather than two settings that have to
+        // be read together to be understood.
+        javax.swing.JPanel centred = new javax.swing.JPanel(new CentredButNeverTaller());
 
         centred.setOpaque(false);
 
-        java.awt.GridBagConstraints middle = new java.awt.GridBagConstraints();
-
-        middle.weightx = 1;
-        middle.weighty = 1;
-        middle.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        middle.anchor = java.awt.GridBagConstraints.CENTER;
-
-        centred.add(scroller, middle);
+        centred.add(scroller);
 
         add(centred, BorderLayout.CENTER);
 
@@ -443,5 +453,99 @@ public class AutonomyBanner extends JPanel
         setBackground(warning ? WARNING_BACKGROUND : INFO_BACKGROUND);
 
         repaint();
+    }
+
+    /**
+     * Centres one child in its container, and never lays it out taller than the container is.
+     *
+     * TWO RULES THAT HAVE TO BE ONE STATEMENT, which is why this exists rather than a constraint.
+     *
+     * - **Centred** (OB-151).  The strip has a height floor so that messages coming and going do not
+     *   move the diagram, and it is taller again while the offer button is showing.  A message shorter
+     *   than the band gets the leftover space split equally above and below it.
+     *
+     * - **Never taller than the band** (OB-191).  A message LONGER than the band is given exactly the
+     *   band.  That is what makes the scroll pane's viewport smaller than its own contents, which is
+     *   the only condition under which an AS_NEEDED scrollbar appears - so the part that does not fit
+     *   becomes reachable rather than merely absent, which is what the banner's own comments about
+     *   that scrollbar have always assumed.
+     *
+     * `GridBagLayout` can express neither half safely.  `BOTH` gives the whole band to a one-line
+     * notice and loses the centring; `HORIZONTAL` keeps the preferred height and, when the band is
+     * smaller, shrinks toward the child's MINIMUM - five pixels, measured - rather than to the band.
+     * What is wanted is `min(preferred, band)`, and that is a sentence rather than a setting.
+     *
+     * ONE CHILD, deliberately: this is not a general layout, and a second child would silently be
+     * ignored.  The container it is given holds the message and nothing else.
+     */
+    private static final class CentredButNeverTaller implements java.awt.LayoutManager
+    {
+        @Override
+        public void layoutContainer(java.awt.Container parent)
+        {
+            if (parent.getComponentCount() == 0) return;
+
+            java.awt.Component only = parent.getComponent(0);
+
+            java.awt.Insets pad = parent.getInsets();
+
+            int width = Math.max(0, parent.getWidth() - pad.left - pad.right);
+            int band = Math.max(0, parent.getHeight() - pad.top - pad.bottom);
+
+            int wants = only.getPreferredSize().height;
+
+            // AND NEVER NOTHING, which is a third rule the other two do not imply - measured, after
+            // `min(preferred, band)` on its own left the strip at its floor with the message zero
+            // pixels tall.
+            //
+            // A text component reports its preferred height by laying its view out at the size it
+            // CURRENTLY has.  Given no height it has nothing to lay out, so it reports none - and being
+            // given `min(0, band)` next pass keeps it there.  Zero is an absorbing state, and the first
+            // pass of a banner whose message has never been laid out lands in it: at `pack()` the
+            // viewport has no extent yet and the message reports 0x0.  `GridBagLayout` never met this
+            // because it would not go below the child's MINIMUM - the same five pixels that made
+            // OB-191, doing the one useful thing they did.
+            //
+            // So a child that asks for nothing is given the band, which is the only size that lets it
+            // measure itself and answer properly on the pass after.
+            int height = wants <= 0 ? band : Math.min(wants, band);
+
+            only.setBounds(pad.left, pad.top + (band - height) / 2, width, height);
+        }
+
+        @Override
+        public java.awt.Dimension preferredLayoutSize(java.awt.Container parent)
+        {
+            java.awt.Insets pad = parent.getInsets();
+
+            java.awt.Dimension only = parent.getComponentCount() == 0
+                ? new java.awt.Dimension() : parent.getComponent(0).getPreferredSize();
+
+            return new java.awt.Dimension(only.width + pad.left + pad.right,
+                only.height + pad.top + pad.bottom);
+        }
+
+        /**
+         * Nothing, and that is the point.
+         *
+         * Reporting the child's own minimum is what let the message be shrunk to five pixels: a parent
+         * asking how small this may go and being told "five" is being offered somewhere to take space
+         * from.  This layout never needs any - it fits whatever it is given.
+         */
+        @Override
+        public java.awt.Dimension minimumLayoutSize(java.awt.Container parent)
+        {
+            return new java.awt.Dimension(0, 0);
+        }
+
+        @Override
+        public void addLayoutComponent(String name, java.awt.Component comp)
+        {
+        }
+
+        @Override
+        public void removeLayoutComponent(java.awt.Component comp)
+        {
+        }
     }
 }

@@ -525,6 +525,18 @@ The rest of this section is about the **first** rule.
     relation `GraphReducer` derives from shared tiles - is refused over a square that is itself
     greyed, but the *path* is not marked as refused anywhere on the diagram.
 
+  **And the answer has to be readable, which is a rule of its own** (OB-191). The "why not moving"
+  answer is a train, a dozen stations and the reason each one was refused, and it is shown in the
+  strip across the top of the editor. That strip has a height floor so that messages coming and going
+  do not move the diagram, and a height CAP so that a long answer does not eat the page - and an
+  answer longer than the cap must be given the whole strip, because a viewport smaller than its
+  contents is the only thing that makes the strip's scrollbar appear. Laid out at its preferred height
+  instead, it was shrunk toward its minimum - measured at five pixels of a two-hundred-and-sixty pixel
+  answer - and the strip stood open at full height with nothing in it. Adam: *"the banner expands, but
+  I see no text."* A short message is still centred in the strip (OB-151); the two rules are one
+  statement in `AutonomyBanner.CentredButNeverTaller`, because settings that have to be read together
+  are settings that come apart.
+
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
