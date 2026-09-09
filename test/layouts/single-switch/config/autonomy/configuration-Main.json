@@ -1,0 +1,11 @@
+{
+  "name": "Main",
+  "globals": {
+    "timetable": []
+  },
+  "points": {
+    "1 - Junction:1,3": {"mustReverse": true},
+    "1 - Junction:7,3": {"mustReverse": true},
+    "1 - Junction:6,2": {"mustReverse": true}
+  }
+}

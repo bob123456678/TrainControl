@@ -1,0 +1,75 @@
+[gleisbildseite]
+page=1
+version
+ .major=1
+element
+ .id=0x10205
+ .typ=prellbock
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x10305
+ .typ=s88kontakt
+ .drehung=1
+ .artikel=36
+element
+ .id=0x10405
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10505
+ .typ=s88bogen
+ .drehung=1
+ .artikel=34
+element
+ .id=0x10506
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10507
+ .typ=s88kontakt
+ .artikel=32
+element
+ .id=0x10508
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10509
+ .typ=s88kontakt
+ .artikel=30
+element
+ .id=0x1050a
+ .typ=prellbock
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10802
+ .typ=prellbock
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10803
+ .typ=s88kontakt
+ .artikel=40
+element
+ .id=0x10804
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10805
+ .typ=s88kontakt
+ .artikel=42
+element
+ .id=0x10806
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10807
+ .typ=s88kontakt
+ .artikel=44
+element
+ .id=0x10808
+ .typ=prellbock
+ .drehung=1
+ .artikel=-1

@@ -4,14 +4,16 @@ Four folders, by what a test is FOR rather than by what it happens to import.
 
 | Folder | What lives there | How many |
 |---|---|---|
-| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 81 |
-| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 29 |
-| `regression/` | Written for one named defect, to stop it coming back. | 54 |
-| `support/` | Not tests. Fixtures the others use. | 4 |
+| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 88 |
+| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 31 |
+| `regression/` | Written for one named defect, to stop it coming back. | 70 |
+| `support/` | Not tests. Fixtures the others use. | 5 |
+| `layouts/` | Not tests either. Checked-in **railways**, one folder per shape - see below. | 3 |
 
-**Counted 2026-09-08.**  They read 63/16/45/3 until then, stale by thirty-four classes (MON-C20) - a
-table that has to be recounted to be believed, in the document that exists to say where a new test goes.
-If you add a class, the number here is the one to move.
+**Counted 2026-09-09.**  They read 81/29/54/4 the day before, and 63/16/45/3 before that - stale by
+thirty-four classes at one point (MON-C20).  A table that has to be recounted to be believed, in the
+document that exists to say where a new test goes.  If you add a class, the number here is the one to
+move.
 
 Set 2026-08-22, at Adam's request, when 76 classes in one flat folder had stopped saying anything about
 themselves.
@@ -116,18 +118,57 @@ A survey of every fixture in the suite (MON-C17 to C21, 2026-09-07) asked what t
 like rather than what they assert.  Recorded here because a blind spot nobody has written down is
 found the expensive way - twice this month, by a defect walking straight through it.
 
+### What now exists: `test/layouts/`
+
+**Added 2026-09-09, to Adam's design.**  *"Many versions of a track diagram/layout that we can use in our
+tests.  Then the ground truth doesn't move underneath us, and things like lengths and train positions can
+be manipulated at will... a folder in the test folder to house many different scenarios, each linked to a
+test case"*, and *"hand-authored for topology, lengths in code."*
+
+One folder per SHAPE, each with a `README.md` stating what a test may rely on and what it may not, opened
+in one call by `support.Scenario`:
+
+    scenario = support.Scenario.open("single-switch");   // copies to a sandbox, builds model + session
+    Layout built = scenario.build();                     // and again after any change
+    scenario.close();
+
+| Scenario | What shape it is | What it made possible |
+|---|---|---|
+| `single-switch/` | A turnout with two routes through it, and a square trains arrive at from both sides | Lock edges and shared metal, and a **split square** - neither had ever appeared in a hand-built fixture |
+| `curve-into-platform/` | A station approached round a curve, with a straight station beside it as the control | The side a rail LEAVES by differs from the compass direction of the neighbour.  Its first use found REV9-B3 on the day it was written |
+| `live-snapshot/` | Adam's whole railway, taken from `git show HEAD:` and frozen | Complex pathing and random movement, against ground truth that cannot move.  The base for mutations |
+
+**Lengths, train placements and locomotive properties are never in a scenario.**  That is the half Adam
+asked to be able to vary freely, so a test sets them itself and no two tests inherit one author's
+numbers.  Every scenario README says so under its own heading, and `testEveryScenarioIsUsedAndSaysSo`
+requires the heading to be there.
+
+**Two guards keep the library from rotting**, both in that class: no folder under `test/layouts` may go
+without a test that names it, and each README's "Used by" list is compared against the classes that
+actually reference the scenario - because that list changes when a *different* file changes, which is
+exactly how the review index came to read `open` on eleven findings whose bodies said `fixed`.
+
+### The survey, and what is left of it
+
 **Settled 2026-09-08.**  The largest one on the list is gone: every "real layout" test was building a
 FIVE-EDGE skeleton of the railway, because the fixture parsed its pages with a second `CS2File` and
 never wired their accessories.  `support.LayoutSandbox.wired` runs the application's own wiring loop
 and the same railway now reduces to 128 edges and builds to 149.  Ten tests failed the moment they
 could see it; a guard in `testEveryTestIsInTheBattery` stops the recipe coming back.
 
+**C20 and C17 are answered by `test/layouts/`, and the rest are not.**  Two genuinely different railways
+now exist, hand-drawn for a shape rather than copied from the operator's, and between them they use
+orientations 1, 2 and 3 on straights, curves, feedback curves and a switch - so the `(4 - orientation)`
+convention is now exercised by a railway a test reasons about, not only by a data table.  What the
+library does NOT do on its own is close C18, C19 or C21: nothing stops a two-page scenario with a paired
+link, a reversible-locomotive scenario or a two-trains-one-switch scenario being added, and
+`single-switch` is already the metal C21's fixture would contend over.  **They are unclosed because
+nobody has written them, which is the first time that has been the only reason.**
+
 **Still true, in rough order of what they would cost to close:**
 
 | | the gap | what would close it |
 |---|---|---|
-| **C20** | Four checked-in railways - `test_layout`, `operator_layout`, `baseline/layout`, `test_layout_snapshot` - are the same five pages, and all four exclude three of them.  Realistic geometry in this suite is one railway counted four times | a genuinely second railway, which is a decision rather than a chore |
-| **C17** | Non-zero tile orientation appears in four files.  Everything else is orientation 0 on one horizontal row, because adjacent feedbacks connect on their own and a rotated straight has to be got right.  `TilePorts`' `(4 - orientation)` convention is verified by a data table and by whatever the real layout happens to contain | a vertical and an L-bend variant of the standard run-of-track helper |
 | **C18** | The reducer never crosses a page.  `testAutonomyDiagramReducer` passes one page in all ~28 fixtures and mentions no portal; the only place the REDUCER contracts across one is a report-not-assert class | one two-page fixture with a paired link, asserting the contracted edge's endpoints, length and lock set |
 | **C21** | Nothing hand-built runs more than two locomotives, and the concurrency cap's own fixture is two DISJOINT routes - two trains that cannot contend, so it tests the counter and not the contention | a fixture where two trains want the same metal |
 | **C19** | Every test locomotive is non-reversible unless a test says so: the short constructors never assign `reversible` and no checked-in JSON carries the key.  So the suite mostly exercises the non-reversible path, and the reversible-only rules - the may-reverse prompt, turning-copy selection, `flipFacing` - are the thin side | awareness, plus reversible variants where reversal is the subject |

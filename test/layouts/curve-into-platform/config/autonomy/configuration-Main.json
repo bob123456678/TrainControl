@@ -1,0 +1,12 @@
+{
+  "name": "Main",
+  "globals": {
+    "timetable": []
+  },
+  "points": {
+    "1 - Curve:9,5": {"mustReverse": true},
+    "1 - Curve:5,3": {"mustReverse": true},
+    "1 - Curve:3,8": {"mustReverse": true},
+    "1 - Curve:7,8": {"mustReverse": true}
+  }
+}

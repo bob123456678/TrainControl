@@ -243,6 +243,17 @@
         <test-one-class class="testAutonomyDiagramReversal"/>
         <test-one-class class="testAutonomyDiagramSampleLayout"/>
 
+        <!-- The scenario library: checked-in railways named for the SHAPE they are, under
+             test/layouts, opened through support.Scenario.  Added 2026-09-09 because every
+             hand-built fixture in this suite was a straight chain of ordinary points and the
+             realistic geometry all came from the operator's live railway, whose ground truth moves
+             as he operates it.  The last of these is the guard that stops a scenario going orphan
+             or a scenario README going stale about who uses it. -->
+        <test-one-class class="testTwoRoutesShareOneSwitch"/>
+        <test-one-class class="testACurvedPlatformRecordsASideTheBuildUses"/>
+        <test-one-class class="testTheFrozenRailwayIsStillTheRailway"/>
+        <test-one-class class="testEveryScenarioIsUsedAndSaysSo"/>
+
         <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
              running 41 of the 76 test classes and reporting success for the whole suite.
 
