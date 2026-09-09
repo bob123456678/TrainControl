@@ -992,7 +992,8 @@ def add_comment(conn, tag, who, text, verdict=None, tests_path=TESTS_FILE):
     return comment
 
 
-def file_issue(conn, kind, title, detail, issues_path=ISSUES_FILE, tests_path=TESTS_FILE):
+def file_issue(conn, kind, title, detail, issues_path=ISSUES_FILE, tests_path=TESTS_FILE,
+               raised_from=None):
     """Files a new OB-### or FR-### in the Inbox and re-reads the store.
 
     Delegates to triage.py's own numbering and Inbox handling, because a second implementation of
@@ -1004,6 +1005,12 @@ def file_issue(conn, kind, title, detail, issues_path=ISSUES_FILE, tests_path=TE
     :param detail: the body
     :param issues_path: issues.md
     :param tests_path: tests.md, needed only because the rebuild below reads both
+    :param raised_from: what this came from - an MT-###, a finding, a person - or None for the
+                        default. WORTH GIVING: the field is what `issues` and `verify-ledger`
+                        report, and 'the triage API' answers the question 'where did this come
+                        from' with 'through a door', which is not an answer. A follow-up filed
+                        out of a test's Comments has an obvious one, and losing it means the
+                        only trace back is prose in the body.
     :return: the reference allocated
     """
 
@@ -1018,9 +1025,11 @@ def file_issue(conn, kind, title, detail, issues_path=ISSUES_FILE, tests_path=TE
 
     block = ("### %s - %s - %s\n\n"
              "**Kind:** %s  \n"
-             "**Raised from:** the triage API  \n"
+             "**Raised from:** %s  \n"
              "**Filed:** %s  \n\n"
-             "%s\n" % (ref, stamp, title.strip(), kind, stamp, detail.strip()))
+             "%s\n" % (ref, stamp, title.strip(), kind,
+                            (raised_from or "the triage API").strip(), stamp,
+                            detail.strip()))
 
     triage.append_to_inbox(issues_path, block)
 
@@ -1300,6 +1309,7 @@ def main(argv=None):
     p.add_argument("kind", choices=["bug", "feature request"])
     p.add_argument("title")
     p.add_argument("detail")
+    p.add_argument("--raised-from", dest="raised_from")
 
     args = parser.parse_args(argv)
 
@@ -1396,7 +1406,8 @@ def main(argv=None):
         return 0
 
     if args.command == "file":
-        print(file_issue(conn, args.kind, args.title, args.detail))
+        print(file_issue(conn, args.kind, args.title, args.detail,
+                         raised_from=args.raised_from))
         return 0
 
     parser.print_help()

@@ -15965,6 +15965,10 @@ it to `editText(getLastHoveredLabel())`. So the shortcut is a real request with 
 which key it should be is yours to say. Control+G already draws the lengths, which makes it the
 natural neighbour and also unavailable.
 
+**Claude, 2026-09-09.**
+
+Filed. The follow-up in the comment above - *"we need a keyboard shortcut to set the length - how about control+T?"* - is **FR-066**, which records that Control+T is already the edit-a-square's-text chord and that a free key is needed. Adam, 2026-09-09: *"file them."*
+
 ---
 
 <a id="mt-289"></a>
@@ -16121,6 +16125,10 @@ entry:
 
 Neither appears in issues.md. The second is small and exact; the first needs to be checked against the
 label work of 2026-09-08 before it is filed, because it may already be gone.
+
+**Claude, 2026-09-09.**
+
+Filed, both of them. *"TopMainR2 still shows two labels"* is **OB-193**, which says to check it against the label work of 2026-09-08 before fixing it, because he called it pending at the time. *"we need a tooltip in the right-click menu ... showing that control+S is rename"* is **FR-067**. Adam, 2026-09-09: *"file them."*
 
 ---
 
@@ -16596,6 +16604,10 @@ command was measured firing on every answered journey, and OB-190 is open on the
 the diagram shows the new facing after a hand-driven reversal. So it is not lost, but it is not
 answered here either: confirm it there rather than by re-running this.
 
+**Claude, 2026-09-09.**
+
+NOT filed, deliberately, and this says so where somebody would look. *"make sure direction commands are correctly emitted to match the direction of the train"* is already tracked as **OB-189** and its open half **OB-190**; filing it a third time would give one question two references. Confirm it there rather than by re-running this.
+
 ---
 
 <a id="mt-309"></a>
@@ -16710,6 +16722,10 @@ puts everything back"*, and OB-183 then changed which of the two wins where they
 are now carried ACROSS a rebuild rather than restored from the setup. That is very likely why Cancel no
 longer puts the cleared locomotives back. Whether the answer is the warning you asked for or a real
 undo is a decision, not a defect report.
+
+**Claude, 2026-09-09.**
+
+Filed. *"clearing locomotives in the autonomy editor cannot be undone by a cancel. Make this clear in the popup"* is **OB-194**, which carries the OB-183 explanation for why Cancel stopped putting them back and states the two possible answers - the warning he asked for, or a real undo - as a decision rather than a defect. Adam, 2026-09-09: *"file them."*
 
 ---
 
@@ -17025,6 +17041,10 @@ route, it is done, and you have none.
 make sure such examples can be properly represented."*  Nothing in issues.md asks for it. It is a
 different question from the one this entry closed: that one was whether the editor MISREADS such a
 condition, and this one is whether it can express it at all.
+
+**Claude, 2026-09-09.**
+
+Filed. *"make sure such examples can be properly represented"* is **FR-068**, which separates it from the misreading this entry closed: the question is whether the row editor can EXPRESS a nested group that is not the first term, and it offers refusing such a condition explicitly as the smaller of the two honest answers. Adam, 2026-09-09: *"file them."*
 
 ---
 

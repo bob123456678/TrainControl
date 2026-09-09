@@ -651,6 +651,127 @@ when i click on DRG 06 001, "why not moving" in the autonomy editor correctly pa
 
 starting autonomous operation from the current track state, via the netbeans compiled jar, makes the UI unresponsive.  Trains still run, but nothing is repainted, and controls are stuck.
 
+### FR-066 - 2026-09-09 - A keyboard shortcut for setting a square's length - and Control+T is taken
+
+**Kind:** feature request  
+**Raised from:** MT-288  
+**Filed:** 2026-09-09  
+
+Adam, on MT-288 (2026-09-08), in the same breath as passing it:
+
+> *"Works. But we need a keyboard shortcut to set the length - how about control+T?"*
+
+MT-288 is **The track-length box is ready to type in** (from OB-176), and it passed: the number in
+the dialog is selected, so typing replaces it. The request is for a way to OPEN that dialog from the
+keyboard, on the square under the pointer, the way Control+S renames one.
+
+**CONTROL+T IS ALREADY TAKEN, so this needs a free key rather than the one he suggested.** In the
+track diagram editor Control+T edits a square's TEXT - `LayoutEditor.formKeyPressed` sends it to
+`editText(getLastHoveredLabel())`. Control+G is taken too, and is the natural neighbour: it draws the
+lengths. Control+L is the caption toggle and Control+K the grid.
+
+So the open question is which chord, and that is Adam's to say. The rest is small: the diagram already
+knows which square the pointer is over (`TrainControlUI.hoveredDiagramTile`), and the dialog is
+`AutonomyEditorPanel.applyLength`.
+
+### OB-193 - 2026-09-09 - TopMainR2 shows two labels
+
+**Kind:** bug  
+**Raised from:** MT-293  
+**Filed:** 2026-09-09  
+
+Adam, on MT-293 (2026-09-08), in the same breath as passing it:
+
+> *"This works. At the time of testing, TopMainR2 still shows two labels, but this is still pending
+> being worked."*
+
+MT-293 is **Control+L moves the caption dropdown with it** (from RGD-C3) and passed on both of its
+runs. This is a separate observation made during them, and it appears nowhere in issues.md.
+
+**CHECK IT AGAINST THE LABEL WORK OF 2026-09-08 BEFORE FIXING IT.** He said himself it was "pending
+being worked", and the caption and station-label handling moved several times that day
+(`updateStationLabels`, the `StationCaption` pill work, `getLayoutStations`). It may already be gone.
+If it is, close this with the commit that did it rather than leaving it open; if it is not, the
+question is why one square is drawn two captions - a square that splits into several Points is the
+obvious candidate, since each copy can carry a label.
+
+### FR-067 - 2026-09-09 - A tooltip in the autonomy editor's right-click menu saying Control+S renames
+
+**Kind:** feature request  
+**Raised from:** MT-293  
+**Filed:** 2026-09-09  
+
+Adam, on MT-293 (2026-09-08), in the same breath as passing it:
+
+> *"Works, but we need a tooltip in the right-click menu in the autonomy editor showing that
+> control+S is rename."*
+
+MT-293 is **Control+L moves the caption dropdown with it** (from RGD-C3), and passed. This is a
+separate, small, exact request made during the run, and it appears nowhere in issues.md.
+
+The item is **Rename...** on the tile menu (`AutonomyEditorPanel.buildTileMenu`, which the track
+diagram viewer also borrows through `TrainControlUI.buildAutonomyTileMenu`). A shortcut that exists
+and is not written next to the thing it does is a shortcut nobody finds - the same argument the
+accelerator hints elsewhere in the menus are there for. Worth checking at the same time whether the
+other diagram chords (Control+L, Control+K, Control+G, Control+X/V/Delete) have anywhere at all that
+names them.
+
+### OB-194 - 2026-09-09 - Clearing every locomotive in the autonomy editor cannot be undone by Cancel
+
+**Kind:** bug  
+**Raised from:** MT-311  
+**Filed:** 2026-09-09  
+
+Adam, on MT-311 (2026-09-08), in the same breath as passing it:
+
+> *"It works, but bug: clearning locomotives in the autonomy editor cannot be undone by a cancel.
+> Make this clear in the popup."*
+
+MT-311 is **Bulk Tools clears placements and keeps the homes** (from MT-257 item 1), and the counts
+and the greying it asks about are right.
+
+**IT CONTRADICTS THAT ENTRY'S OWN EXPECTATION**, which reads *"neither writes to disk - Cancel puts
+everything back"*. What changed in between is OB-183: Adam, 2026-09-08, *"Where a train IS is a fact,
+and where the file thinks it is is a record."*  Placements are now carried ACROSS a rebuild
+(`TrainControlUI.putTheTrainsBack`) rather than regenerated from the setup, which is very likely why
+Cancel no longer puts the cleared locomotives back - Cancel restores the SETUP, and the running
+railway is what the placements now come from.
+
+**Whether the answer is the warning he asked for or a real undo is a decision, not a defect report.**
+The warning is the smaller of the two and is what he asked for: `AutonomyEditorPanel.clearAllPlacements`
+already confirms first, and the confirmation can say that Cancel will not bring them back. A real undo
+means the bulk clear capturing what it removed and the editor's Cancel replaying it, which is a
+different and larger thing.
+
+### FR-068 - 2026-09-09 - Whether a route condition with a bracket that is not at the start can be represented at all
+
+**Kind:** feature request  
+**Raised from:** MT-320  
+**Filed:** 2026-09-09  
+
+Adam, on MT-320 (2026-09-08), in the same breath as passing it:
+
+> *"i have no such route - these can no longer be opened, anyway. make sure such examples can be
+> properly represented."*
+
+MT-320 is **A route condition with a bracket that is not at the start** (from IPR-B2), and it closed
+on its own terms: it says that if he has no such route it is done, and he has none.
+
+**THE SENTENCE AFTER IT IS A DIFFERENT QUESTION FROM THE ONE THAT CLOSED.** MT-320 asked whether the
+editor MISREADS a condition like `3 or ((1 or 2) and 4)` - it used to turn the AND into an OR, flag
+nothing red, evaluate the wrong expression in Test, and write it back on save. This asks whether the
+editor can EXPRESS that shape at all: the condition rows are a flat list with one grouping level, and
+a nested group that is not the first term has no representation in them.
+
+Two honest answers, and the choice is Adam's:
+
+1. the row editor gains real nesting, which is the larger piece of work;
+2. it keeps the shape it has and REFUSES such a condition explicitly rather than silently flattening
+   it - a message saying the expression cannot be shown, with the text preserved untouched.
+
+The second is what the current behaviour is one step away from, and it is the one that cannot lose
+somebody's route.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
