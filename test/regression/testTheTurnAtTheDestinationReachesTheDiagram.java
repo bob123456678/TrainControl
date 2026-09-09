@@ -131,7 +131,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         // BEFORE init (OB-111): the window opens whatever the layout preference names, and on Adam's
         // machine that is his real, unrecoverable railway.  The sandbox redirects the preference at a
         // copy.
-        sandbox = // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
         //
         // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
         // are standing, how long they are and which side they came in by are not, and reading those
@@ -139,7 +139,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
         // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
         // every class over it say something different every week.
-        support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because `reconcileFacingWhenIdle` is a method of the window and this class exists to
         // RUN it.  debug on, because `Layout.setSimulate(true)` refuses outside debug mode and without

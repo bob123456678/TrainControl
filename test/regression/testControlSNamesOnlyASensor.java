@@ -47,7 +47,7 @@ public class testControlSNamesOnlyASensor
     public static void setUpClass() throws Exception
     {
         // A COPY of the real layout, opened before the model (OB-111).
-        sandbox = // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
         //
         // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
         // are standing, how long they are and which side they came in by are not, and reading those
@@ -55,7 +55,7 @@ public class testControlSNamesOnlyASensor
         // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
         // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
         // every class over it say something different every week.
-        support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
         model.stop();
