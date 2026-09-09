@@ -684,7 +684,14 @@ public class testATrainCoversTheTrackBehindIt
      * compared, and the labels for what changed are asked to re-apply the wash.
      *
      * Both directions matter and only one was reported: a square that has just become covered needs the
-     * wash put on, and one that has stopped being covered needs it taken off.
+     * mark put on, and one that has stopped being covered needs it taken off.
+     *
+     * **And BOTH MARKS go through this one comparison** (Adam, 2026-09-09: *"That plus the line, drawn
+     * and refreshed carefully, should do the trick."*).  Since the grey wash came back beside the
+     * orange line, a square changes what it draws when its road changes AND when it starts or stops
+     * being blocked - and the two do not move together: starting autonomy changes every blocked square
+     * and no covered one.  A second refresh path for the second mark would be a second thing to forget
+     * to call, so what is pinned is that one pass diffs both.
      *
      * @throws Exception on a failure to read the source
      */
@@ -695,7 +702,7 @@ public class testATrainCoversTheTrackBehindIt
             java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(ui.contains("repaintTheWashWhereItChanged(was, coveredTrack)"),
+        assertTrue(ui.contains("repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack)"),
             "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
             + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
 
@@ -714,6 +721,20 @@ public class testATrainCoversTheTrackBehindIt
         assertTrue(ui.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
+
+        // AND THE GREY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09).
+        //
+        // A plain symmetric difference, because the wash is over the whole square - it is there or it
+        // is not - where the line needs the road compared as well.  Both arms are asked for: the first
+        // takes the wash off a square that has stopped being blocked, which is OB-180's own half of
+        // this rule arriving at the second mark.
+        assertTrue(ui.contains("if (!greyAfter.contains(at)) changed.add(at)"),
+            "a square that has stopped being blocked is not redrawn, so the grey stays on track"
+            + " nothing blocks any more - and on every square on the railway once autonomy stops");
+
+        assertTrue(ui.contains("if (!greyBefore.contains(at)) changed.add(at)"),
+            "a square that has just become blocked is not redrawn, so it goes on being drawn as free"
+            + " track until something unrelated repaints it");
 
         assertTrue(ui.contains("label.refreshCoveredMark()"),
             "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");

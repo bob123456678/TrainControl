@@ -441,36 +441,56 @@ The rest of this section is about the **first** rule.
   several means the graph cannot say which.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
+- **Two marks, and they say different things** (Adam, 2026-09-09: *"'train is here' should also mean
+  'track is blocked' - that is the whole point. it's the same as greying out edges, just in a
+  different way."*). A square with **orange** on it is where a train IS. A square that is **grey and
+  not orange** is track that train's presence has made unusable. A square with neither is free.
 - A train is drawn as an **orange line along the track it is standing on**, **on the track diagram
   viewer only**, until it moves. An editor is where the railway is arranged, and what happens to be
   standing on it while you arrange it is a fact about right now rather than about the drawing - the
   same reasoning that makes station names the default caption there.
-- **Along the road, not over the square.** The line follows the route the train occupies through each
-  tile, which is why it replaced a grey wash on 2026-09-08. Adam: *"instead of shading the entire
-  tiles, we need to draw a line (let's say in orange) to show that the train is there. graying makes
-  it look confusing on double curve tiles."* A double-curve tile carries two roads and a train on one
-  of them was indistinguishable from a train on the other.
-- **As long as the train, not as long as the edge.** The mark walks square by square from where the
-  train stands, each square paying its own length, and stops when the train is used up. Coverage is
-  recorded per EDGE - one hop between two sensors, which can be a dozen squares - so drawing the edge
-  washed seventeen squares for a train of length one (MT-309).
-- **The mark survives a highlight.** An accessory change flashes the square it commands; when the
+- Blocked track is drawn as a **grey wash over the whole square**, **only while autonomy is running**
+  - which is Adam's own bound: *"can we just grey out the tiles just like blocked edges while
+  autonomy is running?"* Blocked track is a fact about routing, and nothing is routing when nothing
+  is running, so a stopped railway shows the line alone. The wash goes **under** the line, so a
+  square that is both still reads as both.
+- **The line follows the road, not the square.** It runs along the route the train occupies through
+  each tile, which is why a wash was the wrong way to say *"a train is here"*. Adam, 2026-09-08:
+  *"instead of shading the entire tiles, we need to draw a line (let's say in orange) to show that
+  the train is there. graying makes it look confusing on double curve tiles."* A double-curve tile
+  carries two roads, and a train on one of them was indistinguishable from a train on the other. The
+  grey that came back on 2026-09-09 does not reopen this: a square that is grey and not orange is not
+  claiming a train is on either road, only that the track is unavailable.
+- **The line is as long as the train; the grey is as long as the edge.** That difference is what
+  separates the two marks. The line walks square by square from where the train stands, each square
+  paying its own length, and stops when the train is used up - drawing the whole edge instead washed
+  seventeen squares for a train of length one (MT-309). The grey is the whole edge on purpose,
+  because the whole edge is what routing refuses.
+- **The marks survive a highlight.** An accessory change flashes the square it commands; when the
   flash ends the square is asked again rather than remembered, because the train may have moved while
-  the highlight was showing.
-- **WHAT IS DRAWN IS LESS THAN WHAT IS REFUSED**, deliberately, and this is the one place where the
-  picture and the guard are meant to differ. The drawing answers *"where is the train"*; the guard
-  answers *"what may not be used"*, and the second is wider for two reasons:
+  the highlight was showing. Neither mark is part of the tile's icon - both are painted over it.
+- **Both are refreshed together, and only where they changed.** One pass recomputes both answers and
+  repaints exactly the squares whose line or wash differs from what it was. The whole diagram is
+  never rebuilt for either: that is MT-334, and what it looks like is the page flickering.
+- **WHAT IS DRAWN IS WHAT IS REFUSED, once both marks are counted.** The grey is the covered EDGES -
+  the whole hop between two sensors, which is what `Layout.edgesCoveredByStandingTrains` makes
+  unavailable - so blocked track that no train is drawn on is visible as blocked track.
 
-  - coverage is recorded per EDGE, so the whole hop between two sensors is unavailable even where the
-    train is drawn on part of it;
-  - a path is refused when any edge it uses **shares metal** with a covered one - the lock-edge
-    relation `GraphReducer` derives from shared tiles - because at a switch a train lying across it
-    covers the edge it arrived along while a route taking the other pair of arms is a different edge.
+  This bullet said the opposite between 2026-09-08 and 2026-09-09, in bold, and the reversal is the
+  point of the change. Replacing the wash with the line answered the double-curve complaint and made
+  the picture a strict subset of the refusal: a square the railway would not let a train onto looked
+  exactly like free track. Adam: *"that is the whole point."* Two marks answer both questions at
+  once, where narrowing one mark to answer the second question could only ever lose the first.
 
-  **So a square with no orange on it may still be refused.** Until 2026-09-08 the two agreed by
-  construction and the document said "what is drawn is what is refused"; the drawing was narrowed to
-  answer Adam's question about double curves, and the guard was deliberately left where it was. The
-  "why not moving" view is where the refusal is explained, because the diagram no longer shows it.
+  **What is still not drawn**, and is explained in the "why not moving" view rather than on the
+  diagram:
+
+  - the **endpoint squares** of a covered edge, which are deliberately not greyed - *"edges, because
+    the points are technically unoccupied"*, and a train standing at a sensor is already shown
+    standing there;
+  - a path refused because an edge it uses **shares metal** with a covered one - the lock-edge
+    relation `GraphReducer` derives from shared tiles - is refused over a square that is itself
+    greyed, but the *path* is not marked as refused anywhere on the diagram.
 
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains

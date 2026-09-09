@@ -998,20 +998,19 @@ public final class LayoutLabel extends JLabel
 
                         this.setIcon(lastIcon);
 
-                        // A TRAIN IS A LINE ALONG THE TRACK, AND NOT AN ICON AT ALL (MT-309).
+                        // NEITHER MARK IS AN ICON (MT-309).
                         //
-                        // It used to be a grey wash laid over this icon here.  Adam, 2026-09-08:
-                        // "instead of shading the entire tiles, we need to draw a line (let's say in
-                        // orange) to show that the train is there.  graying makes it look confusing on
-                        // double curve tiles" - and, asked whether the two should stand together, he
-                        // chose one indicator rather than two: the line REPLACES the wash.
+                        // A grey wash used to be laid over this icon here.  There are two marks again
+                        // since 2026-09-09 - the orange line where a train IS, and the grey wash over
+                        // the track its presence has BLOCKED - and neither of them is part of the
+                        // icon.  Both are painted in `paintCoveredMark`, over whatever the icon
+                        // happens to be.
                         //
-                        // Which means it is no longer part of the icon, and three places that swapped
-                        // the icon for a greyed copy have gone with it: this one, the restore at the
-                        // end of the transient highlight, and `refreshCoveredMark`.  It is painted in
-                        // `paintCoveredMark` instead, over whatever the icon happens to be - so a tile
-                        // flashing yellow for an accessory change still shows the train on it, which
-                        // is the hazard the old restore needed a paragraph to handle.
+                        // Which is why three places that swapped the icon for a greyed copy stay gone:
+                        // this one, the restore at the end of the transient highlight, and
+                        // `refreshCoveredMark`.  A tile flashing yellow for an accessory change still
+                        // shows both marks, which is the hazard the old restore needed a paragraph to
+                        // handle.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
@@ -1033,10 +1032,10 @@ public final class LayoutLabel extends JLabel
                                     // accessory change highlights the same square" - because the mark
                                     // WAS the icon and putting the plain one back lost it.
                                     //
-                                    // The mark is painted over the icon since MT-309, so it is not in
-                                    // the icon to lose, and the question this branch had to ask no
-                                    // longer arises: whatever the icon is, `paintCoveredMark` draws
-                                    // the train on top of it at the next paint.
+                                    // The marks are painted over the icon since MT-309, so they are
+                                    // not in the icon to lose, and the question this branch had to ask
+                                    // no longer arises: whatever the icon is, `paintCoveredMark` draws
+                                    // the wash and the train on top of it at the next paint.
                                     this.setIcon(lastIcon);
                                 }
                             });
@@ -1420,10 +1419,11 @@ public final class LayoutLabel extends JLabel
      * no part of the image; forcing it with `highlight` would flash every signal and switch it
      * touched, which is a different message to the operator entirely.
      *
-     * A plain repaint since MT-309, where the wash stopped being an icon and became a line painted
+     * A plain repaint since MT-309, where the marks stopped being an icon and became things painted
      * over one - so there is nothing to swap and nothing that a tile which has not drawn its picture
      * yet would miss. `paintCoveredMark` asks the window afresh every time it runs, which is what
-     * makes this enough.
+     * makes this enough, and it is why the same door serves the wash that came back on 2026-09-09
+     * without a second refresh path beside it.
      */
     public void refreshCoveredMark()
     {
@@ -1444,7 +1444,37 @@ public final class LayoutLabel extends JLabel
     public static final Color TRAIN_MARK = new Color(255, 140, 0);
 
     /**
-     * Draws the train lying across this square, along the road it is on.
+     * The grey a BLOCKED square is washed in (MT-309, Adam 2026-09-09).
+     *
+     * *"can we just grey out the tiles just like blocked edges while autonomy is running?"*  The same
+     * grey, to the value, that `ImageUtil.addCoveredOverlay` tinted a covered tile with before the
+     * wash was removed on 2026-09-08: it is the wash Adam is asking to have back, so it is the wash he
+     * gets.
+     *
+     * Translucent, because it has to say "this track is unavailable" without hiding which track it is
+     * - the square keeps its rails, its switch arms and its address label, only darker.
+     *
+     * PAINTED, NOT TINTED INTO THE ICON, and there is exactly one place that draws it.  A tinting
+     * helper in `ImageUtil` was deleted when the wash was removed, with a comment saying that leaving
+     * one there with no caller invites a second way of drawing the same thing; bringing the wash back
+     * as a fill in `paintComponent` honours that rather than undoing it, and it is what lets the wash
+     * survive an accessory highlight swapping the icon underneath it.
+     */
+    public static final Color BLOCKED_WASH = new Color(90, 90, 90, 120);
+
+    /**
+     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
+     * lying on.
+     *
+     * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam, 2026-09-09: *"'train is here' should also
+     * mean 'track is blocked' - that is the whole point.  it's the same as greying out edges, just in
+     * a different way"*).  Between 2026-09-08 and that ruling the line stood alone, and what was drawn
+     * was a strict subset of what routing refuses - so a square the railway would not let a train onto
+     * looked exactly like free track.  A square with orange on it is where a train IS; a square that
+     * is merely grey is track that train's presence has made unusable; a square with neither is free.
+     *
+     * **The wash is under the line**, so a square that is both still reads as both.  The other order
+     * would bury the train under the consequence of the train.
      *
      * **The road, not the square** (Adam, 2026-09-08: *"graying makes it look confusing on double
      * curve tiles"*). A double curve carries two roads that never meet, and a wash over the whole
@@ -1469,7 +1499,22 @@ public final class LayoutLabel extends JLabel
      */
     private void paintCoveredMark(java.awt.Graphics2D g)
     {
-        if (component == null) return;
+        if (component == null || component.isText()) return;
+
+        // THE WASH FIRST, AND ONLY WHILE AUTONOMY IS RUNNING - which the window decides, not this
+        // tile.  Blocked track is a fact about routing, and nothing is routing when nothing is
+        // running, so a stopped railway shows the line alone exactly as it did before this change.
+        //
+        // Over the whole square, because that is what the railway refuses: coverage is recorded per
+        // EDGE and the whole hop between two sensors is unavailable.  Adam's complaint about double
+        // curves was about the wash being used to say WHERE THE TRAIN IS, which is the line's job now
+        // - a square that is grey and not orange is not claiming a train is on both of its roads.
+        if (!edit && square != null && tcUI != null && tcUI.isTrackBlocked(square))
+        {
+            g.setColor(BLOCKED_WASH);
+
+            g.fillRect(0, 0, getWidth(), getHeight());
+        }
 
         java.util.List<org.traincontrol.automationui.TilePorts.Route> roads = coveredRoads();
 

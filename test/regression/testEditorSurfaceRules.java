@@ -1415,12 +1415,21 @@ public class testEditorSurfaceRules
      * a rendered label and a real image, and this file's convention is to assert the decision rather
      * than the pixels.
      *
-     * **Restated for MT-309**, where the wash became a line painted over the icon rather than a greyed
-     * copy of it. The first report is now impossible by construction and the rule is asked of the
-     * mechanism that carries it: the mark is painted, and there is no wash beside it.
+     * **Restated for MT-309**, where both marks became things PAINTED over the icon rather than a
+     * greyed copy of it. The first report is now impossible by construction and the rule is asked of
+     * the mechanism that carries it.
+     *
+     * **And restated again on 2026-09-09**, when Adam put the wash back beside the line: *"'train is
+     * here' should also mean 'track is blocked' - that is the whole point.  it's the same as greying
+     * out edges, just in a different way."*  This asked for the absence of a wash until then, which
+     * was the right rule for one day.  What it asks now is that there is exactly ONE wash and that it
+     * is the painted one: the icon-tinting helper stays deleted, because a tinted icon is the version
+     * a highlight can take away with it, which is the first report on this list.
      *
      * MUTATION: deleting the `paintCoveredMark` call fails the first; dropping the `edit` guard in
-     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the third.
+     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the fourth;
+     * painting the wash without asking `isTrackBlocked`, or over the line rather than under it,
+     * fails the third.
      *
      * @throws Exception on a failure to read the source
      */
@@ -1451,10 +1460,39 @@ public class testEditorSurfaceRules
             + " transient highlight has nothing left to overwrite because there was never anything"
             + " there (Adam, 2026-09-07 and MT-309)");
 
-        assertFalse(label.contains("addCoveredOverlay"),
-            "the grey wash is back beside the orange line. Adam chose ONE indicator: \"instead of"
-            + " shading the entire tiles, we need to draw a line (let's say in orange)\" - and a tile"
-            + " wearing both says the same thing twice, in the shape he asked to be rid of");
+        // AND THE WASH IS THE PAINTED ONE, DRAWN UNDER THE LINE (2026-09-09).
+        //
+        // Adam asked for both marks: "'train is here' should also mean 'track is blocked' ... it's the
+        // same as greying out edges, just in a different way."  Two things have to hold about the one
+        // that came back.
+        //
+        // It is FENCED, on the window's answer rather than on anything the tile works out: "can we
+        // just grey out the tiles just like blocked edges WHILE AUTONOMY IS RUNNING".
+        String painter = bodyOf(label, "private void paintCoveredMark(java.awt.Graphics2D g)");
+
+        assertTrue(painter.contains("tcUI.isTrackBlocked(square)"),
+            "the wash is drawn without asking whether the square is blocked, so it either never"
+            + " appears or appears on free track and while nothing is running");
+
+        // And it is UNDER the line, so a square that is both still reads as both.
+        int wash = painter.indexOf("BLOCKED_WASH");
+        int line = painter.indexOf("g.drawLine(");
+
+        assertTrue(wash > 0 && line > 0 && wash < line,
+            "the grey is painted over the orange rather than under it, so the square carrying the"
+            + " train is the one square whose train cannot be seen");
+
+        // AND THERE IS ONLY ONE OF IT.  The icon-tinting helper was deleted when the wash was removed,
+        // and bringing the wash back as a fill is what keeps that deletion honest: a tinted icon is
+        // the version an accessory highlight can take away with it, which is the first report above.
+        String images = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/util/ImageUtil.java")),
+            StandardCharsets.UTF_8));
+
+        assertFalse(images.contains("addCoveredOverlay("),
+            "there are two ways of drawing the covered wash again - one painted over the icon and one"
+            + " tinted into it. The tinted one is the version a transient highlight overwrites, which"
+            + " is Adam's report of 2026-09-07");
 
         // AND THE MARK IS THE VIEWER'S ONLY.
         assertTrue(label.contains("if (edit || square == null"),

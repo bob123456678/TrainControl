@@ -6734,6 +6734,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> coveredTrack = java.util.Collections.emptyMap();
 
     /**
+     * The diagram squares standing trains have BLOCKED, as of the last refresh - and empty whenever
+     * autonomy is not running (Adam, 2026-09-09).
+     *
+     * *"'train is here' should also mean 'track is blocked' - that is the whole point.  it's the same
+     * as greying out edges, just in a different way."*  `coveredTrack` above says where a train IS and
+     * is as long as the train; this says what its presence has made unusable, and is the whole edge -
+     * which is what `Layout.edgesCoveredByStandingTrains` actually refuses.  Drawn, the two together
+     * make the picture and the guard agree again.
+     *
+     * **EMPTY WHEN NOTHING IS RUNNING**, which is the second half of his instruction: *"can we just
+     * grey out the tiles just like blocked edges while autonomy is running?"*  Blocked track is a fact
+     * about routing and nothing is routing when nothing is running, so the fence is applied HERE
+     * rather than in the tile - one place decides it, and the tiles that have to be redrawn when the
+     * answer changes are the ones this set gained or lost.
+     *
+     * Cached, volatile and replaced wholesale, for the reasons the covered set gives above.
+     */
+    private volatile java.util.Set<org.traincontrol.automationui.TileGraph.TileKey>
+        blockedTrack = java.util.Collections.emptySet();
+
+    /**
+     * Whether a standing train has blocked this square, so the diagram can grey it.
+     *
+     * False whenever autonomy is not running: the set behind this is emptied then, deliberately, and
+     * the tile does not have to know why.
+     *
+     * @param square the tile
+     * @return true when the track is blocked and worth saying so
+     */
+    public boolean isTrackBlocked(org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        return square != null && blockedTrack.contains(square);
+    }
+
+    /**
      * Whether a standing train is lying across this square, so the diagram can mark it.
      *
      * @param page the page the tile is drawn on
@@ -6785,27 +6820,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Recomputes the covered squares, which the diagram greys.
+     * Recomputes both of the marks a standing train puts on the diagram.
      *
      * Asks the RAILWAY which edges are covered and the session to turn them into squares - one
      * statement of the rule, translated, rather than a second implementation that could drift.
+     *
+     * **Two answers, one refresh** (Adam, 2026-09-09: *"That plus the line, drawn and refreshed
+     * carefully, should do the trick."*).  `coveredTrack` is where the trains are, drawn always;
+     * `blockedTrack` is what they have made unusable, drawn only while autonomy is running.  They are
+     * computed together and diffed together on purpose: a second refresh path for the second mark
+     * would be a second thing to forget to call, and the two would come apart on exactly the move that
+     * changes both.
      */
     private void refreshCoveredTrack()
     {
         java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
             java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = coveredTrack;
 
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked = blockedTrack;
+
         try
         {
             if (this.model == null || !this.model.hasAutoLayout() || getAutonomySession() == null)
             {
                 coveredTrack = java.util.Collections.emptyMap();
+                blockedTrack = java.util.Collections.emptySet();
 
                 return;
             }
 
             coveredTrack = getAutonomySession()
                 .routesCoveredByStandingTrains(this.model.getAutoLayout());
+
+            // THE GREY IS BOUNDED TO A RUNNING RAILWAY, and this is the one place that decides it.
+            //
+            // `isAutonomyBusy` rather than the layout's own flag: a staging run spends its planning
+            // phase with nothing dispatched, and its trains block track throughout.  It is the
+            // predicate every other surface that asks "is autonomy doing anything" uses here, and
+            // rebuilding the disjunction is how a new surface comes to be missing half of it.
+            blockedTrack = isAutonomyBusy()
+                ? getAutonomySession().tilesBlockedByStandingTrains(this.model.getAutoLayout())
+                : java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet();
         }
         catch (Exception cannotWorkItOut)
         {
@@ -6813,6 +6868,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // redraws the whole railway, and a picture nobody can read is worse than a protection
             // nobody can see.
             coveredTrack = java.util.Collections.emptyMap();
+            blockedTrack = java.util.Collections.emptySet();
         }
         finally
         {
@@ -6831,7 +6887,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Only what CHANGED, which is usually a handful of squares out of hundreds. Repainting the
             // whole diagram here would run on every refresh, and the refresh runs whenever anything
             // about a train changes.
-            repaintTheWashWhereItChanged(was, coveredTrack);
+            repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack);
         }
     }
 
@@ -6842,14 +6898,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * needs the wash put on, and one that has stopped being covered needs it taken off. The second is
      * the half that was reported, and the half a set comparison makes easy to forget.
      *
-     * @param was the previous set
-     * @param now the set just computed
+     * **BOTH MARKS ARE DIFFED HERE** (MT-309, 2026-09-09).  A square changes what it draws when the
+     * road a train lies on changes AND when it starts or stops being blocked, and the two do not move
+     * together: starting autonomy changes every blocked square and no covered one, and a train pulling
+     * forward off its own tail changes the far end of a segment where no line was ever drawn.  Missing
+     * either half leaves a stale mark on the diagram, which is OB-180 exactly.
+     *
+     * @param was the previous covered set
+     * @param now the covered set just computed
+     * @param wasBlocked the previous blocked set
+     * @param nowBlocked the blocked set just computed
      */
     private void repaintTheWashWhereItChanged(
         java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
             java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was,
         java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> now)
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> now,
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked,
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> nowBlocked)
     {
         try
         {
@@ -6878,6 +6944,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = now.get(at);
 
                 if (then == null ? after == null : then.equals(after)) key.remove();
+            }
+
+            // AND THE SQUARES WHOSE GREY CHANGED, which is a plain symmetric difference: the wash is
+            // over the whole square, so a square either has it or has not.  Added after the covered
+            // squares have been filtered, because a square whose line did not change may still have
+            // gained or lost the wash - which is every square on the railway the moment autonomy
+            // starts or stops.
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyBefore =
+                wasBlocked == null
+                    ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet()
+                    : wasBlocked;
+
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyAfter =
+                nowBlocked == null
+                    ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet()
+                    : nowBlocked;
+
+            for (org.traincontrol.automationui.TileGraph.TileKey at : greyBefore)
+            {
+                if (!greyAfter.contains(at)) changed.add(at);
+            }
+
+            for (org.traincontrol.automationui.TileGraph.TileKey at : greyAfter)
+            {
+                if (!greyBefore.contains(at)) changed.add(at);
             }
 
             for (org.traincontrol.automationui.TileGraph.TileKey key : changed)

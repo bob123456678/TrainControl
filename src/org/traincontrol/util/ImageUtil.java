@@ -198,16 +198,20 @@ public class ImageUtil
         return bufferedImage;
     }
     
-    // THE COVERED WASH IS GONE, AND SO IS THE GREY IT WAS DRAWN IN (MT-309).
+    // THE COVERED WASH IS DRAWN ELSEWHERE, AND STILL HAS NOTHING TO DO WITH AN ICON (MT-309).
     //
-    // `addCoveredOverlay` greyed a whole tile to say a train was lying across it, and Adam has ruled
-    // the other way: "instead of shading the entire tiles, we need to draw a line (let's say in
-    // orange) to show that the train is there.  graying makes it look confusing on double curve
-    // tiles."  A line along one road of a square is not a wash over an icon, so it is painted by
-    // `LayoutLabel.paintCoveredMark` and there is nothing left for this to do.
+    // `addCoveredOverlay` greyed a whole tile to say a train was lying across it.  It was deleted on
+    // 2026-09-08 when the wash was replaced by a line - "instead of shading the entire tiles, we need
+    // to draw a line (let's say in orange) to show that the train is there" - with a note saying that
+    // a tinting helper here with no caller is an invitation to a second way of drawing the same mark.
     //
-    // Removed rather than left unused: a tinting helper sitting here with no caller is an invitation
-    // to put the wash back beside the line, which is the one thing he said he did not want.
+    // A wash came back on 2026-09-09, for a different question: the line says where a train IS, the
+    // grey says which track its presence has BLOCKED, and Adam asked for both - "'train is here'
+    // should also mean 'track is blocked' ... it's the same as greying out edges, just in a different
+    // way."  It is NOT restored here.  `LayoutLabel.paintCoveredMark` fills it in `paintComponent`,
+    // beside the line and under it, which keeps one place that draws it and lets it survive an
+    // accessory highlight swapping the icon underneath - the hazard the icon-tinting version needed a
+    // paragraph to handle.  So the note above still stands, and this is what honouring it looks like.
 
     /**
      * Highlights an icon

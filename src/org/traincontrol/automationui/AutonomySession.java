@@ -5060,6 +5060,12 @@ public class AutonomySession
      * Adam asked it to mean in the same message: *"we need to draw a line ... to show that the train
      * is there."*
      *
+     * **What is unavailable is a different question, and it has its own answer**:
+     * `tilesBlockedByStandingTrains` below, which the diagram greys while autonomy is running.  The
+     * two were one method until 2026-09-08 and one mark until 2026-09-09, and separating them is what
+     * lets each be right - Adam: *"'train is here' should also mean 'track is blocked' ... it's the
+     * same as greying out edges, just in a different way."*
+     *
      * @param running the layout, which is what knows where the trains are
      * @return the squares to draw as covered, empty when nothing is
      */
@@ -5126,6 +5132,71 @@ public class AutonomySession
         for (Map.Entry<org.traincontrol.base.Locomotive, Set<TileKey>> train : reach.entrySet())
         {
             walkBackFrom(running, train.getKey(), train.getValue(), out);
+        }
+
+        return out;
+    }
+
+    /**
+     * The diagram tiles standing trains have BLOCKED, for greying out (Adam, 2026-09-09).
+     *
+     * *"'train is here' should also mean 'track is blocked' - that is the whole point.  it's the same
+     * as greying out edges, just in a different way."*  And, choosing how: *"can we just grey out the
+     * tiles just like blocked edges while autonomy is running?  That plus the line, drawn and
+     * refreshed carefully, should do the trick."*
+     *
+     * **The whole edge, which is what routing actually refuses.**  `routesCoveredByStandingTrains`
+     * walks back only as far as the train reaches, because it answers "where is the train"; this one
+     * answers "what may not be used", and the railway's answer to that is per EDGE - a train lying
+     * across any part of a segment makes the whole segment impassable.  Between the two marks the
+     * picture and the guard agree again, which they had not since the wash was removed.
+     *
+     * **Not restated, asked of the railway.**  `Layout.edgesCoveredByStandingTrains` decides which
+     * edges a train covers - one walk, three rulings - and this only translates that answer into the
+     * squares the diagram draws, through the same `pathBetween` the narrow answer uses.  Deriving it a
+     * second time from the reducer would be quicker and would be the mistake this codebase keeps
+     * making: two statements of one question that drift.
+     *
+     * **The endpoint squares are excluded**, which is `pathBetween`'s own rule and Adam's ruling about
+     * the covered set: *"edges, because the points are technically unoccupied"*.  A train standing at
+     * a sensor already shows as standing there, and greying the platform it is on would say the
+     * platform is blocked by something else.
+     *
+     * WHILE AUTONOMY IS RUNNING is not decided here.  This says what is blocked; whether that is worth
+     * drawing is a question about the window's state, and `TrainControlUI.refreshCoveredTrack` is
+     * where it is asked.
+     *
+     * @param running the layout, which is what knows where the trains are
+     * @return the squares to grey, empty when nothing is blocked
+     */
+    public Set<TileKey> tilesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (running == null || reducer == null || getStationIndex() == null) return out;
+
+        for (org.traincontrol.automation.Edge edge
+            : running.edgesCoveredByStandingTrains().keySet())
+        {
+            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
+
+            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
+            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
+
+            if (from == null || to == null) continue;
+
+            List<GraphReducer.TileStep> between = pathBetween(from, to);
+
+            // Null where the reduction knows of no edge joining the two squares - a portal hop, or a
+            // diagram edited under a covered set computed before it.  The railway still refuses that
+            // track; what cannot be said is which squares to draw, and a wash in the wrong place is
+            // worse than none.
+            if (between == null) continue;
+
+            for (GraphReducer.TileStep step : between)
+            {
+                if (step.getTile() != null) out.add(step.getTile());
+            }
         }
 
         return out;
