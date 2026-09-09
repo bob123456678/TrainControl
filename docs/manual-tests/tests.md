@@ -15662,7 +15662,7 @@ Adam met it as a regression the same evening; the entry carries what replaced it
 
 ### MT-276 - 2026-09-07 - Control+K draws the grid and the numbers together
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-179 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15829,7 +15829,7 @@ broke.
 
 ### MT-282 - 2026-09-07 - Home Locs draws nothing where no home is assigned
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-061 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15955,7 +15955,7 @@ The arrow sits in the lower-right corner of the tile, clear of the track rather 
 
 ### MT-288 - 2026-09-07 - The track-length box is ready to type in
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-176 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15967,6 +15967,26 @@ The arrow sits in the lower-right corner of the tile, clear of the track rather 
 **Expected**
 
 The number is already selected, so typing replaces it without clicking or selecting first.
+
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+Works. But we need a keyboard shortcut to set the length- how about control+T?
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 21:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-09.**
+
+Closing this on your own verdict - you ran it and it works, and it has been sitting in the
+queue you have already emptied.
+
+**THE FOLLOW-UP IN THE SAME BREATH IS NOT FILED ANYWHERE**, so it is written down here rather than
+lost with the entry: *"we need a keyboard shortcut to set the length - how about control+T?"*  Nothing
+in issues.md asks for it.
+
+And Control+T is taken. In the track diagram editor it edits a square's TEXT - `formKeyPressed` sends
+it to `editText(getLastHoveredLabel())`. So the shortcut is a real request with a real collision, and
+which key it should be is yours to say. Control+G already draws the lengths, which makes it the
+natural neighbour and also unavailable.
 
 ---
 
@@ -15991,13 +16011,19 @@ The recorded facing is listed and ticked, alongside the ones the square can hold
 every choice blank, which reads as "this train has no facing" when in fact it has one the square
 cannot hold.
 
+**Adam, 2026-09-08 (triage).** Could not run this.
+
+I don't know how to reproduce this, things seem to work now.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 21:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-290"></a>
 
 ### MT-290 - 2026-09-07 - A route with auto-fire unchecked and a blank s88 saves
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-178 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16073,7 +16099,7 @@ not.
 
 ### MT-293 - 2026-09-07 - Control+L moves the caption dropdown with it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** RGD-C3 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -16097,6 +16123,27 @@ Control+L still reaches it, so it used to empty the diagram under a control stil
 This works.  At the time of testing, TopMainR2 still shows two labels, but this is still pending being worked.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+Works, but we need a tooltip in the right-click menu in the autonomy editor showing that control+S is rename.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-09.**
+
+Closing this on your own verdict - you ran it twice and it works both times.
+
+**TWO FOLLOW-UPS FROM THOSE RUNS, NEITHER FILED**, written down here so they do not close with the
+entry:
+
+- *"At the time of testing, TopMainR2 still shows two labels, but this is still pending being
+  worked."*
+- *"we need a tooltip in the right-click menu in the autonomy editor showing that control+S is
+  rename."*
+
+Neither appears in issues.md. The second is small and exact; the first needs to be checked against the
+label work of 2026-09-08 before it is filed, because it may already be gone.
 
 ---
 
@@ -16148,7 +16195,7 @@ greyed entry described above.
 
 ### MT-295 - 2026-09-07 - The dash marks every station autonomy will not choose
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** MON-B1 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -16248,7 +16295,7 @@ Your change survives. The import fills what is missing; it does not replace what
 
 ### MT-299 - 2026-09-07 - A home on a split square is still there next start
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** DAY-B3 (split from MT-245)
 
 **Written:** 2026-09-07
@@ -16319,7 +16366,7 @@ planner does not consider track blocked by a train's own length).
 
 ### MT-301 - 2026-09-07 - One platform, one home
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** DAY-B3 (split from MT-245)
 
 **Written:** 2026-09-07
@@ -16343,7 +16390,7 @@ The first gives it up. Both homed on one piece of track is a state nothing could
 
 ### MT-302 - 2026-09-07 - A non-reversible train and an all-turning platform - what happens now
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** DAY-B3 (split from MT-245)
 
 **Written:** 2026-09-07
@@ -16377,7 +16424,7 @@ still be refused.
 
 ### MT-303 - 2026-09-07 - Signals stay where you put them
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-166 (split from MT-246)
 
 **Written:** 2026-09-07
@@ -16435,7 +16482,7 @@ that was `mustBackIn`, removed on 2026-09-04 when Return Home became manual oper
 
 ### MT-305 - 2026-09-07 - The reversal-length notices: a useful prompt, or noise
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FX2-3, TCX-B2 (split from MT-248)
 
 **Written:** 2026-09-07
@@ -16476,7 +16523,7 @@ what you see rather than checking it against the twenty.
 
 ### MT-306 - 2026-09-07 - Setting a length clears its notice
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FX2-3 (split from MT-248)
 
 **Written:** 2026-09-07
@@ -16499,7 +16546,7 @@ That notice goes, and no other changes.
 
 ### MT-307 - 2026-09-07 - A train too long for a berth is refused
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** TCX-B2, SVN-B1 (split from MT-248)
 
 **Written:** 2026-09-07
@@ -16539,7 +16586,7 @@ the refusal you actually see on screen, which no test looks at.
 
 ### MT-308 - 2026-09-07 - Homing a train that is already standing on a reversing point
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** D24-B1 (split from MT-250)
 
 **Written:** 2026-09-07
@@ -16561,6 +16608,16 @@ and the one that said no was the one used to prove impossibility.
 works, but make sure direction commands are correctly emitted to match the direction of the train
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-09.**
+
+Closing this on your own verdict - it plans and it goes, which is what this entry asks.
+
+**THE FOLLOW-UP IS NOT FILED HERE, BUT IT IS TRACKED**: *"make sure direction commands are correctly
+emitted to match the direction of the train."*  That is OB-189 and its follow-up OB-190 - the reversal
+command was measured firing on every answered journey, and OB-190 is open on the GRAPH half, whether
+the diagram shows the new facing after a hand-driven reversal. So it is not lost, but it is not
+answered here either: confirm it there rather than by re-running this.
 
 ---
 
@@ -16609,7 +16666,7 @@ Both halves. (1) The wash is replaced by an orange line along the road the train
 
 ### MT-310 - 2026-09-07 - Test Connection has no successor that works without a train
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** RG3, DY3 (split from MT-257, item 5)
 
 **Written:** 2026-09-07
@@ -16625,13 +16682,19 @@ You asked: *"why can't it keep working without a train, between stations?"*
 from here to..." on the autonomy editor, answering for an empty railway, is the obvious shape - but it
 is your control and the wording matters more than the mechanism.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+We already have both, it seems: test a path, and why not moving.  Nothing to do here.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-311"></a>
 
 ### MT-311 - 2026-09-07 - Bulk Tools clears placements and keeps the homes
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** MT-257 item 1 (split from MT-258)
 
 **Written:** 2026-09-07
@@ -16648,6 +16711,28 @@ is your control and the wording matters more than the mechanism.
 Every train comes off the setup and the home assignments stay. Each item carries its own count and
 greys itself when that count is zero. Both confirm first, and neither writes to disk - Cancel puts
 everything back.
+
+**Adam, 2026-09-08 (triage).** Works, with notes.
+
+It works, but bug: clearning locomotives in the autonomy editor cannot be undone by a cancel.  Make this clear in the popup.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-09.**
+
+Closing this on your own verdict - it works, and the counts and the greying are what this
+entry asks about.
+
+**THE BUG YOU FOUND ALONGSIDE IT IS NOT FILED ANYWHERE**, and it is a bug rather than a polish item, so
+it is written down here rather than lost with the entry: *"clearing locomotives in the autonomy editor
+cannot be undone by a cancel. Make this clear in the popup."*
+
+Worth noting what it contradicts. This entry's own expectation says *"neither writes to disk - Cancel
+puts everything back"*, and OB-183 then changed which of the two wins where they disagree - Adam,
+2026-09-08: *"Where a train IS is a fact, and where the file thinks it is is a record"* - so placements
+are now carried ACROSS a rebuild rather than restored from the setup. That is very likely why Cancel no
+longer puts the cleared locomotives back. Whether the answer is the warning you asked for or a real
+undo is a decision, not a defect report.
 
 ---
 
@@ -16670,6 +16755,12 @@ everything back.
 The summary ends with a line saying how many things were deliberately not imported, and the log names
 each with a count and a reason. On your file that is 69 connections with accessory commands, 30 with a
 length, a 36-entry timetable, and the route activations.
+
+**Adam, 2026-09-08 (triage).** Could not run this.
+
+Make a test case for this- no need for a manual test.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16705,13 +16796,21 @@ it works on any tile in the autonomy editor, not just sensors. fix that.  correc
 
 Control+S asked whether the tile was null and nothing else, so it named plain track. The right-click menu's own question - is this a Point the reducer knows - is now `AutonomySession.canBeNamed` and both doors ask it. Commit `8f277e8e`. **To re-test:** Control+S over a sensor square still names it; over plain track it does nothing.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 21:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-314"></a>
 
 ### MT-314 - 2026-09-07 - Should a square's settings be copyable to another square
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** R28-C2 (split from MT-261)
 
 **Written:** 2026-09-07
@@ -16733,13 +16832,35 @@ this is no longer necessary due to how autonomy is constructed.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+why is this MT still open?  close it, and make sure we aren't opening items that introduce unnecessary bloat.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-09.**
+
+Closed on your ruling, and marked **superseded** rather than left open: *"why is this MT still
+open?  close it, and make sure we aren't opening items that introduce unnecessary bloat."*
+
+Its subject is gone rather than done, which is what that disposition is for. The entry asked whether to
+add "copy these settings to another square" to the autonomy editor's right-click menu, and your own
+first verdict on it answers it: *"this is no longer necessary due to how autonomy is constructed."*
+Most of what 2.8.1's "Copy Outgoing Edge..." duplicated is derived from the diagram now, so there is no
+feature here to build and nothing to test.
+
+Taking the second half seriously too: this was a DECISION filed as a test, which is the shape MT-094
+was retired for - a feature nobody had designed yet, sitting in the tests ledger indistinguishable from
+a regression check. The README already says a decision belongs in the receipt table with a State, not
+here.
+
 ---
 
 <a id="mt-315"></a>
 
 ### MT-315 - 2026-09-07 - Where the home assignment should be drawn
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** R28-C3 (split from MT-261)
 
 **Written:** 2026-09-07
@@ -16760,13 +16881,17 @@ draw on the designated label, or on the station if no label is set.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-316"></a>
 
 ### MT-316 - 2026-09-07 - Which keys for the s88 address and the home locomotive
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** R28-C5 (split from MT-261)
 
 **Written:** 2026-09-07
@@ -16785,6 +16910,10 @@ your fingers.
 this is already implemented as control+H and
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16855,7 +16984,7 @@ link shut, correctly.*
 
 ### MT-319 - 2026-09-07 - A column that is cut, undone and pasted back keeps its setup
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** SVN-B11 (split from MT-265)
 
 **Written:** 2026-09-07
@@ -16885,7 +17014,7 @@ two separate fixes.
 
 ### MT-320 - 2026-09-07 - A route condition with a bracket that is not at the start
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** IPR-B2 (split from MT-265)
 
 **Written:** 2026-09-07
@@ -16910,13 +17039,23 @@ i have no such route- these can no longer be opened, anyway.  make sure such exa
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-09.**
+
+Closing this on your own verdict - the entry says in as many words that if you have no such
+route, it is done, and you have none.
+
+**THE SENTENCE AFTER IT IS NOT FILED**: *"i have no such route - these can no longer be opened, anyway.
+make sure such examples can be properly represented."*  Nothing in issues.md asks for it. It is a
+different question from the one this entry closed: that one was whether the editor MISREADS such a
+condition, and this one is whether it can express it at all.
+
 ---
 
 <a id="mt-321"></a>
 
 ### MT-321 - 2026-09-07 - Cropping a large photograph at full zoom-out
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** IPR-B4 (split from MT-265)
 
 **Written:** 2026-09-07
@@ -16940,7 +17079,7 @@ The box follows the pointer and the crop lands where the box was.
 
 ### MT-322 - 2026-09-07 - The axis numbers survive switching between the editors
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-172 (split from MT-268)
 
 **Written:** 2026-09-07
@@ -17167,7 +17306,7 @@ already cleared it.
 
 ### MT-329 - 2026-09-08 - The shading clears from where a train used to be
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-180
 
 **Written:** 2026-09-08
@@ -17299,7 +17438,7 @@ What to run instead: [MT-338](#mt-338).
 
 ### MT-332 - 2026-09-08 - The arrival prompt names the sides the track really has
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-182
 
 **Written:** 2026-09-08
@@ -17390,13 +17529,17 @@ Filed from this test: OB-188 (bug - use current vs use active buttons).  They ar
 
 The whole diagram redrew because the light redraw door added for OB-185 was wired to ONE caller, the One-Way tool. The four ordinary ways to change a direction - including left-clicking track, the gesture you reported - still went through the door that rebuilds every label. Measured: 384 of 384 tiles destroyed and rebuilt for one arrow. Commit `26375f83`. **To re-test:** change a pathing arrow and watch for the flicker.
 
+**Adam, 2026-09-08 (triage).** Works.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 21:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-335"></a>
 
 ### MT-335 - 2026-09-08 - Return Home will not plan through track a train is lying across
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-184
 
 **Written:** 2026-09-08
@@ -17422,6 +17565,52 @@ because of a tail, that is this limit and it is worth reporting.
 worked, 2-8-4 was moved away from its home at bottommainb so that en57-203 could go to its home at bottommainc.  however, the app froze at that point.  2-8-4 was at rampdown.  I ran it again, and that time it did not freeze.  I had no logs, unfortunately.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-08 (triage).** Does not work.
+
+freeze reproduced with current state, see OB-192.
+
+*Run against commit 0016fc18.*
+
+**Claude, 2026-09-08.**
+
+OB-192 is fixed in two commits, and this entry is where you reported it twice - "the app froze at
+that point" on 08 Sep, then "freeze reproduced with current state, see OB-192". So this is the entry
+to re-run, and the freeze is what to watch for rather than the planning rule it was filed for.
+
+**What it was.** The event thread took the window's monitor and then queued for the RAILWAY's.
+`Layout.edgesCoveredByStandingTrains` and `Layout.getHomeStations` are both `synchronized` on the
+`Layout`, and a dispatch holds that same monitor for the whole of `configureAndLockPath` - one sleep
+per accessory of the path. Meanwhile a driving thread inside that monitor commands an accessory, and
+`MarklinAccessory.setSwitched` calls `repaintSwitch`, which is `synchronized` on the window. AB-BA,
+unrecoverable, with the trains already rolling - which is exactly what you saw: things running in the
+background and nothing repainting.
+
+**e4f8f577** moved the covered and blocked marks onto a worker. **49a3aee4** did the same for the
+other three doors, all on the Return Home path this entry runs: the button refresh (which fires on
+every arrival, departure and placement), the diagram's right-click "Return Locomotives Home" item, and
+the Return Home click handler. Their stack was
+`refreshReturnHomeButton -> triageReturnToHome -> HomeStaging.snapshot -> getHomeStations`, measured
+with the event thread reported BLOCKED at that last frame.
+
+Note the two runs in your own notes above - one froze, one did not. That is what a lock race looks
+like from outside, and it is why "I ran it again and it was fine" is not evidence either way here.
+
+**What to look at when you re-run this.** Both halves, because only the second is new:
+
+1. The planning rule this entry was filed for - a plan through track a tail lies across is not
+   offered.
+2. The interface stays alive for the whole run. Watch the diagram repaint while trains move, and press
+   something while a train is between stations. Also right-click the diagram DURING a run and open the
+   menu: that door froze too, and it is the one that had no test at all.
+
+Also worth one look: the Return Home button now greys and un-greys a beat after a train arrives rather
+than in the same instant, because the answer is worked out on a worker. That is deliberate. What would
+be wrong is it settling on the wrong state and staying there.
+
+Four tests hold it: testTheDiagramRefreshDoesNotWaitOnTheRailway measures each door with the railway's
+monitor held by a helper, and testNothingOnTheEventThreadAsksWhetherAnythingIsAwayFromHome refuses a
+new call site in the source. Both were seen red first.
 
 ---
 
@@ -17530,13 +17719,19 @@ editing placements in the autonomy editor doesn't seem to work at all.  and loco
 
 Both halves. (1) Placing from the editor did nothing because the editor writes the placement into the setup, and closing the editor put the running layout's older placements back over it - commit `1728986e`, corrected again in `74015c16` after two reviewers found the first fix let a STALE setup win at the viewer's right-click door. (2) A station captioned on its own square and on an offset one wrote its home twice; a self-caption now gives way - commit `05c7f48e`. **To re-test:** place a locomotive from the autonomy editor and confirm it stays; check a station with an offset label shows its home once.
 
+**Adam, 2026-09-08 (triage).** Does not work.
+
+Maybe not the bug I thought it was- but DRG 06 001 is refused to be placed at bottommaina in the autonomy editor.  if this is because of the track length, it needs to be said in a popup waring, along with any other placement failures.
+
+*Run against commit 22f3d302, build\classes, compiled 08 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-338"></a>
 
 ### MT-338 - 2026-09-08 - The station label and the facing menu say the same thing
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-181
 
 **Written:** 2026-09-08

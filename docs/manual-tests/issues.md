@@ -615,6 +615,42 @@ Both manual doors now refresh when the journey returns. This needs confirming on
 
 ALSO STILL OPEN, and Adam's call rather than a defect: a journey that passes a reversing square gets a compulsory turn there, which is invisible to the operator and flips the train once before the answered turn at the destination flips it again. Measured 2026-09-08: keep-direction ends backward, reverse ends forward. So the answer is honoured but reads as doing nothing when the net is nil. testAReversalCommandIsEmitted guards that the two answers differ.
 
+### FR-064 - 2026-09-08 - routes when power is off
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 10:19  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when the power is off, replace the route play icon with a wrench icon to edit it.  restore play icon and run behavior on click when the power comes on.
+
+### FR-065 - 2026-09-08 - escape closes autonomy/track editor
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 10:22  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 08:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+escape closes autonomy/track editor - same as closing via button, with warning shown as needed
+
+### OB-191 - 2026-09-08 - why not moving is blank
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 18:22  
+**Build:** commit 22f3d302, build\classes, compiled 08 Sep 18:14 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when i click on DRG 06 001, "why not moving" in the autonomy editor correctly paints the paths, but it does not show the list of reasons in the top banner- the banner expands, but I see no text.
+
+### OB-192 - 2026-09-08 - critical: UI freeze in autonomy
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-08 22:05  
+**Build:** commit 0016fc18
+
+starting autonomous operation from the current track state, via the netbeans compiled jar, makes the UI unresponsive.  Trains still run, but nothing is repainted, and controls are stuck.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
