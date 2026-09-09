@@ -38,6 +38,18 @@ once and corrected on 2026-09-06: `isAutoDestination` appears nowhere in `HomeSt
 earlier ruling stands — *"Return Home still fills it; only full autonomy leaves it alone."* The Path
 Type control in the editor says Manual for this reason.
 
+**Occupancy restrictions are autonomy's alone** (Adam, 2026-09-09). A station can be marked
+unavailable while some other named square has a train standing on it. **Autonomy enforces it; manual
+and Return Home do not.** Adam's ruling, asked which tier should: *"enforce only in full autonomy.
+with the length checks, that is our primary anti collision mechanism, whereas the point exclusion is
+for modifying pathing prioritization."* So it is a tool for shaping what autonomy picks, not a guard
+against two trains meeting — that is the length rules in §5, which every tier obeys.
+
+**"Full autonomy" is narrower than "autonomy is running."** Executing a timetable sets the same
+running flag, and a Return Home run *is* a timetable, so a rule fenced behind that flag applied to
+Return Home as well — which is how the planner and the railway came to disagree about this one. The
+fence asks `Layout.isFullAutonomyRunning` now: running, with no timetable driving it.
+
 **One difference remains between Return Home and a manual send**, and it is deliberate (confirmed
 2026-09-07): Return Home refuses to start a train standing on an **inactive** square, where a manual
 send allows it. The exemption exists for a person who has looked at the railway and decided to move
@@ -530,6 +542,9 @@ they are what this section reasons from.
 - Return Home stages every locomotive that has a home, as one plan.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
 - It refuses an inactive **start** (see §1) and obeys every length rule in §5.
+- It does **not** read the occupancy restrictions of §1 — neither when planning, nor when the run
+  executes. A plan may therefore park a train at a station some other occupied square holds back, and
+  the railway carries it out.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
 
 ---

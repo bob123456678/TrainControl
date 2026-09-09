@@ -1716,6 +1716,28 @@ public class Layout
     {
         return this.running;
     }
+
+    /**
+     * Whether FULL autonomy is running: the railway choosing its own destinations, with nobody having
+     * said where a train should go.
+     *
+     * **Not the same question as `isAutoRunning`, and the difference is a tier** (Adam, 2026-09-09).
+     * `executeTimetableInternal` sets `running` as well, so every rule fenced behind `isAutoRunning`
+     * applied to a timetable too - including the Return Home staging run, which behaviour.md 1 puts
+     * with MANUAL on where a train may be sent. `getPossiblePaths` has said so in a comment since the
+     * reversing-point exclusion was moved out of `isPathClear`: an `isAutoRunning()` fence "would also
+     * refuse the return home staging run, which is precisely what is meant to fill these tracks".
+     *
+     * A timetable is a route somebody chose - by hand, or by setting the homes the planner staged them
+     * to. What this is for is the rule that only makes sense against a railway picking for itself,
+     * which today is the FR-001 occupancy restriction in `isPathClear`.
+     *
+     * @return true while autonomy is dispatching and no timetable is
+     */
+    public boolean isFullAutonomyRunning()
+    {
+        return this.running && !this.timetableExecuting;
+    }
     
     /**
      * Stops locomotives gracefully (i.e., at their next station for those that are running)
@@ -2571,8 +2593,16 @@ public class Layout
         // so neither hazard applies - nothing here can hold up a route that was not going to that
         // station anyway.
         //
-        // Behind isAutoRunning, like the endpoint rules above it: this shapes what AUTONOMY chooses,
-        // and a person dispatching by hand is looking at the railway and has said what they want.
+        // BEHIND FULL AUTONOMY, which is narrower than the endpoint rules above it (Adam,
+        // 2026-09-09).  This shapes what AUTONOMY chooses; a person dispatching by hand is looking at
+        // the railway and has said what they want, and so has a person who loaded a timetable or asked
+        // for Return Home.
+        //
+        // `isAutoRunning` was the wrong question, because `executeTimetableInternal` sets `running`:
+        // a staging run was refused the very arrivals its own planner had checked for, which is OB-073
+        // arriving from the other end.  Adam's ruling is that this restriction is "for modifying
+        // pathing prioritization" while the length checks are "our primary anti collision mechanism" -
+        // so it belongs to the tier that does its own choosing, and to no other.
         //
         // The whole BLOCK, not just the named Point.  A square emitted as several copies is one piece
         // of track, so a train on the eastbound copy of the watched point is standing on it, and asking
@@ -2581,7 +2611,7 @@ public class Layout
         // The points themselves, so there is nothing to resolve here and nothing that can fail to.
         // A restriction naming a point that does not exist is dropped when the file is read, which is
         // the one place a name is still involved.
-        if (this.isAutoRunning())
+        if (this.isFullAutonomyRunning())
         {
             Point destination = path.get(path.size() - 1).getEnd();
 
@@ -4702,7 +4732,9 @@ public class Layout
                 //
                 // Asking blockingOccupantOf is not a second copy of the rule. It IS the rule; the
                 // runtime check above calls the same method.
-                Point held = this.isAutoRunning() ? blockingOccupantOf(end, loc) : null;
+                // The same fence isPathClear applies, or this window would name a watched square as the
+                // reason for a refusal that tier never made (2026-09-09).
+                Point held = this.isFullAutonomyRunning() ? blockingOccupantOf(end, loc) : null;
 
                 if (held != null)
                 {

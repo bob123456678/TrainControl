@@ -598,27 +598,21 @@ public class testHomeStaging
      * Replays a plan against the model, checking the invariant that makes it a plan at all: every move
      * must find its destination free at the moment it runs.
      *
-     * "Free" means two things, and it used to check only the first (FSR-C1). `moveLocomotive` PLACES a
-     * locomotive - it does not consult `getBlockedBy` and it does not refuse - so replaying through it
-     * cannot notice a move into a station FR-001 is holding back, which is exactly the fault OB-073 was
-     * about. Under a mutation that reintroduced OB-073, the replay ran clean and the failure came from
-     * a different assertion entirely, while four separate comments credited this method with catching
-     * it.
+     * "Free" means the station holds nobody else at the moment the move runs.
      *
-     * So the FR-001 condition is asserted here, against the state at the moment the move runs, the same
-     * question `isPathClear` asks of a path's destination.
+     * **It used to mean the FR-001 occupancy restriction as well, and no longer does (2026-09-09).**
+     * That assertion was added for OB-073: `moveLocomotive` PLACES a locomotive rather than refusing,
+     * so a replay could not notice a move into a station a restriction was holding back, and the
+     * railway then refused the leg the planner had offered.
      *
-     * **It asks it by calling the rule, not by restating it (DR-B2).** The hand-written version here
-     * was the third and weakest of three copies: it asked `getCurrentLocomotive` rather than the block,
-     * so a train on another copy of the watched square was invisible to the oracle grading the two
-     * production copies; and it had no exemption for the DEPARTING train, so a legal plan whose move
-     * *is* the train leaving the watched square would have failed the test. Both production copies
-     * exempt it - Adam: "The condition should not apply to trains leaving, only departing" - so the
-     * oracle was forbidding an arrival the railway allows.
+     * Adam's ruling took the rule off both of the tiers this oracle grades: the planner does not apply
+     * it (see `HomeStaging.firstClearRoute`) and `isPathClear` fences it behind FULL autonomy, which a
+     * staging run is not. So an arrival at a held-back station is now a legal move, and asserting
+     * against it here would fail every correct plan on a layout that uses the setting - the oracle
+     * forbidding what the railway allows, which is the fault it was itself corrected for once before.
      *
-     * `Point.heldBackBy(end, loc)` is the live-block variant, which is exactly what `isPathClear` asks.
-     * Being the same call is the point: an oracle that restates the rule can only ever grade the copies
-     * against a fourth opinion.
+     * `testAStagingRunIsNotRefusedByTheOccupancyRestriction` is what holds the other half now: it asks
+     * `isPathClear` itself, with the flags a staging run sets, about the very path a plan produced.
      */
     private static void applyPlan(Layout layout, HomeStaging.Plan plan)
     {
@@ -628,16 +622,6 @@ public class testHomeStaging
 
             assertNull(end.getCurrentLocomotive(),
                 "move \"" + move + "\" sends a locomotive into an occupied station");
-
-            org.traincontrol.automation.Point watched = org.traincontrol.automation.Point.heldBackBy(
-                end, move.getLocomotive());
-
-            assertNull(watched,
-                "move \"" + move + "\" sends a locomotive into a station that is held back while "
-                + (watched == null ? "" : watched.getName()) + " is occupied, and it is occupied by "
-                + (watched == null ? "" : watched.getBlockLocomotive())
-                + ". isPathClear refuses that arrival, so the run would retry until it gave up and "
-                + "stop with the fleet half-staged - which is OB-073, exactly");
 
             assertTrue(
                 layout.moveLocomotive(move.getLocomotive().getName(), move.getEnd().getName(), false),
@@ -2282,28 +2266,26 @@ public class testHomeStaging
     }
 
     /**
-     * Two homes that hold each other back are impossible, and the SCAN says so (OB-085).
+     * Two homes that hold each other back are staged like any other pair (Adam, 2026-09-09).
      *
-     * HS C is held back while HS D is occupied; HS D is held back while HS C is occupied; and the two
-     * are the homes of the two locomotives on the layout. In any finished arrangement each train
-     * stands on its own home, and therefore on the square that closes the other station - so whichever
-     * of the two arrives last finds its station held back by a train that is already parked. No
-     * ordering works, and no occupancy has to be read to know it.
+     * **This test asserted the opposite until the tier ruling, and the inversion is the record of it.**
+     * OB-085 proved the arrangement impossible: HS C is held back while HS D is occupied, HS D while
+     * HS C is, and each is the other occupant's home - so whichever arrives last finds its station
+     * closed by a train that is already parked. The proof was sound, and it rested entirely on the
+     * planner enforcing FR-001.
      *
-     * This is the counterexample to the sentence that stood in `plan()` for a day: "no
-     * state-independent statement can be made about an FR-001 blocker". One can, and this is it.
+     * It does not, since Adam's ruling that the restriction is "for modifying pathing prioritization"
+     * while the length checks are "our primary anti collision mechanism". Neither the planner nor a
+     * staging run reads it, so nothing about this layout is impossible and the two trains park in the
+     * obvious two moves. A verdict of IMPOSSIBLE here would now be a false claim about a railway that
+     * works, which is the failure the OB-085 scan was repeatedly prone to and has now been removed
+     * for.
      *
-     * **The assertion that the SCAN rather than the search answers** is the outcome itself, and that
-     * is the whole point of the ticket. IMPOSSIBLE is a proof - it names the locomotives - while
-     * NO_PLAN_FOUND says "no arrangement found, it may still be possible". Without the scan the search
-     * exhausts its budget and answers the second, so the two are distinguishable by more than timing.
-     *
-     * MUTATION-CHECKED: deleting the cycle scan from `plan()` fails this test and no other, with
-     * exactly the message the ticket predicted - "Got: NO_PLAN_FOUND expected [IMPOSSIBLE]". So the
-     * scan is what answers here, not the search reaching the same conclusion by a slower road.
+     * The plan is REPLAYED rather than merely inspected, because "the railway can do this" is the
+     * whole assertion.
      */
     @Test
-    public void testTwoHomesThatHoldEachOtherBackAreImpossible() throws Exception
+    public void testTwoHomesThatHoldEachOtherBackAreStagedAnyway() throws Exception
     {
         Layout layout = load(ring(LOC_A, LOC_B, null));
 
@@ -2314,9 +2296,9 @@ public class testHomeStaging
         layout.getPoint("HS D").setBlockedBy(Arrays.asList(layout.getPoint("HS C")));
 
         assertEquals(layout.getPoint("HS C").getBlockedBy().size(), 1,
-            "the fixture did not take: with nothing watching HS C there is no cycle to find");
+            "the fixture did not take: with nothing watching HS C this tests nothing at all");
         assertEquals(layout.getPoint("HS D").getBlockedBy().size(), 1,
-            "the fixture did not take: with nothing watching HS D there is no cycle to find");
+            "the fixture did not take: with nothing watching HS D this tests nothing at all");
 
         assertNotEquals(layout.getPoint("HS C"), locationOfLoc(layout, LOC_A),
             "precondition: a train already on its home never arrives, and nothing would be checked");
@@ -2325,13 +2307,17 @@ public class testHomeStaging
 
         HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
-            "two homes each held back by the other is provable from the graph alone, so this should "
-            + "be a proof and not a budget running out.  Got: " + plan.getOutcome());
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "the mutual hold is an autonomy setting, and Return Home does not read it - so this is an "
+            + "ordinary two-move arrangement.  IMPOSSIBLE here means the OB-085 cycle scan has come "
+            + "back, and it would be proving something false.  Got: " + plan.getOutcome());
 
-        assertTrue(plan.getBlocked().contains(loc(LOC_A)) && plan.getBlocked().contains(loc(LOC_B)),
-            "an IMPOSSIBLE verdict names the locomotives that cannot be helped, and both of these are "
-            + "in the cycle.  Got: " + plan.getBlocked());
+        assertTrue(plan.getBlocked().isEmpty(),
+            "and nobody is named as beyond help.  Got: " + plan.getBlocked());
+
+        applyPlan(layout, plan);
+
+        assertEveryoneHome(layout);
     }
 
     /**
@@ -2349,13 +2335,15 @@ public class testHomeStaging
      * block. Built out of the wider one, this fixture came back IMPOSSIBLE with both locomotives
      * named, for an arrangement the railway performs in two moves.
      *
-     * The two tests already here could not see it: both build their restrictions out of direct Point
-     * references, so neither reaches `sameTrackAs` at all. The control that exists precisely to stop
-     * this over-claim was blind to the way it actually happened - which is the same lesson as the
-     * first two attempts, arriving a third time.
+     * The two tests already here could not see it: both built their restrictions out of direct Point
+     * references, so neither reached the widened relation at all. The control that existed precisely
+     * to stop this over-claim was blind to the way it actually happened - which is the same lesson as
+     * the first two attempts, arriving a third time.
      *
-     * MUTATION: putting `sameTrackAs` back in place of `blockCopiesOf` inside `watchesTrack` fails
-     * this test, with IMPOSSIBLE and both locomotives named.
+     * **The scan itself went on 2026-09-09**, with the ruling that Return Home does not read an
+     * occupancy restriction at all. This test stays as the line it drew: no verdict of IMPOSSIBLE may
+     * ever again be built out of one, and the fixture that caught the last attempt is the one to
+     * catch the next.
      */
     @Test
     public void testASharedSensorDoesNotMakeAnOrdinaryLayoutImpossible() throws Exception
@@ -2411,7 +2399,9 @@ public class testHomeStaging
      * is the part the operator reads: naming a locomotive that could get home perfectly well sends
      * them looking for a fault that is not there.
      *
-     * MUTATION: removing the `unreachable.contains(...)` guard from the cycle scan fails this test.
+     * **The cycle scan went on 2026-09-09** with the tier ruling, so what this now holds is the
+     * property rather than that scan's version of it: the blocked list names the locomotive that
+     * genuinely cannot get home, and nobody else. The `unreachable` scan it comes from is untouched.
      */
     @Test
     public void testACycleDoesNotNameATrainThatWasAlreadyStuck() throws Exception
@@ -2458,11 +2448,11 @@ public class testHomeStaging
      * could not tell the difference. A test for the cycle alone cannot tell a scan that proves cycles
      * from one that refuses any blockedBy list.
      *
-     * MUTATION-CHECKED: dropping either of the two `watchesTrack` tests from the scan - so that one
-     * direction is enough - fails this test, and also fails
-     * testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan, which was already here. Two tests
-     * for one over-claim is the right number: that one says the plan still executes, this one says the
-     * verdict is not a refusal, and a scan could break either without the other.
+     * **The scan went on 2026-09-09** and this outlives it deliberately, as the second of the pair
+     * that says an occupancy restriction may not produce a verdict of IMPOSSIBLE. The other is
+     * testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan, which says the plan still executes;
+     * this one says the verdict is not a refusal, and a scan coming back could break either without
+     * the other.
      */
     @Test
     public void testAOneWayHoldIsJustAnOrdering() throws Exception
@@ -3680,10 +3670,14 @@ public class testHomeStaging
      * a plan comes back, every move finds its destination free at the moment it runs, and everyone
      * ends up home.
      *
-     * "Free" had to be widened for that to be true (FSR-C1). `applyPlan` replays through
-     * `moveLocomotive`, which PLACES a locomotive rather than refusing and never reads `getBlockedBy` -
-     * so the replay could not see the very arrival OB-073 was about, and under the mutation it ran
-     * clean while a different assertion did the work. It asks the FR-001 question directly now.
+     * **And on 2026-09-09 the answer got shorter still.** Adam ruled the restriction belongs to full
+     * autonomy alone, so neither the planner nor a staging run reads it: the plan is one move, HS A
+     * straight to HS B, with LOC_B left standing on the watched square. What survives from OB-073 is
+     * the property this test is named for and the only one that ever mattered - a plan comes back, and
+     * every move in it is one the railway carries out.
+     *
+     * The move count is therefore no longer asserted. It said "something has to leave the watched
+     * square before A arrives", which was true of the rule and is not true of the railway.
      *
      * The SOP has the paragraph for what happened here: "When a root fix lands, expect tests of the
      * old bug to fail at their preconditions - that is confirmation, not regression."
@@ -3718,18 +3712,13 @@ public class testHomeStaging
             + "cannot: staging moves whatever is standing in the way (FBR-B2).  Got: "
             + plan.getOutcome());
 
-        // The replay FIRST, because it is the assertion this test exists for (FSR-C1).
-        //
-        // The move-count check below used to come before it, and under a mutation that reintroduced
-        // OB-073 that is the one that fired - on "a one-move plan cannot be right" rather than on the
-        // move being one the railway refuses. Both are true of that plan; only the second says what is
-        // wrong with it, and a test whose message names the wrong fault sends the next reader to the
-        // wrong place.
-        applyPlan(layout, plan);
+        // The restriction really is live while the plan is made, or this fixture says nothing about
+        // the tier it is here to pin.
+        assertEquals(Point.heldBackBy(layout.getPoint("HS B"), loc(LOC_A)), layout.getPoint("HS D"),
+            "precondition: HS B must be held back at plan time - the whole test is that Return Home "
+            + "goes there anyway and the railway lets it");
 
-        assertTrue(plan.getMoves().size() >= 2,
-            "a one-move plan cannot be right: something has to leave the watched square before A "
-            + "arrives, so the answer is at least two moves.  Got: " + plan.getMoves());
+        applyPlan(layout, plan);
 
         assertEveryoneHome(layout);
     }
@@ -4492,29 +4481,6 @@ public class testHomeStaging
     }
 
     /**
-     * The same line, but the watched square HS W shares its FEEDBACK with HS X - a different place.
-     *
-     * AutonomyBuilder is explicit that this happens: "a station, its approach guard and a reversing
-     * point can be three Points on one feedback - so the sensor cannot say which Points are one
-     * square."  HS W and HS X carry no block, because they are not copies of one another.
-     *
-     * @param locOnX a locomotive on the square that merely shares the sensor, or null for the control
-     * @return the graph JSON
-     */
-    private static String sensorSharedWithAnotherSquare(String locOnX)
-    {
-        return json("{'points': ["
-            + square("HS A", 0, null, true, LOC_A) + ","
-            + square("HS B", 1, null, true, null) + ","
-            + square("HS W", 2, null, false, null) + ","
-            + square("HS X", 2, null, false, locOnX)
-            + "],'edges': ["
-            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
-            + edge("HS W", "HS X") + "," + edge("HS X", "HS W")
-            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
-    }
-
-    /**
      * Two homes, a one-way hold, and an approach guard that shares a feedback with the other home.
      *
      * The counterexample against the OB-085 impossibility proof, built by a review and kept because
@@ -4623,23 +4589,20 @@ public class testHomeStaging
     /**
      * The parity audit is silent about a station FR-001 is holding back (DR-B1).
      *
-     * The fourth correct divergence, and the one OB-073 created without adding the exemption. The
-     * runtime's FR-001 clause is fenced behind isAutoRunning - it shapes what AUTONOMY chooses, and a
-     * person dispatching by hand is looking at the railway - while the planner's copy applies always,
-     * because staging executes with autonomy running. This audit runs from planReturnToHome with the
-     * layout at rest, so getPossiblePaths offers a held-back station and the planner refuses it, and
-     * the instrument that exists to find real mis-copies reported the rule working as a defect. On
-     * every layout using FR-001, in a debug channel that is only read when something else is already
-     * being chased.
+     * This used to be a DIVERGENCE the audit had to be taught to ignore, and an exemption stood in
+     * `auditAgainstRuntime` to do it: the runtime's copy of the rule is fenced behind autonomy and
+     * this audit runs at rest, while the planner's copy applied always, so on every layout using the
+     * setting the instrument accused the planner of a defect for applying the rule it was supposed to
+     * apply.
      *
-     * MUTATION-CHECKED. Deleting the FR-001 exemption from auditAgainstRuntime - the line reading
-     * `if (Point.heldBackBy(p, loc) != null) continue;` - fails this test and no other.
+     * Since 2026-09-09 the two agree because neither applies it - Adam's ruling that an occupancy
+     * restriction belongs to full autonomy alone - so the exemption went with the rule. That is the
+     * better shape of the same silence: an exemption is a hole in the one instrument that exists to
+     * find real divergence, and this one skipped every destination the RAILWAY would hold back.
      *
-     * That line asked `plannedOccupancy(this.start)` when it was written, which a later review showed
-     * was the planner’s own question on the planner’s own arguments: the exemption and the thing
-     * being audited cancelled exactly, so no planner mis-copy of FR-001 could ever produce a
-     * divergence. It asks the live-block variant now - what the RAILWAY would refuse - so the
-     * instrument can still see the planner disagreeing with it.
+     * The assertion is unchanged, and it is what stops either half coming back on its own: a count
+     * above zero here means the planner has started reading `getBlockedBy` again, or the runtime has
+     * started reading it at rest.
      */
     @Test
     public void testTheParityAuditIsSilentAboutAStationHeldBackByAnOccupiedSquare() throws Exception
@@ -4664,79 +4627,6 @@ public class testHomeStaging
         assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
             "a station held back by an occupied square is not a planner defect - the planner is "
             + "applying the rule it is supposed to apply, and the at-rest oracle simply is not");
-    }
-
-    /**
-     * The staging planner sees a train on another COPY of the watched square (DR-B2).
-     *
-     * FR-001 asks whether a watched square is occupied, and "the square" means the whole block: a
-     * square emitted as several Points is one piece of track, which is what `getBlockLocomotive` is
-     * for. The runtime asked the block. The planner had no block index at all and asked the shared
-     * SENSOR instead, which covers the same pairs on a builder-emitted layout - every copy of a square
-     * carries that square's s88 - and covers nothing whatever on a square that has no feedback.
-     *
-     * There the planner was the LOOSER half, which is the dangerous direction: it planned an arrival
-     * isPathClear then refuses, the run retries until it gives up, and it stops with the fleet
-     * half-staged. That is OB-073's own symptom arriving through a second door.
-     *
-     * The control is the same graph with the same locomotive standing somewhere else, so a green run
-     * proves the refusal comes from where LOC_B is and not from the fixture being unbuildable.
-     *
-     * MUTATION-CHECKED. Deleting the block term from `HomeStaging.sameTrackAs` - the whole
-     * `if (track.getBlock() != null)` clause, which is what the planner did before this fix - fails
-     * this test and no other: 1 failure in the 65 of this class.
-     */
-    @Test
-    public void testThePlannerSeesATrainOnAnotherCopyOfTheWatchedSquare() throws Exception
-    {
-        Layout layout = load(blockOfTwoWatching(LOC_B, null));
-
-        layout.getPoint("HS B").setBlockedBy(Arrays.asList(layout.getPoint("HS W1")));
-
-        assertEquals(layout.getPoint("HS B").getBlockedBy().size(), 1,
-            "the fixture did not take: with nothing watching HS B this tests nothing at all");
-
-        assertNull(layout.getPoint("HS W1").getS88(),
-            "precondition: the watched square must have NO sensor, or the planner's sensor rule "
-            + "covers the block by accident and this test proves nothing");
-
-        assertEquals(layout.getPoint("HS W1").getBlock(), layout.getPoint("HS W2").getBlock(),
-            "precondition: the two copies must be one block");
-
-        assertEquals(layout.getPoint("HS W2").getCurrentLocomotive(), loc(LOC_B),
-            "precondition: the train has to be on the copy the restriction does NOT name");
-
-        // The runtime's own answer, which is the standard the planner is being held to: HS B is held
-        // back, even though the Point that carries the name is empty.
-        assertEquals(Point.heldBackBy(layout.getPoint("HS B"), loc(LOC_A)), layout.getPoint("HS W1"),
-            "precondition: the RUNTIME refuses this arrival - getBlockLocomotive finds LOC_B on the "
-            + "other copy - so any plan that makes it is one the railway will not carry out");
-
-        assign(layout, LOC_A, "HS B");
-
-        HomeStaging.Plan plan = layout.planReturnToHome();
-
-        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "the planner offered a move the runtime refuses: nothing can leave block HSW - it is a "
-            + "siding of its own - so HS B is held back for the whole run.  Got: " + plan);
-
-        // The control: one locomotive moved, one graph, one answer changed.
-        Layout free = load(blockOfTwoWatching(null, LOC_B));
-
-        free.getPoint("HS B").setBlockedBy(Arrays.asList(free.getPoint("HS W1")));
-
-        assign(free, LOC_A, "HS B");
-
-        HomeStaging.Plan control = free.planReturnToHome();
-
-        assertEquals(control.getOutcome(), HomeStaging.Outcome.READY,
-            "the control must plan: with block HSW empty nothing holds HS B back at all, and a "
-            + "refusal here would mean the fixture, not the rule, is what the case above proved.  "
-            + "Got: " + control);
-
-        applyPlan(free, control);
-
-        assertEveryoneHome(free);
     }
 
     /**
@@ -4784,79 +4674,127 @@ public class testHomeStaging
     }
 
     /**
-     * The staging planner is deliberately the STRICTER half on a shared sensor, and this pins it.
+     * Return Home stages a train into a home that FR-001 is holding back (Adam, 2026-09-09).
      *
-     * The one divergence between the two production copies of FR-001 that is NOT being unified, and it
-     * is a decision about Adam's railway rather than a refactor. The runtime asks the block, which is
-     * the only thing that means "one square". The planner also asks the shared SENSOR, on canEnter's
-     * reasoning that two points on one feedback are one detection section - but AutonomyBuilder says
-     * outright that a sensor is not a square: "a station, its approach guard and a reversing point can
-     * be three Points on one feedback." On such a layout the planner refuses arrivals the runtime
-     * allows. That fails safe - a plan withheld, never a wrong movement - but its symptom is
-     * NO_PLAN_FOUND, which is the failure this class has been burned by before.
+     * The occupancy restriction shapes what AUTONOMY picks; it is not a collision guard. Adam, asked
+     * which tier should enforce it: *"enforce only in full autonomy. with the length checks, that is
+     * our primary anti collision mechanism, whereas the point exclusion is for modifying pathing
+     * prioritization."*
      *
-     * Both directions are asserted, so the divergence cannot be changed by accident either way: drop
-     * the sensor term from the planner and the outcome assertion fails; add it to `Point.heldBackBy`
-     * and the runtime assertion fails.
+     * `isPathClear` has always fenced its copy behind autonomy, so a hand-driven send ignores the
+     * restriction. The staging planner applied it unconditionally, which made Return Home a third
+     * answer to a question behaviour.md 1 says has two - and Return Home sits with Manual on where a
+     * train may be sent.
      *
-     * MUTATION-CHECKED. Deleting the sensor term from `HomeStaging.sameTrackAs` - the
-     * `if (track.getS88() != null)` clause - fails this test and no other: 1 failure in the 65 of this
-     * class.
+     * The fixture is the one the block-copy test used to use, and it is the strongest form of the
+     * case: nothing can leave block HSW - it is a siding of its own - so HS B is held back for the
+     * whole run, and no shunting can clear it. That matters, because the planner will happily move an
+     * occupant OFF a watched square and back again when it can, so a fixture whose watcher is
+     * escapable proves nothing about the rule.
+     *
+     * MUTATION-CHECKED: restoring the FR-001 term to `canRest(loc, at, state)` fails this test.
      */
     @Test
-    public void testTheStagingPlannerIsTheStricterHalfOnASharedSensor() throws Exception
+    public void testAHomeHeldBackByAnOccupiedSquareIsStagedAnyway() throws Exception
     {
-        Layout layout = load(sensorSharedWithAnotherSquare(LOC_B));
+        Layout layout = load(blockOfTwoWatching(LOC_B, null));
 
-        layout.getPoint("HS B").setBlockedBy(Arrays.asList(layout.getPoint("HS W")));
+        layout.getPoint("HS B").setBlockedBy(Arrays.asList(layout.getPoint("HS W1")));
 
         assertEquals(layout.getPoint("HS B").getBlockedBy().size(), 1,
             "the fixture did not take: with nothing watching HS B this tests nothing at all");
 
-        assertEquals(layout.getPoint("HS W").getS88(), layout.getPoint("HS X").getS88(),
-            "precondition: the two squares must report one feedback, or there is no divergence here");
+        assertEquals(layout.getPoint("HS W2").getCurrentLocomotive(), loc(LOC_B),
+            "precondition: somebody else must be standing on the watched block, and be stuck there");
 
-        assertNull(layout.getPoint("HS W").getBlock(),
-            "precondition: they must NOT be one block - two places sharing a sensor is exactly the "
-            + "case AutonomyBuilder says the sensor cannot decide");
-
-        // The runtime's answer.  HS W is empty, and the runtime looks no further than the block, so
-        // isPathClear would let LOC_A into HS B.
-        assertNull(Point.heldBackBy(layout.getPoint("HS B"), loc(LOC_A)),
-            "the runtime asks the block and nothing else, so it holds nothing back here - if this "
-            + "fails, the sensor term has been copied into the runtime rule, which changes which "
-            + "stations autonomy offers on the operator's railway");
+        assertEquals(Point.heldBackBy(layout.getPoint("HS B"), loc(LOC_A)), layout.getPoint("HS W1"),
+            "precondition: FR-001 really does hold HS B back here - that is the restriction whose "
+            + "tier is under test, and without it this fixture says nothing");
 
         assign(layout, LOC_A, "HS B");
 
         HomeStaging.Plan plan = layout.planReturnToHome();
 
-        // And the planner's, which is different on purpose.
-        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "the planner treats a sensor sibling as the same piece of track, so it refuses an arrival "
-            + "the runtime would allow.  If this fails, that term has been dropped - which is a "
-            + "legitimate change, but it widens what staging offers and is Adam's to make.  Got: "
-            + plan);
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "Return Home sits with Manual on where a train may be sent, so an occupancy restriction "
+            + "is not its business: the plan is one move, HS A to HS B.  Got: " + plan);
 
-        // The control: the same graph with nobody on the sensor sibling plans without trouble, so the
-        // refusal above is about where LOC_B stands and not about the shape of the fixture.
-        Layout free = load(sensorSharedWithAnotherSquare(null));
+        applyPlan(layout, plan);
 
-        free.getPoint("HS B").setBlockedBy(Arrays.asList(free.getPoint("HS W")));
-
-        assign(free, LOC_A, "HS B");
-
-        HomeStaging.Plan control = free.planReturnToHome();
-
-        assertEquals(control.getOutcome(), HomeStaging.Outcome.READY,
-            "the control must plan: with the shared sensor clear nothing holds HS B back.  Got: "
-            + control);
-
-        applyPlan(free, control);
-
-        assertEveryoneHome(free);
+        assertEveryoneHome(layout);
     }
 
+    /**
+     * And the railway carries that plan out, because a staging run is not full autonomy either.
+     *
+     * The other half of the same ruling, and the half that decides whether the first one is worth
+     * anything. `executeTimetableInternal` sets `running`, so every rule fenced behind
+     * `isAutoRunning()` fired during a Return Home run - which would leave the planner offering a move
+     * the railway then refuses, retries, and gives up on, with the fleet half-staged. That is OB-073,
+     * which is the exact failure the planner's copy of FR-001 was added to prevent.
+     *
+     * So the fence asks whether FULL autonomy is running - `running` with no timetable driving it. A
+     * timetable is the operator's own choice of path, whether they built it by hand or Return Home
+     * wrote it for them, and the same sentence is already written at `getPossiblePaths` about the
+     * reversing-point exclusion: an `isAutoRunning()` fence "would also refuse the return home staging
+     * run".
+     *
+     * The control is the same path and the same occupancy with the timetable flag down, so a failure
+     * here is about the fence rather than about the fixture being unroutable.
+     */
+    @Test
+    public void testAStagingRunIsNotRefusedByTheOccupancyRestriction() throws Exception
+    {
+        Layout layout = load(blockOfTwoWatching(LOC_B, null));
+
+        layout.getPoint("HS B").setBlockedBy(Arrays.asList(layout.getPoint("HS W1")));
+
+        assertEquals(Point.heldBackBy(layout.getPoint("HS B"), loc(LOC_A)), layout.getPoint("HS W1"),
+            "precondition: FR-001 holds HS B back, or there is nothing for the fence to decide");
+
+        assign(layout, LOC_A, "HS B");
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "precondition: there has to be a staged move to ask about.  Got: " + plan);
+
+        List<Edge> path = plan.getMoves().get(0).getPath();
+
+        assertNotNull(path, "precondition: the move must carry the path it would be run over");
+
+        // The two flags set the way executeTimetable sets them.  By reflection, like
+        // testAStagingRunIsNotCapturedIntoItsOwnTimetable above: runLocomotives dispatches trains, and
+        // what is under test is the flag rather than the dispatch.
+        Field running = Layout.class.getDeclaredField("running");
+        Field executing = Layout.class.getDeclaredField("timetableExecuting");
+
+        running.setAccessible(true);
+        executing.setAccessible(true);
+
+        try
+        {
+            running.setBoolean(layout, true);
+            executing.setBoolean(layout, true);
+
+            assertTrue(layout.isPathClear(path, loc(LOC_A), false),
+                "the railway refused the very move the planner staged - the run would retry until it "
+                + "gave up and stop with the fleet half-staged, which is OB-073 arriving through the "
+                + "tier ruling that removed the planner's guard against it");
+
+            // And full autonomy still refuses it, which is the behaviour the ruling deliberately keeps.
+            executing.setBoolean(layout, false);
+
+            assertFalse(layout.isPathClear(path, loc(LOC_A), false),
+                "full autonomy must go on enforcing the restriction: it is the tier the setting "
+                + "exists to shape, and it is the control that says the fence is what decides here");
+        }
+        finally
+        {
+            running.setBoolean(layout, false);
+            executing.setBoolean(layout, false);
+        }
+    }
 
     /**
      * A locomotive held on two points is reported, not planned for (SG-A3).
