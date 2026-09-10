@@ -307,10 +307,10 @@ public class testTheGreyAppearsAtIdleToo
             "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
             + "on rather than one merely blocked by it, and this test is asking about the wrong tile");
 
-        assertTrue(brightness(idleBlocked) < brightness(bareBlocked) - 2.0,
-            "the square " + blockedSquare + " is drawn no darker while a standing train blocks it ("
-            + brightness(idleBlocked) + ") than with nothing standing anywhere ("
-            + brightness(bareBlocked) + "), and NOTHING IS RUNNING.  The refusal is not fenced on a "
+        assertTrue(contrast(idleBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is drawn no fainter while a standing train blocks it ("
+            + contrast(idleBlocked) + ") than with nothing standing anywhere ("
+            + contrast(bareBlocked) + "), and NOTHING IS RUNNING.  The refusal is not fenced on a "
             + "running railway - `Layout.isPathClear` sweeps the covered edges in every tier - so a "
             + "manual send across this square is refused while the diagram paints it as free "
             + "(W7B-B1).  Adam: \"yes, this greyout should appear at idle\"");
@@ -324,11 +324,16 @@ public class testTheGreyAppearsAtIdleToo
     {
         int changed = differingPixels(idleBlocked, bareBlocked);
 
-        int all = TILE * TILE;
+        int drawn = drawnPixels(bareBlocked);
 
-        assertTrue(changed > all / 2,
-            "only " + changed + " of the square's " + all + " pixels change when it becomes blocked "
-            + "at idle, so the mark is a line along part of it rather than the tile being greyed");
+        assertTrue(drawn > 0,
+            "nothing at all is drawn on that square when it is free, so there is nothing for "
+            + "the fade to move and this claim would pass on a blank square");
+
+        assertTrue(changed >= drawn * 9 / 10,
+            "only " + changed + " of the " + drawn + " drawn pixels on the square change when it "
+            + "becomes blocked at idle, so the mark is a stroke across part of it rather than "
+            + "the tile itself");
     }
 
     /**
@@ -341,9 +346,9 @@ public class testTheGreyAppearsAtIdleToo
             "the train on " + coveredSquare + " cannot be seen at idle, so either it is not drawn at "
             + "all or the wash has been laid OVER the line rather than under it");
 
-        assertTrue(brightness(idleCovered) < brightness(bareCovered) - 2.0,
-            "the square the train stands on is drawn no darker at idle with the train standing ("
-            + brightness(idleCovered) + ") than with nothing standing (" + brightness(bareCovered)
+        assertTrue(contrast(idleCovered) < contrast(bareCovered) - 2,
+            "the square the train stands on is drawn no fainter at idle with the train standing ("
+            + contrast(idleCovered) + ") than with nothing standing (" + contrast(bareCovered)
             + "), so the square carrying the train is the one square that does not say it is blocked");
     }
 
@@ -740,6 +745,78 @@ public class testTheGreyAppearsAtIdleToo
         }
 
         return found;
+    }
+
+
+    /**
+     * How much light and shade the square holds - its own contrast, and nothing about the theme.
+     *
+     * The difference between the brightest and the darkest pixel on the tile.  A tile drawn at reduced
+     * alpha blends toward whatever is behind it, so this falls; whether the MEAN rises or falls depends
+     * on the panel's colour, which is exactly the thing a claim about the mark should not depend on.
+     * These claims said "darker" until MT-278 item 1 replaced the wash with a fade, and on a light
+     * panel a fade is brighter.
+     *
+     * @param image the painted tile
+     * @return the spread, 0 for a flat square
+     */
+    /**
+     * How many pixels of this tile carry anything but its own background.
+     *
+     * The background is the commonest colour on the square, which on a tile is the panel showing
+     * through around the track.  What is left is the drawing.
+     *
+     * Used to say what "the whole tile is marked" means for a FADE: a wash paints every pixel, and a
+     * fade moves only the pixels that were not already the background - so counting changed pixels
+     * against the square's area is the wash's claim, and counting them against the DRAWN pixels is
+     * the same claim about a fade.
+     *
+     * @param image the painted tile
+     * @return how many pixels are not the background colour
+     */
+    private static int drawnPixels(java.awt.image.BufferedImage image)
+    {
+        java.util.Map<Integer, Integer> seen = new java.util.HashMap<>();
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                seen.put(rgb, seen.containsKey(rgb) ? seen.get(rgb) + 1 : 1);
+            }
+        }
+
+        int background = 0;
+
+        for (java.util.Map.Entry<Integer, Integer> each : seen.entrySet())
+        {
+            if (each.getValue() > background) background = each.getValue();
+        }
+
+        return image.getWidth() * image.getHeight() - background;
+    }
+
+    private static int contrast(java.awt.image.BufferedImage image)
+    {
+        int darkest = 255;
+        int lightest = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                int shade = (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
+
+                darkest = Math.min(darkest, shade);
+                lightest = Math.max(lightest, shade);
+            }
+        }
+
+        return lightest - darkest;
     }
 
     private static double brightness(BufferedImage image)

@@ -241,10 +241,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
             + "on rather than one merely blocked by it, and this test is asking about the wrong tile");
 
-        assertTrue(brightness(runningBlocked) < brightness(bareBlocked) - 2.0,
-            "the square " + blockedSquare + " is drawn no darker while a train blocks it ("
-            + brightness(runningBlocked) + ") than with nothing standing anywhere ("
-            + brightness(bareBlocked) + "), so nothing says the track is unusable. Adam: \"'train is "
+        assertTrue(contrast(runningBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is drawn no fainter while a train blocks it ("
+            + contrast(runningBlocked) + ") than with nothing standing anywhere ("
+            + contrast(bareBlocked) + "), so nothing says the track is unusable. Adam: \"'train is "
             + "here' should also mean 'track is blocked' - that is the whole point\"");
     }
 
@@ -256,12 +256,17 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     {
         int changed = differingPixels(runningBlocked, bareBlocked);
 
-        int all = TILE * TILE;
+        int drawn = drawnPixels(bareBlocked);
 
-        assertTrue(changed > all / 2,
-            "only " + changed + " of the square's " + all + " pixels change when it becomes blocked, "
-            + "so the mark is a line along part of it rather than the tile being greyed. Adam: "
-            + "\"can we just grey out the tiles just like blocked edges\"");
+        assertTrue(drawn > 0,
+            "nothing at all is drawn on " + blockedSquare + " when it is free, so there is nothing "
+            + "for the fade to move and this claim would pass on a blank square");
+
+        assertTrue(changed >= drawn * 9 / 10,
+            "only " + changed + " of the " + drawn + " drawn pixels on the square change when it "
+            + "becomes blocked, so the mark is a stroke across part of it rather than the tile "
+            + "itself. Adam: \"can we just grey out the tiles just like blocked edges\", and later "
+            + "\"the same tile with more transparency\"");
     }
 
     /**
@@ -296,10 +301,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             + "offered a destination the send will refuse (W7B-B1).  Adam: \"yes, this greyout should "
             + "appear at idle\"");
 
-        assertTrue(brightness(stoppedBlocked) < brightness(bareBlocked) - 2.0,
-            "the square " + blockedSquare + " is drawn no darker with a train blocking it and "
-            + "autonomy STOPPED (" + brightness(stoppedBlocked) + ") than with no train at all ("
-            + brightness(bareBlocked) + "), so nothing on a stopped railway says the track is "
+        assertTrue(contrast(stoppedBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is drawn no fainter with a train blocking it and "
+            + "autonomy STOPPED (" + contrast(stoppedBlocked) + ") than with no train at all ("
+            + contrast(bareBlocked) + "), so nothing on a stopped railway says the track is "
             + "unusable");
     }
 
@@ -338,10 +343,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         // on it and that comparison said what this claim means.  The fence is gone: the two pictures
         // are now identical by design, and the difference this looked for could only ever be zero.
         // The square with nothing standing anywhere is the picture that has no wash on it now.
-        assertTrue(brightness(runningCovered) < brightness(bareCovered) - 2.0,
-            "the square the train stands on is drawn no darker while a train covers it ("
-            + brightness(runningCovered) + ") than with nothing standing anywhere ("
-            + brightness(bareCovered) + "), so the square carrying the train is the one square "
+        assertTrue(contrast(runningCovered) < contrast(bareCovered) - 2,
+            "the square the train stands on is drawn no fainter while a train covers it ("
+            + contrast(runningCovered) + ") than with nothing standing anywhere ("
+            + contrast(bareCovered) + "), so the square carrying the train is the one square "
             + "that does not say it is blocked");
 
         assertTrue(orangePixels(runningCovered) > 0,
@@ -521,6 +526,78 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         }
 
         return found;
+    }
+
+
+    /**
+     * How much light and shade the square holds - its own contrast, and nothing about the theme.
+     *
+     * The difference between the brightest and the darkest pixel on the tile.  A tile drawn at reduced
+     * alpha blends toward whatever is behind it, so this falls; whether the MEAN rises or falls depends
+     * on the panel's colour, which is exactly the thing a claim about the mark should not depend on.
+     * These claims said "darker" until MT-278 item 1 replaced the wash with a fade, and on a light
+     * panel a fade is brighter.
+     *
+     * @param image the painted tile
+     * @return the spread, 0 for a flat square
+     */
+    /**
+     * How many pixels of this tile carry anything but its own background.
+     *
+     * The background is the commonest colour on the square, which on a tile is the panel showing
+     * through around the track.  What is left is the drawing.
+     *
+     * Used to say what "the whole tile is marked" means for a FADE: a wash paints every pixel, and a
+     * fade moves only the pixels that were not already the background - so counting changed pixels
+     * against the square's area is the wash's claim, and counting them against the DRAWN pixels is
+     * the same claim about a fade.
+     *
+     * @param image the painted tile
+     * @return how many pixels are not the background colour
+     */
+    private static int drawnPixels(java.awt.image.BufferedImage image)
+    {
+        java.util.Map<Integer, Integer> seen = new java.util.HashMap<>();
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                seen.put(rgb, seen.containsKey(rgb) ? seen.get(rgb) + 1 : 1);
+            }
+        }
+
+        int background = 0;
+
+        for (java.util.Map.Entry<Integer, Integer> each : seen.entrySet())
+        {
+            if (each.getValue() > background) background = each.getValue();
+        }
+
+        return image.getWidth() * image.getHeight() - background;
+    }
+
+    private static int contrast(java.awt.image.BufferedImage image)
+    {
+        int darkest = 255;
+        int lightest = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                int shade = (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
+
+                darkest = Math.min(darkest, shade);
+                lightest = Math.max(lightest, shade);
+            }
+        }
+
+        return lightest - darkest;
     }
 
     private static double brightness(BufferedImage image)

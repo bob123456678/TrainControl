@@ -1426,10 +1426,17 @@ public class testEditorSurfaceRules
      * is the painted one: the icon-tinting helper stays deleted, because a tinted icon is the version
      * a highlight can take away with it, which is the first report on this list.
      *
+     * **And restated once more for MT-278 item 1**, which moved the refusal mark out of
+     * `paintCoveredMark` and into `paintComponent`: Adam asked for *"the same tile with more
+     * transparency"*, and a fade has to be applied to the icon as it is painted rather than drawn over
+     * it afterwards.  The rule is the one it always was - the mark is applied at PAINT time and never
+     * tinted into the image - and a composite satisfies it for the same reason a fill did: every
+     * repaint re-applies it, so a highlight cannot take it away.
+     *
      * MUTATION: deleting the `paintCoveredMark` call fails the first; dropping the `edit` guard in
-     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the fourth;
-     * painting the wash without asking `isTrackBlocked`, or over the line rather than under it,
-     * fails the third.
+     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the fourth; fading
+     * without asking `isTrackBlocked`, or after the train mark rather than before it, fails the
+     * third.
      *
      * @throws Exception on a failure to read the source
      */
@@ -1468,19 +1475,33 @@ public class testEditorSurfaceRules
         //
         // It is FENCED, on the window's answer rather than on anything the tile works out: "can we
         // just grey out the tiles just like blocked edges WHILE AUTONOMY IS RUNNING".
-        String painter = bodyOf(label, "private void paintCoveredMark(java.awt.Graphics2D g)");
+        //
+        // **IN `paintComponent` SINCE MT-278 ITEM 1, and it had to move there.**  Adam: *"I want the
+        // shading to instead be the same tile with more transparency exactly like what happens when
+        // edges are locked in autonomy mode."*  A fade is applied to the icon AS IT IS PAINTED, which
+        // is a thing only the method that paints it can do - a fill drawn afterwards cannot make what
+        // is underneath more transparent.  It was a `fillRect` in `paintCoveredMark` until then.
+        String painting = bodyOf(label, "protected void paintComponent(java.awt.Graphics g)");
 
-        assertTrue(painter.contains("tcUI.isTrackBlocked(square)"),
-            "the wash is drawn without asking whether the square is blocked, so it either never"
-            + " appears or appears on free track and while nothing is running");
+        assertTrue(painting.contains("tcUI.isTrackBlocked(square)"),
+            "the refusal mark is drawn without asking whether the square is blocked, so it either"
+            + " never appears or appears on free track");
 
-        // And it is UNDER the line, so a square that is both still reads as both.
-        int wash = painter.indexOf("BLOCKED_WASH");
-        int line = painter.indexOf("g.drawLine(");
+        // AND IT IS APPLIED TO THE ICON, NOT PAINTED OVER IT.  That is what makes it survive a
+        // highlight - see the ImageUtil claim below for the other half of the same rule.
+        assertTrue(painting.contains("AlphaComposite.getInstance(")
+            && painting.contains("BLOCKED_ALPHA"),
+            "nothing fades the square while the railway refuses it. Adam asked for \"the same tile"
+            + " with more transparency\", which is a composite set before `super.paintComponent` -"
+            + " not a colour drawn after it");
 
-        assertTrue(wash > 0 && line > 0 && wash < line,
-            "the grey is painted over the orange rather than under it, so the square carrying the"
-            + " train is the one square whose train cannot be seen");
+        // And it is UNDER everything autonomy draws, so a square that is both still reads as both.
+        int faded = painting.indexOf("BLOCKED_ALPHA");
+        int mark = painting.indexOf("paintCoveredMark(mark)");
+
+        assertTrue(faded > 0 && mark > 0 && faded < mark,
+            "the fade is applied after the train mark rather than before it, so the square carrying"
+            + " the train is the one square whose train is drawn faint");
 
         // AND THERE IS ONLY ONE OF IT.  The icon-tinting helper was deleted when the wash was removed,
         // and bringing the wash back as a fill is what keeps that deletion honest: a tinted icon is

@@ -1341,7 +1341,40 @@ public final class LayoutLabel extends JLabel
     @Override
     protected void paintComponent(java.awt.Graphics g)
     {
-        super.paintComponent(g);
+        // THE SQUARE ITSELF, FAINTLY, WHERE THE RAILWAY REFUSES IT (Adam, MT-278 item 1).
+        //
+        // *"I want the shading to instead be the same tile with more transparency exactly like what
+        // happens when edges are locked in autonomy mode."*  A grey rectangle over the tile said the
+        // same thing and said it by hiding the track; this says it by fading the track, so a blocked
+        // curve is still legibly a curve.
+        //
+        // On the icon rather than beside it: `super.paintComponent` is what draws the tile, so the
+        // composite has to be set before it and undone after - which is what the throwaway Graphics
+        // is for.  Everything autonomy draws on top - the arrows, the run line, the train mark - is
+        // painted at full strength afterwards, because those are about this instant and the fade is
+        // about the track underneath them.
+        boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
+
+        if (refused)
+        {
+            java.awt.Graphics2D faded = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                faded.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, BLOCKED_ALPHA));
+
+                super.paintComponent(faded);
+            }
+            finally
+            {
+                faded.dispose();
+            }
+        }
+        else
+        {
+            super.paintComponent(g);
+        }
 
         TileOverlay overlay = autonomyOverlay;
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
@@ -1463,6 +1496,20 @@ public final class LayoutLabel extends JLabel
     public static final Color BLOCKED_WASH = new Color(90, 90, 90, 120);
 
     /**
+     * How solid a square is drawn while the railway refuses it (Adam, MT-278 item 1).
+     *
+     * **"I want the shading to instead be the same tile with more transparency exactly like what
+     * happens when edges are locked in autonomy mode."**  So the square is not painted over: it is
+     * painted faintly, which is the same device the autonomy editor uses for a square autonomy takes
+     * no notice of (`TileAnnotation.IGNORED_ALPHA`, 0.62).
+     *
+     * Lower than that one on purpose.  An ignored square is a permanent property of the layout and is
+     * read at leisure; blocked track is a fact about this minute, sits among squares that are NOT
+     * blocked, and has to be told apart from them at a glance.
+     */
+    public static final float BLOCKED_ALPHA = 0.40f;
+
+    /**
      * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
      * lying on.
      *
@@ -1501,21 +1548,15 @@ public final class LayoutLabel extends JLabel
     {
         if (component == null || component.isText()) return;
 
-        // THE WASH FIRST, AND ONLY WHILE AUTONOMY IS RUNNING - which the window decides, not this
-        // tile.  Blocked track is a fact about routing, and nothing is routing when nothing is
-        // running, so a stopped railway shows the line alone exactly as it did before this change.
+        // THE REFUSAL IS DRAWN IN `paintComponent`, NOT HERE, since MT-278 item 1.
         //
-        // Over the whole square, because that is what the railway refuses: coverage is recorded per
-        // EDGE and the whole hop between two sensors is unavailable.  Adam's complaint about double
-        // curves was about the wash being used to say WHERE THE TRAIN IS, which is the line's job now
-        // - a square that is grey and not orange is not claiming a train is on both of its roads.
-        if (!edit && square != null && tcUI != null && tcUI.isTrackBlocked(square))
-        {
-            g.setColor(BLOCKED_WASH);
-
-            g.fillRect(0, 0, getWidth(), getHeight());
-        }
-
+        // It was a grey rectangle painted over the square at this point.  Adam asked for the square
+        // itself to be faded instead - *"the same tile with more transparency"* - and a fade has to be
+        // applied to the icon as it is painted rather than over it afterwards, which is a thing only
+        // `paintComponent` can do.  `BLOCKED_ALPHA` is the value and says why.
+        //
+        // What is left here is the train mark, which goes on at full strength: the fade says what the
+        // railway refuses, the line says where a train is, and the second is the more urgent.
         java.util.List<org.traincontrol.automationui.TilePorts.Route> roads = coveredRoads();
 
         if (roads.isEmpty()) return;

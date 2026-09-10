@@ -92,7 +92,7 @@ Everything else - 299 of 351 - needs nothing from you unless the area changes ag
 
 ### MT-262 - 2026-09-03 - The reversal-length notices, counted on your own railway
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-171
 
 **Written:** 2026-09-03
@@ -15761,13 +15761,66 @@ shading and orange seems drawn OK, but:
 
 *Run against commit 4565be9b, build\classes, compiled 10 Sep 05:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-10.**
+
+Items 1 and 3 are done. **Item 2 is not a drawing
+fault, and it needs your ruling** - the measurement is below.
+
+**1. The square is faded rather than washed over.** *"I want the shading to instead be the same tile
+with more transparency exactly like what happens when edges are locked in autonomy mode."* The grey
+rectangle is gone; the tile itself is now painted at 40% opacity, so a blocked curve is still legibly a
+curve. The number is `LayoutLabel.BLOCKED_ALPHA` and it is one line to change if it reads too faint or
+not faint enough - the autonomy editor's ignored squares use 62%, and this is deliberately lower
+because blocked track sits among squares that are not blocked and has to be told apart at a glance.
+
+**3. Both marks now follow every setup change.** Three gestures reached them before, each by its own
+path - a placement, a train length, a tile length. Everything else the editor can change (a station
+flag, an arrival side, a one-way direction, a reversal marking) alters which edges exist, and therefore
+what a standing train covers, and told the diagram nothing. The single door every setup change goes
+through refreshes them now, and it diffs the two sets so a rebuild that alters nothing costs a
+comparison.
+
+**2. The switch is shaded because the railway really does refuse it, and this is a decision.**
+
+*"When BR 06 001 at BottomMainB has length 3, and the track a total of length 4, the switch is still
+shaded."*
+
+The mechanism, read off `Layout.edgesCoveredByStandingTrains`: the tail walk covers **whole edges**.
+It takes the edge behind the train, marks all of it, subtracts that edge's length from what is left of
+the train, and stops. So a three-unit train on a four-unit edge covers **the entire edge** - every tile
+of it, the switch included - and `isPathClear` then refuses every route over it. The shading is
+telling the truth: no route through that switch is available while the train is there.
+
+**Why the walk is written that way.** Between two sensors nothing reports where the train actually is;
+the length is an estimate of how far back it lies. Covering three units of a four-unit edge and leaving
+the fourth free would let another train be routed onto that fourth unit with nothing between them but
+arithmetic. Covering the whole edge is what makes the guard safe without a sensor.
+
+**So there are two answers and only you can pick.**
+
+- **(a) Leave it.** The shading matches what routing refuses, which is your own ruling of 2026-09-09 -
+  *"'train is here' should also mean 'track is blocked' - that is the whole point"*. The cost is the
+  one you have just met: a train that stops short of a switch still closes it.
+- **(b) Draw the shading square by square, as the orange line already is.** Then the switch is clear on
+  the diagram - and routing still refuses it, so the picture would understate the refusal and a manual
+  send over that switch would be refused with nothing on screen saying why. That is the state the grey
+  was brought back to end.
+
+There is no third answer that keeps both, short of locking track at tile granularity rather than at
+edge granularity - which is a change to the anti-collision model, not to the drawing.
+
+**My recommendation is (a)**, and to treat the shading as correct here. What it is telling you is that
+your edges are long relative to your trains: an edge that takes a whole four units between sensors will
+be claimed whole by anything standing on it. Splitting that run with a feedback where the switch is
+would give the railway somewhere to stop refusing.
+
 ---
 
 <a id="mt-279"></a>
 
 ### MT-279 - 2026-09-07 - The covered-track shading is on the viewer only
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-175 follow-up (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15805,7 +15858,7 @@ editor.
 
 ### MT-280 - 2026-09-07 - Nothing may be sent across covered track
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-175 follow-up (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15920,7 +15973,7 @@ the caption work that changed after you first saw it.
 
 ### MT-283 - 2026-09-07 - The Text Labels dropdown fits the sidebar
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-061 (split from MT-274)
 
 **Written:** 2026-09-07

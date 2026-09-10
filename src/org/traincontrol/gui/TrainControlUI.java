@@ -6238,6 +6238,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 putThePendingTurnsBack(pendingTurns);
             }
         }
+
+        // AND BOTH MARKS FOLLOW THE EDIT (Adam, MT-278 item 3).
+        //
+        // *"Make sure the shading and orange repaints on any autonomy or train/track length edit."*
+        // Three gestures reached the marks before this and each by its own path - a placement through
+        // `updateVisiblePoints`, a train length through `applyTrainLength`, a tile length through this
+        // rebuild's effect on the built edges.  Everything ELSE the editor can change - a station
+        // flag, an arrival side, a one-way direction, a reversal marking - changes which edges exist
+        // and therefore what a standing train covers, and told the diagram nothing.
+        //
+        // This is the one door every setup change goes through, so it is the one place the answer can
+        // be refreshed without a rule about which gestures need to remember.
+        // `refreshCoveredTrack` diffs the two sets and repaints only the squares whose mark changed,
+        // so a rebuild that alters nothing costs a comparison.
+        blockedTrackChanged();
     }
 
     public boolean isLayoutEditorOpen()
