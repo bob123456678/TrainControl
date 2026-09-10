@@ -340,6 +340,32 @@ the levelling refuses.
 
 ---
 
+### Turning round, and being chosen: two markings, two questions
+
+Adam, 2026-09-09, settling OB-195 - the editor claimed autonomy would never choose a compulsory turn,
+and the runtime chose one quite happily:
+
+> *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the
+> 'allow in autonomy' option is checked, otherwise the train may only pass through in its current
+> direction."*
+
+| the marking | the question it answers |
+|---|---|
+| **Changing Direction - Never / May / Must** | what happens when a train ARRIVES here |
+| **Can Be Chosen in Full Autonomy** | who may SEND a train here |
+
+They are independent, and only the second decides whether autonomy picks a square:
+
+- A **compulsory turn** with the switch on is a station autonomy chooses like any other, and the train
+  turns round when it gets there. `Layout.isSendableDestination` accepts it - a must-turn station is
+  built as a terminus, and a terminus has `isReversing()` false.
+- With the switch **off**, autonomy leaves the square alone. You can still send a train there by hand,
+  and Return Home still uses it; a train that passes through does so in the direction it came in.
+
+**The editor said otherwise until this ruling**, on the strength of a comment claiming to mirror the
+runtime. It cost nothing on Adam's railway, because every compulsory turn he has is also marked
+manual-only - which is exactly why nobody noticed.
+
 ## 4. Which way a train is pointing, and where its tail is
 
 Two different properties, and confusing them was the cause of a day's worth of defects.
@@ -453,14 +479,14 @@ itself walks to a copy that can depart.
 
 Two separate rules, both about length, both easy to mistake for each other.
 
-### 5a. Room at the berth
+### 5a. Room, at every square on the route
 
 **Two rules, not one, and they are asked in different places.**
 
 | | what it measures | which squares it judges |
 |---|---|---|
-| **Track room** | the rail leading in, from the last switch to the berth | **every** destination, terminus or not |
-| **Station capacity** | the length the station says it accepts | **every destination** that states one |
+| **Track room** | the rail behind each square, from the last switch to it | **every square the route runs through**, not only the destination |
+| **Station capacity** | the length the station says it accepts | **the destination**, when it states one |
 
 Adam, annotating this section: *"the train should be refused any destination it does not fit in, i.e.
 where the train length exceeds the accepted length."* It is - by the second rule, and in all three
@@ -482,12 +508,53 @@ The rest of this section is about the **first** rule.
   preference manual may overrule, and §1 makes autonomy the stricter tier - a length rule that
   refused only the operator would invert it.
 
-- The room is measured **from the last switch** to the berth. A train that fits there fits behind any
+- The room is measured **from the last switch** to the square. A train that fits there fits behind any
   earlier switch too; one that does not comes to rest standing on the switch.
 
   **"Fit" here means the surrounding track**, not the length of the berth - that is the station
   capacity rule above, and it is asked separately. A train can fit the platform and still be refused
   because it would be left standing on the switch behind it.
+
+- **The question is asked at EVERY square on the route, not only at the destination.** Adam,
+  2026-09-09, having been asked which of the two it should be and told what the second costs:
+
+  > *"For 1, it's b. This should only apply if lengths are specified - and edges are already locked as
+  > trains pass through in non-dynamic mode. So it's really about implementing the same mechanic."*
+
+  What he reported it against was a nine-unit train being offered `RampDown`: *"technically incorrect
+  to say there is a path since we pass the track of length 1 at 22,7 to get there, then nothing."* The
+  route crosses that tile seven edges before the berth, and the berth-only walk could not see it.
+
+  **The same mechanic, not a second one.** The walk answers about the square a path ENDS at, so it is
+  asked of every prefix of the route; the destination is the last of those rather than a rule of its
+  own. Nothing new is measured.
+
+  **What it costs, measured on Adam's railway.** Over 1848 routable station pairs and six train
+  lengths - 11088 journeys - the berth rule refuses 1892 and this ruling refuses about 1645 more, so
+  roughly one journey in three is now refused for want of room. Every square that does the refusing
+  measures ONE unit, except `TopR1ParkShort` at three. The way to get those journeys back is to
+  measure that track. `core.testTheRoomRuleCensusOnTheRealLayout` re-measures it on every run, and
+  reports a band rather than a figure because which route a search finds first is not reproducible
+  between JVMs.
+
+  **The refusal names the square that is short**, and says a different sentence for one on the way
+  than for the berth. Naming the destination when the destination has room sends the operator to
+  measure the one stretch that was already long enough.
+
+- **A square the train passes THROUGH is judged only where a switch is behind it.** The walk has two
+  stopping conditions and only one of them is a measurement: it stops at the last switch, which is the
+  rule, and at the start of the route, which is the walk running out of track to look at.
+
+  At the destination the second is harmless and long-standing - the train comes to rest there and lies
+  back over the route it came along. At a pass-through square it means a two-edge prefix answers "two
+  edges of room" when the honest answer is that the track behind where the train started has not been
+  looked at **and the train is standing on it**.
+
+  The first cut of this ruling had no such condition, and the battery came back with a four-unit train
+  refused four units of room, an eight-unit train refused a nine-unit run in, and the staging planner
+  giving up on berths it could reach. On Adam's railway the condition costs nothing - every one of the
+  1645 refusals the ruling adds is bounded by a switch - which is what the census reports on every run
+  under *"refusals the unbounded walk would have added"*.
 
 - **Exactly-fits is admitted.** Four units of room takes a four-unit train — otherwise every berth
   measured to the train that lives in it becomes unusable.

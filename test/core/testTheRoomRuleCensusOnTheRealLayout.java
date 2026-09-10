@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -47,7 +48,7 @@ import org.traincontrol.marklin.file.CS2File;
  * rule already did.
  *
  * The station-capacity rule is deliberately not counted. That is the number somebody typed on the
- * platform, it is asked separately in `whyTooLongForTheBerth`, and MT-262 did not touch it.
+ * platform, it is asked separately in `whyTooLongForThisRoute`, and MT-262 did not touch it.
  *
  * **It does not reproduce the published totals, and it cannot.** Section 5b said *"across all 3488
  * ordered station pairs ... the journeys it newly refuses are 332"*. This finds **1980** ordered pairs
@@ -279,6 +280,341 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
+     * Journeys Adam's ruling of 2026-09-09 refuses that the berth-only rule admitted.
+     *
+     * Measured on the live snapshot the day the ruling was made, over 1848 routable pairs and this
+     * class's six trains - **11088 journeys, of which the berth rule already refused 1892 and this
+     * ruling refuses about 1630 more**.  Roughly one journey in three is now refused for want of room,
+     * and every square that does the refusing is measured at one unit except `TopR1ParkShort`, which
+     * is three.  The way to get them back is to measure that track, not to change the rule.
+     *
+     * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Four runs gave 2116, 2146, 1648 and
+     * 1617 - the first two asking one route per pair, the second two asking every route the search
+     * will yield.  `bfs(from, to, exclude)` returns SOME route avoiding the ones already found rather
+     * than the next in a defined order, and which one depends on an adjacency keyed by objects whose
+     * hash is their identity.  So the count moves by about two per cent between JVMs, and a pin to one
+     * value would be a flake with a comment on it.
+     *
+     * The band is wide enough to hold that and narrow enough to fail on a change of rule: the ruling
+     * doubling its reach, or being quietly taken out, moves the number by hundreds.  The exact figure
+     * is printed on every run.
+     */
+    private static final int REFUSED_ON_THE_WAY_AT_LEAST = 1450;
+
+    /**
+     * The other end of the band.  See `REFUSED_ON_THE_WAY_AT_LEAST` for why there is one.
+     */
+    private static final int REFUSED_ON_THE_WAY_AT_MOST = 1800;
+
+    /**
+     * Journeys refused at the destination, which is what the rule did before the ruling.
+     */
+    private static final int REFUSED_AT_THE_BERTH = 1892;
+
+    /**
+     * The squares that do the refusing on the way, which is the half worth reading.
+     */
+    private static final String[] ON_THE_WAY =
+    {
+        "BottomMainA (eastbound)", "BottomMainA (westbound)", "BottomMainB (eastbound)",
+        "BottomMainB (westbound)", "BottomMainB (westbound, reverse)", "BottomMainBCPre (westbound)",
+        "BottomMainC (westbound)", "BottomMainC (westbound, reverse)", "BottomMainPost (northbound)",
+        "BottomMainPost (northbound, reverse)", "BottomMainB (eastbound, reverse)", "TopR1ParkShort"
+    };
+
+    /**
+     * How many routes to one destination the census will look at.
+     *
+     * The point of enumerating them at all is that "is this train refused" is a question about ALL of
+     * them, so a cap is a wrong answer rather than a slow one - it can only make the census report a
+     * refusal that the railway would not make.  `testNoPairHitTheRouteCap` says it never binds, which
+     * is the only thing that makes the number below mean anything.
+     */
+    private static final int ROUTE_CAP = 30;
+
+    /**
+     * What Adam's ruling of 2026-09-09 costs on top of the census above.
+     *
+     * He was asked whether "will the train fit" means at the destination or everywhere on the way,
+     * with the cost of the second stated - it refuses through moves that a berth-only rule allows -
+     * and answered **"For 1, it's b.  This should only apply if lengths are specified."**  This is
+     * that cost, over the same population as the census above.
+     *
+     * **A train is refused a destination when every route to it refuses**, which is what
+     * `getPossiblePaths` does, so the census asks it over every route rather than over the one a
+     * search finds first.  That is not tidiness: one route per pair gave 2116 on one run and 2146 on
+     * the next, because the adjacency is keyed by objects whose hash is their identity.
+     *
+     * The track rule is asked directly, by prefix, rather than through `whyTooLongForThisRoute` -
+     * that door also asks the station's stated capacity, which is a different rule and would be
+     * counted here as though the ruling had caused it.
+     *
+     * @throws Exception on a failure to search
+     */
+    @Test
+    public void testWhatTheRouteWideRuleCostsOnTopOfIt() throws Exception
+    {
+        assertNotNull(built, "the configuration did not build, so nothing was measured");
+
+        int pairs = 0;
+        int refusedAtTheBerth = 0;
+        int refusedOnTheWay = 0;
+
+        // Counted per ROUTE rather than per journey, and it is a measure of the CONDITION rather
+        // than of the rule: how many refusals the walk would make with nothing but the start of the
+        // route to stop it.  See the loop that raises it.
+        int offTheEndOfTheRoute = 0;
+
+        Map<String, Integer> squares = new java.util.TreeMap<>();
+
+        List<Locomotive> trains = censusTrains();
+
+        for (Point from : censusStations())
+        {
+            for (Point to : censusStations())
+            {
+                if (from.equals(to)) continue;
+
+                List<List<Edge>> routes = everyRoute(from, to);
+
+                if (routes.isEmpty()) continue;
+
+                pairs++;
+
+                for (Locomotive train : trains)
+                {
+                    boolean someBerthAdmits = false;
+                    boolean someRouteAdmits = false;
+
+                    Map<String, Integer> refusedBy = new java.util.TreeMap<>();
+
+                    for (List<Edge> route : routes)
+                    {
+                        Integer atTheBerth = Layout.measuredRoomAtTheEndOf(route, train);
+
+                        if (atTheBerth == null || train.getTrainLength() <= atTheBerth)
+                        {
+                            someBerthAdmits = true;
+                        }
+
+                        // THE PRODUCTION RULE, asked the way production asks it: the berth on the
+                        // whole route behind it, a square on the way only where a switch bounds it.
+                        String where = null;
+
+                        Integer room = null;
+
+                        for (int i = 0; i < route.size(); i++)
+                        {
+                            boolean last = i == route.size() - 1;
+
+                            List<Edge> prefix = route.subList(0, i + 1);
+
+                            Integer here = last ? Layout.measuredRoomAtTheEndOf(route, train)
+                                : Layout.roomAfterASwitchOnTheWay(prefix, train);
+
+                            if (here == null || train.getTrainLength() <= here) continue;
+
+                            where = route.get(i).getEnd().getName();
+
+                            room = here;
+
+                            break;
+                        }
+
+                        if (where == null) someRouteAdmits = true;
+                        else refusedBy.put(where, room);
+
+                        // AND WHAT THE RULE WOULD HAVE COST WITHOUT THAT CONDITION.
+                        //
+                        // The walk stops at the last switch, which is Adam's rule - or at the start
+                        // of the route, which measures nothing: a two-edge prefix answers "two edges
+                        // of room" when the track behind where the train started has not been looked
+                        // at.  The first cut of ruling 1b had no such condition and refused a
+                        // four-unit train four units of room.  This counts the difference, so the
+                        // condition can be seen to be load-bearing rather than believed to be.
+                        for (int i = 0; i < route.size() - 1; i++)
+                        {
+                            Integer loose =
+                                Layout.measuredRoomAtTheEndOf(route.subList(0, i + 1), train);
+
+                            if (loose == null || train.getTrainLength() <= loose) continue;
+
+                            if (!crossesASwitch(route, i)) offTheEndOfTheRoute++;
+
+                            break;
+                        }
+                    }
+
+                    if (!someBerthAdmits)
+                    {
+                        refusedAtTheBerth++;
+
+                        continue;
+                    }
+
+                    if (someRouteAdmits) continue;
+
+                    refusedOnTheWay++;
+
+                    // EVERY square that refused, over every route, rather than the first one a
+                    // search happened to reach: which route comes out first is not stable, and this
+                    // is the list the operator would go and measure.
+                    squares.putAll(refusedBy);
+                }
+            }
+        }
+
+        System.out.println("### what ruling 1b costs, re-measured");
+        System.out.println("  routable pairs             : " + pairs);
+        System.out.println("  journeys asked             : " + (pairs * trains.size()));
+        System.out.println("  refused at the berth       : " + refusedAtTheBerth);
+        System.out.println("  refused only on the way    : " + refusedOnTheWay);
+        System.out.println("  squares that refuse, by name: " + squares);
+        System.out.println("  refusals the unbounded walk would have added: "
+            + offTheEndOfTheRoute);
+
+        assertEquals(refusedAtTheBerth, REFUSED_AT_THE_BERTH,
+            refusedAtTheBerth + " journeys are refused at their destination, against "
+            + REFUSED_AT_THE_BERTH + " when this was measured.  That is the rule as it stood BEFORE"
+            + " the ruling, so a change here is a change to the population the next number is a"
+            + " fraction of");
+
+        assertTrue(refusedOnTheWay >= REFUSED_ON_THE_WAY_AT_LEAST
+            && refusedOnTheWay <= REFUSED_ON_THE_WAY_AT_MOST,
+            refusedOnTheWay + " journeys are refused by Adam's ruling of 2026-09-09 and would have"
+            + " been admitted by the berth-only rule, which is outside the "
+            + REFUSED_ON_THE_WAY_AT_LEAST + " to " + REFUSED_ON_THE_WAY_AT_MOST + " measured when it"
+            + " was made.  A rise is the guard closing the railway down, which is the cost he was told"
+            + " about and accepted a measured amount of; a fall is the ruling not being enforced."
+            + "  Either way, re-measure it here and in behaviour.md section 5b together");
+
+        // A SUBSET, NOT AN EQUALITY, and for the same reason the count is a band: which routes the
+        // search yields decides which of a station's copies gets named.  A square OUTSIDE the list is
+        // the rule refusing somewhere Adam was not looking, and that is what this has to catch.
+        Set<String> unexpected = new TreeSet<>(squares.keySet());
+
+        unexpected.removeAll(java.util.Arrays.asList(ON_THE_WAY));
+
+        assertEquals(unexpected, new TreeSet<String>(),
+            "the ruling now refuses trains at " + unexpected + ", which is not among the squares it"
+            + " was measured against.  This is the load-bearing half: it was made about ONE tile -"
+            + " 22,7, measuring BottomMainPost - and every square it costs on his railway is one he"
+            + " has measured at a unit or three");
+
+        assertTrue(squares.size() >= ON_THE_WAY.length - 2,
+            "only " + squares.size() + " of the " + ON_THE_WAY.length + " squares that used to refuse"
+            + " on the way still do (" + squares.keySet() + "), so the ruling has stopped being"
+            + " enforced over most of the railway it was measured on");
+
+        for (Map.Entry<String, Integer> square : squares.entrySet())
+        {
+            assertTrue(square.getValue() != null && square.getValue() <= 3,
+                square.getKey() + " refuses a train with " + square.getValue() + " units of room,"
+                + " which is not the tight track this ruling was made about - so the rule is refusing"
+                + " on roomy track and something else has changed");
+        }
+    }
+
+    /**
+     * Whether any edge up to and including this one crosses a switch.
+     *
+     * The walk that decides a refusal stops at the last switch OR at the start of the route.  Only the
+     * first of those is a rule anybody made; the second is a prefix having nothing behind it yet, and
+     * a refusal that comes from it is the guard being strict about track it never looked at.
+     *
+     * @param route the whole route
+     * @param upTo the index the refusal was found at
+     * @return true when a switch bounds the stretch, so the refusal is the rule
+     */
+    private static boolean crossesASwitch(List<Edge> route, int upTo)
+    {
+        for (int i = 0; i <= upTo && i < route.size(); i++)
+        {
+            if (route.get(i).crossesASwitch()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The cap on routes per pair never binds, so the census is over all of them.
+     *
+     * Asserted separately because a cap that binds turns the census from a measurement into an
+     * under-count, and silently: a pair whose thirty-first route was the one that fitted is reported
+     * as refused.  Adam's standing rule on this is that a bounded sweep says what it dropped.
+     *
+     * @throws Exception on a failure to search
+     */
+    @Test
+    public void testNoPairHitTheRouteCap() throws Exception
+    {
+        assertNotNull(built, "the configuration did not build, so nothing was measured");
+
+        List<String> atTheCap = new ArrayList<>();
+
+        for (Point from : censusStations())
+        {
+            for (Point to : censusStations())
+            {
+                if (from.equals(to)) continue;
+
+                if (everyRoute(from, to).size() >= ROUTE_CAP)
+                {
+                    atTheCap.add(from.getName() + " -> " + to.getName());
+                }
+            }
+        }
+
+        assertEquals(atTheCap, new ArrayList<String>(),
+            atTheCap.size() + " station pairs have at least " + ROUTE_CAP + " routes between them, so"
+            + " the census stopped looking and may be reporting refusals the railway would not make: "
+            + atTheCap);
+    }
+
+    /**
+     * Every route between two squares, in the order the search finds them.
+     *
+     * @param from where the train stands
+     * @param to where it is being sent
+     * @return the routes, empty when there is none
+     * @throws Exception on a failure to search
+     */
+    private static List<List<Edge>> everyRoute(Point from, Point to) throws Exception
+    {
+        List<List<Edge>> seen = new LinkedList<>();
+
+        while (seen.size() < ROUTE_CAP)
+        {
+            List<Edge> path = built.bfs(from, to, seen);
+
+            if (path == null || path.isEmpty()) break;
+
+            seen.add(path);
+        }
+
+        return seen;
+    }
+
+    /**
+     * The destinations the census runs over, in name order.
+     *
+     * @return the stations
+     */
+    private static List<Point> censusStations()
+    {
+        List<Point> stations = new ArrayList<>();
+
+        for (Point point : built.getPoints())
+        {
+            if (point.isDestination()) stations.add(point);
+        }
+
+        Collections.sort(stations, (a, b) -> a.getName().compareTo(b.getName()));
+
+        return stations;
+    }
+
+    /**
      * What one run of the census found.
      */
     private static final class Census
@@ -351,7 +687,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
                     Point ending = path.get(path.size() - 1).getEnd();
 
-                    Integer room = Layout.measuredRoomAtTheBerth(path, train);
+                    Integer room = Layout.measuredRoomAtTheEndOf(path, train);
 
                     census.berths.put(ending.getName(), room);
                 }
@@ -364,7 +700,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     /**
      * Whether the widened rule refuses this journey and the fence it replaced would not have.
      *
-     * The two halves are asked separately on purpose. `measuredRoomAtTheBerth` is the rule; the
+     * The two halves are asked separately on purpose. `measuredRoomAtTheEndOf` is the rule; the
      * terminus-or-reversing test is the fence `Layout.isPathClear`'s own comment records as having
      * stood in front of it before MT-262. A refusal at a terminus is not new.
      *
@@ -378,7 +714,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
         if (ending.isTerminus() || ending.isReversing()) return false;
 
-        Integer room = Layout.measuredRoomAtTheBerth(path, loc);
+        Integer room = Layout.measuredRoomAtTheEndOf(path, loc);
 
         return room != null && loc.getTrainLength() != null && loc.getTrainLength() > room;
     }

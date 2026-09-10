@@ -257,6 +257,21 @@
         <test-one-class class="testTheFrozenRailwayIsStillTheRailway"/>
         <test-one-class class="testEveryScenarioIsUsedAndSaysSo"/>
 
+        <!-- Added 2026-09-09, with Adam's two rulings of that day.
+
+             testATrainMustFitEverySquareOnItsRoute is ruling 1b - the room rule asked at every square
+             a route runs through rather than only at the berth - on the single-switch scenario, whose
+             one turnout is what lets a short stretch sit EARLY on a route.
+
+             testACompulsoryTurnIsChosenLikeAnyOtherStation is OB-195, on the same scenario, which is
+             the only fixture where the two markings can disagree: on Adam's own railway every
+             compulsory turn is also marked manual-only.
+
+             testNoTwoShortcutsShareAKey is the reading FR-066 needed done by hand. -->
+        <test-one-class class="testATrainMustFitEverySquareOnItsRoute"/>
+        <test-one-class class="testACompulsoryTurnIsChosenLikeAnyOtherStation"/>
+        <test-one-class class="testNoTwoShortcutsShareAKey"/>
+
         <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
              running 41 of the 76 test classes and reporting success for the whole suite.
 

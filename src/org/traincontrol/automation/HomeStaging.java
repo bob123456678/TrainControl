@@ -1003,12 +1003,22 @@ public final class HomeStaging
                 // nor the dominance relation.  In practice a genuinely different approach sets some
                 // switch the other way, so its command map is not dominated and it survives - but a
                 // parallel run of track with identical ironwork would still be lost here.
-                if (next.equals(to))
-                {
-                    Integer room = Layout.measuredRoomAtTheBerth(route, loc);
+                // AT EVERY SQUARE, NOT ONLY AT THE BERTH (Adam, 2026-09-09, and see
+                // `Layout.whyTooLongForThisRoute`).  The runtime refuses a route that crosses a
+                // measured stretch too short for the train wherever that stretch is, so a plan that
+                // only checked its last square would be a plan whose first move the runtime then
+                // refuses - which is the failure this planner's own comments say it exists to avoid.
+                //
+                // Pruning here is sound as well as cheap: the property is prefix-closed, so no
+                // extension of a route the train does not fit on can fit either.
+                // THE BERTH IS JUDGED ON THE WHOLE ROUTE BEHIND IT; A SQUARE ON THE WAY ONLY WHERE A
+                // SWITCH BOUNDS IT.  `Layout.roomAfterASwitchOnTheWay` carries the why - the short of
+                // it is that the walk's other stopping condition is the start of the route, which
+                // measures nothing and refused berths this planner could reach.
+                Integer room = next.equals(to) ? Layout.measuredRoomAtTheEndOf(route, loc)
+                    : Layout.roomAfterASwitchOnTheWay(route, loc);
 
-                    if (room != null && loc.getTrainLength() > room) continue;
-                }
+                if (room != null && loc.getTrainLength() > room) continue;
 
                 String key = next.getUniqueId() + (turned ? "/turned" : "/straight");
 

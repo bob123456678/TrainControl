@@ -4766,6 +4766,39 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Sets the length of the square under the pointer, from outside this panel (FR-066).
+     *
+     * Adam: *"a keyboard shortcut for setting a square's length"*, and on which key, **"let's do E"** -
+     * Control+D being taken twice over, by the editor's address toggle and the main window's
+     * locomotive adder.
+     *
+     * The same relationship Control+S has to Rename: `applyLength` is private and the key handler
+     * lives in `LayoutEditor`, which owns this panel rather than sitting inside it.  One line, so the
+     * panel keeps deciding what setting a length means and this only decides who may ask.
+     *
+     * **It asks the menu's own question**, which is `isIgnored` - the guard that decides whether the
+     * right-click menu offers anything about this square at all.  A key that acts where the menu
+     * offers nothing is the shape of MT-313, where Control+S named plain track because it asked only
+     * whether the tile was null.  And it says the same sentence the menu says, rather than doing
+     * nothing quietly: a shortcut that appears to be broken is worse than one that explains itself.
+     *
+     * @param tile the square to measure, ignored when null
+     */
+    public void promptLengthFor(TileKey tile)
+    {
+        if (tile == null || session == null || session.getGraph() == null) return;
+
+        if (isIgnored(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+
+            return;
+        }
+
+        applyLength(tile);
+    }
+
+    /**
      * Whether this square is one that can be named.
      *
      * **The right-click menu's own question**, so the key and the menu cannot disagree about it.

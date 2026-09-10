@@ -1173,7 +1173,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // ended at `autolayout.ui.autoFailedCheckLog` - "check the log" - which is the least
                 // useful thing a dialog can say about a refusal the operator could act on.
                 //
-                // `Layout.whyTooLongForTheBerth` is the rule, not a copy of it: `isPathClear` asks the
+                // `Layout.whyTooLongForThisRoute` is the rule, not a copy of it: `isPathClear` asks the
                 // same method, so this cannot come to a different answer than the railway does.  Asked
                 // HERE because the list this item was built from is a snapshot - the menu is assembled
                 // once and stays open while trains move and lengths are edited - and because the
@@ -1182,7 +1182,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // Only the length rule, deliberately.  Everything else `isPathClear` asks is about
                 // this minute and clears itself; refusing here on a busy sensor would turn a
                 // momentary block into a dialog.
-                String tooLong = org.traincontrol.automation.Layout.whyTooLongForTheBerth(path,
+                String tooLong = org.traincontrol.automation.Layout.whyTooLongForThisRoute(path,
                     locomotive);
 
                 if (tooLong != null)

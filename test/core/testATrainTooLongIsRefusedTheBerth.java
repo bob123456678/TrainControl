@@ -280,7 +280,7 @@ public class testATrainTooLongIsRefusedTheBerth
      *
      * Two rules, and they are not the same rule.  `validateTrainLength` asks about the STATION'S
      * stated capacity and returns true for anything that is not a destination - there is no capacity
-     * to exceed on a square nobody calls a station.  `measuredRoomAtTheBerth` asks about the TRACK
+     * to exceed on a square nobody calls a station.  `measuredRoomAtTheEndOf` asks about the TRACK
      * leading in, with no destination requirement and - since MT-262 - no terminus requirement
      * either: a train comes to rest with its head at the sensor wherever it stops, so its tail lies
      * back over the run in whether or not it had to back in.

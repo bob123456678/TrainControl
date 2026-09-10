@@ -6988,6 +6988,34 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return;
             }
 
+            // Control+E measures the square under the pointer (FR-066).
+            //
+            // Adam asked for *"a keyboard shortcut for setting a square's length"* and picked the key
+            // himself once both handlers had been read for what was free: **"let's do E"**.  Control+D,
+            // which the ticket proposed, is taken twice - this editor toggles addresses with it and the
+            // main window opens the locomotive adder - and E is free in both, besides being the e in
+            // "length".
+            //
+            // Above the guard below, with the other keys that are, and by that guard's own rule:
+            // "Every shortcut below places, cuts, rotates or retextures a tile."  Measuring a square
+            // does none of the four.
+            //
+            // `autonomyHover` for the same reason Control+S takes it: the placement variables are
+            // deliberately not set in autonomy mode, so asking them gets -1,-1 and a key that fires
+            // and finds nothing (MT-258 item 4).
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
+            {
+                LayoutLabel over = autonomyHover;
+
+                if (over != null && autonomyPanel != null)
+                {
+                    autonomyPanel.promptLengthFor(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), getX(over), getY(over)));
+                }
+
+                return;
+            }
+
             // Plus and minus walk through the pages, in BOTH editors (FR-036).
             //
             // Above the guard below, and for the reason its own sentence gives: moving to another page

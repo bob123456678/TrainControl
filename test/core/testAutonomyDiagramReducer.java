@@ -269,7 +269,7 @@ public class testAutonomyDiagramReducer
      * `Layout.parseAuto` reads it back onto the `Edge`, and `Edge.toJSON` writes it out again.
      *
      * **What the gap was worth.**  `Edge.crossesASwitch()` is `roomAtTheEnd != Integer.MIN_VALUE`, so
-     * an edge that never received the key answers false - and `measuredRoomAtTheBerth` then sums
+     * an edge that never received the key answers false - and `measuredRoomAtTheEndOf` then sums
      * the WHOLE route rather than the stretch after the last switch.  That is the too-permissive rule
      * Adam replaced on 2026-09-02, and the cost is written at the guard: a train coming to rest across
      * the points behind it.  Delete the builder's one line and the whole suite stayed green.
@@ -554,7 +554,7 @@ public class testAutonomyDiagramReducer
      * *"Between the switch and the station, the length must be >= length of the train"*, and *"for the
      * switches, for simplicity, let's use any direction, that way we are guaranteed to be safe."*  So
      * the reducer measures the stretch beyond the last switch on each edge, and
-     * `Layout.measuredRoomAtTheBerth` bounds the train by that rather than by the whole route.
+     * `Layout.measuredRoomAtTheEndOf` bounds the train by that rather than by the whole route.
      *
      * **The switch tile itself is not counted.**  The rule exists so the train comes to rest clear of
      * the points; track it would be standing on while fouling them is not room.
@@ -631,7 +631,7 @@ public class testAutonomyDiagramReducer
         // length > 0.  It is only indeterminate if the entire logical segment has length 0."**
         //
         // What the old rule cost, on his own railway: the run into BottomMainPost is twelve tiles with
-        // one of them measured at 1.  Any-tile-unmeasured made that -1, `measuredRoomAtTheBerth`
+        // one of them measured at 1.  Any-tile-unmeasured made that -1, `measuredRoomAtTheEndOf`
         // declined to judge, and a four-unit train was admitted into one unit of room - the case he
         // reported.  The measured tile was there and was discarded for the company it kept.
         //

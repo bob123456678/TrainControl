@@ -1051,7 +1051,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // **"there is no notice that can help state/debug this."**  A send the railway
                     // then turns down ended at `autolayout.ui.autoFailedCheckLog` - "check the log".
                     //
-                    // `Layout.whyTooLongForTheBerth` is the rule rather than a copy: `isPathClear`
+                    // `Layout.whyTooLongForThisRoute` is the rule rather than a copy: `isPathClear`
                     // asks the same method, so this door and the railway cannot disagree.  Asked here
                     // because `this.paths` is a snapshot - the comment above says why that matters -
                     // and because the sentence is what Adam asked for.
@@ -1060,7 +1060,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // place.  Two hand-driven doors, one question: `guard-and-affordance-same-question`
                     // is this file's own history, and the power check three lines up is there because
                     // one of them had it and the other did not.
-                    String tooLong = org.traincontrol.automation.Layout.whyTooLongForTheBerth(chosen,
+                    String tooLong = org.traincontrol.automation.Layout.whyTooLongForThisRoute(chosen,
                         locomotive);
 
                     if (tooLong != null)

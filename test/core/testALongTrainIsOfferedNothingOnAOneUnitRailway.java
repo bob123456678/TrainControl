@@ -32,7 +32,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * 1. **A SECTION IS NOT A TILE.**  That test set every TILE to one unit, and an edge on his railway is
  *    made of many tiles - the run into `RampDown` is eighteen of them - so "every section is one unit"
  *    produced sections of eighteen units.  A nine-unit train fits in eighteen, and was correctly
- *    offered.  The measurement is at `testTheLengthGuardsOnTheRealLayout.testWhyRampDownIsOffered`.
+ *    offered.  The measurement is at `testTheLengthGuardsOnTheRealLayout.testWhyRampDownIsRefused`.
  * 2. **It was start-dependent.**  It asked whatever train happened to be standing somewhere for a
  *    destination, so it asserted about ONE square and read as an assertion about the whole railway.
  *
@@ -166,7 +166,7 @@ public class testALongTrainIsOfferedNothingOnAOneUnitRailway
      * Adam's original claim, on a railway that can carry it.  Not "no berth": nothing, including the
      * through squares, because on a railway measured this tightly there is nowhere the train fits.
      *
-     * MUTATION: `>=` in place of `>` at `Layout.whyTooLongForTheBerth`'s comparison does not move this
+     * MUTATION: `>=` in place of `>` at `Layout.whyTooLongForThisRoute`'s comparison does not move this
      * (nine is never two); measuring the fixture at nine units a square does, and that is what the
      * control below asserts from the other side.
      *

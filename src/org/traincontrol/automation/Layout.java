@@ -2572,9 +2572,9 @@ public class Layout
         // only the operator would invert it.
         //
         // The rule, its two known unsoundnesses and Adam's "OK" accepting them as they stand are all
-        // in `measuredRoomAtTheBerth`, which is also what the staging planner asks: one walk, one
+        // in `measuredRoomAtTheEndOf`, which is also what the staging planner asks: one walk, one
         // answer, so a plan cannot offer a berth this then refuses on the first move.
-        String tooLong = whyTooLongForTheBerth(path, loc);
+        String tooLong = whyTooLongForThisRoute(path, loc);
 
         if (tooLong != null)
         {
@@ -4661,7 +4661,7 @@ public class Layout
 
                 seenPaths.add(path);
 
-                String tooLong = whyTooLongForTheBerth(path, loc);
+                String tooLong = whyTooLongForThisRoute(path, loc);
 
                 // A route it fits down is a route the operator can be sent along, so there is nothing
                 // to report about length whatever the others say.
@@ -7483,7 +7483,11 @@ public class Layout
     }
 
     /**
-     * Why this train does not fit where this path would put it, or null when it does (MT-262).
+     * Why this train does not fit anywhere this path would put it, or null when it does (MT-262).
+     *
+     * **Every square on the route, not only the last one** (Adam, 2026-09-09).  See the walk below for
+     * his ruling and for what it costs; the short of it is that a route crossing a measured stretch
+     * too short for the train is refused even where the train would not have stopped there.
      *
      * **ONE predicate for "it does not fit", so that no door writes a second copy.**  Adam, on being
      * able to send a four-unit train into two units of track: *"there is no notice that can help
@@ -7503,7 +7507,7 @@ public class Layout
      * @param loc the train
      * @return the refusal, already translated, or null when the train fits
      */
-    public static String whyTooLongForTheBerth(List<Edge> path, Locomotive loc)
+    public static String whyTooLongForThisRoute(List<Edge> path, Locomotive loc)
     {
         if (path == null || path.isEmpty() || loc == null) return null;
 
@@ -7519,21 +7523,114 @@ public class Layout
             return I18n.f("autolayout.errorTrainLengthTooLong", ending.getName());
         }
 
-        // AND THE TRACK.  Null is "nobody has measured this", which is not a refusal: Adam, on an
-        // unmeasured run in, *"generally, allow it"*.
-        Integer room = measuredRoomAtTheBerth(path, loc);
+        // AND THE TRACK, AT EVERY SQUARE THE ROUTE RUNS THROUGH (Adam, 2026-09-09).
+        //
+        // He was asked whether "will the train fit" means at the destination or everywhere on the way,
+        // with the cost of the second stated - it refuses through moves that a berth-only rule allows.
+        // **"For 1, it's b.  This should only apply if lengths are specified - and edges are already
+        // locked as trains pass through in non-dynamic mode.  So it's really about implementing the
+        // same mechanic."**  What he reported it against was a nine-unit train being offered RampDown:
+        // *"technically incorrect to say there is a path since we pass the track of length 1 at 22,7
+        // to get there."*
+        //
+        // ONE WALK, ASKED OF EVERY PREFIX.  `measuredRoomAtTheEndOf` answers about the square a path
+        // ENDS at, so asking it of path[0..i] answers "if the train stood here, would its tail be
+        // clear of the switch behind it".  The destination is the last iteration rather than a second
+        // rule, which is the only shape in which the two cannot come to disagree - and it is the
+        // "same mechanic" his ruling asks for rather than a new one.
+        //
+        // NULL IS STILL NOT A REFUSAL.  An unmeasured stretch answers "I cannot judge this" and is
+        // passed over, which is the other half of the ruling - *"only apply if lengths are
+        // specified"*, and before it *"generally, allow it"*.  The measured stretches still bind.
+        //
+        // THE MESSAGE NAMES THE SQUARE THAT IS SHORT, and a different message for a square on the way
+        // than for the berth.  A refusal that names the destination when the destination has room
+        // sends the operator to measure the one stretch that was already long enough.
+        //
+        // Copied into an ArrayList because `subList` is asked for `path.size()` times and the callers
+        // hand in linked lists, where every index costs a walk.
+        if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
-        if (room != null && loc.getTrainLength() != null && loc.getTrainLength() > room)
+        List<Edge> ordered = new java.util.ArrayList<>(path);
+
+        for (int i = 0; i < ordered.size(); i++)
         {
-            return I18n.f("autolayout.errorTrainTooLongForBerth", loc.getName(), ending.getName(),
-                room, loc.getTrainLength());
+            boolean berth = i == ordered.size() - 1;
+
+            Integer room = berth ? measuredRoomAtTheEndOf(ordered, loc)
+                : roomAfterASwitchOnTheWay(ordered.subList(0, i + 1), loc);
+
+            if (room == null || loc.getTrainLength() <= room) continue;
+
+            Point here = ordered.get(i).getEnd();
+
+            if (here == null || berth)
+            {
+                return I18n.f("autolayout.errorTrainTooLongForBerth", loc.getName(),
+                    ending.getName(), room, loc.getTrainLength());
+            }
+
+            return I18n.f("autolayout.errorTrainTooLongOnTheWay", loc.getName(), here.getName(),
+                room, loc.getTrainLength(), ending.getName());
         }
 
         return null;
     }
 
     /**
+     * The room at a square the train runs THROUGH, and only where a switch bounds it (Adam, 2026-09-09).
+     *
+     * The same walk as `measuredRoomAtTheEndOf` with one condition added, and the condition is the
+     * difference between a rule and an artefact.
+     *
+     * **The walk has two stopping conditions and only one of them is a rule.**  It stops at the last
+     * switch, which is Adam's ruling of 2026-09-02 - *"between the switch and the station, the length
+     * must be >= length of the train"*.  It also stops when it runs out of path, which is not a
+     * measurement of anything: a two-edge prefix answers "two edges of room" when the honest answer is
+     * "the track behind where the train started has not been looked at, and the train is standing on
+     * it".
+     *
+     * At the DESTINATION that second condition is harmless and long-standing - the train comes to rest
+     * there and the route behind it is what it lies back over.  At a square it merely passes through it
+     * refuses trains that fit: measured, a four-unit train refused four units of room, an eight-unit
+     * train refused a nine-unit run in, and the staging planner giving up on a berth it could reach.
+     *
+     * So a pass-through square is judged only where a switch bounds it.  That is exactly the case the
+     * ruling was made about - *"we pass the track of length 1 at 22,7"*, which is one measured unit
+     * after a switch - and it is the only case in which the number means anything.
+     *
+     * @param prefix the route so far, ending at the square being judged
+     * @param loc the train
+     * @return the room, or null when no switch bounds this square and the question cannot be answered
+     */
+    public static Integer roomAfterASwitchOnTheWay(List<Edge> prefix, Locomotive loc)
+    {
+        if (prefix == null || prefix.isEmpty()) return null;
+
+        boolean bounded = false;
+
+        for (Edge edge : prefix)
+        {
+            if (edge.crossesASwitch())
+            {
+                bounded = true;
+
+                break;
+            }
+        }
+
+        return bounded ? measuredRoomAtTheEndOf(prefix, loc) : null;
+    }
+
+    /**
      * The measured room a train has to stand in at the end of this path (TCX-A2, MT-262).
+     *
+     * **Asked of PREFIXES as well as of whole routes** (Adam, 2026-09-09).  "The end of this path" is
+     * meant literally: hand it the first three edges of a nine-edge route and it answers about the
+     * square those three arrive at.  That is how `whyTooLongForThisRoute` asks the question at every
+     * square a train runs through without a second walk existing to disagree with this one, and it is
+     * why the method is no longer called `measuredRoomAtTheBerth` - nothing here knows or cares
+     * whether the square it lands on is where the train was going to stop.
      *
      * **Pure**, which is what lets the staging planner ask it.  Every other rule in `isPathClear`
      * reads live feedback, so `HomeStaging` has to re-implement them for hypothetical futures - and
@@ -7560,7 +7657,7 @@ public class Layout
      * @param loc the train
      * @return the total measured length behind the berth, or null when the question does not arise
      */
-    public static Integer measuredRoomAtTheBerth(List<Edge> path, Locomotive loc)
+    public static Integer measuredRoomAtTheEndOf(List<Edge> path, Locomotive loc)
     {
         if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 

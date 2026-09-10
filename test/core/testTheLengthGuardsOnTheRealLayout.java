@@ -8,6 +8,7 @@ import java.util.Set;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -197,22 +198,26 @@ public class testTheLengthGuardsOnTheRealLayout
      * whole railway - and the note that used to be here recorded two questions about it, both of which
      * are now answered by measurement rather than left open.
      *
-     * **THE FIRST QUESTION: is the guard refusing from some start squares and not others?**  No.  It
-     * refuses on the room behind the BERTH, which is a property of the berth and of the last part of
-     * the approach to it, so different starts reach different berths and get different answers.  That
-     * is the rule working, not a hole in it: `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost`
-     * pins it in three measurements at one berth, and `testWhyRampDownIsOffered` pins why a berth eight
-     * edges away is not governed by the same tile.
+     * **THE FIRST QUESTION: is the guard refusing from some start squares and not others?**  Yes, and
+     * that is the rule rather than a hole in it.  Since Adam's ruling of 2026-09-09 the guard refuses
+     * on the tightest measured stretch anywhere on the ROUTE, so the answer is a property of the whole
+     * journey: two starts that reach one berth by different approaches can get different answers about
+     * it, and a berth with room can be refused for a square on the way.
+     * `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost` pins one tile deciding the berth it leads
+     * into, and `testWhyRampDownIsRefused` pins the same tile deciding a berth eight edges away that
+     * it does not lead into at all.  Neither claim can be made by asking whatever train happens to be
+     * standing somewhere.
      *
      * **THE SECOND QUESTION: does `roomTheGuardSees` answer a different question from
-     * `Layout.measuredRoomAtTheBerth`?**  Yes, and it is the helper that is loose.  It takes the
-     * LARGEST `getRoomAtTheEnd` of any edge ending at a station of that name, over every copy of it and
-     * every approach; the guard uses the room on the path in hand.  Where a station is reached by more
-     * than one approach the two are different numbers, and the note that used to be here reported "the
-     * room at that berth is ONE" for RampDown on a path whose last edge crosses no switch at all and
-     * has no such number.  It is still used - by `testExactlyFitsIsAdmittedAndOneMoreIsNot`, which
-     * searches for a berth where the guard binds and then verifies the refusal itself, so a loose
-     * number there costs a candidate rather than a wrong verdict.
+     * `Layout.measuredRoomAtTheEndOf`?**  It did, and that is what it was rewritten for on the same
+     * day.  It took the LARGEST `getRoomAtTheEnd` of any edge ending at a station of that name, over
+     * every copy of it and every approach, while the guard used the room on the path in hand - so it
+     * once reported "the room at that berth is ONE" for RampDown, whose last edge crosses no switch at
+     * all and has no such number.  It now enumerates the routes from where the train is standing and
+     * returns the best route's tightest square, which is exactly what the guard compares the train
+     * against.  Its one caller is `testExactlyFitsIsAdmittedAndOneMoreIsNot`, which searches for a
+     * berth where the guard binds and then verifies the refusal itself, so a number that is wrong in
+     * the safe direction costs a candidate rather than a verdict.
      */
 
     /**
@@ -236,7 +241,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * square, opposite answers - which is the shape the claim this replaced could not have, because it
      * asserted about every berth at once on a fixture that measures three tiles.
      *
-     * MUTATION, run: `>=` for `>` at `Layout.whyTooLongForTheBerth` fails the third case (nine into
+     * MUTATION, run: `>=` for `>` at `Layout.whyTooLongForThisRoute` fails the third case (nine into
      * nine is refused); widening the comparison by any constant fails the second.
      *
      * @throws Exception on a failure to build
@@ -336,46 +341,48 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * WHY RampDown IS OFFERED, AND WHY 22,7 CANNOT BE THE REASON IT IS NOT.
+     * A nine-unit train is refused RampDown, and the one unit at 22,7 is why.
      *
-     * Adam, 2026-09-09, on being shown that a nine-unit train standing at BottomMainB is offered
+     * Adam, 2026-09-09, on being shown that a nine-unit train standing at BottomMainB was offered
      * `RampDown (southbound, reverse)`: **"technically incorrect to say there is a path since we pass
      * the track of length 1 at 22,7 to get there, then nothing."**
      *
-     * **The first half of that is right and the conclusion does not follow, and this test is the
-     * measurement that says so.**  The route really does cross 22,7 - it is the first edge of it - and
-     * after that nothing on the way to RampDown is measured.  But 22,7 is not on RampDown's approach in
-     * the sense the room rule uses, and the geometry is the whole answer:
+     * **He was right, and this test used to say he was not.**  It measured the geometry - which is
+     * still below, because it is the whole of why the tile matters - and concluded that 22,7 was not
+     * RampDown's business:
      *
      *   - RampDown is at `1 - Main:21,6`, BottomMainPost at `22,6`.  They are adjacent squares on the
      *     drawing and there is NO edge between them: the reduction connects RampDown only to
      *     TopMainPost at `7,2`.
      *   - So the route from BottomMainB runs BottomMainB - BottomMainPost - `7,1` - RampUp - down the
-     *     ramp - one of the TopMainR roads - TopMainPost - RampDown: NINE edges, the long way
-     *     round, with three switch-crossing edges between 22,7 and the berth.  WHICH of the two
-     *     roads is not fixed - the search takes R1 with the snapshot's three tiles measured and R2
-     *     with every tile measured - and it does not matter to this: the count of edges and of
-     *     switches between them is the same either way, which is why the test asserts those
-     *     rather than the names.
-     *   - The last of those nine crosses no switch at all and is eighteen tiles long.  `roomAtTheEnd`
-     *     is what bounds a berth, and this edge has none to bound it with.
+     *     ramp - one of the TopMainR roads - TopMainPost - RampDown: NINE edges, the long way round,
+     *     with three switch-crossing edges between 22,7 and the berth.  WHICH of the two roads is not
+     *     fixed - the search takes R1 with the snapshot's three tiles measured and R2 with every tile
+     *     measured - and it does not matter to this: the count of edges and of switches between them
+     *     is the same either way, which is why this asserts those rather than the names.
+     *   - The last of those nine crosses no switch at all and is eighteen tiles long, so there is
+     *     nothing at the berth to bound the train with - the *"then nothing"* in his ruling.
      *
-     * `Layout.measuredRoomAtTheBerth` walks BACKWARDS from the berth and stops at the last switch -
-     * Adam's own ruling of 2026-09-02, *"between the switch and the station, the length must be >=
-     * length of the train"* - so it stops seven edges short of 22,7 and could not reach it.  The one
-     * unit at 22,7 measures the room at BOTTOMMAINPOST, which the train passes through and does not
-     * stop at, and `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost` is that tile doing exactly its
-     * job.
+     * All of that is still true.  What changed is the question: until his ruling of the same day the
+     * rule asked only whether the train fitted where it STOPPED, so the walk started at RampDown, hit
+     * a switch seven edges short of 22,7, and never saw it.  It now asks at every square the route
+     * runs through, and the answer at BottomMainPost - the FIRST square, one measured unit - refuses
+     * the route before the berth is ever reached.
      *
-     * **This is a pin, not a complaint.**  If somebody later decides a route must also fit between the
-     * switches at the points it merely passes through, this test is the one that will go red, and its
-     * message says which claim was traded for which.  `configureAndLockPath` locks the whole route
-     * before the train moves, so nothing stops it at BottomMainPost as things stand.
+     * **The refusal names BottomMainPost, not RampDown**, which is the point of the second message:
+     * RampDown has no measurement to fix and sending him there to make one would help nobody.
+     *
+     * The route is taken from `bfs` rather than from what the railway offers, because what the railway
+     * offers is the thing under test - asking it for the route would make every assertion below
+     * conditional on the refusal not happening.
+     *
+     * MUTATION: asking the room walk of the whole path rather than of each prefix - the rule as it
+     * stood on 2026-09-08 - offers RampDown again and fails this.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testWhyRampDownIsOffered() throws Exception
+    public void testWhyRampDownIsRefused() throws Exception
     {
         ourTrain.setTrainLength(9);
 
@@ -383,40 +390,60 @@ public class testTheLengthGuardsOnTheRealLayout
 
         Layout built = rebuild();
 
-        List<Edge> route = onlyOurTrainAtBottomMainB(built) == null ? null : theRouteTo(built,
-            "RampDown");
+        Point from = onlyOurTrainAtBottomMainB(built);
+
+        assertNotNull(from,
+            "the nine-unit train is not standing alone at BottomMainB, so what follows is about some"
+            + " other journey");
+
+        assertFalse(reaches(destinationsFromBottomMainB(), "RampDown"),
+            "RampDown is still offered to a nine-unit train standing at BottomMainB with 22,7 measured"
+            + " at one unit. That is the case Adam ruled on: the route crosses that tile and the train"
+            + " does not fit on it");
+
+        // THE ROUTE IS STILL THERE, and still has the shape the reasoning above describes - it is the
+        // LENGTH RULE that refuses it, not the graph having changed underneath this test.
+        List<Edge> route = null;
+
+        for (Point candidate : built.getPoints())
+        {
+            if (!candidate.getName().startsWith("RampDown")) continue;
+
+            route = built.bfs(from, candidate, new LinkedList<List<Edge>>());
+
+            if (route != null) break;
+        }
 
         assertNotNull(route,
-            "a nine-unit train standing at BottomMainB is offered no route to RampDown at all with the"
-            + " snapshot's three tiles measured at one unit. Adam's ruling is about that route being"
-            + " offered, so if it has gone the ruling has been overtaken and this test is the record of"
-            + " what it used to say");
+            "there is no route at all from BottomMainB to RampDown any more, so this test is recording"
+            + " a refusal that the geometry makes moot and the reasoning above is about track that no"
+            + " longer connects");
 
-        // THE TILE IS ON THE FIRST EDGE, MEASURING THE ROOM AT BOTTOMMAINPOST.
         assertEquals(route.get(0).getEnd().getName().split(" ")[0], "BottomMainPost",
             "the route from BottomMainB to RampDown no longer starts by running to BottomMainPost, so"
-            + " the tile at 22,7 is somewhere else on it and the reasoning below does not hold. It runs:"
-            + " " + namesOf(route));
+            + " the tile at 22,7 is somewhere else on it and the reasoning above does not hold. It"
+            + " runs: " + namesOf(route));
 
         assertEquals(route.get(0).getRoomAtTheEnd(), 1,
             "the first edge of the route measures " + route.get(0).getRoomAtTheEnd() + " units after"
             + " its last switch rather than the one unit at 22,7, so that tile is not where this test"
             + " believes it is");
 
-        // AND THE BERTH'S OWN APPROACH HAS NOTHING TO BOUND IT WITH.
+        // AND THE BERTH'S OWN APPROACH STILL HAS NOTHING TO BOUND IT WITH, which is what makes this a
+        // test of the route rather than of the destination.
         Edge last = route.get(route.size() - 1);
 
         assertFalse(last.crossesASwitch(),
             "the last edge into RampDown crosses a switch now, so it DOES bound where the train may"
-            + " come to rest and the guard has a number to judge with. That is a different railway from"
-            + " the one this test was measured on");
+            + " come to rest and the refusal above could be the berth rule rather than the route rule."
+            + " That is a different railway from the one this test was measured on");
 
         assertEquals(last.getLength(), 0,
             "the last edge into RampDown is measured at " + last.getLength() + " units, so the snapshot"
             + " has grown a measurement on it and the \"then nothing\" in Adam's ruling is no longer"
             + " true of it");
 
-        // SWITCHES IN BETWEEN, which is what stops the walk long before 22,7.
+        // SWITCHES IN BETWEEN: this is why the berth-only walk could never reach 22,7.
         int switchesBetween = 0;
 
         for (int i = 1; i < route.size(); i++)
@@ -425,25 +452,39 @@ public class testTheLengthGuardsOnTheRealLayout
         }
 
         assertTrue(switchesBetween > 0,
-            "there is no switch anywhere between BottomMainPost and RampDown, so the room walk would"
-            + " run all the way back and 22,7 WOULD bound the berth. It runs: " + namesOf(route));
+            "there is no switch anywhere between BottomMainPost and RampDown, so the berth walk would"
+            + " have run all the way back and 22,7 would have bound the berth even under the old rule."
+            + " It runs: " + namesOf(route));
 
-        assertEquals(Layout.measuredRoomAtTheBerth(route, ourTrain), null,
-            "the guard now measures " + Layout.measuredRoomAtTheBerth(route, ourTrain) + " units at"
-            + " RampDown where it used to decline to judge, so something has been given a length or the"
-            + " walk has been changed");
+        assertNull(Layout.measuredRoomAtTheEndOf(route, ourTrain),
+            "the berth walk now measures " + Layout.measuredRoomAtTheEndOf(route, ourTrain) + " units"
+            + " at RampDown where it used to decline to judge, so the refusal above may be coming from"
+            + " the destination and this test would no longer be about the route");
 
-        // AND ADAM'S TWO CASES: unmeasured and at nine, the route is offered either way.
+        // THE SENTENCE NAMES THE SQUARE THAT IS SHORT.
+        String why = Layout.whyTooLongForThisRoute(route, ourTrain);
+
+        assertNotNull(why, "the railway offers no route to RampDown and the rule accepts the one BFS"
+            + " finds, so the two doors disagree about the same journey");
+
+        assertTrue(why.contains("BottomMainPost"),
+            "the refusal is \"" + why + "\", which does not name BottomMainPost - the square with the"
+            + " one unit. RampDown has nothing to measure and sending anybody there is the notice"
+            + " getting in the way");
+
+        // AND ADAM'S TWO CASES: unmeasured and at nine, the route is offered again.
         measureOnlyTheSnapshotsThreeAs(0);
 
         assertTrue(reaches(destinationsFromBottomMainB(), "RampDown"),
-            "with no lengths set anywhere, RampDown is not offered - Adam asked for this case by name");
+            "with no lengths set anywhere, RampDown is not offered - Adam asked for this case by name,"
+            + " and his ruling of 2026-09-09 is explicit that the route rule applies \"only if lengths"
+            + " are specified\"");
 
         measureOnlyTheSnapshotsThreeAs(9);
 
         assertTrue(reaches(destinationsFromBottomMainB(), "RampDown"),
             "with the snapshot's three tiles measured at nine, RampDown is not offered - Adam asked for"
-            + " this case by name");
+            + " this case by name, and nine units of room holds a nine-unit train");
     }
 
     /**
@@ -741,7 +782,7 @@ public class testTheLengthGuardsOnTheRealLayout
 
             // A BERTH WHERE THE GUARD ACTUALLY BINDS.
             //
-            // Being offered is not enough: the rule is `measuredRoomAtTheBerth`, and it declines to
+            // Being offered is not enough: the rule is `measuredRoomAtTheEndOf`, and it declines to
             // judge a run in nobody has measured - so on most of a real railway there is no refusal
             // to sit at the edge of.  (It applied only where a train had to BACK IN until MT-262,
             // which is a narrower version of the same point.)
@@ -757,7 +798,7 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (String candidate : offeredDestinations(train))
             {
-                int here = roomTheGuardSees(candidate);
+                int here = roomTheGuardSees(train, candidate);
 
                 if (here <= 1) continue;
 
@@ -818,39 +859,67 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * The room the guard will actually count on the way into a station.
+     * The largest train the guard will let into a station from where this one is standing.
      *
-     * **Read from the built railway rather than worked out here.** `roomAtTheEnd` is the part of the
-     * approach AFTER the last switch, because a train reversing in can only use the stretch it can
-     * see - and which tiles fall inside that stretch depends on where the switches are. A test that
-     * decides for itself how many units it has just measured is a test that has to know the geometry,
-     * and this one used to: it named two tiles, they stopped being the run in when the fixture began
+     * **The tightest measured stretch on the best route there**, which is what the rule compares a
+     * train against since Adam's ruling of 2026-09-09 (`Layout.whyTooLongForThisRoute`).  Read off the
+     * built railway rather than worked out here: which tiles fall inside a stretch depends on where
+     * the switches are, and a test that decides that for itself is a test that has to know the
+     * geometry.  This one used to name two tiles, they stopped being the run in when the fixture began
      * building the whole railway, and both halves of the boundary read as refusals.
      *
-     * @param station the destination
-     * @return the units the guard counts, or -1 when nothing leads there
+     * **Tightest along a route, largest across routes.**  A train is offered a berth when SOME route
+     * to it fits, so the number that decides the boundary is the best route's worst square.  Reading
+     * `roomAtTheEnd` off the arriving edges - which is what this did while the berth was the only
+     * square asked about - now over-states it wherever the way there is narrower than the berth.
+     *
+     * @param loc the train, taken from where it is standing
+     * @param station the destination Point's name
+     * @return the units the guard counts, or -1 when nothing measurable leads there
      * @throws Exception on a failure to build
      */
-    private int roomTheGuardSees(String station) throws Exception
+    private int roomTheGuardSees(Locomotive loc, String station) throws Exception
     {
         Layout built = rebuild();
 
-        int most = -1;
+        Point to = built.getPoint(station);
 
-        for (Edge edge : built.getEdges())
+        if (to == null) return -1;
+
+        Point from = null;
+
+        for (Point point : built.getPoints())
         {
-            if (edge.getEnd() == null) continue;
-
-            if (!station.equals(session.getStationIndex().baseNameOf(edge.getEnd().getName()))
-                && !station.equals(edge.getEnd().getName()))
-            {
-                continue;
-            }
-
-            most = Math.max(most, edge.getRoomAtTheEnd());
+            if (loc.equals(point.getCurrentLocomotive())) from = point;
         }
 
-        return most;
+        if (from == null) return -1;
+
+        int best = -1;
+
+        List<List<Edge>> seen = new LinkedList<>();
+
+        while (true)
+        {
+            List<Edge> path = built.bfs(from, to, seen);
+
+            if (path == null) break;
+
+            seen.add(path);
+
+            int tightest = Integer.MAX_VALUE;
+
+            for (int i = 0; i < path.size(); i++)
+            {
+                Integer room = Layout.measuredRoomAtTheEndOf(path.subList(0, i + 1), loc);
+
+                if (room != null) tightest = Math.min(tightest, room);
+            }
+
+            if (tightest != Integer.MAX_VALUE) best = Math.max(best, tightest);
+        }
+
+        return best;
     }
 
     /**

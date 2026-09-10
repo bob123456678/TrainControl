@@ -652,7 +652,7 @@ public class testStationBlockedByAnotherPoint
      * `isPathClear` asked that rule only where the destination was a terminus or a reversing point,
      * so a through platform like BK B was never judged on the track leading into it and any positive
      * number did - the 1 was "some measured length", not a claim about room.  It is a claim now:
-     * `measuredRoomAtTheBerth` reads it, and every locomotive in this file comes from the operator's
+     * `measuredRoomAtTheEndOf` reads it, and every locomotive in this file comes from the operator's
      * real database, where the first two are three units long.  Measured on 2026-09-08, that made
      * five of these tests refuse the path before the FR-001 rule was ever reached - and, worse, made
      * the three that assert a REFUSAL pass without it, because the length was refusing for them.

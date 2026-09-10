@@ -651,61 +651,6 @@ when i click on DRG 06 001, "why not moving" in the autonomy editor correctly pa
 
 starting autonomous operation from the current track state, via the netbeans compiled jar, makes the UI unresponsive.  Trains still run, but nothing is repainted, and controls are stuck.
 
-### FR-066 - 2026-09-09 - A keyboard shortcut for setting a square's length - and Control+T is taken
-
-**Kind:** feature request  
-**Raised from:** MT-288  
-**Filed:** 2026-09-09  
-
-Adam, on MT-288 (2026-09-08), in the same breath as passing it:
-
-> *"Works. But we need a keyboard shortcut to set the length - how about control+T?"*
-
-MT-288 is **The track-length box is ready to type in** (from OB-176), and it passed: the number in
-the dialog is selected, so typing replaces it. The request is for a way to OPEN that dialog from the
-keyboard, on the square under the pointer, the way Control+S renames one.
-
-**CONTROL+T IS ALREADY TAKEN, so this needs a free key rather than the one he suggested.** In the
-track diagram editor Control+T edits a square's TEXT - `LayoutEditor.formKeyPressed` sends it to
-`editText(getLastHoveredLabel())`. Control+G is taken too, and is the natural neighbour: it draws the
-lengths. Control+L is the caption toggle and Control+K the grid.
-
-So the open question is which chord, and that is Adam's to say. The rest is small: the diagram already
-knows which square the pointer is over (`TrainControlUI.hoveredDiagramTile`), and the dialog is
-`AutonomyEditorPanel.applyLength`.
-
-**Claude, 2026-09-09: CONTROL+D IS NOT FREE EITHER, and it is taken TWICE.** Adam suggested it after
-being told Control+T was taken. In the track diagram editor it toggles the addresses drawn on the
-tiles - `LayoutEditor.formKeyPressed`, `VK_D` to `toggleAddresses()` - and in the main window it opens
-the locomotive adder, `TrainControlUI.getLocAdder().setVisible(true)`. Neither is a chord this can
-share: one is about what the diagram draws and the other opens a window.
-
-**No key is picked here.** That is Adam's to say, as the paragraph above already records, and what was
-missing was the list to choose from rather than the choice. So, measured from the two key handlers
-rather than remembered:
-
-| | taken by | free |
-|---|---|---|
-| **the track diagram editor** (`LayoutEditor.formKeyPressed`) | A C D G H I K L R S T V X Y Z | **B E F J M N O P Q U W** |
-| **the main window** (`TrainControlUI`) | A C D F L M N R S V X | B E G H I J K O P Q T U W Y Z |
-| **free in BOTH** | | **B E J O P Q U W** |
-
-**Both matter, not just the editor.** The dialog is opened from the autonomy editor, but the square
-the pointer is over is `TrainControlUI.hoveredDiagramTile` and the track diagram viewer borrows the
-same tile menu - so a chord that works in one window and not the other is a shortcut people will find
-once and then stop trusting. The last row is the set with no collision anywhere.
-
-**Which of them say "length" out loud**, since a chord nobody can guess is a chord nobody uses:
-
-- **U** for *units*, which is the word the dialog and the guard both use for what is being set. Free in
-  both windows.
-- **E** for the *e* in l**e**ngth, which is how Control+X gets to mean cut. Free in both windows.
-- **M** for *measure* - the best of the three as a word, and the one this table exists to warn about:
-  it is free in the editor and TAKEN in the main window (`VK_M`), so it would work over the diagram in
-  one window and do something else in the other.
-
-Nothing else in the free set is a mnemonic for anything: B, J, O, P, Q and W are simply unused.
-
 ### OB-193 - 2026-09-09 - TopMainR2 shows two labels
 
 **Kind:** bug  
@@ -804,48 +749,6 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
-### OB-195 - 2026-09-09 - The editor says autonomy will never choose a compulsory turn; the runtime would
-
-**Kind:** bug  
-**Raised from:** Adam's compulsory-turn ruling of 2026-09-09  
-**Filed:** 2026-09-09  
-
-Adam, 2026-09-09, ruling on the compulsory-turn row in `behaviour.md` section 3:
-
-> Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one
-> there.
-
-His ruling is that the CODE is right and the table overstated it. `AutonomyBuilder` writes
-`autoDestination:false` for exactly one marking - the parking one (`manualOnly`) - and for nothing
-else. A compulsory turn that stops is emitted with `terminus:true`, and `Layout.isSendableDestination`
-(`isDestination && isActive && isAutoDestination && !isReversing`) admits a terminus. So autonomy may
-choose a compulsory turn, and on Adam's railway it does not only because every one of his is ALSO
-marked parking.
-
-**The editor does not agree with that.** `AutonomySession.stationsAutonomyWillNotChoose` adds a
-station when `!isAutoDestination(tile) || isMustTurnAround(tile)` - so a compulsory turn counts as one
-autonomy will never choose whether or not it is parking. That set decides two visible things: the
-magenta colour on a tested path's leg (section 7 of `behaviour.md`) and the Auto tier's "reachable and
-never chosen" notice. Its own comment claimed to be "that clause asked of the diagram", which is what
-made the disagreement invisible; the comment has been corrected to say the set is wider, but the
-behaviour has not been changed.
-
-**What it costs, today:** nothing on Adam's railway, because he has no compulsory turn that is not
-also parking. On any railway that has one, the diagram says autonomy will never send a train there and
-autonomy sends trains there. `guard-and-affordance-same-question`.
-
-**Two ways to settle it, and it is Adam's to choose:**
-
-1. narrow the editor - drop the `isMustTurnAround` clause, so the notice and the colour say exactly
-   what the runtime does. A compulsory turn autonomy may choose is then drawn like any other station;
-2. widen the runtime - have the builder write `autoDestination:false` for a compulsory turn as well,
-   which is the rule the table used to claim and which his ruling has just declined.
-
-(1) matches the ruling. (2) is a behaviour change to the running railway and would need a test at the
-dispatcher.
-
-Not urgent, and not a symptom anybody has seen. Filed so that the divergence is written down rather
-than living in a code comment.
 
 ## What has been picked up
 
@@ -861,6 +764,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read for what was free - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** now opens the length dialog on the square under the pointer in the autonomy editor, through `AutonomyEditorPanel.promptLengthFor`, which asks the right-click menu's own `isIgnored` question so the key cannot act where the menu offers nothing - the shape of MT-313, one door over. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is still free in both, so the next person to be asked "which key" gets the answer off a run rather than off an hour's reading | fixed unvalidated | - |
+| 2026-09-09 | OB-195 | bug | Adam: *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the 'allow in autonomy' option is checked, otherwise the train may only pass through in its current direction."* `AutonomySession.stationsAutonomyWillNotChoose` carried a second clause, `isMustTurnAround`, and a comment claiming it was the runtime's rule; it is not, because a compulsory turn that stops is built as a TERMINUS and `Layout.isSendableDestination` admits one. The clause is gone and nothing replaces it: **Can Be Chosen in Full Autonomy** is the one switch that decides, and turning round says what happens when a train arrives rather than who may send one. `core.testACompulsoryTurnIsChosenLikeAnyOtherStation` asserts both halves on `single-switch`, where the two markings can disagree - on Adam's own railway every compulsory turn is also marked manual-only, which is why this survived. behaviour.md section 3 carries the ruling | fixed unvalidated | - |
 | 2026-09-09 | OB-193 | bug | TopMainR2 is `1 - Main:6,4`, and the snapshot captions it twice - on `6,4` and on `6,5` - which is the state `migrateStationLabels` can produce without anybody asking, because it writes captions through the raw store door and that door does not sweep the old one away. Already fixed on 2026-09-08 by **05c7f48e** (MT-337): `TrainControlUI.autonomyCaptionAt` makes a SELF-caption give way when another square is already naming that station, so the offset label - the one somebody placed - is the one that survives. Verified rather than believed: `regression.testTheHomeLabelIsDrawnOnce` now names that square and asserts one label on it, and goes red with the fix removed | fixed validated | - |
 | 2026-09-09 | OB-194 | bug | Adam: *“Warning if using the bulk tool”* - so the warning rather than a real undo. The confirmation was a fixed sentence about home assignments; it now names every locomotive it is about to lift, says how many squares it will empty, and says that Cancel will not put them back. It cannot, since OB-183: placements are read from the railway rather than from the setup, so closing the editor restores the file and not the trains. One builder feeds both the dialog and the menu item's tooltip, so the warning cannot arrive only after the click. `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` asks the editor for the string and checks all three, in whichever of the eight languages the run is in | fixed unvalidated | - |
 | 2026-09-09 | FR-068 | feature request | Adam: *“it should be representable already in the UI, right?”* - and it is, so nothing in the editor changed. A line may be indented one level past the line above it, so `3 or (4 and (1 or 2))` is built by typing seven lines flat and indenting twice; the outline holds it and the editor saves it. The one shape that cannot be TYPED is the outline `ConditionOutline.of` writes when the group is the AND's left child, which steps from depth 0 straight to depth 2 - and a route carrying that opens and reads correctly, which is what MT-320 settled. `ui.testRouteEditorValidation.testANestedGroupThatIsNotTheFirstTermCanBeBuilt` is the gesture, and asserts the one-level rule that decides which order is typeable | fixed unvalidated | - |
