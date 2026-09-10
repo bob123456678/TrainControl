@@ -77,8 +77,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-347](#mt-347) | 2026-09-10 | A berth with room, refused for the way there | needs test | ruling 1b, 2026-09-09 |
 | [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
+| [MT-350](#mt-350) | 2026-09-10 | Clear All Track Lengths, across every page | needs test | FR-069 |
+| [MT-351](#mt-351) | 2026-09-10 | A shortcut after changing pages acts on the square you are pointing at | needs test | OB-198 |
 
-Everything else - 299 of 349 - needs nothing from you unless the area changes again:
+Everything else - 299 of 351 - needs nothing from you unless the area changes again:
 270 **fixed validated** and 29 **superseded**.
 
 ---
@@ -150,6 +152,10 @@ square, which is the deduplication this test is about.
 fit at every square its route runs through, not only where it stops - so a stretch you measure may now
 refuse routes that merely pass over it, and the refusal names that square. That is [MT-347](#mt-347).
 What this test is still about is the NOTICES: one per stretch between a switch and a station, not ten.
+
+**Adam, 2026-09-10 (triage).** Works.
+
+*Run against commit 4565be9b, build\classes, compiled 10 Sep 04:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -15746,6 +15752,15 @@ press Control+E.
 track says where the train is, and a **grey wash** says that track is unusable. So the check is that
 the flash fades back to *both* - the line and the grey - rather than to bare track.
 
+**Adam, 2026-09-10 (triage).** Does not work.
+
+shading and orange seems drawn OK, but:
+1. I want the shading to instead be the same tile with more transparency exactly like what happens when edges are locked in autonomy mode.
+2. when BR 06 001 at BottomMainB has length 3, and the track a total of length 4, as in the current setup, the switch is still shaded.
+3. make sure the shading and orange repaints on any autonomy or train/track length edit.
+
+*Run against commit 4565be9b, build\classes, compiled 10 Sep 05:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-279"></a>
@@ -15779,6 +15794,10 @@ drawn at all and this test would pass by drawing nothing anywhere.
 **And it is two marks now**, not one: an orange line where the train is, a grey wash on track its
 presence has made unusable. Both belong to the viewer; the check is that neither appears in either
 editor.
+
+**Adam, 2026-09-10 (triage).** Works.
+
+*Run against commit 4565be9b, build\classes, compiled 10 Sep 05:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -15820,6 +15839,12 @@ asked at every square a route runs through, so a second refusal is possible in t
 destination with room can be refused because a measured stretch on the WAY to it is too short. The
 notice names the square on the way rather than the destination. If you see that instead of the
 tail-across-a-switch refusal, that is [MT-347](#mt-347) and not this.
+
+**Adam, 2026-09-10 (triage).** Works.
+
+yes- what is shaded is effectively blocked
+
+*Run against commit 4565be9b, build\classes, compiled 10 Sep 05:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -15907,6 +15932,10 @@ the caption work that changed after you first saw it.
 **Expected**
 
 It sits inside the sidebar without widening it, at the same width as the controls around it.
+
+**Adam, 2026-09-10 (triage).** Works.
+
+*Run against commit 4565be9b, build\classes, compiled 10 Sep 05:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18178,6 +18207,65 @@ At the terminus the locomotive's direction flips when it stops. At the through p
 *Why this is here:* the suite now watches the actual command going to the tracks for both cases, and a
 terminus had no such test at all until 2026-09-10 - only tests that the application changed its own
 mind. This is the same claim on real metal.
+
+---
+
+<a id="mt-350"></a>
+
+### MT-350 - 2026-09-10 - Clear All Track Lengths, across every page
+
+**Disposition:** needs test
+**From:** FR-069
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. In the autonomy editor, measure a couple of squares on **one** page and a couple on **another** -
+   Control+E, or right-click and Segment Length.
+2. Right-click anywhere and open **Bulk Tools**. Hover **Clear All Track Lengths**.
+3. Press it, and read the dialog before answering.
+4. Say yes.
+5. Look at the squares you measured, on **both** pages.
+
+**Expected**
+
+- The menu label and the tooltip both carry the number of measured squares, and the tooltip is the
+  same sentence the dialog then shows.
+- The dialog says how many squares it will empty, and that nothing brings the lengths back except
+  typing them again - there is no undo here, and no file to restore from until you Save.
+- After yes, no square on either page has a length. **Both pages**, which is what you asked for:
+  *"this should clear the segment lengths across all pages."*
+- With nothing measured, the item is greyed and its tooltip says why.
+
+Cancel at step 4 leaves everything alone - worth one run of that too.
+
+---
+
+<a id="mt-351"></a>
+
+### MT-351 - 2026-09-10 - A shortcut after changing pages acts on the square you are pointing at
+
+**Disposition:** needs test
+**From:** OB-198
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. In the autonomy editor, hover a square so the blue outline appears, and note which one.
+2. Step to another page with **+** or **-**.
+3. Without moving the mouse onto any square, press **Control+E**. Then Control+S, then Control+H.
+
+**Expected**
+
+Nothing happens for any of the three - no dialog, no message about a square you did not choose.
+
+Then move the pointer onto a square on the new page and press Control+E: now it opens, on that square.
+
+*What this is:* the editor remembered the label you hovered on the page before and never forgot it, so
+all three shortcuts acted on a square that is no longer on the screen. Pre-existing; Control+E
+inherited it when it was added.
 
 ---
 

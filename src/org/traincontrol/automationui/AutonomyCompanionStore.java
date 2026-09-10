@@ -1015,6 +1015,45 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Every square that has a length recorded (FR-069).
+     *
+     * Read off the map rather than by asking every tile, for `measuresAnyTrack`'s reason: a length
+     * belongs to a SQUARE and most squares are not points, so a run of plain track between two sensors
+     * - exactly the thing somebody measures - carries no point at all.
+     *
+     * @return the measured squares, in the order they were measured
+     */
+    public java.util.List<TileKey> tilesWithALength()
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        for (Map.Entry<TileKey, Integer> each : tileLengths.entrySet())
+        {
+            if (each.getValue() != null && each.getValue() > 0) out.add(each.getKey());
+        }
+
+        return out;
+    }
+
+    /**
+     * Forgets every length on every page (FR-069).
+     *
+     * The whole map, which is the whole layout: lengths are keyed by a square that names its own page,
+     * so there is no per-page variant of this and Adam asked for none - *"clear the segment lengths
+     * across all pages"*.
+     *
+     * @return how many squares had one
+     */
+    public int clearEveryTileLength()
+    {
+        int had = tilesWithALength().size();
+
+        tileLengths.clear();
+
+        return had;
+    }
+
+    /**
      * Lengths of 0 are not stored.  A layout where nobody has assigned any adds nothing to the file, and
      * 0 is what an unassigned tile means anyway.
      * @param tile

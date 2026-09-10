@@ -2029,6 +2029,26 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(clearHomesItem);
 
+        // CLEAR ALL TRACK LENGTHS (FR-069).  Adam: *"to autonomy bulk tools menu, add 'clear all track
+        // lengths' - this should clear the segment lengths across all pages, after the user confirms
+        // in a popup."*
+        //
+        // Built like the two above it, down to the tooltip being the same sentence the dialog shows:
+        // a tooltip that says less than the confirmation has to be kept in step with it by somebody
+        // remembering, and that pair had already drifted once.
+        int measured = session == null ? 0 : session.tilesWithALength().size();
+
+        javax.swing.JMenuItem clearLengths = item(
+            I18n.f("autolayout.ui.menuClearAllTrackLengths", measured),
+            () -> clearAllTileLengths());
+
+        clearLengths.setEnabled(measured > 0);
+        clearLengths.setToolTipText(wrapped(measured > 0
+            ? I18n.f("autolayout.ui.confirmClearAllTrackLengths", measured)
+            : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
+
+        bulk.add(clearLengths);
+
         return bulk;
     }
 
@@ -8103,6 +8123,50 @@ public class AutonomyEditorPanel extends JPanel
         // why at length: the running layout keeps the old names, every caption looks up a Point
         // it has never heard of, and the labels go blank.  Naming sixty squares at once is that
         // failure sixty times over.
+        setupChanged();
+    }
+
+    /**
+     * Forgets every length on every page, after asking (FR-069).
+     *
+     * **What it costs is stated in the dialog, because nothing brings a length back.**  There is no
+     * undo here and no file to restore from until the setup is saved, so the confirmation says how
+     * many squares it is about to empty and that typing them again is the only way back - the same
+     * shape OB-194 gave the locomotive clear, and for the same reason.
+     *
+     * The empty case is said in the hint line rather than in a dialog: a dialog for "there was nothing
+     * to clear" is a second press to dismiss an answer nobody needed.  Kept even though the item greys
+     * itself on the same question, because the greying is the AFFORDANCE and this is the GUARD - and
+     * OB-057 and OB-090 are both what happens when one of the two is missing.
+     */
+    private void clearAllTileLengths()
+    {
+        java.util.List<TileKey> measured = session.tilesWithALength();
+
+        if (measured.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoTrackLengthsToClear"));
+
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
+            I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        int cleared = session.clearEveryTileLength();
+
+        selection.clear();
+
+        say(hint, I18n.f("autosetup.ui.infoTrackLengthsCleared", cleared));
+
+        // Lengths are what the room rule measures with, and it asks the RUNNING layout - so the same
+        // door `applyLength` uses, one gesture over.
         setupChanged();
     }
 

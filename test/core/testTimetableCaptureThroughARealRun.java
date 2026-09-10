@@ -296,8 +296,56 @@ public class testTimetableCaptureThroughARealRun
      * retires the earlier instances - a retired Layout refuses to dispatch, silently - so a test that
      * ran second against a shared fixture would see no trains move and blame the feature.
      */
+    /**
+     * How long to wait for the railway to go quiet before replacing it (OB-199).
+     *
+     * Generous, because it is only ever waited out when something is wrong: a graceful stop on this
+     * fixture takes a second or two, and the ceiling is here so a hung run says so rather than hanging.
+     */
+    private static final long QUIET_MS = 60_000;
+
+    /**
+     * Waits for the layout in force to stop driving trains, before a new one replaces it (OB-199).
+     *
+     * `stopLocomotives` stops trains **gracefully** - at their next station - so it returns long before
+     * the railway is quiet.  The locomotives belong to the MODEL and are shared, so a second
+     * configuration parsed on top of a still-running one is asking a fleet somebody else is driving:
+     * nothing it wants can be dispatched, `getActiveLocomotives()` on the new layout stays empty, and
+     * the test that waits for a train to move waits until its ceiling.
+     *
+     * This class has failed four times inside a full battery and never once on its own, which is the
+     * shape a loaded machine leaving the first run unfinished would produce.
+     *
+     * @throws Exception if interrupted
+     */
+    private static void quiesce() throws Exception
+    {
+        Layout previous = model.getAutoLayout();
+
+        if (previous == null) return;
+
+        previous.stopLocomotives();
+
+        long deadline = System.currentTimeMillis() + QUIET_MS;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            if (!previous.isRunning() && previous.getActiveLocomotives().isEmpty()) return;
+
+            Thread.sleep(200);
+        }
+
+        fail("the railway was still running " + (QUIET_MS / 1000) + " seconds after being asked to"
+            + " stop - " + previous.getActiveLocomotives().size() + " locomotive(s) still active."
+            + "  A new configuration parsed on top of that one would be asking for trains this one is"
+            + " still driving, which is OB-199");
+    }
+
     private static Layout loadedConfiguration() throws Exception
     {
+        // THE RAILWAY IN FORCE IS STOPPED FIRST, and waited for (OB-199).  See `quiesce`.
+        quiesce();
+
         String json = new BufferedReader(new InputStreamReader(
             testTimetableCaptureThroughARealRun.class
                 .getResource("/autonomy_sanity.json").openStream()))

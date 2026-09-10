@@ -956,6 +956,45 @@ public class LayoutEditor extends PositionAwareJFrame
             new org.traincontrol.automationui.TileGraph.TileKey(this.layout.getName(), x, y));
     }
 
+    /**
+     * The square the pointer is over in autonomy mode, or null when it is over none (OB-198).
+     *
+     * **One question, asked by all three shortcuts that need it** - Control+H, Control+S and
+     * Control+E.  Each of them used to read `autonomyHover` itself and build a `TileKey` out of
+     * whatever coordinates it gave, which is fine until the label is stale.
+     *
+     * `autonomyHover` is set when the pointer enters a label and there is nothing that clears it: this
+     * window has no mouse-exit hook, and a page change replaces the grid without touching it.  A label
+     * from a page that has been left behind is not in the grid it is asked about, so
+     * `LayoutGrid.getCoordinates` answers -1,-1 - and the key then acted on `(page, -1, -1)`, which is
+     * a square nobody pointed at and which the panel answers about with a sentence about a square
+     * nobody chose.
+     *
+     * **It forgets the stale label rather than merely refusing it**, so nothing can read it again, and
+     * `leaveFor` clears it on the way out of a page for the same reason.
+     *
+     * @return the square, or null when the pointer is over none this window can answer about
+     */
+    public org.traincontrol.automationui.TileGraph.TileKey hoveredSquare()
+    {
+        LayoutLabel over = autonomyHover;
+
+        if (over == null || layout == null) return null;
+
+        int x = getX(over);
+        int y = getY(over);
+
+        // Not on this page's grid: a label left behind by a page change, or one from the palette.
+        if (x < 0 || y < 0)
+        {
+            autonomyHover = null;
+
+            return null;
+        }
+
+        return new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
+    }
+
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
         // In autonomy mode there is no PLACEMENT preview - nothing is being placed - but the blue
@@ -5867,6 +5906,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private void leaveFor(String page, boolean autonomy)
     {
+        // NOBODY IS POINTING AT THE OLD PAGE ANY MORE (OB-198).
+        //
+        // `hoveredSquare` refuses a stale label anyway - it is not in the new grid - but a field that
+        // is never cleared is one the next reader has to remember to distrust, and there have been
+        // three readers of this one.
+        autonomyHover = null;
+
         // Save, discard, or stay - three answers, not two.
         //
         // Closing offers two because closing is final: the window is going whatever happens, and the
@@ -6945,13 +6991,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // and a key that fires and finds nothing.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H)
             {
-                LayoutLabel over = autonomyHover;
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
-                if (over != null && autonomyPanel != null)
-                {
-                    autonomyPanel.promptHomeFor(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), getX(over), getY(over)));
-                }
+                if (over != null && autonomyPanel != null) autonomyPanel.promptHomeFor(over);
 
                 return;
             }
@@ -6972,18 +7014,15 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // is meant.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
             {
-                // `autonomyHover`, NOT `getLastHoveredLabel()` (MT-258 item 4).
+                // `hoveredSquare`, NOT the placement variables (MT-258 item 4).
                 //
-                // The first version asked the placement variables, which autonomy mode deliberately
-                // never sets - so the key fired, found nothing, and did nothing, in the only mode
-                // where it means anything.
-                LayoutLabel over = autonomyHover;
+                // The first version asked those, which autonomy mode deliberately never sets - so the
+                // key fired, found nothing, and did nothing, in the only mode where it means anything.
+                // It then read `autonomyHover` directly, which is OB-198: nothing clears that field,
+                // so a page change left it naming a square on the page before.
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
-                if (over != null && autonomyPanel != null)
-                {
-                    autonomyPanel.promptNameFor(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), getX(over), getY(over)));
-                }
+                if (over != null && autonomyPanel != null) autonomyPanel.promptNameFor(over);
 
                 return;
             }
@@ -7006,18 +7045,15 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // "Every shortcut below places, cuts, rotates or retextures a tile."  Measuring a square
             // does none of the four.
             //
-            // `autonomyHover` for the same reason Control+S takes it: the placement variables are
+            // `hoveredSquare` for the same reason Control+S takes it: the placement variables are
             // deliberately not set in autonomy mode, so asking them gets -1,-1 and a key that fires
-            // and finds nothing (MT-258 item 4).
+            // and finds nothing (MT-258 item 4).  And it is the one door that refuses a label the page
+            // change left behind (OB-198).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
             {
-                LayoutLabel over = autonomyHover;
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
-                if (over != null && autonomyPanel != null)
-                {
-                    autonomyPanel.promptLengthFor(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), getX(over), getY(over)));
-                }
+                if (over != null && autonomyPanel != null) autonomyPanel.promptLengthFor(over);
 
                 return;
             }

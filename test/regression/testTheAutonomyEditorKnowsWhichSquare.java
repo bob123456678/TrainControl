@@ -336,10 +336,10 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
         // WITHOUT ITS COMMENTS, and this is not a precaution.
         //
-        // The branch's own comment reads "`autonomyHover`, NOT `getLastHoveredLabel()`", which is a
-        // sentence about the fix and was read as the defect - the first run of this test failed
-        // against correct code because of it.  `testTheWindowAttachesItsRefreshCallback` strips
-        // comments for the same reason and says so at more length.
+        // The branch's own comment names both the field and the method it asks, which are sentences
+        // about the fix and were read as the defect - the first run of this test failed against
+        // correct code because of it.  `testTheWindowAttachesItsRefreshCallback` strips comments for
+        // the same reason and says so at more length.
         String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
             java.nio.charset.StandardCharsets.UTF_8));
 
@@ -355,9 +355,22 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
         String branch = body.substring(at, ends);
 
-        assertTrue(branch.contains("autonomyHover"),
+        // `hoveredSquare()` SINCE OB-198, and it is the same claim one door further out.
+        //
+        // The branch read `autonomyHover` directly until 2026-09-10, and so did Control+H and
+        // Control+E - three readers of a field nothing ever cleared, so a page change left all three
+        // naming a square on the page before.  There is one question now, and it forgets a label that
+        // is not on the grid it is asked about.  `regression.testTheHoveredSquareIsForgotten` is what
+        // asserts the behaviour; this stays a source check because what it is about is which door the
+        // KEY goes through.
+        assertTrue(branch.contains("hoveredSquare()"),
             "the Control+S branch does not ask the square autonomy mode tracks.  What it does ask:\n"
             + branch);
+
+        assertFalse(branch.contains("autonomyHover"),
+            "the Control+S branch reads `autonomyHover` itself again. Nothing clears that field on a"
+            + " page change, so the key would name a square on the page before - which is OB-198,"
+            + " and `hoveredSquare()` is the one door that refuses it:\n" + branch);
 
         assertFalse(branch.contains("getLastHoveredLabel"),
             "the Control+S branch asks getLastHoveredLabel(), which autonomy mode deliberately never "

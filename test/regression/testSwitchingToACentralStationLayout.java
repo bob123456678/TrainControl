@@ -711,14 +711,20 @@ public class testSwitchingToACentralStationLayout
         //   per test, on `live-snapshot` through `Scenario.folderFor`, with the sandbox opened before
         //   the model as the rule above requires.
         //
-        // TWENTY-SEVEN since 2026-09-09, and the one that arrived is
-        // `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` (OB-194).  A tooltip is a property
-        // of the menu ITEM rather than of the panel, so the only way to ask whether the warning
-        // reaches the Bulk Tools menu is to build the menu - which needs the editor, which needs a
-        // window.  Its sandbox is `live-snapshot` through `Scenario.folderFor`, opened before the
-        // model, as the rule above requires.
-        assertEquals(checked, 27,
-            checked + " test classes were found to build a window, not the 27 there were when this "
+        // TWENTY-NINE since 2026-09-10.  The three that have arrived since this was 26 all need a
+        // window for the same reason: what they ask about is a property of a menu ITEM or of the
+        // editor's own state rather than of the panel, so the only way to ask is to build one.
+        //
+        //   - `testTheBulkClearWarnsThatCancelWillNotUndoIt` (OB-194), the warning on the Bulk Tools
+        //     menu;
+        //   - `testClearAllTrackLengths` (FR-069), the item beside it;
+        //   - `testTheHoveredSquareIsForgotten` (OB-198), which square the editor thinks the pointer
+        //     is over.
+        //
+        // All three sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model, as
+        // the rule above requires.
+        assertEquals(checked, 29,
+            checked + " test classes were found to build a window, not the 29 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

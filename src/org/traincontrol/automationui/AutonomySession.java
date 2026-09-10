@@ -6104,6 +6104,36 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * Every square that has a length recorded (FR-069).
+     *
+     * @return the measured squares
+     */
+    public java.util.List<TileKey> tilesWithALength()
+    {
+        return store.tilesWithALength();
+    }
+
+    /**
+     * Forgets every length on every page, and re-derives once (FR-069).
+     *
+     * **The session's bulk door, not one `setTileLength` per square**, for the reason
+     * `clearEveryHome` gives: every one of those calls `touched()`, which rebuilds the reducer - a
+     * full builder construction on the event thread - so a loop would pay that once per measured
+     * square, for the gesture that exists precisely because doing it one at a time is too many
+     * right-clicks.
+     *
+     * @return how many squares had a length
+     */
+    public int clearEveryTileLength()
+    {
+        int cleared = store.clearEveryTileLength();
+
+        touched();
+
+        return cleared;
+    }
+
     public void setPageExcluded(String page, boolean excluded)
     {
         store.setPageExcluded(page, excluded);

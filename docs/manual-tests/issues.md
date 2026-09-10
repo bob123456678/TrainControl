@@ -749,36 +749,6 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
-### OB-198 - 2026-09-10 - The editor's hovered square is never cleared, so a key after a page step acts on the old grid
-
-**Kind:** bug  
-**Raised from:** Opus review of 5948a88a  
-**Filed:** 2026-09-10  
-
-`LayoutEditor.autonomyHover` is assigned when the pointer enters a label and never cleared -
-not when the pointer leaves, and not when the page changes.
-
-Three key handlers read it: Control+H (set home), Control+S (rename) and, since FR-066, Control+E
-(set length). After stepping to another page with `+` or `-`, the remembered label belongs to the old
-grid, `LayoutGrid.getCoordinates` answers `{-1,-1}` for it, and the key acts on a square nobody is
-pointing at - which for Control+E means the "there is nothing here to measure" sentence about a square
-the user never chose.
-
-Pre-existing and inherited by the new key rather than caused by it. Reasoned from source by an Opus
-review of `5948a88a`; not reproduced on screen.
-
-The fix is to clear it on page step and on mouse exit, which is a small change in one place -
-filed rather than made because it touches a field three shortcuts read and nothing in the suite covers
-it today.
-
-### FR-069 - 2026-09-10 - autonoy clear all track lengths
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-10 03:43  
-**Build:** commit 4565be9b, build\classes, compiled 10 Sep 03:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-to autonomy bulk tools menu, add "clear all track lengths" - this should clear the segment lengths across all pages, after the user confirms in a popup.
 
 ## What has been picked up
 
@@ -794,6 +764,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-10 | FR-069 | feature request | Adam: *"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear the segment lengths across all pages, after the user confirms in a popup."* **Clear All Track Lengths (N)** sits beside the two clears already there and is built like them: one bulk door on the session so the reducer is re-derived once rather than once per measured square, the count in the label, and a tooltip that is the same sentence the confirmation shows - from one builder, which is the arrangement OB-194 put there so the two cannot drift. The dialog says how many squares it is about to empty and that typing them again is the only way back, because there is no undo and no file to restore from until Save. Greyed when nothing is measured, and the guard asks again when it is pressed - the affordance and the guard being one question is `guard-and-affordance-same-question`. `regression.testClearAllTrackLengths` measures squares on more than one page and asserts none survives, which is the half a per-page clear would pass | fixed unvalidated | - |
+| 2026-09-10 | OB-198 | bug | Fixed in one place rather than three, which is what makes it stay fixed. `LayoutEditor.autonomyHover` was set on hover and never cleared, and Control+H, Control+S and Control+E each read it and built a `TileKey` out of whatever coordinates it gave - so after a page step all three named a square on the page before, `getCoordinates` answered -1,-1, and the key acted on `(page, -1, -1)`. There is one question now, `hoveredSquare()`, which answers null when the remembered label is not on the grid it is asked about and **forgets it while it is there**, so nothing can read it twice; `leaveFor` clears it on the way out of a page as well. `regression.testTheHoveredSquareIsForgotten` hovers a real label off the rendered editor, then one that is not in the grid, and asserts the second names nothing - two of its three claims go red with the check removed | fixed unvalidated | - |
+| 2026-09-10 | OB-199 | bug | Two things, and the diagnostic half was fixed first: `whyNothingMoved` was asked AFTER `stopLocomotives()` and reports exactly the flag that call clears, so it was a constant on the failing path. The flake itself: both tests in the class call `loadedConfiguration()`, which parses a NEW `Layout` while the one before it is still driving trains - `stopLocomotives` stops them *gracefully*, at their next station, so it returns long before the railway is quiet, and the locomotives belong to the MODEL and are shared. So the second test can start against a fleet the first is still driving, `getActiveLocomotives()` on the new layout stays empty, and the wait runs to its ceiling. `loadedConfiguration` now waits for the railway in force to go quiet, and says so loudly if it does not inside a minute. **This is a mechanism, not a proof** - it matches the shape (four failures in a battery, none standalone) and the change is right on its own terms whether or not it is the cause, and the diagnostic will now say if it was not | fixed unvalidated | - |
 | 2026-09-10 | OB-196 | bug | **Not a defect.** Adam: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing. Actual tracks are much longer... these are not realistic lengths, and I need to change them on the diagram."* So the eight squares that offer a train of two units or more nowhere at all are an artefact of three test measurements, not of the rule - and the answer is a tape measure on the diagram, which is his to do. What came out of it: `test/layouts/live-snapshot` now carries **no lengths at all**, on his instruction *"remove all currently set segment lengths and set custom lengths where it makes sense for your tests"*, and the two censuses set the three tight tiles themselves and say in the file that it is a deliberate stress configuration rather than a measurement of his railway. Every figure they report was really about those three tiles | declined | - |
 | 2026-09-10 | OB-197 | bug | Adam: *"it should stop doing that. that was not intended."* `TrainControlUI`'s key chain ended `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping` holds all 26 letters - so Control plus every letter no named shortcut caught selected a locomotive button exactly as the bare letter does. That is also why the shortcut guard's printout was wrong about which keys were free, and FR-066's key was picked off that list. One clause, plus the guard that keeps it: `regression.testNoTwoShortcutsShareAKey.testTheFallThroughStillFiltersControl` fails if the filter comes off, and everything that class prints about free keys rests on it | fixed unvalidated | - |
 | 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** opens the length dialog on the square under the pointer in the autonomy editor. **The first cut had two defects and a review found both**, each the shape `promptLengthFor`'s own javadoc said it avoided: it asked `isIgnored`, which is one of THREE questions `buildTileMenu` asks before it reaches Set Length, so it opened the dialog on a text label whose menu offers no length at all; and it wrote to the hovered square where the menu writes to the run's LEADER, so the two doors put the same number in two places and a run measured through both counted twice. There is one door now - `buildTileMenu` adds its item inside `if (offersALength(tile))` and binds it to `applyLength(squareTheLengthWouldGoOn(tile))`, which is what the key calls - and `regression.testControlEAsksTheMenusQuestion` compares the two over every square of a page rather than over two named ones. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is free in both - which became true only with `OB-197` | fixed unvalidated | - |

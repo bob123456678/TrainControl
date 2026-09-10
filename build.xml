@@ -279,6 +279,11 @@
         <test-one-class class="testWhichSquaresTheRoomRuleClosesOff"/>
         <test-one-class class="testWhatReachesTheTracksAtEachKindOfArrival"/>
 
+        <!-- Added 2026-09-10: FR-069's bulk clear, and OB-198's one question about which square the
+             pointer is over - three shortcuts used to ask it three ways and keep a stale answer. -->
+        <test-one-class class="testClearAllTrackLengths"/>
+        <test-one-class class="testTheHoveredSquareIsForgotten"/>
+
         <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
              running 41 of the 76 test classes and reporting success for the whole suite.
 
