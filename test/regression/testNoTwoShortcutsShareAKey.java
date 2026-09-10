@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
@@ -29,15 +30,24 @@ import org.testng.annotations.Test;
  * simply never reached, because both are `else if` chains on one keycode, and the shortcut that stops
  * working is the one somebody added last.  Nothing else in the suite would notice.
  *
- * **What this is, and what it is not.**  It is a source-shape guard, and it knows only the two spellings
- * the two files actually use - `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X` in the editor,
- * `controlPressed && keyCode == KeyEvent.VK_X` in the main window.  A shortcut bound some third way is
- * one it cannot see, so `testItFoundTheHandlersItThinksItIsReading` asserts a floor on how many it
- * found: a regex that silently stopped matching would otherwise report a clean railway of nothing.
+ * **What this is, and what it is not.**  It is a source-shape guard, and it knows only the spellings
+ * the two files actually use - `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X` or the same
+ * with `e.` in the editor, `controlPressed && keyCode == KeyEvent.VK_X` in the main window.  A shortcut
+ * bound some third way is one it cannot see, so `testItFoundTheHandlersItThinksItIsReading` asserts a
+ * floor on how many it found: a regex that silently stopped matching would otherwise report a clean
+ * bill of health about every case it never heard of.
  *
  * It deliberately does NOT require the two windows to agree with each other.  They are different
  * windows with different jobs, and Control+S means Rename in one and Swap in the other quite happily.
  * What it requires is that neither window has two answers to one key.
+ *
+ * **AND THE MAIN WINDOW HAS NO FREE LETTERS AT ALL**, which is the thing this class got wrong on the
+ * day it was written.  `TrainControlUI`'s chain ends
+ * `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping`
+ * holds every letter - so Control plus any letter not caught above it selects a locomotive button.
+ * The seven letters this printed as "free in both" were seven letters that already did something.
+ * `testTheMainWindowSwallowsEveryOtherLetter` pins that arm, so the print below can say what is true;
+ * whether the arm itself should filter Control is `OB-197`.
  *
  * @author Adam
  */
@@ -54,10 +64,18 @@ public class testNoTwoShortcutsShareAKey
     private static final String MAIN = "src/org/traincontrol/gui/TrainControlUI.java";
 
     /**
-     * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, in either order of the two halves.
+     * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`.
+     *
+     * The Control half first and the keycode second, which is the only order either file writes.  A
+     * branch written the other way round is one this cannot see - it said it read both until a review
+     * checked - and the floor above is what catches a spelling going silently unmatched.
+     *
+     * Both event names, because `LayoutEditor` has two key entry points and they do not agree on one:
+     * `formKeyPressed` calls its argument `evt` and `receiveKeyEvent` calls it `e`.
      */
     private static final Pattern IN_THE_EDITOR = Pattern.compile(
-        "evt\\.isControlDown\\(\\)\\s*&&\\s*evt\\.getKeyCode\\(\\)\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
+        "\\be(?:vt)?\\.isControlDown\\(\\)\\s*&&\\s*e(?:vt)?\\.getKeyCode\\(\\)"
+        + "\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
 
     /**
      * `controlPressed && keyCode == KeyEvent.VK_X`.
@@ -83,18 +101,27 @@ public class testNoTwoShortcutsShareAKey
      * without a first-refusal layer to point at is a shortcut quietly turned off.
      */
     private static final Set<String> BOUND_TWICE_ON_PURPOSE = new LinkedHashSet<>(java.util.Arrays.asList(
-        "TrainControlUI.java#X", "TrainControlUI.java#V", "TrainControlUI.java#DELETE"));
+        "TrainControlUI.java#X", "TrainControlUI.java#V", "TrainControlUI.java#DELETE",
+
+        // `LayoutEditor.receiveKeyEvent` is a SECOND entry point, not a second branch of the first:
+        // it takes the tile it was pressed over, has no caller today, and returns immediately in
+        // autonomy mode.  Its Control+V cannot contend with `formKeyPressed`'s.
+        "LayoutEditor.java#V"));
 
     /**
      * How many Control shortcuts each file is known to bind.
      *
      * A floor rather than a count: adding one is ordinary and must not fail this, while a regex that
-     * has stopped matching drops to nothing and must.  Measured on 2026-09-09 at 10 in the editor and
-     * 15 in the main window.
+     * has stopped matching drops towards nothing and must.
+     *
+     * **Measured by running the regexes**, which is how the first version of this got them wrong: it
+     * said 10 and 15 from a reading, the scan finds **16 and 16**, and floors of 8 and 12 would have
+     * let half the editor's handlers go invisible before anything reddened.  Two below the real count,
+     * so that removing a shortcut is ordinary and losing a spelling is not.
      */
-    private static final int EDITOR_FLOOR = 8;
+    private static final int EDITOR_FLOOR = 14;
 
-    private static final int MAIN_FLOOR = 12;
+    private static final int MAIN_FLOOR = 14;
 
     /**
      * No key does two things in the layout editor.
@@ -167,25 +194,95 @@ public class testNoTwoShortcutsShareAKey
     @Test
     public void testTheFreeKeysArePrinted() throws IOException
     {
-        Set<String> taken = new LinkedHashSet<>(keysIn(EDITOR, IN_THE_EDITOR));
+        Set<String> inTheEditor = new LinkedHashSet<>(keysIn(EDITOR, IN_THE_EDITOR));
 
-        taken.addAll(keysIn(MAIN, IN_THE_MAIN_WINDOW));
+        Set<String> inTheMainWindow = new LinkedHashSet<>(keysIn(MAIN, IN_THE_MAIN_WINDOW));
 
-        StringBuilder free = new StringBuilder();
+        StringBuilder freeInTheEditor = new StringBuilder();
+
+        StringBuilder unclaimed = new StringBuilder();
 
         for (char c = 'A'; c <= 'Z'; c++)
         {
-            if (!taken.contains(String.valueOf(c))) free.append(" ").append(c);
+            String key = String.valueOf(c);
+
+            if (!inTheEditor.contains(key)) freeInTheEditor.append(" ").append(key);
+
+            if (!inTheEditor.contains(key) && !inTheMainWindow.contains(key))
+            {
+                unclaimed.append(" ").append(key);
+            }
         }
 
         System.out.println("### Control shortcuts");
-        System.out.println("  taken in one window or the other:" + new TreeSet<>(taken));
-        System.out.println("  free in both                    :" + free);
+        System.out.println("  bound in the layout/autonomy editor :" + new TreeSet<>(inTheEditor));
+        System.out.println("  bound in the main window            :" + new TreeSet<>(inTheMainWindow));
+        System.out.println("  free in the editor                  :" + freeInTheEditor);
+        System.out.println("  claimed by neither chain            :" + unclaimed);
+        System.out.println("  ...but the main window's last arm takes every letter it reaches, so a"
+            + " letter on that line still selects a locomotive button there (OB-197).");
 
-        assertTrue(free.length() > 0,
-            "every letter of the alphabet is bound to a Control shortcut in one window or the other,"
-            + " which is either a remarkable application or a regex matching things it should not:"
-            + " " + taken);
+        assertTrue(freeInTheEditor.length() > 0,
+            "every letter of the alphabet is bound to a Control shortcut in the layout editor, which"
+            + " is either a remarkable application or a regex matching things it should not: "
+            + new TreeSet<>(inTheEditor));
+
+        assertTrue(inTheEditor.size() < 26,
+            "the editor binds " + inTheEditor.size() + " letters, which cannot be fewer than the 26"
+            + " it would take to make the claim above impossible - so that claim is unfalsifiable"
+            + " and this one says so");
+    }
+
+    /**
+     * The main window's chain ends in an arm that takes every letter, Control held or not.
+     *
+     * `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and
+     * `buttonMapping` is filled with all 26 letters in `setupKeyboardShortcuts` - so Control plus any
+     * letter the arms above do not catch selects a locomotive button.
+     *
+     * **This is why the sibling test prints "free in the editor" rather than "free in both".**  The
+     * first version of this class printed seven letters as free in both windows and FR-066's key was
+     * chosen off that list; the seven were not free, they were unclaimed by any named shortcut and
+     * swallowed by this arm.  Control+E in the main window selects the E button today.
+     *
+     * Pinned rather than fixed: whether that arm should filter Control is a change to what the
+     * application does, and it is filed as `OB-197`.  What this asserts is that the arm is still
+     * there, so the sibling's wording stays true - and if somebody adds the filter, this goes red and
+     * the wording can go back to "free in both".
+     *
+     * @throws IOException when the source cannot be read
+     */
+    @Test
+    public void testTheMainWindowSwallowsEveryOtherLetter() throws IOException
+    {
+        String source = sourceOf(MAIN);
+
+        assertTrue(source.contains("else if (this.buttonMapping.containsKey(keyCode))"),
+            "the main window's fall-through arm is not spelled the way this class reads it, so"
+            + " nothing here says whether Control plus a letter still selects a locomotive button -"
+            + " and the sibling test's wording about free keys rests on that");
+
+        assertFalse(source.contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
+            "the fall-through arm now filters Control, so letters bound to no named shortcut really"
+            + " ARE free in the main window. That is OB-197 fixed: say so in the sibling test's"
+            + " printout and in this class's javadoc, and delete this test");
+    }
+
+    /**
+     * One source file, read whole.
+     *
+     * @param path the file
+     * @return its text
+     * @throws IOException when it cannot be read
+     */
+    private String sourceOf(String path) throws IOException
+    {
+        File file = new File(path);
+
+        assertTrue(file.isFile(), path + " is not there, so this test is reading nothing. Tests run"
+            + " from the project root");
+
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
     /**
@@ -198,12 +295,7 @@ public class testNoTwoShortcutsShareAKey
      */
     private List<String> keysIn(String path, Pattern how) throws IOException
     {
-        File file = new File(path);
-
-        assertTrue(file.isFile(), path + " is not there, so this test is reading nothing. Tests run"
-            + " from the project root");
-
-        String source = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        String source = sourceOf(path);
 
         List<String> out = new ArrayList<>();
 

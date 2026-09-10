@@ -224,10 +224,22 @@ public class testTimetableCaptureThroughARealRun
         // And then let it actually run for a while, which is the part capture would have recorded.
         if (moved) Thread.sleep(RUN_MS / 2);
 
+        // ASKED BEFORE THE STOP, and that is the whole of what makes it an answer.
+        //
+        // `stopLocomotives` sets `running` false, `isAutoRunning()` IS that field, and
+        // `whyNothingMoved` reports it - so taken afterwards the line read "Auto running: false"
+        // whatever had happened, which cannot tell "autonomy never started" from "we have just
+        // stopped it".  Several of `explainCannotStart`'s rules are fenced on the same flag and were
+        // answering about the stopped railway too.  Three failures inside a battery were diagnosed
+        // with that, which is to say they were not.
+        //
+        // Only on the failing path, so the passing one still costs nothing.
+        String why = moved ? "" : whyNothingMoved(layout);
+
         layout.stopLocomotives();
 
         assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
-            + "nothing was declined and nothing is proved." + whyNothingMoved(layout));
+            + "nothing was declined and nothing is proved." + why);
 
         assertTrue(layout.getTimetable().isEmpty(),
             "trains ran with capture switched OFF and the timetable filled anyway, so the flag is "

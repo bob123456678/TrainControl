@@ -7583,21 +7583,30 @@ public class Layout
      * The same walk as `measuredRoomAtTheEndOf` with one condition added, and the condition is the
      * difference between a rule and an artefact.
      *
-     * **The walk has two stopping conditions and only one of them is a rule.**  It stops at the last
+     * **The walk has three stopping conditions and only one of them is a rule.**  It stops at the last
      * switch, which is Adam's ruling of 2026-09-02 - *"between the switch and the station, the length
-     * must be >= length of the train"*.  It also stops when it runs out of path, which is not a
-     * measurement of anything: a two-edge prefix answers "two edges of room" when the honest answer is
-     * "the track behind where the train started has not been looked at, and the train is standing on
-     * it".
+     * must be >= length of the train"*.  It also stops when it meets an unmeasured edge, and when it
+     * runs out of path.  That last one is not a measurement of anything: a two-edge prefix answers
+     * "two edges of room" when the honest answer is "the track behind where the train started has not
+     * been looked at, and the train is standing on it".
      *
-     * At the DESTINATION that second condition is harmless and long-standing - the train comes to rest
-     * there and the route behind it is what it lies back over.  At a square it merely passes through it
-     * refuses trains that fit: measured, a four-unit train refused four units of room, an eight-unit
-     * train refused a nine-unit run in, and the staging planner giving up on a berth it could reach.
+     * At the DESTINATION that is harmless and long-standing - the train comes to rest there and the
+     * route behind it is what it lies back over.  At a square it merely passes through it refuses
+     * trains that fit: measured, a four-unit train refused four units of room, an eight-unit train
+     * refused a nine-unit run in, and the staging planner giving up on a berth it could reach.
      *
-     * So a pass-through square is judged only where a switch bounds it.  That is exactly the case the
-     * ruling was made about - *"we pass the track of length 1 at 22,7"*, which is one measured unit
-     * after a switch - and it is the only case in which the number means anything.
+     * So a pass-through square is judged only where a switch is **somewhere behind it on this route**.
+     * That is exactly the case the ruling was made about - *"we pass the track of length 1 at 22,7"*,
+     * which is one measured unit after a switch.
+     *
+     * **THE UNMEASURED STOP IS NOT EXCLUDED, and that is a known looseness rather than an oversight.**
+     * A prefix whose switch lies behind an unmeasured stretch passes the test here while the number
+     * the walk returns was bounded by the unmeasured edge instead - so such a square is judged on a
+     * count of measured track with unlooked-at track behind it.  Excluding it would mean the walk
+     * reporting WHICH condition stopped it, which is a second return value on a method four call sites
+     * share.  Measured on Adam's railway across 19293 on-the-way refusals: **19293 stopped at a
+     * switch, none at an unmeasured edge, none off the start of the route**, so the case is latent
+     * rather than live, and the census reports the number on every run.
      *
      * @param prefix the route so far, ending at the square being judged
      * @param loc the train

@@ -4776,26 +4776,92 @@ public class AutonomyEditorPanel extends JPanel
      * lives in `LayoutEditor`, which owns this panel rather than sitting inside it.  One line, so the
      * panel keeps deciding what setting a length means and this only decides who may ask.
      *
-     * **It asks the menu's own question**, which is `isIgnored` - the guard that decides whether the
-     * right-click menu offers anything about this square at all.  A key that acts where the menu
-     * offers nothing is the shape of MT-313, where Control+S named plain track because it asked only
-     * whether the tile was null.  And it says the same sentence the menu says, rather than doing
-     * nothing quietly: a shortcut that appears to be broken is worse than one that explains itself.
+     * **It asks `offersALength`, which is the menu's own question**, and it writes where the menu
+     * writes.  The first cut asked `isIgnored` and wrote to the hovered tile, and a review found it
+     * doing exactly the thing the paragraph below says it was written to avoid, twice:
+     *
+     *   - `isIgnored` is one of THREE things `buildTileMenu` asks before it reaches Set Length, and
+     *     the missing one sends a TEXT square to `buildTextMenu` - a menu with no length item on it -
+     *     so the key opened the length dialog on a square the menu offers no length for;
+     *   - the menu acts on `leaderOf(tile)`, the square that speaks for a run of plain track, and the
+     *     key acted on the hovered square.  Two doors, two places, and a run measured through both
+     *     counted twice.
+     *
+     * A key that acts where the menu offers nothing is the shape of MT-313, where Control+S named
+     * plain track because it asked only whether the tile was null.  And it says a sentence rather than
+     * doing nothing quietly: a shortcut that appears to be broken is worse than one that explains
+     * itself.
      *
      * @param tile the square to measure, ignored when null
      */
     public void promptLengthFor(TileKey tile)
     {
-        if (tile == null || session == null || session.getGraph() == null) return;
-
-        if (isIgnored(tile))
+        if (!offersALength(tile))
         {
-            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+            if (tile != null && session != null && session.getGraph() != null)
+            {
+                say(hint, isIgnored(tile) ? I18n.t("autosetup.ui.infoTileIgnored")
+                    : I18n.t("autosetup.ui.infoNothingToMeasureHere"));
+            }
 
             return;
         }
 
-        applyLength(tile);
+        applyLength(squareTheLengthWouldGoOn(tile));
+    }
+
+    /**
+     * The square a length typed for this one actually lands on, or null where none would be asked for.
+     *
+     * **The menu's target, not the pointer's.**  A run of plain track has one tile that speaks for it
+     * and `buildTileMenu` hands every item on the menu that tile, so a length set by right-clicking
+     * anywhere in a run lands on the leader.  Control+E writing to the hovered square instead put the
+     * same number in two different places: the dialog opened showing 0 on a run that is measured, and
+     * `GraphReducer.sumLength` adds every tile of an edge, so a run measured through both doors was
+     * counted twice.
+     *
+     * Public because `promptLengthFor` opens a modal dialog and no test can call it and read the
+     * answer - so what a test compares is the two doors' targets.
+     * `regression.testControlEAsksTheMenusQuestion` is that test.
+     *
+     * @param tile the square under the pointer
+     * @return the square the length would be written to, or null when nothing would be asked
+     */
+    public TileKey squareTheLengthWouldGoOn(TileKey tile)
+    {
+        return offersALength(tile) ? leaderOf(tile) : null;
+    }
+
+    /**
+     * Whether **Set Length...** is on this square's right-click menu, and so whether Control+E means
+     * anything here.
+     *
+     * **`buildTileMenu`'s three early returns, in one place, so the key and the menu cannot drift.**
+     * The menu reaches its length item only when all three are passed, and until a review found it the
+     * key asked one of them:
+     *
+     *   1. a square this panel can answer about at all - a page the session knows, a session with a
+     *      graph;
+     *   2. NOT a text label.  A page's text squares get `buildTextMenu`, whose subject is what is
+     *      written on the square rather than what runs across it, and which offers no length;
+     *   3. NOT ignored - `isIgnored` - which is the excluded page, the untraversable tile type and the
+     *      route button that carries whatever line it sits on.
+     *
+     * Public so that a test can put the two doors side by side and fail when they part company again;
+     * `regression.testControlEAsksTheMenusQuestion` is that test.
+     *
+     * @param tile the square
+     * @return whether the menu offers to measure it
+     */
+    public boolean offersALength(TileKey tile)
+    {
+        if (tile == null || session == null || session.getGraph() == null) return false;
+
+        LayoutDiagramComponent onPage = componentAt(tile);
+
+        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return false;
+
+        return !isIgnored(tile);
     }
 
     /**
@@ -6916,10 +6982,12 @@ public class AutonomyEditorPanel extends JPanel
         // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
         //
         // A path existing and a train being sent along it are different facts, and the check reported
-        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's own rule asked of the
-        // diagram - `Layout.isSendableDestination` refuses a destination that is reversing or not an auto destination
-        // before it is a candidate at all - so on Auto a station in that set is somewhere autonomy can
-        // reach and will never pick, which is exactly the state somebody opens this panel to explain.
+        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's rule asked of the
+        // diagram, in the one clause a SQUARE can answer - `isAutoDestination`, which
+        // `Layout.isSendableDestination` requires before a destination is a candidate at all - so on
+        // Auto a station in that set is somewhere autonomy can reach and will never pick, which is
+        // exactly the state somebody opens this panel to explain.  (The runtime's other clause,
+        // `!isReversing()`, is about a copy rather than a square and cannot be asked here.)
         //
         // Said as well as the route rather than instead of it.  The track is passable and that is
         // worth knowing; what is added is that autonomy will not use it.  Reporting "no path" here
@@ -6983,10 +7051,14 @@ public class AutonomyEditorPanel extends JPanel
         // says is where the line goes - and a colour that only appeared on the last square would be
         // invisible on a route that runs off the edge of the page.
         //
-        // `stationsAutonomyWillNotChoose` is the runtime's own rule asked of the diagram, the same set
-        // the Path Type note below reads: `Layout.isSendableDestination` refuses a destination that is
-        // reversing or is not an auto destination before it is a candidate at all.  So this is not a
-        // second opinion about which stations those are.
+        // `stationsAutonomyWillNotChoose` is the runtime's rule asked of the diagram, the same set
+        // the Path Type note below reads, and it asks the one clause a SQUARE can answer:
+        // `isAutoDestination`, the switch the menu calls Can Be Chosen in Full Autonomy.
+        //
+        // `Layout.isSendableDestination` adds `!isReversing()`, which is about a COPY rather than a
+        // square - a may-reverse square keeps a plain copy autonomy can choose perfectly well - so the
+        // square-level answer is the honest one here and not a narrower version of the runtime's.
+        // (It carried a compulsory-turn clause too until Adam's ruling of 2026-09-09; see OB-195.)
         final boolean manualOnly = to != null && session != null
             && session.stationsAutonomyWillNotChoose().contains(to);
 

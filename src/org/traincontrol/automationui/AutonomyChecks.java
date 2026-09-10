@@ -489,16 +489,22 @@ public class AutonomyChecks
             // NOT ASKED AGAIN HERE, and the sentence that used to stand in its place is the reason
             // why (MON-C1).
             //
-            // It said the reversing clause was "asked here too rather than trusted twice over" - and
-            // the two spellings are not the same. `notAutoDestinations` comes from
-            // `stationsAutonomyWillNotChoose`, which narrows deliberately to squares where turning is
-            // COMPULSORY: "a may-reverse square keeps a plain copy, and autonomy can choose that one
-            // perfectly well". `reversing` here is may-turn AND must-turn together, so re-applying it
-            // was the stricter of the two rules quietly overriding the narrower one three lines after
-            // it was applied.
+            // It said the reversing clause was "asked here too rather than trusted twice over", and
+            // the two spellings are not the same thing. `notAutoDestinations` comes from
+            // `stationsAutonomyWillNotChoose`, which is a question about a SQUARE - may autonomy pick
+            // this station - while `reversing` here is may-turn and must-turn together, a question
+            // about turning. Re-applying the second was the stricter rule quietly overriding the
+            // narrower one three lines after it was applied.
             //
             // What that cost: a reversing square whose only reachable stations are may-reverse squares
             // was told its run leads nowhere, when autonomy can send trains to their plain copies.
+            //
+            // THE REASONING ABOVE USED TO SAY the set "narrows deliberately to squares where turning is
+            // COMPULSORY". It did, until Adam's ruling of 2026-09-09 took that clause out (OB-195):
+            // turning round says what happens when a train ARRIVES, and the one switch that decides
+            // who autonomy may send is `isAutoDestination`. The conclusion is unchanged and the reason
+            // for it is now the one that holds - a compulsory turn autonomy may choose IS somewhere a
+            // reversing square's run can lead, so counting it is right.
             //
             // Trusted once, from the parameter, which is where the decision was made.
 

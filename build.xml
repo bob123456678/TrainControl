@@ -271,6 +271,12 @@
         <test-one-class class="testATrainMustFitEverySquareOnItsRoute"/>
         <test-one-class class="testACompulsoryTurnIsChosenLikeAnyOtherStation"/>
         <test-one-class class="testNoTwoShortcutsShareAKey"/>
+        <test-one-class class="testControlEAsksTheMenusQuestion"/>
+
+        <!-- Added 2026-09-10 out of the Opus review of 5948a88a.  The first is the number a journey
+             census cannot see - which SQUARES the room rule closes off completely; the second is the
+             two doors onto Set Length agreeing about which square they measure. -->
+        <test-one-class class="testWhichSquaresTheRoomRuleClosesOff"/>
 
         <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
              running 41 of the 76 test classes and reporting success for the whole suite.

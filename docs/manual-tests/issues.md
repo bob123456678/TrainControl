@@ -749,6 +749,97 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
+### OB-196 - 2026-09-10 - Seven squares on the bottom main offer a train of two units or more nowhere at all
+
+**Kind:** bug  
+**Raised from:** Opus review of 5948a88a  
+**Filed:** 2026-09-10  
+
+The route-wide room rule (Adam's ruling 1b, 2026-09-09, commit `5948a88a`) refuses about a
+third of this railway's journeys, and that number is in `behaviour.md` section 5a. **A third of
+journeys refused evenly strands nobody; a third refused at the squares on every road out strands
+everybody standing there**, and the two are the same number.
+
+Measured on `test/layouts/live-snapshot`, on an empty railway, asking the door the operator asks
+(`getPossiblePaths(loc, true)` - so this is the by-hand list too, not only autonomy):
+
+| train | destinations offered in total | squares offering NOTHING |
+|---|---|---|
+| 1 unit | 735 | 0 |
+| 2 units | 389 | 8 |
+| 3 units | 382 | 8 |
+| 4 units | 379 | 8 |
+| 5 units | 377 | 8 |
+| 6 units | 378 | 8 |
+
+Seven of those eight are closed **by the ruling**: over the same routes, they offered 33 or 34
+destinations under the berth-only rule and offer none under this one. They are
+`BottomMainA (eastbound)`, `BottomMainB (eastbound)`, `BottomMainB (eastbound, reverse)`,
+`BottomMainC (eastbound)`, `BottomMainC (westbound, reverse)`,
+`BottomMainPost (northbound, reverse)` and `BottomMainPost (southbound)`. The eighth,
+`ParkingTrack12`, offers a long train nothing under either rule - that one is the track.
+
+A train that comes to rest on any of the seven is one autonomy will never dispatch, the right-click
+menu offers nothing for, and Return Home answers `NO_PLAN_FOUND` about.
+
+**The remedy is almost certainly a tape measure rather than a code change.** Every square that does
+the refusing measures ONE unit - `5:22,7`, `5:19,12`, `5:14,13` are the three tiles named in
+`behaviour.md`. If those are real lengths then the railway honestly cannot take those trains there;
+if they are placeholders, measuring them gives all 35 (square, length) pairs back at once.
+
+**Nothing is blocked on this.** `core.testWhichSquaresTheRoomRuleClosesOff` pins the two figures - 35
+pairs closed by the ruling, 40 stranded - so neither can move without somebody being told, and prints
+the whole list on every run. Found by an Opus review of `5948a88a`, which is the finding a journey
+census could not see.
+
+### OB-197 - 2026-09-10 - Control plus any unbound letter selects a locomotive button in the main window
+
+**Kind:** bug  
+**Raised from:** Opus review of 5948a88a  
+**Filed:** 2026-09-10  
+
+`TrainControlUI`'s key handler ends
+
+    else if (this.buttonMapping.containsKey(keyCode))
+
+with no `!controlPressed`, and `buttonMapping` holds all 26 letters. So Control+B, Control+J,
+Control+O, Control+P, Control+Q, Control+U and Control+W - every letter no named shortcut catches -
+select a locomotive button exactly as the bare letter does.
+
+**Probably nobody meant that**, and it is why the shortcut guard's printout was wrong: it reported
+those seven as "free in both windows", and FR-066's key was chosen off that list. They are not free;
+they are unclaimed by any named shortcut and swallowed by that arm. (Control+E is safe for FR-066
+anyway - the editor is a different window with its own handler.)
+
+The one-line change is `!controlPressed && this.buttonMapping.containsKey(keyCode)`. What it costs is
+that Control plus a letter stops selecting a button, which somebody may be using without knowing it -
+so it is a decision rather than a repair.
+
+`regression.testNoTwoShortcutsShareAKey.testTheMainWindowSwallowsEveryOtherLetter` pins the arm as it
+stands and says in its own message what to do to this ticket if it changes. Found by an Opus review of
+`5948a88a`.
+
+### OB-198 - 2026-09-10 - The editor's hovered square is never cleared, so a key after a page step acts on the old grid
+
+**Kind:** bug  
+**Raised from:** Opus review of 5948a88a  
+**Filed:** 2026-09-10  
+
+`LayoutEditor.autonomyHover` is assigned when the pointer enters a label and never cleared -
+not when the pointer leaves, and not when the page changes.
+
+Three key handlers read it: Control+H (set home), Control+S (rename) and, since FR-066, Control+E
+(set length). After stepping to another page with `+` or `-`, the remembered label belongs to the old
+grid, `LayoutGrid.getCoordinates` answers `{-1,-1}` for it, and the key acts on a square nobody is
+pointing at - which for Control+E means the "there is nothing here to measure" sentence about a square
+the user never chose.
+
+Pre-existing and inherited by the new key rather than caused by it. Reasoned from source by an Opus
+review of `5948a88a`; not reproduced on screen.
+
+The fix is to clear it on page step and on mouse exit, which is a small change in one place -
+filed rather than made because it touches a field three shortcuts read and nothing in the suite covers
+it today.
 
 ## What has been picked up
 

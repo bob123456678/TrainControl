@@ -356,11 +356,19 @@ and the runtime chose one quite happily:
 
 They are independent, and only the second decides whether autonomy picks a square:
 
-- A **compulsory turn** with the switch on is a station autonomy chooses like any other, and the train
-  turns round when it gets there. `Layout.isSendableDestination` accepts it - a must-turn station is
-  built as a terminus, and a terminus has `isReversing()` false.
+- A **compulsory turn** with the switch on is a station autonomy may choose, and the train turns round
+  when it gets there. `Layout.isSendableDestination` accepts it - a must-turn station is built as a
+  terminus, and a terminus has `isReversing()` false. Not quite "like any other": `getPossiblePaths`
+  adds `!end.isTerminus() || loc.isReversible()`, so autonomy never sends a locomotive that cannot
+  change direction to one.
 - With the switch **off**, autonomy leaves the square alone. You can still send a train there by hand,
-  and Return Home still uses it; a train that passes through does so in the direction it came in.
+  and Return Home still uses it.
+
+  **Nothing passes through such a square in either case**, and Adam's *"the train may only pass through
+  in its current direction"* is about the marking rather than about that square: a compulsory turn is
+  built as a terminus, and `Layout.isPathClear` refuses any route whose terminus is not its endpoint.
+  What the sentence rules is that turning round is not part of who may be SENT somewhere - that is the
+  switch, and only the switch.
 
 **The editor said otherwise until this ruling**, on the strength of a comment claiming to mirror the
 runtime. It cost nothing on Adam's railway, because every compulsory turn he has is also marked
@@ -530,12 +538,22 @@ The rest of this section is about the **first** rule.
   own. Nothing new is measured.
 
   **What it costs, measured on Adam's railway.** Over 1848 routable station pairs and six train
-  lengths - 11088 journeys - the berth rule refuses 1892 and this ruling refuses about 1645 more, so
-  roughly one journey in three is now refused for want of room. Every square that does the refusing
-  measures ONE unit, except `TopR1ParkShort` at three. The way to get those journeys back is to
-  measure that track. `core.testTheRoomRuleCensusOnTheRealLayout` re-measures it on every run, and
-  reports a band rather than a figure because which route a search finds first is not reproducible
-  between JVMs.
+  lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses about 1655 more, so
+  roughly one journey in three is now refused for want of room. **Every square that does the refusing
+  measures ONE unit**, and every one is a copy of the four berths §5c already names. The way to get
+  those journeys back is to measure that track.
+
+  `core.testTheRoomRuleCensusOnTheRealLayout` re-measures it on every run, against the frozen
+  `test/layouts/live-snapshot` rather than the railway Adam is operating, and reports a band rather
+  than a figure because which route a search finds first is not reproducible between JVMs.
+
+  **A journey in three is not a train in three.** Journeys are counted over every ordered pair of
+  stations, and refusals that fall unevenly strand whole squares rather than thinning the timetable.
+  `core.testWhichSquaresTheRoomRuleClosesOff` is the census that says which squares offer a train of
+  each length nothing at all, and it is the number to read before this one: on Adam's railway **seven
+  squares on the bottom main offer a train of two units or more nowhere at all**, where the berth-only
+  rule offered each of them thirty-odd destinations. `OB-196` carries what it costs and what the
+  remedy is - three tiles measured at one unit, and a tape measure rather than a change to the rule.
 
   **The refusal names the square that is short**, and says a different sentence for one on the way
   than for the berth. Naming the destination when the destination has room sends the operator to
@@ -745,7 +763,7 @@ limit is stated here (MON-C13):
    or the berth is the question that has to go back to him.
 
    This bullet said "It adds the whole path" until 2026-09-08, which is only true of a switch-free
-   route: `Layout.measuredRoomAtTheBerth` returns at the first edge it meets, walking back, whose
+   route: `Layout.measuredRoomAtTheEndOf` returns at the first edge it meets, walking back, whose
    `crossesASwitch()` is true. The defect is the missing stop at the turn, not a missing stop
    altogether - which matters, because the two would be fixed in different places.
 

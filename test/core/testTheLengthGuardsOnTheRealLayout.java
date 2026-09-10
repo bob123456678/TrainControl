@@ -214,10 +214,16 @@ public class testTheLengthGuardsOnTheRealLayout
      * every copy of it and every approach, while the guard used the room on the path in hand - so it
      * once reported "the room at that berth is ONE" for RampDown, whose last edge crosses no switch at
      * all and has no such number.  It now enumerates the routes from where the train is standing and
-     * returns the best route's tightest square, which is exactly what the guard compares the train
-     * against.  Its one caller is `testExactlyFitsIsAdmittedAndOneMoreIsNot`, which searches for a
-     * berth where the guard binds and then verifies the refusal itself, so a number that is wrong in
-     * the safe direction costs a candidate rather than a verdict.
+     * returns the best route's tightest square.
+     *
+     * **NOT EXACTLY WHAT THE GUARD COMPARES AGAINST, and the difference is in the safe direction.**
+     * It asks `measuredRoomAtTheEndOf` of every prefix; the guard asks `roomAfterASwitchOnTheWay` for
+     * a square the train passes through, which answers null where no switch lies behind it.  So this
+     * can report a SMALLER number than the guard uses.  Its one caller,
+     * `testExactlyFitsIsAdmittedAndOneMoreIsNot`, searches for a berth where the guard binds and then
+     * verifies the refusal itself before using the number, so being wrong that way costs a candidate
+     * rather than a verdict.  Said out loud because this codebase's characteristic defect is a
+     * sentence claiming to mirror a rule it does not.
      */
 
     /**

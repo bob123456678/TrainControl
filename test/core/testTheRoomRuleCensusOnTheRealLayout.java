@@ -27,9 +27,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * The section 5b census, as something that can be run rather than something that was run once.
+ * The section 5c census, as something that can be run rather than something that was run once.
  *
- * `behaviour.md` section 5b records a measurement made on the operator's own railway on 2026-09-08,
+ * `behaviour.md` section 5c records a measurement made on the operator's own railway on 2026-09-08,
  * after MT-262 removed the fence that had kept the track-room rule to termini and reversing berths:
  * across every ordered station pair, with each train length in his database in turn, the journeys the
  * widened rule NEWLY refuses, and where they arrive. It ends *"a layout with lengths scattered over
@@ -50,12 +50,12 @@ import org.traincontrol.marklin.file.CS2File;
  * The station-capacity rule is deliberately not counted. That is the number somebody typed on the
  * platform, it is asked separately in `whyTooLongForThisRoute`, and MT-262 did not touch it.
  *
- * **It does not reproduce the published totals, and it cannot.** Section 5b said *"across all 3488
+ * **It does not reproduce the published totals, and it cannot.** Section 5c said *"across all 3488
  * ordered station pairs ... the journeys it newly refuses are 332"*. This finds **1980** ordered pairs
  * - 45 destination Points, each against the other 44 - of which **1848** can be routed, and **880**
  * newly refused journeys over the six lengths. The original probe was never committed, so which pairs
  * it enumerated cannot be recovered, and that is the whole reason this file exists: a number nobody
- * can re-derive is a number nobody can check. Section 5b now carries these figures and states the
+ * can re-derive is a number nobody can check. Section 5c now carries these figures and states the
  * method, so the next person can disagree with it by running something.
  *
  * **What DID reproduce, exactly, is the half the section reasons from.** Every newly refused journey
@@ -74,8 +74,8 @@ public class testTheRoomRuleCensusOnTheRealLayout
     /**
      * The census, re-measured on 2026-09-08 by this file.
      *
-     * These pin the sentences in `behaviour.md` section 5b. If a number here moves, the railway or the
-     * rule has changed and that section is out of date - which is exactly the state section 5b was in
+     * These pin the sentences in `behaviour.md` section 5c. If a number here moves, the railway or the
+     * rule has changed and that section is out of date - which is exactly the state section 5c was in
      * while it had no probe: it could say anything, and nothing would disagree.
      */
     private static final int ORDERED_PAIRS = 1980;
@@ -90,7 +90,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      *
      * They used to be harvested: `trainLengths()` walked `model.getLocomotives()` - the real
      * locomotive database, which `init()` restores and which the layout sandbox does NOT freeze - and
-     * collected the distinct positive lengths it found. Six of them, 1 to 6, which is what section 5b
+     * collected the distinct positive lengths it found. Six of them, 1 to 6, which is what section 5c
      * says. **The census then had a population nobody in this file chose.** Adam measuring one of his
      * own trains, or buying one, or driving a length back to zero, moves the set and this class goes
      * red about a railway that has not changed. The reverse is worse: a length he happens to add can
@@ -98,7 +98,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      *
      * So the six trains are made here, with the lengths written down, and deleted again in
      * `tearDownClass`. The numbers below are unchanged, because these are the same six lengths - which
-     * is the point: the census is over the same population it was over when section 5b was written,
+     * is the point: the census is over the same population it was over when section 5c was written,
      * and now it will stay over it.
      */
     private static final Integer[] LENGTHS = {1, 2, 3, 4, 5, 6};
@@ -125,7 +125,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     /**
      * Where every newly refused journey arrives, and the room measured behind each.
      *
-     * These are the four berths `behaviour.md` section 5b names, spelled as it spells them - by their
+     * These are the four berths `behaviour.md` section 5c names, spelled as it spells them - by their
      * split copies - and the ONE unit of room is the number Adam gave himself: *"bottommainb, which
      * has a length of 1 leading up to its switch"*.
      */
@@ -149,7 +149,17 @@ public class testTheRoomRuleCensusOnTheRealLayout
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (the review's B8).
+        //
+        // This opened `cs2_sample_layout`, and every figure below is a measurement of whatever state
+        // Adam had left it in.  One of the squares this class pins - `TopR1ParkShort` at three units -
+        // existed only in his UNCOMMITTED working copy, so a clean checkout ran the census against a
+        // railway where that square is unmeasured and the pinned list quietly stopped being about the
+        // repository.
+        //
+        // `live-snapshot` is the same railway with the clock stopped, checked in, and the last of the
+        // classes that were reading his live one.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
 
@@ -217,7 +227,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * MUTATION, run: putting the fence back - answering `false` from `newlyRefuses` unless the
      * destination is a terminus or a reversing point is what the rule DID before MT-262 - takes the
      * count to 0 and empties the berth list. Widening a berth's approach in the setup moves the count
-     * too, which is what section 5b's closing sentence asks for: *"a layout with lengths scattered
+     * too, which is what section 5c's closing sentence asks for: *"a layout with lengths scattered
      * over more of its track would be a different answer, and the way to find out is to run that
      * census again rather than to reason about it."*
      *
@@ -233,7 +243,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // PRINTED AS WELL AS ASSERTED.  Re-measuring is the point of this file, and a person who has
         // just scattered more lengths over the railway wants the new numbers, not only the news that
         // the old ones are wrong.
-        System.out.println("### section 5b census, re-measured");
+        System.out.println("### section 5c census, re-measured");
         System.out.println("  ordered station pairs   : " + census.orderedPairs);
         System.out.println("  of those, with a path   : " + census.pairsWithAPath);
         System.out.println("  train lengths asked     : " + census.lengths);
@@ -257,7 +267,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
         assertEquals(census.newlyRefused, NEWLY_REFUSED,
             census.newlyRefused + " journeys are newly refused by the widened room rule, against "
-            + NEWLY_REFUSED + " when behaviour.md section 5b was written.  That section states this"
+            + NEWLY_REFUSED + " when behaviour.md section 5c was written.  That section states this"
             + " number and reasons from it - that the widening refuses the journeys Adam asked to have"
             + " refused, at the squares he was looking at, and not a wider set - so update it there"
             + " and here together, or the document is describing a railway that no longer exists");
@@ -265,7 +275,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         assertEquals(new TreeSet<>(census.berths.keySet()),
             new TreeSet<>(java.util.Arrays.asList(BERTHS)),
             "the newly refused journeys now arrive at " + census.berths.keySet() + " rather than at "
-            + java.util.Arrays.asList(BERTHS) + ".  This is the load-bearing half of section 5b: every"
+            + java.util.Arrays.asList(BERTHS) + ".  This is the load-bearing half of section 5c: every"
             + " refusal the widening adds lands on one of the four berths Adam named himself, each"
             + " with ONE measured unit of room behind it.  A fifth berth appearing means the rule has"
             + " started refusing somewhere he was not looking at");
@@ -274,7 +284,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         {
             assertEquals(berth.getValue(), Integer.valueOf(1),
                 berth.getKey() + " now measures " + berth.getValue() + " units of room rather than the"
-                + " ONE section 5b records - \"bottommainb, which has a length of 1 leading up to its"
+                + " ONE section 5c records - \"bottommainb, which has a length of 1 leading up to its"
                 + " switch\"");
         }
     }
@@ -282,11 +292,11 @@ public class testTheRoomRuleCensusOnTheRealLayout
     /**
      * Journeys Adam's ruling of 2026-09-09 refuses that the berth-only rule admitted.
      *
-     * Measured on the live snapshot the day the ruling was made, over 1848 routable pairs and this
-     * class's six trains - **11088 journeys, of which the berth rule already refused 1892 and this
-     * ruling refuses about 1630 more**.  Roughly one journey in three is now refused for want of room,
-     * and every square that does the refusing is measured at one unit except `TopR1ParkShort`, which
-     * is three.  The way to get them back is to measure that track, not to change the rule.
+     * Measured on `test/layouts/live-snapshot` over 1848 routable pairs and this class's six trains -
+     * **11088 journeys, of which the berth rule already refuses 1760 and this ruling refuses about
+     * 1655 more**.  Roughly one journey in three is now refused for want of room, and **every square
+     * that does the refusing measures ONE unit**.  The way to get those journeys back is to measure
+     * that track, not to change the rule.
      *
      * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Four runs gave 2116, 2146, 1648 and
      * 1617 - the first two asking one route per pair, the second two asking every route the search
@@ -308,29 +318,44 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
     /**
      * Journeys refused at the destination, which is what the rule did before the ruling.
+     *
+     * 1892 while this census read Adam's live railway; 1760 on the frozen snapshot, which is the
+     * railway the repository actually holds.
      */
-    private static final int REFUSED_AT_THE_BERTH = 1892;
+    private static final int REFUSED_AT_THE_BERTH = 1760;
 
     /**
      * The squares that do the refusing on the way, which is the half worth reading.
+     *
+     * **Every one of them measures ONE unit**, and every one is a copy of the four berths the MT-262
+     * census already names - the same tiles, now refusing a train running THROUGH them as well as one
+     * stopping at them.  So the cost of the ruling lands exactly where Adam was looking when he made
+     * it, and the way to get those journeys back is to measure that track rather than change the rule.
+     *
+     * `TopR1ParkShort` was on this list until the census moved off his live railway.  It measures
+     * three units in his UNCOMMITTED working copy and nothing at all in the repository - a pinned list
+     * that was really a photograph of somebody's desk, which is the whole of the review's B8.
      */
     private static final String[] ON_THE_WAY =
     {
         "BottomMainA (eastbound)", "BottomMainA (westbound)", "BottomMainB (eastbound)",
-        "BottomMainB (westbound)", "BottomMainB (westbound, reverse)", "BottomMainBCPre (westbound)",
-        "BottomMainC (westbound)", "BottomMainC (westbound, reverse)", "BottomMainPost (northbound)",
-        "BottomMainPost (northbound, reverse)", "BottomMainB (eastbound, reverse)", "TopR1ParkShort"
+        "BottomMainB (eastbound, reverse)", "BottomMainB (westbound)",
+        "BottomMainB (westbound, reverse)", "BottomMainBCPre (westbound)", "BottomMainC (westbound)",
+        "BottomMainC (westbound, reverse)", "BottomMainPost (northbound)",
+        "BottomMainPost (northbound, reverse)"
     };
 
     /**
      * How many routes to one destination the census will look at.
      *
      * The point of enumerating them at all is that "is this train refused" is a question about ALL of
-     * them, so a cap is a wrong answer rather than a slow one - it can only make the census report a
+     * them, so a cap is a wrong answer rather than a slow one.  It was 30, and a full battery - a
+     * different JVM, so a different route order - found BottomMainC (westbound) to BottomSecondary
+     * at the cap, which is the guard below doing exactly its job - it can only make the census report a
      * refusal that the railway would not make.  `testNoPairHitTheRouteCap` says it never binds, which
      * is the only thing that makes the number below mean anything.
      */
-    private static final int ROUTE_CAP = 30;
+    private static final int ROUTE_CAP = 150;
 
     /**
      * What Adam's ruling of 2026-09-09 costs on top of the census above.
@@ -473,6 +498,16 @@ public class testTheRoomRuleCensusOnTheRealLayout
         System.out.println("  refusals the unbounded walk would have added: "
             + offTheEndOfTheRoute);
 
+        // ASSERTED, NOT ONLY PRINTED (the review's C2).  `behaviour.md` section 5a says every refusal
+        // this ruling adds is bounded by a switch, and leans on this census for it - a claim a
+        // document makes and nothing checks is a claim that goes stale the day it stops being true.
+        assertEquals(offTheEndOfTheRoute, 0,
+            offTheEndOfTheRoute + " of the refusals on the way come from the walk running off the"
+            + " start of the route rather than from a switch behind the square. behaviour.md section"
+            + " 5a states this is none of them, and the condition in"
+            + " `Layout.roomAfterASwitchOnTheWay` exists to keep it that way - so either the railway"
+            + " has changed shape or that condition has been weakened");
+
         assertEquals(refusedAtTheBerth, REFUSED_AT_THE_BERTH,
             refusedAtTheBerth + " journeys are refused at their destination, against "
             + REFUSED_AT_THE_BERTH + " when this was measured.  That is the rule as it stood BEFORE"
@@ -486,7 +521,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + REFUSED_ON_THE_WAY_AT_LEAST + " to " + REFUSED_ON_THE_WAY_AT_MOST + " measured when it"
             + " was made.  A rise is the guard closing the railway down, which is the cost he was told"
             + " about and accepted a measured amount of; a fall is the ruling not being enforced."
-            + "  Either way, re-measure it here and in behaviour.md section 5b together");
+            + "  Either way, re-measure it here and in behaviour.md section 5c together");
 
         // A SUBSET, NOT AN EQUALITY, and for the same reason the count is a band: which routes the
         // search yields decides which of a station's copies gets named.  A square OUTSIDE the list is
@@ -738,7 +773,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             Locomotive train = model.getLocByName(String.format(CENSUS_NAME, units));
 
             assertNotNull(train, "the census's " + units + "-unit train is not in the database, so"
-                + " this run is over a shorter population than the one section 5b states");
+                + " this run is over a shorter population than the one section 5c states");
 
             assertEquals(train.getTrainLength(), units,
                 "the census's " + units + "-unit train measures " + train.getTrainLength()
