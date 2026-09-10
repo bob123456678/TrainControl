@@ -440,8 +440,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         // the item stayed enabled and live at the ceiling, printing "(60 x 30)" on a control that was
         // about to refuse.  Mirrors the predicate growEdges() checks, and swaps the tooltip to the
         // reason for the same treatment Decrease already gets below.
-        boolean canGrow = edit.getMarklinLayout().getSx() < LayoutEditor.MAX_SIZE
-            && edit.getMarklinLayout().getSy() < LayoutEditor.MAX_SIZE;
+        // AND IT IS THE EDITOR'S OWN PREDICATE NOW (X8-C5), which Shift Down and Shift
+        // Right on this same submenu also ask.
+        boolean canGrow = edit.roomToGrow(1, 1);
         menuItem.setEnabled(canGrow);
         menuItem.setToolTipText(canGrow ? "Control+I"
             : I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));

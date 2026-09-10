@@ -20,7 +20,16 @@ public class TimetablePath
     private final List<Edge> path;
     private long executionTime;
     
-    // Seconds to the next execution.  Precalculated externally
+    // MILLISECONDS to the next execution, despite the name (X8-C4).  Precalculated externally.
+    //
+    // Every writer and reader uses milliseconds: `Layout` stores a difference of two
+    // `System.currentTimeMillis()` stamps and compares it against another one, `TrainControlUI`
+    // multiplies the operator's typed seconds by 1000 on the way in and divides by 1000 to display it,
+    // and `testLayoutTimetable` asserts 10000 for a ten-second gap.  The name and this comment were
+    // the only two things in the chain that said seconds.
+    //
+    // Renaming it would touch nine call sites and every one of them is right; what was wrong is that
+    // the field lied to the tenth person to read it.
     private long secondsToNext = 0;
 
     public TimetablePath(Locomotive loc, List<Edge> path, long executionTime)

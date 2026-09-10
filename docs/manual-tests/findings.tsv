@@ -2363,6 +2363,29 @@ WR-C7	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (workin
 WR-C8	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (working tree) - reworded to cover both states: wait for arrival, or 
 WR-C9	2026-07-28-week-verification-review.md	Closed	**Open**
 WR-D1	2026-07-28-week-verification-review.md	Closed	Recorded
+X8-A1	X8-independent-review.md	-	closed
+X8-A2	X8-independent-review.md	-	closed
+X8-B1	X8-independent-review.md	-	closed
+X8-B2	X8-independent-review.md	-	closed
+X8-B3	X8-independent-review.md	-	closed
+X8-B4	X8-independent-review.md	-	closed
+X8-B5	X8-independent-review.md	-	closed
+X8-B6	X8-independent-review.md	-	closed
+X8-C1	X8-independent-review.md	-	closed
+X8-C2	X8-independent-review.md	-	closed
+X8-C3	X8-independent-review.md	-	closed
+X8-C4	X8-independent-review.md	-	closed
+X8-C5	X8-independent-review.md	-	closed
+X8-C6	X8-independent-review.md	-	closed
+X8-C7	X8-independent-review.md	-	closed
+X8-D1	X8-independent-review.md	-	clean, 0 of 13,524
+X8-D2	X8-independent-review.md	-	clean
+X8-D3	X8-independent-review.md	-	compensated
+X8-D4	X8-independent-review.md	-	not so, by construction
+X8-D5	X8-independent-review.md	-	complete but for `locked`
+X8-D6	X8-independent-review.md	-	cannot bite - the timetable is a `List`
+X8-D7	X8-independent-review.md	-	it can
+X8-D8	X8-independent-review.md	-	it asks both, and that is what makes `X8-A2` narrow
 # DEAD - cited, no finding behind them
 AR-19	-	-	-
 FCR-B3	-	-	-

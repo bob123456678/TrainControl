@@ -723,8 +723,18 @@ public class testSwitchingToACentralStationLayout
         //
         // All three sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model, as
         // the rule above requires.
-        assertEquals(checked, 29,
-            checked + " test classes were found to build a window, not the 29 there were when this "
+        //
+        // THIRTY-ONE since 2026-09-10, and the two that arrived are the X8 round's:
+        //
+        //   - `testCutWithNothingHovered` (X8-B1), which asks what Cut arms when the pointer is
+        //     not over a square - a property of the editor's own clipboard state, so there has to
+        //     be an editor;
+        //   - `testDeleteForgetsTheWholeSquare` (X8-B4), which deletes a square through the real
+        //     `delete(LayoutLabel)` door, and a label only exists once a grid has been built.
+        //
+        // Both sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model.
+        assertEquals(checked, 31,
+            checked + " test classes were found to build a window, not the 31 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

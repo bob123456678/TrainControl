@@ -2401,8 +2401,8 @@ public class Layout
         //
         // THE START STAYS EXEMPT, which is the whole of the exception: a train standing on a square
         // that has been switched off is driven out by hand, and that is what closing a square around a
-        // train is for.  `:2243`'s stricter form - any edge with an inactive endpoint - keeps its
-        // `isAutoRunning` fence, because it refuses the start too.
+        // train is for.  `trainsUnderway`'s stricter form - any edge with an inactive endpoint -
+        // keeps its `isAutoRunning` fence, because it refuses the start too.
         if (!path.get(path.size() - 1).getEnd().isActive())
         {
             logPathError(
@@ -6140,7 +6140,7 @@ public class Layout
                     //
                     // `configureAndLockPath` already recovers that case completely: it releases the
                     // prefix it took, and `handleMisconfiguredPath` re-reserves the locomotive on the
-                    // point it never left (`:3232`, "Provably at its start").  Then it rethrows, and
+                    // point it never left (`handleMisconfiguredPath`, "Provably at its start").  Then it rethrows, and
                     // this handler used to unlock the WHOLE path over the top of that recovery -
                     // clearing the start reservation at `unlockPath`'s `i == 0` clause, so the train
                     // stood on a square the model believed empty and `pickPath` could route another
@@ -6151,7 +6151,7 @@ public class Layout
                     // only after `configureAndLockPath` has returned - at the `activeLocomotives.put` in `executePathInternal`, so its absence here
                     // means the lock phase is what threw and has already cleaned up after itself.
                     //
-                    // The comment at `:2923` promised this - "it went straight out to executePath's
+                    // The comment in `setBlockedBy`'s loop promised this - "it went straight out to executePath's
                     // handler, which deliberately does not unlock" - and stopped being true on
                     // 2026-09-03.  It is true again.
                     if (hadItsPath)
@@ -6498,7 +6498,7 @@ public class Layout
                 // be asked something - and nowhere else (DIR-A1).
                 //
                 // SPEC-A2 / REG6-B3: THIS ASKED `mayReverseAt` AND THAT IS A SQUARE-WIDE TEST.
-                // `AutonomyBuilder:844` gives every copy of a multi-copy square the same block, so
+                // `AutonomyBuilder.build`'s block emission gives every copy of a multi-copy square the same block, so
                 // `mayReverseAt` is true at the PLAIN copy as well as the turning one - and autonomy,
                 // which reaches this line through `ALWAYS_REVERSE`, began stopping dead and
                 // re-accelerating at plain copies it used to pass at line speed.  The comment above

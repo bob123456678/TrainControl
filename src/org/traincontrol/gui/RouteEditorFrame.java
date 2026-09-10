@@ -2747,7 +2747,25 @@ public class RouteEditorFrame extends JFrame
         {
             int parsed = Integer.parseInt(text.trim());
 
-            return parsed < 0 ? wasBefore : parsed;
+            if (parsed < 0) return wasBefore;
+
+            // THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY (X8-C2).
+            //
+            // `MarklinRoute` sleeps `max(delay, DEFAULT_SLEEP_MS)` between commands, because that is
+            // the gap it leaves between two route commands and THREEWAY_ROUTE_DELAY_MS is built on top
+            // of it.  So a delay between 1 and 150 was accepted here, stored, written to the file, read
+            // back and redisplayed - and never used.  Somebody lowering a pause from 300 to 100 saw the
+            // number change and the railway not.
+            //
+            // Raised on the way in, so the cell holds the number the railway will actually use.  Zero
+            // is left alone: it means "no delay asked for", which is a different thing from "as short
+            // as possible" and is what an untouched row holds.
+            if (parsed > 0 && parsed < org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS)
+            {
+                return org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS;
+            }
+
+            return parsed;
         }
         catch (NumberFormatException e)
         {

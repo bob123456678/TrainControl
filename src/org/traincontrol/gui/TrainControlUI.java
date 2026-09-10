@@ -18520,7 +18520,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     // UXR-C21: showTab(Icon) removed. Dead code - its only call site
-    // (LocomotiveSelector.java:394) has been commented out, and it never picked up C20's
+    // (LocomotiveSelector.formWindowStateChanged) has been commented out, and it never picked up C20's
     // isEnabledAt/getTabCount guard, so reviving it would revive OB-128 (a program-driven tab switch
     // landing on a greyed, empty tab) with it.
 
@@ -27274,9 +27274,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * The redraw is skipped when this has not changed, and it has to be built from the text rather
      * than from the objects: a locomotive hashes by identity, so renaming one changes every row and no
-     * hash. Everything the table draws is in here - the order, the locomotive, the two stations and
-     * whether the entry has run - and nothing else is, so a repaint is asked for exactly when one is
-     * needed.
+     * hash. Everything the table draws is in here - the order, the locomotive, the two stations,
+     * whether the entry has run, its execution time and its countdown.
+     *
+     * IT IS NOT THE OTHER WAY ROUND (X8-C7). This sentence used to end "and nothing else is, so a
+     * repaint is asked for exactly when one is needed", and it named four of the six. Both extra
+     * fields ARE drawn, so nothing spurious is in here - but `getSecondsToNext` is in milliseconds
+     * (X8-C4) and the cell shows it divided by 1000, so a change smaller than a second moves this
+     * string and not the table. A repaint is asked for whenever one is needed, and sometimes when it
+     * is not; the redraw is the cheap half and the wrong direction to be wrong in.
      *
      * @param timeTable the snapshot about to be drawn
      * @return a key that changes when the drawing would

@@ -663,6 +663,260 @@ public class testParseCS2Layout
     }
 
     /**
+     * The `page=` line at the top of a page file survives a save (X8-A1).
+     *
+     * **A line deleted from every page the application has ever saved.**  `parseFileContents` knew
+     * three shapes of line - a block name, a `" .key=value"`, a `" .key"` array header - and the second
+     * line of a genuine Central Station page export is none of them: `page=1`, at the left margin, with
+     * an equals sign.  It became no item, so it reached neither `addUnmodelledBlock` nor
+     * `addUnmodelledElement`, and the exporter regenerates the whole file from the model.
+     *
+     * Measured on this repository's own exports before the fix: the four pages of `cs2_sample_layout`
+     * the application works on had lost it, and `5 - Test.cs2`, which nothing edits, still had it.
+     *
+     * This is the third instance of one rule - *"what TrainControl does not understand it is not
+     * entitled to throw away"* - which had a keeper for a block and a keeper for an element, and this
+     * shape is neither.
+     *
+     * MUTATION: delete the fourth arm of `parseFileContents`, or the `bareKeys` loop in
+     * `exportToCS2TextFormat`, and the first assertion fails.
+     */
+    @Test
+    public void testTheHeaderKeyOfAPageSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "page=1\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("page=1"),
+            "the line every genuine Central Station page export opens with was deleted by saving the "
+            + "page (X8-A1).  File was:\n" + written);
+
+        // AND EXACTLY ONCE - the other direction, a line both carried over and regenerated.
+        assertEquals(written.split("page=1", -1).length - 1, 1,
+            "the header key appears more than once:\n" + written);
+
+        // AND WHERE THE FILE HAS IT: before the first block, which is where a station writes it.
+        int header = written.indexOf("[gleisbildseite]");
+        int key = written.indexOf("page=1");
+        int firstBlock = written.indexOf("version");
+
+        assertTrue(header >= 0 && key > header && firstBlock > key,
+            "the key came back but not between the header and the first block, so the file is no "
+            + "longer in the shape the station wrote it in:\n" + written);
+
+        // And the ordinary content still works, which is what says the export is not simply broken.
+        assertTrue(written.contains("gerade"), "the modelled component is still written:\n" + written);
+    }
+
+    /**
+     * A page file that is nothing but a header and its key does not lose the key (X8-A1).
+     *
+     * The keys are held until a block opens, because that is where the file puts them and the exporter
+     * has to write them back in that order.  A file with no block at all - which a truncated or
+     * hand-edited page is - would otherwise reach the end of the read still holding them.
+     *
+     * MUTATION: delete the flush in `parseFileContents`'s final pass and this fails while the test
+     * above still passes.
+     */
+    @Test
+    public void testAPageWithNoBlocksStillKeepsItsHeaderKey() throws Exception
+    {
+        String written = roundTrip("[gleisbildseite]\npage=4\n");
+
+        assertTrue(written.contains("page=4"),
+            "a page whose header key is followed by no block lost it, because the collector is only "
+            + "emptied when a block opens (X8-A1).  File was:\n" + written);
+    }
+
+    /**
+     * What the station wrote INSIDE a page's own block survives a page edit (X8-B2).
+     *
+     * `readLayoutIndexExtras` keeps whole blocks it has no name for and declares `seite` modelled.
+     * That is true of the two keys the writer emits - `.id` and `.name` - and false of the block: a
+     * Central Station writes the page's scroll position into it as `.xoffset` and `.yoffset`.  So the
+     * index kept `zuletztBenutzt` at the top of the file, which AC2-C1 was written for, and still
+     * deleted what sat inside each page.
+     *
+     * The same rule as the test above, one file up.
+     *
+     * MUTATION: remove either `appendPageExtras` call from `writeLayoutIndex` and this fails.
+     */
+    @Test
+    public void testAPageEditKeepsWhatTheStationWroteInsideThePage() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // Only the SECOND page carries the offsets, so a writer that emitted them for every page
+            // would fail this as surely as one that emitted them for none.
+            String original = "[gleisbild]\n"
+                + "version\n .major=1\n"
+                + "groesse\n"
+                + "seite\n .id=7\n .name=Page One\n"
+                + "seite\n .id=9\n .name=Page Two\n .xoffset=3\n .yoffset=11\n";
+
+            java.io.File index = new java.io.File(config, "gleisbild.cs2");
+
+            java.nio.file.Files.write(index.toPath(),
+                original.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(java.nio.file.Files.readAllBytes(index.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".xoffset=3") && after.contains(".yoffset=11"),
+                "writing the index deleted what the station wrote inside the page.  `seite` was "
+                + "declared modelled, which is true of the two keys the writer emits and not of the "
+                + "block (X8-B2).  File was:\n" + after);
+
+            // ON THE RIGHT PAGE, which is the whole reason they are kept by id.
+            int pageTwo = after.indexOf(".name=Page Two");
+            int offset = after.indexOf(".xoffset=3");
+
+            assertTrue(pageTwo >= 0 && offset > pageTwo,
+                "the offsets came back attached to the wrong page:\n" + after);
+
+            // AND NOT ON THE OTHER ONE.
+            assertEquals(after.split("\\.xoffset", -1).length - 1, 1,
+                "the offset was written for more than one page:\n" + after);
+
+            // The ids still stand.
+            java.util.Map<String, Integer> back =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(back.get("Page One"), Integer.valueOf(7), "the first page's id changed");
+            assertEquals(back.get("Page Two"), Integer.valueOf(9), "the second page's id changed");
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * A page with NO id keeps what the station wrote inside its block (X8-B2).
+     *
+     * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
+     * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
+     * An absent id is the page's POSITION, which is what `pageIdOrPosition` says and what
+     * `readLayoutIndexIds` does with the same file - so a reader that insisted on a stated id would
+     * drop the offsets of the one page in the shipped export that has any.
+     *
+     * MUTATION: make `readLayoutIndexPageExtras` skip a page whose `.id` is absent and this fails
+     * while the two tests above pass.
+     */
+    @Test
+    public void testAPageWithNoIdKeepsWhatTheStationWroteInsideIt() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // The shape of the shipped export: the last-used-page block, then a first page with no id.
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "zuletztBenutzt\n .name=Page One\n"
+                    + "seite\n .name=Page One\n .xoffset=1\n .yoffset=3\n"
+                    + "seite\n .id=2\n .name=Page Two\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".xoffset=1") && after.contains(".yoffset=3"),
+                "the page with no stated id lost what the station wrote inside it.  An absent id is "
+                + "the page's position, which is what every other reader of this file does with it "
+                + "(X8-B2).  File was:\n" + after);
+
+            // AND ON THE RIGHT PAGE.
+            int pageOne = after.indexOf(".name=Page One");
+            int pageTwo = after.indexOf(".name=Page Two");
+            int offset = after.indexOf(".xoffset=1");
+
+            assertTrue(pageOne >= 0 && offset > pageOne && (pageTwo < 0 || offset < pageTwo),
+                "the offsets came back attached to the wrong page:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * A renamed page keeps what the station wrote inside its block (X8-B2).
+     *
+     * The reason the extras are keyed by id.  A rename is the one operation where the writer is
+     * holding a name the index has never seen, and by-name bookkeeping would drop the offsets of
+     * exactly the page the operator just touched.
+     *
+     * MUTATION: key `readLayoutIndexPageExtras` by name and this fails while the test above passes.
+     */
+    @Test
+    public void testARenamedPageKeepsWhatTheStationWroteInsideIt() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "seite\n .id=7\n .name=Page One\n .xoffset=5\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            java.util.Map<String, String> renamed = new java.util.HashMap<>();
+
+            renamed.put("Page One", "Page Renamed");
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page Renamed"), renamed, 0, null);
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".name=Page Renamed"),
+                "precondition: the rename has to have happened:\n" + after);
+
+            assertTrue(after.contains(".xoffset=5"),
+                "renaming a page deleted what the station wrote inside its block.  The extras are "
+                + "carried by id precisely because a rename is when the name is not usable (X8-B2).  "
+                + "File was:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
      * A key on a component the model DOES understand, but has no field for, survives too.
      *
      * The same loss one level down: the component is kept, and everything the file said about it that

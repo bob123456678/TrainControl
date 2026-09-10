@@ -196,6 +196,84 @@ public class testEveryCitationResolves
     }
 
     /**
+     * No comment cites a LINE NUMBER (X8-C1).
+     *
+     * `CommandRow` states the rule and nothing enforced it: *"By method name, not by line (VD9-C12):
+     * the first version of this paragraph cited `RouteEditorFrame:3415-3419`, which was already wrong
+     * when it was copied here out of a review, and a stale line number in a javadoc outlives every
+     * edit above it with nothing able to notice."*
+     *
+     * It was written and not swept. Six such citations were in the tree when this test was added and
+     * **all six pointed at unrelated code** - the closest was 70 lines out, the furthest 232. The test
+     * beside this one could not see any of them: its pattern finds review ids, so it reported clean
+     * about a whole class of citation it had never heard of. `guard-knows-only-what-it-lists`.
+     *
+     * **Refused outright rather than resolved.** Checking that the cited line still holds the quoted
+     * phrase would pass today and rot exactly as the citations did; the rule the codebase already
+     * wrote down is that the shape itself is wrong, and a name is a thing the compiler and every
+     * search can follow.
+     *
+     * Two exemptions, both deliberate:
+     *
+     *   the rule's own counter-example    `CommandRow` quotes the bad citation to explain the rule.
+     *   a git revision                    `git show master:path/File.java:111` names a revision of a
+     *                                     file, not a line of the tree.
+     *
+     * MUTATION: write `// see Layout.java:1234` in any source comment and this fails, naming the file.
+     *
+     * @throws Exception on a failure to read the tree
+     */
+    @Test
+    public void testNoCommentCitesALineNumber() throws Exception
+    {
+        // A name, then a colon, then at least two digits - the shape every one of the six had.  The
+        // name has to start with a capital, which is what keeps `http://host:8080` and a clock time
+        // out of it.
+        Pattern byLine = Pattern.compile(
+            "`?\\b([A-Z][A-Za-z0-9_]*(?:\\.java)?):(\\d{2,5})\\b");
+
+        List<String> found = new ArrayList<>();
+
+        for (File f : filesUnder(new File("src"), ".java"))
+        {
+            String body = new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int lineNumber = 0;
+
+            for (String line : body.split("\n"))
+            {
+                lineNumber++;
+
+                String trimmed = line.trim();
+
+                // Comments only.  A citation in code would be a compile error, and a string literal
+                // that happens to hold this shape is data.
+                if (!trimmed.startsWith("//") && !trimmed.startsWith("*")) continue;
+
+                // The rule's own counter-example, which quotes the bad citation to explain why the
+                // shape is wrong, and a git revision reference.
+                if (trimmed.contains("which was already wrong when it was copied")) continue;
+
+                if (trimmed.contains("git show ")) continue;
+
+                Matcher m = byLine.matcher(trimmed);
+
+                while (m.find())
+                {
+                    found.add(f.getPath() + ":" + lineNumber + " cites " + m.group());
+                }
+            }
+        }
+
+        assertTrue(found.isEmpty(),
+            "a comment cites a line number.  `CommandRow` states the rule - by method name, not by "
+            + "line - because a stale line number outlives every edit above it with nothing able to "
+            + "notice, and when this test was written all six such citations in the tree pointed at "
+            + "unrelated code (X8-C1).  Found:\n  " + String.join("\n  ", found));
+    }
+
+    /**
      * The catalogue is regenerable and current.
      *
      * It is rendered from `docs/manual-tests/triage.db` by `triagedb.render_findings`, and a generated

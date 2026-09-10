@@ -84,6 +84,8 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testTheShadingFollowsTheTrain`
 - `regression.testAPendingTurnSurvivesTheRebuild`
 - `regression.testClearAllTrackLengths`
+- `regression.testCutWithNothingHovered`
+- `regression.testDeleteForgetsTheWholeSquare`
 - `regression.testTheHoveredSquareIsForgotten`
 - `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt`
 - `regression.testControlSNamesOnlyASensor`

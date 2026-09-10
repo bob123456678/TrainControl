@@ -1061,6 +1061,32 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * Every locomotive this one commands when it is driven - itself excluded (X8-A2).
+     *
+     * **Two ways of being a consist, one question.**  A locomotive may command others because somebody
+     * linked them in TrainControl (`linkedLocomotives`) or because the Central Station holds it as a
+     * multi-unit (`modelMultiUnitLocomotives`), and the two are exclusive:
+     * `setLinkedLocomotives` clears the links and returns -1 for a `MULTI_UNIT`, because *"multi units
+     * defined in the Central Station cannot be linked to other locomotives"*.
+     *
+     * It existed as two spellings inside `isSimultaneousMultiUnitCompatible`, kept in step by
+     * somebody remembering - and they were not: the second of the two loops asked the raw links, which
+     * for a Central Station multi-unit is always empty, so two of them driving the same locomotive
+     * read as safe to run together.  Asked once here so that cannot happen again.
+     *
+     * @return the locomotives this one drives, empty when it drives only itself
+     */
+    public Collection<Locomotive> commandedLocomotives()
+    {
+        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
+        {
+            return this.getModelMultiUnitLocomotives();
+        }
+
+        return this.getLinkedLocomotives().keySet();
+    }
+
+    /**
      * Checks if this locomotive can be in a multi-unit with another, at the same time, based
      * on whether it is already linked to another as a multi-unit, or has the same address
      * Stricter check than isLinkedTo and is used by the autonomy layout to minimize errors
@@ -1078,42 +1104,39 @@ public class MarklinLocomotive extends Locomotive
             return false;
         }
         
-        // Our linked locomotives have the same address as the other locomotive
-        Collection<Locomotive> otherLocs;
+        // ONE QUESTION, ASKED OF BOTH SIDES (X8-A2).
+        //
+        // "Which locomotives does this one command?" had two spellings here - a decoder-type branch in
+        // the first loop and the raw `getLinkedLocomotives()` in the second - and the second loop is
+        // the one that compares MY members against YOURS.  So two Central Station multi-units driving
+        // the same locomotive read as safe to run as two trains: both were placed on the graph, both
+        // dispatched, and every speed and direction command sent to one fanned out to a decoder the
+        // other was also driving.
+        //
+        // It was not merely likely to miss that case, it was provably dead for it:
+        // `setLinkedLocomotives` clears `linkedLocomotives` and returns -1 for a MULTI_UNIT - *"multi
+        // units defined in the Central Station cannot be linked to other locomotives"* - so the whole
+        // body of the second loop could never run for exactly the case the first loop's branch was
+        // written for.
+        //
+        // `Layout.sanitizeMultiUnits` asks this both ways round and cannot compensate: both directions
+        // had the same gap when both sides are multi-units, so neither answered.
+        Collection<Locomotive> ours = this.commandedLocomotives();
 
-        if (this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
-        {
-            otherLocs = this.getModelMultiUnitLocomotives();
-        }
-        else
-        {
-            otherLocs = this.getLinkedLocomotives().keySet();
-        }
-        
-        for (Locomotive other : otherLocs)
+        for (Locomotive other : ours)
         {
             if (other.hasEquivalentAddress((MarklinLocomotive) l))
             {
                 return false;
             }
         }
-              
-        // Locomotives linked to the other locomotive have the same address as one of our linked locomotives
-        for (Locomotive other : this.getLinkedLocomotives().keySet())
+
+        // And what the other one commands, against what we command.
+        Collection<Locomotive> theirs = ((MarklinLocomotive) l).commandedLocomotives();
+
+        for (Locomotive other : ours)
         {
-            Collection<Locomotive> other2Locs;
-            
-            // Also check central stations MUs
-            if (((MarklinLocomotive) l).getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
-            {
-                other2Locs = l.getModelMultiUnitLocomotives();
-            }
-            else
-            {
-                other2Locs = l.getLinkedLocomotives().keySet();
-            }
-            
-            for (Locomotive other2 : other2Locs)
+            for (Locomotive other2 : theirs)
             {
                 if (other.hasEquivalentAddress(other2) || other.equals(other2))
                 {

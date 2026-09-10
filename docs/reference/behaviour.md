@@ -1086,6 +1086,20 @@ route was then skipped: one turnout under a train silently dropped all the other
 human door and never has its stop skipped (SVN-A4). Suppressing a stop is the one refusal that can
 make things worse, and a route that contains one is a route somebody wants to happen now.
 
+**Conditions hold back the route's own firing, not a route somebody runs by hand (X8-B6).** A route's
+conditions - "S88 1 is on, switch 3 is turned" - are read in exactly two places: the s88 monitor thread
+that fires the route on its trigger, and the editor's Test button, which reports what that thread would
+decide. `execRoute` does not read them, so the play button, the right-click Execute item and a route
+tile on the diagram all run the route whatever its conditions say.
+
+That is deliberate, and it is the same rule as the tiered destination lists in §1 and the same reason
+§7a gives for letting a person answer OK: the operator running a route by hand can see the railway and
+the condition cannot. Every one of these doors is a person deciding to do this now.
+
+The help text used to say only *"The route is held until these are true"*, with nothing about which
+firing, so a user who added a condition, pressed Test, was told the route would not fire, and then
+pressed Play got every switch in it thrown. It now says which firing it means.
+
 ## 8. Things that are true of the whole system
 
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it

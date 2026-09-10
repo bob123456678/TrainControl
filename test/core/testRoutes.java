@@ -576,6 +576,72 @@ public class testRoutes
     }
 
     /**
+     * A route run BY HAND runs whatever its conditions say (X8-B6).
+     *
+     * **The conditions hold back the route's own firing, not a person's.** They are read in exactly two
+     * places - the s88 monitor thread, and the editor's Test button, which reports what that thread
+     * would decide. `execRoute` does not read them, so the play button, the right-click Execute item
+     * and a route tile on the diagram all run the route regardless.
+     *
+     * That is the same rule as the tiered destination lists and the same reason a person may answer OK
+     * to a switch under a train: the operator running a route by hand can see the railway and the
+     * condition cannot. What was wrong was the help text, which said only *"The route is held until
+     * these are true"* with nothing about which firing - so a user who added a condition, pressed Test,
+     * was told the route would not fire, and then pressed Play got every switch in it thrown. See
+     * `behaviour.md` section 7a.
+     *
+     * Pinned here because it is a decision, not an accident, and the next person to read `execRoute`
+     * beside the monitor loop will see a missing guard.
+     *
+     * MUTATION: add the monitor's `hasConditions() && !conditions.evaluate(network)` guard to
+     * `execRoute` and this fails.
+     */
+    @Test
+    public void testARouteRunByHandIgnoresItsConditions() throws Exception
+    {
+        MarklinAccessory observable = model.newSwitch(288, MM2, false);
+
+        assertFalse(observable.isSwitched(), "precondition: the observed switch starts straight");
+
+        model.newFeedback(8831, null);
+        model.setFeedbackState("8831", false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(288, MM2, true));
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandFeedback(8831, true));
+
+        MarklinRoute route = new MarklinRoute(model, "X8B6 manual route", 9803, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, NodeExpression.fromList(conditions));
+
+        try
+        {
+            assertFalse(route.getConditions().evaluate(model),
+                "precondition: the condition has to be UNSATISFIED, or this test is about a route "
+                + "that was free to run anyway");
+
+            route.execRoute(false);
+
+            // `execRoute` runs on a thread of its own - *"must be a thread for the UI to update
+            // correctly"* - so the answer is waited for rather than read straight away.
+            for (int waited = 0; waited < 60 && !observable.isSwitched(); waited++)
+            {
+                Thread.sleep(50);
+            }
+
+            assertTrue(observable.isSwitched(),
+                "a route run by hand was held back by its conditions.  They belong to the trigger - "
+                + "the person pressing play can see the railway and the condition cannot - and the "
+                + "help text is what names which firing they hold back (X8-B6)");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    /**
      * A route may only ever have one monitor thread.
      *
      * disable() just clears a flag; the thread stays parked in its feedback wait until the sensor next
@@ -1205,6 +1271,61 @@ public class testRoutes
             model.deleteRoute(name);
         }
     }
+    /**
+     * Editing a route keeps its Central Station lock (X8-B5).
+     *
+     * **The lock is what the menu guards Delete and Change Route ID on.** `editRoute` edits by
+     * delete-then-re-add, and `newRoute` builds a fresh route whose `locked` defaults to false - the
+     * only writer of true is the sync's import loop. So every edit unlocked the route.
+     *
+     * **And one door reaches it without editing anything the user would call an edit.** Enable/Disable
+     * Automatic Execution is twenty lines above those two items in the same menu and is deliberately
+     * not gated on the lock; it reaches `writeRouteEnabledState` and so `editRoute`, and
+     * `BulkEnableOrDisable` applies it to every route matching a pattern. `syncWithCS2` runs
+     * afterwards and re-locks the route - but only if the station answers and still carries that id,
+     * which it does not in simulate mode or on a timeout. The menu then offers Delete on a Central
+     * Station route.
+     *
+     * MUTATION: remove the `wasLocked` restore from `editRoute` and this fails.
+     */
+    @Test
+    public void testEditingARouteKeepsItsLock() throws Exception
+    {
+        MarklinRoute route = unusedRoute();
+
+        assertTrue(model.newRoute(route), "precondition: the route must be added");
+
+        final String name = route.getName();
+        final Integer id = route.getId();
+
+        try
+        {
+            model.getRoute(name).setLocked(true);
+
+            assertTrue(model.getRoute(name).isLocked(),
+                "precondition: the route has to be locked, or the assertion below is about a route "
+                + "that never was");
+
+            assertTrue(model.editRoute(name, name, route.getRoute(), route.getS88(),
+                route.getTriggerType(), false, null),
+                "precondition: the edit itself must succeed, or nothing below is exercised");
+
+            assertTrue(model.getRoute(name) != null && model.getRoute(name).isLocked(),
+                "editing a route unlocked it.  editRoute deletes and re-adds, the re-added route's "
+                + "lock defaults to false, and the two menu items beside Enable/Disable Automatic "
+                + "Execution - Delete and Change Route ID - are behind exactly that lock (X8-B5)");
+
+            // AND IT IS STILL THE SAME ROUTE, which is what says the lock was carried rather than
+            // some other route now answering to the name.
+            assertEquals(model.getRoute(name).getId(), (int) id,
+                "the route came back under a different id");
+        }
+        finally
+        {
+            model.deleteRoute(name);
+        }
+    }
+
     /**
      * editRoute refuses what it cannot do, says so in its return value, and damages nothing.
      *

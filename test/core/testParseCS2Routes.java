@@ -197,6 +197,81 @@ public class testParseCS2Routes
     }
 
     /**
+     * A route file whose FIRST route carries conditions parses, conditions and commands both (X8-B3).
+     *
+     * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER
+     * arm of `parseFileContents`, whose character class was still `[a-z]+` while its sibling nine lines
+     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognised and `lastKey` was
+     * not updated - and in `test/fahrstrassen.cs2` the first route has no conditions and opens with
+     * ` .item`, so `lastKey` already held "item" by the time the first condition arrived and everything
+     * landed in the right string by luck.  `testConditionsOnTheRealRouteFile` passes either way.
+     *
+     * Put the conditional route FIRST and the luck runs out: the flush becomes `item.put(null, ...)`,
+     * and `parseRoutes` drops any route with no `item` - **its commands as well as its conditions** -
+     * with a single log line.  Route ids are not ordered in these files, and which route is first is
+     * the operator's business.
+     *
+     * Read as TEXT, through `parseFile`, not assembled as a map: the map builders elsewhere in this
+     * class bypass the reader, which is the half being measured.
+     *
+     * MUTATION: put `[a-z]+` back in the array-header arm and this fails while every other test in the
+     * class passes.
+     */
+    @Test
+    public void testAConditionalRouteFirstInTheFileIsNotDropped() throws Exception
+    {
+        String file =
+            "[fahrstrassen]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "fahrstrasse\n"
+            + " .id=9601\n"
+            + " .name=Conditional First\n"
+            + " .s88=14\n"
+            + " .S88Flag\n"
+            + " ..kont=7801\n"
+            + " ..hi=1\n"
+            + " .item\n"
+            + " ..magnetartikel=1\n"
+            + " ..stellung=1\n";
+
+        java.io.File temp = java.io.File.createTempFile("tc-routes", ".cs2");
+
+        temp.deleteOnExit();
+
+        java.nio.file.Files.write(temp.toPath(),
+            file.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        model.newFeedback(7801, null);
+
+        List<MarklinRoute> parsed = parser.parseRoutes(
+            CS2File.parseFile(CS2File.fetchURL(temp.toURI().toString())),
+            new ArrayList<MarklinAccessory>());
+
+        assertEquals(parsed.size(), 1,
+            "the route was dropped entirely.  Its condition header was not recognised, so the "
+            + "condition group was flushed under a null key and `parseRoutes` refuses a route with no "
+            + "`item` (X8-B3).  Parsed: " + parsed);
+
+        MarklinRoute route = parsed.get(0);
+
+        assertEquals(route.getName(), "Conditional First");
+
+        assertFalse(route.getRoute().isEmpty(),
+            "the route came back with no commands, so what the file said it DOES was lost even though "
+            + "the route survived: " + route);
+
+        List<RouteCommand> conditions = NodeExpression.toList(route.getConditions());
+
+        assertEquals(conditions.size(), 1,
+            "exactly one condition was declared: " + conditions);
+
+        assertEquals(conditions.get(0).getAddress(), 7801);
+
+        assertTrue(conditions.get(0).getSetting(), "hi=1 asks for the sensor to be occupied");
+    }
+
+    /**
      * Checks if there are any extra routes in the CS2 DB
      */
     @Test

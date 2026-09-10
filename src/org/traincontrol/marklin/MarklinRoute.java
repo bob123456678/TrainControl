@@ -39,7 +39,11 @@ public class MarklinRoute extends Route
     private final Set<LayoutLabel> tiles;
     
     // Extra delay between route commands
-    private static final int DEFAULT_SLEEP_MS = 150;
+    // FLOOR UNDER ANY DELAY A COMMAND CARRIES, and public so the editor can raise a
+    // smaller number to it as it is typed (X8-C2) - below this a delay was accepted,
+    // stored, exported, redisplayed and then discarded, so the cell and the railway
+    // disagreed with nothing to say so.
+    public static final int DEFAULT_SLEEP_MS = 150;
 
     // What a route command's delay must be for the *next* command to land THREEWAY_DELAY_MS later -
     // the gap the track diagram already leaves between a three-way's two commands.  execRoute sleeps
@@ -1000,18 +1004,32 @@ public class MarklinRoute extends Route
 
                             try
                             {
-                                if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                                // ONE EXPRESSION, NOT TWO BRANCHES (X8-C2).
+                                //
+                                // The two branches did the same arithmetic on different numbers, and
+                                // the difference between them was invisible from the editor: a delay
+                                // between 1 and DEFAULT_SLEEP_MS was accepted, stored, written to the
+                                // file, read back, redisplayed - and discarded here, without even the
+                                // `route.delay` line the other branch logs.  Somebody lowering a pause
+                                // from 300 to 100 to speed a route up saw the number change and the
+                                // railway not.
+                                //
+                                // The FLOOR IS KEPT, because it is real: it is the gap this program
+                                // leaves between two route commands, and THREEWAY_ROUTE_DELAY_MS is
+                                // defined as sitting above it.  What is fixed is that the floor was
+                                // silent.  `delayOf` now raises a smaller number as it is typed, so
+                                // the cell shows what the railway will use.
+                                long pause = Math.max(rc.getDelay(), MarklinRoute.DEFAULT_SLEEP_MS);
+
+                                if (rc.getDelay() > 0)
                                 {
                                     this.network.logf(
                                         "route.delay",
-                                        rc.getDelay()
-                                    );                                
-                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                                        pause
+                                    );
                                 }
-                                else
-                                {
-                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
-                                }    
+
+                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + pause);    
                             } 
                             catch (InterruptedException ex)
                             {

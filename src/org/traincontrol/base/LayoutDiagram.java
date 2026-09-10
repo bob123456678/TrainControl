@@ -283,6 +283,16 @@ public class LayoutDiagram
 
         builder.append("[gleisbildseite]\n");
 
+        // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM (X8-A1).
+        //
+        // `page=1` sits between the header and the first block on a genuine export, and it was dropped
+        // on read and therefore deleted on save.  Written back before anything else so the file comes
+        // out in the order it went in.
+        for (Map.Entry<String, String> bare : bareKeys.entrySet())
+        {
+            builder.append(bare.getKey()).append("=").append(bare.getValue()).append("\n");
+        }
+
         // The blocks above the elements, put back as they were read.
         //
         // This used to emit a hardcoded version block, which is the same loss the elements themselves
@@ -353,6 +363,34 @@ public class LayoutDiagram
      * adds - in the order they were read.  See exportToCS2TextFormat.
      */
     private final List<Map<String, String>> unmodelledBlocks = new ArrayList<>();
+
+    /**
+     * Keys that sit at the left margin of a page file, between the header and the first block (X8-A1).
+     *
+     * A genuine Central Station page export has exactly one - `page=1` - and it matched none of the
+     * three line shapes `CS2File.parseFileContents` knew, so it was dropped on read and deleted the
+     * first time this application saved the page.  Measured on this repository's own exports: every
+     * untouched page carries it, and the pages the application has worked on do not.
+     *
+     * This is the same rule as `unmodelledBlocks` and `unmodelledElements` a few lines away, and the
+     * reason is the one written there: *"Losing scenery, or a component a later Central Station
+     * firmware added, because this program had not heard of it is not a trade anybody agreed to."*
+     * A left-margin key is neither a block nor an element, and fell between the two.
+     */
+    private final Map<String, String> bareKeys = new LinkedHashMap<>();
+
+    /**
+     * Remembers a key at the left margin of a page file, so that it survives a save (X8-A1).
+     *
+     * @param key the name, `page` on a real export
+     * @param value what follows the equals sign
+     */
+    public void addBareKey(String key, String value)
+    {
+        if (key == null || key.isEmpty() || key.startsWith("_")) return;
+
+        bareKeys.put(key, value == null ? "" : value);
+    }
 
     /**
      * Remembers a block that is not an element, so that saving does not delete it.
@@ -950,6 +988,109 @@ public class LayoutDiagram
     }
 
     /**
+     * The keys inside a page's own `seite` block that TrainControl does not model (X8-B2).
+     *
+     * `readLayoutIndexExtras` below keeps whole blocks the program has no name for, and declares
+     * `seite` modelled.  That is true of the two keys the writer emits - `.id` and `.name` - and not
+     * true of the block: a Central Station writes the page's scroll position into it as `.xoffset` and
+     * `.yoffset`, and a later firmware may write anything else there.  So the index kept
+     * `zuletztBenutzt` at the top of the file and still deleted what sat inside each page.
+     *
+     * **Keyed by id, not by name.**  A rename is the one operation where the writer is holding a name
+     * the index has never seen, and the id is precisely what is carried across it.
+     *
+     * An ABSENT id is the page's position, through `pageIdOrPosition` - the rule `readLayoutIndexIds`
+     * uses on the same file.  The genuine Central Station export here opens with a `seite` that has
+     * offsets and no id, so a reader that insisted on one would drop the offsets of the very page the
+     * finding is about.
+     *
+     * Best-effort for the same reason as the method below: an index that cannot be read is already
+     * reported - loudly - by `readLayoutIndexIds`, and this must not add a second way to fail a save.
+     *
+     * @param path the layout folder
+     * @return each page id against the lines of its block the writer does not emit, in file order
+     */
+    public static Map<Integer, List<String>> readLayoutIndexPageExtras(String path)
+    {
+        Map<Integer, List<String>> out = new LinkedHashMap<>();
+
+        File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
+
+        if (!index.exists()) return out;
+
+        try
+        {
+            boolean inPage = false;
+
+            // AN ABSENT ID IS THE PAGE'S POSITION, through the rule the rest of this file uses.
+            //
+            // The genuine Central Station export in this repository - `Oles kreds` - opens with a
+            // `seite` that carries `.xoffset=1` and `.yoffset=3` and NO `.id`, so a reader that
+            // insisted on one would drop the offsets of exactly the page this finding is about.
+            // Counted the same way `readLayoutIndexIds` counts it, so the two readers cannot disagree
+            // about which page a block belongs to.
+            int position = 0;
+            String idText = null;
+
+            List<String> extras = null;
+
+            for (String line : readIndexLines(index))
+            {
+                String trimmed = line.trim();
+
+                if (trimmed.isEmpty()) continue;
+
+                if (!trimmed.startsWith("."))
+                {
+                    // A block name - or the file's own opening line - closes whatever page was open.
+                    // Held until here rather than emitted at `.id`, since a real file writes the id
+                    // first but nothing promises it.
+                    if (inPage && extras != null && !extras.isEmpty())
+                    {
+                        out.put(pageIdOrPosition(idText, position), extras);
+                    }
+
+                    inPage = "seite".equalsIgnoreCase(trimmed);
+
+                    if (inPage) position++;
+
+                    idText = null;
+                    extras = inPage ? new ArrayList<>() : null;
+
+                    continue;
+                }
+
+                if (!inPage || extras == null) continue;
+
+                String key = trimmed.substring(1);
+
+                if (key.toLowerCase().startsWith("id="))
+                {
+                    idText = key.substring(3);
+
+                    continue;
+                }
+
+                // The other key the writer emits for itself.
+                if (key.toLowerCase().startsWith("name=")) continue;
+
+                extras.add(" " + trimmed);
+            }
+
+            if (inPage && extras != null && !extras.isEmpty())
+            {
+                out.put(pageIdOrPosition(idText, position), extras);
+            }
+        }
+        catch (IOException e)
+        {
+            return new LinkedHashMap<>();
+        }
+
+        return out;
+    }
+
+    /**
      * The blocks in `gleisbild.cs2` that TrainControl does not model, kept so a page edit does not
      * delete them (AC2-C1).
      *
@@ -963,10 +1104,15 @@ public class LayoutDiagram
      * the station remembering which page you were last looking at.  A user who downloads their layout
      * from the station and then renames a page gets an index the station never wrote.
      *
-     * **What is NOT kept, and why that is not an omission.**  `[gleisbild]`, `version`, `groesse` and
-     * `seite` are the modelled parts: the writer emits them itself, from what the layout actually is
-     * now, and keeping a stale copy of any of them would be worse than regenerating it.  Everything
+     * **What is NOT kept here, and where it is kept instead.**  `[gleisbild]`, `version`, `groesse`
+     * and `seite` are the modelled parts: the writer emits them itself, from what the layout actually
+     * is now, and keeping a stale copy of any of them would be worse than regenerating it.  Everything
      * else is passed through untouched.
+     *
+     * `seite` was over-claimed by that list (X8-B2).  What the writer regenerates is the BLOCK and its
+     * two keys, `.id` and `.name` - not everything a station may have written inside it, which on a
+     * real export includes the page's scroll position.  Those keys are read by
+     * `readLayoutIndexPageExtras` above and written back with the page they belong to.
      *
      * Best-effort by design.  An index that cannot be read is already handled - and loudly - by
      * `readLayoutIndexIds`; this returns nothing rather than adding a second way to fail a save over
@@ -1194,6 +1340,29 @@ public class LayoutDiagram
     }
 
     /**
+     * The lines of a page's `seite` block that this writer does not model, written back with it
+     * (X8-B2).
+     *
+     * @param contents the file being built
+     * @param pageExtras what `readLayoutIndexPageExtras` found, keyed by page id
+     * @param id the page being written
+     */
+    private static void appendPageExtras(StringBuilder contents,
+        Map<Integer, List<String>> pageExtras, Integer id)
+    {
+        if (pageExtras == null || id == null) return;
+
+        List<String> extras = pageExtras.get(id);
+
+        if (extras == null) return;
+
+        for (String line : extras)
+        {
+            contents.append(line).append("\n");
+        }
+    }
+
+    /**
      * The same again, told which absent pages to hold on to rather than retire (FR-018).
      *
      * `keepAbsent` names pages the operator has said are coming back - a placeholder that has not
@@ -1278,6 +1447,10 @@ public class LayoutDiagram
         // never had one.  Nothing any other page does can change it.
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
+        // And what the station wrote INSIDE each page's block, which this writer does not model
+        // (X8-B2).  Read here, beside the ids it is keyed by, and emitted with each page below.
+        Map<Integer, List<String>> pageExtras = readLayoutIndexPageExtras(path);
+
         // Refuse to renumber the whole layout because the index could not be READ (DR-B4).
         //
         // With `existing` empty every page below is issued a fresh id, and that is right for a layout
@@ -1344,12 +1517,20 @@ public class LayoutDiagram
 
             contents.append("seite\n");
 
-            // ALWAYS written, unlike before.  An absent id is read as the page's POSITION
-            // (CS2File: `m.get("id") != null ? m.get("id") : String.valueOf(position)`), so omitting it
-            // for the first page only worked while ids and positions were the same thing.  They are
-            // not any more - a retired id leaves a gap - and an omitted id would be read as 1.
+            // ALWAYS written, unlike before.  An absent id is read as the page's POSITION - see
+            // `pageIdOrPosition`, which CS2File's page loop calls - so omitting it for the first page
+            // only worked while ids and positions were the same thing.  They are not any more - a
+            // retired id leaves a gap - and an omitted id would be read as 1.
+            //
+            // This used to quote the expression that rule was once written as (X8-C6).  The rule still
+            // holds; the expression does not, and `CS2File` carries the comment recording its removal
+            // - so a reader checking the quotation found a method that does more than the line quoted
+            // and had to work out whether the paragraph survived.  Named by method, which is what
+            // `CommandRow.hasDelay`'s own citation rule says.
             contents.append(" .id=").append(id).append("\n");
             contents.append(" .name=").append(layout).append("\n");
+
+            appendPageExtras(contents, pageExtras, id);
         }
 
         // Pages the operator said are coming back (FR-018).
@@ -1376,6 +1557,8 @@ public class LayoutDiagram
                 contents.append("seite\n");
                 contents.append(" .id=").append(id).append("\n");
                 contents.append(" .name=").append(held).append("\n");
+
+                appendPageExtras(contents, pageExtras, id);
             }
         }
 

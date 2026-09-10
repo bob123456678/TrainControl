@@ -7707,7 +7707,7 @@ public class AutonomyEditorPanel extends JPanel
      *
      * **And that is also why it did not survive the application closing**, which is the half that
      * looks like a separate defect and is not. The exit path captures the RUNNING layout back into the
-     * configuration (`TrainControlUI:2259`, "the save on the way out"), and `captureFromLayout` walks
+     * configuration (`TrainControlUI.saveState`, "the save on the way out"), and `captureFromLayout` walks
      * `POINT_OPERATIONAL_KEYS` writing what the layout has and **removing what it does not** - `home`
      * among them. So the edit was saved to disk correctly and then deleted from it on the way out, by
      * a running layout that had never heard of it.

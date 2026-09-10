@@ -453,6 +453,9 @@ public final class CS2File
         String s;
         String lastKey = null;
         Map<String, String> item = null;
+
+        // Keys at the left margin, which arrive before any block is opened (X8-A1).
+        Map<String, String> bare = null;
         
         Map<String, String> array = new HashMap<>();
         
@@ -469,7 +472,7 @@ public final class CS2File
             // F17-32 get a different key on the CS2
             s = s.replace(".funktionen_2", ".funktionen");
                         
-            if (s.matches("^ \\.\\.[a-z]+=.+$"))
+            if (s.matches("^ \\.\\.[a-z0-9A-Z]+=.+$"))
             {
                 // Limit of 2, for the same reason as the ordinary key=value branch below: the one array
                 // key that carries free text is lokname, the name of a multi-unit member, which
@@ -526,10 +529,21 @@ public final class CS2File
                 }
                 
                 if (s.matches("^[a-z]+$"))
-                {                
+                {
                     if (item != null)
                     {
                         items.add(item);
+                    }
+
+                    // THE BARE KEYS GO FIRST, because that is where the file has them: they sit
+                    // between the header and the first block (X8-A1).
+                    if (bare != null)
+                    {
+                        bare.put("_type", "_bareKeys");
+
+                        items.add(bare);
+
+                        bare = null;
                     }
 
                     item = new HashMap<>();
@@ -546,20 +560,69 @@ public final class CS2File
                         item.put(parts[0], parts[1]);
                     }
                 }   
-                else if (s.matches("^ \\.[a-z]+$"))
+                else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
                 {
+                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE (X8-B3).
+                    //
+                    // It read `[a-z]+` while its sibling nine lines up read `[a-z0-9A-Z]+`, and the
+                    // Central Station spells a route's condition block ` .S88Flag`.  That line has no
+                    // `=`, so it lands here, failed the class, and `lastKey` was NOT updated - so the
+                    // `..kont=` / `..hi=` group that follows was flushed under whatever key the file
+                    // had set earlier.
+                    //
+                    // The shipped fixture survives it by accident: its first route has no conditions
+                    // and opens with ` .item`, so `lastKey` is already "item" when the first condition
+                    // arrives, and `parseRoutes` sorts the pieces out by asking each for `kont`.  A
+                    // file whose FIRST route is conditional flushes into `item.put(null, ...)`, and
+                    // `parseRoutes` drops a route with no `item` outright - its commands as well as
+                    // its conditions - with one log line.  Route ids are not ordered in these files
+                    // and the operator decides which route is first.
                     lastKey = s.substring(2);
+                }
+                else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
+                {
+                    // A KEY AT THE LEFT MARGIN (X8-A1).
+                    //
+                    // `page=1` is the second line of a genuine Central Station page export, and it
+                    // matched none of the three arms above: it carries an `=`, so it is not a block
+                    // name, and it has no leading " .", so it is neither a key nor an array header.
+                    // It was dropped on read - and the writer regenerates the whole file from the
+                    // model, so the line was deleted the first time the application saved the page.
+                    //
+                    // Measured on this repository's own exports: every untouched page carries it, and
+                    // the pages the application has worked on do not.
+                    //
+                    // This shape fell between the two preservers the same rule already has - one for a
+                    // block a later firmware adds, one for an element - because it is neither.  It is
+                    // collected into an item of its own so that nothing downstream has to guess where
+                    // it belongs; `LayoutDiagram.addBareKey` puts it back after the header.
+                    if (bare == null) bare = new java.util.LinkedHashMap<>();
+
+                    String[] parts = s.split("=", 2);
+
+                    bare.put(parts[0], parts.length > 1 ? parts[1] : "");
                 }
             } 
             
             // We need to add the current item to the list...
             if (s.equals("__done"))
-            {   
+            {
                 if (item != null)
                 {
                     items.add(item);
                 }
-                
+
+                // And bare keys that no block ever followed (X8-A1), which is what a file holding
+                // nothing but a header and a `page=` line is.
+                if (bare != null)
+                {
+                    bare.put("_type", "_bareKeys");
+
+                    items.add(bare);
+
+                    bare = null;
+                }
+
                 break;
             }
         }
@@ -787,7 +850,32 @@ public final class CS2File
                 {
                     MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
 
-                    String route = m.get("item").replace("{", "").replace("}","");
+                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER (X8-B3).
+                    //
+                    // A route file writes its conditions under ` .S88Flag` and its commands under
+                    // ` .item`, and this method used to read `item` alone.  It got the conditions
+                    // anyway, by accident: the array-header regex did not recognise ` .S88Flag`, so
+                    // `lastKey` was left holding "item" and the condition group was flushed in beside
+                    // the commands.  The loop below tells the two apart by asking each piece whether it
+                    // carries `kont`, so the result was right.
+                    //
+                    // That accident is what broke when the regex was corrected, and it is why the two
+                    // halves had to be done together: with the header recognised, the conditions arrive
+                    // under their own key, and a route read from `item` alone keeps every command and
+                    // silently loses every condition.
+                    //
+                    // Conditions first, which is the order the file has them in and the order
+                    // `addConditionS88` records.
+                    StringBuilder both = new StringBuilder();
+
+                    if (m.get("S88Flag") != null)
+                    {
+                        both.append(m.get("S88Flag")).append("|");
+                    }
+
+                    both.append(m.get("item"));
+
+                    String route = both.toString().replace("{", "").replace("}","");
                     String[] pieces = route.split("\\|");
 
                     if (m.containsKey("s88"))
@@ -2439,6 +2527,18 @@ public final class CS2File
                         
                 for (Map<String, String> m : l)
                 {
+                    // The left-margin keys, which are not a block and must not be written as one
+                    // (X8-A1).  `page=1` is the only one a real export carries.
+                    if ("_bareKeys".equals(m.get("_type")))
+                    {
+                        for (Map.Entry<String, String> bare : m.entrySet())
+                        {
+                            layout.addBareKey(bare.getKey(), bare.getValue());
+                        }
+
+                        continue;
+                    }
+
                     // The blocks above the elements - version, groesse, anything a later firmware adds -
                     // kept so that saving the page does not delete them.  The exporter used to write a
                     // hardcoded version block in their place.

@@ -307,8 +307,19 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind can carry a delay.  Feedback, stop and functions-off cannot - RouteCommand
-     * only writes a delay for accessory, speed, direction and function commands.
+     * Whether this kind can carry a delay.
+     *
+     * SEVEN OF THE THIRTEEN CANNOT (X8-C3): FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
+     * AUTONOMY_LIGHTS_ON, ROUTE and AUTO_LOCOMOTIVE.  This sentence used to name the first three, and
+     * `Kind` has grown since.
+     *
+     * The reason is unchanged and is the thing to check this list against: `RouteCommand.toLine`
+     * writes a delay in its accessory, direction, speed and function branches and nowhere else, so a
+     * delay on any other kind is a number the file cannot carry.  Stated as a rule rather than as a
+     * roll-call because the roll-call is what went stale.
+     *
+     * This class already carries the identical correction fifty lines above, on `canBeACondition`:
+     * *"This said four, and there was no version in which four was right."*  Same file, same miscount.
      */
     public static boolean hasDelay(Kind kind)
     {

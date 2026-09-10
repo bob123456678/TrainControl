@@ -500,7 +500,7 @@ public class AutonomySession
      * it does not overwrite somebody's work with a file's.
      *
      * Nothing is written to disk BY THIS METHOD; the only caller saves immediately afterwards
-     * (`AutonomyViewerPanel:1156-1158`), so in practice an import is committed as soon as it is
+     * (`AutonomyViewerPanel.importLegacyGraph`, which calls `save()` on the next line), so in practice an import is committed as soon as it is
      * asked for.  This used to say a bad match "can still be cancelled", which described a step
      * that has never existed and would have led the next reader to add it back (ACC-C5).
      *

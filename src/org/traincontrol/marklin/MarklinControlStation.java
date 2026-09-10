@@ -1909,6 +1909,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // BEFORE THE DELETE STRIPS IT (AC2-A1).  See isRouteActivatedByAutonomy for why the delete is
         // right to strip it and why this door has to put it back.
         final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
+
+        // AND THE LOCK, FOR THE SAME REASON (X8-B5).
+        //
+        // This method edits by delete-then-re-add, and `newRoute` builds a fresh `MarklinRoute` whose
+        // `locked` defaults to false - the only writer of true is the sync's import loop.  So every
+        // edit unlocked the route, and the lock is what `RightClickRouteMenu` puts Change Route ID and
+        // Delete behind.
+        //
+        // The door that made it reachable without editing anything is Enable/Disable Automatic
+        // Execution, twenty lines above those two in the same menu and deliberately not gated on the
+        // lock: it reaches `writeRouteEnabledState` and so this method, and `BulkEnableOrDisable`
+        // applies it to every route matching a pattern.  The sync that follows re-locks the route only
+        // if the station answers and still carries that id - so with the station off, or on a timeout,
+        // the menu then offered Delete on a Central Station route.
+        //
+        // A route that continues to exist keeps what it is.  Whether TrainControl may change a station
+        // route's auto-fire is a separate question, and the menu's answer to it stands: that item is
+        // ungated on purpose.  What was wrong is that exercising it destroyed the lock.
+        final boolean wasLocked = existing.isLocked();
         
         // Disable the route so that the s88 condition stops firing
         existing.disable();
@@ -1923,6 +1942,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         // And back into the autonomy selection, which the delete above took it out of.
         this.restoreRouteActivation(id, wasActivated);
+
+        // And the lock, onto the route that now holds this id (X8-B5).
+        if (wasLocked && this.routeDB.getById(id) != null)
+        {
+            this.routeDB.getById(id).setLocked(true);
+        }
 
         // Let other routes know this has been renamed
         for (MarklinRoute r : this.getRoutes())

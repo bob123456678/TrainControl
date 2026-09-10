@@ -299,7 +299,7 @@ public class RightClickFunctionMenu extends MouseAdapter
                 // departure is a thing somebody opens this dialog to LOOK at.
                 //
                 // Restored rather than deferred, so the preview stays honest and Cancel still means
-                // cancel.  Its sibling door applies at commit time instead (GraphLocAssign:253).
+                // cancel.  Its sibling door applies at commit time instead (GraphLocAssign.commitChanges).
                 activeLoc.setDepartureFunc(departureWas);
                 activeLoc.setArrivalFunc(arrivalWas);
             }

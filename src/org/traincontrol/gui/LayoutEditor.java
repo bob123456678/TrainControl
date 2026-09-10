@@ -2603,10 +2603,42 @@ public class LayoutEditor extends PositionAwareJFrame
      * Adds this label's location to the clipboard
      * @param label
      * @param component - the component at the label location, or one that's specified
-     * @param move 
+     * @param move
      */
     synchronized public void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
+        // WORK OUT WHAT IS BEING PICKED UP BEFORE ANYTHING IS PUT DOWN (X8-B1).
+        //
+        // Control+X and Control+C pass `getLastHoveredLabel()` with no null check, and that is null
+        // whenever the pointer is over the palette: `lastHoveredX/Y` are set back to -1 every time the
+        // pointer leaves the grid, and `LayoutGrid.getValueAt` answers null for a negative coordinate.
+        // The gesture then did three things, all wrong - discarded a group already on the clipboard,
+        // set the coordinates to -1, and armed `toolFlag` with `lastComponent` null.
+        //
+        // Arming is what enables the right-click Paste item and what Control+V tests, so both then
+        // reached `new LayoutDiagramComponent(null)`, which dereferences `original.type` on its first
+        // line.  Through the menu that is caught and shown as a dialog with no message in it, and
+        // `executeTool` has already taken a snapshot, so undo gains an entry for an edit that never
+        // happened.
+        //
+        // GUARDED ON "NOTHING AT ALL", WHICH IS NARROWER THAN IT LOOKS.  Two other callers pass one
+        // half of this legitimately and must keep working:
+        //
+        //   the palette      hands over a COMPONENT with a label whose `getX` is -1 on purpose -
+        //                    `placingFromPalette()` is built on exactly that state - so a guard on the
+        //                    coordinates would refuse a working feature;
+        //   a column drag    hands over a real grid LABEL and no component, because a column being
+        //                    dragged carries its blank squares too.  A guard on the component refuses
+        //                    that, which is how this fix was first written and what
+        //                    `testLayoutEditorBulkEdits` said about it.
+        //
+        // What no caller ever means is both: a null label carries no square, and with no component
+        // there is nothing to arm the paste with.  That is only reachable from the two key branches.
+        if (label == null && component == null) return;
+
+        int x = getX(label);
+        int y = getY(label);
+
         // Picking up a single tile puts the group down.
         //
         // Clearing it only in resetClipboard was not enough: that runs on Escape and on a click that
@@ -2615,19 +2647,19 @@ public class LayoutEditor extends PositionAwareJFrame
         // bounding box over the layout and left the cut tile where it was.
         this.groupClipboard = null;
 
-        this.lastX = getX(label);
-        this.lastY = getY(label);
+        this.lastX = x;
+        this.lastY = y;
         this.pauseRepaint = false;
-                
+
         if (component != null)
         {
             lastComponent = component;
         }
         else
         {
-            lastComponent = layout.getComponent(lastX, lastY);
+            lastComponent = layout.getComponent(x, y);
         }
-        
+
         this.toolFlag = move ? tool.MOVE : tool.COPY;
         
         // For colored border highlight
@@ -3648,14 +3680,27 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.AutonomySession autonomy =
                     tellAutonomy ? parent.getAutonomySession() : null;
 
-                // Only when something was actually forgotten.
+                // THE WHOLE SQUARE, NOT ITS CAPTION (X8-B4).
                 //
-                // forgetCaptionsAt returns whether it changed anything, and this ignored it - so
-                // deleting a square that had no caption still wrote the whole setup to disk, every
+                // This called `forgetCaptionsAt`, which touches the captions map and nothing else, so a
+                // deleted platform kept its station membership, point name, length, facing, barred
+                // arrivals, signal pairing, blocked flag, portal, link name and its
+                // `configurations.points` block - all of it keyed to a square that now holds nothing.
+                //
+                // Every sibling gesture already forgets the lot: `execCopy`, `pasteSelection`,
+                // `fillSelection` and `clear` all reach `forgetTiles`.  And `clear`'s own comment says
+                // this one did too - *"Deleting one square tells the setup so; emptying the whole page
+                // told it nothing at all"* - which is the sentence that makes this an oversight rather
+                // than a decision.  Its argument holds here word for word: a reconciling save would
+                // prune the orphans eventually, and the non-reconciling write on the way out commits
+                // them to disk first.
+                //
+                // Only when something was actually forgotten.  The return value used to be ignored, so
+                // deleting a square that had nothing on it still wrote the whole setup to disk, every
                 // file of it.  Deleting a selection is one call per square.
-                if (autonomy != null && autonomy.forgetCaptionsAt(
+                if (autonomy != null && autonomy.forgetTiles(java.util.Collections.singletonList(
                         new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), getX(label), getY(label))))
+                            layout.getName(), getX(label), getY(label)))))
                 {
                     rememberAutonomy(autonomy);
                 }
@@ -4412,6 +4457,31 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Whether the page has room to grow by this much (X8-C5).
+     *
+     * **The ceiling had three copies and two of the gestures that need it had none.**  It was written
+     * out in `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that
+     * greys Increase Size - while `shiftDown` and `shiftRight`, two items away on the same popup, grow
+     * the page by a row or a column and asked nothing.  `LayoutDiagram.shiftDown` opens with
+     * `addRowsAndColumns(1, 0)`, and neither it nor the model's own grower knows the limit exists.
+     *
+     * So at the ceiling the menu greyed one item with a tooltip explaining why, and offered another
+     * that did the same thing and worked.  `canShiftDown`'s javadoc cites LE-C1 - one submenu
+     * expressing one rule two ways - which is exactly this.
+     *
+     * Public because the menu asks it before offering an item and the methods ask it before acting:
+     * ONE predicate, asked in both places, which is the arrangement LE-C1 put here.
+     *
+     * @param rows how many rows the gesture would add
+     * @param columns how many columns it would add
+     * @return true when the result would still be within MAX_SIZE
+     */
+    public boolean roomToGrow(int rows, int columns)
+    {
+        return layout.getSy() + rows <= MAX_SIZE && layout.getSx() + columns <= MAX_SIZE;
+    }
+
+    /**
      * Whether shiftLeft would do anything (LE-C1).
      *
      * Public because the menu asks it before offering the item, and the method asks it before acting -
@@ -4443,7 +4513,9 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public boolean canShiftDown()
     {
-        return lastHoveredY >= 0;
+        // AND THE CEILING (X8-C5).  This grows the page by a row, and Increase Size beside it on the
+        // same popup is greyed at the limit with a tooltip saying why.
+        return lastHoveredY >= 0 && roomToGrow(1, 0);
     }
 
     /**
@@ -4461,7 +4533,9 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public boolean canShiftRight()
     {
-        return lastHoveredX >= 0;
+        // AND THE CEILING (X8-C5), for the same reason as canShiftDown: this grows the page by a
+        // column.
+        return lastHoveredX >= 0 && roomToGrow(0, 1);
     }
     /**
      * Inserts a row or a column at the hovered square and pushes everything past it along.
@@ -4805,7 +4879,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void growEdges()
     {
-        if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
+        if (!roomToGrow(1, 1))  // ONE PREDICATE (X8-C5)
         {
             JOptionPane.showMessageDialog(this, I18n.f("layout.ui.errorMaxSizeExceeded", MAX_SIZE));
 
@@ -4950,7 +5024,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void addRowsAndColumns(int rows, int cols)
     {
-        if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
+        if (!roomToGrow(1, 1))  // ONE PREDICATE (X8-C5)
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -5180,6 +5254,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 // running layout and saves without reconciling when it closes - commit that state to
                 // disk first, and the page's setup outlives the diagram it describes until somebody
                 // opens the autonomy editor and presses Save.
+                //
+                // THE FIRST CLAUSE WAS NOT TRUE WHEN THIS WAS WRITTEN (X8-B4).  `delete` forgot the
+                // square's CAPTION and left everything else keyed to it, so the contrast this comment
+                // draws was between a gesture that forgot nothing and one that forgot almost nothing.
+                // It is true now.
                 forgetWholePage();
 
                 layout.clear();
