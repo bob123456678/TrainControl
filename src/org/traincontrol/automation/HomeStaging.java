@@ -424,10 +424,13 @@ public final class HomeStaging
             //     barely exists anyway: `Layout.claimHome` gives a hand-placed one a positional home
             //     where it is put.
             //
-            // There is nothing here to keep, and since 2026-09-09 there is nothing anywhere else in
-            // this class either: the planner does not apply FR-001 at all, on Adam's ruling that the
-            // restriction shapes what FULL autonomy picks rather than keeping trains apart.  See
-            // firstClearRoute, where the state-aware canRest used to ask it.
+            // There is nothing here to keep.  **This is about the PRE-SCAN and not about the rule**
+            // (E8-B5): the planner applies FR-001 again, at the arrival test in `firstClearRoute`,
+            // since Adam's ruling of 2026-09-10 that the restriction binds every tier.  What must not
+            // come back is a copy HERE, because this scan reads the STARTING occupancy and turns it
+            // into a proof of impossibility - which is what made a locomotive merely standing on a
+            // watched square prove the goal unreachable, including one being staged elsewhere whose
+            // departure is the plan's own first move.
             //
             // `connected`, four lines down, states the doctrine this scan rests on either way: "A
             // route blocked merely by another train is not impossible - moving that train is exactly
@@ -510,13 +513,20 @@ public final class HomeStaging
             }
         }
 
-        // AND NO CYCLE SCAN OVER THE OCCUPANCY RESTRICTIONS, since 2026-09-09.
+        // AND NO CYCLE SCAN OVER THE OCCUPANCY RESTRICTIONS, and the reason is not the one it was.
         //
         // OB-085 proved a PAIR of homes impossible: each held back while the square the other's
         // occupant must end on is occupied, so whichever of the two arrives last finds the other
-        // already parked there.  That proof rested entirely on this planner enforcing FR-001, and it
-        // does not any more - see firstClearRoute.  The arrangement is an ordinary one the search
-        // stages in a move or two, and IMPOSSIBLE would be a false claim about a railway that works.
+        // already parked there.  It was removed on 2026-09-09, when the planner stopped enforcing
+        // FR-001 and the arrangement became an ordinary one.
+        //
+        // **THE ARRANGEMENT IS A REAL DEADLOCK AGAIN** (Adam, 2026-09-10; E8-B5).  The planner
+        // enforces FR-001 once more, so the pair genuinely cannot be staged - and the scan stays out
+        // anyway.  IMPOSSIBLE names locomotives and asserts that no arrangement exists; the scan that
+        // produced that verdict was wrong three separate times, each time about a railway that works,
+        // and a search that exhausts and answers NO_PLAN_FOUND is the weaker claim and the true one.
+        // `docs/reference/behaviour.md` section 1 records that as Adam's own choice, and
+        // `testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
         //
         // `watchesTrack`, `onOneTrack` and `blockCopiesOf` went with it: they existed only to state
         // that relation.  The pairwise scan above stays, because it is about two homes on ONE
@@ -1531,6 +1541,15 @@ public final class HomeStaging
      * WHICH squares are consulted and WHO is exempt are not decided here: that is the rule, and the
      * rule lives in `Point.heldBackBy` (DR-B2).  All this contributes is where to look for occupancy,
      * which is the one thing about FR-001 that is genuinely this class's business.
+     *
+     * **THE AUDIT'S GUARANTEE RUNS ONE WAY** (E8-C8).  `auditAgainstRuntime` proves the planner offers
+     * nothing the runtime refuses - which is OB-073, and the direction that matters.  It does not prove
+     * the reverse, and the reverse is deliberately false: `plannedOccupancy` also consults the points
+     * reporting the same SENSOR, which the runtime does not, so on a layout where a station and its
+     * approach guard share a feedback address this refuses arrivals the railway would allow.  That
+     * divergence is declared where it lives, fails safe - a refused plan, never a wrong movement - and
+     * is pinned in both directions by
+     * `testHomeStaging.testTwoActivePointsSharingASensorAreNeverBothOccupied`.
      *
      * @param loc the locomotive being planned
      * @param at where it would come to rest

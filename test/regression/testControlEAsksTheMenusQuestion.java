@@ -304,6 +304,73 @@ public class testControlEAsksTheMenusQuestion
     }
 
     /**
+     * And the predicate's CONTENT, named off the fixture rather than read off itself (E8-C7).
+     *
+     * The whole-page comparison above asks `buildTileMenu` on one side and `offersALength` on the
+     * other, and since the menu adds its item inside `if (offersALength(tile))` those are the same
+     * call.  That comparison is still worth having - it is what catches a second copy of the guard
+     * growing back, which is how the original defect arrived - but a wrong predicate cannot redden it,
+     * and neither can the floors, which come from the same predicate.
+     *
+     * These two cases come from the fixture: a **text label** carries no track to measure, and a
+     * square on an **excluded page** is one autonomy takes no notice of.  Both are states the key
+     * acted on before the menu's three early returns were asked, and both are named here rather than
+     * derived, so the claim survives the predicate being rewritten.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheKeyRefusesTheTwoSquaresTheMenuOffersNoLengthFor() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-content").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            TileKey label = new TileKey("main", 3, 3);
+            TileKey track = new TileKey("main", 4, 1);
+
+            assertTrue(panel.offersALength(track),
+                "the plain track at " + track + " offers no length, so the two refusals below could"
+                + " be a predicate that answers false for everything");
+
+            assertFalse(panel.offersALength(label),
+                "Control+E acts on the text label at " + label + ", whose right-click menu is about"
+                + " what is WRITTEN on the square and carries no length item at all");
+
+            // AND A SQUARE ON A PAGE AUTONOMY IS TOLD TO IGNORE.
+            session.setPageExcluded("main", true);
+
+            try
+            {
+                assertFalse(panel.offersALength(track),
+                    "Control+E acts on " + track + " while its whole page is excluded from autonomy."
+                    + " Nothing on such a square is the user's to set, which is why the right-click"
+                    + " menu offers only Bulk Tools there");
+            }
+            finally
+            {
+                session.setPageExcluded("main", false);
+            }
+
+            assertTrue(panel.offersALength(track),
+                "the track at " + track + " still offers no length once its page is back in service,"
+                + " so the refusal above was not the exclusion");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
      * The labels of every item on a menu, submenus included.
      *
      * @param menu the menu

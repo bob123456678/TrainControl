@@ -35,6 +35,17 @@ import org.traincontrol.util.Conversion;
  * reduction and before the destination's sensor - so a mark taken there and a count taken after the run
  * is exactly the arrival, and nothing else.
  *
+ * **WHAT THE WIRE DROPS, and it is a lower bound rather than a count** (E8-C3).
+ * `MarklinControlStation.log(String)` is `if (message != null && !message.equals(this.lastMessage))` -
+ * two IDENTICAL, ADJACENT messages reach this recorder as one line.  That dedupe is right for a log a
+ * person reads and there is nothing to fix in it, but it means a claim of "exactly one direction
+ * command" would also hold if the rule emitted two of them back to back.
+ *
+ * It does not weaken the claims that matter.  A direction command carries the direction, so the two
+ * commands a double reversal would send are not identical; and every absolute claim here is about the
+ * ARRIVAL window, where one is expected and zero is the alternative.  Where a count is used as an upper
+ * bound on identical commands, read it as "at least this many".
+ *
  * Lifted out of `regression.testTheReversalReachesTheTracks`, which had all of this privately and could
  * therefore only make the one comparative claim it makes.
  *

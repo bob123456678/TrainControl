@@ -3544,10 +3544,24 @@ public class AutonomySession
     /**
      * The stations this editor will report as ones autonomy never chooses (V36-C4, OB-195).
      *
-     * **THE RUNTIME'S RULE, asked of the diagram.**  The runtime is `Layout.isSendableDestination` -
-     * `isDestination() && isActive() && isAutoDestination() && !isReversing()` - and `isAutoDestination`
-     * is the same switch under a different name, the one the menu calls **Can Be Chosen in Full
-     * Autonomy**.  Nothing else decides it.
+     * **THE RUNTIME'S RULE, in the two clauses a SQUARE can answer.**  The runtime is
+     * `Layout.isSendableDestination` - `isDestination() && isActive() && isAutoDestination() &&
+     * !isReversing()` - and two of those four are asked here:
+     *
+     *   - `isAutoDestination`, the same switch under a different name, the one the menu calls **Can Be
+     *     Chosen in Full Autonomy**;
+     *   - `isActive`, which the menu writes when a square is switched out of service.
+     *
+     * `!isReversing()` is the one that genuinely cannot be: it is a property of a COPY, and a
+     * may-reverse square keeps a plain copy autonomy can choose perfectly well, so a square-level
+     * answer would refuse squares the runtime accepts.  `isDestination` is `store.isStation`.
+     *
+     * **`isActive` was missing until 2026-09-10, and this javadoc said "Nothing else decides it"**
+     * (E8-B1).  A station Adam had switched OUT OF SERVICE was reported as one autonomy will choose -
+     * in the panel he opens to find out why a train is not moving.  The sentence is what made the
+     * omission invisible, and the guard written to catch the divergence,
+     * `core.testTheAutoTierScopeMatchesTheRuntime`, paraphrased the runtime with the same clause
+     * missing, so the two agreed about a rule neither of them had.
      *
      * **It carried a second clause until 2026-09-09, and a comment claiming that clause was the
      * runtime's.**  The clause was `isMustTurnAround`, and it is not: a compulsory-turn square that
@@ -3594,7 +3608,14 @@ public class AutonomySession
             // should only allow a turn at a point if the 'allow in autonomy' option is checked,
             // otherwise the train may only pass through in its current direction"*, and that switch is
             // `isAutoDestination`.
-            if (store.isStation(tile) && !isAutoDestination(tile)) out.add(tile);
+            // SHUT COUNTS TOO (E8-B1).  `Layout.isSendableDestination` requires `isActive()`, and
+            // that is a property of the SQUARE - the menu writes it, `shutTiles` reads it in bulk, and
+            // the badge code a few thousand lines below spells this exact test.  Without it a station
+            // switched out of service was reported as one autonomy will choose, which is the opposite
+            // of what the operator had just told the railway.
+            boolean shut = Boolean.FALSE.equals(getPointProperty(tile, "active"));
+
+            if (store.isStation(tile) && (shut || !isAutoDestination(tile))) out.add(tile);
         }
 
         return out;

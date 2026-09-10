@@ -1476,24 +1476,6 @@ public final class LayoutLabel extends JLabel
      */
     public static final Color TRAIN_MARK = new Color(255, 140, 0);
 
-    /**
-     * The grey a BLOCKED square is washed in (MT-309, Adam 2026-09-09).
-     *
-     * *"can we just grey out the tiles just like blocked edges while autonomy is running?"*  The same
-     * grey, to the value, that `ImageUtil.addCoveredOverlay` tinted a covered tile with before the
-     * wash was removed on 2026-09-08: it is the wash Adam is asking to have back, so it is the wash he
-     * gets.
-     *
-     * Translucent, because it has to say "this track is unavailable" without hiding which track it is
-     * - the square keeps its rails, its switch arms and its address label, only darker.
-     *
-     * PAINTED, NOT TINTED INTO THE ICON, and there is exactly one place that draws it.  A tinting
-     * helper in `ImageUtil` was deleted when the wash was removed, with a comment saying that leaving
-     * one there with no caller invites a second way of drawing the same thing; bringing the wash back
-     * as a fill in `paintComponent` honours that rather than undoing it, and it is what lets the wash
-     * survive an accessory highlight swapping the icon underneath it.
-     */
-    public static final Color BLOCKED_WASH = new Color(90, 90, 90, 120);
 
     /**
      * How solid a square is drawn while the railway refuses it (Adam, MT-278 item 1).

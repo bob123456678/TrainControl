@@ -94,11 +94,12 @@ registered is a per-accessory wait seconds wide and two trains crossed it togeth
   anti-collision guarantees are the edge locks and the length rules of §5, which every tier obeys.
 - **The fence is `isAutoRunning`, which is wider than "full autonomy".** `executeTimetableInternal`
   sets the same flag, and a Return Home run *is* a timetable, so **a timetable and Return Home ARE
-  capped** — where the occupancy restrictions above, asking `isFullAutonomyRunning`, are not. The two
-  fences answer the same-sounding question differently, and this is written down rather than left to
-  be rediscovered: if Adam's *"only under full autonomy"* is meant literally, the fence is the thing
-  to change, and that is a behaviour change nobody has asked for. **A question for him**, not a
-  defect.
+  capped**. If Adam's *"only under full autonomy"* is meant literally, the fence is the thing to
+  change, and that is a behaviour change nobody has asked for.
+
+  This bullet used to contrast the cap with the occupancy restrictions, which asked
+  `isFullAutonomyRunning`. There is nothing to contrast it with any more: those bind every tier since
+  2026-09-10, and **the cap is now the only rule in this document with a tier fence on it**.
 - `core.testMaxActiveTrains` is the class, and
   `core.testMaxActiveTrains.testTheCapDoesNotBindAHandDispatch` is the one that goes red when the
   fence is removed; the other three all start by running the railway and would not notice.
@@ -184,14 +185,15 @@ The code enforces the terminus row in both directions: a terminus **must** be a 
 `setDestination(false)` clears `isTerminus` and a copy trains may not arrive at is emitted as a plain
 reversing point rather than as a terminus.
 
-**One surface is wider than this, on purpose or not (OB-195).**
+**One surface was wider than this, and OB-195 narrowed it on 2026-09-09.**
 `AutonomySession.stationsAutonomyWillNotChoose` - which decides the magenta leg colour and the Auto
-tier's "reachable and never chosen" notice, both in section 7 - counts a compulsory turn as one
-autonomy will never choose whether or not it is also parking. That is wider than
-`isSendableDestination`, and its own comment claimed to BE `isSendableDestination` until this ruling.
-The comment now says what the set is; whether the editor should narrow or the builder widen is filed
-as OB-195 and is Adam's to settle. On his railway the two cannot disagree, because he has no
-compulsory turn that is not also parking - which is exactly why it went unnoticed.
+tier's "reachable and never chosen" notice, both in section 7 - counted a compulsory turn as one
+autonomy will never choose whether or not it was also parking, and its own comment claimed to BE
+`isSendableDestination`. Adam ruled that the editor should narrow, and it did: the set asks
+`isStation && !isAutoDestination` and, since E8-B1, `isActive` as well - the two clauses of the runtime
+rule that a SQUARE can answer. On his railway the two could not disagree, because he has no compulsory
+turn that is not also parking, which is exactly why it went unnoticed. The ruling is below, under
+*Turning round, and being chosen*.
 
 `testACompulsoryTurnStationIsNotEmittedAsADestination` measures that last fact against the real
 railway: every compulsory-turn copy on it has `isAutoDestination` false. It is a statement about how
@@ -667,8 +669,16 @@ The rest of this section is about the **first** rule.
   viewer only**, until it moves. An editor is where the railway is arranged, and what happens to be
   standing on it while you arrange it is a fact about right now rather than about the drawing - the
   same reasoning that makes station names the default caption there.
-- Blocked track is drawn as a **grey wash over the whole square**, **whether or not anything is
-  running**. The wash goes **under** the line, so a square that is both still reads as both.
+- Blocked track is drawn by **fading the square itself to 40%**, **whether or not anything is
+  running** — the tile's own art, drawn faintly, so a blocked curve is still legibly a curve. Adam,
+  2026-09-10: *"I want the shading to instead be the same tile with more transparency exactly like
+  what happens when edges are locked in autonomy mode."* It was a grey wash painted over the square
+  until then.
+
+  The fade is applied **to the icon as it is painted** — a composite set before `super.paintComponent`
+  — because nothing drawn afterwards can make what is underneath transparent. Everything autonomy
+  draws on top, the train line included, is painted at full strength, so a square that is both still
+  reads as both. `LayoutLabel.BLOCKED_ALPHA` is the number.
 
   **This said "only while autonomy is running" between 2026-09-09 and 2026-09-09, and the reversal is
   the point of the change** (W7B-B1). The bound was Adam's own sentence - *"can we just grey out the
@@ -690,17 +700,24 @@ The rest of this section is about the **first** rule.
   `ui.testTheGreyAppearsAtIdleToo` is the class; `ui.testBlockedTrackIsGreyWhileAutonomyRuns` keeps
   its name and its subject, having lost the word ONLY.
 
-- **And it is regenerated by the three gestures that change it with no train moving** - a locomotive
-  placed or removed, a train's length changed, a tile's length changed (Adam, same sentence). The
-  marks otherwise refresh on the railway's own events, and those three are operator gestures that
-  change what is blocked while nothing is running. They reach it by three different routes, and which
-  route is not arbitrary:
+- **And it is regenerated by every operator gesture that changes it with no train moving.** Adam
+  asked first for three - a locomotive placed or removed, a train's length changed, a tile's length
+  changed - and then, on 2026-09-10, for all of them: *"make sure the shading and orange repaints on
+  any autonomy or train/track length edit."* A station flag, an arrival side, a one-way direction and
+  a reversal marking all change which edges exist, and therefore what a standing train covers.
+
+  **One door carries the general case**: `rebuildRunningLayoutFromSetup` ends in
+  `blockedTrackChanged()`, and every setup change goes through it. The refresh diffs the two sets and
+  repaints only the squares whose mark changed, so a rebuild that alters nothing costs a comparison.
+
+  The three original gestures still reach it by their own routes, and which route is not arbitrary:
 
   - a **placement** through `updateVisiblePoints`, at each of the diagram's placement doors - the
     keyboard's Control+X / Control+V / Delete, the right-click Place and Remove items, and
     `GraphLocAssign`;
   - a **tile length** through the setup rebuild it needs anyway, because an edge's length is baked
-    into the built `Layout` by `GraphReducer` and cannot change without one;
+    into the built `Layout` by `GraphReducer` and cannot change without one - which is the general
+    door above, reached first by this one;
   - a **train length** through `TrainControlUI.blockedTrackChanged`, and this is the one that had
     nothing at all. `Layout.edgesCoveredByStandingTrains` reads `getTrainLength()` off the locomotive
     every time it is asked, so a length typed into the dialog changes what the railway refuses
@@ -719,7 +736,7 @@ The rest of this section is about the **first** rule.
   because the whole edge is what routing refuses.
 - **The marks survive a highlight.** An accessory change flashes the square it commands; when the
   flash ends the square is asked again rather than remembered, because the train may have moved while
-  the highlight was showing. Neither mark is part of the tile's icon - both are painted over it.
+  the highlight was showing. The train line is painted over the tile's icon; the refusal is the icon itself, drawn faintly. Neither is baked into the image - both are applied on every paint, which is what keeps an accessory highlight from taking either away with it.
 - **Both are refreshed together, and only where they changed.** One pass recomputes both answers and
   repaints exactly the squares whose line or wash differs from what it was. The whole diagram is
   never rebuilt for either: that is MT-334, and what it looks like is the page flickering.
@@ -846,14 +863,50 @@ they are what this section reasons from.
 
 ---
 
+### The autonomy editor's keyboard doors
+
+Three shortcuts act on **the square the pointer is over**, and they ask one question to find it -
+`LayoutEditor.hoveredSquare()`, which answers null when the remembered label is not on the grid it is
+asked about, and forgets it while it is there. They read a field nothing cleared until 2026-09-10, so
+after stepping to another page all three named a square on the page before (OB-198).
+
+| | |
+|---|---|
+| **Control+S** | Names the square — the right-click menu's **Rename**. Asks `canBeNamed`, so it does nothing on plain track (MT-313). |
+| **Control+E** | Opens **Segment Length** on it (FR-066). Adam picked the key: *"let's do E"*, Control+D being taken twice over. |
+| **Control+H** | Sets the home locomotive. |
+
+**Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
+`buildTileMenu`'s three early returns in one place — a page the session knows, not a text label, not an
+ignored square — and the menu adds its item inside it, so the guard and the affordance are one
+expression rather than two that agree today. The length lands on `squareTheLengthWouldGoOn`, which is
+the **run leader**: a run of plain track has one square that speaks for it, and both doors write there,
+so measuring a run through both does not count it twice.
+
+**Control plus any other letter does nothing in the main window**, since OB-197. Its key chain ended in
+an arm that took every letter whether or not Control was held, so Control+B and six others selected a
+locomotive button; `regression.testNoTwoShortcutsShareAKey` reads both windows' handlers on every run
+and prints what is free in both.
+
+---
+
 ## 6. Parking and Return Home
 
 - Return Home stages every locomotive that has a home, as one plan.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
 - It refuses an inactive **start** (see §1) and obeys every length rule in §5.
-- It does **not** read the occupancy restrictions of §1 — neither when planning, nor when the run
-  executes. A plan may therefore park a train at a station some other occupied square holds back, and
-  the railway carries it out.
+- It **does** read the occupancy restrictions of §1, in both halves, since Adam's ruling of
+  2026-09-10 that they bind every tier. **Planning** asks them against the occupancy the plan has
+  reached (`HomeStaging.plannedOccupancy`), and **execution** asks them because every leg goes through
+  `Layout.isPathClear`, which has no tier fence on that rule at all.
+
+  The two have to move together: a planner that offered a leg the runtime refuses is OB-073 — the run
+  retries until it gives up and stops with the fleet half-staged — and `auditAgainstRuntime` is what
+  proves the planner offers nothing the runtime would refuse.
+
+  **So two homes that hold each other back are a deadlock.** Whichever train arrives last finds its
+  station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` — not `IMPOSSIBLE`,
+  which names locomotives and asserts no arrangement exists. See §1.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
 
 **Whether it is on offer is asked once, off the event thread** (OB-192, second round). "Is anything
@@ -981,8 +1034,10 @@ settings.
 
 **And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
 on the way out and orange on the way back; a leg whose **destination** is a station autonomy will
-never choose — a parking berth, or a square that turns every train it takes — is drawn in magenta
-instead, whichever direction it runs. Adam: *"just use a different color going to manual-only points.
+never choose — a parking berth, or a station switched out of service — is drawn in magenta instead,
+whichever direction it runs. **Not a compulsory turn**: since OB-195 a square that turns every train
+it takes is chosen like any other station when *Can Be Chosen in Full Autonomy* is on, and is drawn
+like one. Adam: *"just use a different color going to manual-only points.
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* The colour is
 about the destination, so every square of that leg carries it; the chevrons still say the direction.
 

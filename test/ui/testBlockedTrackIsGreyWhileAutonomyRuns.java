@@ -249,17 +249,20 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * And it is grey rather than another line: the whole square is darkened, not a stroke across it.
+     * And it is grey rather than another line: the whole square is faded, not a stroke drawn across it.
      */
     @Test(dependsOnMethods = "testBlockedTrackIsGreyedWhileAutonomyRuns")
-    public void testTheBlockedMarkIsAWashOverTheWholeSquare()
+    public void testTheBlockedMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
         int changed = differingPixels(runningBlocked, bareBlocked);
 
         int drawn = drawnPixels(bareBlocked);
 
-        assertTrue(drawn > 0,
-            "nothing at all is drawn on " + blockedSquare + " when it is free, so there is nothing "
+        // A REAL FRACTION OF THE SQUARE, not one pixel (E8-C6).  `drawn > 0` admits a tile with
+        // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
+        // claim below is meant to tell a fade of the whole tile from a stroke across part of it.
+        assertTrue(drawn > TILE * TILE / 10,
+            "almost nothing is drawn on " + blockedSquare + " when it is free, so there is nothing "
             + "for the fade to move and this claim would pass on a blank square");
 
         assertTrue(changed >= drawn * 9 / 10,

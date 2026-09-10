@@ -928,37 +928,6 @@ public class testTheLengthGuardsOnTheRealLayout
         return best;
     }
 
-    /**
-     * Sets the two tiles that bind the run into TunnelLongPark and asks whether it is offered.
-     *
-     * @param first 1 - Main:10,9
-     * @param second 1 - Main:10,10
-     * @param train the locomotive
-     * @return whether TunnelLongPark is offered
-     * @throws Exception on a failure to build
-     */
-    private boolean roomOf(int first, int second, Locomotive train) throws Exception
-    {
-        java.util.List<TileKey> runIn = theRunInto("TunnelLongPark");
-
-        assertTrue(runIn.size() >= 2,
-            "the run into TunnelLongPark is " + runIn.size() + " tiles, so a two-number measurement"
-            + " cannot be spread across it and every case below would be measuring the same thing:"
-            + " " + runIn);
-
-        // FOUND, NOT NAMED (2026-09-08).  This used to set `1 - Main:10,9` and `10,10` by hand, which
-        // were the run into TunnelLongPark on the railway this suite used to build - eighteen edges,
-        // because the fixture parsed its pages without wiring their accessories. On the real reduction
-        // the run is elsewhere, so the two numbers were being written onto track the guard never
-        // consulted, and both halves of the boundary read as refusals.
-        //
-        // The LAST two tiles of the run, because the guard measures backwards from the berth and stops
-        // at the last switch: those are the ones inside the stretch it counts.
-        session.setTileLength(runIn.get(runIn.size() - 2), first);
-        session.setTileLength(runIn.get(runIn.size() - 1), second);
-
-        return offers(train, "TunnelLongPark");
-    }
 
     /**
      * The tiles a train crosses on its way into a station, in the order it crosses them.
@@ -1029,14 +998,87 @@ public class testTheLengthGuardsOnTheRealLayout
         {
             train.setTrainLength(4);
 
+            // THE FLOOR (E8-B4).  `offers` answers false when the railway offers this train nothing
+            // at all - an unplaced locomotive, a configuration that drops its Point - so without this
+            // the refusal below is satisfied by a railway that has closed down entirely.
+            assertFalse(offeredDestinations(train).isEmpty(),
+                "this railway offers 75 407 DB nowhere at all, so the refusal below says nothing"
+                + " about TunnelLongPark - it says the fixture is broken");
+
             assertFalse(offers(train, "TunnelLongPark"),
                 "with only the two one-unit segments he measured, a four-unit train is still offered"
                 + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
+
+            // AND THE LENGTH IS WHAT REFUSES IT, which is the claim this test's NAME makes and which
+            // it did not make until 2026-09-10 (E8-B4).
+            //
+            // `testTunnelLongParkIsRefusedForReasonsOtherThanLength` already asserts that this berth
+            // refuses this locomotive with every tile measured at eight - so something other than
+            // length closes it, and the refusal above holds with the room rule switched off entirely.
+            // A reviewer measured that: neutered, four of this class's eight tests went red and this
+            // one passed.
+            //
+            // So the rule is asked directly, of a route to that berth, which is the one question no
+            // other bar can answer for it.
+            List<Edge> route = theRouteToByBfs("TunnelLongPark");
+
+            assertNotNull(route,
+                "there is no route at all from where 75 407 DB stands to TunnelLongPark, so the room"
+                + " rule has nothing to judge and the claim below is about track that does not"
+                + " connect");
+
+            String why = Layout.whyTooLongForThisRoute(route, train);
+
+            assertNotNull(why,
+                "the room rule admits a four-unit train over the two one-unit segments Adam named, so"
+                + " the refusal above is somebody else's and this test does not test the length rule"
+                + " at all - which is what it was doing until E8-B4 found it");
+
+            assertTrue(why.contains("4"),
+                "the refusal is \"" + why + "\" and does not carry the train's length, so it is not"
+                + " the room rule's sentence");
         }
         finally
         {
             train.setTrainLength(was == null ? 0 : was);
         }
+    }
+
+    /**
+     * A route from where the borrowed engine stands to a named station, found by search.
+     *
+     * From `bfs` rather than from what the railway offers, because what it offers is the thing under
+     * test - asking it for the route would make the claim conditional on the refusal not happening.
+     *
+     * @param station the destination's base name
+     * @return the edges in order, or null when nothing connects
+     * @throws Exception on a failure to build
+     */
+    private List<Edge> theRouteToByBfs(String station) throws Exception
+    {
+        Layout built = rebuild();
+
+        Locomotive train = model.getLocByName("75 407 DB");
+
+        Point from = null;
+
+        for (Point point : built.getPoints())
+        {
+            if (train != null && train.equals(point.getCurrentLocomotive())) from = point;
+        }
+
+        if (from == null) return null;
+
+        for (Point to : built.getPoints())
+        {
+            if (!to.getName().startsWith(station)) continue;
+
+            List<Edge> route = built.bfs(from, to, new LinkedList<List<Edge>>());
+
+            if (route != null) return route;
+        }
+
+        return null;
     }
 
     /**
@@ -1268,31 +1310,4 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
 
-    /**
-     * The berths this train is offered that it would have to come to rest inside - terminus or
-     * reversing, which is where the room rule applies.
-     *
-     * @param built the railway
-     * @param loc the train
-     * @return the names of those destinations
-     */
-    private Set<String> berthsOfferedTo(Layout built, Locomotive loc)
-    {
-        Set<String> out = new LinkedHashSet<>();
-
-        List<List<Edge>> paths = built.getPossiblePaths(loc, true);
-
-        if (paths == null) return out;
-
-        for (List<Edge> path : paths)
-        {
-            if (path.isEmpty()) continue;
-
-            Point end = path.get(path.size() - 1).getEnd();
-
-            if (end.isTerminus() || end.isReversing()) out.add(end.getName());
-        }
-
-        return out;
-    }
 }

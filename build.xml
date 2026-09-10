@@ -283,6 +283,7 @@
              pointer is over - three shortcuts used to ask it three ways and keep a stale answer. -->
         <test-one-class class="testClearAllTrackLengths"/>
         <test-one-class class="testTheHoveredSquareIsForgotten"/>
+        <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
 
         <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
              running 41 of the 76 test classes and reporting success for the whole suite.

@@ -85,15 +85,39 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * Methods that are not themselves `synchronized` but reach one, so a call to them is a door too.
      *
-     * ONE ENTRY TODAY, and it is the one the narrow tripwire was written for:
-     * `Layout.triageReturnToHome` builds a `HomeStaging.snapshot`, which calls `Layout.getHomeStations`
-     * - `synchronized`.  Naming it here is what lets that tripwire be deleted rather than kept.
+     * `Layout.triageReturnToHome` is the one the narrow tripwire was written for: it builds a
+     * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized`.  Naming it here is
+     * what lets that tripwire be deleted rather than kept.
+     *
+     * **SIX MORE SINCE 2026-09-10 (E8-C4), and they are the ones the UI touches.**  A review traced
+     * this class's blind spots: it reads `synchronized` METHOD DECLARATIONS, so it cannot see a member
+     * that takes the same monitor with a `synchronized (this)` BLOCK, and it cannot see one that
+     * reaches the monitor through a call.  Twelve `Layout` members do the second, five of them already
+     * called from this application - all five correctly, on workers - which means `executePath` on the
+     * event thread would have passed this guard in silence while holding the monitor for a whole
+     * dispatch.  That is precisely OB-192's shape.
+     *
+     *   - `executePath`, `executeTimetable`, `runLocomotives` - reach it through `isPathClear` and
+     *     `configureAndLockPath`, and each holds it for the length of a dispatch or a run.
+     *   - `configureAndLockPath` - `synchronized (this)` block, `Layout.java:3180`.
+     *   - `getPathValidationFailureCount`, `hasShownPathValidationAlert` - `synchronized (this)`
+     *     blocks, and a public `int` and `boolean`: exactly the shape a status panel or a tooltip
+     *     reads from `actionPerformed`.
      *
      * This list cannot be derived from the source the way the `synchronized` ones can - it would need a
      * call graph - so it grows by hand when somebody finds another.  That is a weakness, and it is why
      * the list above it is the one that does the work.
      */
-    private static final String[] REACHES_THE_MONITOR = { "triageReturnToHome" };
+    private static final String[] REACHES_THE_MONITOR =
+    {
+        "triageReturnToHome",
+
+        // Reached through isPathClear and configureAndLockPath, and held for a whole dispatch.
+        "executePath", "executeTimetable", "runLocomotives",
+
+        // `synchronized (this)` blocks, which the declaration scanner above cannot see.
+        "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert"
+    };
 
     /**
      * Every door, and what makes it acceptable.
@@ -106,6 +130,32 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     static
     {
         // ------------------------------------------------------------ off the event thread
+
+        // ------------------------------------------------------- the five dispatch doors (E8-C4)
+        //
+        // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by
+        // being `synchronized` themselves, so the scanner above could not see them and this guard was
+        // silent about them until 2026-09-10.  All five were already on workers - what they were not
+        // was written down, which is what makes a sixth one indistinguishable from them.
+        //
+        // `executePath` holds the monitor for a whole dispatch, across a CONFIGURE_SLEEP per accessory
+        // of the path.  On the event thread that is OB-192 exactly: a frozen interface with trains
+        // still running.
+        ALLOWED.put("AutoLocomotiveStatus.java#locAvailPathsMouseClicked",
+            "OFF THE EVENT THREAD: the click handler dispatches the run on a `new Thread`, and the"
+            + " completion is put back on the event thread with invokeLater.");
+
+        ALLOWED.put("LayoutRightclickAutonomyMenu.java#destinationItem",
+            "OFF THE EVENT THREAD: the menu item's action starts a `new Thread` for the dispatch."
+            + "  The menu is built on the event thread; nothing it builds runs the railway there.");
+
+        ALLOWED.put("TrainControlUI.java#executeTimetableActionPerformed",
+            "OFF THE EVENT THREAD: the button disables itself on the event thread and then runs the"
+            + " timetable on a `new Thread`, re-enabling through invokeLater.");
+
+        ALLOWED.put("TrainControlUI.java#startAutonomyActionPerformed",
+            "OFF THE EVENT THREAD: `runLocomotives` is dispatched on a `new Thread`, which is why the"
+            + " Return Home button is disabled directly rather than through refreshReturnHomeButton.");
 
         ALLOWED.put("AutoLocomotiveStatus.java#findPaths",
             "OFF THE EVENT THREAD: AutonomyRenderer, submitted by repaintAutoLocList; its own javadoc"
