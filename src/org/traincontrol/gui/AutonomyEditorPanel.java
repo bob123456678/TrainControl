@@ -7022,22 +7022,35 @@ public class AutonomyEditorPanel extends JPanel
         // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
         //
         // A path existing and a train being sent along it are different facts, and the check reported
-        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's rule asked of the
-        // diagram, in the one clause a SQUARE can answer - `isAutoDestination`, which
-        // `Layout.isSendableDestination` requires before a destination is a candidate at all - so on
-        // Auto a station in that set is somewhere autonomy can reach and will never pick, which is
-        // exactly the state somebody opens this panel to explain.  (The runtime's other clause,
-        // `!isReversing()`, is about a copy rather than a square and cannot be asked here.)
+        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's rule asked of the diagram,
+        // in the two clauses a SQUARE can answer - `isAutoDestination`, the switch the menu calls Can
+        // Be Chosen in Full Autonomy, and `isActive`.  `Layout.isSendableDestination` requires both
+        // before a destination is a candidate at all.  (Its other clause, `!isReversing()`, is about a
+        // COPY rather than a square and cannot be asked here.)
         //
-        // Said as well as the route rather than instead of it.  The track is passable and that is
-        // worth knowing; what is added is that autonomy will not use it.  Reporting "no path" here
-        // would be a lie about the railway to make a point about the settings.
+        // TWO DIFFERENT SENTENCES, because the set answers about two different things (E8V-B1).  A
+        // manual-only station is a preference about what autonomy picks and a person may still drive
+        // there.  A square switched OUT OF SERVICE is a fact about the railway that binds every tier:
+        // `isPathClear` refuses a closed final point in all of them since Adam's ruling of 2026-09-06,
+        // and `isOfferableToOperator` refuses it outright, so the right-click menu never offers it.
+        // Telling that operator to "switch Path Type to Manual" sends them to a door that is shut - in
+        // the panel they opened to find out why a train is not moving.
         //
-        // Nothing is said on Manual, where every station is somewhere a person may send a train.
+        // Said as well as the route rather than instead of it.  The track is passable as far as the
+        // walk is concerned and that is worth knowing; what is added is who may use it.  Reporting "no
+        // path" here would be a lie about the railway to make a point about the settings.
+        //
+        // The shut sentence is said on BOTH tiers, because it is true of both.  The manual-only one is
+        // said on Auto alone, where every station is somewhere a person may send a train.
         String tierNote = "";
 
-        if (pathTypeAuto != null && pathTypeAuto.isSelected() && session != null
-            && session.stationsAutonomyWillNotChoose().contains(tile))
+        if (session != null && session.shutTiles().contains(tile))
+        {
+            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testSquareIsOutOfService",
+                describeTile(tile)));
+        }
+        else if (pathTypeAuto != null && pathTypeAuto.isSelected() && session != null
+            && session.manualOnlyStations().contains(tile))
         {
             tierNote = "<br>" + escape(I18n.f("autosetup.ui.testNotAnAutoDestination",
                 describeTile(tile)));
@@ -7091,16 +7104,20 @@ public class AutonomyEditorPanel extends JPanel
         // says is where the line goes - and a colour that only appeared on the last square would be
         // invisible on a route that runs off the edge of the page.
         //
-        // `stationsAutonomyWillNotChoose` is the runtime's rule asked of the diagram, the same set
-        // the Path Type note below reads, and it asks the one clause a SQUARE can answer:
-        // `isAutoDestination`, the switch the menu calls Can Be Chosen in Full Autonomy.
+        // `manualOnlyStations` AND NOT `stationsAutonomyWillNotChoose` (E8V-B1).  The colour was
+        // asked for in these words: *"just use a different color going to manual-only points"* - and
+        // since `isActive` joined the runtime set, a square the operator has switched OUT OF SERVICE
+        // is in it too.  That is not a manual-only point: nothing may be sent there by any tier, so
+        // colouring the leg as though a hand-driven run were the remedy points at a shut door.
         //
-        // `Layout.isSendableDestination` adds `!isReversing()`, which is about a COPY rather than a
-        // square - a may-reverse square keeps a plain copy autonomy can choose perfectly well - so the
-        // square-level answer is the honest one here and not a narrower version of the runtime's.
-        // (It carried a compulsory-turn clause too until Adam's ruling of 2026-09-09; see OB-195.)
+        // The set is the runtime's rule in the two clauses a SQUARE can answer - `isAutoDestination`
+        // and `isActive` - less the shut ones.  `Layout.isSendableDestination` adds `!isReversing()`,
+        // which is about a COPY rather than a square: a may-reverse square keeps a plain copy autonomy
+        // can choose perfectly well, so the square-level answer is the honest one here rather than a
+        // narrower version of the runtime's.  (It carried a compulsory-turn clause too until Adam's
+        // ruling of 2026-09-09; see OB-195.)
         final boolean manualOnly = to != null && session != null
-            && session.stationsAutonomyWillNotChoose().contains(to);
+            && session.manualOnlyStations().contains(to);
 
         // The squares in order, which the reduction does not hand over as one list: each edge carries
         // the track BETWEEN its two Points, so the Points themselves have to be put back between them.

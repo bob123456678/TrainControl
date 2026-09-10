@@ -1546,10 +1546,19 @@ public final class HomeStaging
      * nothing the runtime refuses - which is OB-073, and the direction that matters.  It does not prove
      * the reverse, and the reverse is deliberately false: `plannedOccupancy` also consults the points
      * reporting the same SENSOR, which the runtime does not, so on a layout where a station and its
-     * approach guard share a feedback address this refuses arrivals the railway would allow.  That
-     * divergence is declared where it lives, fails safe - a refused plan, never a wrong movement - and
-     * is pinned in both directions by
-     * `testHomeStaging.testTwoActivePointsSharingASensorAreNeverBothOccupied`.
+     * approach guard share a feedback address this refuses arrivals the railway would allow.  It fails
+     * safe - a refused plan, never a wrong movement.
+     *
+     * **AND NOTHING PINS IT** (E8V-B3).  A validator neutered the sensor half of `sameTrackAs` -
+     * `if (false && track.getS88() != null)` - and this class came back 92 tests, 0 failures.  An
+     * attempt to write the missing test did not hold either: on a four-point ring the arrival is
+     * already refused by `canEnter`'s own sensor rule and by the occupancy of the square the route
+     * runs through, so the mutation left it green and it was deleted rather than kept.
+     *
+     * Isolating this rule needs a fixture where the watched square is **not on any route** to the
+     * destination and only the FR-001 relation joins the two - a bigger railway than this suite builds
+     * by hand.  Until somebody writes it, this is a deliberate divergence that would not be noticed
+     * going, and the sentence above is the only thing that says so.
      *
      * @param loc the locomotive being planned
      * @param at where it would come to rest

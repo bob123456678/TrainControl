@@ -3621,6 +3621,30 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * The stations autonomy leaves alone that a PERSON can still drive to (E8V-B1).
+     *
+     * `stationsAutonomyWillNotChoose` is the runtime's rule and answers about two different things at
+     * once: a station marked manual-only, which is a preference about what autonomy picks, and a
+     * station switched OUT OF SERVICE, which is a fact about the railway that binds every tier.
+     *
+     * The magenta leg colour was asked for in Adam's own words - *"just use a different color going to
+     * manual-only points"* - and a shut square is not one of those.  Nothing may be sent there at all:
+     * `Layout.isPathClear` refuses a closed final point in every tier since his ruling of 2026-09-06,
+     * and `Layout.isOfferableToOperator` refuses it outright, so the right-click menu never offers it.
+     * Colouring it as though a hand-driven send were the remedy points at a door that is shut.
+     *
+     * @return the stations a hand-driven send may still reach and autonomy will not choose
+     */
+    public Set<TileKey> manualOnlyStations()
+    {
+        Set<TileKey> out = new LinkedHashSet<>(stationsAutonomyWillNotChoose());
+
+        out.removeAll(shutTiles());
+
+        return out;
+    }
+
     public Set<TileKey> mandatoryTurnTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();

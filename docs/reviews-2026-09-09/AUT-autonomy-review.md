@@ -1,5 +1,9 @@
 # AUT — Autonomy as it ships: the graph, the locking, the tiers, and what tests can see
 
+**Status:** closed
+
+*Every finding in this document was worked in the rounds of 2026-09-09 and 2026-09-10; a finding's state lives in `docs/manual-tests/triage.db` and its mirror `docs/manual-tests/findings.tsv`, which is where it has lived since the reviews folder was retired. Added 2026-09-10 (E8V-C4): `docs/reviews/README.md` says a document with no status line is open, and these seven were relying on that default.*
+
 **Prefix: `AUT9`** (confirmed free in `docs/manual-tests/findings.tsv` — no `AUT9*` and no `AUT*` rows exist).
 
 Independent acceptance review of the autonomy feature on branch `autonomy-diagram-r0`, 2026-09-09.

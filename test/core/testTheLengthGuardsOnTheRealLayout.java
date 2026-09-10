@@ -929,39 +929,6 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
 
-    /**
-     * The tiles a train crosses on its way into a station, in the order it crosses them.
-     *
-     * Read off the reduction rather than written down, so it follows the railway instead of a snapshot
-     * of it: this test hard-coded two tiles and they stopped being the answer the moment the fixture
-     * started building the whole layout.
-     *
-     * @param station the destination
-     * @return its approach tiles, empty when nothing leads there
-     */
-    private java.util.List<TileKey> theRunInto(String station)
-    {
-        TileKey berth = session.getStationIndex().squareOf(station);
-
-        if (berth == null) return java.util.Collections.emptyList();
-
-        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : session.getReducer()
-            .getEdges())
-        {
-            if (!berth.equals(edge.getEnd())) continue;
-
-            java.util.List<TileKey> tiles = new java.util.ArrayList<>();
-
-            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) tiles.add(step.getTile());
-            }
-
-            if (tiles.size() >= 2) return tiles;
-        }
-
-        return java.util.Collections.emptyList();
-    }
 
     /**
      * The railway as Adam describes it: two numbered segments, both one unit - and the route refused.
@@ -986,6 +953,20 @@ public class testTheLengthGuardsOnTheRealLayout
         // The two he named, and nothing else.
         session.setTileLength(new TileKey(MAIN, 19, 12), 1);
         session.setTileLength(new TileKey(MAIN, 22, 7), 1);
+
+        // AND THEY ARE ON TRACK THE GUARD COUNTS (E8V-C1).
+        //
+        // Two named tiles are a measurement only while they lie on a stretch the room walk reaches,
+        // and this file records what it costs when they do not: `testWhyRampDownIsRefused`'s own note
+        // is about two tiles named by hand that turned out to be on track the walk never consulted,
+        // and both halves of a boundary then read as refusals.
+        //
+        // Asked of the walk rather than of the geometry.  `measuredRoomAtTheEndOf` is what the guard
+        // counts with, so a small answer on the route to this berth is the two lengths above landing
+        // where they were meant to - and a large one, or none, says they did not.
+        //
+        // This is the invariant `roomOf` carried until it was deleted as unreachable (E8-C9), and
+        // which was then asserted nowhere at all (E8V-C1).
 
         Locomotive train = model.getLocByName("75 407 DB");
 
@@ -1026,6 +1007,17 @@ public class testTheLengthGuardsOnTheRealLayout
                 "there is no route at all from where 75 407 DB stands to TunnelLongPark, so the room"
                 + " rule has nothing to judge and the claim below is about track that does not"
                 + " connect");
+
+            Integer room = Layout.measuredRoomAtTheEndOf(route, train);
+
+            assertNotNull(room,
+                "the room walk declines to judge the route to TunnelLongPark, so neither of the two"
+                + " lengths set above is on a stretch it counts - which is the staleness this file's"
+                + " own note at testWhyRampDownIsRefused is about");
+
+            assertTrue(room < 4,
+                "the walk measures " + room + " units on the way to TunnelLongPark with only Adam's"
+                + " two one-unit tiles set, so it is counting track those two numbers are not on");
 
             String why = Layout.whyTooLongForThisRoute(route, train);
 

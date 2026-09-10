@@ -1,5 +1,9 @@
 # W7 - Seven-day review (2026-09-01 .. 2026-09-08)
 
+**Status:** closed
+
+*Every finding in this document was worked in the rounds of 2026-09-09 and 2026-09-10; a finding's state lives in `docs/manual-tests/triage.db` and its mirror `docs/manual-tests/findings.tsv`, which is where it has lived since the reviews folder was retired. Added 2026-09-10 (E8V-C4): `docs/reviews/README.md` says a document with no status line is open, and these seven were relying on that default.*
+
 **Prefix for citing these findings elsewhere:** `W7`
 
 ## Scope and method

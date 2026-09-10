@@ -1034,10 +1034,15 @@ settings.
 
 **And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
 on the way out and orange on the way back; a leg whose **destination** is a station autonomy will
-never choose — a parking berth, or a station switched out of service — is drawn in magenta instead,
-whichever direction it runs. **Not a compulsory turn**: since OB-195 a square that turns every train
-it takes is chosen like any other station when *Can Be Chosen in Full Autonomy* is on, and is drawn
-like one. Adam: *"just use a different color going to manual-only points.
+never choose **and a person still may** — a parking berth — is drawn in magenta instead, whichever
+direction it runs.
+
+**Two squares are deliberately not magenta.** A **compulsory turn** is chosen like any other station
+since OB-195, when *Can Be Chosen in Full Autonomy* is on. And a square **switched out of service** is
+not a manual-only point at all: nothing may be sent there by any tier, so colouring the leg as though
+a hand-driven run were the remedy would point at a shut door. The routing check says so in its own
+sentence instead — see §7. The colour asks `AutonomySession.manualOnlyStations`, which is the runtime
+rule less the shut squares. Adam: *"just use a different color going to manual-only points.
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* The colour is
 about the destination, so every square of that leg carries it; the chevrons still say the direction.
 

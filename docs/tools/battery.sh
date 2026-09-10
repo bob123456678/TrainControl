@@ -528,6 +528,34 @@ fingerprint()
 
 live_before=$(fingerprint)
 
+# AND THE SOURCE THIS RUN IS MEASURING (E8V-C5).
+#
+# Forty-four classes in this battery read `src/` and `test/` FROM DISK while they run, rather than
+# through the bytecode the compile above produced: the citation roll, the battery-membership census,
+# the event-thread door census, the editor surface rules, the shortcut census, the javadoc checks.
+#
+# So a battery is a measurement of ONE COMMIT only while nobody edits the tree - and when somebody
+# does, what comes out is a failure in a source-scanning class carrying a message about its own
+# subject.  A validation pass lost time to exactly that: the citation roll failed naming five
+# identifiers that did not exist when the run began, and the way to find out why was to read the diff
+# of a tree that had moved rather than anything this runner printed.
+#
+# Names and sizes rather than content hashes.  What matters is "did the tree move", the two directories
+# hold several thousand files, and hashing them all would add real time to every run for a question a
+# cheap answer settles.
+sourceprint()
+{
+    for tree in src test build.xml
+    do
+        if [ -e "$tree" ]
+        then
+            find "$tree" -type f -printf "%p %s\n" 2>/dev/null | sort
+        fi
+    done
+}
+
+source_before=$(sourceprint)
+
 pass=0
 fail=0
 skip=0
@@ -675,6 +703,8 @@ fi
 
 live_after=$(fingerprint)
 
+source_after=$(sourceprint)
+
 # THE TRAP'S COPY OF THIS CHECK STANDS DOWN NOW (TSX-C14).
 #
 # What follows reports the comparison properly, with the diff and the question about whether
@@ -705,6 +735,25 @@ then
     echo "These classes reported no failures because they ran nothing.  A skipped class is not a"
     echo "green class - check whether the skip is deliberate (needing a display) or a broken setup:"
     echo -e "$skipped"
+fi
+
+# THE TREE MOVED WHILE THIS RAN (E8V-C5), which is not a failure and is not nothing either.
+#
+# Said before the layout warning below, because it explains the layout warning as often as not: a
+# source-scanning class that failed in a run like this is reporting on a commit that no longer exists.
+if [ "$source_before" != "$source_after" ]
+then
+    echo ""
+    echo "*** THE SOURCE TREE CHANGED WHILE THIS BATTERY RAN ***"
+    echo ""
+    echo "44 of these classes read src/ and test/ from disk rather than from the build, so"
+    echo "these results are not a measurement of one commit.  A failure in one of them may be"
+    echo "about the edit rather than about the code under test - check the diff before acting"
+    echo "on it, and re-run on a quiet tree before trusting a clean result."
+    echo ""
+
+    diff <(echo "$source_before") <(echo "$source_after") | grep "^[<>]" | head -20 | sed "s/^/  /"
+    echo ""
 fi
 
 if [ "$live_before" != "$live_after" ]

@@ -3370,6 +3370,7 @@ public class testHomeStaging
             + plan.getBlocked());
     }
 
+
     /**
      * Two trains already standing on their own homes are not told the arrangement is impossible.
      *

@@ -1,5 +1,9 @@
 # Independent acceptance review of v3.0.0 — the application as it stands
 
+**Status:** closed
+
+*Every finding in this document was worked in the rounds of 2026-09-09 and 2026-09-10; a finding's state lives in `docs/manual-tests/triage.db` and its mirror `docs/manual-tests/findings.tsv`, which is where it has lived since the reviews folder was retired. Added 2026-09-10 (E8V-C4): `docs/reviews/README.md` says a document with no status line is open, and these seven were relying on that default.*
+
 **Prefix for citing these findings elsewhere:** `IND9X`
 (Checked against `docs/manual-tests/findings.tsv` 2026-09-09: `IND` and `IND9` are taken, `IND9X` is free.)
 

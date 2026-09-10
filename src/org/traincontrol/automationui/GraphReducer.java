@@ -504,16 +504,23 @@ public class GraphReducer
      * Same semantics as the sibling, for the same reason: `isPathClear` refuses a closed square as an
      * INTERMEDIATE and not at either end, so it is a valid destination and never a way through.
      *
-     * **That is the MANUAL tier's rule, and both callers ask an autonomy question (DIR-C10).**
-     * `isPathClear` refuses a closed FINAL point too, but only `if (this.isAutoRunning())` - and while
-     * autonomy runs it additionally refuses any edge with a closed endpoint.  So for the checks, which
-     * ask what autonomy can do, treating a closed square as a valid destination overstates what is
-     * reachable.
+     * **`isPathClear` refuses a closed FINAL point in EVERY tier, and this paragraph said otherwise
+     * for four days (DIR-C10, corrected by E8V-C2).**  It read "but only `if (this.isAutoRunning())`",
+     * and concluded that treating a closed square as a valid destination merely overstates what
+     * AUTONOMY can reach.  That fence went on 2026-09-06, on Adam's ruling: *"in manual mode, inactive
+     * endpoints and intermediates should be refused as well.  Just not inactive start points.
+     * Inactive really means nothing can pass."*
      *
-     * Left as it is deliberately: the overstatement is in the safe direction - the findings may call a
-     * closed station reachable when autonomy would never route there, which hides nothing that was not
-     * hidden before - and the alternative is a second walk with a second rule, which is how the two
-     * walks came to disagree in the first place.
+     * So the overstatement is wider than it was: a route this walk draws to a closed square is refused
+     * at every door there is, not only autonomy's.  While autonomy runs, the railway additionally
+     * refuses any edge with a closed endpoint.
+     *
+     * Left as it is deliberately, and the reason survives the correction: the overstatement is in the
+     * safe direction - the checks may call a closed station reachable when nothing may be sent there,
+     * which hides nothing that was not hidden before - and the alternative is a second walk with a
+     * second rule, which is how the two walks came to disagree in the first place.  What the checks do
+     * NOT do any more is explain such a leg with the wrong sentence: the Auto-tier note tells a shut
+     * square apart from a manual-only one (E8V-B1).
      *
      * @param from where the train is
      * @param to where it should go

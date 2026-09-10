@@ -462,7 +462,8 @@ public class AutonomyChecks
         // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station (V36-C4).
         //
         // This counted any station, and the runtime does not: `Layout.isSendableDestination` requires
-        // `!isReversing() && isAutoDestination()` before a square is a candidate at all.  So a
+        // `isActive() && isAutoDestination() && !isReversing()` before a square is a candidate at all,
+        // and the set handed in asks the first two - the ones a SQUARE can answer (E8V-B2).  So a
         // reversing point whose only reachable station is a parking berth read as healthy here and
         // was useless in the run - a train sent there turns round and is still nowhere, which is the
         // exact sentence this notice exists to say.
