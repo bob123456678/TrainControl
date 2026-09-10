@@ -1729,8 +1729,15 @@ public class Layout
      * refuse the return home staging run, which is precisely what is meant to fill these tracks".
      *
      * A timetable is a route somebody chose - by hand, or by setting the homes the planner staged them
-     * to. What this is for is the rule that only makes sense against a railway picking for itself,
-     * which today is the FR-001 occupancy restriction in `isPathClear`.
+     * to.  This is for a rule that only makes sense against a railway picking for itself.
+     *
+     * **NOTHING ASKS IT TODAY** (Adam, 2026-09-10).  Its one caller was the FR-001 occupancy
+     * restriction in `isPathClear`, and his ruling took the fence off that: *"enforce the occupancy
+     * ruling in all modes and then rely on isPathClear."*  Kept rather than deleted because the
+     * distinction is real and hard to get right - `isAutoRunning` covers a timetable and a Return Home
+     * run, and every rule that has been fenced behind it has had to be corrected for that - so the
+     * next rule that needs "full autonomy" should find it spelled correctly rather than spell it
+     * again.  `docs/reference/behaviour.md` section 1 says the same.
      *
      * @return true while autonomy is dispatching and no timetable is
      */
@@ -2593,16 +2600,23 @@ public class Layout
         // so neither hazard applies - nothing here can hold up a route that was not going to that
         // station anyway.
         //
-        // BEHIND FULL AUTONOMY, which is narrower than the endpoint rules above it (Adam,
-        // 2026-09-09).  This shapes what AUTONOMY chooses; a person dispatching by hand is looking at
-        // the railway and has said what they want, and so has a person who loaded a timetable or asked
-        // for Return Home.
+        // IN EVERY TIER, and it was fenced twice before (Adam, 2026-09-10).
         //
-        // `isAutoRunning` was the wrong question, because `executeTimetableInternal` sets `running`:
-        // a staging run was refused the very arrivals its own planner had checked for, which is OB-073
-        // arriving from the other end.  Adam's ruling is that this restriction is "for modifying
-        // pathing prioritization" while the length checks are "our primary anti collision mechanism" -
-        // so it belongs to the tier that does its own choosing, and to no other.
+        // *"If it's cleaner to go with consistency across the board, then let's enforce the occupancy
+        // ruling in all modes and then rely on isPathClear.  Revert the prior lax ruling unless you
+        // see a good reason not to."*
+        //
+        // It stood behind `isAutoRunning` until 2026-09-09 and behind `isFullAutonomyRunning` after
+        // it, on his earlier ruling that the restriction is *"for modifying pathing prioritization"*
+        // while the length checks are *"our primary anti collision mechanism"*.  Both fences are
+        // gone: a station the operator has marked unavailable while another square is occupied is
+        // unavailable, and there is one answer to that rather than one per tier.
+        //
+        // **THE PLANNER MOVED WITH IT, AND HAD TO.**  `HomeStaging` stopped applying this rule when
+        // the fence narrowed, precisely so that it would not offer a leg the runtime refuses - which
+        // is OB-073, a plan that fails half way through and stops everything with the fleet
+        // scattered.  Its copy is back, reading the occupancy the PLAN has reached rather than the
+        // live railway, and `auditAgainstRuntime` is what proves the two agree.
         //
         // The whole BLOCK, not just the named Point.  A square emitted as several copies is one piece
         // of track, so a train on the eastbound copy of the watched point is standing on it, and asking
@@ -2611,7 +2625,6 @@ public class Layout
         // The points themselves, so there is nothing to resolve here and nothing that can fail to.
         // A restriction naming a point that does not exist is dropped when the file is read, which is
         // the one place a name is still involved.
-        if (this.isFullAutonomyRunning())
         {
             Point destination = path.get(path.size() - 1).getEnd();
 
@@ -4609,7 +4622,13 @@ public class Layout
      *
      * Both of those sentences now describe `Point.heldBackBy`, which is where the rule lives (DR-B2).
      * This method is the runtime's NAME for it - the live-block variant - and it stays because the
-     * fence above it is this tier's business: the rule only applies here while autonomy is running.
+     * question of WHICH occupancy to read is the runtime's business: the live railway here, the
+     * occupancy the plan has reached in `HomeStaging.plannedOccupancy`.
+     *
+     * **There is no fence on it since 2026-09-10** (Adam: *"enforce the occupancy ruling in all modes
+     * and then rely on isPathClear"*), so the paragraph above about the clause only firing while
+     * autonomy runs is history: it fires for every tier now, and the window names the square in all
+     * of them.
      *
      * @param destination the station being arrived at
      * @param loc the locomotive arriving, exempt where it is itself the occupant
@@ -4732,9 +4751,11 @@ public class Layout
                 //
                 // Asking blockingOccupantOf is not a second copy of the rule. It IS the rule; the
                 // runtime check above calls the same method.
-                // The same fence isPathClear applies, or this window would name a watched square as the
-                // reason for a refusal that tier never made (2026-09-09).
-                Point held = this.isFullAutonomyRunning() ? blockingOccupantOf(end, loc) : null;
+                //
+                // NO FENCE, because isPathClear has none since 2026-09-10 - the restriction is
+                // enforced in every tier. A fence here would name a watched square as the reason for a
+                // refusal that tier never made; no fence there means every tier makes it.
+                Point held = blockingOccupantOf(end, loc);
 
                 if (held != null)
                 {
@@ -7604,9 +7625,13 @@ public class Layout
      * the walk returns was bounded by the unmeasured edge instead - so such a square is judged on a
      * count of measured track with unlooked-at track behind it.  Excluding it would mean the walk
      * reporting WHICH condition stopped it, which is a second return value on a method four call sites
-     * share.  Measured on Adam's railway across 19293 on-the-way refusals: **19293 stopped at a
-     * switch, none at an unmeasured edge, none off the start of the route**, so the case is latent
-     * rather than live, and the census reports the number on every run.
+     * share.
+     *
+     * What IS re-measured on every run is the other loose stop:
+     * `core.testTheRoomRuleCensusOnTheRealLayout` counts the refusals that would come from the walk
+     * running off the start of the route and asserts there are none.  Nothing counts the
+     * unmeasured-edge stops, so this paragraph is a statement about the code and not a measurement -
+     * said plainly, because an earlier version of it quoted a figure no test produces.
      *
      * @param prefix the route so far, ending at the square being judged
      * @param loc the train

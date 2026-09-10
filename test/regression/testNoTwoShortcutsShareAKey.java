@@ -41,13 +41,13 @@ import org.testng.annotations.Test;
  * windows with different jobs, and Control+S means Rename in one and Swap in the other quite happily.
  * What it requires is that neither window has two answers to one key.
  *
- * **AND THE MAIN WINDOW HAS NO FREE LETTERS AT ALL**, which is the thing this class got wrong on the
- * day it was written.  `TrainControlUI`'s chain ends
+ * **THE MAIN WINDOW HAD NO FREE LETTERS AT ALL UNTIL OB-197.**  Its chain ended
  * `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping`
- * holds every letter - so Control plus any letter not caught above it selects a locomotive button.
- * The seven letters this printed as "free in both" were seven letters that already did something.
- * `testTheMainWindowSwallowsEveryOtherLetter` pins that arm, so the print below can say what is true;
- * whether the arm itself should filter Control is `OB-197`.
+ * holds every letter - so Control plus any letter not caught above it selected a locomotive button,
+ * and the seven letters this printed as "free in both" were seven that already did something.  Adam,
+ * 2026-09-10: *"it should stop doing that.  that was not intended."*  The arm filters Control now and
+ * `testTheFallThroughStillFiltersControl` is what keeps it filtering, because everything this class
+ * prints about free keys rests on it.
  *
  * @author Adam
  */
@@ -115,9 +115,12 @@ public class testNoTwoShortcutsShareAKey
      * has stopped matching drops towards nothing and must.
      *
      * **Measured by running the regexes**, which is how the first version of this got them wrong: it
-     * said 10 and 15 from a reading, the scan finds **16 and 16**, and floors of 8 and 12 would have
-     * let half the editor's handlers go invisible before anything reddened.  Two below the real count,
-     * so that removing a shortcut is ordinary and losing a spelling is not.
+     * said 10 and 15 from a reading, and floors of 8 and 12 would have let half the editor's handlers
+     * go invisible before anything reddened.  The scan finds **17 in the editor and 16 in the main
+     * window** - 17 because the `e.` alternative added afterwards also matches
+     * `LayoutEditor.receiveKeyEvent`, and a first re-measurement said 16 because it was taken before
+     * that.  Three below the real count, so that removing a shortcut is ordinary and losing a spelling
+     * is not.
      */
     private static final int EDITOR_FLOOR = 14;
 
@@ -218,9 +221,7 @@ public class testNoTwoShortcutsShareAKey
         System.out.println("  bound in the layout/autonomy editor :" + new TreeSet<>(inTheEditor));
         System.out.println("  bound in the main window            :" + new TreeSet<>(inTheMainWindow));
         System.out.println("  free in the editor                  :" + freeInTheEditor);
-        System.out.println("  claimed by neither chain            :" + unclaimed);
-        System.out.println("  ...but the main window's last arm takes every letter it reaches, so a"
-            + " letter on that line still selects a locomotive button there (OB-197).");
+        System.out.println("  free in BOTH                        :" + unclaimed);
 
         assertTrue(freeInTheEditor.length() > 0,
             "every letter of the alphabet is bound to a Control shortcut in the layout editor, which"
@@ -234,38 +235,27 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * The main window's chain ends in an arm that takes every letter, Control held or not.
+     * The main window's last arm takes a bare letter and not a Control chord (OB-197).
      *
-     * `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and
-     * `buttonMapping` is filled with all 26 letters in `setupKeyboardShortcuts` - so Control plus any
-     * letter the arms above do not catch selects a locomotive button.
+     * `buttonMapping` is filled with all 26 letters, so without `!controlPressed` this arm catches
+     * Control plus every letter the arms above it do not - which is what it did until 2026-09-10, and
+     * is why the first version of this class printed seven letters as free in both windows when all
+     * seven already selected a locomotive button.  FR-066's key was chosen off that list.
      *
-     * **This is why the sibling test prints "free in the editor" rather than "free in both".**  The
-     * first version of this class printed seven letters as free in both windows and FR-066's key was
-     * chosen off that list; the seven were not free, they were unclaimed by any named shortcut and
-     * swallowed by this arm.  Control+E in the main window selects the E button today.
-     *
-     * Pinned rather than fixed: whether that arm should filter Control is a change to what the
-     * application does, and it is filed as `OB-197`.  What this asserts is that the arm is still
-     * there, so the sibling's wording stays true - and if somebody adds the filter, this goes red and
-     * the wording can go back to "free in both".
+     * **Everything this class says about free keys rests on this arm**, so it is asserted rather than
+     * assumed: a "free in both" list is only true while Control cannot reach the buttons.
      *
      * @throws IOException when the source cannot be read
      */
     @Test
-    public void testTheMainWindowSwallowsEveryOtherLetter() throws IOException
+    public void testTheFallThroughStillFiltersControl() throws IOException
     {
         String source = sourceOf(MAIN);
 
-        assertTrue(source.contains("else if (this.buttonMapping.containsKey(keyCode))"),
-            "the main window's fall-through arm is not spelled the way this class reads it, so"
-            + " nothing here says whether Control plus a letter still selects a locomotive button -"
-            + " and the sibling test's wording about free keys rests on that");
-
-        assertFalse(source.contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
-            "the fall-through arm now filters Control, so letters bound to no named shortcut really"
-            + " ARE free in the main window. That is OB-197 fixed: say so in the sibling test's"
-            + " printout and in this class's javadoc, and delete this test");
+        assertTrue(source.contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
+            "the main window's last arm no longer filters Control, so Control plus every letter no"
+            + " named shortcut catches selects a locomotive button again - and the free-key list this"
+            + " class prints is wrong about all of them. That is OB-197 coming back");
     }
 
     /**

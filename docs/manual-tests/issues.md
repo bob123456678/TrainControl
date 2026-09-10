@@ -749,76 +749,6 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
-### OB-196 - 2026-09-10 - Seven squares on the bottom main offer a train of two units or more nowhere at all
-
-**Kind:** bug  
-**Raised from:** Opus review of 5948a88a  
-**Filed:** 2026-09-10  
-
-The route-wide room rule (Adam's ruling 1b, 2026-09-09, commit `5948a88a`) refuses about a
-third of this railway's journeys, and that number is in `behaviour.md` section 5a. **A third of
-journeys refused evenly strands nobody; a third refused at the squares on every road out strands
-everybody standing there**, and the two are the same number.
-
-Measured on `test/layouts/live-snapshot`, on an empty railway, asking the door the operator asks
-(`getPossiblePaths(loc, true)` - so this is the by-hand list too, not only autonomy):
-
-| train | destinations offered in total | squares offering NOTHING |
-|---|---|---|
-| 1 unit | 735 | 0 |
-| 2 units | 389 | 8 |
-| 3 units | 382 | 8 |
-| 4 units | 379 | 8 |
-| 5 units | 377 | 8 |
-| 6 units | 378 | 8 |
-
-Seven of those eight are closed **by the ruling**: over the same routes, they offered 33 or 34
-destinations under the berth-only rule and offer none under this one. They are
-`BottomMainA (eastbound)`, `BottomMainB (eastbound)`, `BottomMainB (eastbound, reverse)`,
-`BottomMainC (eastbound)`, `BottomMainC (westbound, reverse)`,
-`BottomMainPost (northbound, reverse)` and `BottomMainPost (southbound)`. The eighth,
-`ParkingTrack12`, offers a long train nothing under either rule - that one is the track.
-
-A train that comes to rest on any of the seven is one autonomy will never dispatch, the right-click
-menu offers nothing for, and Return Home answers `NO_PLAN_FOUND` about.
-
-**The remedy is almost certainly a tape measure rather than a code change.** Every square that does
-the refusing measures ONE unit - `5:22,7`, `5:19,12`, `5:14,13` are the three tiles named in
-`behaviour.md`. If those are real lengths then the railway honestly cannot take those trains there;
-if they are placeholders, measuring them gives all 35 (square, length) pairs back at once.
-
-**Nothing is blocked on this.** `core.testWhichSquaresTheRoomRuleClosesOff` pins the two figures - 35
-pairs closed by the ruling, 40 stranded - so neither can move without somebody being told, and prints
-the whole list on every run. Found by an Opus review of `5948a88a`, which is the finding a journey
-census could not see.
-
-### OB-197 - 2026-09-10 - Control plus any unbound letter selects a locomotive button in the main window
-
-**Kind:** bug  
-**Raised from:** Opus review of 5948a88a  
-**Filed:** 2026-09-10  
-
-`TrainControlUI`'s key handler ends
-
-    else if (this.buttonMapping.containsKey(keyCode))
-
-with no `!controlPressed`, and `buttonMapping` holds all 26 letters. So Control+B, Control+J,
-Control+O, Control+P, Control+Q, Control+U and Control+W - every letter no named shortcut catches -
-select a locomotive button exactly as the bare letter does.
-
-**Probably nobody meant that**, and it is why the shortcut guard's printout was wrong: it reported
-those seven as "free in both windows", and FR-066's key was chosen off that list. They are not free;
-they are unclaimed by any named shortcut and swallowed by that arm. (Control+E is safe for FR-066
-anyway - the editor is a different window with its own handler.)
-
-The one-line change is `!controlPressed && this.buttonMapping.containsKey(keyCode)`. What it costs is
-that Control plus a letter stops selecting a button, which somebody may be using without knowing it -
-so it is a decision rather than a repair.
-
-`regression.testNoTwoShortcutsShareAKey.testTheMainWindowSwallowsEveryOtherLetter` pins the arm as it
-stands and says in its own message what to do to this ticket if it changes. Found by an Opus review of
-`5948a88a`.
-
 ### OB-198 - 2026-09-10 - The editor's hovered square is never cleared, so a key after a page step acts on the old grid
 
 **Kind:** bug  
@@ -841,6 +771,15 @@ The fix is to clear it on page step and on mouse exit, which is a small change i
 filed rather than made because it touches a field three shortcuts read and nothing in the suite covers
 it today.
 
+### FR-069 - 2026-09-10 - autonoy clear all track lengths
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-10 03:43  
+**Build:** commit 4565be9b, build\classes, compiled 10 Sep 03:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+to autonomy bulk tools menu, add "clear all track lengths" - this should clear the segment lengths across all pages, after the user confirms in a popup.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -855,7 +794,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
-| 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read for what was free - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** now opens the length dialog on the square under the pointer in the autonomy editor, through `AutonomyEditorPanel.promptLengthFor`, which asks the right-click menu's own `isIgnored` question so the key cannot act where the menu offers nothing - the shape of MT-313, one door over. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is still free in both, so the next person to be asked "which key" gets the answer off a run rather than off an hour's reading | fixed unvalidated | - |
+| 2026-09-10 | OB-196 | bug | **Not a defect.** Adam: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing. Actual tracks are much longer... these are not realistic lengths, and I need to change them on the diagram."* So the eight squares that offer a train of two units or more nowhere at all are an artefact of three test measurements, not of the rule - and the answer is a tape measure on the diagram, which is his to do. What came out of it: `test/layouts/live-snapshot` now carries **no lengths at all**, on his instruction *"remove all currently set segment lengths and set custom lengths where it makes sense for your tests"*, and the two censuses set the three tight tiles themselves and say in the file that it is a deliberate stress configuration rather than a measurement of his railway. Every figure they report was really about those three tiles | declined | - |
+| 2026-09-10 | OB-197 | bug | Adam: *"it should stop doing that. that was not intended."* `TrainControlUI`'s key chain ended `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping` holds all 26 letters - so Control plus every letter no named shortcut caught selected a locomotive button exactly as the bare letter does. That is also why the shortcut guard's printout was wrong about which keys were free, and FR-066's key was picked off that list. One clause, plus the guard that keeps it: `regression.testNoTwoShortcutsShareAKey.testTheFallThroughStillFiltersControl` fails if the filter comes off, and everything that class prints about free keys rests on it | fixed unvalidated | - |
+| 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** opens the length dialog on the square under the pointer in the autonomy editor. **The first cut had two defects and a review found both**, each the shape `promptLengthFor`'s own javadoc said it avoided: it asked `isIgnored`, which is one of THREE questions `buildTileMenu` asks before it reaches Set Length, so it opened the dialog on a text label whose menu offers no length at all; and it wrote to the hovered square where the menu writes to the run's LEADER, so the two doors put the same number in two places and a run measured through both counted twice. There is one door now - `buildTileMenu` adds its item inside `if (offersALength(tile))` and binds it to `applyLength(squareTheLengthWouldGoOn(tile))`, which is what the key calls - and `regression.testControlEAsksTheMenusQuestion` compares the two over every square of a page rather than over two named ones. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is free in both - which became true only with `OB-197` | fixed unvalidated | - |
 | 2026-09-09 | OB-195 | bug | Adam: *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the 'allow in autonomy' option is checked, otherwise the train may only pass through in its current direction."* `AutonomySession.stationsAutonomyWillNotChoose` carried a second clause, `isMustTurnAround`, and a comment claiming it was the runtime's rule; it is not, because a compulsory turn that stops is built as a TERMINUS and `Layout.isSendableDestination` admits one. The clause is gone and nothing replaces it: **Can Be Chosen in Full Autonomy** is the one switch that decides, and turning round says what happens when a train arrives rather than who may send one. `core.testACompulsoryTurnIsChosenLikeAnyOtherStation` asserts both halves on `single-switch`, where the two markings can disagree - on Adam's own railway every compulsory turn is also marked manual-only, which is why this survived. behaviour.md section 3 carries the ruling | fixed unvalidated | - |
 | 2026-09-09 | OB-193 | bug | TopMainR2 is `1 - Main:6,4`, and the snapshot captions it twice - on `6,4` and on `6,5` - which is the state `migrateStationLabels` can produce without anybody asking, because it writes captions through the raw store door and that door does not sweep the old one away. Already fixed on 2026-09-08 by **05c7f48e** (MT-337): `TrainControlUI.autonomyCaptionAt` makes a SELF-caption give way when another square is already naming that station, so the offset label - the one somebody placed - is the one that survives. Verified rather than believed: `regression.testTheHomeLabelIsDrawnOnce` now names that square and asserts one label on it, and goes red with the fix removed | fixed validated | - |
 | 2026-09-09 | OB-194 | bug | Adam: *“Warning if using the bulk tool”* - so the warning rather than a real undo. The confirmation was a fixed sentence about home assignments; it now names every locomotive it is about to lift, says how many squares it will empty, and says that Cancel will not put them back. It cannot, since OB-183: placements are read from the railway rather than from the setup, so closing the editor restores the file and not the trains. One builder feeds both the dialog and the menu item's tooltip, so the warning cannot arrive only after the click. `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` asks the editor for the string and checks all three, in whichever of the eight languages the run is in | fixed unvalidated | - |

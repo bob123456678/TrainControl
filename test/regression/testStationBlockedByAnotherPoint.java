@@ -320,10 +320,25 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A hand-driven route is not affected, which is the tiering the arrival restrictions use.
+     * A hand-driven route is refused too, and that is the whole of Adam's ruling of 2026-09-10.
+     *
+     * **This asserted the opposite until then, and correctly.**  The restriction stood behind
+     * `isAutoRunning` until 2026-09-09 and behind `isFullAutonomyRunning` after it, on his ruling that
+     * it is *"for modifying pathing prioritization"* while the length checks are the anti-collision
+     * guard.  He replaced that: **"if it's cleaner to go with consistency across the board, then let's
+     * enforce the occupancy ruling in all modes and then rely on isPathClear.  Revert the prior lax
+     * ruling."**
+     *
+     * So a station marked unavailable while another square is occupied is unavailable, and there is
+     * one answer rather than one per tier.  The exemption for the train LEAVING the watched square is
+     * untouched and is what keeps that from being a trap -
+     * `testATrainLeavingTheWatchedPointMayStillBeSentThere` is it.
+     *
+     * MUTATION: putting either fence back in `Layout.isPathClear` fails this and leaves every other
+     * claim in this class green.
      */
     @Test
-    public void testAPersonMayStillSendATrainThere() throws Exception
+    public void testAHandDrivenRouteIsRefusedThere() throws Exception
     {
         Layout layout = built();
 
@@ -331,17 +346,23 @@ public class testStationBlockedByAnotherPoint
         Locomotive other = model.getLocByName(model.getLocList().get(1));
 
         layout.getPoint("BK A").setLocomotive(driven);
-        layout.getPoint("BK YARD").setLocomotive(other);
 
         List<Edge> path = new LinkedList<>();
         path.add(layout.getEdge("BK A", "BK B"));
 
-        // Not auto running is what a hand dispatch looks like to this rule
+        // Not auto running is what a hand dispatch looks like to this rule.
         layout.stopLocomotives();
 
         assertTrue(layout.isPathClear(path, driven, false),
-            "a route chosen by hand was refused by a restriction that exists to shape what AUTONOMY "
-            + "chooses. A person looking at the railway has said what they want (FR-001)");
+            "the path is refused with nothing standing on the watched square, so the refusal below"
+            + " would not be the restriction and this test would prove nothing");
+
+        layout.getPoint("BK YARD").setLocomotive(other);
+
+        assertFalse(layout.isPathClear(path, driven, false),
+            "a route chosen BY HAND was allowed into a station held back by an occupied square."
+            + " Adam's ruling of 2026-09-10 is that the restriction is enforced in every mode - one"
+            + " answer, relied on through isPathClear (FR-001)");
     }
 
     /**

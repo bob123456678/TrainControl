@@ -33,22 +33,51 @@ document exists to prevent comes from assuming they do.
 | **Manual** (right-click, Locomotive tab) | no — the operator chooses | yes | yes, about reversals |
 | **Return Home** | no — the planner chooses | **yes** | never |
 
+The middle column is about the **parking marking** — *Can Be Chosen in Full Autonomy* — and nothing
+else. The occupancy restriction below is not a tier question at all any more.
+
 **Return Home sits with Manual on the question of where a train may be sent.** This was got wrong
 once and corrected on 2026-09-06: `isAutoDestination` appears nowhere in `HomeStaging`, and Adam's
 earlier ruling stands — *"Return Home still fills it; only full autonomy leaves it alone."* The Path
 Type control in the editor says Manual for this reason.
 
-**Occupancy restrictions are autonomy's alone** (Adam, 2026-09-09). A station can be marked
-unavailable while some other named square has a train standing on it. **Autonomy enforces it; manual
-and Return Home do not.** Adam's ruling, asked which tier should: *"enforce only in full autonomy.
-with the length checks, that is our primary anti collision mechanism, whereas the point exclusion is
-for modifying pathing prioritization."* So it is a tool for shaping what autonomy picks, not a guard
-against two trains meeting — that is the length rules in §5, which every tier obeys.
+**Occupancy restrictions bind every tier** (Adam, 2026-09-10). A station can be marked unavailable
+while some other named square has a train standing on it, and **autonomy, a hand-driven send and
+Return Home all obey it**. His ruling:
 
-**"Full autonomy" is narrower than "autonomy is running."** Executing a timetable sets the same
-running flag, and a Return Home run *is* a timetable, so a rule fenced behind that flag applied to
-Return Home as well — which is how the planner and the railway came to disagree about this one. The
-fence asks `Layout.isFullAutonomyRunning` now: running, with no timetable driving it.
+> *"If it's cleaner to go with consistency across the board, then let's enforce the occupancy ruling
+> in all modes and then rely on isPathClear. Revert the prior lax ruling."*
+
+**It was fenced twice before, and this is the record of both.** It stood behind `isAutoRunning` until
+2026-09-09 and behind `isFullAutonomyRunning` after it, on his earlier ruling that the restriction is
+*"for modifying pathing prioritization"* while the length checks are *"our primary anti collision
+mechanism."* Both fences are gone. One rule, one answer, asked once — in `Layout.isPathClear`.
+
+**The planner reads it again, and has to.** `HomeStaging` stopped applying it when the fence narrowed,
+precisely so it would not offer a leg the runtime refuses; with the fence gone it would offer exactly
+that, and a plan whose first move the railway refuses is OB-073 — the run retries until it gives up
+and stops with the fleet half-staged. Its copy asks the occupancy the **plan** has reached rather than
+the live railway (`HomeStaging.plannedOccupancy`), and `auditAgainstRuntime` is what proves the two
+agree.
+
+**Two consequences worth knowing.**
+
+- **The train leaving the watched square is still exempt** — Adam: *"the condition should not apply to
+  trains leaving, only departing"* — and that exemption is what keeps the rule from being a trap: a
+  locomotive parked on the yard could otherwise never be sent to the platform the yard holds back,
+  and while it sat there the platform would be shut to everybody else too.
+- **Two stations that hold each other back are now a real deadlock.** Whichever train arrives last
+  finds its station closed by one already parked, and no order of moves avoids it. Return Home reports
+  `NO_PLAN_FOUND` — not `IMPOSSIBLE`, which names locomotives and asserts that no arrangement exists.
+  The scan that used to produce that verdict was wrong three separate times and was removed rather
+  than repaired, so the weaker true answer is the one that stands.
+  `core.testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
+
+**"Full autonomy" is still narrower than "autonomy is running", and the distinction survives this
+change.** Executing a timetable sets the same running flag, and a Return Home run *is* a timetable, so
+a rule fenced behind that flag applies to Return Home as well. `Layout.isFullAutonomyRunning` — running,
+with no timetable driving it — exists for that; nothing asks it today, and it is kept because the next
+rule that needs the distinction will need it spelled correctly.
 
 **How many trains may be out at once is a cap, and it binds only while the railway is running
 itself** (Adam, 2026-09-09: it *"stays enforced only under full autonomy"* — no change asked for).
@@ -537,23 +566,28 @@ The rest of this section is about the **first** rule.
   asked of every prefix of the route; the destination is the last of those rather than a rule of its
   own. Nothing new is measured.
 
-  **What it costs, measured on Adam's railway.** Over 1848 routable station pairs and six train
-  lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses about 1655 more, so
-  roughly one journey in three is now refused for want of room. **Every square that does the refusing
-  measures ONE unit**, and every one is a copy of the four berths §5c already names. The way to get
-  those journeys back is to measure that track.
+  **What it costs, on a railway measured to make it cost something.** Over 1848 routable station
+  pairs and six train lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses
+  about 1655 more, so roughly one journey in three is refused for want of room, and **every square
+  that does the refusing measures ONE unit**.
+
+  **Those three one-unit tiles are a test configuration, not a survey of his track.** Adam,
+  2026-09-10: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing.
+  Actual tracks are much longer."* `5:22,7`, `5:19,12` and `5:14,13` were the only lengths anywhere on
+  the snapshot, and both censuses now set them deliberately and say so, rather than reading them out
+  of a fixture and reporting the answer as a fact about his railway. The figures are what a rule about
+  room does on a railway with no room; the real one has more.
 
   `core.testTheRoomRuleCensusOnTheRealLayout` re-measures it on every run, against the frozen
   `test/layouts/live-snapshot` rather than the railway Adam is operating, and reports a band rather
   than a figure because which route a search finds first is not reproducible between JVMs.
 
-  **A journey in three is not a train in three.** Journeys are counted over every ordered pair of
-  stations, and refusals that fall unevenly strand whole squares rather than thinning the timetable.
-  `core.testWhichSquaresTheRoomRuleClosesOff` is the census that says which squares offer a train of
-  each length nothing at all, and it is the number to read before this one: on Adam's railway **seven
-  squares on the bottom main offer a train of two units or more nowhere at all**, where the berth-only
-  rule offered each of them thirty-odd destinations. `OB-196` carries what it costs and what the
-  remedy is - three tiles measured at one unit, and a tape measure rather than a change to the rule.
+  **A journey in three is not a train in three**, and that is the number to read first. Journeys are
+  counted over every ordered pair of stations, so refusals that fall unevenly close whole squares
+  rather than thinning the timetable — and here they do: with those three tiles at one unit, **seven
+  squares offer a train of two units or more nowhere at all**, where the berth-only rule offered each
+  of them thirty-odd destinations. `core.testWhichSquaresTheRoomRuleClosesOff` measures and pins it.
+  Whenever this rule is changed, that census is the one to read, not this one.
 
   **The refusal names the square that is short**, and says a different sentence for one on the way
   than for the berth. Naming the destination when the destination has room sends the operator to

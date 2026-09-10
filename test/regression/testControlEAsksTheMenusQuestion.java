@@ -222,6 +222,88 @@ public class testControlEAsksTheMenusQuestion
     }
 
     /**
+     * Over every square of the page: the menu offers a length exactly where the key acts.
+     *
+     * The two claims above name two squares each.  This one names none - it walks the whole page and
+     * compares the two doors square by square, which is the only form in which "they ask one question"
+     * is checkable rather than a hope about two expressions that happen to be typed the same.
+     *
+     * It is what would have caught the original defect on its own, and it is what catches the NEXT
+     * condition somebody adds to `buildTileMenu` and forgets to add to the key - which is exactly how
+     * the first one arrived.
+     *
+     * MUTATION: gating the menu's Set Length item on anything `offersALength` does not ask - a review
+     * used `isPoint` - fails this on every plain-track square, and left both claims above green.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheTwoDoorsAgreeAboutEverySquareOnThePage() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-page").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            String setLength = org.traincontrol.util.I18n.t("autosetup.ui.menuSetLength");
+
+            java.util.List<String> disagreed = new java.util.ArrayList<>();
+
+            int offered = 0;
+            int refused = 0;
+
+            for (int x = 0; x < 12; x++)
+            {
+                for (int y = 0; y < 4; y++)
+                {
+                    TileKey tile = new TileKey("main", x, y);
+
+                    javax.swing.JPopupMenu menu = panel.buildTileMenu(tile, null);
+
+                    boolean onTheMenu = menu != null && itemNames(menu).contains(setLength);
+
+                    boolean theKeyActs = panel.offersALength(tile);
+
+                    if (onTheMenu) offered++;
+                    else refused++;
+
+                    if (onTheMenu != theKeyActs)
+                    {
+                        disagreed.add(tile + ": menu " + (onTheMenu ? "offers" : "does not offer")
+                            + " a length, the key " + (theKeyActs ? "acts" : "does not act"));
+                    }
+                }
+            }
+
+            assertEquals(disagreed, new java.util.ArrayList<String>(),
+                "the right-click menu and Control+E disagree about " + disagreed.size() + " squares: "
+                + disagreed + ". They are meant to be one question - `buildTileMenu` adds its item"
+                + " inside `if (offersALength(tile))` - so a disagreement is a second copy having"
+                + " grown back");
+
+            // AND BOTH ANSWERS HAPPEN ON THIS PAGE, or the agreement above is between two constants.
+            assertTrue(offered > 0,
+                "no square on this page offers a length at all, so the comparison above is between two"
+                + " predicates that both answer false everywhere");
+
+            assertTrue(refused > 0,
+                "every square on this page offers a length, so the comparison above is between two"
+                + " predicates that both answer true everywhere - and the label at 3,3 should not");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
      * The labels of every item on a menu, submenus included.
      *
      * @param menu the menu

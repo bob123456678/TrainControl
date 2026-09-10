@@ -110,7 +110,13 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and the review's B8).
+        //
+        // Every figure below is a count of what Adam's railway builds to, and it moves as he works on
+        // it - so this pinned four numbers against a folder with uncommitted edits in it, and a clean
+        // checkout measured something else.  `live-snapshot` is the same railway with the clock
+        // stopped, which is what a pin needs.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
 

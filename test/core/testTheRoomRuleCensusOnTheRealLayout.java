@@ -19,6 +19,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -65,7 +66,11 @@ import org.traincontrol.marklin.file.CS2File;
  * gave. So the conclusion stands on its own measurement: the widening refuses the journeys he asked to
  * have refused, at the squares he was looking at, and nowhere else on this railway.
  *
- * Read against a `LayoutSandbox` copy of `cs2_sample_layout` (OB-111). His railway is only ever read.
+ * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot` - the frozen railway rather
+ * than the one Adam is operating - with the three tight tiles set by this class rather than
+ * carried in the fixture.  Adam, 2026-09-10: *"We put the lengths of 1 in there for testing.
+ * Actual tracks are much longer."*  So every figure here is what a rule about room does on a
+ * railway with no room, and not a survey of his track.
  *
  * @author Adam
  */
@@ -189,6 +194,27 @@ public class testTheRoomRuleCensusOnTheRealLayout
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
+
+        // THE THREE TIGHT TILES, SET HERE RATHER THAN READ OUT OF THE FIXTURE (Adam, 2026-09-10).
+        //
+        // `live-snapshot` carried these three at one unit and nothing else at all, so every figure
+        // below was really a measurement of a railway with three one-unit tiles on it - which is what
+        // Adam had set them to for testing.  **"A/B/C are distinct pieces of track.  We put the lengths
+        // of 1 in there for testing.  Actual tracks are much longer."**
+        //
+        // So the fixture carries no lengths now and this census states its own configuration: the
+        // tight case, deliberately, because a rule about room says nothing on a railway with room to
+        // spare.  It is not a claim about what his track measures.
+        //
+        // 22,7 is the last unswitched square before BottomMainPost; the other two are the equivalent
+        // squares before BottomMainB and BottomMainC.  Together they are the four berths the MT-262
+        // census named.
+        for (TileKey tight : new TileKey[] { new TileKey("1 - Main", 22, 7),
+            new TileKey("1 - Main", 19, 12), new TileKey("1 - Main", 14, 13) })
+        {
+            session.setTileLength(tight, 1);
+        }
+
         model.parseAuto(session.buildConfiguration());
 
         built = model.getAutoLayout();
@@ -298,9 +324,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * that does the refusing measures ONE unit**.  The way to get those journeys back is to measure
      * that track, not to change the rule.
      *
-     * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Four runs gave 2116, 2146, 1648 and
-     * 1617 - the first two asking one route per pair, the second two asking every route the search
-     * will yield.  `bfs(from, to, exclude)` returns SOME route avoiding the ones already found rather
+     * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Six runs on Adam's live railway gave
+     * 2116, 2146, 1648, 1617, 1625 and 1645 - the first two asking one route per pair, the rest asking
+     * every route the search will yield - and the snapshot answers in the same neighbourhood, 1640 to
+     * 1660.  `bfs(from, to, exclude)` returns SOME route avoiding the ones already found rather
      * than the next in a defined order, and which one depends on an adjacency keyed by objects whose
      * hash is their identity.  So the count moves by about two per cent between JVMs, and a pin to one
      * value would be a flake with a comment on it.
@@ -501,12 +528,19 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // ASSERTED, NOT ONLY PRINTED (the review's C2).  `behaviour.md` section 5a says every refusal
         // this ruling adds is bounded by a switch, and leans on this census for it - a claim a
         // document makes and nothing checks is a claim that goes stale the day it stops being true.
+        // WHAT THIS MEASURES IS THE RAILWAY, NOT THE GUARD, and the message used to say otherwise.
+        //
+        // The counter is built from `measuredRoomAtTheEndOf` and this class's own `crossesASwitch`;
+        // it never calls `roomAfterASwitchOnTheWay`, so weakening that condition cannot move it.  What
+        // it says is that on THIS railway every refusal the ruling adds has a switch behind it - which
+        // is the sentence behaviour.md section 5a leans on, and the reason the condition costs nothing
+        // here.
         assertEquals(offTheEndOfTheRoute, 0,
-            offTheEndOfTheRoute + " of the refusals on the way come from the walk running off the"
-            + " start of the route rather than from a switch behind the square. behaviour.md section"
-            + " 5a states this is none of them, and the condition in"
-            + " `Layout.roomAfterASwitchOnTheWay` exists to keep it that way - so either the railway"
-            + " has changed shape or that condition has been weakened");
+            offTheEndOfTheRoute + " of the refusals on the way would come from the walk running off"
+            + " the start of the route rather than from a switch behind the square. behaviour.md"
+            + " section 5a states that none of them do on this railway, which is what makes the"
+            + " condition in `Layout.roomAfterASwitchOnTheWay` free here - so the railway has changed"
+            + " shape, and that sentence needs re-measuring");
 
         assertEquals(refusedAtTheBerth, REFUSED_AT_THE_BERTH,
             refusedAtTheBerth + " journeys are refused at their destination, against "

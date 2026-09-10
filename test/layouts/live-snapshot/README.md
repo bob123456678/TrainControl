@@ -60,6 +60,17 @@ before anything reads it, so the checked-in fixture is never written to either.
   "the first station with a length", "a locomotive long enough" — is the failure mode the whole library
   exists to end, and freezing the folder does not fix it. Name the square.
 
+## Not invariants — set these in code
+
+- **Lengths.** No tile in this scenario has one, and that is deliberate. Adam, 2026-09-10: *"We put
+  the lengths of 1 in there for testing. Actual tracks are much longer... remove all currently set
+  segment lengths and set custom lengths where it makes sense for your tests."* Three tiles carried a
+  length of one unit until then — `5:19,12`, `5:14,13` and `5:22,7` — and every figure the two
+  censuses report was really a measurement of those three. A test that needs measured track calls
+  `session.setTileLength(tile, n)` itself and says why it chose that number.
+- **Train placements and locomotive properties.** A test creates its own locomotives rather than
+  borrowing one from the real database.
+
 ## Used by
 
 - `core.testACompulsoryTurnIsNotAQuestion`
@@ -67,6 +78,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`
 - `core.testTheLengthGuardsOnTheRealLayout`
+- `core.testEverySquareBuildsToTheCopiesTheSetupImplies`
 - `core.testTheRoomRuleCensusOnTheRealLayout`
 - `core.testWhichSquaresTheRoomRuleClosesOff`
 - `core.testTheShadingFollowsTheTrain`

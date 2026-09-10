@@ -68,8 +68,17 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | fixed unvalidated | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
 | [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | fixed unvalidated | OB-183 |
+| [MT-341](#mt-341) | 2026-09-10 | Control+E sets the length of the square under the pointer | needs test | FR-066 |
+| [MT-342](#mt-342) | 2026-09-10 | Control+E over a square with no track says so | needs test | FR-066 |
+| [MT-343](#mt-343) | 2026-09-10 | The key and the menu measure the same square | needs test | FR-066 |
+| [MT-344](#mt-344) | 2026-09-10 | Control plus a letter no longer jumps to a locomotive button | needs test | OB-197 |
+| [MT-345](#mt-345) | 2026-09-10 | A station held back by an occupied square is refused by hand too | needs test | FR-001 |
+| [MT-346](#mt-346) | 2026-09-10 | Return Home does not stage a train into a held-back home | needs test | FR-001 |
+| [MT-347](#mt-347) | 2026-09-10 | A berth with room, refused for the way there | needs test | ruling 1b, 2026-09-09 |
+| [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
+| [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
 
-Everything else - 299 of 340 - needs nothing from you unless the area changes again:
+Everything else - 299 of 349 - needs nothing from you unless the area changes again:
 270 **fixed validated** and 29 **superseded**.
 
 ---
@@ -127,6 +136,20 @@ also, that path is not shown in the "why not moving" view.  We should draw arrow
 **Claude, 2026-09-08.**
 
 The room rule existed but was fenced behind terminus-or-reversing, so a plain through platform was never judged on the track leading into it. Measured on your railway: `75 407 DB` at BottomMainPost was offered `BottomMainA (eastbound)` with ONE measured unit behind it. Both length rules are one predicate now, `whyTooLongForTheBerth`, which returns the berth, the room found and the train's length, and it reaches the why-not-moving view. Commit `716cf3f5`. **Two things to know.** The fence removal means the rule binds on AUTONOMY too - a census over your railway says 880 journeys of 1,848 routable are newly refused, all arriving at the four berths you named, each at one unit. And part (c), the orange arrows to manual-only destinations, is NOT done: orange already means two things on the running diagram and there is no drawing whose subject is arrows to destinations, so it needs your ruling - see `docs/for-adam-2026-09-09.md`.
+
+**Claude, 2026-09-10.**
+
+**Fresh instructions, 2026-09-10, and the rule under this has changed twice since it was
+written.**
+
+**You cleared the lengths from the working diagram**, which is the state this test is easiest to run
+from: every reversal notice should now be asking for a length, one per stretch rather than one per
+square, which is the deduplication this test is about.
+
+**And the rule they are notices about is wider than it was.** On 2026-09-09 you ruled that a train must
+fit at every square its route runs through, not only where it stops - so a stretch you measure may now
+refuse routes that merely pass over it, and the refusal names that square. That is [MT-347](#mt-347).
+What this test is still about is the NOTICES: one per stretch between a switch and a station, not ten.
 
 ---
 
@@ -15708,6 +15731,21 @@ row rather than as two sets.
 The yellow flash fades back to **grey**, not to bare track. That was the report: the highlight was
 repainting over the shading and leaving it off.
 
+**Claude, 2026-09-10.**
+
+**Fresh instructions, 2026-09-10 - the drawing changed and so did your railway.**
+
+Two things have moved under this test.
+
+**There is no measured track on your railway any more.** You cleared the lengths from the working
+diagram, so nothing greys and nothing draws a line - step 1 would report "no shading" and mean nothing
+by it. **Set a length on one approach first**: right-click the square, Segment Length, or hover it and
+press Control+E.
+
+**And what you are looking for is two marks, not one.** Since 2026-09-08 an **orange line** along the
+track says where the train is, and a **grey wash** says that track is unusable. So the check is that
+the flash fades back to *both* - the line and the grey - rather than to bare track.
+
 ---
 
 <a id="mt-279"></a>
@@ -15730,6 +15768,17 @@ repainting over the shading and leaving it off.
 
 The grey is gone in both editors and present in the viewer. What is standing on the railway is not a
 fact about the drawing.
+
+**Claude, 2026-09-10.**
+
+**Fresh instructions, 2026-09-10.**
+
+**Set a length on the approach first.** You cleared the lengths from the working diagram, so nothing is
+drawn at all and this test would pass by drawing nothing anywhere.
+
+**And it is two marks now**, not one: an orange line where the train is, a grey wash on track its
+presence has made unusable. Both belong to the viewer; the check is that neither appears in either
+editor.
 
 ---
 
@@ -15756,6 +15805,21 @@ The trip is refused, and the reason names the train lying across the switch.
 *Changed since you last saw this:* the refusal now only fires when the two paths genuinely share
 metal. It used to fire on travel restrictions too, which refused trips over physically clear track and
 blamed a train nowhere near it.
+
+**Claude, 2026-09-10.**
+
+**Fresh instructions, 2026-09-10.**
+
+**The tail needs a length to lie across anything.** You cleared the lengths from the working diagram,
+so a train covers only the square it stands on and there is nothing to be refused - the test would pass
+without exercising the rule. Measure the approach behind the platform you park the long train on
+first, and give that train a length longer than it.
+
+**Something else to look at while you are there.** Since your ruling of 2026-09-09 the room rule is
+asked at every square a route runs through, so a second refusal is possible in the same gesture: a
+destination with room can be refused because a measured stretch on the WAY to it is too short. The
+notice names the square on the way rather than the destination. If you see that instead of the
+tail-across-a-switch refusal, that is [MT-347](#mt-347) and not this.
 
 ---
 
@@ -17488,6 +17552,14 @@ If the shading disappears or the second train is allowed through, the doors and 
 naming sides differently again, which is the state that made the first attempt at OB-182 worse than
 the bug.
 
+**Claude, 2026-09-10.**
+
+**Fresh instructions, 2026-09-10.**
+
+**Set a length on the curved approach first**, and give the train one longer than it. You cleared the
+lengths from the working diagram, so the track behind a train is no longer blocked by anything and this
+test would pass without the rule being asked at all.
+
 ---
 
 <a id="mt-334"></a>
@@ -17874,6 +17946,238 @@ when the look and feel happens to be installed.
 I like it.  Looks good, I will move around some menus later to make more room.
 
 *Run against commit 409d4ce8, build\classes, compiled 08 Sep 06:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-341"></a>
+
+### MT-341 - 2026-09-10 - Control+E sets the length of the square under the pointer
+
+**Disposition:** needs test
+**From:** FR-066
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. Open the autonomy editor.
+2. Hover over a piece of plain track and press **Control+E**.
+3. Type a number and press OK.
+
+**Expected**
+
+The Segment Length dialog opens on the square you were pointing at, with its current length already
+selected so you can type over it. The number you type is the number that square measures afterwards -
+check by right-clicking it and opening Segment Length again.
+
+You picked the key yourself: **"let's do E"**. Control+D, which the ticket proposed, is taken twice
+over - this editor toggles addresses with it, the main window opens the locomotive adder.
+
+---
+
+<a id="mt-342"></a>
+
+### MT-342 - 2026-09-10 - Control+E over a square with no track says so
+
+**Disposition:** needs test
+**From:** FR-066
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. In the autonomy editor, hover over a **text label** - a station name written on the diagram - and
+   press **Control+E**.
+2. Then over a square on a page you have excluded from autonomy, and press it again.
+
+**Expected**
+
+No dialog either time, and a line under the diagram saying why: there is no track on that square to
+measure, or autonomy takes no notice of it.
+
+*Changed since this was written:* the first cut opened the dialog on a text label, whose right-click
+menu offers no length at all. A review found it. The key and the menu ask one question now.
+
+---
+
+<a id="mt-343"></a>
+
+### MT-343 - 2026-09-10 - The key and the menu measure the same square
+
+**Disposition:** needs test
+**From:** FR-066
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. Find a **run of plain track** between two sensors - four or five squares with nothing on them.
+2. Right-click one of the middle squares, open **Segment Length**, and set it to 5.
+3. Hover over a **different** square of the same run and press **Control+E**.
+
+**Expected**
+
+The dialog opens showing **5**, not 0. A run of plain track has one square that speaks for it, and both
+doors write to that one - so measuring the run twice through two different doors does not count it
+twice.
+
+---
+
+<a id="mt-344"></a>
+
+### MT-344 - 2026-09-10 - Control plus a letter no longer jumps to a locomotive button
+
+**Disposition:** needs test
+**From:** OB-197
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. In the main window, select a locomotive button so you can see which one is current.
+2. Press **Control+B**, then Control+J, Control+O, Control+P, Control+Q, Control+U, Control+W.
+3. Then press the same letters **without** Control.
+
+**Expected**
+
+With Control held, nothing happens. Without it, each letter jumps to that button as it always has.
+
+You said of the old behaviour: **"it should stop doing that. that was not intended."** It also made
+the answer to "which Control key is free" wrong - those seven letters were reported as free while all
+seven already did this.
+
+---
+
+<a id="mt-345"></a>
+
+### MT-345 - 2026-09-10 - A station held back by an occupied square is refused by hand too
+
+**Disposition:** needs test
+**From:** FR-001
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. Mark a station **unavailable while another square is occupied** - the right-click menu, on the
+   station.
+2. Put a train on the watched square.
+3. With autonomy **stopped**, try to send another train to the held-back station by right-clicking it.
+
+**Expected**
+
+The station is not offered, and the reason names the watched square rather than saying the railway is
+busy.
+
+Your ruling of 2026-09-10: **"enforce the occupancy ruling in all modes and then rely on isPathClear."**
+It used to be autonomy's alone, so a hand-driven send ignored it.
+
+**And the exemption still stands:** the train standing ON the watched square may still be sent to the
+station that square holds back - otherwise it could never leave, and the station would be shut to
+everybody while it sat there. Worth checking both.
+
+---
+
+<a id="mt-346"></a>
+
+### MT-346 - 2026-09-10 - Return Home does not stage a train into a held-back home
+
+**Disposition:** needs test
+**From:** FR-001
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. With the same restriction in place and a train standing on the watched square, give another
+   locomotive a home at the held-back station.
+2. Run **Return Home**.
+
+**Expected**
+
+It does not plan that arrival. Before 2026-09-10 the planner ignored the restriction and the railway
+enforced it, so the run would have set off and been refused half way.
+
+**Two stations that hold each other back are now a genuine deadlock** - whichever train arrives last
+finds its station closed - and Return Home reports that it could find no plan. It does not say
+"impossible": the check that used to make that claim was wrong three times and was removed.
+
+---
+
+<a id="mt-347"></a>
+
+### MT-347 - 2026-09-10 - A berth with room, refused for the way there
+
+**Disposition:** needs test
+**From:** ruling 1b, 2026-09-09
+
+**Written:** 2026-09-10
+
+**The rule changed on your ruling** - *"For 1, it's b"* - so a train must now fit at every square its
+route runs through, not only where it stops.
+
+**Steps**
+
+1. Pick a route with a switch early on it. Give the stretch **just past that switch** a small length -
+   say 1.
+2. Leave the destination's own approach long, or unmeasured.
+3. Set a train longer than that stretch and ask where it may go.
+
+**Expected**
+
+The destination is not offered, and the notice names **the square just past the switch** - not the
+destination. The destination has room; sending you to measure it again would help nobody.
+
+Set the small length back to 0 and the destination comes back: an unmeasured stretch is not a refusal.
+
+---
+
+<a id="mt-348"></a>
+
+### MT-348 - 2026-09-10 - A compulsory turn you allow in autonomy is chosen like any other station
+
+**Disposition:** needs test
+**From:** OB-195
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. Find a station marked **Trains Must Change Direction Here**.
+2. Make sure **Can Be Chosen in Full Autonomy** is ticked on it.
+3. Open the routing check on the **Auto** setting and look at what it says about that square.
+
+**Expected**
+
+It is not listed as a station autonomy leaves alone - because autonomy will send trains there, and it
+did before this was corrected. Untick **Can Be Chosen in Full Autonomy** and it is listed again.
+
+Your ruling: **"autonomy should only allow a turn at a point if the 'allow in autonomy' option is
+checked."** Turning round says what happens when a train arrives; that switch says who may send one.
+
+---
+
+<a id="mt-349"></a>
+
+### MT-349 - 2026-09-10 - A train really reverses at a terminus, and not at a plain platform
+
+**Disposition:** needs test
+**From:** the reversal-emission tests
+
+**Written:** 2026-09-10
+
+**Steps**
+
+1. Send a train to a **terminus** - a dead end - and watch it arrive.
+2. Send one to an ordinary **through platform** and watch that arrival.
+
+**Expected**
+
+At the terminus the locomotive's direction flips when it stops. At the through platform it does not.
+
+*Why this is here:* the suite now watches the actual command going to the tracks for both cases, and a
+terminus had no such test at all until 2026-09-10 - only tests that the application changed its own
+mind. This is the same claim on real metal.
 
 ---
 

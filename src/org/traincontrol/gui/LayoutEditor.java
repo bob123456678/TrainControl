@@ -6993,8 +6993,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // Adam asked for *"a keyboard shortcut for setting a square's length"* and picked the key
             // himself once both handlers had been read for what was free: **"let's do E"**.  Control+D,
             // which the ticket proposed, is taken twice - this editor toggles addresses with it and the
-            // main window opens the locomotive adder - and E is free in both, besides being the e in
-            // "length".
+            // main window opens the locomotive adder - and E is the e in "length".
+            //
+            // "FREE IN BOTH" WAS NOT TRUE WHEN THIS WAS WRITTEN, and is now (OB-197).  The main
+            // window's key chain ended in an arm that took every letter, Control held or not, so
+            // Control+E selected a locomotive button there; the reading that picked this key could not
+            // see it.  Adam, 2026-09-10: *"it should stop doing that.  that was not intended."*  The
+            // arm filters Control now, and `regression.testNoTwoShortcutsShareAKey` is what keeps it
+            // filtering.
             //
             // Above the guard below, with the other keys that are, and by that guard's own rule:
             // "Every shortcut below places, cuts, rotates or retextures a tile."  Measuring a square

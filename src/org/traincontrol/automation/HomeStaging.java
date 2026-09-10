@@ -871,19 +871,29 @@ public final class HomeStaging
         // plan had reached - which made Return Home a THIRD answer to a question behaviour.md 1 says
         // has two, and put it on autonomy's side of the split rather than manual's.
         //
-        // Adam, asked which tier enforces it: *"enforce only in full autonomy. with the length checks,
-        // that is our primary anti collision mechanism, whereas the point exclusion is for modifying
-        // pathing prioritization."*  It is a tool for shaping what autonomy PICKS, not a guard against
-        // two trains meeting; the length rules are that guard, and they are still asked - here through
-        // canRest, and again at execution.  Return Home chooses no destinations of its own: the
-        // operator chose them when the homes were set.
+        // AND IT IS BACK, because the runtime enforces it in every tier again (Adam, 2026-09-10).
         //
-        // THE RUNTIME'S FENCE MOVED WITH IT, and it had to.  `executeTimetableInternal` sets
-        // `running`, so an `isAutoRunning()` fence covers a staging run as well; `isPathClear` asks
-        // `isFullAutonomyRunning` now, and the arrival this plans is one the railway will carry out.
-        // A planner that offers a move execution refuses is OB-073 - the defect the state-aware
-        // canRest was added to prevent - so removing the one without the other would have restored it.
-        if (!canRest(loc, to) || state.containsKey(to)) return null;
+        // He was asked which tier should enforce it and answered, on 2026-09-09, *"enforce only in
+        // full autonomy... the point exclusion is for modifying pathing prioritization"* - and on
+        // 2026-09-10 replaced that: **"if it's cleaner to go with consistency across the board, then
+        // let's enforce the occupancy ruling in all modes and then rely on isPathClear.  Revert the
+        // prior lax ruling."**
+        //
+        // THE PLANNER MOVES WITH THE RUNTIME, IN BOTH DIRECTIONS, and that is not a preference.  A
+        // plan that offers a leg the railway then refuses is OB-073: the run retries until it gives up
+        // and stops with the fleet half-staged.  `auditAgainstRuntime` is what proves the two agree,
+        // and it compares this search against `getPossiblePaths`, which is where `isPathClear` applies
+        // the rule.
+        //
+        // ASKED OF THE PLANNED STATE, never of the live railway.  By the time this move happens the
+        // trains are where the plan put them, not where they are now - see `plannedOccupancy`.
+        //
+        // NOT in the reachability pre-scan, which is where the OB-073 fix first put it and where
+        // FBR-B1 and FBR-B2 took it out again: that copy read the STARTING occupancy, so a locomotive
+        // merely standing on a watched square proved the goal unreachable - including one being staged
+        // elsewhere whose departure is the plan's own first move.  This is the arrival test, which is
+        // the one that was ever right.
+        if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
@@ -1496,6 +1506,132 @@ public final class HomeStaging
 
         // A block naming no copies cannot be answered by looking at them.
         return sawACopy ? false : canRest(loc, at);
+    }
+
+    /**
+     * canRest, plus the one rest rule that depends on where everything ELSE is (FR-001).
+     *
+     * A station may be marked unavailable while some other named square has a train standing on it,
+     * and `isPathClear` enforces that on a path's DESTINATION - which is every move this planner
+     * makes.  The stateless `canRest` cannot see it: it reads only the station itself, and
+     * `getBlockedBy` is about a different square.
+     *
+     * When it could not, the plan reported READY, execution refused the leg, the run retried until it
+     * gave up, and it stopped everything with the fleet half-staged (OB-073).  It fails safe - no
+     * train moves wrongly - but partial execution is the thing staging exists to avoid, and the
+     * planner is where it should have been refused.
+     *
+     * Asked of the PLANNED state rather than the live railway, because that is what the rest of this
+     * class reasons about: by the time this move happens the trains are where the plan put them.
+     *
+     * The locomotive being routed is exempt, as it is at runtime - Adam: *"the condition should not
+     * apply to trains leaving, only departing"* - so a train standing on the watched square may still
+     * be sent to the station that square holds back.
+     *
+     * WHICH squares are consulted and WHO is exempt are not decided here: that is the rule, and the
+     * rule lives in `Point.heldBackBy` (DR-B2).  All this contributes is where to look for occupancy,
+     * which is the one thing about FR-001 that is genuinely this class's business.
+     *
+     * @param loc the locomotive being planned
+     * @param at where it would come to rest
+     * @param state who is standing where, in the plan
+     * @return whether it may rest there
+     */
+    private boolean canRest(Locomotive loc, Point at, Map<Point, Locomotive> state)
+    {
+        if (!canRest(loc, at)) return false;
+
+        return Point.heldBackBy(at, loc, plannedOccupancy(state)) == null;
+    }
+
+    /**
+     * The staging planner's answer to "who is standing on the same piece of track as this square" -
+     * the second of `Point.Occupancy`'s two named variants, and the one that reads the PLAN.
+     *
+     * It consults three things, and the third is a deliberate divergence from the runtime:
+     *
+     *  - the square itself;
+     *  - the other copies of it, by BLOCK.  That is exactly what the runtime's `getBlockLocomotive`
+     *    asks, and the planner did not ask it once: a train on a copy the restriction does not name
+     *    was invisible here while the runtime could see it plainly - a plan the railway refuses, which
+     *    is OB-073's own symptom;
+     *  - the other points reporting the same SENSOR, which the runtime does NOT consult.  Two active
+     *    points on one feedback are one detection section, so the planner is right that they cannot
+     *    both hold a train - but `AutonomyBuilder` says outright that a sensor is not a square: *"a
+     *    station, its approach guard and a reversing point can be three Points on one feedback."*  On
+     *    such a layout this refuses arrivals the runtime would allow.  It fails SAFE - a refused plan,
+     *    never a wrong movement - but it is the "planner is the stricter half" shape, whose symptom is
+     *    NO_PLAN_FOUND.  Left in force deliberately: dropping it changes which stations staging offers
+     *    on a real railway, and that is Adam's decision rather than a refactor's.
+     *
+     * @param state who is standing where, in the plan
+     * @return the occupancy source for `Point.heldBackBy`
+     */
+    private Point.Occupancy plannedOccupancy(final Map<Point, Locomotive> state)
+    {
+        return (track, exempt) ->
+        {
+            if (heldBySomebodyElse(track, exempt, state)) return true;
+
+            for (Point sibling : sameTrackAs(track))
+            {
+                if (heldBySomebodyElse(sibling, exempt, state)) return true;
+            }
+
+            return false;
+        };
+    }
+
+    /**
+     * Whether a point holds a locomotive that is not the one being planned.
+     *
+     * @param p the square
+     * @param loc the locomotive being planned, which is exempt
+     * @param state who is standing where, in the plan
+     * @return true when somebody else is there
+     */
+    private static boolean heldBySomebodyElse(Point p, Locomotive loc, Map<Point, Locomotive> state)
+    {
+        Locomotive there = state.get(p);
+
+        return there != null && !there.equals(loc);
+    }
+
+    /**
+     * The other points the planner treats as one piece of track with this one.
+     *
+     * Read off the layout rather than out of a field: `pointsByBlock` went with the rule on
+     * 2026-09-09 and there is no reason to bring a cache back for a walk this short.
+     * `canRestOnSquare` reads block copies the same way, a few methods down.
+     *
+     * @param track the square being asked about
+     * @return its block copies and its sensor siblings, never including the square itself
+     */
+    private List<Point> sameTrackAs(Point track)
+    {
+        List<Point> out = new ArrayList<>();
+
+        if (track.getBlock() != null && track.getLayout() != null)
+        {
+            for (Point copy : track.getLayout().getPoints())
+            {
+                if (!copy.equals(track) && track.getBlock().equals(copy.getBlock())) out.add(copy);
+            }
+        }
+
+        if (track.getS88() != null)
+        {
+            for (Point sibling : this.pointsBySensor.getOrDefault(track.getS88(),
+                java.util.Collections.<Point>emptyList()))
+            {
+                // A copy that is both a block sibling and a sensor sibling - which is every copy on a
+                // builder-emitted layout - is asked once.  Twice would be harmless and misleading to
+                // anyone counting, since the two terms are meant to be visibly different sets.
+                if (!sibling.equals(track) && !out.contains(sibling)) out.add(sibling);
+            }
+        }
+
+        return out;
     }
 
     /**

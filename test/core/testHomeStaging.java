@@ -2274,18 +2274,22 @@ public class testHomeStaging
      * closed by a train that is already parked. The proof was sound, and it rested entirely on the
      * planner enforcing FR-001.
      *
-     * It does not, since Adam's ruling that the restriction is "for modifying pathing prioritization"
-     * while the length checks are "our primary anti collision mechanism". Neither the planner nor a
-     * staging run reads it, so nothing about this layout is impossible and the two trains park in the
-     * obvious two moves. A verdict of IMPOSSIBLE here would now be a false claim about a railway that
-     * works, which is the failure the OB-085 scan was repeatedly prone to and has now been removed
-     * for.
+     * **It is a real deadlock again since Adam's ruling of 2026-09-10**, which enforces the
+     * restriction in every tier: whichever train arrives last finds its station closed by one that is
+     * already parked, and no order of moves avoids it.  So the planner cannot stage it, and says
+     * NO_PLAN_FOUND.
      *
-     * The plan is REPLAYED rather than merely inspected, because "the railway can do this" is the
-     * whole assertion.
+     * **What it does NOT say is IMPOSSIBLE, and that is deliberate.**  IMPOSSIBLE names locomotives
+     * and asserts that no arrangement exists; the scan that used to produce it here was wrong three
+     * separate times, each time proving something false about a railway that works, and it was removed
+     * rather than repaired.  A search that exhausts and reports NO_PLAN_FOUND is a weaker answer and a
+     * true one.  A verdict of IMPOSSIBLE appearing here means that scan has come back.
+     *
+     * The control is the same fixture with one of the two holds removed, so NO_PLAN_FOUND is the
+     * mutual hold rather than a ring nothing can be staged on.
      */
     @Test
-    public void testTwoHomesThatHoldEachOtherBackAreStagedAnyway() throws Exception
+    public void testTwoHomesThatHoldEachOtherBackAreADeadlock() throws Exception
     {
         Layout layout = load(ring(LOC_A, LOC_B, null));
 
@@ -2307,15 +2311,24 @@ public class testHomeStaging
 
         HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "the mutual hold is an autonomy setting, and Return Home does not read it - so this is an "
-            + "ordinary two-move arrangement.  IMPOSSIBLE here means the OB-085 cycle scan has come "
-            + "back, and it would be proving something false.  Got: " + plan.getOutcome());
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND,
+            "two homes that hold each other back are a deadlock since the restriction became every"
+            + " tier's: whichever arrives last finds its station closed by a train already parked."
+            + "  READY means the planner has stopped reading FR-001 again; IMPOSSIBLE means the"
+            + " OB-085 cycle scan has come back, and it was wrong three times.  Got: "
+            + plan.getOutcome());
 
-        assertTrue(plan.getBlocked().isEmpty(),
-            "and nobody is named as beyond help.  Got: " + plan.getBlocked());
+        // THE CONTROL: one hold instead of two, and the same ring stages perfectly well - so the
+        // refusal above is the mutual hold rather than a fixture nothing can be staged on.
+        layout.getPoint("HS D").setBlockedBy(new java.util.LinkedList<Point>());
 
-        applyPlan(layout, plan);
+        HomeStaging.Plan freed = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(freed.getOutcome(), HomeStaging.Outcome.READY,
+            "with only one of the two holds in place this ring still cannot be staged, so the"
+            + " deadlock above says nothing about the pair of restrictions.  Got: " + freed);
+
+        applyPlan(layout, freed);
 
         assertEveryoneHome(layout);
     }
@@ -4674,28 +4687,31 @@ public class testHomeStaging
     }
 
     /**
-     * Return Home stages a train into a home that FR-001 is holding back (Adam, 2026-09-09).
+     * Return Home does NOT stage a train into a home FR-001 is holding back (Adam, 2026-09-10).
      *
-     * The occupancy restriction shapes what AUTONOMY picks; it is not a collision guard. Adam, asked
-     * which tier should enforce it: *"enforce only in full autonomy. with the length checks, that is
-     * our primary anti collision mechanism, whereas the point exclusion is for modifying pathing
-     * prioritization."*
+     * **This asserted the opposite for a day, and the inversion is the record of two rulings.**  On
+     * 2026-09-09, asked which tier should enforce the restriction, he said *"enforce only in full
+     * autonomy... the point exclusion is for modifying pathing prioritization"*, and the planner's
+     * copy was removed.  On 2026-09-10 he replaced that: **"if it's cleaner to go with consistency
+     * across the board, then let's enforce the occupancy ruling in all modes and then rely on
+     * isPathClear.  Revert the prior lax ruling."*
      *
-     * `isPathClear` has always fenced its copy behind autonomy, so a hand-driven send ignores the
-     * restriction. The staging planner applied it unconditionally, which made Return Home a third
-     * answer to a question behaviour.md 1 says has two - and Return Home sits with Manual on where a
-     * train may be sent.
+     * So the planner reads it again, and it has to: the runtime refuses this arrival in every tier
+     * now, and a plan that offers a leg the railway refuses is OB-073 - the run retries until it gives
+     * up and stops with the fleet half-staged.  `auditAgainstRuntime` is what keeps the two together.
      *
-     * The fixture is the one the block-copy test used to use, and it is the strongest form of the
-     * case: nothing can leave block HSW - it is a siding of its own - so HS B is held back for the
-     * whole run, and no shunting can clear it. That matters, because the planner will happily move an
-     * occupant OFF a watched square and back again when it can, so a fixture whose watcher is
-     * escapable proves nothing about the rule.
+     * The fixture is the strongest form of the case: nothing can leave block HSW - it is a siding of
+     * its own - so HS B is held back for the whole run and no shunting can clear it.  That matters,
+     * because the planner will happily move an occupant OFF a watched square and back again when it
+     * can, so a fixture whose watcher is escapable proves nothing about the rule.
      *
-     * MUTATION-CHECKED: restoring the FR-001 term to `canRest(loc, at, state)` fails this test.
+     * **The control is the same fixture with the watcher cleared**, and without it NO_PLAN_FOUND here
+     * would be satisfied by a layout nothing can be staged on at all.
+     *
+     * MUTATION: dropping the FR-001 term from `canRest(loc, at, state)` fails this.
      */
     @Test
-    public void testAHomeHeldBackByAnOccupiedSquareIsStagedAnyway() throws Exception
+    public void testAHomeHeldBackByAnOccupiedSquareIsNotStaged() throws Exception
     {
         Layout layout = load(blockOfTwoWatching(LOC_B, null));
 
@@ -4713,37 +4729,45 @@ public class testHomeStaging
 
         assign(layout, LOC_A, "HS B");
 
-        HomeStaging.Plan plan = layout.planReturnToHome();
+        assertNotEquals(layout.planReturnToHome().getOutcome(), HomeStaging.Outcome.READY,
+            "Return Home staged a train into a home held back by a square nothing can leave. Since"
+            + " Adam's ruling of 2026-09-10 the runtime refuses that arrival in every tier, so a plan"
+            + " containing it is a plan the first move fails on - which is OB-073.  Got: "
+            + layout.planReturnToHome());
 
-        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "Return Home sits with Manual on where a train may be sent, so an occupancy restriction "
-            + "is not its business: the plan is one move, HS A to HS B.  Got: " + plan);
+        // THE CONTROL: the same fixture with the RESTRICTION removed rather than the train.  Without
+        // it the refusal above is satisfied by a layout nothing can be staged on for any reason at
+        // all - and lifting the occupant instead would take LOC_B off its own home, so "everyone
+        // home" could not be asserted afterwards.
+        layout.getPoint("HS B").setBlockedBy(new java.util.LinkedList<Point>());
 
-        applyPlan(layout, plan);
+        HomeStaging.Plan freed = layout.planReturnToHome();
+
+        assertEquals(freed.getOutcome(), HomeStaging.Outcome.READY,
+            "with the watched block empty the same arrangement is still not staged, so the refusal"
+            + " above says nothing about the restriction - it says this fixture cannot be staged."
+            + "  Got: " + freed);
+
+        applyPlan(layout, freed);
 
         assertEveryoneHome(layout);
     }
 
     /**
-     * And the railway carries that plan out, because a staging run is not full autonomy either.
+     * Every tier gives the same answer about a held-back arrival (Adam, 2026-09-10).
      *
-     * The other half of the same ruling, and the half that decides whether the first one is worth
-     * anything. `executeTimetableInternal` sets `running`, so every rule fenced behind
-     * `isAutoRunning()` fired during a Return Home run - which would leave the planner offering a move
-     * the railway then refuses, retries, and gives up on, with the fleet half-staged. That is OB-073,
-     * which is the exact failure the planner's copy of FR-001 was added to prevent.
+     * The other half of the ruling, and the half that decides whether the first is worth anything.
+     * There were two fences on this rule and both are gone - `isAutoRunning` until 2026-09-09,
+     * `isFullAutonomyRunning` after it - so the question **"may a train be sent to a station held back
+     * by an occupied square"** has one answer wherever it is asked: no.
      *
-     * So the fence asks whether FULL autonomy is running - `running` with no timetable driving it. A
-     * timetable is the operator's own choice of path, whether they built it by hand or Return Home
-     * wrote it for them, and the same sentence is already written at `getPossiblePaths` about the
-     * reversing-point exclusion: an `isAutoRunning()` fence "would also refuse the return home staging
-     * run".
-     *
-     * The control is the same path and the same occupancy with the timetable flag down, so a failure
-     * here is about the fence rather than about the fixture being unroutable.
+     * Asserted over the three flag combinations that used to differ, by reflection, the same way
+     * `testAStagingRunIsNotCapturedIntoItsOwnTimetable` reaches them: stopped, running under a
+     * timetable, and running as full autonomy.  A fence of either kind coming back moves exactly one
+     * of these three.
      */
     @Test
-    public void testAStagingRunIsNotRefusedByTheOccupancyRestriction() throws Exception
+    public void testEveryTierRefusesAHeldBackArrival() throws Exception
     {
         Layout layout = load(blockOfTwoWatching(LOC_B, null));
 
@@ -4754,14 +4778,13 @@ public class testHomeStaging
 
         assign(layout, LOC_A, "HS B");
 
-        HomeStaging.Plan plan = layout.planReturnToHome();
+        // THE PATH IS TAKEN FROM THE RAILWAY, not from a plan: since the ruling the planner refuses
+        // this arrival too, so there is no staged move to read it out of - which is the point.
+        List<Edge> path = new java.util.LinkedList<>();
 
-        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "precondition: there has to be a staged move to ask about.  Got: " + plan);
+        path.add(layout.getEdge("HS A", "HS B"));
 
-        List<Edge> path = plan.getMoves().get(0).getPath();
-
-        assertNotNull(path, "precondition: the move must carry the path it would be run over");
+        assertNotNull(path.get(0), "precondition: the fixture has no edge from HS A to HS B");
 
         // The two flags set the way executeTimetable sets them.  By reflection, like
         // testAStagingRunIsNotCapturedIntoItsOwnTimetable above: runLocomotives dispatches trains, and
@@ -4774,26 +4797,39 @@ public class testHomeStaging
 
         try
         {
+            // STOPPED, which is what a hand dispatch looks like to this rule.
+            assertFalse(layout.isPathClear(path, loc(LOC_A), false),
+                "a hand-driven send was allowed into a station held back by an occupied square. Since"
+                + " 2026-09-10 there is no fence on this rule at all");
+
+            // RUNNING UNDER A TIMETABLE, which is what a Return Home staging run looks like.
             running.setBoolean(layout, true);
             executing.setBoolean(layout, true);
 
-            assertTrue(layout.isPathClear(path, loc(LOC_A), false),
-                "the railway refused the very move the planner staged - the run would retry until it "
-                + "gave up and stop with the fleet half-staged, which is OB-073 arriving through the "
-                + "tier ruling that removed the planner's guard against it");
+            assertFalse(layout.isPathClear(path, loc(LOC_A), false),
+                "a staging run was allowed into a station held back by an occupied square, so the"
+                + " `isFullAutonomyRunning` fence is back - and the planner, which now refuses this"
+                + " arrival, would be the stricter half");
 
-            // And full autonomy still refuses it, which is the behaviour the ruling deliberately keeps.
+            // AND FULL AUTONOMY, which is the tier that always refused it.
             executing.setBoolean(layout, false);
 
             assertFalse(layout.isPathClear(path, loc(LOC_A), false),
-                "full autonomy must go on enforcing the restriction: it is the tier the setting "
-                + "exists to shape, and it is the control that says the fence is what decides here");
+                "full autonomy allowed it, which no version of this rule has ever done");
         }
         finally
         {
             running.setBoolean(layout, false);
             executing.setBoolean(layout, false);
         }
+
+        // AND THE CONTROL: with the watched block empty every tier allows it, so the three refusals
+        // above are the restriction rather than a path that does not exist.
+        layout.getPoint("HS W2").setLocomotive(null);
+
+        assertTrue(layout.isPathClear(path, loc(LOC_A), false),
+            "the path is refused even with nothing standing on the watched block, so the three"
+            + " refusals above say nothing about FR-001");
     }
 
     /**

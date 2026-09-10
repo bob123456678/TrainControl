@@ -165,13 +165,15 @@ public class testMaxActiveTrains
      * that puts the FR-001 occupancy restrictions behind full autonomy and NOT the reasoning behind
      * the length rules, which are physical and bind in every tier.
      *
-     * **"ONLY UNDER FULL AUTONOMY" IS NOT WHAT THE FENCE SAYS, and the difference is a tier.**  The
-     * occupancy restrictions ask `isFullAutonomyRunning()`, which is "running, with no timetable
-     * driving it"; this asks `isAutoRunning()`, and `executeTimetableInternal` sets `running` too - so
-     * a timetable, and Return Home, which IS a timetable, are capped where the restrictions do not
-     * reach them.  No test can tell those two apart from here, because both set one flag, so the claim
-     * below is the one that can be made: nothing running means no cap.  The wording is Adam's to
-     * settle; `docs/reference/behaviour.md` section 1 records both the fence and the question.
+     * **"ONLY UNDER FULL AUTONOMY" IS NOT WHAT THIS FENCE SAYS, and the difference is a tier.**  It
+     * asks `isAutoRunning()`, and `executeTimetableInternal` sets `running` too - so a timetable, and
+     * Return Home, which IS a timetable, are capped.  No test can tell those two apart from here,
+     * because both set one flag, so the claim below is the one that can be made: nothing running means
+     * no cap.  The wording is Adam's to settle; `docs/reference/behaviour.md` section 1 records it.
+     *
+     * The occupancy restrictions used to be the comparison here - they asked `isFullAutonomyRunning`,
+     * which is narrower - and since his ruling of 2026-09-10 they ask nothing at all: they bind in
+     * every tier.  So the cap is now the ONLY rule in this file with a tier fence on it.
      *
      * **It was in no document until 2026-09-09** - the cap appears nowhere in behaviour.md - and in no
      * test either: every claim above starts by calling `runLocomotives()`, so all three would go on

@@ -1754,7 +1754,20 @@ public class AutonomyEditorPanel extends JPanel
         // put the commonest setting on the menu one click further away on every square that has
         // nothing else to tune. The name is the part that was worth keeping: "Length..." did not say
         // length of what.
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
+        // OFFERED WHERE `offersALength` SAYS, AND BOUND TO THE SQUARE IT NAMES (FR-066).
+        //
+        // The item used to be added unconditionally here, and Control+E re-spelled this method's three
+        // early returns to decide whether it could act.  Two copies of one question, agreeing by
+        // being typed identically - which is this project's characteristic defect, and a review proved
+        // it by narrowing this line while the key went on answering the old way.
+        //
+        // Structurally the condition is already true at this point, so the call adds no behaviour; it
+        // adds the only thing that keeps the two doors together, which is that there is one of them.
+        if (offersALength(tile))
+        {
+            menu.add(item(I18n.t("autosetup.ui.menuSetLength"),
+                () -> applyLength(squareTheLengthWouldGoOn(tile))));
+        }
 
         // BULK TOOLS: the things that are about the whole setup rather than this square (MT-257).
         //
@@ -4824,6 +4837,11 @@ public class AutonomyEditorPanel extends JPanel
      * answer - so what a test compares is the two doors' targets.
      * `regression.testControlEAsksTheMenusQuestion` is that test.
      *
+     * **It is the square, not necessarily the only square.**  `applyLength` writes to the whole
+     * SELECTION when there is one, and to this square when there is not - the menu behaves the same
+     * way, because both doors reach the same method, so the two still agree.  What this names is where
+     * a length lands with nothing selected, which is the case the two doors used to differ about.
+     *
      * @param tile the square under the pointer
      * @return the square the length would be written to, or null when nothing would be asked
      */
@@ -4836,9 +4854,11 @@ public class AutonomyEditorPanel extends JPanel
      * Whether **Set Length...** is on this square's right-click menu, and so whether Control+E means
      * anything here.
      *
-     * **`buildTileMenu`'s three early returns, in one place, so the key and the menu cannot drift.**
-     * The menu reaches its length item only when all three are passed, and until a review found it the
-     * key asked one of them:
+     * **`buildTileMenu`'s three early returns, and the menu asks this rather than repeating them.**
+     * The item is added inside `if (offersALength(tile))` and bound to `squareTheLengthWouldGoOn`, so
+     * the guard and the affordance are one expression.  They were two, agreeing by being typed
+     * identically, until a review narrowed the menu's copy and watched the key go on answering the old
+     * way.  The three the menu reaches its length item by, and which the key asked one of:
      *
      *   1. a square this panel can answer about at all - a page the session knows, a session with a
      *      graph;

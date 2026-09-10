@@ -18034,7 +18034,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.setCopyTarget(this.currentButton, true);
             this.setCopyTarget(this.currentButton, true);
         }
-        else if (this.buttonMapping.containsKey(keyCode))
+        // A BARE LETTER, NOT A CONTROL CHORD (OB-197).
+        //
+        // `buttonMapping` holds all 26 letters, and this arm had no `!controlPressed` - so Control plus
+        // every letter the arms above do not catch selected a locomotive button, exactly as the bare
+        // letter does.  Adam, 2026-09-10: *"it should stop doing that.  that was not intended."*
+        //
+        // It also made the answer to "which Control key is free" wrong: `testNoTwoShortcutsShareAKey`
+        // printed seven letters as free when all seven already did this, and FR-066's key was picked
+        // off that list.
+        //
+        // Alt is deliberately not filtered: the arms above take every Alt chord this window has, so
+        // an Alt+letter reaching here is one nothing else claims, and Alt is not a modifier this
+        // window builds shortcuts out of.
+        else if (!controlPressed && this.buttonMapping.containsKey(keyCode))
         {
             this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
         }

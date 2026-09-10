@@ -17,6 +17,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -49,10 +50,16 @@ import org.traincontrol.marklin.file.CS2File;
  * track, which `behaviour.md` section 5a already states - but it is a different fact from "one
  * journey in three", and it is the one an operator meets first.
  *
- * `ParkingTrack12` is in the first list and not the second: it offers a long train nothing under
- * either rule, so it is a fact about the track rather than about the ruling.
+ * **`ParkingTrack12` used to be on this list and is not on it.**  It appeared at every length while
+ * this class emptied the railway once instead of once per pass, so each length after the first ran
+ * with the previous pass's train still standing somewhere.  Seven squares, not eight; 35 pairs, not
+ * 40.  A review found it after both wrong numbers had been published.
  *
- * Read against a `LayoutSandbox` copy of `cs2_sample_layout` (OB-111).  His railway is only ever read.
+ * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot` - the frozen railway, not the
+ * one Adam is operating - with the three tight tiles set by this class rather than carried in the
+ * fixture.  Adam, 2026-09-10: *"We put the lengths of 1 in there for testing.  Actual tracks are much
+ * longer."*  So these figures are what a rule about room does on a railway with no room, which is what
+ * makes them worth measuring, and are not a survey of his track.
  *
  * @author Adam
  */
@@ -101,6 +108,27 @@ public class testWhichSquaresTheRoomRuleClosesOff
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
+
+        // THE THREE TIGHT TILES, SET HERE RATHER THAN READ OUT OF THE FIXTURE (Adam, 2026-09-10).
+        //
+        // `live-snapshot` carried these three at one unit and nothing else at all, so every figure
+        // below was really a measurement of a railway with three one-unit tiles on it - which is what
+        // Adam had set them to for testing.  **"A/B/C are distinct pieces of track.  We put the lengths
+        // of 1 in there for testing.  Actual tracks are much longer."**
+        //
+        // So the fixture carries no lengths now and this census states its own configuration: the
+        // tight case, deliberately, because a rule about room says nothing on a railway with room to
+        // spare.  It is not a claim about what his track measures.
+        //
+        // 22,7 is the last unswitched square before BottomMainPost; the other two are the equivalent
+        // squares before BottomMainB and BottomMainC.  Together they are the four berths the MT-262
+        // census named.
+        for (TileKey tight : new TileKey[] { new TileKey("1 - Main", 22, 7),
+            new TileKey("1 - Main", 19, 12), new TileKey("1 - Main", 14, 13) })
+        {
+            session.setTileLength(tight, 1);
+        }
+
         model.parseAuto(session.buildConfiguration());
 
         built = model.getAutoLayout();
@@ -127,22 +155,13 @@ public class testWhichSquaresTheRoomRuleClosesOff
     }
 
     /**
-     * How many of the dead ends the ruling of 2026-09-09 added, over the same routes.
-     *
-     * `whyTooLongForThisRoute` is the rule as it stands; the berth-only question - the rule as it
-     * stood before the ruling - is `measuredRoomAtTheEndOf` over the whole route plus the station's
-     * stated capacity, which is what `whyTooLongForThisRoute` asked before the prefix loop was added.
-     * Asked over the SAME route set, so the difference between the two is the ruling and nothing else.
-     *
-     * @throws Exception on a failure to search
-     */
-    /**
      * (square, length) pairs that had somewhere to go before the ruling and have nowhere after it.
      *
-     * Measured on `test/layouts/live-snapshot`.  **A pin, not an endorsement**: it says nobody changes
-     * this without saying so, and `docs/manual-tests/issues.md` carries what it costs and what the
-     * remedy is.
+     * Measured on `test/layouts/live-snapshot` with the three tight tiles this class sets itself.
+     * **A pin, not an endorsement**: it says nobody changes the number without saying so.
      */
+    private static final int CLOSED_BY_THE_RULING = 35;
+
     /**
      * How many routes between one pair the search will look at.
      *
@@ -156,13 +175,17 @@ public class testWhichSquaresTheRoomRuleClosesOff
      */
     private static final int ROUTE_CAP = 150;
 
-    private static final int CLOSED_BY_THE_RULING = 35;
-
     /**
      * (square, length) pairs that offer a train nothing at all where a one-unit train has somewhere
      * to go - so the square is closed by the room rule rather than by the shape of the track.
+     *
+     * **40 until 2026-09-10, and five of those forty were this class's own leftover train.**  The
+     * railway was cleared once, before the sweep over lengths, and `whereItMayGo` lifts only the train
+     * it is about to place - so from two units on, the previous pass's probe was still standing on the
+     * last square it had been put on.  It made `ParkingTrack12` read as closed at every length, which
+     * is where the eighth square in the published figures came from.  A review found it.
      */
-    private static final int STRANDED = 40;
+    private static final int STRANDED = 35;
 
     @Test
     public void testHowManySquaresTheRulingClosedCompletely() throws Exception
@@ -242,18 +265,26 @@ public class testWhichSquaresTheRoomRuleClosesOff
             + " difference is the ruling and nothing else: " + closedByTheRuling);
     }
 
+    /**
+     * Which squares offer a train of each length nothing at all, on an empty railway.
+     *
+     * The number to read beside the journey census: a third of journeys refused evenly strands nobody,
+     * and a third refused at the squares on every road out closes those squares to everybody standing
+     * there.
+     *
+     * **Emptied at the top of every pass, and that is not a detail.**  It used to be emptied once, and
+     * `whereItMayGo` lifts only the train it is about to place - so each length after the first ran
+     * against a railway with the previous length's probe still standing on it, which reported an
+     * eighth square closed that is not and put five phantom pairs into the pinned figure.
+     *
+     * @throws Exception on a failure to search
+     */
     @Test
     public void testWhichSquaresOfferALongTrainNothingAtAll() throws Exception
     {
         assertNotNull(built, "the configuration did not build");
 
-        for (Point point : built.getPoints())
-        {
-            if (point.getCurrentLocomotive() != null)
-            {
-                built.moveLocomotive(null, point.getName(), true);
-            }
-        }
+        emptyTheRailway();
 
         List<Point> starts = new ArrayList<>();
 
@@ -272,6 +303,9 @@ public class testWhichSquaresTheRoomRuleClosesOff
             Locomotive train = model.getLocByName(String.format(NAME, units));
 
             assertNotNull(train, "the " + units + "-unit probe train is gone");
+
+            // THE PREVIOUS PASS'S TRAIN IS STILL STANDING SOMEWHERE, and a train blocks track.
+            emptyTheRailway();
 
             int total = 0;
             int nothing = 0;
@@ -324,6 +358,23 @@ public class testWhichSquaresTheRoomRuleClosesOff
             + " core.testTheRoomRuleCensusOnTheRealLayout's: a third of journeys refused evenly"
             + " strands nobody, and a third refused at the squares on every road out strands"
             + " everybody standing there");
+    }
+
+    /**
+     * Takes every locomotive off the railway.
+     *
+     * `whereItMayGo` lifts only the train it is about to place, which is enough within one pass and
+     * not enough between two.
+     */
+    private void emptyTheRailway()
+    {
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null)
+            {
+                built.moveLocomotive(null, point.getName(), true);
+            }
+        }
     }
 
     /**
