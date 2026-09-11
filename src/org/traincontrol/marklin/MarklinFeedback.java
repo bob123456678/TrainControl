@@ -117,10 +117,10 @@ public class MarklinFeedback extends Feedback
      * @param val 
      */
     @Override
-    public void setState(boolean val)
+    synchronized public void setState(boolean val)
     {
         this._setState(val);
-        
+
         if (this.network.isDebug())
         {
             this.network.logf(
@@ -129,10 +129,27 @@ public class MarklinFeedback extends Feedback
                 " " + I18n.t("acc.manually"),
                 (val ? I18n.t("acc.stateSet") : I18n.t("acc.stateNotSet"))
             );
-            
-            // If we want to capture route commands in the future, we could call a method in the model here
         }
-        
+
+        // AND ANYTHING WATCHING FOR ONE, WHICH IS WHAT `parseMessage` DOES (W21-B1).
+        //
+        // A module changes state two ways and only one of them announced it.  `parseMessage` - a sensor
+        // arriving over the wire - calls this; `setState` is every OTHER way, and it did not.  Its
+        // callers are clicking an s88 tile on the track diagram, the simulation's own announce and
+        // clear, and the restore at start-up, so the route editor's capture could not see a sensor the
+        // operator had just clicked.
+        //
+        // **The capture cannot tell a clicked sensor from a wired one and should not**: a route the
+        // operator is recording is about what the railway did, not about which code path said so.
+        //
+        // This used to be a comment inside the isDebug block saying "if we want to capture route
+        // commands in the future, we could call a method in the model here".  Both halves had stopped
+        // being true: the method exists, and the sibling twenty lines above calls it.
+        //
+        // Outside the isDebug block, which is where that comment sat - announcing only in debug mode
+        // would make the capture depend on a logging setting.
+        this.network.feedbackChanged(this.getName(), val);
+
         this.updateTiles();
     }
     

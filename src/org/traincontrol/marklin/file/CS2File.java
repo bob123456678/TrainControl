@@ -528,7 +528,23 @@ public final class CS2File
                     array.clear();
                 }
                 
-                if (s.matches("^[a-z]+$"))
+                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE (T10-C6, after X8V-C4).
+                //
+                // `X8V-C4` made LayoutDiagram.readLayoutIndexIds match the block name without regard to
+                // case, on the measured ground that "an index spelling the block `Seite` gave no page an
+                // id at all".  Its twin here was not swept, and this one is worse: a capitalised block
+                // is not a block to this parser, so the file comes back with ZERO pages and ZERO
+                // unreadable pages - and the guard that reverts to the Central Station asks whether
+                // anything failed, not whether anything was expected.  The operator would get an empty
+                // diagram with no message, and then be asked whether the pages they were looking at a
+                // moment ago are deleted.
+                //
+                // The premise is this project's own files: `sample_layout` spells its version block
+                // `Version` and `cs2_sample_layout` spells it `version`, so the station's casing is not
+                // uniform across firmware.  No `gleisbild.cs2` here spells `Seite` with a capital, so
+                // this is a trap rather than a live defect - and it is the same trap X8V-C4 accepted the
+                // premise of and half-fixed.
+                if (s.matches("^[a-zA-Z]+$"))
                 {
                     if (item != null)
                     {
@@ -548,7 +564,9 @@ public final class CS2File
 
                     item = new HashMap<>();
 
-                    item.put("_type", s);
+                    // LOWER-CASED, so that the twelve `"xxx".equals(m.get("_type"))` readers keep
+                    // working whatever the file's casing (T10-C6).
+                    item.put("_type", s.toLowerCase());
                 }
                 else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
                 {
@@ -2396,12 +2414,30 @@ public final class CS2File
      */
     private int pagesThatCouldNotBeRead;
 
+    // How many pages the index named, which is what "did anything read" is asked against (T10-C6).
+    private int pagesTheIndexNamed;
+
     /**
      * @return how many pages the last parseLayout could not read
      */
     public int getPagesThatCouldNotBeRead()
     {
         return this.pagesThatCouldNotBeRead;
+    }
+
+    /**
+     * How many pages the index NAMED, whether or not any of them arrived.
+     *
+     * The caller's "did anything read" guard needs something to ask against (T10-C6).  A page can fail
+     * loudly - it throws, and is counted as unread - or it can simply never be recognised, which is what
+     * an index this parser does not understand produces: zero pages AND zero failures, a layout that
+     * read nothing at all and reported no fault.  The index is the statement of what should be there.
+     *
+     * @return the page count of the last parseLayout's index
+     */
+    public int getPagesTheIndexNamed()
+    {
+        return this.pagesTheIndexNamed;
     }
 
     /**
@@ -2414,6 +2450,8 @@ public final class CS2File
     {
         // Answers about THIS parse, not about every parse this object has ever done (RC-A3).
         this.pagesThatCouldNotBeRead = 0;
+
+        this.pagesTheIndexNamed = 0;
 
         // How a file word maps to a type, handed to the component class so that its export can tell
         // "still what was read" from "redrawn by the user" without owning a second copy of this table.
@@ -2440,6 +2478,8 @@ public final class CS2File
         {
             names.add(page.get("name"));
         }
+
+        this.pagesTheIndexNamed = names.size();
         
         List<LayoutDiagram> out = new ArrayList<>();
         

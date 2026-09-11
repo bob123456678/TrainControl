@@ -232,5 +232,26 @@ public class testNetworkProxy
         assertTrue(sent, "A8: sending should reopen the socket and succeed");
 
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
+
+        // AND SOMETHING IS LISTENING ON IT AGAIN (W21-B2).
+        //
+        // This test asserted that transmission came back and stopped there - while the test above it
+        // had just proved the reader count was ZERO, with the helper for asking sitting in this same
+        // class.  So the state the class exists to prevent, "able to transmit but deaf", was reached
+        // and measured as a pass: the socket reopens, no listener is started, and no feedback,
+        // accessory echo or power change is ever seen again.
+        //
+        // Given time to start, the same way the priority-2 test waits for the first one.
+        long deadline = System.currentTimeMillis() + 5000;
+
+        while (countReaderThreads() == 0 && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(50);
+        }
+
+        assertEquals(countReaderThreads(), 1,
+            "transmission came back and reception did not: the socket is open again and nothing is "
+            + "listening on it, which is the deaf-but-transmitting state this class was hardened "
+            + "against (W21-B2)");
     }
 }

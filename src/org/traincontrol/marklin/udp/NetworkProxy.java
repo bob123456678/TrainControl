@@ -99,7 +99,11 @@ public class NetworkProxy
         return this.transmitIP.getHostAddress();
     }
 
-    // The listener thread, kept so that stopListening can end it
+    // The listener thread, kept so that `listen()` can tell whether one is still running (W21-C6).
+    //
+    // The comment here used to say "kept so that stopListening can end it".  `stopListening` closes the
+    // socket, which is what ends the thread, and never mentions this field - so the field was read
+    // nowhere at all and the sentence described a mechanism that was not there.
     private ReadMessages reader;
 
     /**
@@ -135,8 +139,34 @@ public class NetworkProxy
         // the socket closing, so as an ordinary thread it kept the JVM alive for ever after the caller
         // was done.  The GUI hid that behind System.exit(0); anything embedding TrainControl - the
         // example in org.traincontrol.examples, or a test - simply hung on return.
+        listen();
+    }
+
+    /**
+     * Makes sure something is listening on the socket, starting a listener if nothing is.
+     *
+     * **THE OTHER HALF OF THE REOPEN** (W21-B2).  A listener stops for one reason - the socket being
+     * closed - and `sendMessage` reopens the socket when it finds it closed, which brings TRANSMISSION
+     * back.  Nothing restarted the listener, so the end state was an open socket with nothing on it:
+     * *"able to transmit but deaf - no feedback, no accessory echoes, no power state changes, and path
+     * integrity validation failing every path"*, which is the state this class was hardened to prevent,
+     * made permanent.  Measured: readers before a close 1, after it 0, and after a send that reopened
+     * the socket still 0.
+     *
+     * One method owns the question so that the two halves cannot drift apart again - which is how they
+     * drifted in the first place, the reopen being added where the send is and the listener living
+     * where the model is set.
+     */
+    private synchronized void listen()
+    {
+        if (this.reader != null && this.reader.isAlive()) return;
+
         this.reader = new ReadMessages();
 
+        // A DAEMON, because it exists only to serve a running application: its only exit condition is
+        // the socket closing, so as an ordinary thread it kept the JVM alive for ever after the caller
+        // was done.  The GUI hid that behind System.exit(0); anything embedding TrainControl - the
+        // example in org.traincontrol.examples, or a test - simply hung on return.
         this.reader.setName("cs2-can-listener");
         this.reader.setDaemon(true);
         this.reader.start();
@@ -175,6 +205,11 @@ public class NetworkProxy
             if (this.socket.isClosed())
             {
                 this.socket = openReceiveSocket();
+
+                // AND SOMETHING TO LISTEN ON IT (W21-B2).  Reopening the socket restored transmission
+                // and nothing else; the listener had already exited on the close and was never
+                // replaced.
+                listen();
             }
 
             socket.send(packet);

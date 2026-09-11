@@ -150,15 +150,11 @@ public class LayoutPageEdit
             layoutList.remove(currentLayout);
         }
 
-        if (blank)
-        {
-            page.clear();
-        }
-
-        page.saveChanges(newLayoutName, duplicate);
-
         // Back in its own slot, so the page keeps its id.  A duplicate or a new page has no slot of its
         // own and goes at the end, which is where a page that did not exist before belongs.
+        //
+        // MOVED ABOVE THE WRITE, because the arrows have to be re-aimed before anything is written and
+        // the re-aim needs the final list (T10-B1, T10-B2, T10-B3).  Nothing here touches a file.
         if (renamedAt >= 0 && renamedAt <= layoutList.size())
         {
             layoutList.add(renamedAt, newLayoutName);
@@ -167,6 +163,82 @@ public class LayoutPageEdit
         {
             layoutList.add(newLayoutName);
         }
+
+        // Told what was renamed, so the page keeps its ID under the new name - and so the arrows
+        // that point AT it follow it, which is why this is built before the re-aim below rather
+        // than beside the index write at the end (T10-B3).
+        //
+        // Ids are a page's identity now rather than its place in the list, and they are read back from
+        // the index by NAME - so a rename is the one operation where the name the id belongs to
+        // changes.  Without this the renamed page would be a name nobody has seen, take a fresh id, and
+        // leave its whole setup keyed to an id that no page holds any more: orphaned, and pruned by the
+        // next reconcile.
+        Map<String, String> renamed = new LinkedHashMap<>();
+
+        if (rename) renamed.put(currentLayout, newLayoutName);
+
+        // AND THE ARROWS ARE RE-AIMED BEFORE ANY PAGE IS WRITTEN.
+        //
+        // A link tile holds the destination's place in the name-sorted page list, so all three gestures
+        // here change what every arrow means.  The re-aim used to run at the END of this method, 128
+        // lines below the write - so each gesture left one page on disk aimed at the old alphabet while
+        // every other page was corrected:
+        //
+        //  * Add Page blanks the current page's object to write it out as the new blank page, so the
+        //    re-aim then ran over a page with no tiles and the ORIGINAL file was never corrected - the
+        //    page the operator had open, and the one most likely to carry arrows;
+        //  * Duplicate wrote the copy from the source page as it stood, and the copy is not in the model
+        //    when a later re-aim runs, so nothing ever corrected it;
+        //  * Rename wrote the renamed page here and the re-aim excluded it afterwards, on the stated
+        //    ground that "the rename writes that same object under its new name, so the fix travels with
+        //    it" - true of the object, false of the ORDER.
+        //
+        // Doing it here fixes all three at once, because every one of them is downstream of this line.
+        List<LayoutDiagram> pages = loadedPages(log);
+
+        for (LayoutDiagram moved : LayoutDiagram.repointLinksForNewOrder(pages, layoutList, renamed))
+        {
+            // The page this gesture is about is written below, under its new name, carrying the tiles
+            // just corrected - so saving it HERE as well would write the same correction to its old
+            // path, which for a rename is the file the rename is about to delete.
+            if (moved == page) continue;
+
+            try
+            {
+                moved.saveChanges(null, false);
+            }
+            catch (Exception cannotSave)
+            {
+                // The arrows are right in memory either way; refusing here would leave this gesture
+                // half done.
+                if (log != null) log.log(cannotSave);
+            }
+        }
+
+        // A PAGE THAT KEEPS ITS OWN FILE IS SAVED TO IT (T10-B1, T10-B2).
+        //
+        // Add and Duplicate write a NEW file below and leave the current page's own file alone, so the
+        // correction above would never reach disk for it.  A rename has no such file - its old one is
+        // deleted by the write below - which is why this asks about the gesture rather than about the
+        // page.
+        if (!rename && pages.contains(page))
+        {
+            try
+            {
+                page.saveChanges(null, false);
+            }
+            catch (Exception cannotSave)
+            {
+                if (log != null) log.log(cannotSave);
+            }
+        }
+
+        if (blank)
+        {
+            page.clear();
+        }
+
+        page.saveChanges(newLayoutName, duplicate);
 
         // The autonomy setup keys everything by PAGE NAME, so it has to be told (OB-049).
         //
@@ -251,17 +323,6 @@ public class LayoutPageEdit
             }
         }
 
-        // Told what was renamed, so the page keeps its ID under the new name.
-        //
-        // Ids are a page's identity now rather than its place in the list, and they are read back from
-        // the index by NAME - so a rename is the one operation where the name the id belongs to
-        // changes.  Without this the renamed page would be a name nobody has seen, take a fresh id, and
-        // leave its whole setup keyed to an id that no page holds any more: orphaned, and pruned by the
-        // next reconcile.
-        Map<String, String> renamed = new LinkedHashMap<>();
-
-        if (rename) renamed.put(currentLayout, newLayoutName);
-
         // AND EVERY ARROW KEEPS ITS AIM (N8-A1).  A link tile holds a POSITION in the name-sorted page
         // list, so adding, renaming or duplicating a page changes what every arrow on the layout means -
         // measured on the five pages of the sample layout, adding one page repointed four of seven.
@@ -269,33 +330,32 @@ public class LayoutPageEdit
         // The rule is in LayoutDiagram because TrainControlUI writes this same index for Delete and
         // Combine, and a rule implemented in one of two writers is the defect this project produces
         // most often.
+        // The arrows were re-aimed and saved above, BEFORE the page files were written - see there for
+        // why the order is the whole of it.  What is left here is the index itself.
+        LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session),
+            keepAbsent);
+    }
+
+    /**
+     * Every page of the layout, as objects.
+     *
+     * @param model the ViewListener this was handed, which is the only way in here to the page objects.
+     *        Null in the overload that takes none, in which case there is nothing to re-aim
+     * @return the loaded pages
+     */
+    private static List<LayoutDiagram> loadedPages(ViewListener model)
+    {
         List<LayoutDiagram> pages = new java.util.ArrayList<>();
 
-        // `log` is the ViewListener this was handed - the model - and it is the only way in here to the
-        // page objects.  Null in the overload that takes none, in which case there is nothing to re-aim.
-        if (log != null)
-        {
-            for (String name : log.getLayoutList())
-            {
-                LayoutDiagram each = log.getLayout(name);
+        if (model == null) return pages;
 
-                if (each != null) pages.add(each);
-            }
+        for (String name : model.getLayoutList())
+        {
+            LayoutDiagram each = model.getLayout(name);
+
+            if (each != null) pages.add(each);
         }
 
-        for (LayoutDiagram moved : LayoutDiagram.writeIndexAndKeepLinksAimed(layoutPath, layoutList,
-            renamed, pageIdFloor(session), keepAbsent, pages))
-        {
-            try
-            {
-                moved.saveChanges(null, false);
-            }
-            catch (Exception cannotSave)
-            {
-                // The arrows are right in memory either way and the index is already written; refusing
-                // here would leave the two disagreeing.
-                if (log != null) log.log(cannotSave);
-            }
-        }
+        return pages;
     }
 }

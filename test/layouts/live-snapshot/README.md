@@ -74,6 +74,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 ## Used by
 
 - `core.testACompulsoryTurnIsNotAQuestion`
+- `regression.testTheArrowsKeepTheirAim`
 - `core.testAPastedTrainKeepsItsDirection`
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`

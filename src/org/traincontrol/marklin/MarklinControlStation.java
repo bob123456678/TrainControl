@@ -821,9 +821,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (!l.isUnreadable()) actuallyRead++;
         }
 
-        if (actuallyRead == 0 && couldNotBeRead > 0)
+        // AND THE QUESTION IS ASKED AGAINST WHAT THE INDEX SAID THERE WAS (T10-C6).
+        //
+        // `couldNotBeRead > 0` means a page threw on the way in.  A page can also simply not arrive: if
+        // the parser does not recognise the index's block name at all - a capitalised `Seite`, say - it
+        // returns zero pages and zero failures, and this guard stayed silent for a layout that read
+        // nothing whatsoever.  The operator got an empty diagram, no message, and the override
+        // preference kept, which is the RC-A4 symptom by another route.
+        //
+        // The index is the statement of what should be there, and it is read by a different method that
+        // does match the block name without regard to case - so it can say "two pages" about a file this
+        // parser made nothing of.
+        final int namedByTheIndex = fileParser.getPagesTheIndexNamed();
+
+        if (actuallyRead == 0 && (couldNotBeRead > 0 || namedByTheIndex > 0))
         {
-            throw new Exception(I18n.f("layout.errorNoPageCouldBeRead", couldNotBeRead));
+            throw new Exception(I18n.f("layout.errorNoPageCouldBeRead",
+                Math.max(couldNotBeRead, namedByTheIndex)));
         }
 
         this.clearLayouts();

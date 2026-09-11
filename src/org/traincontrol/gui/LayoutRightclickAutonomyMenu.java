@@ -1084,7 +1084,25 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         if (locName == null) return;
 
-        ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false);
+        // THE RAILWAY'S ANSWER DECIDES WHETHER ANY OF THIS HAPPENS (W21-B3).
+        //
+        // `moveLocomotive` returns false and logs rather than throwing, in four cases: autonomy is
+        // running, the locomotive is unknown, the point is unknown, and the target is not a destination.
+        // Its answer was discarded, so the placement and the facing were written into the setup AND
+        // SAVED for a move the railway had just declined - and the setup is the half that survives a
+        // restart, so the next build emitted the train on a square it was never put on.
+        //
+        // Both doors are real.  `placeableCopies` deliberately offers non-destination copies - its own
+        // comment says "nothing open is not the same as nowhere to go" - and falls back to exactly those
+        // when no copy is reachable, which is the case `moveLocomotive` refuses.  And `behaviour.md`
+        // section 6a states the other as a rule: a menu is greyed when the popup OPENS and the action
+        // fires when it is clicked, so autonomy started from another window in between leaves a live
+        // item over a running railway.  The refusal is in the method, correctly; what was missing was
+        // the caller honouring it.
+        //
+        // The log line `moveLocomotive` already writes is the user-visible half, so nothing is added
+        // here: a second message would say the same thing twice.
+        if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
 
         if (session != null)
         {

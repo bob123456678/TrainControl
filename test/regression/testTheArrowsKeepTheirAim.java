@@ -125,6 +125,67 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
+     * Add Page leaves the page it was invoked from aimed correctly, ON DISK (T10-B1).
+     *
+     * **The tests above drive the rule; these drive the gesture.** `FV3-A2` fixed the arithmetic of the
+     * re-aim and left the sequence alone, and the test it shipped with called
+     * `writeIndexAndKeepLinksAimed` directly - so the battery was green while all three of Add, Duplicate
+     * and Rename wrote a page file before the arrows were corrected. A rule tested at the rule says
+     * nothing about the call, which is the trap this project has hit before.
+     *
+     * Asserted on the FILE, because that is what survives: the in-memory correction is thrown away by the
+     * refresh that follows every one of these gestures, so an assertion on the tile would have passed
+     * while the railway kept the old numbers.
+     *
+     * Add Page blanks the CURRENT page's object to write it out as the new blank page. The re-aim used
+     * to run after that, over a page with no tiles - so the original file, belonging to the page the
+     * operator had open, was the one page never corrected.
+     *
+     * MUTATION: move the re-aim back below `page.saveChanges(newLayoutName, duplicate)` and this fails
+     * with the arrow still on 2.
+     */
+    @Test
+    public void testAddingAPageCorrectsTheFileItWasInvokedFrom() throws Exception
+    {
+        assertArrowOnDiskAfterGesture("add", 3);
+    }
+
+    /**
+     * Duplicate Page writes the COPY with corrected arrows (T10-B2).
+     *
+     * The copy is written from the source page as it stands and is not in the model when a later re-aim
+     * runs, so nothing ever corrected it - the source and its copy disagreed about where the same arrow
+     * goes.
+     *
+     * MUTATION: as above.
+     */
+    @Test
+    public void testDuplicatingAPageCorrectsTheCopy() throws Exception
+    {
+        assertArrowOnDiskAfterGesture("duplicate", 3);
+    }
+
+    /**
+     * A renamed page's own arrows are corrected in the file the rename writes (T10-B3).
+     *
+     * The re-aim deliberately skipped the renamed page, on the stated ground that the rename writes the
+     * same object under its new name so the correction travels with it. That is true of the OBJECT and
+     * false of the ORDER: the rename's write happened 128 lines earlier. Every page's arrows were
+     * corrected except the renamed page's own.
+     *
+     * MUTATION: as above.
+     */
+    @Test
+    public void testARenamedPageKeepsItsOwnArrowsOnDisk() throws Exception
+    {
+        // 1 - Main is renamed, not 2 - Bottom: the arrow on Bottom points at Main, which does not
+        // move, so that case would pass with the re-aim deleted.  Main's own first arrow points at
+        // 3 - Top Parking, which moves from position 2 to position 1 when Main leaves the front of the
+        // alphabet.
+        assertArrowOnDiskAfterGesture("rename", 1);
+    }
+
+    /**
      * What an arrow ended up aimed at.
      */
     private static class Aimed
@@ -213,5 +274,76 @@ public class testTheArrowsKeepTheirAim
         }
 
         where.delete();
+    }
+
+    /**
+     * Runs one real page gesture over a three-page layout and reports where the arrow points in the
+     * FILE afterwards.
+     *
+     * The fixture is `live-snapshot`, a frozen copy of Adam's own five pages, whose `1 - Main` carries
+     * three arrows - the first aimed at `3 - Top Parking`, position 2 of the five. Adding a page that
+     * sorts second moves that destination to position 3.
+     *
+     * @param gesture "add", "duplicate" or "rename"
+     * @param expected where that arrow must point afterwards
+     */
+    private static void assertArrowOnDiskAfterGesture(String gesture, int expected) throws Exception
+    {
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open(
+            support.Scenario.folderFor("live-snapshot"));
+
+        try
+        {
+            org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            model.stop();
+
+            String from = "1 - Main";
+
+            String made = "rename".equals(gesture) ? "9 - Main" : "1 - Main and neighbours";
+
+            String subject = from;
+
+            java.util.List<String> layoutList = new ArrayList<>(model.getLayoutList());
+
+            org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
+                layoutList, model.getLayout(subject), sandbox.getFolder().getAbsolutePath(), subject, made,
+                "rename".equals(gesture), !"rename".equals(gesture), "add".equals(gesture), null, model,
+                null);
+
+            // The file, not the tile: a refresh throws the in-memory correction away.
+            String page = "rename".equals(gesture) ? made : subject;
+
+            assertEquals(arrowInFile(sandbox, page), expected,
+                "after " + gesture + ", the arrow on " + page + " points at position "
+                + arrowInFile(sandbox, page) + " in its FILE, where " + expected + " is correct.  The "
+                + "in-memory correction is discarded by the refresh that follows every one of these "
+                + "gestures, so only the file matters (T10-B1, T10-B2, T10-B3)");
+        }
+        finally
+        {
+            sandbox.close();
+        }
+    }
+
+    /**
+     * The `.artikel` of the first `pfeil` tile in a page's file.
+     */
+    private static int arrowInFile(support.LayoutSandbox sandbox, String page) throws Exception
+    {
+        File file = new File(new File(sandbox.getFolder(), "config/gleisbilder"), page + ".cs2");
+
+        assertTrue(file.isFile(), "no file for " + page + " at " + file);
+
+        String body = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("\\.typ=pfeil[\\s\\S]*?\\.artikel=(-?\\d+)").matcher(body);
+
+        assertTrue(m.find(), "no arrow tile in " + file);
+
+        return Integer.parseInt(m.group(1));
     }
 }

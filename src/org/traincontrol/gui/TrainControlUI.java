@@ -2151,6 +2151,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
             this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
 
+        // AND A PAGE THAT IS IN THE LIST ONLY AS A STAND-IN (T10-C3).
+        //
+        // FR-018 asks the operator about a page the index names and the folder does not hold, so that
+        // its id is kept for a file that is coming back and pruned for one that is not.  Since NSV-B3
+        // every page named in the index comes back - as itself or as a blank stand-in - so `layoutList`
+        // always covers the index, `absent` was always empty, the dialog never appeared, and
+        // `forgetHeldPages` had no reachable caller at all.
+        //
+        // The KEEP half became automatic and correct: the page stays in the index with its id because it
+        // is in the list.  What was lost is the prune, and the warning at the moment of the edit - which
+        // is the half the operator is there for.  A stand-in IS the absence FR-018 is about; it just has
+        // a name now, and `isUnreadable()` is the question that used to be answered by the page simply
+        // not being there.
+        for (String name : this.model.getLayoutList())
+        {
+            LayoutDiagram page = this.model.getLayout(name);
+
+            if (page != null && page.isUnreadable() && !absent.contains(name)) absent.add(name);
+        }
+
         // The index has to be READABLE before any caller of this touches the disk (RA-C3).
         //
         // writeLayoutIndex refuses a layout whose index is present and unreadable - a sync client

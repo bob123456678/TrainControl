@@ -532,6 +532,41 @@ public class LayoutDiagram
         // also settles the case where two pages carry one name: `layoutDB` aliases them into a single
         // entry, so the index names more pages than the list the arrows index into, and a `before` taken
         // from the file was longer than that list and moved an arrow that was already right.
+        List<LayoutDiagram> changed = repointLinksForNewOrder(pages, layoutList, renamed);
+
+        writeLayoutIndex(path, layoutList, renamed, floor, keepAbsent);
+
+        return changed;
+    }
+
+    /**
+     * Re-aims every arrow for a new page order, in memory, and says which pages changed.
+     *
+     * **SEPARATE FROM THE INDEX WRITE BECAUSE THE ORDER MATTERS** (T10-B1, T10-B2, T10-B3).  A caller
+     * that WRITES A PAGE FILE as part of the same gesture has to re-aim before it writes, or the file it
+     * writes carries the old numbers.  `LayoutPageEdit` does exactly that for Add, Duplicate and Rename -
+     * it saves the page and only then reached the re-aim - so all three left a page on disk aimed at the
+     * old alphabet while every other page was corrected.
+     *
+     * `writeIndexAndKeepLinksAimed` is still the whole job for a caller that writes no page of its own,
+     * which is Delete and Combine.
+     *
+     * A link holds the destination's place in the NAME-SORTED page list, so both ends are sorted here
+     * regardless of what order the caller is holding: a rename puts the new name back in the old slot,
+     * and an add, a duplicate and a combine append.
+     *
+     * `before` is taken from the PAGES rather than from any list, which is what settles the case where
+     * two pages carry one name: `layoutDB` aliases them into a single entry, so a list read from the
+     * index would be longer than the one arrows index into.
+     *
+     * @param pages every page of the layout
+     * @param layoutList the new page list, in whatever order the caller holds it
+     * @param renamed old name -&gt; new name, or null
+     * @return the pages whose arrows changed, which the caller must save
+     */
+    public static List<LayoutDiagram> repointLinksForNewOrder(java.util.Collection<LayoutDiagram> pages,
+        List<String> layoutList, Map<String, String> renamed)
+    {
         List<String> before = new ArrayList<>();
 
         if (pages != null)
@@ -548,8 +583,6 @@ public class LayoutDiagram
 
         java.util.Collections.sort(after);
 
-        writeLayoutIndex(path, layoutList, renamed, floor, keepAbsent);
-
         // A rename is the same page under another name: the arrows that pointed at it follow it.  The
         // substitution is on the OLD list, because that is the one an arrow's current number indexes
         // into - the page is found by where it was, and then asked where it has gone.
@@ -563,28 +596,7 @@ public class LayoutDiagram
             }
         }
 
-        List<LayoutDiagram> changed = repointLinksAcross(pages, before, after);
-
-        // A PAGE BEING RENAMED IS NOT SAVED HERE (FV3-A2).
-        //
-        // `saveChanges(null, false)` writes to the path the object was constructed with, and a rename
-        // does not update that path - so saving the renamed page here would write its corrected arrows
-        // into the file the rename has just deleted, recreating it as an orphan, while the new file kept
-        // the stale numbers.  Its tiles are already corrected in memory and the rename writes that same
-        // object under its new name, so the fix travels with it.
-        if (renamed != null && !renamed.isEmpty())
-        {
-            List<LayoutDiagram> toSave = new ArrayList<>();
-
-            for (LayoutDiagram page : changed)
-            {
-                if (page != null && !renamed.containsKey(page.getName())) toSave.add(page);
-            }
-
-            return toSave;
-        }
-
-        return changed;
+        return repointLinksAcross(pages, before, after);
     }
 
     /**
