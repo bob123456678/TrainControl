@@ -18040,7 +18040,7 @@ I like it.  Looks good, I will move around some menus later to make more room.
 
 ### MT-341 - 2026-09-10 - Control+E sets the length of the square under the pointer
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-066
 
 **Written:** 2026-09-10
@@ -18060,13 +18060,17 @@ check by right-clicking it and opening Segment Length again.
 You picked the key yourself: **"let's do E"**. Control+D, which the ticket proposed, is taken twice
 over - this editor toggles addresses with it, the main window opens the locomotive adder.
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-342"></a>
 
 ### MT-342 - 2026-09-10 - Control+E over a square with no track says so
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-066
 
 **Written:** 2026-09-10
@@ -18085,13 +18089,17 @@ measure, or autonomy takes no notice of it.
 *Changed since this was written:* the first cut opened the dialog on a text label, whose right-click
 menu offers no length at all. A review found it. The key and the menu ask one question now.
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-343"></a>
 
 ### MT-343 - 2026-09-10 - The key and the menu measure the same square
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-066
 
 **Written:** 2026-09-10
@@ -18108,13 +18116,17 @@ The dialog opens showing **5**, not 0. A run of plain track has one square that 
 doors write to that one - so measuring the run twice through two different doors does not count it
 twice.
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-344"></a>
 
 ### MT-344 - 2026-09-10 - Control plus a letter no longer jumps to a locomotive button
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-197
 
 **Written:** 2026-09-10
@@ -18132,6 +18144,10 @@ With Control held, nothing happens. Without it, each letter jumps to that button
 You said of the old behaviour: **"it should stop doing that. that was not intended."** It also made
 the answer to "which Control key is free" wrong - those seven letters were reported as free while all
 seven already did this.
+
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18272,7 +18288,7 @@ mind. This is the same claim on real metal.
 
 ### MT-350 - 2026-09-10 - Clear All Track Lengths, across every page
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-069
 
 **Written:** 2026-09-10
@@ -18298,13 +18314,21 @@ mind. This is the same claim on real metal.
 
 Cancel at step 4 leaves everything alone - worth one run of that too.
 
+**Adam, 2026-09-11 (triage).** Works, with notes.
+
+Works, but this action cannot be undone.  Warn the user of this.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-351"></a>
 
+**Claude, 2026-09-11.** The confirmation already said nothing brings the lengths back except typing them; it now also says, in all eight languages, that the action cannot be undone and that Ctrl+Z will not bring them back.  That is the word an operator in an editor with an undo stack is actually reaching for.
+
 ### MT-351 - 2026-09-10 - A shortcut after changing pages acts on the square you are pointing at
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-198
 
 **Written:** 2026-09-10
@@ -18325,13 +18349,17 @@ Then move the pointer onto a square on the new page and press Control+E: now it 
 all three shortcuts acted on a square that is no longer on the screen. Pre-existing; Control+E
 inherited it when it was added.
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-352"></a>
 
 ### MT-352 - 2026-09-11 - An imported route file arrives switched off
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** S14-A1, and Adam's ruling of 2026-09-10
 
 **Written:** 2026-09-11
@@ -18357,13 +18385,21 @@ ones already built running for the rest of the session with nothing able to stop
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Could not run this.
+
+too much manual effort for this, generate an export of an active route, import it, and confirm behavior.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-353"></a>
 
+**Claude, 2026-09-11.** Automated as asked - `core.testRoutes.testAnExportedRouteComesBackDisarmed` exports the live routes, reads the file back, and asserts every route arrives with automatic execution off while its commands, sensor and conditions survive.  Superseded by that test rather than left asking for a run nobody should have to do by hand.
+
 ### MT-353 - 2026-09-11 - Adding a page leaves every arrow pointing where it pointed
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** N8-A1, FV3-A2
 
 **Written:** 2026-09-11
@@ -18389,13 +18425,17 @@ changed destination, and the new numbers were written to the files.
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-354"></a>
 
 ### MT-354 - 2026-09-11 - A renamed page keeps the arrows that point at it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** N8-A1, FV3-A2
 
 **Written:** 2026-09-11
@@ -18418,13 +18458,17 @@ pointing at whatever slid into the old slot - and Bottom became reachable from n
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-355"></a>
 
 ### MT-355 - 2026-09-11 - An arrow to a deleted page does nothing, and says so
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's ruling of 2026-09-10
 
 **Written:** 2026-09-11
@@ -18447,13 +18491,17 @@ resolve to nothing when clicked. Then, the user can set it to the right page on 
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-356"></a>
 
 ### MT-356 - 2026-09-11 - A link cannot be aimed at its own page, and can be aimed at nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's ruling of 2026-09-10, FV3-C8
 
 **Written:** 2026-09-11
@@ -18479,13 +18527,17 @@ page in the alphabet the moment you pressed OK, which took the choice away from 
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-357"></a>
 
 ### MT-357 - 2026-09-11 - A page that cannot be read shows why, and keeps its autonomy setup
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** NSV-B3, FV3-A1
 
 **Written:** 2026-09-11
@@ -18516,13 +18568,21 @@ dropped.
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Could not run this.
+
+write a test case for this- too much manual effort otherwise.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-358"></a>
 
+**Claude, 2026-09-11.** Automated as asked.  `core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged` pins the half that matters - a stand-in page must not let a save judge, and therefore prune, the settings of a page nobody can see - with a control proving a genuinely present page IS judged.  What no unit test can reach is the OneDrive dehydration itself; what this pins is everything downstream of it.  Superseded by that test.
+
 ### MT-358 - 2026-09-11 - The Central Station still follows an arrow after TrainControl saves
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** the page-link work; hardware question
 
 **Written:** 2026-09-11
@@ -18549,9 +18609,17 @@ to patch in a hurry.
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Could not run this.
+
+this test is not relevant- syncs from traincontrol to CS2 don't happen, only the other way.  I will comment on ID design separately.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-359"></a>
+
+**Claude, 2026-09-11.** Withdrawn on Adam's word: *"this test is not relevant - syncs from traincontrol to CS2 don't happen, only the other way.  I will comment on ID design separately."*  The question it asked - whether the station reads an arrow's number the way TrainControl does - cannot arise if TrainControl never writes a layout the station then reads.
 
 ### MT-359 - 2026-09-11 - A function the consist head does not have is not sent to its members
 
@@ -18580,13 +18648,21 @@ rather than OFF. The only way back was to select the member and clear it there.
 
 #### Comments
 
+**Adam, 2026-09-11 (triage).** Does not work.
+
+Probably works as-is, but this isn't the intended behavior.  Make the allowed function be the highest possible for the consist- so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-360"></a>
 
+**Claude, 2026-09-11.** Ruling implemented: a consist's function range is the HIGHEST of its members rather than the head's, so two MM2 locomotives give F0-F4 and an MM2 head with an MFX member unlocks all of them.  The half that made `S14-B1` a finding is kept - a function outside the whole consist's range is still refused, `getF` answers from the members where the head's own decoder has no such function, and `functionsOff` clears exactly the range `setF` accepts, so nothing can be switched on that nothing can switch off.  `core.testMultiUnitMembership.testAConsistCanDriveEveryFunctionItsMembersHave` asserts all three, with a control that two MM2 locomotives still give an MM2 range.  Back to you to run.
+
 ### MT-360 - 2026-09-11 - The route editor accepts the top address of each protocol
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** S14-C1
 
 **Written:** 2026-09-11
@@ -18607,5 +18683,9 @@ from zero - so it refused exactly one address per protocol, the last one. Adam's
 that he would rather have no check than one that refuses something legal.
 
 #### Comments
+
+**Adam, 2026-09-11 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

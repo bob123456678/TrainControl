@@ -20,7 +20,42 @@ public class GraphLocAssign extends javax.swing.JPanel
 {
     TrainControlUI parent;
     Point p;
-    
+
+    /**
+     * The setup this assignment is being recorded into, and the railway it is happening on.
+     *
+     * Held rather than passed to `commitAndRecord` as they used to be: the dialog now offers the
+     * ARRIVAL SIDE, which has to be worked out while the form is being built, and a second copy handed
+     * in at commit time could name a different setup from the one the combo was filled from.  Two
+     * parameters that can disagree are a trap, so there is one.
+     */
+    private final org.traincontrol.automationui.AutonomySession session;
+
+    private final org.traincontrol.automation.Layout running;
+
+    /**
+     * Where the operator says the train's tail is, offered only where there is a choice.
+     *
+     * Null on a terminus and on a square with no track - see `buildArrivalSide`, which explains why a
+     * combo with one entry is not a choice.
+     */
+    private javax.swing.JComboBox<String> arrivedFrom;
+
+    private javax.swing.JLabel arrivedFromLabel;
+
+    /**
+     * The sides behind the combo's entries, in its own order, offset by one for the "---" row.
+     */
+    private java.util.List<String> arrivalSides = new java.util.ArrayList<>();
+
+    /**
+     * Whether the operator has picked a side themselves, in which case changing the locomotive must
+     * not quietly pick a different one under them.
+     */
+    private boolean arrivalSideChosenByHand;
+
+    private boolean fillingArrivalSide;
+        
     public static final String NONE_LABEL = "---";
 
     /**
@@ -49,8 +84,12 @@ public class GraphLocAssign extends javax.swing.JPanel
      * @param parent
      * @param p
      * @param newOnly - do we allow the selection of locomotives not currently on the graph?
+     * @param session the setup being edited, or null when there is none
+     * @param running the running layout, for working out where a train's tail lies
      */
-    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly)
+    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly,
+        org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automation.Layout running)
     {
         initComponents();
         
@@ -79,7 +118,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         this.locAssign.setModel(new DefaultComboBoxModel(locs.toArray()));
         this.parent = parent;
         this.p = p;
-        
+        this.session = session;
+        this.running = running;
+                
         // Select current locomotive if possible
         if (p.getCurrentLocomotive() != null)
         {
@@ -93,6 +134,8 @@ public class GraphLocAssign extends javax.swing.JPanel
             this.trainLength.setSelectedIndex(0);
         }
         
+        buildArrivalSide();
+
         updateValues();
 
         this.arrivalFunc.setVisible(true);
@@ -139,21 +182,42 @@ public class GraphLocAssign extends javax.swing.JPanel
      * for the arriving one is a placement that carefully preserves the wrong thing, which is worse than
      * one that preserves nothing.
      *
-     * The arrival side is not written and does not need to be: `placeLocomotive` clears it when the
-     * occupant changes, and neither of these doors asks. Nothing recorded is the honest answer for a
-     * train nobody watched arrive.
+     * **The arrival side is written too, and the dialog is where it was answered** (Adam, 2026-09-11:
+     * *"the missing arrival side should be set - either from the data, by the user, or randomly"*).
+     *
+     * It used to be left out, on the reasoning that a train nobody watched arrive has no honest
+     * answer - but `behaviour.md` section 4 recorded that as an open defect (`REV9-B2`) and it was:
+     * the diagram's drag and paste door works the side out and blocks the track behind the train,
+     * while these two put an identical train down and blocked nothing. `GraphLocAssign` offers it as a
+     * combo rather than a second popup on top of this one; `getArrivedFrom` answers from that combo,
+     * or from the rule on a square that gave nothing to choose between.
+     *
+     * **After the commit, because the commit is what clears it**: `Point.setLocomotive` drops
+     * `arrivedFrom` whenever the occupant changes, which is right - a different train did not come in
+     * the way the last one did - and writing before would be writing into that.
+     *
+     * **Both stores, like the heading above it** (VAL8-A2): the walk that blocks track reads the live
+     * `Point`, and the setup value only reaches it at the next rebuild. Written to one only, the
+     * operator answers the question, watches nothing become blocked, and cannot tell "it does not
+     * work" from "it has not been rebuilt yet".
+     *
+     * **One argument, since the dialog now holds the setup it was built against** (2026-09-11). The
+     * combo's entries are worked out from that setup while the form is built, so a session handed in
+     * separately at commit time could name a different one - two parameters that can disagree, which
+     * is a trap this project has been caught by before. The point, the session and the layout all come
+     * from the dialog, and there is nothing left for a caller to get wrong.
      *
      * @param edit the dialog, already dismissed with OK
-     * @param point the Point being assigned, as the running layout holds it
-     * @param session the setup, or null when there is none to record into
-     * @param layout the running layout, for working out the heading
      */
-    public static void commitAndRecord(GraphLocAssign edit,
-        org.traincontrol.automation.Point point,
-        org.traincontrol.automationui.AutonomySession session,
-        org.traincontrol.automation.Layout layout)
+    public static void commitAndRecord(GraphLocAssign edit)
     {
-        if (edit == null || point == null) return;
+        if (edit == null || edit.p == null) return;
+
+        final org.traincontrol.automation.Point point = edit.p;
+
+        final org.traincontrol.automationui.AutonomySession session = edit.session;
+
+        final org.traincontrol.automation.Layout layout = edit.running;
 
         String arriving = edit.getLoc();
 
@@ -180,6 +244,15 @@ public class GraphLocAssign extends javax.swing.JPanel
             session.setFacing(tile,
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     session.facingsFor(tile), heading, point.getName()));
+
+            // AND WHERE ITS TAIL IS (REV9-B2, closed 2026-09-11).  See the note above: answered in the
+            // dialog, written here, and into both stores because the walk that blocks track reads the
+            // live Point while the setup is the half that survives a restart.
+            String tail = edit.getArrivedFrom();
+
+            session.setArrivedFrom(tile, tail);
+
+            point.setArrivedFrom(tail);
         }
 
         // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and
@@ -204,8 +277,280 @@ public class GraphLocAssign extends javax.swing.JPanel
         }
     }
     /**
+     * Offers the arrival side, where the square gives the operator anything to choose between.
+     *
+     * Adam, 2026-09-11: **"the missing arrival side should be set - either from the data, by the user,
+     * or randomly"**, and then **"proceed with this combo.  Try to reuse the machinery/checks of the
+     * current popup."**
+     *
+     * **What the tail is for.** `Layout.edgesCoveredByStandingTrains` walks back from a standing train
+     * along the side it came in by and blocks that track for everything else. Recorded wrong, it
+     * blocks the wrong rail and leaves the one the train is actually fouling open - which is worse
+     * than recording nothing, because the picture then claims a protection that is not there. That is
+     * the whole reason the popup asks instead of guessing, and the reason this combo can afford not
+     * to: a starting value in a form is SEEN and can be corrected before OK, where a guess inside a
+     * popup could not be.
+     *
+     * **Only where there is something to choose.** One side is a terminus - there is one way in and
+     * the rule forces it, so a combo would be a control with a single entry pretending to be a
+     * decision. None is a square with no track. In both cases nothing is shown and `getArrivedFrom`
+     * answers from the rule, exactly as the popup does.
+     *
+     * The entries, the wording and the sides themselves all come from `ArrivalSidePrompt` - the same
+     * three the popup uses. A second list assembled here would be a second author computing what that
+     * class already decided, which is how this pair of doors came apart in the first place.
+     */
+    private void buildArrivalSide()
+    {
+        this.arrivalSides = ArrivalSidePrompt.choicesFor(this.running, this.p, sidesFromTheBuild());
+
+        if (this.arrivalSides.size() < 2) return;
+
+        // SIDES ONLY - there is deliberately no "---" here.
+        //
+        // Adam, 2026-09-07: **"clearing should not be possible, only setting."**  The arrived-from MENU
+        // used to carry a "Not known" entry and it was taken out for the reason that applies here word
+        // for word: every side the square has is offered, so a wrong answer is corrected by choosing
+        // the right one, and what a blank entry really offers is a way to switch the tail blocking off
+        // - a preference about the check rather than a fact about the railway.
+        //
+        // It is also what Adam asked for from the other side on 2026-09-11 - *"the missing arrival side
+        // should be set"* - and `refreshArrivalSide` guarantees one: recorded, else derived, else the
+        // first side this square has.
+        List<String> entries = new ArrayList<>();
+
+        for (String side : this.arrivalSides)
+        {
+            entries.add(ArrivalSidePrompt.labelFor(side));
+        }
+
+        this.arrivedFrom = new javax.swing.JComboBox<>(entries.toArray(new String[0]));
+        this.arrivedFrom.setFont(new java.awt.Font("Segoe UI", 0, 14));
+
+        // THE CAPTION THE MENU ALREADY USES.  `buildArrivedFromMenu` offers this same setting from
+        // the right-click menu on both surfaces and calls it `autosetup.ui.menuArrivedFrom`; a new key
+        // here would be a second wording of one setting, in eight bundles, free to drift from the
+        // first at the next edit.
+        this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autosetup.ui.menuArrivedFrom"));
+        this.arrivedFromLabel.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        this.arrivedFromLabel.setForeground(new java.awt.Color(0, 0, 115));
+
+        // A HAND on the combo is remembered, so that picking a different locomotive - which moves the
+        // suggestion, because it is worked out from THAT train's heading - does not overwrite what the
+        // operator just said.
+        this.arrivedFrom.addActionListener(event ->
+        {
+            if (!this.fillingArrivalSide) this.arrivalSideChosenByHand = true;
+        });
+
+        refreshArrivalSide();
+    }
+
+    /**
+     * The build's own arrival sides for this square, where there is a setup to ask.
+     *
+     * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
+     * the west, rather than the north or the south."  The geometric answer names where the
+     * neighbouring POINT lies, and a reduced edge may turn corners on the way; the builder splits the
+     * square on the side the track actually comes in by, and that is the vocabulary the tail walk
+     * compares against (OB-182).
+     *
+     * @return the sides, or null when there is no setup - `choicesFor` then falls back to the geometry
+     */
+    private java.util.List<org.traincontrol.automationui.TilePorts.Side> sidesFromTheBuild()
+    {
+        org.traincontrol.automationui.TileGraph.TileKey tile = square();
+
+        return this.session == null || tile == null ? null : this.session.arrivalSides(tile);
+    }
+
+    /**
+     * The square this point belongs to, as the setup indexes it.
+     *
+     * @return the square, or null when there is no setup to ask
+     */
+    private org.traincontrol.automationui.TileGraph.TileKey square()
+    {
+        return this.session == null || this.session.getStationIndex() == null
+            ? null : this.session.getStationIndex().squareOf(this.p.getName());
+    }
+
+    /**
+     * Starts the combo at the side this placement should be recorded with.
+     *
+     * **Three sources, in the order Adam gave them** - *"either from the data, by the user, or
+     * randomly"*:
+     *
+     * - **From the data**, and this is the one that matters most: a train already standing here has an
+     *   arrival side that something WATCHED it arrive by, and re-opening this dialog to change a
+     *   function must not quietly replace a measured value with a derived one.  Read only when the
+     *   selected locomotive is the one standing here - the recorded tail belongs to the train that is
+     *   on the square, and attaching the departing train's tail to the arriving one would be a
+     *   placement that carefully preserves the wrong thing.
+     * - **From the rule**, which is `ArrivalSidePrompt.suggestedFor` - a terminus forced, an ordinary
+     *   station taken from behind the heading.  Passed `mayReverse` as FALSE deliberately: the rule
+     *   declines to guess on a square trains may turn at because a popup's guess would be invisible,
+     *   and in a form it is not.  The operator sees it and can change it.
+     * - **And otherwise the first side there is**, which is the "randomly" Adam allowed for - a
+     *   heading nobody has set leaves the rule nothing to work from, and a side that is at least a side
+     *   this square has beats a blank that records nothing.  There is no blank to fall back to in any
+     *   case: see `buildArrivalSide` on why the combo offers sides only.
+     *
+     * Not called when the operator has already chosen: their answer outranks all three.
+     */
+    private void refreshArrivalSide()
+    {
+        if (this.arrivedFrom == null || this.arrivalSideChosenByHand) return;
+
+        String side = recordedHere();
+
+        if (side == null)
+        {
+            side = ArrivalSidePrompt.suggestedFor(this.running, this.p, headingOfTheArrivingTrain(),
+                false, sidesFromTheBuild());
+        }
+
+        if (side == null && !this.arrivalSides.isEmpty()) side = this.arrivalSides.get(0);
+
+        select(side);
+    }
+
+    /**
+     * Puts the combo on one side without that counting as the operator's own answer.
+     *
+     * A side this square does not have falls back to the first one it does, which is the same
+     * "randomly" `refreshArrivalSide` ends on: the combo offers sides and nothing else, so there is no
+     * entry for "none of these".
+     *
+     * @param side the side to show
+     */
+    private void select(String side)
+    {
+        int index = side == null ? -1 : this.arrivalSides.indexOf(side);
+
+        this.fillingArrivalSide = true;
+
+        try
+        {
+            this.arrivedFrom.setSelectedIndex(index < 0 ? 0 : index);
+        }
+        finally
+        {
+            this.fillingArrivalSide = false;
+        }
+    }
+
+    /**
+     * The arrival side already recorded for the train standing here, if it is the one being edited.
+     *
+     * The setup first and the railway second, because the setup is the half that survives a restart -
+     * but they are written together by every door that writes either, so this is a fallback rather
+     * than a second opinion.
+     *
+     * @return the recorded side, or null when there is none or a different locomotive is selected
+     */
+    private String recordedHere()
+    {
+        if (this.p.getCurrentLocomotive() == null) return null;
+
+        if (!this.p.getCurrentLocomotive().getName().equals(getLoc())) return null;
+
+        org.traincontrol.automationui.TileGraph.TileKey tile = square();
+
+        String recorded = this.session == null || tile == null
+            ? null : this.session.getArrivedFrom(tile);
+
+        return recorded != null ? recorded : this.p.getArrivedFrom();
+    }
+
+    /**
+     * Which way the selected train is pointing, which is what the tail is worked out from.
+     *
+     * Read for the train ARRIVING, from the combo, and not for whoever is standing here already - the
+     * same reason `commitAndRecord` reads the heading before it commits.
+     *
+     * @return the heading's name, or null when there is no setup or nobody has set one
+     */
+    private String headingOfTheArrivingTrain()
+    {
+        if (this.session == null || getLoc() == null) return null;
+
+        org.traincontrol.automationui.TilePorts.Side facing = this.session.facingOf(getLoc(), this.running);
+
+        return facing == null ? null : facing.name();
+    }
+
+    /**
+     * The side this placement should be recorded as having arrived from.
+     *
+     * The combo when there was one, and the rule when there was not - a terminus has one way in and
+     * answers itself, which is exactly what the popup does with a square it would not ask about.  So
+     * the caller gets an answer either way and never has to know which surface produced it.
+     *
+     * @return the side, or null when nothing should be recorded
+     */
+    public String getArrivedFrom()
+    {
+        if (this.arrivedFrom == null)
+        {
+            return ArrivalSidePrompt.suggestedFor(this.running, this.p,
+                headingOfTheArrivingTrain(), mayTurnHere(), sidesFromTheBuild());
+        }
+
+        int index = this.arrivedFrom.getSelectedIndex();
+
+        return index < 0 || index >= this.arrivalSides.size() ? null : this.arrivalSides.get(index);
+    }
+
+    /**
+     * Whether the operator marked this square as one trains may turn round at.
+     *
+     * Asked of the SETUP, because `canReverse` never reaches the running layout - the builder
+     * expresses it by splitting the square and says so.  Same question `TrainControlUI.mayTurnHere`
+     * asks for the paste door, and the same answer.
+     *
+     * @return true when trains may turn there
+     */
+    private boolean mayTurnHere()
+    {
+        org.traincontrol.automationui.TileGraph.TileKey tile = square();
+
+        return this.session != null && tile != null && this.session.mayTurnTiles().contains(tile);
+    }
+
+    /**
+     * This panel, with the arrival side under it, as the doors should show it.
+     *
+     * The form is laid out by the GUI builder to a fixed size, so the combo cannot be added INTO it
+     * without editing generated code.  It goes underneath instead, in a wrapper this class builds -
+     * one place, because two doors show this dialog and a wrapper assembled at each of them is the
+     * same two-copies-of-one-rule that `commitAndRecord` exists to prevent.
+     *
+     * Returns the panel itself when there is nothing to offer, so a door can always show what this
+     * gives it without asking whether the square had a choice.
+     *
+     * @return what to hand to `showOptionDialog`
+     */
+    public javax.swing.JComponent asDialogContent()
+    {
+        if (this.arrivedFrom == null) return this;
+
+        javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout(6, 0));
+        row.setOpaque(false);
+        row.add(this.arrivedFromLabel, java.awt.BorderLayout.WEST);
+        row.add(this.arrivedFrom, java.awt.BorderLayout.CENTER);
+
+        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
+        wrapper.setOpaque(false);
+        wrapper.add(this, java.awt.BorderLayout.CENTER);
+        wrapper.add(row, java.awt.BorderLayout.SOUTH);
+
+        return wrapper;
+    }
+
+    /**
      * Gets the number of locomotives selectable
-     * @return 
+     * @return
      */
     public int getNumLocs()
     {
@@ -278,6 +623,12 @@ public class GraphLocAssign extends javax.swing.JPanel
             
             updateSpeedLabel();
         }
+
+        // AND THE TAIL FOLLOWS THE TRAIN.  The suggested side is worked out from the SELECTED
+        // locomotive's heading, so choosing a different one has to re-ask - otherwise the form shows
+        // the side that was right for the train the operator just changed their mind about.  A side
+        // they picked themselves is left alone; see `refreshArrivalSide`.
+        refreshArrivalSide();
     }
     
     public void updateSpeedLabel()

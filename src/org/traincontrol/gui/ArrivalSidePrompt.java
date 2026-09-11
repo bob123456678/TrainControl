@@ -50,28 +50,71 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The side a hand-placed train should be recorded as having arrived from.
+     * The side a hand-placed train should be recorded as having arrived from, asking if it must.
+     *
+     * **Two halves, because there are now two surfaces** (Adam, 2026-09-11).  This door puts the
+     * question in a dialog of its own, which is right for a menu item that places a train with no
+     * dialog of its own.  `GraphLocAssign` already HAS a dialog, so it offers the same choice as a
+     * combo in the form it is already showing - and a second dialog on top of a dialog would be the
+     * worse of the two.
+     *
+     * So the rule is `suggestedFor` and the question is `ask`, and this is the one that does both.
+     * The combo calls the first and is the answer to the second.  Written as a dispatch rather than
+     * duplicated, because a rule with two spellings is this project's most repeated defect.
      *
      * @param layout the running layout, which knows where the neighbours are
      * @param at the point the train is being put down on
      * @param facing which way it points, or null when nobody has said
      * @param mayReverse whether the operator marked this square as one trains may turn at
      * @param parent what to centre the dialog on
+     * @param arrivalSides the build's own sides, where the caller has them
      * @return the side, or null when it cannot be worked out and was not answered
      */
     public static String forPlacement(Layout layout, Point at, String facing, boolean mayReverse,
         Component parent,
         List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
     {
-        if (layout == null || at == null) return null;
+        // AND THE QUESTION, on the squares where the assumption does not hold - asked through
+        // `wouldAsk` rather than through a second spelling of its condition.  The paste door reads
+        // that same predicate to tell a dismissal from the other two nulls (IND9-B5), so the two have
+        // to agree; now they agree by construction rather than by inspection.
+        if (wouldAsk(layout, at, mayReverse, arrivalSides))
+        {
+            return ask(parent, at, choicesFor(layout, at, arrivalSides));
+        }
 
-        // THE BUILD'S SIDES when the caller has them, which every caller in the application does.
-        // The fallback is for a caller with no session - the tests that build a Layout by hand - and
-        // it is no longer a second opinion: since REV9-B3 it reads `Layout.entrySideOf` too, which is
-        // the build's own answer where an edge carries one and the compass geometry where it does
-        // not.  A hand-built Layout carries none, so those tests get exactly what they always got.
-        List<String> sides = arrivalSides == null || arrivalSides.isEmpty()
-            ? sidesOf(layout, at) : sidesOf(arrivalSides);
+        return suggestedFor(layout, at, facing, mayReverse, arrivalSides);
+    }
+
+    /**
+     * What the rule alone says, with nobody asked.
+     *
+     * The whole of `forPlacement` except the dialog, and the half a form can use: a combo can show
+     * this as its starting value and let the operator change it, where a popup has to either guess
+     * silently or interrupt.
+     *
+     * - **A terminus** has one way in, so there is nothing to choose: `sides` holds one entry and it
+     *   is the answer.  A square with no track at all has none, and answers null.
+     * - **An ordinary station** is answered by the heading - a train faces the way it will leave and
+     *   arrived from behind - out of the sides this square actually has.
+     * - **A may-reverse station** answers NULL here, because turning round is what those squares are
+     *   for and the heading stops being evidence there.  `forPlacement` sends that case to the
+     *   operator.  A caller with a form to put the question in can pass `mayReverse` as false to get
+     *   the assumption as a visible starting value instead - which is what `GraphLocAssign` does, and
+     *   the difference between the two is that a value in a combo can be seen and corrected before it
+     *   is written, while a guess inside a popup cannot.
+     *
+     * @param layout the running layout
+     * @param at the point the train is being put down on
+     * @param facing which way it points, or null when nobody has said
+     * @param mayReverse whether the operator marked this square as one trains may turn at
+     * @param arrivalSides the build's own sides, where the caller has them
+     * @return the side the rule gives, or null where only the operator can say
+     */
+    public static String suggestedFor(Layout layout, Point at, String facing, boolean mayReverse,
+        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+    {
+        List<String> sides = choicesFor(layout, at, arrivalSides);
 
         // NOTHING TO CHOOSE BETWEEN. A terminus has one way in, and a square with no track at all has
         // none - both answer themselves, and asking would be a dialog with one button.
@@ -79,13 +122,40 @@ public class ArrivalSidePrompt
 
         if (sides.size() == 1) return sides.get(0);
 
+        // THE SQUARES WHERE THE ASSUMPTION DOES NOT HOLD are not this method's to answer.
+        if (mayReverse) return null;
+
         // THE ASSUMPTION, on a station where it holds: a train faces the way it will leave, so it came
         // from behind.  Answered out of THE SIDES THIS SQUARE ACTUALLY HAS rather than off the
         // compass - see `arrivedFrom` for why those are not the same question on a curve (REV9-B3).
-        if (!mayReverse) return arrivedFrom(sides, facing);
+        return arrivedFrom(sides, facing);
+    }
 
-        // AND THE QUESTION, on the squares where the assumption does not hold.
-        return ask(parent, at, sides);
+    /**
+     * The sides a placement here may be recorded as having come from.
+     *
+     * **THE BUILD'S SIDES when the caller has them**, which every caller in the application does.
+     * The fallback is for a caller with no session - the tests that build a Layout by hand - and it is
+     * not a second opinion: since REV9-B3 it reads `Layout.entrySideOf` too, which is the build's own
+     * answer where an edge carries one and the compass geometry where it does not.  A hand-built
+     * Layout carries none, so those tests get exactly what they always got.
+     *
+     * One place, because three things read this list - the dialog's buttons, the combo's entries, and
+     * `wouldAsk`, which the paste door uses to tell a dismissal from a square with nothing to ask
+     * about.  Assembled separately they would drift, and the drift would be silent.
+     *
+     * @param layout the running layout
+     * @param at the point
+     * @param arrivalSides the build's own sides, where the caller has them
+     * @return the sides, in a stable order, never null
+     */
+    public static List<String> choicesFor(Layout layout, Point at,
+        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+    {
+        if (layout == null || at == null) return new ArrayList<>();
+
+        return arrivalSides == null || arrivalSides.isEmpty()
+            ? sidesOf(layout, at) : sidesOf(arrivalSides);
     }
 
     /**
@@ -176,12 +246,12 @@ public class ArrivalSidePrompt
     public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse,
         List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
     {
-        if (!mayReverse || layout == null || at == null) return false;
+        if (!mayReverse) return false;
 
-        // The same sides forPlacement would offer, by construction: this has to agree with it or the
-        // paste door reads a null as a dismissal when no question was ever put (IND9-B5).
-        return (arrivalSides == null || arrivalSides.isEmpty()
-            ? sidesOf(layout, at) : sidesOf(arrivalSides)).size() > 1;
+        // THE SAME LIST, not a second assembly of it: the paste door reads a null from `forPlacement`
+        // as a dismissal only when this says a question was really put (IND9-B5), so the two have to
+        // offer the same sides.  Through `choicesFor` since 2026-09-11, so they cannot come apart.
+        return choicesFor(layout, at, arrivalSides).size() > 1;
     }
 
     /**
@@ -212,11 +282,7 @@ public class ArrivalSidePrompt
 
                 for (int i = 0; i < sides.size(); i++)
                 {
-                    // WHOLE KEYS, not a prefix plus a letter.  The bundle check reads the source for
-                    // the keys it must find, and a concatenated one reads as "autolayout.ui.side" -
-                    // which is in no bundle, so it reports a missing message that is not missing while
-                    // saying nothing about the four that could really go absent.
-                    options[i] = I18n.t(keyFor(sides.get(i)));
+                    options[i] = labelFor(sides.get(i));
                 }
 
                 int chose = JOptionPane.showOptionDialog(parent,
@@ -240,7 +306,27 @@ public class ArrivalSidePrompt
     }
 
     /**
+     * What one side is called where an operator reads it.
+     *
+     * Both surfaces come through here - the dialog's buttons and the combo in `GraphLocAssign` - so a
+     * side is worded the same wherever it is offered.  Two spellings of "from the west" would read as
+     * two different settings.
+     *
+     * @param side "N", "S", "E" or "W"
+     * @return the operator's name for it
+     */
+    public static String labelFor(String side)
+    {
+        return I18n.t(keyFor(side));
+    }
+
+    /**
      * The message key naming one side, written out so the bundle check can see it.
+     *
+     * WHOLE KEYS, not a prefix plus a letter.  The bundle check reads the source for the keys it must
+     * find, and a concatenated one reads as "autolayout.ui.side" - which is in no bundle, so it
+     * reports a missing message that is not missing while saying nothing about the four that could
+     * really go absent.
      *
      * @param side "N", "S", "E" or "W"
      * @return the key, or the north one for anything unrecognised

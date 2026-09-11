@@ -1769,21 +1769,6 @@ public class AutonomyEditorPanel extends JPanel
                 () -> applyLength(squareTheLengthWouldGoOn(tile))));
         }
 
-        // BULK TOOLS: the things that are about the whole setup rather than this square (MT-257).
-        //
-        // Adam: "Put both Clear Locomotives and Clear All Home Locomotives into a 'bulk tools'
-        // category in the autonomy edit right-click menu."
-        //
-        // Everything else on this menu names one square and acts on it, so these two need a heading
-        // that says they do not - a bare "Clear All Home Locomotives" between Set Length and Rename
-        // reads as being about the square under the pointer, which is the one thing it is not.
-        //
-        // Clear All Home Locomotives was a button in the tool column and is not any more.  One place
-        // for both, rather than one each in two different surfaces.
-        menu.addSeparator();
-
-        menu.add(bulkTools());
-
 
         // A station name can go on almost any square, not only on a text square.  The label is drawn
         // beside the tile wherever it sits, so there is no reason to make the user find a text square
@@ -1812,6 +1797,27 @@ public class AutonomyEditorPanel extends JPanel
 
             addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile));
         }
+
+        // BULK TOOLS, LAST (Adam, 2026-09-11: *"can we make 'bulk tools' be the last item in the
+        // right-click menu in the autonomy editor?  mind the separators."*).
+        //
+        // These are the things that are about the WHOLE SETUP rather than this square (MT-257), which is
+        // what everything above them is about - so they belong at the bottom, behind a divider, where a
+        // menu conventionally puts what is not about the thing you clicked.  In the middle, between Set
+        // Length and the caption items, a bare "Clear All Home Locomotives" read as being about the
+        // square under the pointer, which is the one thing it is not.
+        //
+        // Adam's earlier reason for the submenu still holds and is why it is a submenu rather than three
+        // loose items: *"Put both Clear Locomotives and Clear All Home Locomotives into a 'bulk tools'
+        // category in the autonomy edit right-click menu."*
+        //
+        // The separator is added unconditionally and `tidy` below decides whether it survives - it drops
+        // a divider with nothing after it and collapses two in a row, so a menu that happens to end with
+        // one already does not grow a second, and this cannot leave a stray line above the submenu.
+        // Minding the separators is therefore one call rather than a condition here.
+        menu.addSeparator();
+
+        menu.add(bulkTools());
 
         tidy(menu);
 
@@ -3061,7 +3067,8 @@ public class AutonomyEditorPanel extends JPanel
 
         for (final String side : sides)
         {
-            menu.add(radio(group, I18n.t(sideLabel(side)), "autosetup.ui.hintArrivedFrom",
+            menu.add(radio(group, org.traincontrol.gui.ArrivalSidePrompt.labelFor(side),
+                "autosetup.ui.hintArrivedFrom",
                 side.equals(recorded),
                 () ->
                 {
@@ -3090,7 +3097,8 @@ public class AutonomyEditorPanel extends JPanel
         if (recordedButGone != null)
         {
             javax.swing.JRadioButtonMenuItem gone = new javax.swing.JRadioButtonMenuItem(
-                I18n.f("autosetup.ui.arrivedFromNotOnTrack", I18n.t(sideLabel(recordedButGone))), true);
+                I18n.f("autosetup.ui.arrivedFromNotOnTrack",
+                    org.traincontrol.gui.ArrivalSidePrompt.labelFor(recordedButGone)), true);
 
             // Not in the group, and not enabled: it is a statement about the square, not a choice.
             gone.setEnabled(false);
@@ -3118,22 +3126,6 @@ public class AutonomyEditorPanel extends JPanel
         return menu;
     }
 
-    /**
-     * The message key naming one side, written out so the bundle check can see whole keys.
-     *
-     * @param side "N", "S", "E" or "W"
-     * @return the key
-     */
-    private static String sideLabel(String side)
-    {
-        switch (side)
-        {
-            case "S": return "autolayout.ui.sideS";
-            case "E": return "autolayout.ui.sideE";
-            case "W": return "autolayout.ui.sideW";
-            default: return "autolayout.ui.sideN";
-        }
-    }
     /**
      * The "{loc} Is Facing..." submenu for a square, or null when there is nothing to ask.
      *
@@ -4346,9 +4338,16 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
         {
-            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, false);
+            // THE SETUP GOES IN WITH IT, because the dialog now offers the arrival side and has to
+            // work out this square's sides to do that (REV9-B2).  This panel edits the session it was
+            // constructed with, which is not always the main window's, so it is handed over rather
+            // than fetched.
+            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, false, session,
+                runningLayout == null ? null : runningLayout.get());
 
-            int answer = JOptionPane.showOptionDialog(owner(), edit,
+            // `asDialogContent`, not the panel: the arrival side sits under the form, and the dialog
+            // builds that wrapper once for both doors rather than each door assembling its own.
+            int answer = JOptionPane.showOptionDialog(owner(), edit.asDialogContent(),
                 I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", describeTile(target)),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
                 TrainControlUI.OK_CANCEL_OPTS, TrainControlUI.OK_CANCEL_OPTS[0]);
@@ -4362,8 +4361,7 @@ public class AutonomyEditorPanel extends JPanel
             // of this item never had the second half and an assignment made there reverted on the next
             // configuration load.  Copying these lines into that menu is how the two came apart; the
             // rule sits with the dialog instead, and both call it.
-            GraphLocAssign.commitAndRecord(edit, point, session,
-                runningLayout == null ? null : runningLayout.get());
+            GraphLocAssign.commitAndRecord(edit);
             // AND THE RAILWAY IS TOLD (VD11-A1).  This door moves a train, which is the one thing the
             // running layout most needs to hear about - and it is the sibling of `placementChanged`,
             // which every other placement door has gone through since it was written.

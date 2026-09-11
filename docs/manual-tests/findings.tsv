@@ -1695,6 +1695,37 @@ SWC-C7	2026-07-29-switch-command-review.md	Closed	Fixed - the comment names the 
 SWC-C8	2026-07-29-switch-command-review.md	Closed	Fixed - execute() instead of submit(), so an escaping exception reaches the thread handler
 SWC-C9	2026-07-29-switch-command-review.md	Closed	Fixed - both possessives repaired, and the validator now rejects the sequence, so this cla
 SWC-D15	2026-07-29-switch-command-review.md	Closed	Verified clean
+T10-B1	T10-ten-day-review.md	-	open
+T10-B1	TWV-validation.md	-	**FIX CONFIRMED**
+T10-B2	T10-ten-day-review.md	-	open
+T10-B2	TWV-validation.md	-	**FIX CONFIRMED** (its test does not test it - `TWV-B1`)
+T10-B3	T10-ten-day-review.md	-	open
+T10-B3	TWV-validation.md	-	**FIX CONFIRMED**
+T10-C1	T10-ten-day-review.md	-	open
+T10-C1	TWV-validation.md	-	NOT FIXED - still open (real)
+T10-C2	T10-ten-day-review.md	-	open
+T10-C2	TWV-validation.md	-	NOT FIXED - still open; **the claim is confirmed**, see below
+T10-C3	T10-ten-day-review.md	-	open
+T10-C3	TWV-validation.md	-	**FIX INCOMPLETE**, and partly **FIX WRONG** - `TWV-B3`, `TWV-C4`
+T10-C4	T10-ten-day-review.md	-	open
+T10-C4	TWV-validation.md	-	NOT FIXED - still open (real)
+T10-C5	T10-ten-day-review.md	-	open
+T10-C5	TWV-validation.md	-	NOT FIXED - still open (real)
+T10-C6	T10-ten-day-review.md	-	open
+T10-C6	TWV-validation.md	-	**FIX CONFIRMED**, two caveats - `TWV-C1`, `TWV-C2`
+T10-C7	T10-ten-day-review.md	-	open
+T10-C7	TWV-validation.md	-	NOT FIXED - still open (real)
+T10-D1	T10-ten-day-review.md	-	closed
+T10-D10	T10-ten-day-review.md	-	withdrawn (was C)
+T10-D10	TWV-validation.md	-	**agreed** - independently re-traced, see `T10-C2` below
+T10-D2	T10-ten-day-review.md	-	closed
+T10-D3	T10-ten-day-review.md	-	closed
+T10-D4	T10-ten-day-review.md	-	closed
+T10-D5	T10-ten-day-review.md	-	closed
+T10-D6	T10-ten-day-review.md	-	closed
+T10-D7	T10-ten-day-review.md	-	closed
+T10-D8	T10-ten-day-review.md	-	closed
+T10-D9	T10-ten-day-review.md	-	closed
 TA-A1	2026-08-24-test-suite-audit.md	Closed	Open
 TA-B1	2026-08-24-test-suite-audit.md	Closed	Open
 TA-B10	2026-08-24-test-suite-audit.md	Closed	Open
@@ -2019,6 +2050,29 @@ TV2-D2	2026-09-01-third-validation.md	Closed	closed — checked clean, traced no
 TV2-D3	2026-09-01-third-validation.md	Closed	closed — checked clean, measured
 TV2-D4	2026-09-01-third-validation.md	Closed	closed — checked clean
 TV2-D5	2026-09-01-third-validation.md	Closed	closed — checked clean
+TWV-B1	TWV-validation.md	-	open
+TWV-B2	TWV-validation.md	-	open
+TWV-B3	TWV-validation.md	-	open
+TWV-B4	TWV-validation.md	-	open
+TWV-B5	TWV-validation.md	-	open
+TWV-C1	TWV-validation.md	-	open
+TWV-C2	TWV-validation.md	-	open
+TWV-C3	TWV-validation.md	-	open
+TWV-C4	TWV-validation.md	-	open
+TWV-C5	TWV-validation.md	-	open
+TWV-C6	TWV-validation.md	-	open
+TWV-C7	TWV-validation.md	-	open
+TWV-C8	TWV-validation.md	-	open
+TWV-D1	TWV-validation.md	-	closed
+TWV-D2	TWV-validation.md	-	closed
+TWV-D3	TWV-validation.md	-	closed
+TWV-D4	TWV-validation.md	-	closed
+TWV-D5	TWV-validation.md	-	closed
+TWV-D6	TWV-validation.md	-	closed
+TWV-D7	TWV-validation.md	-	closed
+TWV-D8	TWV-validation.md	-	closed
+TWV-T10	TWV-validation.md	-	-
+TWV-W21	TWV-validation.md	-	-
 UC-B1	2026-08-01-untouched-code-review.md	Closed	Fixed at the model, both writers: `setAddress` clears out-of-range functions after the res
 UC-C1	2026-08-01-untouched-code-review.md	Closed	Fixed in `compareVersions` - each component parses its leading digit run - so the fix cove
 UC-C10	2026-08-01-untouched-code-review.md	Closed	Fixed - a `TYPE_CUSTOM` source falls back to `TYPE_INT_ARGB`
@@ -2434,6 +2488,39 @@ VLD-C5	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-C6	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-C7	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-D1	2026-09-05-single-pass-validation.md	Closed	-
+W21-B1	TWV-validation.md	-	**FIX CONFIRMED** (no test - `TWV-C5`)
+W21-B1	W21-three-week-review.md	-	open
+W21-B2	TWV-validation.md	-	**FIX CONFIRMED** (mutation-checked)
+W21-B2	W21-three-week-review.md	-	open
+W21-B3	TWV-validation.md	-	**FIX INCOMPLETE** - two unswept siblings, `TWV-B4`, `TWV-B5`
+W21-B3	W21-three-week-review.md	-	open
+W21-C1	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C1	W21-three-week-review.md	-	open
+W21-C2	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C2	W21-three-week-review.md	-	open
+W21-C3	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C3	W21-three-week-review.md	-	open
+W21-C4	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C4	W21-three-week-review.md	-	open
+W21-C5	TWV-validation.md	-	NOT FIXED - still open (real, unreachable today)
+W21-C5	W21-three-week-review.md	-	open
+W21-C6	TWV-validation.md	-	**FIX CONFIRMED**
+W21-C6	W21-three-week-review.md	-	open
+W21-C7	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C7	W21-three-week-review.md	-	open
+W21-C8	TWV-validation.md	-	NOT FIXED - still open (real)
+W21-C8	W21-three-week-review.md	-	open
+W21-C9	TWV-validation.md	-	NOT FIXED - still open (Adam's to settle)
+W21-C9	W21-three-week-review.md	-	fixed 2026-09-11 - Adam ruled, and the side is now recorded by all three doors
+W21-D1	W21-three-week-review.md	-	-
+W21-D2	W21-three-week-review.md	-	-
+W21-D3	W21-three-week-review.md	-	-
+W21-D4	W21-three-week-review.md	-	-
+W21-D5	W21-three-week-review.md	-	-
+W21-D6	TWV-validation.md	-	**settled - it is a second defect**, `TWV-B5`
+W21-D6	W21-three-week-review.md	-	-
+W21-D7	W21-three-week-review.md	-	-
+W21-D8	W21-three-week-review.md	-	-
 W7-A1	W7-seven-day-review.md	-	-
 W7-A2	W7-seven-day-review.md	-	-
 W7-B1	W7-seven-day-review.md	-	-

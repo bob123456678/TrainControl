@@ -972,6 +972,92 @@ public class testRoutes
     }
 
     /**
+     * An ACTIVE route, exported and read back, arrives switched off (MT-352, Adam 2026-09-11).
+     *
+     * *"too much manual effort for this, generate an export of an active route, import it, and confirm
+     * behavior."*  So this is the manual test, done by the suite: a route with a sensor and automatic
+     * execution ON goes out through the real exporter and comes back through the real parser.
+     *
+     * **Read back rather than imported**, deliberately.  `importRoutes` deletes every route in the
+     * database before adding the file's, and the database here is the operator's own - which is exactly
+     * why the hands-on version was too much effort to be worth it.  `parseRoutesFromJson` is the half
+     * that decides what a route arrives as, and it is the half the ruling is about.
+     * `testFailedRouteImportLeavesExistingRoutesIntact` drives the deleting half with files that always
+     * throw, which is the only safe way to reach it.
+     *
+     * The route is asserted to have been exported as ACTIVE, because a file that says `auto: false` would
+     * make the claim below true for the wrong reason - that is the whole trap in testing a default.
+     *
+     * MUTATION: remove the `route.disable()` from `parseRoutesFromJson` and this fails.
+     */
+    @Test
+    public void testAnExportedRouteComesBackDisarmed() throws Exception
+    {
+        final int sensor = 8881;
+
+        model.newFeedback(sensor, null);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(301, MM2, true));
+
+        // Built disarmed so that building the FIXTURE arms nothing, then exported as active - which is
+        // the state an operator's own automatic route is in.
+        MarklinRoute fixture = new MarklinRoute(model, "MT352 active route", 9831, commands, sensor,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        assertTrue(model.newRoute(fixture), "could not register the route this test needs");
+
+        try
+        {
+            model.getRoute("MT352 active route").enable();
+
+            String json = model.exportRoutes();
+
+            // THE FILE REALLY SAYS ACTIVE.  Without this the claim below passes on an export that never
+            // asked for an automatic route.
+            org.json.JSONArray exported = new org.json.JSONObject(json).getJSONArray("routes");
+
+            boolean found = false;
+
+            for (int i = 0; i < exported.length(); i++)
+            {
+                org.json.JSONObject each = exported.getJSONObject(i);
+
+                if (!"MT352 active route".equals(each.optString("name"))) continue;
+
+                found = true;
+
+                assertTrue(each.optBoolean("auto"),
+                    "the export did not record the route as active, so reading it back proves nothing");
+            }
+
+            assertTrue(found, "the exported file does not contain the route this test made");
+
+            // And back in through the real parser.
+            for (MarklinRoute back : model.parseRoutesFromJson(json))
+            {
+                if (!"MT352 active route".equals(back.getName())) continue;
+
+                assertFalse(back.isEnabled(),
+                    "a route exported as active came back armed.  Constructing a route parks a thread on "
+                    + "its s88, so it would be watching the railway before anything held it - and the "
+                    + "operator, not the file, decides when an imported route starts driving (Adam, "
+                    + "2026-09-10)");
+
+                assertEquals(back.getS88(), sensor, "control: the sensor survived the round trip");
+
+                assertEquals(back.getRoute().size(), 1, "control: the command survived it too");
+            }
+        }
+        finally
+        {
+            model.getRoute("MT352 active route").disable();
+
+            model.deleteRoute("MT352 active route");
+        }
+    }
+
+    /**
      * A route may only ever have one monitor thread.
      *
      * disable() just clears a flag; the thread stays parked in its feedback wait until the sensor next

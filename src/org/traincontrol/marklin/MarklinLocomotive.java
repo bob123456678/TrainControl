@@ -912,28 +912,34 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
+        // THE CONSIST'S RANGE, WHICH IS THE HIGHEST OF ITS MEMBERS (Adam, MT-359, 2026-09-11).
+        //
+        // *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean
+        // F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
+        //
+        // S14-B1 had this refuse anything the HEAD could not do, which fixed the real defect - the state
+        // going nowhere - and answered the wrong question with it: the point of a consist is that a
+        // member can do things the head cannot, and an MM2 head with an MFX member is a configuration
+        // the program allows on purpose.
+        //
+        // What stays fixed is the part that mattered.  A function outside the whole consist's range is
+        // still refused rather than sent and forgotten, `getF` answers for the members where the head's
+        // own decoder has no such function, and `functionsOff` clears the same range it can set - so
+        // nothing can be switched on that nothing can switch off, which is what made the original defect
+        // worth a finding.
+        if (fNumber < 0 || fNumber >= this.drivableFunctionCount()) return this;
+
+        // Every member is asked; each one's own validF refuses what its decoder does not have, on the
+        // recursive call.  That is the direction that was always safe.
+        for (Locomotive l : this.linkedLocomotives.keySet())
+        {
+            l.setF(fNumber, state);
+        }
+
+        // AND THE HEAD ITSELF ONLY IF IT HAS THE FUNCTION.  An MM2 head physically cannot do f6; what
+        // it must not do is pretend it did.
         if (this.validF(fNumber))
         {
-            // PASSED ON ONLY IF THE HEAD HAS THIS FUNCTION (S14-B1).
-            //
-            // The fan-out used to come first, and the check below is the HEAD's: MM2 has five functions,
-            // DCC twenty-nine, MFX thirty-two, and canBeLinkedTo says nothing about decoder types - so an
-            // MM2 head with an MFX member is a consist the program allows.  On that consist f6 went on at
-            // the member and was recorded nowhere, because the head's functionState is five long: no
-            // button showed it, functionsOff() loops to getNumF() and could not clear it, and switchF
-            // sends !getF(fn), which is true out of range, so every further press sent ON again.
-            //
-            // The head is the thing being commanded.  A function it does not have is not a command to
-            // pass on.  The other direction - a member with fewer functions - was already safe, by the
-            // member's own check on the recursive call.
-            //
-            // setSpeed and setDirection fan out unconditionally and correctly: neither carries an index,
-            // so there is nothing about them the head could fail to have.
-            for (Locomotive l : this.linkedLocomotives.keySet())
-            {
-                l.setF(fNumber, state);
-            }
-
             // Force last known direction if this is the first command to move
             if (this.lastStartTime == 0)
             {
@@ -1334,8 +1340,83 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * How many functions this locomotive can drive, counting the consist it heads.
+     *
+     * Adam's rule, MT-359: *"the allowed function [is] the highest possible for the consist"*.  Two MM2
+     * locomotives give five; one MM2 and one MFX give thirty-two, and all of them are reachable because
+     * the MFX member can do them.
+     *
+     * A locomotive with no members answers exactly what it always did.
+     *
+     * @return the largest function count in this consist, including the head's own
+     */
+    public int drivableFunctionCount()
+    {
+        int most = this.getNumF();
+
+        for (Locomotive l : this.linkedLocomotives.keySet())
+        {
+            if (l != null && l.getNumF() > most) most = l.getNumF();
+        }
+
+        return most;
+    }
+
+    /**
+     * Whether a function is on, asking the members for the ones the head's own decoder does not have.
+     *
+     * **NOT by widening `validF`**, which would be the obvious way and is wrong: `Locomotive.getF`
+     * tests `validF` and then indexes `functionState`, an array sized to this decoder's own function
+     * count, so a widened range would read past the end of it.
+     *
+     * The head's own functions answer from the head.  Beyond them the question is about the consist, and
+     * the consist's answer is its members' - which is also the only place that state exists.
+     *
+     * @param fNumber the function
+     * @return whether it is on
+     */
+    @Override
+    public boolean getF(int fNumber)
+    {
+        if (fNumber >= 0 && fNumber < this.getNumF()) return super.getF(fNumber);
+
+        if (fNumber < 0) return false;
+
+        for (Locomotive l : this.linkedLocomotives.keySet())
+        {
+            if (l != null && l.getF(fNumber)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Turns off every function this consist can turn on.
+     *
+     * The base walks `getNumF()`, which is the head's own count - so on a consist whose members have
+     * more functions than the head, it could switch one on and not off again.  That asymmetry is the
+     * defect S14-B1 was filed for, and it survives the change of rule: whatever range `setF` accepts,
+     * this has to clear.
+     *
+     * @return this
+     */
+    @Override
+    public Locomotive functionsOff()
+    {
+        for (int i = 0; i < this.drivableFunctionCount(); i++)
+        {
+            if (this.getF(i))
+            {
+                this.setF(i, false).delay(FUNCTION_DELAY_MS);
+            }
+        }
+
+        return this;
+    }
+
+    /**
      * Gets the list of linked locomotives (names only - suitable for export)
-     * @return 
+     * @return
      */
     @Override
     public Map<String, Double> getLinkedLocomotiveNames()

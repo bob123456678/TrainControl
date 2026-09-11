@@ -749,6 +749,23 @@ Two honest answers, and the choice is Adam's:
 The second is what the current behaviour is one step away from, and it is the one that cannot lose
 somebody's route.
 
+### FR-070 - 2026-09-11 - make it easier to enable/disable routes
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-11 03:31  
+**Build:** commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+instead of having to risk-click to enable/disable auto execution, show a checkbox next to each entry in the route tiles.  checking it has the same effect as activating auto execution.  grey out checkboxes for routes with no s88, and disable everything while the power is on.  feature for 3.1.0
+
+### FR-071 - 2026-09-11 - right clicking the edit button
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-11 03:44  
+**Build:** commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+right clicking the edit button on the track diagram viewer pulls up the same "manage pages" right click menu to manage pages (add/delete/rename), and is blocked at the same times as the other one.
 
 ## What has been picked up
 

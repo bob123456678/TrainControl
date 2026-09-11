@@ -761,11 +761,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
                         menuItem.addActionListener(event -> 
                         {
-                            GraphLocAssign edit = new GraphLocAssign(ui, current, false);
+                            // THE SETUP GOES IN WITH IT (REV9-B2): the dialog offers the arrival
+                            // side now, and works this square's sides out from the build to do it.
+                            GraphLocAssign edit = new GraphLocAssign(ui, current, false,
+                                ui.getAutonomySession(),
+                                ui.getModel() == null ? null : ui.getModel().getAutoLayout());
 
                             int dialogResult = JOptionPane.showOptionDialog(
                                 ui,
-                                edit,
+                                // The form WITH the arrival side under it, wrapped in one place for
+                                // both doors - see `asDialogContent`.
+                                edit.asDialogContent(),
                                 I18n.f("autolayout.ui.dialogEditOrAssignLocomotive",
                                     stationName(current)),
                                 JOptionPane.OK_CANCEL_OPTION,
@@ -786,9 +792,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 //
                                 // Through the shared door rather than a copy of the twin’s lines: a
                                 // second copy is what put these two a week apart.
-                                GraphLocAssign.commitAndRecord(edit, current,
-                                    ui.getAutonomySession(),
-                                    ui.getModel() == null ? null : ui.getModel().getAutoLayout());
+                                GraphLocAssign.commitAndRecord(edit);
 
                                 ui.updateVisiblePoints();
                                 ui.repaintAutoLocList(false);
@@ -1069,6 +1073,20 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
+     * Whether the operator marked this square as one trains may turn round at.
+     *
+     * Asked of the SETUP, because `canReverse` never reaches the running layout - the builder
+     * expresses it by splitting the square and says so.  The same question `TrainControlUI.mayTurnHere`
+     * asks for the paste door and `GraphLocAssign` for the dialog, and the same answer.
+     *
+     * @return true when trains may turn there
+     */
+    private boolean mayTurnHere()
+    {
+        return session != null && station != null && session.mayTurnTiles().contains(station);
+    }
+
+    /**
      * Puts a named locomotive on a named copy of this square, facing a given way.
      *
      * Takes the locomotive rather than reading the active one, because it has two callers that mean
@@ -1083,6 +1101,51 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         org.traincontrol.automationui.TilePorts.Side facing)
     {
         if (locName == null) return;
+
+        final org.traincontrol.automation.Layout running = ui.getModel() == null
+            ? null : ui.getModel().getAutoLayout();
+
+        final org.traincontrol.automation.Point landing =
+            running == null ? null : running.getPoint(pointName);
+
+        // A PLACEMENT, OR A TURN?  The two callers mean different things and only one of them is an
+        // arrival: placing puts the active locomotive down somewhere it was not, while "face east"
+        // turns the train already standing here.  A turn does not change which way the train CAME in,
+        // and `Point.setLocomotive` leaves `arrivedFrom` alone when the occupant does not change - so
+        // this asks about placements only, and a turn goes through untouched.
+        final boolean arriving = landing != null && (landing.getCurrentLocomotive() == null
+            || !locName.equals(landing.getCurrentLocomotive().getName()));
+
+        String tail = null;
+
+        if (arriving)
+        {
+            // AND WHERE ITS TAIL IS (REV9-B2).  This door placed a train and worked the side out at
+            // all, so nothing behind it was blocked - while the identical placement by drag asked the
+            // question and blocked it.  `behaviour.md` section 4 recorded that as an open defect and
+            // it was one; Adam settled it on 2026-09-11: *"the missing arrival side should be set -
+            // either from the data, by the user, or randomly."*
+            //
+            // Through the same door the paste uses, with the same rule behind it: forced at a terminus,
+            // taken from behind the heading at an ordinary station, asked on a square trains may turn
+            // at.  This door has no dialog of its own to offer it in - `GraphLocAssign` does, and it
+            // uses a combo for exactly that reason - so here it is the prompt, as it is for a paste.
+            //
+            // BEFORE THE MOVE, so that a dismissal can leave the railway as it was.  Asked afterwards
+            // there would be nothing left to decline, which is the mistake the paste door made first.
+            tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(running, landing,
+                facing == null ? null : facing.name(), mayTurnHere(), ui,
+                session == null ? null : session.arrivalSides(station));
+
+            // A DISMISSAL, and not the other two nulls (IND9-B5): `forPlacement` also answers null when
+            // the square offers nothing to choose between, and refusing to place there would be a
+            // silent, permanent refusal with no dialog to explain it.
+            if (tail == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(running, landing,
+                mayTurnHere(), session == null ? null : session.arrivalSides(station)))
+            {
+                return;
+            }
+        }
 
         // THE RAILWAY'S ANSWER DECIDES WHETHER ANY OF THIS HAPPENS (W21-B3).
         //
@@ -1112,6 +1175,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // invalidating the whole layout.  Every path was then refused as "configuration is
             // invalid", from a placement made minutes earlier.
             session.placeLocomotive(station, locName);
+
+            // AND THE TAIL, into BOTH stores (REV9-B2, and VAL8-A2 for the second of them).  The walk
+            // that blocks track reads the live Point; the setup value only reaches it at the next
+            // rebuild, so written to one only the operator answers the question and watches nothing
+            // become blocked.  After `placeLocomotive`, because a change of occupant clears it.
+            if (arriving)
+            {
+                session.setArrivedFrom(station, tail);
+
+                if (landing != null) landing.setArrivedFrom(tail);
+            }
         }
 
         if (facing != null && session != null)

@@ -266,7 +266,7 @@ covered by a rebuild — see `W21-D6`.
 | W21-C6 | `NetworkProxy.reader`: "kept so that stopListening can end it" — `stopListening` never touches it and nothing reads it | open |
 | W21-C7 | `testTheWindowAttachesItsRefreshCallback`'s first assertion still reads the raw source, which is the hole its own javadoc names | open |
 | W21-C8 | localising the trigger-type combo moves a Momentary selection to Toggle; only a deferred repaint puts it back | open |
-| W21-C9 | `GraphLocAssign` declares the missing arrival side a non-issue; `behaviour.md` §4 lists it as an open defect | open |
+| W21-C9 | `GraphLocAssign` declares the missing arrival side a non-issue; `behaviour.md` §4 lists it as an open defect | fixed 2026-09-11 - Adam ruled, and the side is now recorded by all three doors |
 
 ### W21-C1 — `(char) -1` in a message dialog, guarded in the twin and not here
 
@@ -550,6 +550,34 @@ and the live `Point`, and says why.
 **What I would change.** Nothing in the code until Adam rules. In the meantime the comment at `:142`
 should not assert a decision that `behaviour.md` records as an open defect — it should name `REV9-B2`
 and say the question is open, which is the one case where citing a finding id is the whole point.
+
+**Settled 2026-09-11, and `behaviour.md` was the one that was right.** Adam: *"the missing arrival
+side should be set - either from the data, by the user, or randomly"*, and then *"proceed with this
+combo. Try to reuse the machinery/checks of the current popup."*
+
+The reviewer's framing was exactly right - the two could not both be right, and the source comment was
+the worse of the two, because a reader who opened the one file that exists to hold this rule for both
+doors was told there was nothing to do. What the finding could not settle, and did not try to, is
+which way: that was a design question and it went to Adam.
+
+- `ArrivalSidePrompt` was split into `suggestedFor` - the rule with the dialog taken out - and
+  `forPlacement`, which is that same rule plus the question. Neither surface can answer differently
+  from the other, because there is one rule and one list of sides behind both (`choicesFor`).
+- `GraphLocAssign` offers the side as a combo in the form it is already showing, started at the
+  recorded value if something watched the train arrive, else the rule's, else the first side the
+  square has. Sides only: clearing is not offered here for the same reason it was taken off the
+  arrived-from menu (Adam, 2026-09-07).
+- `commitAndRecord` writes it to the setup AND the live `Point`, and lost its three redundant
+  parameters in the process - the dialog holds the session it was built against, so there is no longer
+  a second copy that can name a different one.
+- `LayoutRightclickAutonomyMenu.placeFacing`, the third door and the one this finding did not name,
+  was swept with them: it asks through the prompt before anything moves, and only on a placement -
+  turning a train that is already standing there does not change which way it came in.
+- `regression.testAPlacedTrainRecordsWhereItCameFrom` drives the DOOR, which is the half that was
+  missing: the rule has had tests since it was written and every one of them was green throughout
+  this defect's life.
+
+`W21-D6` is settled by the same commit in passing: `removeLocomotiveHere` now saves.
 
 ---
 

@@ -470,11 +470,35 @@ turned round the two point the same way while the carriages have not moved.
 - a square with **three or more ways in** where the facing cannot separate them and the build does
   not enter by the compass opposite either - see the rule above. Deliberate: nothing is recorded
   rather than a side guessed.
-- and one that is **not** narrow and is a defect rather than a design: the **right-click "Place
-  locomotive"** item and the **graph window's assign** both place a train without working the side
-  out at all (`REV9-B2`, open). Only the diagram drag/paste door implements the rules above. A train
-  put down by either of the other two lands with no tail recorded, so nothing behind it is blocked,
-  while the identical placement by drag asks the question and blocks it.
+- and a square whose occupant a **placement door could not ask about**, which since 2026-09-11 is
+  only the dismissed prompt: `placeFacing` treats that as "do not place the train", so nothing lands
+  and nothing is recorded.
+
+**Every hand-placement door works it out, as of 2026-09-11** (`REV9-B2`, closed). This was the one
+entry in the list above that was a defect rather than a design: the right-click "Place locomotive"
+item and the assign dialog both placed a train without working the side out at all, so the same
+placement blocked the track behind it or did not depending on which menu it was made from. Adam
+settled it: *"the missing arrival side should be set - either from the data, by the user, or
+randomly."*
+
+The three doors now differ only in **where the question is put**, because the rule behind them is one
+method:
+
+| door | how it asks |
+|---|---|
+| diagram drag and paste | `ArrivalSidePrompt.forPlacement` - a dialog, before anything moves, so a dismissal leaves the railway as it was |
+| right-click "Place ... facing" | the same dialog, on a placement only: turning a train that is already standing there does not change which way it came in |
+| the assign dialog | a combo in the form it is already showing, started on the answer and correctable before OK |
+
+`GraphLocAssign` uses a combo rather than a second popup because it HAS a dialog, and a dialog on top
+of a dialog is worse than either. That also makes the assumption safe to show where the popup declines
+to make it: on a may-reverse square the popup asks, because a guess it made would be invisible, while a
+value sitting in a combo is seen and can be changed. `ArrivalSidePrompt.suggestedFor` is the rule with
+the dialog taken out, and `forPlacement` is that same method plus the question - so the two surfaces
+cannot answer differently.
+
+The combo offers **sides and nothing else**, for the reason clearing is not offered on the menu below:
+recorded, else derived, else the first side the square has, which is the "randomly" above.
 
 **Clearing is not offered.** Adam, 2026-09-07: *"clearing should not be possible, only setting."* The
 menu used to carry a "Not known" option, on the argument that a mistaken answer would otherwise be

@@ -262,38 +262,33 @@ public class testMultiUnitMembership
     }
 
     /**
-     * A function the head does not have is not passed on to the members (S14-B1).
+     * A consist can drive every function any of its members has (Adam, MT-359, 2026-09-11).
      *
-     * **The fan-out came before the bounds check.** `setF` looped over the members first and asked
-     * `validF(fNumber)` afterwards, and the check is the HEAD's: `getMaxNumF` gives MM2 five functions,
-     * DCC twenty-nine and MFX thirty-two. `canBeLinkedTo` refuses self, a Central Station multi-unit, a
-     * member that is already a head, and an address clash - and says nothing about decoder types, so an
-     * MM2 head with an MFX member is a supported consist.
+     * *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4
+     * do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
      *
-     * On that consist `setF(6, true)` switched f6 on at the member and recorded nothing at the head,
-     * whose `functionState` is five long. Three things follow, and the third is why this is not cosmetic:
-     * no button exists for it, `functionsOff()` loops to `getNumF()` and can never clear it - which is
-     * what autonomy calls on arrival - and `TrainControlUI.switchF` sends `!getF(fn)`, which is always
-     * `true` out of range, so **every press sends ON and no press ever sends OFF**. The only way back is
-     * to select the member and clear it there.
+     * **This replaces the opposite claim.** `S14-B1` found that an MM2 head passed f6 to an MFX member
+     * and recorded it nowhere - no button, `functionsOff` could not clear it, and the next press sent ON
+     * again - and fixed it by refusing anything the HEAD could not do. That fixed the real defect and
+     * answered the wrong question: the point of a consist is that a member can do what the head cannot.
+     * Adam ran it and said so.
      *
-     * The keyboard reaches this: the bare function keys are bound to `switchF(0)` through `switchF(30)`
-     * with no gate on the active locomotive's function count.
+     * What must stay true is the part that made it a finding: nothing can be switched on that nothing
+     * can switch off. So three things are asserted together - the function reaches the member, the
+     * consist can still SEE it afterwards, and `functionsOff` clears it.
      *
-     * The opposite direction - a member with FEWER functions than the head - was already safe, by the
-     * member's own check. This is the one that leaked.
-     *
-     * MUTATION: put the loop back above `if (this.validF(fNumber))` and the first assertion fails.
+     * MUTATION: put `if (this.validF(fNumber))` back around the fan-out and the first claim fails; drop
+     * the `getF` override and the second does; leave `functionsOff` walking `getNumF()` and the third.
      */
     @Test
-    public void testAFunctionTheHeadDoesNotHaveIsNotSentToTheMembers()
+    public void testAConsistCanDriveEveryFunctionItsMembersHave()
     {
         MarklinLocomotive head = model.newMM2Locomotive("MU head J", 79);
         MarklinLocomotive member = model.newMFXLocomotive("MU member J1", 80);
 
         try
         {
-            assertEquals(head.getNumF(), 5, "precondition: an MM2 head has five functions");
+            assertEquals(head.getNumF(), 5, "precondition: an MM2 head has five functions of its own");
 
             assertTrue(member.getNumF() > 6,
                 "precondition: the MFX member has more functions than the head, which is the whole "
@@ -301,22 +296,50 @@ public class testMultiUnitMembership
 
             link(head, member);
 
-            assertEquals(head.getLinkedLocomotives().size(), 1, "precondition: the member is linked");
+            assertEquals(head.drivableFunctionCount(), member.getNumF(),
+                "the consist's range is the highest of its members, not the head's");
 
             head.setF(6, true);
 
+            assertTrue(member.getF(6),
+                "f6 did not reach the MFX member.  An MM2 head cannot do f6 itself, but the consist "
+                + "can - that is what a consist is for (MT-359)");
+
+            // AND THE CONSIST CAN SEE IT, which is what the original defect was really about: the state
+            // went somewhere nothing could read.
+            assertTrue(head.getF(6),
+                "the consist cannot see a function it has just switched on, so no button shows it and "
+                + "nothing can turn it off - which is the defect S14-B1 was filed for");
+
+            // AND CAN TURN IT OFF AGAIN.
+            head.functionsOff();
+
             assertFalse(member.getF(6),
-                "f6 was switched on at the member by a head that has no f6.  Nothing records it at the "
-                + "head, so no button shows it, functionsOff() cannot clear it, and every further press "
-                + "of that key sends ON again (S14-B1)");
+                "functionsOff left f6 on at the member: it walks the head's own function count, so a "
+                + "consist could switch on what it could not switch off");
 
-            // THE CONTROL: a function the head DOES have still reaches the member, so the assertion
-            // above is not passing because the fan-out stopped working.
-            head.setF(3, true);
+            // A function beyond EVERY member is still refused, so this is a range and not an absence
+            // of one.
+            head.setF(member.getNumF() + 5, true);
 
-            assertTrue(member.getF(3),
-                "control: f3 did not reach the member, so this test would pass with the fan-out removed "
-                + "entirely");
+            assertFalse(head.getF(member.getNumF() + 5), "a function no member has was accepted");
+
+            // THE CONTROL: two locomotives of the same kind still have that kind's range.
+            MarklinLocomotive plainHead = model.newMM2Locomotive("MU head J2", 81);
+            MarklinLocomotive plainMember = model.newMM2Locomotive("MU member J2", 82);
+
+            try
+            {
+                link(plainHead, plainMember);
+
+                assertEquals(plainHead.drivableFunctionCount(), 5,
+                    "two MM2 locomotives give an MM2 range - the rule is the highest of the members, "
+                    + "not simply the highest there is");
+            }
+            finally
+            {
+                deleteAll("MU head J2", "MU member J2");
+            }
         }
         finally
         {
