@@ -750,6 +750,27 @@ FV2-D2	2026-09-01-fix-validation.md	Closed	closed — checked clean
 FV2-D3	2026-09-01-fix-validation.md	Closed	closed — checked clean
 FV2-D4	2026-09-01-fix-validation.md	Closed	closed — checked clean
 FV2-D5	2026-09-01-fix-validation.md	Closed	closed — checked clean
+FV3-A1	FV-second-validation.md	-	**a repair landed in the working tree while this pass was running; re-measured, the data i
+FV3-A2	FV-second-validation.md	-	open
+FV3-A3	FV-second-validation.md	-	open
+FV3-B1	FV-second-validation.md	-	open
+FV3-B2	FV-second-validation.md	-	open
+FV3-B3	FV-second-validation.md	-	open
+FV3-C1	FV-second-validation.md	-	open
+FV3-C2	FV-second-validation.md	-	open
+FV3-C3	FV-second-validation.md	-	open
+FV3-C4	FV-second-validation.md	-	open
+FV3-C5	FV-second-validation.md	-	open
+FV3-C6	FV-second-validation.md	-	open
+FV3-C7	FV-second-validation.md	-	open
+FV3-C8	FV-second-validation.md	-	open
+FV3-D1	FV-second-validation.md	-	clean - **withdrawn**, originally opened as a suspected A
+FV3-D2	FV-second-validation.md	-	clean, measured
+FV3-D3	FV-second-validation.md	-	clean
+FV3-D4	FV-second-validation.md	-	clean - present in all eight bundles, ASCII-only, placeholders match
+FV3-D5	FV-second-validation.md	-	a trap, not the cause of `FV3-A2` - measured
+FV3-D6	FV-second-validation.md	-	clean
+FV3-D7	FV-second-validation.md	-	verified
 FX2-1	2026-09-01-fanout-index.md	Closed	**Closed**
 FX2-2	2026-09-01-fanout-index.md	Closed	**Closed** (`6f729027`)
 FX2-3	2026-09-01-fanout-index.md	Closed	**Closed, accepted as-is**
@@ -1068,20 +1089,28 @@ MON-C6	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - four javadocs and two t
 MON-C7	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-C8	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the index re-counted against its own sections; three other documents qu
 MON-C9	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the arithmetic recorded, and BOTH unadjudicated sub-findings ruled: C19
+N8-A1	FV-second-validation.md	-	**FIX WRONG** - see `FV3-A2`. Add, Rename, Duplicate and Combine re-aim against a list tha
 N8-A1	N8-eight-day-review.md	-	closed
 N8-A1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: B**
+N8-B1	FV-second-validation.md	-	**FIX CONFIRMED** - keyed by name; the test catches the key-by-id mutation. Two cautions u
 N8-B1	N8-eight-day-review.md	-	closed
 N8-B1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
+N8-B2	FV-second-validation.md	-	**FIX INCOMPLETE** - `clear()` still forgets the page BEFORE emptying it (`FV3-C3`), and t
 N8-B2	N8-eight-day-review.md	-	closed
 N8-B2	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
+N8-B3	FV-second-validation.md	-	**FIX CONFIRMED** - measured: the fifteen are gone, `X8V-C1` and `X8V-C3` read `closed`, a
 N8-B3	N8-eight-day-review.md	-	closed
 N8-B3	NSV-validation.md	-	**CONFIRMED** (count and mechanism exact; the stated cause and the proposed fix are both w
+N8-C1	FV-second-validation.md	-	**FIX INCOMPLETE** - the ceiling is asked after the page has been created, indexed and exc
 N8-C1	N8-eight-day-review.md	-	closed
 N8-C1	NSV-validation.md	-	**CONFIRMED**
+N8-C2	FV-second-validation.md	-	**FIX CONFIRMED** - §7b written; two inaccuracies in it under `FV3-C5`
 N8-C2	N8-eight-day-review.md	-	closed
 N8-C2	NSV-validation.md	-	**CONFIRMED** (same defect as `S14-C8`)
+N8-C3	FV-second-validation.md	-	**FIX CONFIRMED**
 N8-C3	N8-eight-day-review.md	-	closed
 N8-C3	NSV-validation.md	-	**CONFIRMED**
+N8-C4	FV-second-validation.md	-	**FIX CONFIRMED**
 N8-C4	N8-eight-day-review.md	-	closed
 N8-C4	NSV-validation.md	-	**CONFIRMED**
 N8-D1	N8-eight-day-review.md	-	clean
@@ -1101,15 +1130,25 @@ NR-6	2026-08-23-night-review.md	Closed	High
 NR-7	2026-08-23-night-review.md	Closed	High
 NR-8	2026-08-23-night-review.md	Closed	High
 NR-9	2026-08-23-night-review.md	Closed	Medium
+NSV-B1	FV-second-validation.md	-	**FIX CONFIRMED** - parser fixed and the prune simulated read-only; two residual risks nam
 NSV-B1	NSV-validation.md	-	closed
+NSV-B2	FV-second-validation.md	-	**FIX INCOMPLETE** - the one-call form is right and the `restoreState` precondition genuin
 NSV-B2	NSV-validation.md	-	closed
+NSV-B3	FV-second-validation.md	-	**FIX WRONG** - see `FV3-A1`. The placeholder defeats `pagesSafeToJudge`, and the next aut
 NSV-B3	NSV-validation.md	-	closed
+NSV-C1	FV-second-validation.md	-	**FIX CONFIRMED**
 NSV-C1	NSV-validation.md	-	closed
+NSV-C2	FV-second-validation.md	-	**FIX CONFIRMED** - covered by the factory clamp
 NSV-C2	NSV-validation.md	-	closed
+NSV-C3	FV-second-validation.md	-	**FIX CONFIRMED** in the code. Its test cannot fail for this defect - see the test section
 NSV-C3	NSV-validation.md	-	closed
+NSV-C4	FV-second-validation.md	-	**FIX CONFIRMED**
 NSV-C4	NSV-validation.md	-	closed
+NSV-C5	FV-second-validation.md	-	**FIX WRONG** - the sentence the finding is about is unchanged; the edit landed on `TileGr
 NSV-C5	NSV-validation.md	-	closed
+NSV-C6	FV-second-validation.md	-	**FIX CONFIRMED**
 NSV-C6	NSV-validation.md	-	closed
+NSV-C7	FV-second-validation.md	-	**FIX CONFIRMED**
 NSV-C7	NSV-validation.md	-	closed
 NSV-D1	NSV-validation.md	-	**`S14-C5` refuted**; it is one of six exports with the same shape, and nothing can be los
 NSV-D2	NSV-validation.md	-	clean, measured
@@ -1451,32 +1490,46 @@ RV-C2	2026-08-01-reversing-destinations-review.md	Closed	Fixed - the probe now a
 RV-D1	2026-08-01-reversing-destinations-review.md	Closed	Clean - except its through-traffic bullet, whose judgment `b56b407` reverses; see "The thi
 RV-D2	2026-08-01-reversing-destinations-review.md	Closed	Verified
 RV-D3	2026-08-01-reversing-destinations-review.md	Closed	Concurs
+S14-A1	FV-second-validation.md	-	**FIX CONFIRMED** - disarmed at construction; the operator's arming door reconstructs the 
 S14-A1	NSV-validation.md	-	**CONFIRMED** - and demonstrated by execution
 S14-A1	S14-application-review.md	-	closed
+S14-A2	FV-second-validation.md	-	**FIX CONFIRMED** - measured: with absent `.id` = 0, none of the thirteen index files has 
 S14-A2	NSV-validation.md	-	**CONFIRMED**
 S14-A2	S14-application-review.md	-	closed
+S14-B1	FV-second-validation.md	-	**FIX CONFIRMED**
 S14-B1	NSV-validation.md	-	**CONFIRMED**
 S14-B1	S14-application-review.md	-	closed
+S14-B2	FV-second-validation.md	-	**FIX CONFIRMED** - clamped at the factory, every caller checked, negative still normalise
 S14-B2	NSV-validation.md	-	**CONFIRMED**
 S14-B2	S14-application-review.md	-	closed
+S14-B3	FV-second-validation.md	-	**FIX CONFIRMED** - and `entrySide` is a `String`, so the unguarded `put` cannot write an 
 S14-B3	NSV-validation.md	-	**CONFIRMED**
 S14-B3	S14-application-review.md	-	closed
+S14-B4	FV-second-validation.md	-	**FIX INCOMPLETE** - the design is right and pinned, but publishing is no longer `synchron
 S14-B4	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: A**
 S14-B4	S14-application-review.md	-	closed
+S14-C1	FV-second-validation.md	-	**FIX CONFIRMED** - both branches, including three-way, now agree with the diagram editor
 S14-C1	NSV-validation.md	-	**CONFIRMED**
 S14-C1	S14-application-review.md	-	closed
+S14-C2	FV-second-validation.md	-	**FIX CONFIRMED** for the daemon and the name. The `shutdown()` half the finding also prop
 S14-C2	NSV-validation.md	-	**CONFIRMED**
 S14-C2	S14-application-review.md	-	closed
+S14-C3	FV-second-validation.md	-	**FIX INCOMPLETE** - one of the two stale paragraphs was corrected; *"This replaces the cu
 S14-C3	NSV-validation.md	-	**CONFIRMED**
 S14-C3	S14-application-review.md	-	closed
+S14-C4	FV-second-validation.md	-	**FIX CONFIRMED**
 S14-C4	NSV-validation.md	-	**CONFIRMED**
 S14-C4	S14-application-review.md	-	closed
+S14-C5	FV-second-validation.md	-	**FIX CONFIRMED (refuted)** - re-checked: five other exports truncate, nothing was changed
 S14-C5	NSV-validation.md	-	**REFUTED**
 S14-C5	S14-application-review.md	-	refuted
+S14-C6	FV-second-validation.md	-	**FIX CONFIRMED**
 S14-C6	NSV-validation.md	-	**CONFIRMED** (one factual error in it, and it missed the stronger sibling)
 S14-C6	S14-application-review.md	-	closed
+S14-C7	FV-second-validation.md	-	**FIX INCOMPLETE** - the gate is on the COMMAND only. `MarklinFeedback.parseMessage` also 
 S14-C7	NSV-validation.md	-	**CONFIRMED**
 S14-C7	S14-application-review.md	-	closed
+S14-C8	FV-second-validation.md	-	**FIX CONFIRMED** - see `N8-C2` and `FV3-C5`
 S14-C8	NSV-validation.md	-	**CONFIRMED** (same defect as `N8-C2`)
 S14-C8	S14-application-review.md	-	closed
 S14-D1	S14-application-review.md	-	withdrawn, opened as a suspected A: the conditional `touched()` does not leave the autonom

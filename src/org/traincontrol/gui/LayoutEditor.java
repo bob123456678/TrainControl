@@ -3916,7 +3916,22 @@ public class LayoutEditor extends PositionAwareJFrame
                     
                     // Retrieve the address from LayoutEditorAddressPopup and use it
                     int newAddress = Integer.parseInt(addressPopup.getAddress());
-                    lc.setLogicalAddress(newAddress, addressPopup.getProtocol(), addressPopup.getGreenButton().isSelected());
+
+                    // A LINK MAY BE AIMED AT NOTHING, AND ONLY THIS PATH CAN SAY SO (FV3-C8).
+                    //
+                    // Zero from the popup means the operator chose "(none)", or the arrow was already
+                    // pointing nowhere and they pressed OK without changing it.  setLogicalAddress
+                    // cannot express that - it subtracts one for a link and throws on a negative - so
+                    // pressing OK on a broken arrow used to aim it at the first page in the alphabet,
+                    // silently, which is exactly the choice Adam's ruling leaves to the operator.
+                    if (lc.isLink() && newAddress <= 0)
+                    {
+                        lc.setLinkedPageIndex(-1);
+                    }
+                    else
+                    {
+                        lc.setLogicalAddress(newAddress, addressPopup.getProtocol(), addressPopup.getGreenButton().isSelected());
+                    }
                     
                     layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
                     lc.setProtocol(addressPopup.getProtocol());
@@ -5303,9 +5318,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 // square's CAPTION and left everything else keyed to it, so the contrast this comment
                 // draws was between a gesture that forgot nothing and one that forgot almost nothing.
                 // It is true now.
-                forgetWholePage();
-
+                // EMPTIED FIRST, THEN FORGOTTEN (FV3-C3).
+                //
+                // forgetWholePage rebuilds the tile graph, and the graph is traced from the
+                // SQUARES - so forgetting first rebuilt from the diagram the next line is about to
+                // throw away, and nothing rebuilt afterwards.  Clear Page left autonomy holding
+                // every tile it had just deleted.
+                //
+                // This is the order N8-B2's adjudication asked for and the fix for it missed.  It
+                // was cosmetic while the rebuild was conditional on the store; it stopped being
+                // cosmetic when the rebuild became unconditional again.
                 layout.clear();
+
+                forgetWholePage();
                 this.resetClipboard();
 
                 refreshGrid();

@@ -24876,6 +24876,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // THE CEILING, ASKED BEFORE ANYTHING IS MADE (N8-C1, FV3-C4).
+        //
+        // The check used to live in `fillCombinedPage`, which runs after the page has been written to
+        // disk, entered in the index, excluded from autonomy and the layouts refreshed - so refusing
+        // left the operator an unfilled copy of the page they combined from, to find and delete.  This
+        // is the "refuse before the page is created" the finding asked for.
+        //
+        // The size is the same arithmetic `fillCombinedPage` does: the widest source page, and every
+        // source page's height plus a blank row between them.
+        int wouldBeWide = 0;
+        int wouldBeHigh = 0;
+
+        for (String each : pages)
+        {
+            LayoutDiagram page = this.model.getLayout(each);
+
+            if (page == null) continue;
+
+            wouldBeWide = Math.max(wouldBeWide, page.getSx());
+            wouldBeHigh += page.getSy() + 1;
+        }
+
+        if (wouldBeHigh > LayoutEditor.MAX_SIZE || wouldBeWide > LayoutEditor.MAX_SIZE)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
+            return;
+        }
+
         // On a worker, because it parses every page of the layout twice over.
         new Thread(() ->
         {
@@ -25010,8 +25039,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The page already exists - it was made as a copy of the one being combined - so this empties it,
      * grows it to fit, and writes the squares in.  Copied square by square rather than by reference,
      * because a LayoutDiagramComponent carries its own coordinates and the copies sit at different
-     * ones.  A link on a combined page keeps pointing at the page it always pointed at: it is a
-     * redrawing, and following it should still arrive where the original does.
+     * ones.
+     *
+     * **THE COPIED ARROWS ARE NOT RE-AIMED, AND THAT IS A KNOWN GAP** (NSV-C5, FV3-A2).  This used to
+     * say a link on a combined page "keeps pointing at the page it always pointed at", as settled fact.
+     * It does not.  A link tile holds a POSITION in the name-sorted page list, and combining adds a
+     * page to that list, so every number on the copy means a different page afterwards.
+     *
+     * `writeIndexAndKeepLinksAimed` re-aims every arrow in the layout when the list changes - but the
+     * combined page is not in the model when that runs: it has been written to disk and the model is
+     * refreshed afterwards, so the re-aim never sees it.  The pages it was made FROM are corrected; the
+     * copy keeps the numbers it was copied with.
+     *
+     * Left rather than patched here, because the fix belongs where the page joins the model and not in
+     * the method that fills its squares.
      *
      * @param name the page just created
      * @param pages the source pages, the one being combined first

@@ -36,6 +36,89 @@ public class testAutonomyDiagramSession
     private File layout;
     private AutonomySession session;
 
+    /**
+     * A stand-in for a page that would not read is not a page autonomy may judge (FV3-A1, FV3-A3).
+     *
+     * **`CS2File` substitutes a blank page when a file will not parse**, so that a link tile after it
+     * still resolves to the right page - Adam's ruling of 2026-09-10, and the reason is that a page
+     * which simply vanished re-aimed every arrow after it (NSV-B3).
+     *
+     * The stand-in carries the missing page's NAME and ID, and both are how this session decides whether
+     * it is looking at the whole railway. So it made things worse than the absence it replaced:
+     * `pagesNotLoaded` compares names and came back empty, `pagesSafeToJudge` went true, the entries
+     * held out of memory for a page nobody can see were released, and the next `save()` reconciled the
+     * real page's whole setup against the one text tile the stand-in carries. That is MT-135 - *"all
+     * stations are gone"* - reached by a third route.
+     *
+     * **Three loops in this class build that name set, and a repair reaching two of them is worse than
+     * one reaching none** (FV3-A3): the prune is then declined while `Reconciliation.declined` with an
+     * empty absent-list reports `wasDeclined()` as false, so the save refuses to judge the page and
+     * tells every caller it did not. This asserts the ANSWER rather than the loops, so it holds however
+     * many copies of them there are.
+     *
+     * MUTATION: take `if (page.isUnreadable()) continue;` out of `pagesSafeToJudge` or out of `open`
+     * and this fails.
+     */
+    @Test
+    public void testAPageThatWouldNotReadIsNotJudged() throws IOException
+    {
+        // A setup written while both pages are genuinely there.
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+        session.initialize("Evening");
+
+        TileKey onTheSecondPage = new TileKey("second", 1, 1);
+
+        session.setPointName(onTheSecondPage, "Second Platform");
+        session.save();
+
+        // Now the second page's file will not read, so CS2File hands over a blank stand-in for it -
+        // same name, same id, one text tile.
+        LayoutDiagram standIn = new LayoutDiagram("second", 6, 4, null, null);
+
+        standIn.setPageId("2");
+
+        standIn.markUnreadable();
+
+        AutonomySession withAStandIn = new AutonomySession(layout);
+
+        withAStandIn.open(Arrays.asList(runOfTrack(), standIn));
+
+        assertFalse(withAStandIn.pagesSafeToJudge(),
+            "a blank stand-in for a page whose file would not read was accepted as a loaded page.  "
+            + "Everything the setup holds about the real page is then judged against the one text tile "
+            + "the stand-in carries, and written - which is MT-135 (FV3-A1)");
+
+        // AND THE SETTING IS STILL THERE afterwards, which is the half that matters.
+        withAStandIn.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        assertEquals(reopened.getStore().getPointName(onTheSecondPage), "Second Platform",
+            "the name on a page that could not be read was reconciled away by a save that should have "
+            + "declined to judge it");
+
+        // THE CONTROL: with both pages really present, the session does judge - so the refusal above is
+        // about the stand-in and not about this having stopped answering yes.
+        assertAWholeLayoutIsJudged();
+    }
+
+    /**
+     * The control for `testAPageThatWouldNotReadIsNotJudged`: a layout with every page loaded is safe
+     * to judge.
+     */
+    private void assertAWholeLayoutIsJudged() throws IOException
+    {
+        AutonomySession whole = new AutonomySession(layout);
+
+        whole.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        assertTrue(whole.pagesSafeToJudge(),
+            "control: a layout with every page genuinely loaded is not safe to judge either, so the "
+            + "assertion above would pass with the stand-in rule removed entirely");
+    }
+
     @BeforeMethod
     public void setUp() throws IOException
     {

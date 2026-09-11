@@ -124,6 +124,13 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
+            // A placeholder's id is NOT offered to the store (FV3-A1).  `pageIsHere` answers from this
+            // map, and answering yes about a page whose contents did not load is what releases the
+            // entries OB-067 holds out of memory to be written back verbatim.  The placeholder keeps
+            // its id for the index writer, which is a different question - that one is "which page is
+            // this", and this one is "is its track here to judge".
+            if (page.isUnreadable()) continue;
+
             if (page.getPageId() != null) pageIds.put(page.getName(), page.getPageId());
         }
 
@@ -6853,6 +6860,23 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
+            // A STAND-IN FOR A PAGE THAT WOULD NOT READ IS NOT A LOADED PAGE (FV3-A1).
+            //
+            // `NSV-B3` put a blank placeholder in the list so that a link tile after it still resolves
+            // to the right page.  It carries the missing page's NAME, and this set is compared by name -
+            // so the page stopped being reported as absent, `pagesNotLoaded` came back empty, and this
+            // method started answering true about a page whose contents nobody can see.
+            //
+            // What follows from that is the whole of MT-135: `save()` reconciles against what is on the
+            // page, the placeholder holds one text tile, and every station, point name, length, facing,
+            // signal pairing, caption and placement on the real page is dropped and written out.
+            // Measured: the setting survives when the page is genuinely missing and when it is genuinely
+            // there, and is destroyed only in between.
+            //
+            // The page still stands in the list, so the link fix keeps everything it gained.  It simply
+            // stops claiming to be loaded, which is what it never was.
+            if (page.isUnreadable()) continue;
+
             loadedNames.add(page.getName());
         }
 
@@ -6925,6 +6949,20 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
+            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO (FV3-A3).
+            //
+            // This is the third copy of this loop, and the first repair for FV3-A1 reached the other
+            // two.  The consequence of missing this one is worse than missing all three, because the
+            // two halves then disagree: `incomplete` comes back true from pagesSafeToJudge, so the
+            // prune is correctly declined - but `absent` comes back EMPTY, because the placeholder
+            // still supplies its name here, and `Reconciliation.declined(absent)` reports
+            // `wasDeclined()` as false when the list is empty.
+            //
+            // So the save refuses to judge the page, which is right, and then tells every caller it
+            // did nothing of the sort.  Three of the four doors that reach this save discard the
+            // report, so the refusal would be silent in exactly the case the report exists for.
+            if (page.isUnreadable()) continue;
+
             loadedNames.add(page.getName());
         }
 

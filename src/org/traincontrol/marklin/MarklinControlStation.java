@@ -2488,7 +2488,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // accumulating.  The predicate's own naming is the wider question and is left alone -
                 // it is read by isUnknownCommand and by the message description, so narrowing it would
                 // change what the log says about two commands this branch no longer acts on.
-                else if (message.getCommand() == CS2Message.CMD_ACC_SENSOR)
+                // AND THE LENGTH, WHICH IS THE OTHER HALF OF WHAT THE PARSER REQUIRES (FV3).
+                //
+                // `MarklinFeedback.parseMessage` acts only on an 8-byte 0x11 frame and drops anything
+                // else silently, so gating on the command alone still created a module from a frame it
+                // would refuse - which is the whole defect, one notch narrower.  The rule here is "the
+                // parser would read this", and that is both tests or neither.
+                else if (message.getCommand() == CS2Message.CMD_ACC_SENSOR && message.getLength() == 8)
                 {
                     newFeedback(id, message);
                 }

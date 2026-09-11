@@ -798,7 +798,8 @@ public class testPageIdsAreDurable
     /**
      * The first page's id is written out, rather than left to be assumed.
      *
-     * CS2File reads an absent id as the page's POSITION. That was harmless while ids and positions were
+     * CS2File reads an absent id as ZERO (Adam, 2026-09-10; it was the page's POSITION until then, which
+     * is what gave two pages one id). That was harmless while ids and positions were
      * the same thing; with a retired id there is a gap, and an omitted id would read as 1 - so the first
      * page in the file would claim page 1's settings.
      */

@@ -159,7 +159,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
                 int at = Integer.parseInt(addr) - 1;
 
+                // A link to nothing shows as such, rather than leaving the combo on whatever happened to
+                // be first (FV3-C8).
                 if (at >= 0 && at < all.size()) this.addressSelector.setSelectedItem(all.get(at));
+                else this.addressSelector.setSelectedItem(NO_PAGE);
             }
             else
             {
@@ -213,6 +216,11 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
                 if (chosen == null) return Integer.toString(lc.getLogicalAddress());
 
+                // "No page" is zero, which is what getLogicalAddress reports for a link holding -1; the
+                // caller turns it back into -1 rather than pushing it through setLogicalAddress, which
+                // refuses a negative (FV3-C8).
+                if (NO_PAGE.equals(chosen.toString())) return "0";
+
                 int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
 
                 return Integer.toString(at + 1);
@@ -233,6 +241,17 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     {
         List<String> out = new java.util.ArrayList<>();
 
+        // "NO PAGE" FIRST, AND IT IS A REAL CHOICE (FV3-C8).
+        //
+        // An arrow whose page was deleted carries -1 - Adam's ruling, so that it resolves to nothing and
+        // the operator re-aims it when they next edit the square.  Without an entry for that, opening
+        // this popup on such an arrow selected nothing, a populated combo shows its first item anyway,
+        // and pressing OK silently aimed the arrow at the first page in the alphabet.  The next edit
+        // chose for them, which is what the ruling exists to prevent.
+        //
+        // It also gives them a way to BREAK a link on purpose, which there was none of before.
+        out.add(NO_PAGE);
+
         for (String page : tcui.getModel().getLayoutList())
         {
             if (onPage != null && onPage.equals(page)) continue;
@@ -242,6 +261,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
         return out;
     }
+
+    /**
+     * The combo entry that means a link points at no page.  Its own string, so a page cannot collide
+     * with it by being called "(none)": the comparison is by reference on the constant.
+     */
+    private static final String NO_PAGE = I18n.t("autosetup.ui.labelNone");
 
     public Accessory.accessoryDecoderType getProtocol()
     {

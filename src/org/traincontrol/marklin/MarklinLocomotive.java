@@ -1275,8 +1275,11 @@ public class MarklinLocomotive extends Locomotive
         if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map) 
                 || this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            // One assignment - see the field.
-            this.linkedLocomotives = java.util.Collections.emptyMap();
+            // One assignment, under the monitor - see the publish below.
+            synchronized (this)
+            {
+                this.linkedLocomotives = java.util.Collections.emptyMap();
+            }
 
             return -1;
         }
@@ -1305,7 +1308,21 @@ public class MarklinLocomotive extends Locomotive
         // ONE ASSIGNMENT, of a map nothing will edit again - see the field.  This is what the staging
         // above was already most of the way towards; what it still did was clear() then putAll() on the
         // instance every reader holds.
-        this.linkedLocomotives = java.util.Collections.unmodifiableMap(staged);
+        //
+        // UNDER THE MONITOR, WHICH IS NOT ABOUT THE READERS (FV3-B2).  They read a volatile reference
+        // and take no lock, which is the whole point of the design.  This excludes the other WRITER:
+        // `unlinkLocomotive` is a read-copy-write on the same field and is synchronized, so without
+        // this a rebuild overlapping an unlink would silently discard one of them - and the one that
+        // loses is either a deleted locomotive put back into a consist, or a freshly synced consist
+        // reverted.  The publish before this change was inside `synchronized (this)` and excluded it
+        // for free; the exclusion went out with the clear-and-refill.
+        //
+        // The monitor is held for a field assignment and nothing else - not across the validation
+        // above, which logs through the UI, and not across a fan-out, which sends UDP.
+        synchronized (this)
+        {
+            this.linkedLocomotives = java.util.Collections.unmodifiableMap(staged);
+        }
 
         // Ensure the correct direction - commands should automatically cascade
         if (!staged.isEmpty())

@@ -958,7 +958,7 @@ public class testParseCS2Layout
      *
      * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
      * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
-     * An absent id is the page's POSITION, which is what `pageIdOrPosition` says and what
+     * An absent id is ZERO - Adam, 2026-09-10 - which is what `pageIdOrPosition` says and what
      * `readLayoutIndexIds` does with the same file - so a reader that insisted on a stated id would
      * drop the offsets of the one page in the shipped export that has any.
      *

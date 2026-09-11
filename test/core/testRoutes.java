@@ -304,10 +304,20 @@ public class testRoutes
     @Test
     public void testNodeExpressionEvaluation() throws Exception 
     {
-        // Initialize model and set states
-        model.setFeedbackState("10", true);
-        model.setFeedbackState("6", false);
-        model.setFeedbackState("4", true);
+        // Initialize model and set states.
+        //
+        // CREATED FIRST, AND ASSERTED (FV3-B1).  `setFeedbackState` returns false and does nothing for a
+        // module that is not in the database, and these three came from Adam's saved `LocDB.data` rather
+        // than from any test - so when one of them was not there, this failed eighteen assertions later
+        // at the expression evaluation with `expected [true] but found [false]`, a message that says
+        // nothing about feedback 4.
+        model.newFeedback(10, null);
+        model.newFeedback(6, null);
+        model.newFeedback(4, null);
+
+        assertTrue(model.setFeedbackState("10", true), "feedback 10 is in the database");
+        assertTrue(model.setFeedbackState("6", false), "feedback 6 is in the database");
+        assertTrue(model.setFeedbackState("4", true), "feedback 4 is in the database");
         MarklinAccessory accessory1 = model.getAccessoryByAddress(60, MarklinAccessory.accessoryDecoderType.MM2);
         accessory1.setSwitched(true);
         MarklinAccessory accessory2 = model.getAccessoryByAddress(55, MarklinAccessory.accessoryDecoderType.MM2);

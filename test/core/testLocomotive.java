@@ -183,6 +183,27 @@ public class testLocomotive
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
         assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
 
+        // THE MODULE HAS TO EXIST, AND THIS USED TO PARK THE WHOLE SUITE (FV3-B1).
+        //
+        // `waitForOccupiedFeedback` is an untimed Object.wait(), and the only thing that can release it
+        // is the `setFeedbackState("1001", true)` on the thread above.  That setter looks the module up
+        // by NAME and returns false without doing anything when it is not in the database - so with 1001
+        // missing the test waited for ever, held the runner's user-wide lock, and had to be killed by
+        // hand.
+        //
+        // 1001 was never created by any test: it came from `LocDB.data`, the live file Adam's own
+        // application writes, which is why this class was green earlier the same day and then was not.
+        //
+        // The `assertFalse` below reads like a check that the module is there and is exactly the
+        // opposite - `getFeedbackState` also answers false for a module that does not exist, so it
+        // passed BECAUSE the test was about to hang.  It is kept, after the creation, where it means
+        // what it looks like.
+        model.newFeedback(1001, null);
+
+        assertTrue(model.setFeedbackState("1001", false),
+            "feedback 1001 is not in the database, so the setter that releases the wait below does "
+            + "nothing and this test hangs for ever (FV3-B1)");
+
         assertFalse(model.getFeedbackState("1001"));
         l.waitForOccupiedFeedback("1001");
         assertTrue(model.getFeedbackState("1001"));

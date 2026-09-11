@@ -199,6 +199,64 @@ public class testTheDiagramCeiling
     }
 
     /**
+     * A page at the ceiling in ONE dimension can still grow in the other (NSV-C3, at the call site).
+     *
+     * **The test below this one pins the predicate, and the predicate was not what changed.** `X8V-C2`
+     * had already made `roomToGrow` per-dimension; what `NSV-C3` fixed is that `addRowsAndColumns`
+     * asked it about `(1, 1)` and then added `rows` and `cols`. So that test passes with the defect put
+     * back - measured: 4 tests, 0 failures - and this one is the one that does not (FV3).
+     *
+     * **Asserted in the SUCCESS direction, on purpose.** The refusal branch is
+     * `JOptionPane.showMessageDialog`, which is modal: a test that drives a refusal parks the event
+     * thread until somebody clicks OK, and that stranded the runner twice in one day. A page at the row
+     * ceiling growing sideways is refused by `roomToGrow(1, 1)` - rows are full - and allowed by
+     * `roomToGrow(0, 5)`, so it separates the two without ever reaching the dialog.
+     *
+     * MUTATION: ask `roomToGrow(1, 1)` again and this does not fail, it HANGS - the refusal opens the
+     * modal dialog. The harness reports a class that prints no summary, so the regression is still
+     * caught; it is caught noisily rather than cleanly, and that is a property of the dialog rather
+     * than of this test.
+     */
+    @Test
+    public void testAPageAtTheRowCeilingStillGrowsSideways() throws Exception
+    {
+        final LayoutDiagram page = new LayoutDiagram("Ceiling sideways", 10, LayoutEditor.MAX_SIZE,
+            null, null);
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() -> built[0] = new LayoutEditor(page, 8, ui, 0));
+
+        LayoutEditor editor = built[0];
+
+        try
+        {
+            assertEquals(page.getSy(), LayoutEditor.MAX_SIZE, "precondition: the page is at the ceiling "
+                + "in rows");
+
+            assertFalse(editor.roomToGrow(1, 1),
+                "precondition: the question the guard used to ask - room for one more of EACH - is no "
+                + "on this page, which is what makes this test able to tell the two apart");
+
+            final int wasWide = page.getSx();
+
+            SwingUtilities.invokeAndWait(() -> editor.addRowsAndColumns(0, 5));
+
+            assertEquals(page.getSx(), wasWide + 5,
+                "a page at the row ceiling was refused five more COLUMNS, which it has room for.  The "
+                + "guard asked whether there was room for one more of each and then added what it was "
+                + "given (NSV-C3)");
+
+            assertEquals(page.getSy(), LayoutEditor.MAX_SIZE,
+                "and it did not grow in the dimension that was already full");
+        }
+        finally
+        {
+            dispose(editor);
+        }
+    }
+
+    /**
      * The ceiling is asked about the amount being added, not about one (NSV-C3).
      *
      * `LayoutEditor.addRowsAndColumns(rows, cols)` asked `roomToGrow(1, 1)` - "is there room for one

@@ -514,11 +514,45 @@ public class LayoutDiagram
         Map<String, String> renamed, int floor, java.util.Collection<String> keepAbsent,
         java.util.Collection<LayoutDiagram> pages) throws IOException
     {
-        // BEFORE the write, because the write is what destroys it.
-        List<String> before = pageNamesInIndex(path);
+        // BOTH ENDS ARE THE SORTED LIST, WHICH IS THE ONLY THING A LINK'S NUMBER INDEXES INTO (FV3-A2).
+        //
+        // `getLayoutList()` sorts by name, and that sorted list is what an arrow's number means.  This
+        // used to read the OLD order from the index file and take the NEW order from `layoutList` as
+        // handed in, and neither is that list: four of the five gestures pass something else.  A rename
+        // removes the old name and puts the new one back IN THE OLD SLOT, deliberately; an add, a
+        // duplicate and a combine APPEND, and the default name Combine offers - "<page> and neighbours" -
+        // sorts immediately after the page it was made from rather than last.  Only a delete was safe,
+        // because removing an element from a sorted list leaves it sorted.
+        //
+        // Measured before this: adding a page left an arrow pointing at `2 - Bottom` where
+        // `3 - Top Parking` is correct, which is the same wrong answer the finding reported in the first
+        // place, and each write left the index unsorted so the next operation started from a worse one.
+        //
+        // `before` comes from the PAGES this session is holding rather than from the index file, which
+        // also settles the case where two pages carry one name: `layoutDB` aliases them into a single
+        // entry, so the index names more pages than the list the arrows index into, and a `before` taken
+        // from the file was longer than that list and moved an arrow that was already right.
+        List<String> before = new ArrayList<>();
+
+        if (pages != null)
+        {
+            for (LayoutDiagram page : pages)
+            {
+                if (page != null) before.add(page.getName());
+            }
+        }
+
+        java.util.Collections.sort(before);
+
+        List<String> after = new ArrayList<>(layoutList);
+
+        java.util.Collections.sort(after);
 
         writeLayoutIndex(path, layoutList, renamed, floor, keepAbsent);
 
+        // A rename is the same page under another name: the arrows that pointed at it follow it.  The
+        // substitution is on the OLD list, because that is the one an arrow's current number indexes
+        // into - the page is found by where it was, and then asked where it has gone.
         if (renamed != null)
         {
             for (Map.Entry<String, String> each : renamed.entrySet())
@@ -529,63 +563,28 @@ public class LayoutDiagram
             }
         }
 
-        return repointLinksAcross(pages, before, layoutList);
-    }
+        List<LayoutDiagram> changed = repointLinksAcross(pages, before, after);
 
-    /**
-     * The page names in the index, in the order the file holds them.
-     *
-     * **Which is the page order the links on disk were written against** (N8-A1).  `writeLayoutIndex`
-     * writes the pages in the order it is given, and it is given `getLayoutList()`, which is sorted by
-     * name - so the order in the file is the sorted order as it stood when the file was last written.
-     * That is exactly the list a link's stored number indexes into.
-     *
-     * Read from the file rather than from the running model on purpose: the model's list has already
-     * been changed by the time a page operation gets to writing, and the question this answers is what
-     * the arrows currently on disk MEAN.
-     *
-     * @param path the layout folder
-     * @return the page names in file order, empty when there is no index
-     */
-    public static List<String> pageNamesInIndex(String path)
-    {
-        List<String> out = new ArrayList<>();
-
-        File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
-
-        if (!index.exists()) return out;
-
-        try
+        // A PAGE BEING RENAMED IS NOT SAVED HERE (FV3-A2).
+        //
+        // `saveChanges(null, false)` writes to the path the object was constructed with, and a rename
+        // does not update that path - so saving the renamed page here would write its corrected arrows
+        // into the file the rename has just deleted, recreating it as an orphan, while the new file kept
+        // the stale numbers.  Its tiles are already corrected in memory and the rename writes that same
+        // object under its new name, so the fix travels with it.
+        if (renamed != null && !renamed.isEmpty())
         {
-            boolean inPage = false;
+            List<LayoutDiagram> toSave = new ArrayList<>();
 
-            for (String line : readIndexLines(index))
+            for (LayoutDiagram page : changed)
             {
-                String trimmed = line.trim();
-
-                if (trimmed.isEmpty()) continue;
-
-                if (!trimmed.startsWith("."))
-                {
-                    inPage = "seite".equalsIgnoreCase(trimmed);
-
-                    continue;
-                }
-
-                if (inPage && trimmed.toLowerCase().startsWith(".name="))
-                {
-                    out.add(trimmed.substring(6));
-
-                    inPage = false;
-                }
+                if (page != null && !renamed.containsKey(page.getName())) toSave.add(page);
             }
-        }
-        catch (IOException e)
-        {
-            return new ArrayList<>();
+
+            return toSave;
         }
 
-        return out;
+        return changed;
     }
 
     /**
@@ -595,7 +594,7 @@ public class LayoutDiagram
      * measured case had arrows on three different pages all aimed at two others.
      *
      * @param pages every page of the layout
-     * @param before the page order the arrows were written against, from `pageNamesInIndex`
+     * @param before the page order the arrows were written against - the OLD page list, sorted
      * @param after the page order as it now is
      * @return the pages whose arrows changed, which are the ones the caller has to save
      */
@@ -1253,19 +1252,19 @@ public class LayoutDiagram
      * `.yoffset`, and a later firmware may write anything else there.  So the index kept
      * `zuletztBenutzt` at the top of the file and still deleted what sat inside each page.
      *
-     * **Keyed by id, not by name.**  A rename is the one operation where the writer is holding a name
-     * the index has never seen, and the id is precisely what is carried across it.
+     * **Keyed by the page's NAME** (N8-B1).  It was keyed by id, and two pages can resolve to one - the
+     * genuine Central Station export here has such a pair - so one of them had to lose its keys.  A name
+     * identifies a page everywhere else in this program and the file states it on every block; the
+     * writer is handed the rename map, which is how a renamed page still finds its own lines.
      *
-     * An ABSENT id is the page's position, through `pageIdOrPosition` - the rule `readLayoutIndexIds`
-     * uses on the same file.  The genuine Central Station export here opens with a `seite` that has
-     * offsets and no id, so a reader that insisted on one would drop the offsets of the very page the
-     * finding is about.
+     * The `.id` line is not read here at all.  What an absent one means is `pageIdOrPosition`'s
+     * question, and Adam settled it on 2026-09-10: an absent `.id` is id ZERO.
      *
      * Best-effort for the same reason as the method below: an index that cannot be read is already
      * reported - loudly - by `readLayoutIndexIds`, and this must not add a second way to fail a save.
      *
      * @param path the layout folder
-     * @return each page id against the lines of its block the writer does not emit, in file order
+     * @return each page NAME against the lines of its block the writer does not emit, in file order
      */
     public static Map<String, List<String>> readLayoutIndexPageExtras(String path)
     {
@@ -1805,10 +1804,10 @@ public class LayoutDiagram
 
             contents.append("seite\n");
 
-            // ALWAYS written, unlike before.  An absent id is read as the page's POSITION - see
-            // `pageIdOrPosition`, which CS2File's page loop calls - so omitting it for the first page
-            // only worked while ids and positions were the same thing.  They are not any more - a
-            // retired id leaves a gap - and an omitted id would be read as 1.
+            // ALWAYS written, unlike before.  An absent id is read as ZERO - see `pageIdOrPosition`,
+            // which CS2File's page loop calls, and Adam's ruling of 2026-09-10 recorded there - so
+            // omitting it for a page whose id is not 0 would silently give that page id 0, and omitting
+            // it for two such pages would give them both the same one.
             //
             // This used to quote the expression that rule was once written as (X8-C6).  The rule still
             // holds; the expression does not, and `CS2File` carries the comment recording its removal

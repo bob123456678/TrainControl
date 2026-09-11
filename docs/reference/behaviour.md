@@ -1115,19 +1115,26 @@ database, on no list, reachable by nothing, and throwing switches for a route th
 see (S14-A1).  And on an import that succeeded, the route being replaced and its replacement both
 watched the same sensor until the old one was deleted, so a trigger in that window fired both.
 
-**The railway leaves at least 150 ms between two route commands, whatever the route says.**  A command
-may carry its own delay, and the executor waits the LARGER of that delay and 150 ms - so a delay below
-the floor is not a shorter pause, it is the same pause.  The editor shows the number the railway will
-actually wait rather than the number that was typed, in both directions: a delay that arrived from an
-earlier build, from a station or from a JSON file is shown raised too (X8-C2, X8V-C7).
+**A delay below 150 ms is the same as a delay of 150 ms.**  A command may carry its own delay, and the
+executor pauses for a fixed interval PLUS the larger of that delay and 150 - so the floor is on the
+delay, not on the whole wait, and the number in the editor is a floored delay rather than the time
+between two commands.  The editor shows the floored number in both directions: a delay that arrived from
+an earlier build, from a station or from a JSON file is shown raised too, not only one typed in
+(X8-C2, X8V-C7).
 
-Zero is not a delay.  It means no pause was asked for, which is what an untouched command holds, and it
-is not raised.  `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above the floor, which is what makes the
-gap a three-way switch needs between its two commands real rather than inert.
+Zero is left alone, and it is the one number in that column which is not what the railway will do: it
+means no pause was asked for, which is what an untouched command holds, and the executor then waits the
+same 150 as it would for a delay of 150.  Raising it in the editor would put a pause on every command in
+every route, which is the worse of the two inaccuracies.
+
+`THREEWAY_ROUTE_DELAY_MS` is defined as sitting above the floor, which is what makes the gap a three-way
+switch needs between its two commands real rather than inert.
 
 **A speed in a route is between 0 and 100, and a negative speed means an instant stop.**  Any number
-outside that range is clamped where the command is built, so every door agrees - typed into the editor,
-read from a JSON file, or imported from a Central Station (S14-B2).  Before that an imported route could
+outside that range is clamped where the command is BUILT, so a route that arrives from a JSON file or
+from a Central Station import cannot hold one (S14-B2).  The editor is different and stays different: it
+range-checks a typed speed and refuses to save, which tells the operator rather than quietly changing
+what they wrote.  Before that an imported route could
 ask for 150, which the head of a multi-unit discarded while every member was sent 100: the two engines
 of one consist pulling against each other.
 
@@ -1145,8 +1152,8 @@ if a reissued id later disagrees with it, neither number decides where the page 
 
 **A page that states no `.id` has id 0.** Adam, 2026-09-10: *"no .id means id 0 implicitly."* That is
 the ordinary CS2 convention - a key the station omits carries the zero value - and it is what the files
-say: of the index files here, four have a first page with no `.id`, their stated ids run 1..n, and none
-states `.id=0`. On the genuine station export the pages are named `0 stationer` .. `7 autonom
+say: of the index files here, four have a first page with no `.id`, none states `.id=0`, and in each of
+them the stated ids run consecutively from 1 or 2. On the genuine station export the pages are named `0 stationer` .. `7 autonom
 annotated` against stated ids 1..7, so the absent one is 0 and the ids line up with the names.
 
 Reading it as the page's POSITION instead is what made two pages hold one id, which keyed both of them
@@ -1162,7 +1169,9 @@ Three things follow, and they are the behaviour rather than the implementation:
   duplicating, deleting and combining all move the alphabet, and an arrow follows the page it pointed
   at. Before this it silently came to mean another page and the new number was written to the file -
   measured on the five pages of the sample layout, adding one page repointed four of seven arrows
-  (N8-A1).
+  (N8-A1). **The one thing not covered is the combined page's own copied arrows**: the copy is written
+  before it joins the model, so the re-aim does not see it, and its arrows keep the numbers they were
+  copied with (NSV-C5).
 - **An arrow whose page is deleted points at nothing.** Adam: *"set the ID to -1. This shouldn't throw
   any errors, and simply resolve to nothing when clicked. Then, the user can set it to the right page
   on their next edit."* Clicking it does nothing and its tooltip says so.

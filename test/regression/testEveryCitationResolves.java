@@ -310,11 +310,23 @@ public class testEveryCitationResolves
 
         int seen = 0;
 
+        // HOW MANY ROWS COULD ACTUALLY BE CHECKED (FV3).
+        //
+        // Without this the guard was vacuous as shipped: both surviving sub-lettered rows name documents
+        // that no longer exist, so every row was skipped, nothing was compared, and it reported success.
+        // A guard that examines nothing is the thing this class exists to catch.
+        int resolvable = 0;
+
         for (String row : mirror.split("\n"))
         {
             String[] cells = row.split("\t");
 
             if (cells.length < 2) continue;
+
+            // COUNTED OVER EVERY ROW, not only the sub-lettered ones (FV3).  The floor asks whether the
+            // resolution works at all, and sub-lettered refs are legitimately rare - scoping the count
+            // inside the filter below made the floor as vacuous as the check it was added to guard.
+            if (documentExists(cells[1].trim())) resolvable++;
 
             java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
 
@@ -345,6 +357,15 @@ public class testEveryCitationResolves
 
             if (!body.contains(cells[0].trim())) unwritten.add(cells[0].trim() + " in " + cells[1].trim());
         }
+
+        // THE FLOOR.  Sub-lettered refs are rare by design and the parser fault that produced them is
+        // fixed, so "none left to check" is the expected state and cannot itself be asserted against.
+        // What CAN be asserted is that the resolution works at all: if no catalogued row names a
+        // document still in the tree, this is measuring nothing.
+        assertTrue(resolvable > 0,
+            "no row in the catalogue names a review document that still exists, so this guard compared "
+            + "nothing at all - which is how it passed as shipped (FV3).  " + seen + " sub-lettered "
+            + "row(s) were seen and none of them could be resolved to a document");
 
         assertTrue(unwritten.isEmpty(),
             "the catalogue holds " + unwritten.size() + " finding(s) whose own document never writes "
@@ -390,6 +411,29 @@ public class testEveryCitationResolves
             "docs/manual-tests/triage.db is gone. Since the review folder was deleted on 2026-09-08 it"
             + " and the mirror beside it are the only record of what 2,265 findings were about, and the"
             + " mirror is rendered FROM it - losing it means the next regeneration writes an empty file");
+    }
+
+    /**
+     * Whether a review document named in the catalogue is still in the tree.
+     *
+     * Most are not, and deliberately: the folder was retired on 2026-09-08 once the catalogue carried
+     * it, which is the whole reason the catalogue exists. What this answers is whether ANY of them can
+     * still be found, which is what says the name-to-file resolution above is working rather than
+     * silently matching nothing.
+     *
+     * @param named the document cell from the mirror
+     * @return true when a file of that name exists under docs/
+     */
+    private static boolean documentExists(String named)
+    {
+        if (named == null || named.isEmpty()) return false;
+
+        for (File candidate : filesUnder(new File("docs"), ".md"))
+        {
+            if (candidate.getName().equals(named)) return true;
+        }
+
+        return false;
     }
 
     /**
