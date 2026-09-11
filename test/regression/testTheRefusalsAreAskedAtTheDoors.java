@@ -178,6 +178,98 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * Every door that puts a train down uses the railway's answer.
+     *
+     * `behaviour.md` section 4 states this as a rule - *"nothing about a placement is recorded until
+     * the railway has accepted it"* - and the coverage pass of 2026-09-11 found nothing holding it:
+     * `W21-B3` is cited by no test in the suite.
+     *
+     * **What it was.** `Layout.moveLocomotive` refuses in four cases - autonomy is running, the
+     * locomotive is unknown, the point is unknown, the target is not a destination - and returns false
+     * rather than throwing. The diagram's menu discarded that answer, so the placement and the facing
+     * were written into the setup AND SAVED for a move the railway had just declined. The setup is the
+     * half that survives a restart, so the next build emitted the train on a square it was never put
+     * on.
+     *
+     * **A named list, and one of them is allowed to discard it** - which is the point of writing them
+     * down rather than counting. `GraphLocAssign.commitChanges` does discard the answer, and what
+     * makes that safe is the line after it: `commitAndRecord` asks the POINT what is standing there
+     * rather than assuming the move took, so a refused placement records the train that is really
+     * there - or nothing - and never the one the dialog hoped for.
+     *
+     * MUTATION: drop the `if (!` from either of the two doors that guard, and this names it.
+     */
+    @Test
+    public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
+    {
+        String[][] doors =
+        {
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "guards",
+                "the diagram's Place and Remove items - W21-B3 and TWV-B5 are these two"},
+            {"src/org/traincontrol/gui/TrainControlUI.java", "guards",
+                "the diagram's paste door - TWV-B4, which discarded the refusal AND cleared the "
+                + "clipboard, so a train cut with Control+X was on no square and on no clipboard"},
+            {"src/org/traincontrol/gui/GraphLocAssign.java", "discards",
+                "the assign dialog: commitChanges moves and does not look, and commitAndRecord "
+                + "afterwards asks the POINT what is standing there rather than assuming"},
+        };
+
+        List<String> wrong = new ArrayList<>();
+
+        for (String[] door : doors)
+        {
+            String source = withoutComments(read(door[0]));
+
+            int calls = occurrences(source, "moveLocomotive(");
+
+            int guarded = occurrences(source, "if (!") > 0
+                ? countGuarded(source) : 0;
+
+            if ("guards".equals(door[1]) && guarded == 0)
+            {
+                wrong.add(door[0] + " no longer uses moveLocomotive's answer anywhere - " + door[2]);
+            }
+
+            if (calls == 0)
+            {
+                wrong.add(door[0] + " no longer places a train at all, so this rule has stopped being "
+                    + "checked there rather than being kept - " + door[2]);
+            }
+        }
+
+        assertEquals(wrong.toString(), "[]",
+            "these doors write a placement the railway may have refused. moveLocomotive returns false "
+            + "and logs rather than throwing, so a discarded answer is a placement saved for a move "
+            + "that never happened - and the setup is the half that survives a restart "
+            + "(behaviour.md section 4, W21-B3). " + wrong);
+    }
+
+    /**
+     * How many `moveLocomotive` calls in this source have their answer tested.
+     *
+     * Counted rather than pattern-matched on the whole call, because the call spans lines in two of
+     * the three doors and a regex over it would be a second spelling of the shape it is checking.
+     */
+    private static int countGuarded(String source)
+    {
+        int found = 0;
+
+        for (int at = source.indexOf("moveLocomotive("); at >= 0;
+             at = source.indexOf("moveLocomotive(", at + 1))
+        {
+            // Back to the start of the statement, which is as far as the last brace or semicolon.
+            int from = Math.max(Math.max(source.lastIndexOf(';', at), source.lastIndexOf('{', at)),
+                source.lastIndexOf('}', at));
+
+            String statement = source.substring(from + 1, at);
+
+            if (statement.contains("if (!") || statement.contains("if(!")) found++;
+        }
+
+        return found;
+    }
+
+    /**
      * A method's body, by name, brace-matched from its declaration.
      */
     private static String bodyOf(String source, String method) throws Exception

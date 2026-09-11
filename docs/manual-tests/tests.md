@@ -28,7 +28,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
-| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
@@ -54,16 +53,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-304](#mt-304) | 2026-09-07 | A non-reversible train goes home nose first | needs test | OB-166 (split from MT-246) |
 | [MT-309](#mt-309) | 2026-09-07 | EN57-203 can get back to TunnelLongPark | fixed unvalidated | D24-B1 (split from MT-250) |
 | [MT-312](#mt-312) | 2026-09-07 | The import says what it left behind | needs test | MT-257 item 3 (split from MT-258) |
-| [MT-313](#mt-313) | 2026-09-07 | Control+S names the square under the pointer | fixed unvalidated | MT-257 item 4 (split from MT-258) |
 | [MT-318](#mt-318) | 2026-09-07 | Undoing a shut link opens both halves, across pages | needs test | SVN-B8 (split from MT-265) |
 | [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
 | [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
 | [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
-| [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | fixed unvalidated | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
-| [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | fixed unvalidated | OB-183 |
 | [MT-345](#mt-345) | 2026-09-10 | A station held back by an occupied square is refused by hand too | needs test | FR-001 |
 | [MT-346](#mt-346) | 2026-09-10 | Return Home does not stage a train into a held-back home | needs test | FR-001 |
 | [MT-347](#mt-347) | 2026-09-10 | A berth with room, refused for the way there | needs test | ruling 1b, 2026-09-09 |
@@ -71,8 +67,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
 | [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
 
-Everything else - 317 of 360 - needs nothing from you unless the area changes again:
-285 **fixed validated** and 32 **superseded**.
+Everything else - 321 of 360 - needs nothing from you unless the area changes again:
+285 **fixed validated** and 36 **superseded**.
 
 ---
 
@@ -7515,6 +7511,8 @@ the requirements are too long.  I can't cleanly view the testing requirements fo
 
 <a id="mt-142"></a>
 
+**Claude, 2026-09-11.** Flagged for your review: this one is a DECISION, not a run. It says so in its own first line - *"a design decision, and I would rather you made it than have me pick"* - and no amount of hands-on testing settles it. `regression.testTheRefusalsAreAskedAtTheDoors` now pins the half that is not in question (every door asks before it acts, REG9-A1); what is still open is what the rebuild should do about the OTHER trains.
+
 ### MT-142 - 2026-08-24 - A page keeps its identity when other pages change
 
 **Disposition:** fixed validated
@@ -8025,7 +8023,7 @@ to anything working in page names - and it is exactly the state in which they mu
 
 ### MT-149 - 2026-08-24 - The timetable survives renaming a locomotive
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-069
 **Written:** 2026-08-24
 
@@ -8221,6 +8219,8 @@ itself was gone.
 ---
 
 <a id="mt-150"></a>
+
+**Claude, 2026-09-11.** Superseded: `core.testALocomotiveDoesNotEvictItself` is this test, filed under this number - *"place loc on station.  Rename it.  It is now gone from the station"* - and `ui.testARenameReachesTheTimetableOnScreen` covers the timetable half on screen. Nothing here is left for a hands-on run.
 
 ### MT-150 - 2026-08-24 - A page name with a colon keeps its own setup
 
@@ -14186,6 +14186,8 @@ in its comment instead.
 
 <a id="mt-248"></a>
 
+**Claude, 2026-09-11.** Flagged for your review: also a decision as much as a test - *"when you decline the conflict dialog, the code has to decide what you meant, and today the answer differs depending on which door the route came through"*. The two doors' behaviour is pinned by `regression.testARouteDoesNotThrowSwitchesUnderATrain` and `regression.testAConflictSkipsOnlyTheSwitchUnderTheTrain`; which answer is right is yours.
+
 ### MT-248 - 2026-09-01 - The length notice and the guard it is meant to arm
 
 **Disposition:** superseded
@@ -15284,6 +15286,8 @@ narrowing below and is built - the count was already in the popup, the list is n
 ---
 
 <a id="mt-261"></a>
+
+**Claude, 2026-09-11.** Flagged for your review, and it is the one I would put first: six questions, each sitting under a finding that is otherwise understood and could be built either way. A word each is enough, and answering them unblocks work in six different places. None of it needs the railway.
 
 ### MT-261 - 2026-09-02 - Four things the C sweep needs you to choose
 
@@ -16898,7 +16902,7 @@ Make a test case for this- no need for a manual test.
 
 ### MT-313 - 2026-09-07 - Control+S names the square under the pointer
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-257 item 4 (split from MT-258)
 
 **Written:** 2026-09-07
@@ -16937,6 +16941,8 @@ Control+S asked whether the tile was null and nothing else, so it named plain tr
 ---
 
 <a id="mt-314"></a>
+
+**Claude, 2026-09-11.** Superseded by two tests between them: `regression.testControlSNamesOnlyASensor`, which is your follow-up of 2026-09-08 (*"it works on any tile in the autonomy editor, not just sensors"*), and `regression.testTheHoveredSquareIsForgotten`, which pins which square the editor thinks the pointer is over - the half this entry was written about.
 
 ### MT-314 - 2026-09-07 - Should a square's settings be copyable to another square
 
@@ -17639,7 +17645,7 @@ test would pass without the rule being asked at all.
 
 ### MT-334 - 2026-09-08 - Changing a pathing arrow no longer flickers the diagram
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-185
 
 **Written:** 2026-09-08
@@ -17678,6 +17684,8 @@ The whole diagram redrew because the light redraw door added for OB-185 was wire
 ---
 
 <a id="mt-335"></a>
+
+**Claude, 2026-09-11.** Superseded by `regression.testTheDiagramIsNotRebuiltForAnArrow`, which asserts object identity across a real editor's tiles: a rebuild replaces every `LayoutLabel` and an annotation refresh does not, so the flicker this entry is about cannot come back without that test failing.
 
 ### MT-335 - 2026-09-08 - Return Home will not plan through track a train is lying across
 
@@ -17814,7 +17822,7 @@ Built, and [MT-337](#mt-337) is the test. This entry was the question, and the q
 
 ### MT-337 - 2026-09-08 - A train you moved by hand stays put when a home changes
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-183
 
 **Written:** 2026-09-08
@@ -17870,6 +17878,8 @@ Maybe not the bug I thought it was- but DRG 06 001 is refused to be placed at bo
 ---
 
 <a id="mt-338"></a>
+
+**Claude, 2026-09-11.** Superseded by `regression.testAnEditedPlacementSurvivesTheRebuild`, whose own javadoc names this entry: the rebuilt layout holds the moved train where you put it. `REG9-D3` re-derived that coverage independently and found it real and wider than claimed - three tests across two opposed mutations.
 
 ### MT-338 - 2026-09-08 - The station label and the facing menu say the same thing
 

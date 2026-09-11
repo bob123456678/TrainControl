@@ -779,6 +779,9 @@ FX2-5	2026-09-01-fanout-index.md	Closed	**Closed** (`6f729027`)
 FX2-6	2026-09-01-fanout-index.md	Closed	**Withdrawn**
 FX2-D24	2026-09-01-fanout-index.md	Closed	1 A, 5 B, 11 C, 8 D
 FX2-R28	2026-09-01-fanout-index.md	Closed	1 A, 2 B, 5 C, 12 D
+GAP-B1	GAP-acceptance-coverage.md	-	-
+GAP-C1	GAP-acceptance-coverage.md	-	-
+GAP-D1	GAP-acceptance-coverage.md	-	-
 GC-A1	2026-08-22-general-code-review.md	Closed	Half closed - the LAYOUT half is fixed in LayoutGrid and the false comment and test are co
 GC-A2	2026-08-22-general-code-review.md	Closed	Closed `3aa24314`+ - the teardown unmounts it, and the contract is pinned by test
 GC-B1	2026-08-22-general-code-review.md	Closed	Open

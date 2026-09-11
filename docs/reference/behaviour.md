@@ -424,7 +424,8 @@ AND SAVED for a move the railway had just declined - and the setup is the half t
 so the next build emitted the train on a square it was never put on. The refusal is the method's, and
 the caller's job is to honour it: no placement, no facing, no arrival side, nothing saved. The log line
 `moveLocomotive` already writes is what the operator sees; a second message would say the same thing
-twice.
+twice. `regression.testTheRefusalsAreAskedAtTheDoors.testEveryPlacementDoorUsesTheRailwaysAnswer` names
+every door and says which one is allowed to discard the answer, and why.
 
 ### How `arrivedFrom` is set
 
@@ -1267,6 +1268,8 @@ instead: *drop it.* Nothing is pruned automatically. A page whose file will not 
 that is missing right now, which is not the same as a page that is gone, and the answer that cannot
 lose anything is to keep. The question could not fire anyway once every page named in the index came
 back as something (T10-C3): there were no absences left for it to be about.
+`core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged` is what holds this - a stand-in
+must not let a save judge, and therefore prune, the settings of a page nobody can see.
 
 The message the operator gets says this too. It used to say the page *"could not be read and was
 skipped"*, which was the opposite of what they would see (T10-C4); it now says the page is shown blank,
