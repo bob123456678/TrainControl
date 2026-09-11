@@ -7743,6 +7743,35 @@ public class Layout
         {
             Edge segment = path.get(i);
 
+            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does (Adam, 2026-09-11).
+            //
+            // Asked whether *"the track segments leading up to it"* means up to the berth or up to the
+            // reversal: **"it can be either the reversal or the berth, depending on where switches
+            // are.  both need to be long enough."**
+            //
+            // Stopping at whichever is met FIRST walking back is that ruling: the nearer of the two
+            // gives the smaller sum, and a train that fits in the smaller fits in the larger - so one
+            // walk enforces both bounds.
+            //
+            // What this was missing: the walk stopped at the last SWITCH and nothing else, so on a
+            // route with no switch between the turn and the berth it summed the whole path. A train
+            // that turns part way along comes to rest on the track AFTER the turn only - the 10 + 1 +
+            // 2 case, which admitted an eight-unit train into three units of room (`MON-C13`).
+            //
+            // The END of this segment, not its start: that point is where the train turned, so the
+            // segments before it are behind the turn. The last edge is exempt because its end is the
+            // berth itself - a train arriving at a reversing platform comes to rest there, and
+            // whatever it does on departure is a different journey.
+            //
+            // ANY reversing point on the way, whether or not the train actually turns at it - the same
+            // simplification Adam gave for switches on 2026-09-02: *"for the switches, for simplicity,
+            // let's use any direction, that way we are guaranteed to be safe."* It can only shorten
+            // the room, which is the direction that refuses rather than admits.
+            if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
+            {
+                return room > 0 ? room : null;
+            }
+
             if (segment.crossesASwitch())
             {
                 // -1 is bounded-but-unmeasured, which is the same answer as an unmeasured edge.

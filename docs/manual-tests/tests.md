@@ -14759,7 +14759,7 @@ anywhere.  Nothing in the editor does that now.
 | 2 | The legacy import's new blocking behaviour is accepted as it stands | closed, no work |
 | 3 | List what the import dropped in the log, and say in the dialog that it is there | done - see MT-258 |
 | 4 | The station-label keyboard shortcut comes back to the autonomy editor, the menu item already being there | done - see MT-258 |
-| 5 | **A question, answered below rather than acted on** | open - needs his word |
+| 5 | **Two clicks** (Adam, 2026-09-11) | ruled - and already built: **Test a path** is that gesture.  See below |
 
 **On 5 - "why can't it keep working without a train, between stations?"**
 
@@ -14777,6 +14777,21 @@ So the question is what shape you want it back in, and that is the part I have n
   what Test a path already does and needs no second gesture.
 
 Say which and it is a small addition.
+
+**Claude, 2026-09-11, and the paragraph above is wrong.** Adam ruled *"two clicks"* - and that gesture
+already exists. **Test a path**, the toggle in the autonomy editor's tool column, is exactly it:
+*"Click the sensor a train would start from"*, then *"Now click the sensor it should reach"*, and it
+answers BOTH directions at once - `autosetup.ui.testBothWays` reads *"{0} to {1}: {2} there (yellow),
+{3} back (amber)"*. It needs no train anywhere: it asks `GraphReducer.findPath` with the turn sets, the
+barred arrivals and the shut tiles, which is the reduction rather than the running railway.
+
+So my sentence above - *"it answers about one end at a time"* - was simply untrue of the tool it names,
+and the ruling it asked for is satisfied by what is already there.
+
+**What may still be missing, and it is a different thing.** The old Test Connection lived on the TRACK
+DIAGRAM; Test a path is a tool button in the Autonomy Setup window. If what is missed is reaching it
+without opening that window, that is a small piece of work and worth saying so; if not, this item is
+closed. Back to Adam for one word: is it the gesture that was wanted, or the place?
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 02:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 

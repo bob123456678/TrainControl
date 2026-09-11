@@ -831,30 +831,30 @@ The rest of this section is about the **first** rule.
 track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
 
-**And two the room sum is known to get wrong**, both found the day it was written, both left because
-fixing either changes what the railway does and that is Adam's to decide. They lived only in a comment
-at `Layout.isPathClear` until 2026-09-08, against this document's own promise at the top that a known
-limit is stated here (MON-C13):
+**Two things about the room sum were open, and Adam settled both on 2026-09-11** (MON-C13). They had
+lived only in a comment at `Layout.isPathClear` until 2026-09-08, against this document's own promise at
+the top that a known limit is stated here.
 
-1. **A positive length does not mean a measured one.** On a diagram-built graph an edge's length is the
-   sum of `max(0, tileLength)` over the tiles it spans, so one measured tile out of five gives a
-   positive number and the sum reads it as a measured segment. The total then under-counts and refuses
-   trains that fit - the same failure the total-of-what-is-measured ruling removed, one layer further
-   down.
-2. **It may be summing the wrong segments.** The walk runs backwards from the berth and stops at the
-   last SWITCH; it does not stop at a REVERSAL. Where a train backs in after turning part way along,
-   the track it comes to rest on is only the part after the reversal - so on a route with no switch
-   between the turn and the berth, a 10 + 1 + 2 path admits an eight-unit train into three units of
-   room. Adam's words were "sum the track segments leading up to it"; whether *it* means the reversal
-   or the berth is the question that has to go back to him.
+1. **A positive length counts, and that is deliberate.** On a diagram-built graph an edge's length is
+   the sum of `max(0, tileLength)` over the tiles it spans, so one measured tile out of five gives a
+   positive number and the sum reads it as a measured segment - which under-counts and can refuse a
+   train that fits. Asked whether an edge should count as measured only when every tile in it is:
+   *"no, any nonzero length on a logical edge between 2 stations will count."*
 
-   This bullet said "It adds the whole path" until 2026-09-08, which is only true of a switch-free
-   route: `Layout.measuredRoomAtTheEndOf` returns at the first edge it meets, walking back, whose
-   `crossesASwitch()` is true. The defect is the missing stop at the turn, not a missing stop
-   altogether - which matters, because the two would be fixed in different places.
+   So this is the rule rather than a limitation. It errs towards refusing, which is the safe direction,
+   and the remedy in the operator's hands is to measure the rest of the tiles.
 
-The first refuses trains that would fit, which is safe and annoying. The second admits trains that do
-not, which is neither - it is the one of the pair worth ruling on first.
+2. **The walk stops at a reversal as well as at a switch.** It ran backwards from the berth and stopped
+   at the last SWITCH only, so on a route with no switch between the turn and the berth it summed the
+   whole path: a 10 + 1 + 2 route admitted an eight-unit train into three units of room. Asked whether
+   *"the track segments leading up to it"* means up to the reversal or up to the berth: *"it can be
+   either the reversal or the berth, depending on where switches are.  both need to be long enough."*
+
+   Stopping at whichever is met first walking back is that ruling in one walk - the nearer of the two
+   gives the smaller sum, and a train that fits in the smaller fits in the larger. Any reversing point
+   on the way counts, whether or not the train turns at it, which is the same simplification he gave
+   for switches: *"for the switches, for simplicity, let's use any direction, that way we are
+   guaranteed to be safe."* `core.testTheRoomStopsAtAReversal` holds it, with his own figures.
 
 **Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
 (MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever

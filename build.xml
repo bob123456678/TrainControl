@@ -306,6 +306,7 @@
 
         <!-- Added 2026-09-11: TWV-C5 - two of that round's fixes shipped with no test. -->
         <test-one-class class="testAFeedbackChangeIsAnnounced"/>
+        <test-one-class class="testTheRoomStopsAtAReversal"/>
         <test-one-class class="testTheHoveredSquareIsForgotten"/>
         <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
         <test-one-class class="testTwoCentralStationMultiUnitsShareAMember"/>
