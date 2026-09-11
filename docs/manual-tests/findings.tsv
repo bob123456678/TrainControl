@@ -2364,20 +2364,35 @@ WR-C8	2026-07-28-week-verification-review.md	Closed	**Fixed 2026-07-28** (workin
 WR-C9	2026-07-28-week-verification-review.md	Closed	**Open**
 WR-D1	2026-07-28-week-verification-review.md	Closed	Recorded
 X8-A1	X8-independent-review.md	-	closed
+X8-A1	X8V-validation.md	-	**HELD** — four claims, each mutation-verified; measured over all 65 CS2 text files in the
 X8-A2	X8-independent-review.md	-	closed
+X8-A2	X8V-validation.md	-	**HELD** — the documentation half of the finding was not done (`X8V-C8`)
 X8-B1	X8-independent-review.md	-	closed
+X8-B1	X8V-validation.md	-	**HELD** — and the guard is reachable from exactly the two key branches, by enumeration of
 X8-B2	X8-independent-review.md	-	closed
+X8-B2	X8V-validation.md	-	**PARTIAL** — three claims pinned, and the genuine export's two offsets land on their own 
 X8-B3	X8-independent-review.md	-	closed
+X8-B3	X8V-validation.md	-	**HELD** — and the two halves are pinned separately, which is the part worth knowing (`X8V
 X8-B4	X8-independent-review.md	-	closed
+X8-B4	X8V-validation.md	-	**PARTIAL** — it does, both caption directions included. But `forgetTiles` answers "yes" t
 X8-B5	X8-independent-review.md	-	closed
+X8-B5	X8V-validation.md	-	**HELD** — including across a rename, which the shipped test does not exercise (`X8V-D7`)
 X8-B6	X8-independent-review.md	-	closed
+X8-B6	X8V-validation.md	-	**HELD** as an answer: `execRoute` unchanged, the help text rewritten in all eight bundles
 X8-C1	X8-independent-review.md	-	closed
+X8-C1	X8V-validation.md	-	**PARTIAL** — the shape is gone and a guard refuses it. Three of the eight rewrites name t
 X8-C2	X8-independent-review.md	-	closed
+X8-C2	X8V-validation.md	-	**PARTIAL** — the executor's sleep is unchanged for every value, `delayOf` raises a typed 
 X8-C3	X8-independent-review.md	-	closed
+X8-C3	X8V-validation.md	-	**HELD** — verified against `Kind` and against every branch of `RouteCommand.toLine`
 X8-C4	X8-independent-review.md	-	closed
+X8-C4	X8V-validation.md	-	**HELD** — all nine call sites re-read
 X8-C5	X8-independent-review.md	-	closed
+X8-C5	X8V-validation.md	-	**PARTIAL** — three became one and the two shift gestures now ask it, which is the fix. Th
 X8-C6	X8-independent-review.md	-	closed
+X8-C6	X8V-validation.md	-	**HELD**
 X8-C7	X8-independent-review.md	-	closed
+X8-C7	X8V-validation.md	-	**HELD**
 X8-D1	X8-independent-review.md	-	clean, 0 of 13,524
 X8-D2	X8-independent-review.md	-	clean
 X8-D3	X8-independent-review.md	-	compensated
@@ -2386,6 +2401,43 @@ X8-D5	X8-independent-review.md	-	complete but for `locked`
 X8-D6	X8-independent-review.md	-	cannot bite - the timetable is a `List`
 X8-D7	X8-independent-review.md	-	it can
 X8-D8	X8-independent-review.md	-	it asks both, and that is what makes `X8-A2` narrow
+X8V-A1a	X8V-validation.md	-	2 red: `testTheHeaderKeyOfAPageSurvivesASave`, `testAPageWithNoBlocksStillKeepsItsHeaderKe
+X8V-A1b	X8V-validation.md	-	the same 2 red
+X8V-A1c	X8V-validation.md	-	**1** red: `testAPageWithNoBlocksStillKeepsItsHeaderKey` alone — the discriminator that te
+X8V-A2	X8V-validation.md	-	2 of 2 red
+X8V-B1	X8V-validation.md	-	closed
+X8V-B1a	X8V-validation.md	-	2 of 2 red
+X8V-B1b	X8V-validation.md	-	**1** red: the blank-square control, which is the column-drag case the commit message says
+X8V-B2	X8V-validation.md	-	closed
+X8V-B2a	X8V-validation.md	-	3 red: the page-edit, no-id and renamed claims
+X8V-B2b	X8V-validation.md	-	**1** red: `testAPageWithNoIdKeepsWhatTheStationWroteInsideIt` alone
+X8V-B3a	X8V-validation.md	-	**1** red: `testAConditionalRouteFirstInTheFileIsNotDropped`. `testConditionsOnTheRealRout
+X8V-B3b	X8V-validation.md	-	**2** red — including `testConditionsOnTheRealRouteFile`, so the second half is pinned by 
+X8V-B4	X8V-validation.md	-	1 of 1 red
+X8V-B5	X8V-validation.md	-	1 red: `testEditingARouteKeepsItsLock`
+X8V-B6	X8V-validation.md	-	1 red: `testARouteRunByHandIgnoresItsConditions`
+X8V-C1	X8V-validation.md	-	1 red: `testNoCommentCitesALineNumber`
+X8V-C2	X8V-validation.md	-	closed
+X8V-C2a	X8V-validation.md	-	**nothing red** (`X8V-C5`)
+X8V-C3	X8V-validation.md	-	open
+X8V-C4	X8V-validation.md	-	closed
+X8V-C5	X8V-validation.md	-	closed
+X8V-C5a	X8V-validation.md	-	**nothing red** (`X8V-C2`)
+X8V-C6	X8V-validation.md	-	closed
+X8V-C7	X8V-validation.md	-	closed
+X8V-C8	X8V-validation.md	-	closed
+X8V-D1	X8V-validation.md	-	clean, measured
+X8V-D10	X8V-validation.md	-	all eight rewritten, all ASCII
+X8V-D11	X8V-validation.md	-	both correct
+X8V-D12	X8V-validation.md	-	209 green, 0 failures, 0 testing nothing
+X8V-D2	X8V-validation.md	-	clean, 65 files
+X8V-D3	X8V-validation.md	-	clean, 41 pages
+X8V-D4	X8V-validation.md	-	inert on all real data
+X8V-D5	X8V-validation.md	-	it is, both caption directions
+X8V-D6	X8V-validation.md	-	nine call sites enumerated
+X8V-D7	X8V-validation.md	-	it does
+X8V-D8	X8V-validation.md	-	untested, and correct
+X8V-D9	X8V-validation.md	-	all four true
 # DEAD - cited, no finding behind them
 AR-19	-	-	-
 FCR-B3	-	-	-

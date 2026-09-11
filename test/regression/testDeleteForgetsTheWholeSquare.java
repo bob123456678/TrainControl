@@ -4,6 +4,7 @@ package regression;
 
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -224,5 +225,54 @@ public class testDeleteForgetsTheWholeSquare
             "the caption naming the deleted square survived, so the repair that forgets more forgot "
             + "the one thing the old call did (X8-B4)");
     }
+
+    /**
+     * Forgetting squares nothing was ever written about reports that nothing changed (X8V-B2).
+     *
+     * **The answer used to be manufactured from the size of the list.** `moveTiles` computed it as
+     * `builtOver != null && !builtOver.isEmpty()`, which is true before it has looked at anything, and
+     * four call sites read it as "something was forgotten, so write the setup to disk" - `delete` says
+     * so in as many words, in a comment `X8-B4` kept while moving the call onto a method that no longer
+     * honoured it.
+     *
+     * So deleting a piece of plain track that no station, name, length or facing had ever been written
+     * about rebuilt the graph over every page and wrote every file of the setup, to a folder under
+     * OneDrive. `deleteSelection` - the Delete key, and **Delete Selected** on the right-click menu -
+     * does that once per picked square.
+     *
+     * MUTATION: put `return builtOver != null && !builtOver.isEmpty();` back at the top of
+     * `AutonomySession.moveTiles` and the first claim fails; make `Kept.forget` return false always and
+     * the second does.
+     */
+    @Test
+    public void testForgettingNothingSaysNothingChanged() throws Exception
+    {
+        TileKey untouched = new TileKey(PAGE, 0, 0);
+
+        // Nothing has ever been written about it - asserted rather than assumed, because a square that
+        // did hold something would satisfy the claim below for the wrong reason.
+        session.getStore().setTileLength(untouched, 0);
+        session.getStore().setPointName(untouched, null);
+        session.getStore().setCaption(untouched, null);
+
+        assertFalse(session.forgetTiles(java.util.Collections.singletonList(untouched)),
+            "forgetting a square nothing was written about reported that something changed.  Every "
+            + "caller reads that as a reason to rebuild the graph over every page and write the whole "
+            + "setup to disk, once per square (X8V-B2)");
+
+        // THE CONTROL: a square that DOES hold something still reports a change, so the answer above is
+        // not simply "no" for everything.
+        TileKey written = new TileKey(PAGE, 1, 1);
+
+        session.getStore().setTileLength(written, 5);
+
+        assertTrue(session.forgetTiles(java.util.Collections.singletonList(written)),
+            "control: forgetting a square that held a measured length reported no change, so the "
+            + "assertion above is about a method that answers no whatever it is given");
+
+        assertEquals(session.getStore().getTileLength(written), 0,
+            "and it did not actually forget the length");
+    }
+
 
 }

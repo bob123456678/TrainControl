@@ -286,8 +286,15 @@ public class LayoutDiagram
         // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM (X8-A1).
         //
         // `page=1` sits between the header and the first block on a genuine export, and it was dropped
-        // on read and therefore deleted on save.  Written back before anything else so the file comes
-        // out in the order it went in.
+        // on read and therefore deleted on save.  Written back before anything else, which is where a
+        // station puts them.
+        //
+        // BY KEY AND BY RULE, NOT BY LINE (X8V-C6).  Two shapes do not survive unchanged: a key
+        // REPEATED in one file keeps only the last value, and a key written BELOW the blocks comes back
+        // above them.  Neither is a regression - before this existed all of it was deleted - and no
+        // file in this repository has either shape: 18 left-margin keys across 65 `.cs2` files, every
+        // one a single `page=N` on line 2.  Recorded because this comment used to claim the file comes
+        // out in the order it went in, which is true of what a station writes and not of those two.
         for (Map.Entry<String, String> bare : bareKeys.entrySet())
         {
             builder.append(bare.getKey()).append("=").append(bare.getValue()).append("\n");
@@ -381,6 +388,17 @@ public class LayoutDiagram
 
     /**
      * Remembers a key at the left margin of a page file, so that it survives a save (X8-A1).
+     *
+     * PRESERVED VERBATIM, AND IT MAY DISAGREE WITH THE INDEX (X8V-C3).  `page=N` is a number, and
+     * `writeLayoutIndex` can reissue the id of the page that carries it - a duplicate id loses the
+     * argument to the first claimant, and the genuine export here has such a pair.  Measured:
+     * `1 gods.cs2` says `page=1` while the index, after a write, says `.id=8`.
+     *
+     * **That costs nothing, and Adam settled why (2026-09-10):** *"the `.id` field is what the Central
+     * Station uses to order the pages.  We still order by name, which is the simpler behavior."*  So
+     * neither number decides anything in TrainControl - `getLayoutList` sorts by name, and the id is an
+     * identity the autonomy setup is keyed by, not a position.  Rewriting this line from the id would
+     * be this program asserting something about an ordering it deliberately does not use.
      *
      * @param key the name, `page` on a real export
      * @param value what follows the equals sign
@@ -947,7 +965,15 @@ public class LayoutDiagram
                 // makes that luck expire, so the rule is written down before it is relied on.
                 if (trimmed.length() > 0 && !trimmed.startsWith(".") && !trimmed.startsWith("["))
                 {
-                    inPage = "seite".equals(trimmed);
+                    // WITHOUT REGARD TO CASE, which is what the other two readers of this file do
+                    // (X8V-C4).  `readLayoutIndexExtras` matches its modelled names case-insensitively
+                    // - VLD-B2, because the genuine export spells its version block `Version` - and so
+                    // does `readLayoutIndexPageExtras`.  This one was the odd one out, and it is the one
+                    // whose answer everything else is keyed BY: an index spelling the block `Seite`
+                    // gave no page an id at all, so a write reissued 1..n across the whole layout and
+                    // every stored setting had to be recovered through the setup's own record of what
+                    // each id used to be called.
+                    inPage = "seite".equalsIgnoreCase(trimmed);
 
                     if (inPage)
                     {
@@ -955,11 +981,11 @@ public class LayoutDiagram
                         idText = null;
                     }
                 }
-                else if (inPage && trimmed.startsWith(".id="))
+                else if (inPage && trimmed.toLowerCase().startsWith(".id="))
                 {
                     idText = trimmed.substring(4);
                 }
-                else if (inPage && trimmed.startsWith(".name="))
+                else if (inPage && trimmed.toLowerCase().startsWith(".name="))
                 {
                     // Through the shared rule rather than inline (DR-B4).
                     out.put(trimmed.substring(6), pageIdOrPosition(idText, position));
@@ -1014,6 +1040,9 @@ public class LayoutDiagram
     {
         Map<Integer, List<String>> out = new LinkedHashMap<>();
 
+        // Every id a page has CLAIMED, so that an id two pages claim can be withdrawn (X8V-B1).
+        java.util.Set<Integer> claimed = new java.util.LinkedHashSet<>();
+
         File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
 
         if (!index.exists()) return out;
@@ -1045,10 +1074,8 @@ public class LayoutDiagram
                     // A block name - or the file's own opening line - closes whatever page was open.
                     // Held until here rather than emitted at `.id`, since a real file writes the id
                     // first but nothing promises it.
-                    if (inPage && extras != null && !extras.isEmpty())
-                    {
-                        out.put(pageIdOrPosition(idText, position), extras);
-                    }
+                    attribute(out, claimed, inPage ? pageIdOrPosition(idText, position) : null,
+                        inPage ? extras : null);
 
                     inPage = "seite".equalsIgnoreCase(trimmed);
 
@@ -1077,10 +1104,8 @@ public class LayoutDiagram
                 extras.add(" " + trimmed);
             }
 
-            if (inPage && extras != null && !extras.isEmpty())
-            {
-                out.put(pageIdOrPosition(idText, position), extras);
-            }
+            attribute(out, claimed, inPage ? pageIdOrPosition(idText, position) : null,
+                inPage ? extras : null);
         }
         catch (IOException e)
         {
@@ -1088,6 +1113,43 @@ public class LayoutDiagram
         }
 
         return out;
+    }
+
+    /**
+     * Files one page's unmodelled keys under its id, and withdraws the id if two pages claim it
+     * (X8V-B1).
+     *
+     * **Two pages can hold one id, and this file has a pair.**  `Oles kreds/config/gleisbild.cs2` - the
+     * genuine Central Station export here - opens with a `seite` carrying no `.id` at all, which
+     * resolves to its position, 1, and the page after it states `.id=1`.  A map keyed by id keeps the
+     * last of those; `writeLayoutIndex` then reissues the LATER page's id and writes the pages in order,
+     * so the FIRST page looked up that id and got the second page's scroll offsets, and the second got
+     * none.  Measured: Beta's `.xoffset=42`/`.yoffset=43` came back under Alpha.
+     *
+     * Withdrawn rather than resolved, and it fails safe both ways: nobody inherits anybody's keys, and a
+     * page that loses a scroll position is a page the station will set again.  Fixing the writer alone
+     * would not have helped - the misattribution is already complete by the time it reads the map.
+     *
+     * @param out what has been filed so far
+     * @param claimed every id a page has claimed, which this adds to
+     * @param id the page's id, or null when there is no page open
+     * @param extras its unmodelled lines, or null
+     */
+    private static void attribute(Map<Integer, List<String>> out, java.util.Set<Integer> claimed,
+        Integer id, List<String> extras)
+    {
+        if (id == null) return;
+
+        // A page with nothing unmodelled still CLAIMS its id, so a later page holding the same one
+        // cannot be handed keys that might have been about this one.
+        if (!claimed.add(id))
+        {
+            out.remove(id);
+
+            return;
+        }
+
+        if (extras != null && !extras.isEmpty()) out.put(id, extras);
     }
 
     /**

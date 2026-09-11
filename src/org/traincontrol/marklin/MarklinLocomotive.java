@@ -1087,6 +1087,19 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
+     * NOT SYMMETRIC, AND BOTH DIRECTIONS HAVE TO BE ASKED (X8V-C8).
+     *
+     * `a.isSimultaneousMultiUnitCompatible(b)` and `b.isSimultaneousMultiUnitCompatible(a)` can
+     * disagree, because the question is asked from the left-hand locomotive's point of view: it walks
+     * what THIS one commands, and a plain member commands nothing.  Measured on a Central Station
+     * multi-unit at address 4003 holding a member at 62: asked one way round the answer is false, the
+     * other way true.
+     *
+     * `Layout.sanitizeMultiUnits` is the only production caller and it asks both ways.  A second caller
+     * that asked once would let the pair through half the time, which is the shape `X8-A2` was: a
+     * missing branch in one of the two loops made both directions answer the same wrong thing, and the
+     * both-ways call could not compensate because neither direction knew.
+     *
      * Checks if this locomotive can be in a multi-unit with another, at the same time, based
      * on whether it is already linked to another as a multi-unit, or has the same address
      * Stricter check than isLinkedTo and is used by the autonomy layout to minimize errors

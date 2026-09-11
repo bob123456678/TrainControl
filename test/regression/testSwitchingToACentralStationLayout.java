@@ -733,8 +733,13 @@ public class testSwitchingToACentralStationLayout
         //     `delete(LayoutLabel)` door, and a label only exists once a grid has been built.
         //
         // Both sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model.
-        assertEquals(checked, 31,
-            checked + " test classes were found to build a window, not the 31 there were when this "
+        //
+        // THIRTY-TWO since the validation of that round: `testTheDiagramCeiling` (X8-C5, X8V-C2)
+        // builds editors over pages past MAX_SIZE, because the ceiling is a property of the
+        // editor and the pages it asks about have to exist.  It sandboxes `single-switch`, opened
+        // before the model, and the pages it measures are built in memory.
+        assertEquals(checked, 32,
+            checked + " test classes were found to build a window, not the 32 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating");
 

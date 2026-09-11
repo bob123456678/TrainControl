@@ -4478,7 +4478,21 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public boolean roomToGrow(int rows, int columns)
     {
-        return layout.getSy() + rows <= MAX_SIZE && layout.getSx() + columns <= MAX_SIZE;
+        // EACH DIMENSION ONLY WHERE THE GESTURE ADDS TO IT (X8V-C2).
+        //
+        // Written as one conjunction over both, `roomToGrow(0, 1)` still asked `getSy() <= MAX_SIZE` -
+        // so a page taller than the ceiling refused a COLUMN shift, which adds nothing to its height,
+        // and a page wider than it refused a row shift.  That is not hypothetical here: a page's size
+        // comes from its largest element coordinate with nothing clamping it, and three fixture pages
+        // in this repository parse at 17 x 129.
+        //
+        // Asking about a dimension the caller is not growing is asking whether the page is already too
+        // big, which is a different question and not one a shift can make worse.
+        if (rows > 0 && layout.getSy() + rows > MAX_SIZE) return false;
+
+        if (columns > 0 && layout.getSx() + columns > MAX_SIZE) return false;
+
+        return true;
     }
 
     /**

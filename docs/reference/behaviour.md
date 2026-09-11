@@ -1102,6 +1102,16 @@ pressed Play got every switch in it thrown. It now says which firing it means.
 
 ## 8. Things that are true of the whole system
 
+**Pages are ordered by name, not by the number the Central Station orders them with.** Adam,
+2026-09-10: *"the `.id` field is what the Central Station uses to order the pages. We still order by
+name, which is the simpler behavior."* `getLayoutList` sorts, and that sort is what the window and
+every menu show.
+
+An id is still an identity - the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps
+each page's id rather than renumbering by position - but it is not a position here. The same goes for
+the `page=N` line at the top of a page file: it is preserved exactly as the station wrote it (X8-A1),
+and if a reissued id later disagrees with it, neither number decides anything TrainControl does.
+
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it
   means, or it is asking a question the graph does not answer.
 - **`canReverse` is not in the running layout.** Only the setup knows it. **It is a property of the

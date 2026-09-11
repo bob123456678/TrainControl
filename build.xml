@@ -284,6 +284,7 @@
         <test-one-class class="testClearAllTrackLengths"/>
         <test-one-class class="testCutWithNothingHovered"/>
         <test-one-class class="testDeleteForgetsTheWholeSquare"/>
+        <test-one-class class="testTheDiagramCeiling"/>
         <test-one-class class="testTheHoveredSquareIsForgotten"/>
         <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
         <test-one-class class="testTwoCentralStationMultiUnitsShareAMember"/>

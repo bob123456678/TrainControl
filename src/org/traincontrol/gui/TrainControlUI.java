@@ -3063,6 +3063,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Added in code rather than in the form, which is generated - the same way everything else added
      * to this window since the diagram work has been mounted.
+     *
+     * **IMMEDIATELY AFTER DUPLICATE CURRENT PAGE, not at the end** (Adam, 2026-09-10).  `add()` appends,
+     * so "where the other page operations are" put it below the divider and below Delete - in the group
+     * the menu's own gaps say is about destroying a page, not making one.  Combining pages is the same
+     * kind of act as duplicating one.
+     *
+     * Placed by SEARCHING for that item, for the reason `mountEditPageMenu` gives about this same menu:
+     * an index is a fact about the generated form and moves the next time somebody adds an item in the
+     * designer.  This also has to survive `removeSupersededPageItems` and the separator sweep, which
+     * shift every index below them at runtime.
      */
     private void addCombinePagesItem()
     {
@@ -3084,7 +3094,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         combinePagesItem.addActionListener(event -> combineLinkedPages());
 
-        modifyLocalLayoutMenu.add(combinePagesItem);
+        int after = -1;
+
+        for (int i = 0; i < modifyLocalLayoutMenu.getMenuComponentCount(); i++)
+        {
+            if (modifyLocalLayoutMenu.getMenuComponent(i) == duplicateLayoutMenuItem)
+            {
+                after = i;
+                break;
+            }
+        }
+
+        // Appended only if that item has gone, which would mean the form has changed under this method
+        // - and the bottom of the menu is a worse place for it than a missing one.
+        if (after >= 0) modifyLocalLayoutMenu.add(combinePagesItem, after + 1);
+        else modifyLocalLayoutMenu.add(combinePagesItem);
     }
 
     /** The one Combine item, so that mounting the controls again replaces it rather than adding another */
@@ -3475,23 +3499,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu editPageMenu;
 
     /**
-     * Takes "Edit Current Page" off Manage Pages.
-     *
-     * It is now the first entry of Edit Layout Page, by name, along with all the others.  Removed here
-     * rather than left out of the form, which is generated - the same treatment the legacy editor item
-     * gets immediately above.
-     */
-    private void removeEditCurrentPageItem()
-    {
-        if (modifyLocalLayoutMenu != null && editCurrentPageActionPerformed != null)
-        {
-            modifyLocalLayoutMenu.remove(editCurrentPageActionPerformed);
-        }
-
-        tidySeparators(modifyLocalLayoutMenu);
-    }
-
-    /**
      * Drops separators that no longer separate anything (OB-021).
      *
      * Taking an item off a menu built by the form leaves the dividers that were around it, and two of
@@ -3537,11 +3544,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Takes the legacy track diagram editor off the Layouts menu.
+     * Takes the two superseded items off the Layouts menu: the legacy track diagram editor, and
+     * "Edit Current Page".
      *
      * Removed here rather than in the form, which is generated and cannot be hand-edited - so the
-     * item is still built and still added by initComponents, and is taken off again immediately
-     * afterwards.  Say the word and it comes out of the .form properly.
+     * items are still built and still added by initComponents, and are taken off again immediately
+     * afterwards.  Say the word and they come out of the .form properly.
+     *
+     * **BOTH IN ONE PLACE (Adam, 2026-09-10)**, which is also what makes the separator sweep below
+     * necessary rather than merely prudent: two items taken out of the middle of a generated menu leave
+     * two dividers adjacent.
+     *
+     * "Edit Current Page" did `showLayoutTab()` and then pressed Edit Layout, so it edited whatever
+     * page was on screen.  Edit Layout Page lists every page BY NAME, which is a different question -
+     * the list cannot say "the one I am looking at" - and the editor's own guard against a second
+     * window names this item as a caller.  Adam took the removal out on 2026-09-10, read that, and put
+     * it back here.
      *
      * **CALLED ONCE, FROM THE WINDOW'S OWN SET-UP (RG3-C3).**  It used to be called from
      * `mountAutonomyControls`, after the early return taken when there is no local layout folder - so
@@ -3558,12 +3576,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * kilobytes of somebody else's binary - and the executable has been removed from the resources
      * along with it.
      */
-    private void removeLegacyEditorItem()
+    private void removeSupersededPageItems()
     {
-        if (modifyLocalLayoutMenu != null && openLegacyTrackDiagramEditor != null)
+        if (modifyLocalLayoutMenu == null) return;
+
+        // EACH ITEM GUARDED ON ITSELF (2026-09-10).  The two removals were consolidated into one
+        // method and the second was put inside the first item's null check, so a null legacy item -
+        // which is what a form the designer has edited could hand over - would have left the other one
+        // on the menu with nothing to say so.
+        if (openLegacyTrackDiagramEditor != null)
         {
             modifyLocalLayoutMenu.remove(openLegacyTrackDiagramEditor);
         }
+
+        if (editCurrentPageActionPerformed != null)
+        {
+            modifyLocalLayoutMenu.remove(editCurrentPageActionPerformed);
+        }
+
+        // AND THE DIVIDERS THAT FRAMED THEM (OB-021).
+        //
+        // Taking an item off a menu the FORM generates leaves the dividers the designer put around it,
+        // and with both of these gone two of them end up adjacent - a gap twice the size, in a menu
+        // whose groups no longer mean what the gaps say they mean.  That is the defect OB-021 was, and
+        // it is live again now that both items come off here.
+        //
+        // The sweep asks the menu what it is holding rather than counting, so it does not care which
+        // of the two was actually present.
+        tidySeparators(modifyLocalLayoutMenu);
     }
 
     /**
@@ -3753,8 +3793,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // place those actions live, because they are a few hundred lines of dialogs and file handling
         // that gain nothing from being copied into a menu class.
         mountAutonomyMenu();
-
-        removeEditCurrentPageItem();
 
         addCombinePagesItem();
 
@@ -8854,7 +8892,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         restoreLayoutTitles();
 
         // On every path, not only the one with a local layout folder (RG3-C3).
-        removeLegacyEditorItem();
+        removeSupersededPageItems();
 
         takeTheKeyboard();
     }
@@ -18520,7 +18558,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     // UXR-C21: showTab(Icon) removed. Dead code - its only call site
-    // (LocomotiveSelector.formWindowStateChanged) has been commented out, and it never picked up C20's
+    // (the commented-out showTab in LocomotiveSelector.addLocomotiveActionPerformed) has been
+    // commented out, and it never picked up C20's
     // isEnabledAt/getTabCount guard, so reviving it would revive OB-128 (a program-driven tab switch
     // landing on a greyed, empty tab) with it.
 
@@ -25256,7 +25295,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void openLegacyTrackDiagramEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLegacyTrackDiagramEditorActionPerformed
 
         // WITHDRAWN.  The menu item is taken off the menu in the constructor and the executable it
-        // unpacked is no longer shipped, so nothing can reach this - see removeLegacyEditorItem.
+        // unpacked is no longer shipped, so nothing can reach this - see removeSupersededPageItems.
         //
         // The code below is left standing on purpose.  It is the only worked example of unpacking a
         // bundled tool and running it against the layout folder, and if a native editor is ever

@@ -2401,8 +2401,8 @@ public class Layout
         //
         // THE START STAYS EXEMPT, which is the whole of the exception: a train standing on a square
         // that has been switched off is driven out by hand, and that is what closing a square around a
-        // train is for.  `trainsUnderway`'s stricter form - any edge with an inactive endpoint -
-        // keeps its `isAutoRunning` fence, because it refuses the start too.
+        // train is for.  `isPathClear`'s stricter form - any edge with an inactive endpoint - keeps
+        // its `isAutoRunning` fence, because it refuses the start too.
         if (!path.get(path.size() - 1).getEnd().isActive())
         {
             logPathError(
@@ -6151,7 +6151,7 @@ public class Layout
                     // only after `configureAndLockPath` has returned - at the `activeLocomotives.put` in `executePathInternal`, so its absence here
                     // means the lock phase is what threw and has already cleaned up after itself.
                     //
-                    // The comment in `setBlockedBy`'s loop promised this - "it went straight out to executePath's
+                    // The comment in `configureAndLockPath` promised this - "it went straight out to executePath's
                     // handler, which deliberately does not unlock" - and stopped being true on
                     // 2026-09-03.  It is true again.
                     if (hadItsPath)

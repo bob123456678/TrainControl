@@ -642,6 +642,74 @@ public class testRoutes
     }
 
     /**
+     * A delay the railway will not honour is not a delay the editor shows (X8-C2, X8V-C5, X8V-C7).
+     *
+     * **The number in the cell and the number on the railway disagreed silently.** `execRoute` honours a
+     * command's own delay only when it is the larger of it and `DEFAULT_SLEEP_MS`, and the editor
+     * accepted any non-negative integer, stored it, wrote it to the file, read it back and redisplayed
+     * it. Somebody lowering a pause from 300 to 100 to speed a route up saw the number change and the
+     * railway not, and did not even get the log line the other branch prints.
+     *
+     * The floor itself is kept, because it is real: it is the gap this program leaves between two route
+     * commands, and `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above it. What is fixed is that the
+     * floor was invisible.
+     *
+     * **Both directions**, which is `X8V-C7`: raising it only as it was typed left every delay that
+     * arrived another way - a route saved by an earlier build, imported from a station, read out of a
+     * JSON file - still showing a number the railway would not use.
+     *
+     * Reached by reflection because both are private statics on a window class; neither needs an
+     * instance, and building a `RouteEditorFrame` to ask a pure function about two integers would need
+     * a display.
+     *
+     * MUTATION: return `asked` unchanged from `delayTheRailwayWillUse` and the first two claims fail;
+     * raise zero as well and the third does.
+     */
+    @Test
+    public void testADelayBelowTheFloorIsShownAsTheFloor() throws Exception
+    {
+        java.lang.reflect.Method floor =
+            Class.forName("org.traincontrol.gui.RouteEditorFrame")
+                .getDeclaredMethod("delayTheRailwayWillUse", int.class);
+
+        floor.setAccessible(true);
+
+        java.lang.reflect.Method typed =
+            Class.forName("org.traincontrol.gui.RouteEditorFrame")
+                .getDeclaredMethod("delayOf", String.class, int.class);
+
+        typed.setAccessible(true);
+
+        int min = org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS;
+
+        assertEquals(floor.invoke(null, 100), min,
+            "a delay of 100 was shown as 100, and the railway waits " + min + " (X8V-C7)");
+
+        assertEquals(typed.invoke(null, "100", 0), min,
+            "a delay of 100 TYPED into the cell was kept as 100 (X8-C2)");
+
+        // ZERO IS NOT A DELAY.  It means "none asked for", which is what an untouched row holds, and
+        // raising it would put a pause on every command in every route.
+        assertEquals(floor.invoke(null, 0), 0,
+            "zero was raised to the floor, which would give every command in every route a pause it "
+            + "was never given");
+
+        assertEquals(typed.invoke(null, "", 300), 0,
+            "clearing the cell no longer clears the delay");
+
+        // AND ABOVE THE FLOOR NOTHING MOVES, which is what says this is a floor and not a default.
+        assertEquals(floor.invoke(null, 3200), 3200, "a delay above the floor was changed");
+
+        assertEquals(floor.invoke(null, min), min, "a delay exactly at the floor was changed");
+
+        // The three-way spacing is built on top of the floor and must stay above it, or it is
+        // silently inert - its own comment says so.
+        assertTrue(org.traincontrol.marklin.MarklinRoute.THREEWAY_ROUTE_DELAY_MS > min,
+            "THREEWAY_ROUTE_DELAY_MS has fallen to or below the floor, so the gap it exists to leave "
+            + "between a three-way's two commands is no longer being left");
+    }
+
+    /**
      * A route may only ever have one monitor thread.
      *
      * disable() just clears a flag; the thread stays parked in its feedback wait until the sensor next

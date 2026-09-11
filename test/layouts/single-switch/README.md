@@ -50,3 +50,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `core.testACompulsoryTurnIsChosenLikeAnyOtherStation`
 - `core.testAShutStationIsOneAutonomyWillNotChoose`
 - `core.testTwoCentralStationMultiUnitsShareAMember`
+- `regression.testTheDiagramCeiling`

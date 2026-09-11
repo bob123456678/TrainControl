@@ -2733,6 +2733,36 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * The delay the railway will actually wait for, given the one somebody asked for.
+     *
+     * **THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY (X8-C2).**  `MarklinRoute` sleeps
+     * `max(delay, DEFAULT_SLEEP_MS)` between commands, because 150ms is the gap it leaves between two
+     * route commands and `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above it.  So a delay between
+     * 1 and 150 was accepted, stored, written to the file, read back and redisplayed - and never used.
+     * Somebody lowering a pause from 300 to 100 to speed a route up saw the number change and the
+     * railway not.
+     *
+     * Zero is left alone: it means "no delay asked for", which is a different thing from "as short as
+     * possible" and is what an untouched row holds.
+     *
+     * ASKED ON THE WAY OUT AS WELL AS ON THE WAY IN (X8V-C7).  Raising it only as it was typed left
+     * every delay that arrived another way - a route saved by an earlier build, imported from a station,
+     * read out of a JSON file - showing a number the railway would not use.
+     *
+     * @param asked what the row holds
+     * @return what the railway will wait
+     */
+    private static int delayTheRailwayWillUse(int asked)
+    {
+        if (asked > 0 && asked < org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS)
+        {
+            return org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS;
+        }
+
+        return asked;
+    }
+
+    /**
      * A delay from what the user typed.
      *
      * A BLANK clears it - emptying the cell is how a delay is removed, and there is no other way to
@@ -2749,23 +2779,7 @@ public class RouteEditorFrame extends JFrame
 
             if (parsed < 0) return wasBefore;
 
-            // THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY (X8-C2).
-            //
-            // `MarklinRoute` sleeps `max(delay, DEFAULT_SLEEP_MS)` between commands, because that is
-            // the gap it leaves between two route commands and THREEWAY_ROUTE_DELAY_MS is built on top
-            // of it.  So a delay between 1 and 150 was accepted here, stored, written to the file, read
-            // back and redisplayed - and never used.  Somebody lowering a pause from 300 to 100 saw the
-            // number change and the railway not.
-            //
-            // Raised on the way in, so the cell holds the number the railway will actually use.  Zero
-            // is left alone: it means "no delay asked for", which is a different thing from "as short
-            // as possible" and is what an untouched row holds.
-            if (parsed > 0 && parsed < org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS)
-            {
-                return org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS;
-            }
-
-            return parsed;
+            return delayTheRailwayWillUse(parsed);
         }
         catch (NumberFormatException e)
         {
@@ -2971,7 +2985,13 @@ public class RouteEditorFrame extends JFrame
 
                     default:
                         if (!CommandRow.hasDelay(at.getKind())) return "";
-                        return at.getDelay() == 0 ? "" : String.valueOf(at.getDelay());
+
+                        // The number the railway will wait, not the number somebody once typed
+                        // (X8V-C7).  A delay below the floor arrives here from every route saved before
+                        // the floor was made visible, and from every import.
+                        int shown = delayTheRailwayWillUse(at.getDelay());
+
+                        return shown == 0 ? "" : String.valueOf(shown);
                 }
             }
 

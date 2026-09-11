@@ -810,6 +810,115 @@ public class testParseCS2Layout
     }
 
     /**
+     * Two pages claiming one id give their unmodelled keys to NOBODY (X8V-B1).
+     *
+     * **Keying by id was right and incomplete.** A map keyed by id keeps the last page written under a
+     * duplicate, and `writeLayoutIndex` resolves a duplicate by reissuing the LATER page - so the first
+     * page looked up that id and got the second page's scroll offsets, while the second got none.
+     *
+     * **The shape is in this repository.** `Oles kreds/config/gleisbild.cs2` opens with a `seite`
+     * carrying no `.id` at all, which resolves to its position - 1 - and the page after it states
+     * `.id=1`. It survives today only because one of the two carries offsets and the other does not.
+     *
+     * Withdrawn rather than resolved, because both answers are guesses and this one fails safe: a page
+     * that loses a scroll position is a page the station will set again, and a page given somebody
+     * else's is a page nothing will correct.
+     *
+     * MUTATION: take the `claimed` set out of `readLayoutIndexPageExtras` and this fails, naming the
+     * page that inherited the offsets.
+     */
+    @Test
+    public void testTwoPagesClaimingOneIdKeepNeithersKeys() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // Only BETA carries the offsets, and both pages state id 1.
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "seite\n .id=1\n .name=Alpha\n"
+                    + "seite\n .id=1\n .name=Beta\n .xoffset=42\n .yoffset=43\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Alpha", "Beta"));
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int alpha = after.indexOf(".name=Alpha");
+            int beta = after.indexOf(".name=Beta");
+            int offset = after.indexOf(".xoffset=42");
+
+            assertTrue(alpha >= 0 && beta >= 0, "precondition: both pages have to be written:\n" + after);
+
+            assertTrue(!(offset > alpha && offset < beta),
+                "Alpha was given Beta's scroll position.  Two pages claimed id 1, the map keyed by id "
+                + "kept Beta's keys, and the writer reissued Beta - so the page that kept the id "
+                + "inherited the keys of the page that lost it (X8V-B1).  File was:\n" + after);
+
+            // AND IT IS WITHDRAWN, not merely moved: neither page gets them.
+            assertTrue(offset < 0,
+                "the offsets were reattached to one of the two pages.  An id two pages claim says "
+                + "nothing about either of them, and guessing is what put them on the wrong page "
+                + "(X8V-B1).  File was:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * The control: ONE page claiming an id still keeps its keys.
+     *
+     * Withdrawing on a collision must not withdraw on every page, which is what a guard written as
+     * "an id that has been seen" rather than "an id claimed twice" would do.
+     */
+    @Test
+    public void testOnePageClaimingAnIdStillKeepsItsKeys() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "seite\n .id=1\n .name=Alpha\n"
+                    + "seite\n .id=2\n .name=Beta\n .xoffset=42\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Alpha", "Beta"));
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int beta = after.indexOf(".name=Beta");
+            int offset = after.indexOf(".xoffset=42");
+
+            assertTrue(beta >= 0 && offset > beta,
+                "control: two pages with DIFFERENT ids lost the one page's keys, so the collision guard "
+                + "is refusing everything:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
      * A page with NO id keeps what the station wrote inside its block (X8-B2).
      *
      * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -

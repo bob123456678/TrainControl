@@ -149,6 +149,160 @@ public class testTheMenusComeBackAtOneMoment
     }
 
     /**
+     * "Combine linked pages" sits immediately after "Duplicate Current Page" (Adam, 2026-09-10).
+     *
+     * **`add()` appends.** The item is mounted in code - the menu bar is generated, so everything the
+     * diagram work added to this window is hand-written - and appending put it at the BOTTOM of Manage
+     * Pages: past the divider and past Delete, in the group the menu's own gaps say is about destroying
+     * a page. Combining pages is the same kind of act as duplicating one.
+     *
+     * **Found by searching for the item rather than by index**, which is the reason `mountEditPageMenu`
+     * gives about this same menu: an index is a fact about the generated form and moves the next time
+     * somebody adds an item in the designer. It also has to survive two removals and a separator sweep
+     * that shift every index below them at runtime, which is why the test drives the real start-up
+     * rather than calling the mounting method on a fresh menu.
+     *
+     * **And the two adjacent claims are both needed.** "After Duplicate" alone passes for an item at the
+     * bottom of a menu whose last entry happens to be Duplicate; "not last" alone passes for an item
+     * anywhere in the middle. Together they say one position.
+     *
+     * MUTATION: put `modifyLocalLayoutMenu.add(combinePagesItem)` back in `addCombinePagesItem` and this
+     * fails, naming where the item landed.
+     */
+    @Test
+    public void testCombineSitsRightAfterDuplicateCurrentPage() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("a menu is on a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        org.traincontrol.gui.TrainControlUI ui = null;
+
+        try
+        {
+            // BEFORE the model (OB-111).
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            model.stop();
+
+            final org.traincontrol.gui.TrainControlUI[] made =
+                new org.traincontrol.gui.TrainControlUI[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(
+                () -> made[0] = new org.traincontrol.gui.TrainControlUI());
+
+            ui = made[0];
+
+            final org.traincontrol.marklin.MarklinControlStation connected = model;
+            final org.traincontrol.gui.TrainControlUI window = ui;
+
+            // The real start-up, which is what mounts the item and then takes two others off the menu.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    window.setViewListener(connected, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            javax.swing.JMenu manage = field(ui, "modifyLocalLayoutMenu", javax.swing.JMenu.class);
+
+            Object duplicate = field(ui, "duplicateLayoutMenuItem", Object.class);
+            Object combine = field(ui, "combinePagesItem", Object.class);
+
+            assertNotNull(manage, "the Manage Pages menu is not there, so this proves nothing");
+            assertNotNull(duplicate, "Duplicate Current Page is not there");
+            assertNotNull(combine, "Combine linked pages was never mounted, so its place cannot be "
+                + "asserted - mountAutonomyControls is what adds it");
+
+            int at = indexOf(manage, combine);
+            int after = indexOf(manage, duplicate);
+
+            assertTrue(at >= 0, "Combine linked pages is not on the Manage Pages menu at all");
+            assertTrue(after >= 0, "Duplicate Current Page is not on the Manage Pages menu");
+
+            assertEquals(at, after + 1,
+                "Combine linked pages is at position " + at + " and Duplicate Current Page at "
+                + after + ", so it is not the next item.  `add()` appends, which put it below the "
+                + "divider and below Delete - in the group the menu's gaps say is about destroying a "
+                + "page (Adam, 2026-09-10).  The menu holds: " + shapeOf(manage));
+
+            // AND NOT LAST, which is the half "after Duplicate" cannot see on a menu whose last entry
+            // is Duplicate.
+            assertTrue(at < manage.getMenuComponentCount() - 1,
+                "Combine linked pages is the last entry on the menu: " + shapeOf(manage));
+        }
+        finally
+        {
+            if (ui != null)
+            {
+                final org.traincontrol.gui.TrainControlUI closing = ui;
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A private field of the window, by name.
+     */
+    private static <T> T field(org.traincontrol.gui.TrainControlUI on, String name, Class<T> kind)
+        throws Exception
+    {
+        java.lang.reflect.Field f =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return kind.cast(f.get(on));
+    }
+
+    /**
+     * Where a component sits on a menu, or -1.
+     */
+    private static int indexOf(javax.swing.JMenu menu, Object what)
+    {
+        for (int i = 0; i < menu.getMenuComponentCount(); i++)
+        {
+            if (menu.getMenuComponent(i) == what) return i;
+        }
+
+        return -1;
+    }
+
+    /**
+     * The menu's entries in order, for a failure message somebody can act on.
+     */
+    private static String shapeOf(javax.swing.JMenu menu)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (int i = 0; i < menu.getMenuComponentCount(); i++)
+        {
+            java.awt.Component c = menu.getMenuComponent(i);
+
+            if (out.length() > 0) out.append(" | ");
+
+            if (c instanceof javax.swing.JSeparator) out.append("----");
+            else if (c instanceof javax.swing.JMenuItem) out.append(((javax.swing.JMenuItem) c).getText());
+            else out.append(c.getClass().getSimpleName());
+        }
+
+        return out.toString();
+    }
+
+    /**
      * The first menu on the bar of the given kind.
      *
      * By type rather than by title: the menu's text is translated, so a title would make this test

@@ -2085,15 +2085,33 @@ public class AutonomySession
 
         if (!any) return false;
 
-        store.moveTiles(moves, builtOver);
+        // WHETHER ANYTHING IN THE STORE ACTUALLY CHANGED (X8V-B2).
+        //
+        // `any` above is only "the caller gave me something to look at", and it was what this method
+        // returned.  Four call sites read the answer as "something was forgotten, so write the setup to
+        // disk" - `delete` says so in as many words - so deleting a piece of plain track that no
+        // station, name, length or facing had ever been written about rebuilt the graph over every page
+        // and wrote every file of the setup.  `deleteSelection` does that once per picked square.
+        boolean changed = store.moveTiles(moves, builtOver);
 
         // The graph is built from the squares, so it is now describing the old ones - and touched()
         // is what rebuilds it.  This used to call rebuild() again immediately afterwards, so every
         // move paid for two full passes: a fresh TileGraph over every page, a GraphReducer.reduce, and
         // an AutonomyBuilder naming run, twice.  Nothing between them could have changed.
-        touched();
+        //
+        // STILL UNCONDITIONAL FOR A MOVE, AND THAT IS THE LOAD-BEARING HALF (X8V-B2).  A move changes
+        // the DIAGRAM, and the graph is built from the diagram - so the rebuild is owed whatever the
+        // store happened to be holding about those squares, and making it conditional on the store
+        // would leave autonomy describing track that has walked away.
+        //
+        // For a built-over-only call - `forgetTiles`, which is what a delete, a paste, a fill and a
+        // clear reach - there is nothing to rebuild FROM unless something was stored, and the caller
+        // who asked is about to decide whether to write the setup to disk on the strength of the
+        // answer.  That is the case this restores to what it was before `X8-B4` moved `delete` onto
+        // this method.
+        if (changed || (moves != null && !moves.isEmpty())) touched();
 
-        return true;
+        return changed;
     }
 
     /**

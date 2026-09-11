@@ -2644,7 +2644,7 @@ public class AutonomyCompanionStore
      * @param moves each square being vacated, and where it is going - may be null
      * @param builtOver squares whose track has been replaced by other track - may be null
      */
-    public void moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    public boolean moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
     {
         Map<TileKey, TileKey> byKey = new LinkedHashMap<>();
 
@@ -2686,9 +2686,12 @@ public class AutonomyCompanionStore
 
         // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose
         // name is written on the square below it, nudged down one, lands ON its own label.
-        forgetSquares(landing, byKey);
+        //
+        // And WHETHER IT FOUND ANYTHING (X8V-B2), which is what the caller's "did this change
+        // something" answer is built from.
+        boolean changed = forgetSquares(landing, byKey);
 
-        if (byKey.isEmpty()) return;
+        if (byKey.isEmpty()) return changed;
 
         // Where both halves name a square, both follow - and the value is REPOINTED rather than
         // moved: a caption on a square that stayed put, naming a station that moved, still names that
@@ -2742,6 +2745,10 @@ public class AutonomyCompanionStore
 
             configuration.put("points", moved);
         }
+
+        // A real move always changes the keys it is given, so the answer above is only interesting for
+        // the built-over half.
+        return true;
     }
 
     /**
@@ -3190,9 +3197,9 @@ public class AutonomyCompanionStore
      *
      * @param squares stored keys, "page:x,y"
      */
-    private void forgetSquares(Set<TileKey> squares)
+    private boolean forgetSquares(Set<TileKey> squares)
     {
-        forgetSquares(squares, null);
+        return forgetSquares(squares, null);
     }
 
     /**
@@ -3219,9 +3226,14 @@ public class AutonomyCompanionStore
      * as not - which would spare a label that some other tile has just been built over the top of, and
      * leave a station's name written on track it has nothing to do with.
      */
-    private void forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+    private boolean forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
     {
-        if (squares == null || squares.isEmpty()) return;
+        if (squares == null || squares.isEmpty()) return false;
+
+        // WHETHER ANYTHING WAS ACTUALLY REMOVED (X8V-B2).  See `Kept.forget`: the answer used to be
+        // manufactured by `moveTiles` from the size of the list it was handed, which is not the same
+        // question, and four callers treat it as a reason to write the whole setup to disk.
+        boolean any = false;
 
         // Each collection drops what it knows about these squares AND anything POINTING at them.
         //
@@ -3234,7 +3246,7 @@ public class AutonomyCompanionStore
         // nudged down one, lands ON its own label, and that label is not stale. It is about the tile
         // that just arrived. That is what `arriving` is for, and it applies to the KEY half only - a
         // square being vacated is never in this set, because moveTiles builds it by excluding them.
-        for (Kept k : kept()) k.forget(squares, arriving);
+        for (Kept k : kept()) any |= k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
         for (JSONObject configuration : configurations.values())
@@ -3245,9 +3257,11 @@ public class AutonomyCompanionStore
 
             for (TileKey key : squares)
             {
-                points.remove(key.toString());
+                any |= points.remove(key.toString()) != null;
             }
         }
+
+        return any;
     }
 
     /**
@@ -4137,10 +4151,17 @@ public class AutonomyCompanionStore
         /**
          * Drops everything about squares that are gone, and everything POINTING at them.
          *
+         * REPORTS WHETHER IT REMOVED ANYTHING (X8V-B2).  It used to return nothing, and the answer was
+         * manufactured one level up as "the caller handed me a non-empty list" - which is true before
+         * anything has been looked at.  Four call sites read that as "something was forgotten, so write
+         * the setup to disk", so every deleted piece of plain track rebuilt the graph over every page
+         * and wrote every file of the setup, once per square.
+         *
          * @param squares the squares being forgotten
          * @param arriving the moves in progress, so a label being landed on by its own tile is spared
+         * @return true when something was actually removed
          */
-        abstract void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving);
+        abstract boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving);
 
         /** Everything on one page, in a form restore can put back. */
         abstract Object snapshotOf(String page);
@@ -4180,9 +4201,13 @@ public class AutonomyCompanionStore
 
         @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
-            for (TileKey key : squares) map.remove(key);
+            boolean any = false;
+
+            for (TileKey key : squares) any |= map.remove(key) != null;
+
+            return any;
         }
 
         @Override Object snapshotOf(String page) { return onPage(map, page); }
@@ -4256,12 +4281,20 @@ public class AutonomyCompanionStore
 
         @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
+            boolean any = false;
+
             for (java.util.Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
             {
-                if (squares.contains(keys.next().square())) keys.remove();
+                if (squares.contains(keys.next().square()))
+                {
+                    keys.remove();
+                    any = true;
+                }
             }
+
+            return any;
         }
 
         @Override Object snapshotOf(String page) { return onPage(map, page); }
@@ -4329,8 +4362,10 @@ public class AutonomyCompanionStore
             moveKeys(map, byKey);
         }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
+            boolean any = false;
+
             for (TileKey key : squares)
             {
                 if (spareArriving)
@@ -4340,7 +4375,7 @@ public class AutonomyCompanionStore
                     if (names != null && arriving != null && key.equals(arriving.get(names))) continue;
                 }
 
-                map.remove(key);
+                any |= map.remove(key) != null;
             }
 
             // And anything pointing AT a square that is gone.  No exception for the arriving tiles
@@ -4349,8 +4384,14 @@ public class AutonomyCompanionStore
             for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
                 pairs.hasNext();)
             {
-                if (squares.contains(pairs.next().getValue())) pairs.remove();
+                if (squares.contains(pairs.next().getValue()))
+                {
+                    pairs.remove();
+                    any = true;
+                }
             }
+
+            return any;
         }
 
         // BOTH ends (B5).  A portal's two halves are normally on different pages, and this map is
@@ -4415,9 +4456,11 @@ public class AutonomyCompanionStore
             moveKeys(map, byKey);
         }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
-            for (TileKey key : squares) map.remove(key);
+            boolean any = false;
+
+            for (TileKey key : squares) any |= map.remove(key) != null;
 
             // A pointer at track that has been built over is one nothing can satisfy or clear.
             for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
@@ -4425,10 +4468,16 @@ public class AutonomyCompanionStore
             {
                 Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
-                pair.getValue().removeAll(squares);
+                any |= pair.getValue().removeAll(squares);
 
-                if (pair.getValue().isEmpty()) pairs.remove();
+                if (pair.getValue().isEmpty())
+                {
+                    pairs.remove();
+                    any = true;
+                }
             }
+
+            return any;
         }
 
         // BOTH ends (B5).  A station's protecting signal, and a point that holds a station back,
@@ -4496,9 +4545,9 @@ public class AutonomyCompanionStore
 
         @Override void move(Map<TileKey, TileKey> byKey) { moveMembers(set, byKey); }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
-            set.removeAll(squares);
+            return set.removeAll(squares);
         }
 
         @Override Object snapshotOf(String page)
@@ -4564,7 +4613,7 @@ public class AutonomyCompanionStore
 
         @Override void move(Map<TileKey, TileKey> byKey) { }
 
-        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving) { }
+        @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving) { return false; }
 
         @Override Object snapshotOf(String page) { return null; }
 
