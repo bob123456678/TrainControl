@@ -208,14 +208,22 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
+            // NO ACTIVE BUTTON MEANS NOTHING TO NAME (W21-C1).
+            //
+            // `getKeyForCurrentButton()` ends `return -1` when no button is selected, and this
+            // formatted that straight into the sentence - so the operator was told to map the
+            // locomotive to button U+FFFF. The sibling item on the right-click menu has asked this
+            // question since it was written and says why: *"(char) -1 painted as U+FFFF garbage."*
+            //
+            // It omits the item; this is a dialog the operator has already asked for, so it answers
+            // instead - with the other half of the sentence, which is that there is no active button
+            // to map to.
+            int key = this.selector.getUI().getKeyForCurrentButton();
+
             JOptionPane.showMessageDialog(
                 selector,
-                I18n.f(
-                    "loc.ui.messageClickToAssign",
-                    String.valueOf(
-                        (char) this.selector.getUI().getKeyForCurrentButton().intValue()
-                    )
-                )
+                key < 0 ? I18n.t("loc.ui.messageNoActiveButton")
+                        : I18n.f("loc.ui.messageClickToAssign", String.valueOf((char) key))
             );
         }
     }//GEN-LAST:event_formMouseReleased

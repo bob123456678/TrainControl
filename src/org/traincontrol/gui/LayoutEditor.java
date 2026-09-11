@@ -3721,7 +3721,15 @@ public class LayoutEditor extends PositionAwareJFrame
                 //
                 // Only when something was actually forgotten.  The return value used to be ignored, so
                 // deleting a square that had nothing on it still wrote the whole setup to disk, every
-                // file of it.  Deleting a selection is one call per square.
+                // file of it.
+                //
+                // This is the SINGLE-SQUARE door (T10-C7).  The sentence here used to be "deleting a
+                // selection is one call per square", which was the cost argument for the check above -
+                // and `deleteSelection` stopped working that way in the same round it was written:
+                // it collects the whole selection into `emptied`, makes ONE `forgetTiles` call, and
+                // passes `tellAutonomy=false` to each per-square delete.  So the saving here is one
+                // write per stray single delete rather than one per square of a selection, and the
+                // check is still worth having for it.
                 if (autonomy != null && autonomy.forgetTiles(java.util.Collections.singletonList(
                         new org.traincontrol.automationui.TileGraph.TileKey(
                             layout.getName(), getX(label), getY(label)))))

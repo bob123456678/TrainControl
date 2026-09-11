@@ -85,6 +85,94 @@ public class testParseCS2Layout
      * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
      * assertion fails; remove the `inPage` guard from the id reader and the third does.
      */
+    /**
+     * A block name the station capitalised is still a block (T10-C6).
+     *
+     * The Central Station writes `Version` with a capital V, and `LayoutDiagram.readLayoutIndexIds`
+     * has matched block names without regard to case since `VLD-B2` - the test below this one exists
+     * for exactly that. `CS2File.parseFile` did not: its block-name arm was `^[a-z]+$`, so a page
+     * block spelled `Seite` was not a block, its `.name=` and `.id=` lines were attached to whatever
+     * came before, and the parser returned **zero pages and zero failures**.
+     *
+     * That combination is the quiet one. Nothing threw, so the "a page could not be read" count was 0
+     * and the guard that reverts to the Central Station stayed silent; the operator got an empty
+     * diagram, no message, and the layout-folder override kept.
+     *
+     * **Both halves, in one test, because the defect is that they disagreed.** The index reader and
+     * the page parser are asked about the same bytes: if one of them ever stops matching the other's
+     * spelling again, the two numbers move apart here.
+     *
+     * MUTATION: narrow the block-name arm in `parseFile` back to `^[a-z]+$` and the parser's count
+     * falls to zero while the index reader still says two.
+     *
+     * @throws Exception on a failure to read
+     */
+    @Test
+    public void testACapitalisedBlockNameIsStillABlock() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-capital").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // SEITE, capitalised, which is what this test is about - and `Version` with its capital V,
+            // which is how the shipped export really spells it.
+            String index = "[gleisbild]\n"
+                + "Version\n .major=1\n"
+                + "Seite\n .id=7\n .name=Page One\n"
+                + "Seite\n .id=9\n .name=Page Two\n";
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                index.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            // THE INDEX READER, which has been case-insensitive since VLD-B2.
+            java.util.Map<String, Integer> ids =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(ids.size(), 2,
+                "the index reader no longer finds a capitalised page block, so this test cannot tell "
+                + "the two readers apart: " + ids);
+
+            // AND THE PAGE PARSER, asked about the same bytes.
+            java.util.List<java.util.Map<String, String>> blocks =
+                org.traincontrol.marklin.file.CS2File.parseFile(
+                    new java.io.BufferedReader(new java.io.FileReader(
+                        new java.io.File(config, "gleisbild.cs2"))));
+
+            int pages = 0;
+
+            for (java.util.Map<String, String> block : blocks)
+            {
+                if ("seite".equals(block.get("_type"))) pages++;
+            }
+
+            assertEquals(pages, ids.size(),
+                "the page parser found " + pages + " page blocks where the index reader found "
+                + ids.size() + ".  The station writes `Seite` with a capital S, and a parser that "
+                + "matches only lower case returns zero pages AND zero failures - so nothing throws, "
+                + "the revert-to-the-station guard stays silent, and the operator gets an empty "
+                + "diagram with no message and the layout override kept (T10-C6)");
+
+            // AND THE TYPE IS STORED LOWER-CASED, which is what lets twelve call sites go on asking
+            // `"seite".equals(...)` without knowing the station shouted.
+            for (java.util.Map<String, String> block : blocks)
+            {
+                String type = block.get("_type");
+
+                assertTrue(type == null || type.equals(type.toLowerCase()),
+                    "a block type reached a reader with its original capitals (" + type + "), so "
+                    + "every `\"seite\".equals(_type)` in the codebase answers false for it");
+            }
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
     @Test
     public void testAPageEditKeepsWhatTheStationWroteInTheIndex() throws Exception
     {

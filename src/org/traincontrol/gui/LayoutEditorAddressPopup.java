@@ -219,7 +219,14 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 // "No page" is zero, which is what getLogicalAddress reports for a link holding -1; the
                 // caller turns it back into -1 rather than pushing it through setLogicalAddress, which
                 // refuses a negative (FV3-C8).
-                if (NO_PAGE.equals(chosen.toString())) return "0";
+                //
+                // BY REFERENCE, which is what the constant's own comment always claimed (T10-C5).
+                // `NO_PAGE.equals(chosen.toString())` is value equality, so a page named exactly the
+                // localised label read as "(none)" and had its arrow set to -1. The entry the combo
+                // holds IS the constant - `pagesThatCanBeLinkedTo` puts that very object in - so this
+                // is the comparison the comment describes, and it makes the collision impossible
+                // rather than documented.
+                if (chosen == NO_PAGE) return "0";
 
                 int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
 
@@ -263,8 +270,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     }
 
     /**
-     * The combo entry that means a link points at no page.  Its own string, so a page cannot collide
-     * with it by being called "(none)": the comparison is by reference on the constant.
+     * The combo entry that means a link points at no page.
+     *
+     * Compared BY REFERENCE where it is read, so a page cannot collide with it by being called
+     * "(none)" - the combo is given this very object, and no page name can be it. The comparison was
+     * `equals` for a while under this same sentence (T10-C5), which is the shape of comment that hides
+     * a defect rather than explaining one: it described the design and not the code.
      */
     private static final String NO_PAGE = I18n.t("autosetup.ui.labelNone");
 

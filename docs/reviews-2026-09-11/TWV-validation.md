@@ -1,6 +1,6 @@
 # TWV - validating the fixes for T10 and W21
 
-**Status:** open
+**Status:** closed 2026-09-11 - every finding addressed; C4 moot by Adam's ruling
 
 **Prefix for citing these findings elsewhere:** TWV
 
@@ -266,19 +266,19 @@ not the same, and two are defects:
 
 | id | what | disposition |
 |---|---|---|
-| B1 | `testDuplicatingAPageCorrectsTheCopy` asserts on the source page and passes against the pre-fix code | open |
-| B2 | the new gesture test opens its `LayoutSandbox` outside the try, and the battery is red for it | open |
-| B3 | `settleAbsentPages`' stand-in loop ignores `deliberatelyRemoved`, so deleting an unreadable page can put it back in the index | open |
-| B4 | the `moveLocomotive` sweep missed the Ctrl+V paste door, which discards the refusal, clears the clipboard and saves | open |
-| B5 | `removeLocomotiveHere` never saves, so a removal made from the diagram is lost at the next launch (settles `W21-D6`) | open |
-| C1 | lower-casing `_type` reaches `exportToCS2TextFormat`, so saving a page rewrites its block names | open |
-| C2 | `namedByTheIndex` is read off the `fileParser` field long after the parse, against the RC-B9 rule eight lines above | open |
-| C3 | `stopListening` is still unsynchronised, and the reopen now leaves a listener THREAD as well as a socket | open |
-| C4 | "They were deleted" no longer retires a stand-in's id, because a stand-in is in `layoutList` | open |
-| C5 | four of the six fixes ship with no test, and `behaviour.md` is untouched by the whole commit | open |
-| C6 | the "Place X here" item is still offered for the copies the fix now refuses, and `placeFacing`'s javadoc names a caller that is gone | open |
-| C7 | Add and Duplicate now rewrite the operator's current page file unconditionally | open |
-| C8 | both review documents' tables say `open` for the findings this same commit fixed | open |
+| B1 | `testDuplicatingAPageCorrectsTheCopy` asserts on the source page and passes against the pre-fix code | fixed 2026-09-11 (ac960047) - the test asserts on the copy, and that the copy and source agree |
+| B2 | the new gesture test opens its `LayoutSandbox` outside the try, and the battery is red for it | fixed 2026-09-11 (ac960047) - the sandbox is opened inside the try |
+| B3 | `settleAbsentPages`' stand-in loop ignores `deliberatelyRemoved`, so deleting an unreadable page can put it back in the index | fixed 2026-09-11 (ac960047) - and the loop is gone entirely as of Adam's ruling on T10-C3 |
+| B4 | the `moveLocomotive` sweep missed the Ctrl+V paste door, which discards the refusal, clears the clipboard and saves | fixed 2026-09-11 (ac960047) - the paste door returns when moveLocomotive refuses |
+| B5 | `removeLocomotiveHere` never saves, so a removal made from the diagram is lost at the next launch (settles `W21-D6`) | fixed 2026-09-11 (ac960047) - removeLocomotiveHere saves through AutonomyReport.show |
+| C1 | lower-casing `_type` reaches `exportToCS2TextFormat`, so saving a page rewrites its block names | fixed 2026-09-11 - `_typeAsWritten` carries the original spelling to the exporter |
+| C2 | `namedByTheIndex` is read off the `fileParser` field long after the parse, against the RC-B9 rule eight lines above | fixed 2026-09-11 - the index count is read beside its sibling, once |
+| C3 | `stopListening` is still unsynchronised, and the reopen now leaves a listener THREAD as well as a socket | fixed 2026-09-11 - `stopListening` is synchronized and `listen()` waits for a model |
+| C4 | "They were deleted" no longer retires a stand-in's id, because a stand-in is in `layoutList` | fixed 2026-09-11 - moot: Adam dropped the question, so nothing is pruned |
+| C5 | four of the six fixes ship with no test, and `behaviour.md` is untouched by the whole commit | fixed 2026-09-11 - two tests added, and behaviour.md states all four rules |
+| C6 | the "Place X here" item is still offered for the copies the fix now refuses, and `placeFacing`'s javadoc names a caller that is gone | fixed 2026-09-11 - the menu offers only copies the railway will accept |
+| C7 | Add and Duplicate now rewrite the operator's current page file unconditionally | fixed 2026-09-11 - a page is rewritten only when the re-aim changed it |
+| C8 | both review documents' tables say `open` for the findings this same commit fixed | fixed 2026-09-11 - this row, and the seventeen above it |
 | D1 | `setState` being `synchronized` - no deadlock, no lock inversion - clean | closed |
 | D2 | the start-up restore does not flood anything - clean | closed |
 | D3 | a second CAN listener cannot be started - clean | closed |

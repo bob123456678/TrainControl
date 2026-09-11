@@ -179,13 +179,7 @@ public final class StationIndex
      */
     public String describe(Point point)
     {
-        if (point == null) return "";
-
-        String base = baseByPoint.get(point.getName());
-
-        if (base != null && !base.trim().isEmpty()) return base;
-
-        return withoutArrivalSuffix(point.getName());
+        return point == null ? "" : baseNameOf(point.getName());
     }
 
     /**
@@ -230,14 +224,30 @@ public final class StationIndex
     }
 
     /**
-     * @param pointName
-     * @return the base name behind a copy, or the name itself when it is not a copy
+     * What a Point is called, as a place rather than as a copy.
+     *
+     * **`describe`'s twin, and now its implementation** (W21-C3). These were two answers to one
+     * question: `describe` falls back to `withoutArrivalSuffix` when the index has never heard of a
+     * Point - a configuration built by a different run of the builder, a setup reloaded, a layout
+     * edited underneath a running graph - and this one fell back to the internal name. So the same
+     * platform read as "BottomMainA" through one and "BottomMainA (northbound)" through the other,
+     * and which the operator saw depended on which caller they had reached.
+     *
+     * A blank base counts as no answer, which is the other half `describe` had and this did not.
+     *
+     * @param pointName an emitted Point name
+     * @return the base name behind a copy, the name with its arrival side removed when the index
+     *         cannot answer, and null only for null
      */
     public String baseNameOf(String pointName)
     {
-        String base = pointName == null ? null : baseByPoint.get(pointName);
+        if (pointName == null) return null;
 
-        return base == null ? pointName : base;
+        String base = baseByPoint.get(pointName);
+
+        if (base != null && !base.trim().isEmpty()) return base;
+
+        return withoutArrivalSuffix(pointName);
     }
 
     /**

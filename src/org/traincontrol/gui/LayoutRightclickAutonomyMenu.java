@@ -1004,6 +1004,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (session == null || !ui.getModel().hasAutoLayout()) return out;
 
+        // `shut` - the copies barred to arrivals - is counted and not offered (TWV-C6).  Kept as a
+        // separate bucket rather than folded into "not usable", because the distinction is what the
+        // comment at the foot of this method is about and the next reader needs it to follow the
+        // reasoning.
         java.util.List<String> shut = new java.util.ArrayList<>();
 
         // copies a train could sit on but never be dispatched from
@@ -1041,16 +1045,26 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             }
             else
             {
-                shut.add(name);
+                shut.add(name);  // counted, not offered - see the note at the top and the return below
             }
         }
 
-        // Nothing open is not the same as nowhere to go.  A square whose copies are all shut to
-        // arrivals, or all stranded, is still somewhere a train physically stands, and refusing to
-        // place one there would be a different message from the "no way out" one this list produces.
+        // Nothing open is not the same as nowhere to go.  A square whose copies are all stranded is
+        // still somewhere a train physically stands, and refusing to place one there would be a
+        // different message from the "no way out" one this list produces.
         if (!out.isEmpty()) return out;
 
-        return shut.isEmpty() ? stranded : shut;
+        // BUT NOT A COPY THE RAILWAY WILL REFUSE (TWV-C6).
+        //
+        // `shut` is the copies whose `isDestination()` is explicitly false, and since `W21-B3` those
+        // are exactly what `moveLocomotive` declines.  Offering them enabled the menu item, the
+        // operator clicked it, and nothing happened but a line in the log - the button promising an
+        // action the guard behind it refuses, which is the `OB-057` / `OB-090` shape: the affordance
+        // must ask the guard's own question.
+        //
+        // Stranded copies stay: they ARE destinations, so the railway accepts them, and standing a
+        // train somewhere it cannot leave is a thing an operator may legitimately want to do.
+        return stranded;
     }
 
     /**
@@ -1089,13 +1103,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Puts a named locomotive on a named copy of this square, facing a given way.
      *
-     * Takes the locomotive rather than reading the active one, because it has two callers that mean
-     * different trains.  Placing means the active locomotive - that is what the menu item says.
+     * Takes the locomotive rather than reading the active one, because the two things this can mean
+     * are different trains.  Placing means the active locomotive - that is what the menu item says.
      * Turning means the one already standing there, and this used to move the active one instead: with
      * some other locomotive selected on the keyboard, "face east" picked THAT train up and put it down
      * on this platform, in the running layout and in the saved configuration both, while the train the
      * user was pointing at did not move.  With nothing selected it threw instead, and the menu item
      * did nothing at all.
+     *
+     * **One caller today, not two** (TWV-C6): the turning door was retired and this javadoc was not
+     * swept with it.  The parameter stays because the reason above is about what the method is handed
+     * rather than about how many doors hand it - and the arrival-side branch below still asks whether
+     * this is a placement or a turn, which costs nothing and is what keeps the method safe if turning
+     * comes back through it.
      */
     private void placeFacing(String locName, String pointName,
         org.traincontrol.automationui.TilePorts.Side facing)

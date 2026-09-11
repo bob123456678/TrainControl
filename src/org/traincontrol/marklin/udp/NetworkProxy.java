@@ -113,7 +113,7 @@ public class NetworkProxy
      * JVM.  It is here so that a caller who creates a control station and finishes with it can give
      * the port back: a second init() in the same JVM otherwise found 15730 still held by the first.
      */
-    public void stopListening()
+    public synchronized void stopListening()
     {
         if (this.socket != null && !this.socket.isClosed()) this.socket.close();
     }
@@ -160,6 +160,19 @@ public class NetworkProxy
     private synchronized void listen()
     {
         if (this.reader != null && this.reader.isAlive()) return;
+
+        // AND NOT BEFORE THERE IS A MODEL TO READ INTO (TWV-C3).
+        //
+        // This was lifted out of setModel, where `this.model = model` had just run, and is now also
+        // called from sendMessage - where the model may still be null. The catch below says why that
+        // window exists: the model is set AFTER this class is constructed, and the control station's
+        // constructor transmits a ping and a power command before it gets there. `ReadMessages.run()`
+        // opens with `model.initMessageBuffer()`.
+        //
+        // It needs the socket to be closed in that window to reach here at all, which a normal
+        // construction does not do - so this is the precondition the original call site had and the
+        // new one did not, rather than a fault anybody has seen.
+        if (this.model == null) return;
 
         this.reader = new ReadMessages();
 

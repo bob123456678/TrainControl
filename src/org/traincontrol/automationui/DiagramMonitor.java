@@ -114,8 +114,18 @@ public class DiagramMonitor
      * For after the screen has been cleared behind this class's back: refresh() suppresses a publish
      * whose picture has not changed, which is right for a burst of movement and wrong for tiles that
      * were wiped and now show nothing - to them, the same picture is news.
+     *
+     * **SYNCHRONIZED, on the same monitor as `refresh()`** (W21-C4). `refresh()` holds it because the
+     * compare-against-published is a check then a set; this is the set half of that same field, and it
+     * was taking no lock at all. The threads really are different - the driver's timer thread ticks
+     * `refreshIfDirty()` while `clear()` reaches here from the event thread - so a tick already inside
+     * `refresh()`, between `compute()` and `published = overlays`, would overwrite the invalidate. The
+     * identical picture is then suppressed as unchanged and the wiped tiles stay blank until something
+     * moves, which is the outcome this method exists to prevent.
+     *
+     * `published` is volatile, so visibility was never the problem; only the check-then-set was.
      */
-    public void invalidate()
+    public synchronized void invalidate()
     {
         published = Collections.emptyMap();
     }

@@ -25,12 +25,17 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         // No current button means no key to render - (char) -1 painted as U+FFFF garbage.
         // Without a target the item is meaningless, so it is omitted rather than disabled.
-        Integer currentButtonKey = ui.getKeyForCurrentButton();
+        //
+        // ONE CLAUSE, NOT TWO (W21-C1). The `!= null` half could never be false -
+        // `getKeyForCurrentButton` returns -1 and never null - and a guard whose first clause is dead
+        // is what made the OTHER site look as though it were already covered. It was not: the same
+        // value went into a dialog unguarded for as long as this comment has been here.
+        int currentButtonKey = ui.getKeyForCurrentButton();
 
-        if (currentButtonKey != null && currentButtonKey != -1)
+        if (currentButtonKey >= 0)
         {
             menuItem = new JMenuItem(
-                I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) currentButtonKey.intValue()))
+                I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) currentButtonKey))
             );
             menuItem.addActionListener(event -> {
                 ui.mapLocToCurrentButton(loc.getName());

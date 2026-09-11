@@ -1,6 +1,6 @@
 # T10 - the last ten days, reviewed
 
-**Status:** open
+**Status:** closed 2026-09-11 - every A, B and C addressed; see the tables for each
 
 **Commit reviewed:** `d168f769`, branch `autonomy-diagram-r0`, on 2026-09-11.
 
@@ -40,9 +40,9 @@ routed through an arrow; they are filed at that grade for consistency.
 
 | id | what | disposition |
 |---|---|---|
-| B1 | Adding a page leaves the page the operator was looking at with stale arrow numbers on disk | open |
-| B2 | Duplicating a page leaves the COPY with stale arrow numbers | open |
-| B3 | Renaming a page leaves the renamed page's own arrows stale on disk, and the comment saying otherwise is false | open |
+| B1 | Adding a page leaves the page the operator was looking at with stale arrow numbers on disk | fixed 2026-09-11 (abbed984) |
+| B2 | Duplicating a page leaves the COPY with stale arrow numbers | fixed 2026-09-11 (abbed984); its test was wrong too - TWV-B1, fixed ac960047 |
+| B3 | Renaming a page leaves the renamed page's own arrows stale on disk, and the comment saying otherwise is false | fixed 2026-09-11 (abbed984) |
 
 All three are one root cause in one method: `LayoutPageEdit.renameOrDuplicate` writes the page FILE at
 line 158, and re-aims the arrows at line 286. Everything the write captured is therefore pre-re-aim.
@@ -156,13 +156,13 @@ it is.
 
 | id | what | disposition |
 |---|---|---|
-| C1 | Two javadocs say the old page order is read from the index; the body says the opposite, in the same method | open |
-| C2 | The "known gap" for a combined page's arrows does not exist, and behaviour.md repeats it while missing three real ones | open |
-| C3 | FR-018's absent-page question, and its prune, became unreachable when the stand-in was introduced | open |
-| C4 | "could not be read and was skipped" is no longer what happens | open |
-| C5 | `NO_PAGE`'s javadoc claims a reference comparison; it is `equals`, so the collision it denies is real | open |
-| C6 | A capitalised `seite` block gives CS2File no pages at all, with no error - the twin X8V-C4 did not sweep | open |
-| C7 | "Deleting a selection is one call per square" stopped being true in the commit that says so | open |
+| C1 | Two javadocs say the old page order is read from the index; the body says the opposite, in the same method | fixed 2026-09-11 - both javadocs now say the order comes from the loaded pages |
+| C2 | The "known gap" for a combined page's arrows does not exist, and behaviour.md repeats it while missing three real ones | fixed 2026-09-11 - behaviour.md states the rule and no longer names Combine as an exception |
+| C3 | FR-018's absent-page question, and its prune, became unreachable when the stand-in was introduced | fixed 2026-09-11 - Adam ruled: the question is dropped and nothing is pruned |
+| C4 | "could not be read and was skipped" is no longer what happens | fixed 2026-09-11 - reworded in eight bundles |
+| C5 | `NO_PAGE`'s javadoc claims a reference comparison; it is `equals`, so the collision it denies is real | fixed 2026-09-11 - the comparison is by reference, as its comment always claimed |
+| C6 | A capitalised `seite` block gives CS2File no pages at all, with no error - the twin X8V-C4 did not sweep | fixed 2026-09-11 (abbed984); tested 2026-09-11 - core.testParseCS2Layout |
+| C7 | "Deleting a selection is one call per square" stopped being true in the commit that says so | fixed 2026-09-11 - the sentence names the single-square door |
 
 ### C1 - the re-aim does not read the old order from the index any more
 

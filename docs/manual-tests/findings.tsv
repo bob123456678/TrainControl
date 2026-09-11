@@ -1738,25 +1738,25 @@ SWC-C7	2026-07-29-switch-command-review.md	Closed	Fixed - the comment names the 
 SWC-C8	2026-07-29-switch-command-review.md	Closed	Fixed - execute() instead of submit(), so an escaping exception reaches the thread handler
 SWC-C9	2026-07-29-switch-command-review.md	Closed	Fixed - both possessives repaired, and the validator now rejects the sequence, so this cla
 SWC-D15	2026-07-29-switch-command-review.md	Closed	Verified clean
-T10-B1	T10-ten-day-review.md	-	open
+T10-B1	T10-ten-day-review.md	-	fixed 2026-09-11 (abbed984)
 T10-B1	TWV-validation.md	-	**FIX CONFIRMED**
-T10-B2	T10-ten-day-review.md	-	open
+T10-B2	T10-ten-day-review.md	-	fixed 2026-09-11 (abbed984); its test was wrong too - TWV-B1, fixed ac960047
 T10-B2	TWV-validation.md	-	**FIX CONFIRMED** (its test does not test it - `TWV-B1`)
-T10-B3	T10-ten-day-review.md	-	open
+T10-B3	T10-ten-day-review.md	-	fixed 2026-09-11 (abbed984)
 T10-B3	TWV-validation.md	-	**FIX CONFIRMED**
-T10-C1	T10-ten-day-review.md	-	open
+T10-C1	T10-ten-day-review.md	-	fixed 2026-09-11 - both javadocs now say the order comes from the loaded pages
 T10-C1	TWV-validation.md	-	NOT FIXED - still open (real)
-T10-C2	T10-ten-day-review.md	-	open
+T10-C2	T10-ten-day-review.md	-	fixed 2026-09-11 - behaviour.md states the rule and no longer names Combine as an exceptio
 T10-C2	TWV-validation.md	-	NOT FIXED - still open; **the claim is confirmed**, see below
-T10-C3	T10-ten-day-review.md	-	open
+T10-C3	T10-ten-day-review.md	-	fixed 2026-09-11 - Adam ruled: the question is dropped and nothing is pruned
 T10-C3	TWV-validation.md	-	**FIX INCOMPLETE**, and partly **FIX WRONG** - `TWV-B3`, `TWV-C4`
-T10-C4	T10-ten-day-review.md	-	open
+T10-C4	T10-ten-day-review.md	-	fixed 2026-09-11 - reworded in eight bundles
 T10-C4	TWV-validation.md	-	NOT FIXED - still open (real)
-T10-C5	T10-ten-day-review.md	-	open
+T10-C5	T10-ten-day-review.md	-	fixed 2026-09-11 - the comparison is by reference, as its comment always claimed
 T10-C5	TWV-validation.md	-	NOT FIXED - still open (real)
-T10-C6	T10-ten-day-review.md	-	open
+T10-C6	T10-ten-day-review.md	-	fixed 2026-09-11 (abbed984); tested 2026-09-11 - core.testParseCS2Layout
 T10-C6	TWV-validation.md	-	**FIX CONFIRMED**, two caveats - `TWV-C1`, `TWV-C2`
-T10-C7	T10-ten-day-review.md	-	open
+T10-C7	T10-ten-day-review.md	-	fixed 2026-09-11 - the sentence names the single-square door
 T10-C7	TWV-validation.md	-	NOT FIXED - still open (real)
 T10-D1	T10-ten-day-review.md	-	closed
 T10-D10	T10-ten-day-review.md	-	withdrawn (was C)
@@ -2093,19 +2093,19 @@ TV2-D2	2026-09-01-third-validation.md	Closed	closed — checked clean, traced no
 TV2-D3	2026-09-01-third-validation.md	Closed	closed — checked clean, measured
 TV2-D4	2026-09-01-third-validation.md	Closed	closed — checked clean
 TV2-D5	2026-09-01-third-validation.md	Closed	closed — checked clean
-TWV-B1	TWV-validation.md	-	open
-TWV-B2	TWV-validation.md	-	open
-TWV-B3	TWV-validation.md	-	open
-TWV-B4	TWV-validation.md	-	open
-TWV-B5	TWV-validation.md	-	open
-TWV-C1	TWV-validation.md	-	open
-TWV-C2	TWV-validation.md	-	open
-TWV-C3	TWV-validation.md	-	open
-TWV-C4	TWV-validation.md	-	open
-TWV-C5	TWV-validation.md	-	open
-TWV-C6	TWV-validation.md	-	open
-TWV-C7	TWV-validation.md	-	open
-TWV-C8	TWV-validation.md	-	open
+TWV-B1	TWV-validation.md	-	fixed 2026-09-11 (ac960047) - the test asserts on the copy, and that the copy and source a
+TWV-B2	TWV-validation.md	-	fixed 2026-09-11 (ac960047) - the sandbox is opened inside the try
+TWV-B3	TWV-validation.md	-	fixed 2026-09-11 (ac960047) - and the loop is gone entirely as of Adam's ruling on T10-C3
+TWV-B4	TWV-validation.md	-	fixed 2026-09-11 (ac960047) - the paste door returns when moveLocomotive refuses
+TWV-B5	TWV-validation.md	-	fixed 2026-09-11 (ac960047) - removeLocomotiveHere saves through AutonomyReport.show
+TWV-C1	TWV-validation.md	-	fixed 2026-09-11 - `_typeAsWritten` carries the original spelling to the exporter
+TWV-C2	TWV-validation.md	-	fixed 2026-09-11 - the index count is read beside its sibling, once
+TWV-C3	TWV-validation.md	-	fixed 2026-09-11 - `stopListening` is synchronized and `listen()` waits for a model
+TWV-C4	TWV-validation.md	-	fixed 2026-09-11 - moot: Adam dropped the question, so nothing is pruned
+TWV-C5	TWV-validation.md	-	fixed 2026-09-11 - two tests added, and behaviour.md states all four rules
+TWV-C6	TWV-validation.md	-	fixed 2026-09-11 - the menu offers only copies the railway will accept
+TWV-C7	TWV-validation.md	-	fixed 2026-09-11 - a page is rewritten only when the re-aim changed it
+TWV-C8	TWV-validation.md	-	fixed 2026-09-11 - this row, and the seventeen above it
 TWV-D1	TWV-validation.md	-	closed
 TWV-D2	TWV-validation.md	-	closed
 TWV-D3	TWV-validation.md	-	closed
@@ -2532,27 +2532,27 @@ VLD-C6	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-C7	2026-09-05-single-pass-validation.md	Closed	fixed
 VLD-D1	2026-09-05-single-pass-validation.md	Closed	-
 W21-B1	TWV-validation.md	-	**FIX CONFIRMED** (no test - `TWV-C5`)
-W21-B1	W21-three-week-review.md	-	open
+W21-B1	W21-three-week-review.md	-	fixed 2026-09-11 (abbed984); tested 2026-09-11 - core.testAFeedbackChangeIsAnnounced
 W21-B2	TWV-validation.md	-	**FIX CONFIRMED** (mutation-checked)
-W21-B2	W21-three-week-review.md	-	open
+W21-B2	W21-three-week-review.md	-	fixed 2026-09-11 (abbed984), mutation-checked by TWV
 W21-B3	TWV-validation.md	-	**FIX INCOMPLETE** - two unswept siblings, `TWV-B4`, `TWV-B5`
-W21-B3	W21-three-week-review.md	-	open
+W21-B3	W21-three-week-review.md	-	fixed 2026-09-11 (abbed984); the two unswept siblings settled ac960047
 W21-C1	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C1	W21-three-week-review.md	-	open
+W21-C1	W21-three-week-review.md	-	fixed 2026-09-11 - the dialog says there is no active button, and the twin's dead clause i
 W21-C2	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C2	W21-three-week-review.md	-	open
+W21-C2	W21-three-week-review.md	-	fixed 2026-09-11 - the gateway ping is retried like every other
 W21-C3	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C3	W21-three-week-review.md	-	open
+W21-C3	W21-three-week-review.md	-	fixed 2026-09-11 - `describe` now calls `baseNameOf`, so there is one answer
 W21-C4	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C4	W21-three-week-review.md	-	open
+W21-C4	W21-three-week-review.md	-	fixed 2026-09-11 - `invalidate()` is synchronized and the caller's comment is corrected
 W21-C5	TWV-validation.md	-	NOT FIXED - still open (real, unreachable today)
-W21-C5	W21-three-week-review.md	-	open
+W21-C5	W21-three-week-review.md	-	fixed 2026-09-11 - the chevron pass skips what the line pass skips
 W21-C6	TWV-validation.md	-	**FIX CONFIRMED**
-W21-C6	W21-three-week-review.md	-	open
+W21-C6	W21-three-week-review.md	-	fixed (abbed984), confirmed by TWV
 W21-C7	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C7	W21-three-week-review.md	-	open
+W21-C7	W21-three-week-review.md	-	fixed 2026-09-11 - the assertion reads the code rather than the raw source
 W21-C8	TWV-validation.md	-	NOT FIXED - still open (real)
-W21-C8	W21-three-week-review.md	-	open
+W21-C8	W21-three-week-review.md	-	fixed 2026-09-11 - the combo is localised before anything is selected in it
 W21-C9	TWV-validation.md	-	NOT FIXED - still open (Adam's to settle)
 W21-C9	W21-three-week-review.md	-	fixed 2026-09-11 - Adam ruled, and the side is now recorded by all three doors
 W21-D1	W21-three-week-review.md	-	-

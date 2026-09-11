@@ -739,7 +739,14 @@ public class TileOverlay
 
         for (Segment segment : segments)
         {
-            if (segment.getState() == State.LOCKED || segment.getTo() == null) continue;
+            // AND A SEGMENT WITH NO COLOUR, which the line pass twenty lines above also skips
+            // (W21-C5). `colourOf` answers null for IDLE, so without this an idle segment drew a
+            // black arrowhead floating over track with no line under it. Nothing emits that pair
+            // today - the only IDLE overlay built anywhere passes null segments - so this is a trap
+            // for the next author rather than a defect on screen, which is why `isBlank()` was taught
+            // about the same pair and this loop was not.
+            if (segment.getState() == State.LOCKED || segment.getTo() == null
+                || colourOf(segment.getState()) == null) continue;
 
             // Along the segment's own chord, for the same reason the line follows it.  An arrowhead
             // squared to the edge on a curve points across the rail it is meant to be running on.

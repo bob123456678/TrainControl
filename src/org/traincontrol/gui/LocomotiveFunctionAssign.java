@@ -107,6 +107,33 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
+        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT (W21-C8).
+        //
+        // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
+        // `setSelectedIndex` had already chosen the current function's trigger type.
+        // `DefaultComboBoxModel.removeElementAt` MOVES the selection when the element it removes is the
+        // selected one - and for a momentary function the third statement removes exactly that. The
+        // selection fell to 0, and `applyButton` reads the index and writes `FUNCTION_TOGGLE`: every
+        // momentary function became a toggle on Apply.
+        //
+        // Measured on the model alone, walking all four starting selections: start=1 (Momentary) ended
+        // at index 0 (Umschalten). Toggle survived by luck, being moved away and back.
+        //
+        // It did not reach the operator, because a deferred `fNoItemStateChanged(null)` queued in the
+        // constructor re-derived the type afterwards - a corrupted state with an accidental repair
+        // standing over it. Moving the localisation above the selection removes the corruption instead
+        // of relying on the repair.
+        javax.swing.DefaultComboBoxModel<String> defaultModel =
+            (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
+
+        // Replace item at index 0 with localized "Toggle"
+        defaultModel.removeElementAt(0);
+        defaultModel.insertElementAt(I18n.t("function.ui.toggle"), 0);
+
+        // Replace item at index 1 with localized "Momentary"
+        defaultModel.removeElementAt(1);
+        defaultModel.insertElementAt(I18n.t("function.ui.momentary"), 1);
+
         // Display current icon
         fNoItemStateChanged(null);
         
@@ -205,15 +232,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             displayCustomizationButtons();
         });
         
-        javax.swing.DefaultComboBoxModel<String> defaultModel = (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
-
-        // Replace item at index 0 with localized "Toggle"
-        defaultModel.removeElementAt(0);
-        defaultModel.insertElementAt(I18n.t("function.ui.toggle"), 0);
-
-        // Replace item at index 1 with localized "Momentary"
-        defaultModel.removeElementAt(1);
-        defaultModel.insertElementAt(I18n.t("function.ui.momentary"), 1);
     }
     
     /**

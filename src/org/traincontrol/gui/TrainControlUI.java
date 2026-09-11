@@ -2164,40 +2164,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
             this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
 
-        // AND A PAGE THAT IS IN THE LIST ONLY AS A STAND-IN (T10-C3).
-        //
-        // FR-018 asks the operator about a page the index names and the folder does not hold, so that
-        // its id is kept for a file that is coming back and pruned for one that is not.  Since NSV-B3
-        // every page named in the index comes back - as itself or as a blank stand-in - so `layoutList`
-        // always covers the index, `absent` was always empty, the dialog never appeared, and
-        // `forgetHeldPages` had no reachable caller at all.
-        //
-        // The KEEP half became automatic and correct: the page stays in the index with its id because it
-        // is in the list.  What was lost is the prune, and the warning at the moment of the edit - which
-        // is the half the operator is there for.  A stand-in IS the absence FR-018 is about; it just has
-        // a name now, and `isUnreadable()` is the question that used to be answered by the page simply
-        // not being there.
-        for (String name : this.model.getLayoutList())
-        {
-            LayoutDiagram page = this.model.getLayout(name);
-
-            if (page == null || !page.isUnreadable() || absent.contains(name)) continue;
-
-            // THE SAME TWO EXCEPTIONS `pagesTheIndexWouldDrop` MAKES, which this loop ignored (TWV-B3).
-            //
-            // A page the operator has just DELETED is not a page to ask them about - the question is
-            // whether an absence is permanent, and they have already said so.  Asking anyway, and then
-            // being answered "keep them", writes the deleted page back into the index.
-            //
-            // And a RENAMED page's old name is an absence by construction: it is the same page under
-            // another name, which is why the method above is told about renames at all.
-            if (deliberatelyRemoved != null && deliberatelyRemoved.contains(name)) continue;
-
-            if (renamedFromTo != null && renamedFromTo.containsKey(name)) continue;
-
-            absent.add(name);
-        }
-
         // The index has to be READABLE before any caller of this touches the disk (RA-C3).
         //
         // writeLayoutIndex refuses a layout whose index is present and unreadable - a sync client
@@ -2222,81 +2188,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        if (absent.isEmpty()) return absent;
-
-        final int[] answer = {javax.swing.JOptionPane.CLOSED_OPTION};
-
-        // On the event thread, whichever thread asked.  Every caller of this runs on a worker - page
-        // edits parse the whole layout - and a modal dialog put up from one is a dialog that may never
-        // paint.
-        Runnable ask = () ->
-        {
-            StringBuilder names = new StringBuilder();
-
-            for (String name : absent) names.append("\n    ").append(name);
-
-            Object[] choices =
-            {
-                I18n.t("layout.ui.absentPageKeep"),
-                I18n.t("layout.ui.absentPageGone"),
-                I18n.t("layout.ui.absentPageCancel")
-            };
-
-            answer[0] = javax.swing.JOptionPane.showOptionDialog(this,
-                I18n.f("layout.ui.absentPageQuestion", names.toString()),
-                I18n.t("layout.ui.absentPageTitle"),
-                javax.swing.JOptionPane.DEFAULT_OPTION,
-                javax.swing.JOptionPane.WARNING_MESSAGE,
-                null, choices, choices[0]);
-        };
-
-        try
-        {
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
-            else javax.swing.SwingUtilities.invokeAndWait(ask);
-        }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
-        {
-            // Unanswerable, so answer it the safe way: keep everything.  Keeping a deleted page's id
-            // reserved costs a number nobody will notice; retiring a live page's id costs its settings.
-            this.model.log(couldNotAsk);
-
-            return absent;
-        }
-
-        // KEEP - the page is coming back.  Its id stays in the index, so the file that returns is the
-        // same page and its settings are still attached to it.
-        if (answer[0] == 0) return absent;
-
-        // CANCEL, or the window closed.  Nothing is written, which leaves the layout exactly as it was.
-        if (answer[0] != 1) return null;
-
-        // GONE - retire the id as before, AND prune what is being held under it, which is the half of
-        // this that had never been done at all.
-        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-        if (session != null && session.exists())
-        {
-            try
-            {
-                int pruned = session.getStore().forgetHeldPages(absent);
-
-                if (pruned > 0)
-                {
-                    this.model.logf("layout.infoAbsentPageSetupPruned", pruned, absent.size());
-                }
-
-                session.saveWithoutReconciling();
-            }
-            catch (Exception couldNotPrune)
-            {
-                // The page is going either way; only the record of it is at risk.  Same rule as the
-                // delete path above.
-                this.model.log(couldNotPrune);
-            }
-        }
-
-        return java.util.Collections.emptyList();
+        // AND NOTHING IS PRUNED (Adam, 2026-09-11).
+        //
+        // FR-018 asked the operator about a page the index named and the folder did not hold - keep its
+        // settings for a file that is coming back, or retire its id for one that is not. Since NSV-B3
+        // every page named in the index comes back, as itself or as a blank stand-in, so `layoutList`
+        // always covers the index and this question could not arise: the dialog had not appeared since
+        // that change, and `forgetHeldPages` had no reachable caller.
+        //
+        // Adam's ruling, asked whether to point it at stand-ins instead: **drop it.** The settings of a
+        // page whose file will not read are simply kept, always. That is what the KEEP half did anyway,
+        // and it is the answer that cannot lose anything - a stand-in is a file that is missing right
+        // now, which is not the same as a page that is gone.
+        //
+        // `AutonomyCompanionStore.forgetHeldPages` stays, with its own tests: it is the mechanism a
+        // deliberate "forget this page's settings" would use, which is the shape Adam asked for if such
+        // a choice is ever offered - about the settings, not about the page, because a stand-in IS
+        // still in the list.
+        //
+        // What remains here is the index-readability guard above, which is load-bearing at three doors,
+        // and an answer that always keeps.
+        return absent;
     }
 
     /**
@@ -18812,8 +18724,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * **Every page operation goes through here**, which is the point of the method.  The three callers
      * each used to write the index themselves, and a repair applied to one of three call sites and not
      * its twins is the defect this project produces most often.  The order the arrows were written
-     * against is read from the index BEFORE it is overwritten, so a caller cannot get that wrong
-     * either.
+     * against is worked out here rather than by the caller, so a caller cannot get that wrong either -
+     * and it is taken from the PAGES this session holds, not from the index file, because an index
+     * naming two pages the same aliases them onto one entry (FV3-A2, T10-C1).
      *
      * A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into its
      * place - Adam, 2026-09-10.  See `LayoutDiagramComponent.setLinkedPageIndex`.

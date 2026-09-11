@@ -416,6 +416,16 @@ Two different properties, and confusing them was the cause of a day's worth of d
 **Facing cannot answer where the tail is.** A train faces the way it will leave; once it has been
 turned round the two point the same way while the carriages have not moved.
 
+**Nothing about a placement is recorded until the railway has accepted it** (W21-B3). Every door that
+puts a train down asks `Layout.moveLocomotive`, and that refuses in four cases: autonomy is running,
+the locomotive is unknown, the point is unknown, and the target is not a destination. Its answer used
+to be discarded at the diagram's own menu, so the placement and the facing were written into the setup
+AND SAVED for a move the railway had just declined - and the setup is the half that survives a restart,
+so the next build emitted the train on a square it was never put on. The refusal is the method's, and
+the caller's job is to honour it: no placement, no facing, no arrival side, nothing saved. The log line
+`moveLocomotive` already writes is what the operator sees; a second message would say the same thing
+twice.
+
 ### How `arrivedFrom` is set
 
 - **Autonomy writes it on arrival**, which is the only moment anything knows it for certain — and
@@ -1104,6 +1114,16 @@ about the destination, so every square of that leg carries it; the chevrons stil
 
 ---
 
+**A sensor announces itself however it changed** (W21-B1). A module changes state two ways - a
+message arriving over the wire, and `setState`, which is everything else: clicking an s88 tile on the
+track diagram, the simulation's own announce and clear, the restore at start-up. Only the first told
+anything, so the route editor's capture could not see a sensor the operator had just clicked. The
+capture cannot tell a clicked sensor from a wired one and should not: a route being recorded is about
+what the railway did, not about which code path said so. The announcement is outside the debug check -
+a capture that depends on a logging setting is the same defect reachable by a preference.
+
+---
+
 ## 7a. A route that meets a train
 
 A route is a list of commands - accessories, functions, locomotive speeds, the power. Any of its
@@ -1240,6 +1260,17 @@ dropped is the rule above it: the list is what every arrow indexes into, so a mi
 re-aimed every arrow after it, with nobody having edited anything (NSV-B3). An unhydrated cloud file is
 enough to cause that. Such a page is never saved, because writing a blank page over the file somebody
 is trying to recover is worse than not showing it.
+
+**And its autonomy settings are kept, always.** Adam, 2026-09-11, asked whether the old "these pages
+are absent - keep their settings, or were they deleted?" question should be pointed at stand-in pages
+instead: *drop it.* Nothing is pruned automatically. A page whose file will not read today is a file
+that is missing right now, which is not the same as a page that is gone, and the answer that cannot
+lose anything is to keep. The question could not fire anyway once every page named in the index came
+back as something (T10-C3): there were no absences left for it to be about.
+
+The message the operator gets says this too. It used to say the page *"could not be read and was
+skipped"*, which was the opposite of what they would see (T10-C4); it now says the page is shown blank,
+that the page says so itself, and that it will not be written over until the file reads again.
 
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it
   means, or it is asking a question the graph does not answer.

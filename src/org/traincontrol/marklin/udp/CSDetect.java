@@ -147,7 +147,17 @@ public class CSDetect
                     if (inetAddress.isSiteLocalAddress() && broadcast != null)
                     {
                         // Check for default gateway by sending a ping
-                        if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1"))
+                        //
+                        // RETRIED, like every other ping in this class (W21-C2).  This was the one
+                        // that was not, and it is upstream of all of them: one dropped reply makes
+                        // `getLocalSubnet()` return empty and `hasLocalSubnets()` false, and the
+                        // operator is told auto-detect is not possible at all - a worse answer than
+                        // the one MT-060 was raised about, from the same cause.  The javadoc at the
+                        // head of this class is about exactly that: *"a single timeout threw away a
+                        // station that had just answered.  Three attempts turn a one-in-ten failure
+                        // into a one-in-a-thousand one."*  It costs at most one extra round trip per
+                        // interface, once, before a scan that sends 254.
+                        if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1", PING_RETRY))
                         {
                             String ip = inetAddress.getHostAddress();
                             out.add(ip.substring(0, ip.lastIndexOf('.') + 1));

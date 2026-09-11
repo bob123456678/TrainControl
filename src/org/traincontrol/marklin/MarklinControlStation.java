@@ -795,6 +795,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // A local removes the question rather than answering it.
         final int couldNotBeRead = fileParser.getPagesThatCouldNotBeRead();
 
+        // AND THE INDEX'S OWN COUNT, ASKED IN THE SAME BREATH (TWV-C2).
+        //
+        // It was read a hundred and sixty lines below, off this same field, after `parseLayout` and
+        // after the loop that counts what actually arrived - which is a second question to a field
+        // `syncWithCS2` reassigns outside the lock that serialises this method, and therefore exactly
+        // the hazard the paragraph above was written about. The window is smaller than the one RC-B9
+        // closed and the cost is milder - a spurious revert to the Central Station, or a missed one -
+        // but the rule was already written down here and the new line did not follow it.
+        final int namedByTheIndex = fileParser.getPagesTheIndexNamed();
+
         // NOTHING READ IS STILL A FAILURE (RC-A4).
         //
         // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch, so the revert
@@ -831,8 +841,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         //
         // The index is the statement of what should be there, and it is read by a different method that
         // does match the block name without regard to case - so it can say "two pages" about a file this
-        // parser made nothing of.
-        final int namedByTheIndex = fileParser.getPagesTheIndexNamed();
+        // parser made nothing of.  Carried from the top of this method rather than asked again here,
+        // for the reason given beside it (TWV-C2).
 
         if (actuallyRead == 0 && (couldNotBeRead > 0 || namedByTheIndex > 0))
         {

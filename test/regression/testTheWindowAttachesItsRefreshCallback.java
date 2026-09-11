@@ -84,7 +84,17 @@ public class testTheWindowAttachesItsRefreshCallback
 
         String source = new String(Files.readAllBytes(ui.toPath()), StandardCharsets.UTF_8);
 
-        assertTrue(source.contains("AutonomyRefreshCallback.attach"),
+        // IN THE CODE, NOT THE RAW SOURCE (W21-C7).
+        //
+        // This was `source.contains(...)`, and the sibling assertion twenty lines below was hardened
+        // against exactly that and explains why at length - it searched for a method name that also
+        // appeared in the comment explaining why the call was there, so deleting the call left it
+        // green. That hardening was applied to the count and not to this, which guards the more
+        // important half: whether the window attaches the callback at all.
+        //
+        // It passed by luck, and the luck was checked: the name appears once in that file, at the call.
+        // The first comment anybody writes mentioning it would have reopened the hole.
+        assertTrue(withoutComments(source).contains("AutonomyRefreshCallback.attach"),
             "TrainControlUI no longer attaches AutonomyRefreshCallback.  The timetable and the "
             + "locomotive status panel redraw ONLY when the layout announces a path start or end, so "
             + "without this they show whatever they last showed: entries are captured into a table "

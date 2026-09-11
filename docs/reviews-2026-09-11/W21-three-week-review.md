@@ -1,6 +1,6 @@
 # The three-week review: 2026-08-21 to 2026-09-11, weighted to the older half
 
-**Status:** open
+**Status:** closed 2026-09-11 - every A, B and C addressed; C9 by Adam's ruling
 
 **Prefix for citing these findings elsewhere:** `W21`
 
@@ -67,9 +67,9 @@ severity the last week's documents have not already claimed. The three `B` items
 
 | id | title | disposition |
 |---|---|---|
-| W21-B1 | `MarklinFeedback.setState` tells nobody, so the route editor's capture cannot see a sensor set from the diagram or in simulation | open |
-| W21-B2 | when the CAN socket closes, `sendMessage` brings transmission back and nothing ever brings reception back | open |
-| W21-B3 | the diagram's "Place locomotive" writes AND SAVES a placement the railway has just refused | open |
+| W21-B1 | `MarklinFeedback.setState` tells nobody, so the route editor's capture cannot see a sensor set from the diagram or in simulation | fixed 2026-09-11 (abbed984); tested 2026-09-11 - core.testAFeedbackChangeIsAnnounced |
+| W21-B2 | when the CAN socket closes, `sendMessage` brings transmission back and nothing ever brings reception back | fixed 2026-09-11 (abbed984), mutation-checked by TWV |
+| W21-B3 | the diagram's "Place locomotive" writes AND SAVES a placement the railway has just refused | fixed 2026-09-11 (abbed984); the two unswept siblings settled ac960047 |
 
 ### W21-B1 — `MarklinFeedback.setState` tells nobody, and its twin `parseMessage` does
 
@@ -258,14 +258,14 @@ covered by a rebuild — see `W21-D6`.
 
 | id | title | disposition |
 |---|---|---|
-| W21-C1 | `LocomotiveSelectorItem` renders `(char) -1` in a dialog; its twin one class over guards against exactly that | open |
-| W21-C2 | the gateway ping is the one ping in `CSDetect` that is not retried, and it gates the whole scan | open |
-| W21-C3 | `baseNameOf` never got `describe`'s arrival-suffix fallback, so the timetable can still print "(northbound)" | open |
-| W21-C4 | `DiagramMonitor.invalidate()` writes `published` outside the monitor `refresh()` is synchronized for, and the caller's comment claims the opposite | open |
-| W21-C5 | `paintRun` draws a chevron for an IDLE segment whose line it has just skipped; `isBlank()` was taught about that pair and this was not | open |
-| W21-C6 | `NetworkProxy.reader`: "kept so that stopListening can end it" — `stopListening` never touches it and nothing reads it | open |
-| W21-C7 | `testTheWindowAttachesItsRefreshCallback`'s first assertion still reads the raw source, which is the hole its own javadoc names | open |
-| W21-C8 | localising the trigger-type combo moves a Momentary selection to Toggle; only a deferred repaint puts it back | open |
+| W21-C1 | `LocomotiveSelectorItem` renders `(char) -1` in a dialog; its twin one class over guards against exactly that | fixed 2026-09-11 - the dialog says there is no active button, and the twin's dead clause is gone |
+| W21-C2 | the gateway ping is the one ping in `CSDetect` that is not retried, and it gates the whole scan | fixed 2026-09-11 - the gateway ping is retried like every other |
+| W21-C3 | `baseNameOf` never got `describe`'s arrival-suffix fallback, so the timetable can still print "(northbound)" | fixed 2026-09-11 - `describe` now calls `baseNameOf`, so there is one answer |
+| W21-C4 | `DiagramMonitor.invalidate()` writes `published` outside the monitor `refresh()` is synchronized for, and the caller's comment claims the opposite | fixed 2026-09-11 - `invalidate()` is synchronized and the caller's comment is corrected |
+| W21-C5 | `paintRun` draws a chevron for an IDLE segment whose line it has just skipped; `isBlank()` was taught about that pair and this was not | fixed 2026-09-11 - the chevron pass skips what the line pass skips |
+| W21-C6 | `NetworkProxy.reader`: "kept so that stopListening can end it" — `stopListening` never touches it and nothing reads it | fixed (abbed984), confirmed by TWV |
+| W21-C7 | `testTheWindowAttachesItsRefreshCallback`'s first assertion still reads the raw source, which is the hole its own javadoc names | fixed 2026-09-11 - the assertion reads the code rather than the raw source |
+| W21-C8 | localising the trigger-type combo moves a Momentary selection to Toggle; only a deferred repaint puts it back | fixed 2026-09-11 - the combo is localised before anything is selected in it |
 | W21-C9 | `GraphLocAssign` declares the missing arrival side a non-issue; `behaviour.md` §4 lists it as an open defect | fixed 2026-09-11 - Adam ruled, and the side is now recorded by all three doors |
 
 ### W21-C1 — `(char) -1` in a message dialog, guarded in the twin and not here

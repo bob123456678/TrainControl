@@ -503,9 +503,15 @@ public class LayoutDiagram
      * A rule implemented in one of two writers and not the other is the defect this project produces
      * most often, so neither writer implements it.
      *
-     * The order the arrows were written against is read from the index BEFORE it is overwritten, which
-     * is why that read is in here and not at the call sites: it is the one step a caller could get
-     * wrong in a way nothing would notice.
+     * **Both ends of the re-aim are the sorted list, and the OLD one comes from the pages** (FV3-A2,
+     * corrected here by T10-C1).  This paragraph used to say the old order was read from the index
+     * before it was overwritten, and that it was done here so no caller could get it wrong.  It is not
+     * read from the index at all any more: `layoutDB` is keyed by name, so an index naming two pages
+     * the same aliases them onto one entry and the read gave an order neither page was written
+     * against.  `before` is taken from the pages this session is holding instead.
+     *
+     * The reason the work is here rather than at the call sites is unchanged, and it is the important
+     * half: it is the one step a caller could get wrong in a way nothing would notice.
      *
      * A rename carries the arrows with it - the page is the same page under another name.  A page that
      * has gone leaves its arrows pointing at nothing rather than at whatever slid into its place, which

@@ -196,7 +196,10 @@ public class LayoutPageEdit
         // Doing it here fixes all three at once, because every one of them is downstream of this line.
         List<LayoutDiagram> pages = loadedPages(log);
 
-        for (LayoutDiagram moved : LayoutDiagram.repointLinksForNewOrder(pages, layoutList, renamed))
+        // HELD, so the page this gesture is about can be asked the same question (TWV-C7).
+        List<LayoutDiagram> changed = LayoutDiagram.repointLinksForNewOrder(pages, layoutList, renamed);
+
+        for (LayoutDiagram moved : changed)
         {
             // The page this gesture is about is written below, under its new name, carrying the tiles
             // just corrected - so saving it HERE as well would write the same correction to its old
@@ -221,7 +224,17 @@ public class LayoutPageEdit
         // correction above would never reach disk for it.  A rename has no such file - its old one is
         // deleted by the write below - which is why this asks about the gesture rather than about the
         // page.
-        if (!rename && pages.contains(page))
+        // AND ONLY WHEN THE RE-AIM ACTUALLY CHANGED IT (TWV-C7).
+        //
+        // This asked about the GESTURE - "was this an Add or a Duplicate" - and so rewrote the
+        // operator's current page through `exportToCS2TextFormat` whether or not a single arrow on it
+        // had moved, which for a page carrying no arrows is every page. The loop above saves exactly
+        // the pages `repointLinksForNewOrder` reported as changed; this is the same question, asked of
+        // the one page that loop cannot see because it is the page being written by the gesture itself.
+        //
+        // Nothing was lost by the extra write - the round trip is well covered - but it is a file on
+        // OneDrive, rewritten for nothing, with a `.bak` made beside it the first time.
+        if (!rename && changed.contains(page))
         {
             try
             {
