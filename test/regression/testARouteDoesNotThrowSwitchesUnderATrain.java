@@ -1391,6 +1391,175 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * @param id a route id nothing else uses
      * @return the route, not executed
      */
+    /**
+     * A route that cuts the power is never held back, and its stop always goes out.
+     *
+     * `behaviour.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is
+     * true. A route carrying a stop is never refused at a human door and never has its stop skipped"* -
+     * and it has two halves. Adam's ruling of 2026-09-06 on `MT-247` ended *"make test cases for this"*.
+     *
+     * **The first half was already held, and `GAP-C1` was wrong to say otherwise.**
+     * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` asks the screening question of a route
+     * with a stop and one without, inside a dispatch, exactly as this does; `testBothDoorsCarveOutTheEmergencyStop`
+     * pins the carve-out at both doors by shape. That pass searched for the word "emergency" and read
+     * one file's worth of results too quickly - the finding is corrected in its own document.
+     *
+     * **What was missing is the second half: that the stop actually goes out.** No test ran such a
+     * route and looked at the power. That is the half the rule is for - being excused the question is
+     * worth nothing if the command is then dropped - and it is what this adds.
+     *
+     * Adam, 2026-09-01: **"emergency stop should never conflict or prompt."** Suppressing a stop is the
+     * one refusal that can make things worse, and a route that contains one is a route somebody wants
+     * to happen now.
+     *
+     * **Two claims and two controls**, in the one state where the hazard exists - inside a dispatch,
+     * with the path locked and the turnout reserved:
+     *
+     * - the route carrying a stop is not screened at the human door, while the SAME route without one
+     *   is. Without that second half, a door that screened nothing would pass;
+     * - the power really goes off, and the conflicting accessory is still not thrown. Declining to
+     *   throw a switch under a moving train was never the part in dispute, and a fix that obeyed the
+     *   stop by running the whole route would be worse than the defect.
+     *
+     * MUTATION: take `if (this.hasEmergencyStop()) return null;` out of
+     * `MarklinRoute.conflictingAccessoryAndReason` and the first claim fails.
+     */
+    @Test
+    public void testARouteWithAnEmergencyStopIsNeverHeldBack() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("ES_A", false, null);
+        layout.createPoint("ES_B", true, S88);
+
+        Edge ab = layout.createEdge("ES_A", "ES_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("ES_A").setLocomotive(loc);
+
+        final String[][] askedAboutTheStop = {null};
+        final String[][] askedAboutTheOther = {null};
+        final boolean[] sawTheLock = {false};
+        final boolean[] powerAfter = {true};
+        final boolean[] switchedAfter = {false};
+
+        layout.setCallback("emergency stop probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            if (layout.getActiveAccs().contains(turnout)) sawTheLock[0] = true;
+
+            // THE SCREENING QUESTION, asked of both routes at the moment the conflict is real.
+            askedAboutTheStop[0] = new String[][] {routeWithAStop(84921).conflictingAccessoryAndReason()}[0];
+            askedAboutTheOther[0] = new String[][] {route(84922).conflictingAccessoryAndReason()}[0];
+
+            // AND THEN RUN IT.  The power is put on first so that "the power is off" afterwards can
+            // only be this route's doing.
+            model.go();
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException ignored)
+            {
+            }
+
+            routeWithAStop(84923).execRoute(false);
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException ignored)
+            {
+            }
+
+            powerAfter[0] = model.getPowerState();
+            switchedAfter[0] = turnout.isSwitched();
+
+            return null;
+        });
+
+        try
+        {
+            layout.executePath(Arrays.asList(ab), loc(loc), 30, null);
+
+            settle();
+        }
+        finally
+        {
+            // The callback is not removed, because there is no door for that and none is needed: every
+            // test in this class begins with `clearAutoLayout()`, which discards the whole Layout and
+            // its callbacks with it.  `setCallback(name, null)` is not the way - the map behind it is a
+            // ConcurrentHashMap, which throws on a null value.
+            model.go();
+        }
+
+        assertTrue(sawTheLock[0],
+            "the probe never saw the turnout reserved, so nothing below was asked in the state this "
+            + "test is about - the fixture is wrong, not the railway");
+
+        // THE CONTROL FIRST: the conflict really is there for a route without a stop.
+        assertNotNull(askedAboutTheOther[0],
+            "the same route WITHOUT an emergency stop was not screened either, so the claim below is "
+            + "about a door that screens nothing rather than about the stop");
+
+        assertNull(askedAboutTheStop[0],
+            "a route carrying an emergency stop was screened at the human door, so the operator would "
+            + "be asked to confirm it - and whichever way they answered, they would not be answering "
+            + "about the power. Adam, 2026-09-01: \"emergency stop should never conflict or prompt\" "
+            + "(SVN-A4, FX2-2)");
+
+        assertFalse(powerAfter[0],
+            "the route ran and the power is still on, so its emergency stop was skipped. That is the "
+            + "one refusal that can make things worse (behaviour.md section 7a)");
+
+        assertFalse(switchedAfter[0],
+            "the emergency stop was obeyed by running the whole route, including the turnout under a "
+            + "moving train. Declining to throw that switch was never the part in dispute - the stop "
+            + "is exempt from the QUESTION, not from the per-command check");
+    }
+
+    /**
+     * The same one-accessory route, with an emergency stop after it.
+     *
+     * The stop comes second on purpose: `hasEmergencyStop` is about the whole route *"wherever it sits
+     * in the command list"*, and a stop written first would also be the first command executed, which
+     * would pass a weaker implementation that only looked at the head.
+     *
+     * @param id a route id nothing else uses
+     * @return the route, not executed
+     */
+    private static MarklinRoute routeWithAStop(int id)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, true));
+
+        commands.add(RouteCommand.RouteCommandStop());
+
+        return new MarklinRoute(model, "ES route " + id, id, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
     private static MarklinRoute route(int id)
     {
         List<RouteCommand> commands = new ArrayList<>();

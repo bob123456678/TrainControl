@@ -163,6 +163,97 @@ public class testEveryWindowWearsTheApplicationsLook
     }
 
     /**
+     * And a TEST that stands up a bare Swing window installs it too.
+     *
+     * Adam, 2026-09-11, after the product-side fix: *"I still see tests popping up with the small font
+     * in the menu bar, FYI."* He was right, and the fix above could not have covered it: every window
+     * the APPLICATION owns now asks for the look and feel in its own constructor, and a `JFrame`, a
+     * `JDialog`, a `JWindow` or a `JOptionPane` built by a test is nobody's window but the test's.
+     *
+     * Four classes were doing that. This is the rule that stops a fifth, and it is the same shape as
+     * the sandbox rule in `testSwitchingToACentralStationLayout`: a test that stands something up has
+     * to put the machine in the state the application would be in first.
+     *
+     * **Only BARE windows are asked about.** A test that builds a `TrainControlUI`, a
+     * `RouteEditorFrame` or any other class under `gui/` is already covered by the claim above, and
+     * requiring the call there as well would be a rule that is satisfied twice and understood once.
+     *
+     * MUTATION: take the install out of any of the four and this names the file.
+     */
+    @Test
+    public void testATestThatBuildsABareWindowInstallsItToo() throws Exception
+    {
+        List<String> bare = new ArrayList<>();
+
+        for (File source : everyTestSource(new File("test")))
+        {
+            String code = withoutComments(new String(Files.readAllBytes(source.toPath()),
+                StandardCharsets.UTF_8));
+
+            if (!standsUpABareWindow(code)) continue;
+
+            // Calling init is the application's own door and installs it; so is asking directly.
+            if (code.contains("installLookAndFeel") || code.contains("MarklinControlStation.init(")
+                || code.contains("= init(")) continue;
+
+            bare.add(source.getName());
+        }
+
+        assertEquals(bare.toString(), "[]",
+            "these tests stand up a Swing window of their own without installing the application's "
+            + "look and feel, so what pops up is drawn in Metal - a different font and different "
+            + "insets from the window the operator sees. Add "
+            + "`org.traincontrol.gui.TrainControlUI.installLookAndFeel()` before the window is built "
+            + "(Adam, 2026-09-11): " + bare);
+    }
+
+    /**
+     * A source with its comments taken out.
+     *
+     * A comment mentioning `new JFrame(` is not a test building one - and this class's own javadoc
+     * above says exactly that phrase, so without this it reports itself.
+     *
+     * @param source the file's text
+     * @return the code alone
+     */
+    private static String withoutComments(String source)
+    {
+        return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)//[^\\n]*", "");
+    }
+
+    /**
+     * Whether this source builds a Swing window that belongs to no application class.
+     */
+    private static boolean standsUpABareWindow(String code)
+    {
+        return code.contains("new JFrame(") || code.contains("new javax.swing.JFrame(")
+            || code.contains("new JDialog(") || code.contains("new javax.swing.JDialog(")
+            || code.contains("new JWindow(") || code.contains("new javax.swing.JWindow(")
+            || code.contains("JOptionPane.show");
+    }
+
+    /**
+     * Every test source under a folder.
+     */
+    private static List<File> everyTestSource(File folder)
+    {
+        List<File> out = new ArrayList<>();
+
+        File[] here = folder.listFiles();
+
+        if (here == null) return out;
+
+        for (File f : here)
+        {
+            if (f.isDirectory()) out.addAll(everyTestSource(f));
+
+            else if (f.getName().endsWith(".java")) out.add(f);
+        }
+
+        return out;
+    }
+
+    /**
      * Whether this source declares a top-level window.
      */
     private static boolean isAWindow(String source)

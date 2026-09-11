@@ -1,6 +1,6 @@
 # GAP - what holds each rule the specification states?
 
-**Status:** open 2026-09-11 - one real gap found and closed (`GAP-B1`), one open and unblocked (`GAP-C1`)
+**Status:** closed 2026-09-11 - one real gap closed (`GAP-B1`), one half-real and closed with a correction (`GAP-C1`)
 
 **Prefix:** `GAP`
 
@@ -40,7 +40,7 @@ no comment in the code can point at, which is its own small finding.
 | Nothing on the event thread may call a synchronized Layout method | `D3-B2` | covered, under a sibling id - `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` cites `D3-A1` |
 | An unreadable page's autonomy settings are kept | `T10-C3` | covered - `core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged`; behaviour.md now names it |
 | Two things the room sum is known to get wrong | `MON-C13` | **not a gap - a disclosed limitation waiting on Adam**, see below |
-| An emergency stop is obeyed whatever else is true | `SVN-A4` | **REAL GAP - open**, and not blocked: `MT-247` was ruled on 2026-09-06 and built - see below |
+| An emergency stop is obeyed whatever else is true | `SVN-A4` | **half a gap, closed** - the screening was held all along and this finding missed it; the execution was not - see below |
 
 ### GAP-B1 - the placement rule had nothing holding it
 
@@ -63,22 +63,32 @@ back at either guarded door fails it.
 
 ### GAP-C1 - the emergency stop rests on a manual test that is itself a decision
 
-*"An emergency stop is obeyed whatever else is true"* is as load-bearing as any rule in the document, and
-the only thing holding it is `MT-247` - which opens by saying it is *"a question for you as much as a
-test"*, because declining the conflict dialog means different things at the two human doors.
+*"An emergency stop is obeyed whatever else is true"* is as load-bearing as any rule in the document,
+and it has two halves: such a route is never refused at a human door, and its stop is never skipped.
 
-One test file mentions an emergency stop at all
-(`regression.testARouteDoesNotThrowSwitchesUnderATrain`), and what it pins is which switches a conflict
-skips, not that the stop is obeyed.
+**This finding was half wrong, and the correction is the interesting part.** It said nothing in the
+suite held the rule. The first half was held all along, in the very file this finding named:
+`testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` asks the screening question of a route with a
+stop and one without, inside a dispatch, and `testBothDoorsCarveOutTheEmergencyStop` pins the carve-out
+at both doors by shape. Removing `if (this.hasEmergencyStop()) return null;` fails both.
 
-**Corrected the same day.** I wrote the paragraph above believing `MT-247` was still an open question.
-It is not: Adam ruled on 2026-09-06 - *"cancel should cancel everything. OK should fire everything...
-don't run the conflicting switch commands, but do run the power off and others. make test cases for
-this"* - and it was built on 2026-09-08 in `c22c9d90`, with the rule in `behaviour.md` section 7a.
+What the pass did was search for the word *"emergency"*, find one file, and read its result as "what it
+pins is which switches a conflict skips" - which is true of the tests it looked at and false of the two
+it did not. A citation search is a lower bound on coverage, and this is what that costs when the
+hand-check behind it is hurried.
 
-So this gap is real and has no blocker: the behaviour is settled, the code is written, and the test
-cases Adam asked for in that same sentence are the part still missing. **Open, and mine to do**, not
-his to decide.
+**The half that really was missing: nothing ran such a route and looked at the power.** Being excused
+the question is worth nothing if the command is then dropped, and no test executed a route carrying a
+stop with a conflict present and asserted the railway went dead.
+
+**Closed 2026-09-11.** `MT-247` was not an open question either - Adam ruled on 2026-09-06 (*"don't
+run the conflicting switch commands, but do run the power off and others. make test cases for this"*)
+and it was built on 2026-09-08 in `c22c9d90`.
+
+`testARouteWithAnEmergencyStopIsNeverHeldBack` now runs a route carrying a stop with the conflicting
+turnout reserved by a live dispatch, and asserts three things: it is not screened (with the same route
+minus the stop as the control), the power really goes off, and the conflicting turnout is still not
+thrown - because obeying the stop by running the whole route would be worse than the defect.
 
 ### GAP-D1 - the room sum's two known-wrong cases
 

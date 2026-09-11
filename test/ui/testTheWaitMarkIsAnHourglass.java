@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import static org.testng.Assert.*;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.gui.LoadingSpinner;
@@ -36,6 +37,27 @@ import org.traincontrol.gui.LoadingSpinner;
  */
 public class testTheWaitMarkIsAnHourglass
 {
+
+    /**
+     * The application's look and feel, before this class stands anything up.
+     *
+     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
+     *
+     * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
+     * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
+     * `JOptionPane` - and those are nobody's to fix but this one's. Without it the window is drawn in
+     * Metal: different font, different insets, and not the window the operator sees.
+     *
+     * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place for every such class.
+     */
+    @BeforeClass
+    public static void theApplicationsLookAndFeel()
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless())
+        {
+            org.traincontrol.gui.TrainControlUI.installLookAndFeel();
+        }
+    }
     /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop. */
     private static final int CYCLE = 62;
 

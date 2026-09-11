@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
@@ -31,6 +32,27 @@ import org.testng.annotations.Test;
  */
 public class testEveryWindowWearsTheIcon
 {
+
+    /**
+     * The application's look and feel, before this class stands anything up.
+     *
+     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
+     *
+     * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
+     * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
+     * `JOptionPane` - and those are nobody's to fix but this one's. Without it the window is drawn in
+     * Metal: different font, different insets, and not the window the operator sees.
+     *
+     * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place for every such class.
+     */
+    @BeforeClass
+    public static void theApplicationsLookAndFeel()
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless())
+        {
+            org.traincontrol.gui.TrainControlUI.installLookAndFeel();
+        }
+    }
     /** What makes a file a window. */
     private static final String[] WINDOWS = {
         "extends JFrame", "extends javax.swing.JFrame",
