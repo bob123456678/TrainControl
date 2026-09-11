@@ -34,16 +34,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
-| [MT-262](#mt-262) | 2026-09-03 | The reversal-length notices, counted on your own railway | fixed unvalidated | OB-171 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
 | [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | fixed unvalidated | RGN-C3 |
 | [MT-277](#mt-277) | 2026-09-07 | One menu carries both the facing and the arrival side | needs test | FR-057 (split from MT-274) |
 | [MT-278](#mt-278) | 2026-09-07 | The covered-track shading survives a flash | needs test | OB-175 follow-up (split from MT-274) |
-| [MT-279](#mt-279) | 2026-09-07 | The covered-track shading is on the viewer only | needs test | OB-175 follow-up (split from MT-274) |
-| [MT-280](#mt-280) | 2026-09-07 | Nothing may be sent across covered track | needs test | OB-175 follow-up (split from MT-274) |
-| [MT-283](#mt-283) | 2026-09-07 | The Text Labels dropdown fits the sidebar | needs test | FR-061 (split from MT-274) |
 | [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
 | [MT-285](#mt-285) | 2026-09-07 | A page whose top row is empty still numbers its axis | needs test | OB-172 (split from MT-274) |
 | [MT-286](#mt-286) | 2026-09-07 | The editor comes to the front on the first open | needs test | OB-173 (split from MT-274) |
@@ -79,9 +75,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
 | [MT-350](#mt-350) | 2026-09-10 | Clear All Track Lengths, across every page | needs test | FR-069 |
 | [MT-351](#mt-351) | 2026-09-10 | A shortcut after changing pages acts on the square you are pointing at | needs test | OB-198 |
+| [MT-352](#mt-352) | 2026-09-11 | An imported route file arrives switched off | fixed unvalidated | S14-A1, and Adam's ruling of 2026-09-10 |
+| [MT-353](#mt-353) | 2026-09-11 | Adding a page leaves every arrow pointing where it pointed | fixed unvalidated | N8-A1, FV3-A2 |
+| [MT-354](#mt-354) | 2026-09-11 | A renamed page keeps the arrows that point at it | fixed unvalidated | N8-A1, FV3-A2 |
+| [MT-355](#mt-355) | 2026-09-11 | An arrow to a deleted page does nothing, and says so | fixed unvalidated | Adam's ruling of 2026-09-10 |
+| [MT-356](#mt-356) | 2026-09-11 | A link cannot be aimed at its own page, and can be aimed at nothing | fixed unvalidated | Adam's ruling of 2026-09-10, FV3-C8 |
+| [MT-357](#mt-357) | 2026-09-11 | A page that cannot be read shows why, and keeps its autonomy setup | fixed unvalidated | NSV-B3, FV3-A1 |
+| [MT-358](#mt-358) | 2026-09-11 | The Central Station still follows an arrow after TrainControl saves | needs test | the page-link work; hardware question |
+| [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
+| [MT-360](#mt-360) | 2026-09-11 | The route editor accepts the top address of each protocol | fixed unvalidated | S14-C1 |
 
-Everything else - 299 of 351 - needs nothing from you unless the area changes again:
-270 **fixed validated** and 29 **superseded**.
+Everything else - 303 of 360 - needs nothing from you unless the area changes again:
+274 **fixed validated** and 29 **superseded**.
 
 ---
 
@@ -18322,3 +18327,285 @@ inherited it when it was added.
 
 ---
 
+<a id="mt-352"></a>
+
+### MT-352 - 2026-09-11 - An imported route file arrives switched off
+
+**Disposition:** fixed unvalidated
+**From:** S14-A1, and Adam's ruling of 2026-09-10
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Export your routes (**Routes** then Export), so you have a file to put back.
+2. Note which routes currently have automatic execution ON, and which sensor each watches.
+3. **Routes** then Import, and choose that file.
+4. Look at the route list.
+
+**Expected**
+
+Every imported route is there, with its commands, its sensor and its conditions - and every one of them
+has automatic execution **off**, whatever the file said. Turning one on is a deliberate act by you.
+
+Nothing on the railway moves during the import.
+
+*What this is:* Adam, 2026-09-10 - *"they should not be armed. The user can choose to do this when they
+are ready."* Building a route used to arm it as soon as it existed, so an import had every route in the
+file watching its sensors before anything held them, and a file that failed half way through left the
+ones already built running for the rest of the session with nothing able to stop them.
+
+#### Comments
+
+---
+
+<a id="mt-353"></a>
+
+### MT-353 - 2026-09-11 - Adding a page leaves every arrow pointing where it pointed
+
+**Disposition:** fixed unvalidated
+**From:** N8-A1, FV3-A2
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. On **1 - Main**, note where each arrow tile goes - click each one and see which page opens, then come
+   back.
+2. **Layouts** then **New Page**, and give it a name that sorts into the MIDDLE of your list - `1 - Main
+   and neighbours` is the name Combine offers, and it sorts between `1 - Main` and `2 - Bottom`.
+3. Go back to **1 - Main** and click each arrow again.
+
+**Expected**
+
+Every arrow opens the same page it opened in step 1.
+
+**Worth doing on the other pages too** - the arrows on `2 - Bottom` and `3 - Top Parking` point back at
+Main, and they are the ones a mistake here would send somewhere else.
+
+*What this is:* an arrow stores the page's POSITION in the name-sorted list, so adding a page in the
+middle used to move every arrow past it. Measured on a copy of your own five pages: four of seven arrows
+changed destination, and the new numbers were written to the files.
+
+#### Comments
+
+---
+
+<a id="mt-354"></a>
+
+### MT-354 - 2026-09-11 - A renamed page keeps the arrows that point at it
+
+**Disposition:** fixed unvalidated
+**From:** N8-A1, FV3-A2
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Note which arrows lead to **2 - Bottom**.
+2. Rename it to **9 - Bottom** (**Layouts** then **Rename Current Page**), which moves it to the end of
+   the alphabet.
+3. Click each of those arrows.
+
+**Expected**
+
+They all open **9 - Bottom**. It is the same page under another name and the arrows follow it.
+
+Arrows that pointed at OTHER pages still open those, unchanged.
+
+*What this is:* a rename moves a page's position, so before this the arrows that pointed at it were left
+pointing at whatever slid into the old slot - and Bottom became reachable from no arrow at all.
+
+#### Comments
+
+---
+
+<a id="mt-355"></a>
+
+### MT-355 - 2026-09-11 - An arrow to a deleted page does nothing, and says so
+
+**Disposition:** fixed unvalidated
+**From:** Adam's ruling of 2026-09-10
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. On a page you can spare, note an arrow that leads to some page - say **5 - Test**.
+2. Delete **5 - Test** (**Layouts** then **Delete Current Page**).
+3. Hover the arrow, then click it.
+
+**Expected**
+
+The tooltip says the link points at no page. Clicking it does nothing at all - no error, no dialog, and
+it does NOT open some other page.
+
+Then right-click the square and set it to a real page: it works normally from then on.
+
+*What this is:* Adam, 2026-09-10 - *"set the ID to -1. This shouldn't throw any errors, and simply
+resolve to nothing when clicked. Then, the user can set it to the right page on their next edit."*
+
+#### Comments
+
+---
+
+<a id="mt-356"></a>
+
+### MT-356 - 2026-09-11 - A link cannot be aimed at its own page, and can be aimed at nothing
+
+**Disposition:** fixed unvalidated
+**From:** Adam's ruling of 2026-09-10, FV3-C8
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. In the track diagram editor, right-click an arrow tile on **1 - Main** and open its address.
+2. Look at the list of pages offered.
+3. Choose **(none)** and press OK. Hover the square.
+4. Open it again and choose a real page.
+
+**Expected**
+
+At step 2: every page EXCEPT **1 - Main** itself is offered, and **(none)** is the first entry.
+
+At step 3: the arrow now points at no page - the tooltip says so and clicking does nothing.
+
+At step 4: it points at that page again.
+
+*What this is:* two things. An arrow to the page it is drawn on is a square that looks like a way
+somewhere and is not. And opening this dialog on an already-broken arrow used to aim it at the first
+page in the alphabet the moment you pressed OK, which took the choice away from you.
+
+#### Comments
+
+---
+
+<a id="mt-357"></a>
+
+### MT-357 - 2026-09-11 - A page that cannot be read shows why, and keeps its autonomy setup
+
+**Disposition:** fixed unvalidated
+**From:** NSV-B3, FV3-A1
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Pick a page that has autonomy settings on it - station names, lengths - and note two or three of them.
+2. Close TrainControl. Make that page's `.cs2` file unreadable: rename it, or let OneDrive dehydrate it.
+3. Start TrainControl and look at the page list, then open that page.
+4. **Without changing anything**, do something that saves the autonomy setup - open the autonomy editor
+   and close it, or run a build.
+5. Close TrainControl, put the file back, and start again. Look at the settings from step 1.
+
+**Expected**
+
+At step 3: the page is still in the list, in its usual place, and opens blank with a message near the
+top-left saying it could not be loaded.
+
+At step 5: **every setting from step 1 is still there.**
+
+**This is the one that matters.** A page that will not read must not cost you its setup - the program
+cannot see the track, so it must not conclude the track is gone.
+
+*What this is:* the stand-in keeps the page in the list so the arrows after it still point where they
+should. The danger is the opposite one: it must not make the program think the page is really there,
+because everything the setup knows about that page would then be judged against a blank page and
+dropped.
+
+#### Comments
+
+---
+
+<a id="mt-358"></a>
+
+### MT-358 - 2026-09-11 - The Central Station still follows an arrow after TrainControl saves
+
+**Disposition:** needs test
+**From:** the page-link work; hardware question
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Note an arrow on a page and which page it leads to in TrainControl.
+2. Make any page change that causes a save - add a page, rename one, then undo that if you like.
+3. Copy the layout back to the Central Station, or open it there however you normally do.
+4. On the STATION, touch that arrow.
+
+**Expected**
+
+The station opens the same page TrainControl does.
+
+*What this is:* a question nothing here can answer. TrainControl reads the number on an arrow as the
+page's position in the name-sorted list, which is how it has always read it and what Adam confirmed on
+2026-09-10. The station orders its pages by `.id`, which is a different number - so if the station reads
+that arrow as "the page with id N" rather than "the Nth page", our arrows and its arrows could disagree
+after a save. Nobody has checked, and it needs the hardware.
+
+If they disagree, say so and nothing else needs doing on the spot - it is a format decision, not a bug
+to patch in a hurry.
+
+#### Comments
+
+---
+
+<a id="mt-359"></a>
+
+### MT-359 - 2026-09-11 - A function the consist head does not have is not sent to its members
+
+**Disposition:** fixed unvalidated
+**From:** S14-B1
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Make a multi-unit whose HEAD is an MM2 locomotive - five functions - and whose member is MFX or DCC,
+   which have many more. Any pair you can spare.
+2. Select the head and press **F6** - a function number the head does not have.
+3. Look at the member locomotive, both on the railway and by selecting it in TrainControl.
+
+**Expected**
+
+Nothing happens. The member's f6 does not come on.
+
+Then press **F3**, which the head does have: the member responds as usual.
+
+*What this is:* the head passed every function number to its members before checking whether it had that
+function itself. So f6 came on at the member and was recorded nowhere - no button showed it, the
+autonomy arrival that turns functions off could not clear it, and pressing the key again sent ON again
+rather than OFF. The only way back was to select the member and clear it there.
+
+#### Comments
+
+---
+
+<a id="mt-360"></a>
+
+### MT-360 - 2026-09-11 - The route editor accepts the top address of each protocol
+
+**Disposition:** fixed unvalidated
+**From:** S14-C1
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Open a route for editing and add an accessory command.
+2. Type address **320** with MM2 selected. Save.
+3. Add another, type **2048** with DCC selected. Save.
+
+**Expected**
+
+Both are accepted and the route saves. These are the top addresses each protocol has, and the track
+diagram editor has always accepted them.
+
+*What this is:* the route editor checked the number you typed against the internal maximum, which counts
+from zero - so it refused exactly one address per protocol, the last one. Adam's standing preference is
+that he would rather have no check than one that refuses something legal.
+
+#### Comments
+
+---
