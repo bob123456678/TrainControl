@@ -238,26 +238,43 @@ public class testTheDiagramCeiling
                 "precondition: the question the guard used to ask - room for one more of EACH - is no "
                 + "on this page, which is what makes this test able to tell the two apart");
 
-            // MEASURED AFTER THE EDITOR HAS SETTLED, not the moment it was constructed.
+            // MEASURED EITHER SIDE OF THE CALL, IN ONE TASK (2026-09-11).
             //
-            // Building an editor grows the page to fit - `growEdges` - and that lands through the
-            // event queue, so the width read straight after the constructor can still be the one the
-            // page was born with. In the battery this test failed "expected [15] but found [21]":
-            // 10 + 5 against 16 + 5, the difference being whether the growth had happened yet. It
-            // passed run on its own, which is what a race looks like from outside (2026-09-11).
-            settle();
+            // The claim is about what `addRowsAndColumns` did, and nothing else: building an editor
+            // also grows the page to fit its viewport - `growEdges` - and how much depends on the
+            // window's geometry, which is not the same in a battery as it is in a class run on its
+            // own.  Reading the width before the call and comparing after it therefore measured that
+            // growth as well, and this failed "expected [15] but found [21]" in two consecutive
+            // batteries while passing alone: 10 + 5 against 16 + 5.
+            //
+            // Taken inside the same invokeAndWait, so nothing can grow the page between the two
+            // readings, and the assertion is about the difference rather than about an absolute
+            // width this test does not control.
+            final int[] wide = new int[2];
+            final int[] tall = new int[2];
 
-            final int wasWide = page.getSx();
+            SwingUtilities.invokeAndWait(() ->
+            {
+                wide[0] = page.getSx();
+                tall[0] = page.getSy();
 
-            SwingUtilities.invokeAndWait(() -> editor.addRowsAndColumns(0, 5));
+                editor.addRowsAndColumns(0, 5);
 
-            assertEquals(page.getSx(), wasWide + 5,
+                wide[1] = page.getSx();
+                tall[1] = page.getSy();
+            });
+
+            assertEquals(wide[1], wide[0] + 5,
                 "a page at the row ceiling was refused five more COLUMNS, which it has room for.  The "
                 + "guard asked whether there was room for one more of each and then added what it was "
                 + "given (NSV-C3)");
 
-            assertEquals(page.getSy(), LayoutEditor.MAX_SIZE,
+            assertEquals(tall[1], tall[0],
                 "and it did not grow in the dimension that was already full");
+
+            assertEquals(tall[1], LayoutEditor.MAX_SIZE,
+                "the page is no longer at the row ceiling, so the case this test is about was not the "
+                + "one exercised");
         }
         finally
         {
