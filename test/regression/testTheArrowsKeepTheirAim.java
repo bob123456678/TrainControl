@@ -289,11 +289,18 @@ public class testTheArrowsKeepTheirAim
      */
     private static void assertArrowOnDiskAfterGesture(String gesture, int expected) throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open(
-            support.Scenario.folderFor("live-snapshot"));
+        // OPENED INSIDE THE TRY (TWV-B2).
+        //
+        // A sandbox takes the machine-global layout preference - the one the APPLICATION reads - and
+        // gives it back in close().  Anything that throws between the open and the try leaves that
+        // preference pointing at a folder under %TEMP%, which is the railway TrainControl opens the next
+        // time it starts.  That is not hypothetical: it happened yesterday and cost two battery classes.
+        support.LayoutSandbox sandbox = null;
 
         try
         {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
             org.traincontrol.marklin.MarklinControlStation model =
                 org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
 
@@ -312,18 +319,36 @@ public class testTheArrowsKeepTheirAim
                 "rename".equals(gesture), !"rename".equals(gesture), "add".equals(gesture), null, model,
                 null);
 
-            // The file, not the tile: a refresh throws the in-memory correction away.
-            String page = "rename".equals(gesture) ? made : subject;
+            // WHICH FILE HOLDS THE ANSWER IS DIFFERENT FOR EACH GESTURE (TWV-B1).
+            //
+            // This asked about `subject` for both Add and Duplicate, and for Duplicate that is the
+            // SOURCE - which the old code corrected anyway.  Measured by the validator: the Duplicate
+            // case passed against the commit before the fix, so it was pinning nothing.
+            //
+            //   Add       the new page is blank, so the file that matters is the ORIGINAL - and it is
+            //             the one the old order never corrected, because Add blanks that object before
+            //             the re-aim can see it.
+            //   Duplicate the COPY, which is written from the source and was never corrected.
+            //   Rename    the renamed page's own new file.
+            String page = "add".equals(gesture) ? subject : made;
 
             assertEquals(arrowInFile(sandbox, page), expected,
                 "after " + gesture + ", the arrow on " + page + " points at position "
                 + arrowInFile(sandbox, page) + " in its FILE, where " + expected + " is correct.  The "
                 + "in-memory correction is discarded by the refresh that follows every one of these "
                 + "gestures, so only the file matters (T10-B1, T10-B2, T10-B3)");
+
+            // A duplicate leaves TWO files that must agree - the copy and the page it was made from.
+            // They disagreed before the fix, which is the shape of the defect.
+            if ("duplicate".equals(gesture))
+            {
+                assertEquals(arrowInFile(sandbox, subject), expected,
+                    "the copy and the page it was made from disagree about where the same arrow goes");
+            }
         }
         finally
         {
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

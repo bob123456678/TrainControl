@@ -314,11 +314,21 @@ public class LayoutDiagram
         {
             for (Map<String, String> block : unmodelledBlocks)
             {
-                builder.append(block.get("_type")).append("\n");
+                // THE SPELLING THE FILE USED, where it differed from the lower-cased form the
+                // readers ask about (TWV-C1).  This machinery exists to write back what the file
+                // said - "what TrainControl does not understand it is not entitled to throw
+                // away" - and case is part of what it said.  Lower-casing `_type` for the
+                // readers alone would have rewritten a block spelled `Version` as `version` on
+                // the first save.
+                builder.append(block.containsKey("_typeAsWritten")
+                    ? block.get("_typeAsWritten") : block.get("_type")).append("\n");
 
                 for (Map.Entry<String, String> entry : block.entrySet())
                 {
                     if ("_type".equals(entry.getKey())) continue;
+
+                    // Bookkeeping of ours, not a key the file had.
+                    if ("_typeAsWritten".equals(entry.getKey())) continue;
 
                     LayoutDiagramComponent.appendPreservedKey(builder, entry.getKey(),
                         entry.getValue());

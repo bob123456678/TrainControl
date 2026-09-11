@@ -1287,16 +1287,38 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // it goes on showing in the Autonomy tab, and runLocomotives logs it as started and spawns a
         // thread that idles for the rest of the session. Nothing stalls - it has no destination to
         // yield to anybody - but the railway is keeping a place for a train that is not on it.
-        ui.getModel().getAutoLayout().moveLocomotive(
-            null,
-            current.getName(),
-            true
-        );
+        // THE RAILWAY'S ANSWER, AND THEN THE SAVE (TWV-B5, settling W21-D6).
+        //
+        // Discarded, a refusal left the setup saying the square is empty while the railway still has the
+        // train on it - and the next save from any other door commits that.
+        if (!ui.getModel().getAutoLayout().moveLocomotive(null, current.getName(), true)) return;
 
         // The setup as well, or the next build puts the train back: the configuration still records it
         // standing here, and the running layout is rebuilt from the configuration.  The facing goes
         // with it - it belonged to that train, not to the square.
-        if (session != null) session.placeLocomotive(station, null);
+        if (session != null)
+        {
+            session.placeLocomotive(station, null);
+
+            // AND WRITTEN.  Nothing downstream saved this: the two repaints below do not reach the
+            // autonomy panel's refresh callback, so a train removed here was back on the square at the
+            // next launch unless some unrelated door happened to save first - which made it
+            // intermittent, and intermittent is worse than consistently broken.
+            //
+            // `GraphLocAssign` states the rule this was breaking: every other door that writes the setup
+            // saves it - the paste door, the facing menu, and placeFacing beside this one on this very
+            // menu.
+            try
+            {
+                AutonomyReport.show(ui, session.save());
+            }
+            catch (java.io.IOException e)
+            {
+                // The removal stands either way; only the memory of it is at risk, which is the same
+                // answer placeFacing gives beside this.
+                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+            }
+        }
 
         ui.repaintAutoLocList(false);
 

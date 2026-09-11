@@ -567,6 +567,19 @@ public final class CS2File
                     // LOWER-CASED, so that the twelve `"xxx".equals(m.get("_type"))` readers keep
                     // working whatever the file's casing (T10-C6).
                     item.put("_type", s.toLowerCase());
+
+                    // AND THE SPELLING THE FILE USED IS KEPT (TWV-C1).
+                    //
+                    // `exportToCS2TextFormat` writes `_type` back as the block name for every block this
+                    // program does not model, and that machinery exists to put back what the file said -
+                    // "what TrainControl does not understand it is not entitled to throw away".  Case is
+                    // part of what it said, so lower-casing alone would silently rewrite a block spelled
+                    // `Version` as `version` on the first save.
+                    //
+                    // Two keys rather than case-insensitive comparisons at the readers: there are twelve
+                    // of those, and a rule applied to eleven of twelve is this project's most repeated
+                    // defect.
+                    if (!s.equals(s.toLowerCase())) item.put("_typeAsWritten", s);
                 }
                 else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
                 {

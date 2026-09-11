@@ -1169,9 +1169,9 @@ Three things follow, and they are the behaviour rather than the implementation:
   duplicating, deleting and combining all move the alphabet, and an arrow follows the page it pointed
   at. Before this it silently came to mean another page and the new number was written to the file -
   measured on the five pages of the sample layout, adding one page repointed four of seven arrows
-  (N8-A1). **The one thing not covered is the combined page's own copied arrows**: the copy is written
-  before it joins the model, so the re-aim does not see it, and its arrows keep the numbers they were
-  copied with (NSV-C5).
+  (N8-A1). **Combine is covered too**, though not obviously: its copy is written before the re-aim, but
+  the page is then refilled square by square from the corrected sources and saved again, so what ends up
+  on disk is right. A claim that it was the one exception stood here briefly and was wrong (T10-C2).
 - **An arrow whose page is deleted points at nothing.** Adam: *"set the ID to -1. This shouldn't throw
   any errors, and simply resolve to nothing when clicked. Then, the user can set it to the right page
   on their next edit."* Clicking it does nothing and its tooltip says so.

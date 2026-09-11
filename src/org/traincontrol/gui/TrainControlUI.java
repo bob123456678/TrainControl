@@ -2168,7 +2168,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             LayoutDiagram page = this.model.getLayout(name);
 
-            if (page != null && page.isUnreadable() && !absent.contains(name)) absent.add(name);
+            if (page == null || !page.isUnreadable() || absent.contains(name)) continue;
+
+            // THE SAME TWO EXCEPTIONS `pagesTheIndexWouldDrop` MAKES, which this loop ignored (TWV-B3).
+            //
+            // A page the operator has just DELETED is not a page to ask them about - the question is
+            // whether an absence is permanent, and they have already said so.  Asking anyway, and then
+            // being answered "keep them", writes the deleted page back into the index.
+            //
+            // And a RENAMED page's old name is an absence by construction: it is the same page under
+            // another name, which is why the method above is told about renames at all.
+            if (deliberatelyRemoved != null && deliberatelyRemoved.contains(name)) continue;
+
+            if (renamedFromTo != null && renamedFromTo.containsKey(name)) continue;
+
+            absent.add(name);
         }
 
         // The index has to be READABLE before any caller of this touches the disk (RA-C3).
@@ -6700,7 +6714,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return true;
             }
 
-            this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
+            // THE RAILWAY'S ANSWER DECIDES, HERE TOO (TWV-B4, after W21-B3).
+            //
+            // `isAutonomyBusy()` above closes the "autonomy started in between" door for this path, which
+            // the right-click menu could not.  What it does not close is a target that is not a
+            // destination, and that IS reachable: `getAutonomyPointForTile` hands back a non-destination
+            // copy when no copy of the square is one, and this door's own guard asks `canDepartFrom`,
+            // which is a different question and true for an ordinary sensor on plain track.
+            //
+            // Discarded, the clipboard was cleared for a move that did not happen - and a train that got
+            // here by Control+X, which removes it, was then on no square and on no clipboard.
+            if (!this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false))
+            {
+                // The clipboard still holds it, so the next square accepts the same paste - which is
+                // what the dismissed-question branch above does, for the same reason.
+                return true;
+            }
 
             this.cutLocomotive = null;
         }
@@ -25061,18 +25090,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * because a LayoutDiagramComponent carries its own coordinates and the copies sit at different
      * ones.
      *
-     * **THE COPIED ARROWS ARE NOT RE-AIMED, AND THAT IS A KNOWN GAP** (NSV-C5, FV3-A2).  This used to
-     * say a link on a combined page "keeps pointing at the page it always pointed at", as settled fact.
-     * It does not.  A link tile holds a POSITION in the name-sorted page list, and combining adds a
-     * page to that list, so every number on the copy means a different page afterwards.
+     * **A LINK ON A COMBINED PAGE DOES KEEP ITS DESTINATION, AND THE SEQUENCE IS WHY** (T10-C2, TWV).
      *
-     * `writeIndexAndKeepLinksAimed` re-aims every arrow in the layout when the list changes - but the
-     * combined page is not in the model when that runs: it has been written to disk and the model is
-     * refreshed afterwards, so the re-aim never sees it.  The pages it was made FROM are corrected; the
-     * copy keeps the numbers it was copied with.
+     * This is not obvious from here, and the paragraph that used to sit in its place said the opposite -
+     * that the copied arrows are a known gap - which was wrong and had been written into `behaviour.md`
+     * as well.  What actually happens, in order: the copy is written from the source page BEFORE the
+     * arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` then re-reads every
+     * page, including the corrected sources; and this method clears the copy and refills it square by
+     * square from those sources through `LayoutDiagramComponent`'s copy constructor, which carries
+     * `rawAddress` across - so the squares written here are the corrected ones, and the save at the end
+     * commits them.
      *
-     * Left rather than patched here, because the fix belongs where the page joins the model and not in
-     * the method that fills its squares.
+     * Recorded because the stale intermediate write makes this look broken to anybody who reads only
+     * the first step.
      *
      * @param name the page just created
      * @param pages the source pages, the one being combined first
