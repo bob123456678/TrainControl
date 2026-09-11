@@ -81,9 +81,28 @@ public final class LayoutSandbox
 
         Preferences prefs = TrainControlUI.getPrefs();
 
+        // ANYTHING A KILLED JVM LEFT BEHIND IS PUT BACK FIRST.
+        //
+        // `close()` restores the preference and its javadoc says why.  It runs only if the JVM lives,
+        // and test JVMs do get killed - two were on 2026-09-11, one parked on a modal dialog and one on
+        // an untimed feedback wait, and both had to be stopped by hand.  The preference was left naming
+        // a sandbox, so the next run built its configuration from a single-switch fixture and two
+        // battery classes failed with no defect behind them.  Worse, the key is the same one the
+        // APPLICATION reads, so Adam's own window would have opened that folder too.
+        repairALeakedPreference(prefs);
+
         String was = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
+        // WRITTEN BEFORE the preference is changed, so a kill between the two lines leaves a marker
+        // that says the truth rather than one that does not exist.
+        rememberForRepair(was);
+
         prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, to.toFile().getAbsolutePath());
+
+        // And for an ordinary exit that skips close() - an exception in a @BeforeClass, a System.exit
+        // from a window - the hook is enough.  It cannot help against a forced kill, which is what the
+        // marker above is for.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> putBack(prefs, was)));
 
         // AND NOBODY IS WATCHING, which the window has no other way to know.
         //
@@ -113,6 +132,22 @@ public final class LayoutSandbox
         // session that shares this JVM.
         TrainControlUI.setUnattended(false);
 
+        putBack(prefs, was);
+
+        forgetTheRepairMarker();
+    }
+
+    /**
+     * Puts the preference back to what it was, including back to unset.
+     *
+     * One place, because three things do it now: `close`, the shutdown hook, and the repair that runs
+     * when a previous JVM was killed before either could.
+     *
+     * @param prefs the preference node
+     * @param was the value to restore, empty or null for "there was none"
+     */
+    private static void putBack(Preferences prefs, String was)
+    {
         if (was == null || was.isEmpty())
         {
             prefs.remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
@@ -120,6 +155,93 @@ public final class LayoutSandbox
         else
         {
             prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, was);
+        }
+    }
+
+    /**
+     * Where the previous value is written down, so a killed JVM can be cleaned up after.
+     *
+     * In the temp directory rather than the repository: it is machine state, it is about a preference
+     * that is machine state, and a file in the tree would be committed by somebody eventually.
+     */
+    private static java.io.File repairMarker()
+    {
+        return new java.io.File(System.getProperty("java.io.tmpdir"), "tc-sandbox-layout-pref.marker");
+    }
+
+    /**
+     * Writes down what the preference was, for a JVM that does not get to run `close`.
+     *
+     * A marker that already exists is NOT overwritten: the first one is the operator's real value, and
+     * a second sandbox opening inside a killed one's mess would otherwise record the sandbox path as
+     * the thing to restore.
+     *
+     * @param was the value before this sandbox took the preference
+     */
+    private static void rememberForRepair(String was)
+    {
+        try
+        {
+            if (repairMarker().exists()) return;
+
+            java.nio.file.Files.write(repairMarker().toPath(),
+                (was == null ? "" : was).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        catch (IOException cannotWrite)
+        {
+            // A sandbox that cannot write its marker still works; it just cannot be cleaned up after
+            // a kill, which is where this started.
+        }
+    }
+
+    /**
+     * Removes the marker, once the preference is genuinely back.
+     */
+    private static void forgetTheRepairMarker()
+    {
+        try
+        {
+            java.nio.file.Files.deleteIfExists(repairMarker().toPath());
+        }
+        catch (IOException cannotDelete)
+        {
+        }
+    }
+
+    /**
+     * Puts the preference back if a previous JVM was killed before it could.
+     *
+     * The marker is only there when a sandbox took the preference and never gave it back, so its
+     * presence IS the diagnosis.  Read and acted on before this sandbox records its own value, or the
+     * repair would record the leaked sandbox path as the operator's.
+     *
+     * @param prefs the preference node
+     */
+    private static void repairALeakedPreference(Preferences prefs)
+    {
+        try
+        {
+            if (!repairMarker().exists()) return;
+
+            String was = new String(java.nio.file.Files.readAllBytes(repairMarker().toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            String now = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            // Only if the preference is still pointing at a sandbox.  If somebody has since set it
+            // deliberately, theirs wins and the marker is simply stale.
+            if (now.contains("tc-sandbox-layout"))
+            {
+                putBack(prefs, was);
+
+                System.out.println("LayoutSandbox: put the layout preference back to \"" + was
+                    + "\" - a previous run was killed before it could");
+            }
+
+            forgetTheRepairMarker();
+        }
+        catch (IOException cannotRead)
+        {
         }
     }
 

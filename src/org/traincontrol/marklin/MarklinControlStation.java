@@ -805,7 +805,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         //
         // Thrown BEFORE clearLayouts, so the diagram already on screen survives the attempt.  An empty
         // folder is not this: it fails no pages, so it comes through as the empty layout it is.
-        if (parsed.isEmpty() && couldNotBeRead > 0)
+        //
+        // COUNTED, NOT ASKED WHETHER THE LIST IS EMPTY (FV3, caught by the battery).  Since NSV-B3 a page
+        // that will not read comes back as a blank STAND-IN rather than being dropped, so that the link
+        // tiles after it still resolve - which means the list is no longer empty when every page failed,
+        // the throw stopped happening, and the revert to the Central Station stopped running.  The user
+        // would have got an empty diagram, no message, and the override preference kept, at every
+        // launch.  That is RC-A4 exactly, reintroduced by a change made for a different reason.
+        //
+        // The question was always "did anything actually read", and now it has to be asked that way.
+        int actuallyRead = 0;
+
+        for (LayoutDiagram l : parsed)
+        {
+            if (!l.isUnreadable()) actuallyRead++;
+        }
+
+        if (actuallyRead == 0 && couldNotBeRead > 0)
         {
             throw new Exception(I18n.f("layout.errorNoPageCouldBeRead", couldNotBeRead));
         }
