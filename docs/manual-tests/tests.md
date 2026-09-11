@@ -64,29 +64,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-334](#mt-334) | 2026-09-08 | Changing a pathing arrow no longer flickers the diagram | fixed unvalidated | OB-185 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
 | [MT-337](#mt-337) | 2026-09-08 | A train you moved by hand stays put when a home changes | fixed unvalidated | OB-183 |
-| [MT-341](#mt-341) | 2026-09-10 | Control+E sets the length of the square under the pointer | needs test | FR-066 |
-| [MT-342](#mt-342) | 2026-09-10 | Control+E over a square with no track says so | needs test | FR-066 |
-| [MT-343](#mt-343) | 2026-09-10 | The key and the menu measure the same square | needs test | FR-066 |
-| [MT-344](#mt-344) | 2026-09-10 | Control plus a letter no longer jumps to a locomotive button | needs test | OB-197 |
 | [MT-345](#mt-345) | 2026-09-10 | A station held back by an occupied square is refused by hand too | needs test | FR-001 |
 | [MT-346](#mt-346) | 2026-09-10 | Return Home does not stage a train into a held-back home | needs test | FR-001 |
 | [MT-347](#mt-347) | 2026-09-10 | A berth with room, refused for the way there | needs test | ruling 1b, 2026-09-09 |
 | [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
-| [MT-350](#mt-350) | 2026-09-10 | Clear All Track Lengths, across every page | needs test | FR-069 |
-| [MT-351](#mt-351) | 2026-09-10 | A shortcut after changing pages acts on the square you are pointing at | needs test | OB-198 |
-| [MT-352](#mt-352) | 2026-09-11 | An imported route file arrives switched off | fixed unvalidated | S14-A1, and Adam's ruling of 2026-09-10 |
-| [MT-353](#mt-353) | 2026-09-11 | Adding a page leaves every arrow pointing where it pointed | fixed unvalidated | N8-A1, FV3-A2 |
-| [MT-354](#mt-354) | 2026-09-11 | A renamed page keeps the arrows that point at it | fixed unvalidated | N8-A1, FV3-A2 |
-| [MT-355](#mt-355) | 2026-09-11 | An arrow to a deleted page does nothing, and says so | fixed unvalidated | Adam's ruling of 2026-09-10 |
-| [MT-356](#mt-356) | 2026-09-11 | A link cannot be aimed at its own page, and can be aimed at nothing | fixed unvalidated | Adam's ruling of 2026-09-10, FV3-C8 |
-| [MT-357](#mt-357) | 2026-09-11 | A page that cannot be read shows why, and keeps its autonomy setup | fixed unvalidated | NSV-B3, FV3-A1 |
-| [MT-358](#mt-358) | 2026-09-11 | The Central Station still follows an arrow after TrainControl saves | needs test | the page-link work; hardware question |
 | [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
-| [MT-360](#mt-360) | 2026-09-11 | The route editor accepts the top address of each protocol | fixed unvalidated | S14-C1 |
 
-Everything else - 303 of 360 - needs nothing from you unless the area changes again:
-274 **fixed validated** and 29 **superseded**.
+Everything else - 317 of 360 - needs nothing from you unless the area changes again:
+285 **fixed validated** and 32 **superseded**.
 
 ---
 
@@ -18687,5 +18673,71 @@ that he would rather have no check than one that refuses something legal.
 **Adam, 2026-09-11 (triage).** Works.
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+### MT-361 - 2026-09-11 - A train placed from either menu records which way it came in
+
+**Disposition:** needs test
+**From:** REV9-B2, W21-C9
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. In the autonomy editor, right-click a station **with two ways in** and choose *Place Locomotive
+   At...*. The dialog now has an **arrived from** row at the bottom.
+2. Leave it as it opened, pick a locomotive and press OK.
+3. Right-click that square again, open *Train arrived from* in the menu, and see which side is ticked.
+4. Do the same thing from the **track diagram's** right-click menu, on a different station.
+5. Open the dialog again on a train that is already standing somewhere with a side recorded - change an
+   arrival function only, and press OK.
+6. On a **terminus** (one way in), place a train from the dialog and check the menu again.
+
+**Expected**
+
+- Steps 3 and 4: a side is recorded, and it is the one the combo was showing. Both menus behave the
+  same way.
+- Step 5: the side that was there before is still there. It is not replaced by a derived one.
+- Step 6: a side is recorded even though the dialog offered no combo - a terminus has one way in and
+  the rule forces it.
+
+*What this is:* the diagram's drag and paste worked the arrival side out; these two doors placed a train
+without working it out at all, so nothing behind it was blocked. The side is what
+`edgesCoveredByStandingTrains` walks back along to keep other trains off the track a standing train is
+lying across. Adam's ruling: *"the missing arrival side should be set - either from the data, by the
+user, or randomly."*
+
+---
+
+### MT-362 - 2026-09-11 - The locomotive keys work from any part of the window
+
+**Disposition:** needs test
+**From:** OB-170
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Start TrainControl and click something on a tab that is not the keyboard - a row in the route
+   editor's table, a square in the autonomy editor, the layout page list.
+2. Press a **letter** that names a locomotive button.
+3. Press the speed and function keys, an Alt chord, and a Control chord.
+4. Now click into the **log** or the JSON pane and type a few letters.
+5. Back on the autonomy editor, press the **arrow keys** and **space** while something that uses them
+   has the focus - a table row, a focused button.
+
+**Expected**
+
+- Steps 2 and 3: the locomotive is selected and the shortcuts act, exactly as they do on the keyboard
+  tab.
+- Step 4: the letters are typed. No locomotive is selected.
+- Step 5: the arrows and space do what that control does, and are not also taken as train commands.
+
+*What this is:* the key map is a `KeyListener`, so it only ever heard the component holding the
+keyboard. Adam: *"any part of the app should respect the key mapping (locomotive selector) and all
+related keyboard shortcuts."* The keys are now routed to the map by a post-processor, which the focus
+manager runs only for keys the focused component did not want - so step 5 is the half that says the
+routing did not take anything it should not have.
 
 ---

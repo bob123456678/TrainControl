@@ -8944,6 +8944,125 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         removeSupersededPageItems();
 
         takeTheKeyboard();
+
+        letTheWholeWindowDriveTrains();
+    }
+
+    /**
+     * The key event this window's map has already been shown, so it is not acted on twice.
+     */
+    private java.awt.event.KeyEvent theKeyTheMapAlreadySaw;
+
+    private java.awt.KeyEventPostProcessor theMapForTheWholeWindow;
+
+    /**
+     * The locomotive keys work wherever the operator is in this window (Adam, 2026-09-11).
+     *
+     * **"It should take the keystrokes - any part of the app should respect the key mapping
+     * (locomotive selector) and all related keyboard shortcuts."**
+     *
+     * The map is a `KeyListener`, and a `KeyListener` only ever hears the component that HOLDS the
+     * focus. It is attached to the tabbed pane and the locomotive panel, so the letters drove trains
+     * while one of those two had the keyboard and did nothing at all from anywhere else - click a
+     * button in the autonomy editor, or a row in the route table, and the railway stopped answering
+     * to the keyboard with nothing on screen to say why. Four rounds of `OB-170` moved the focus back
+     * to the tabbed pane for exactly this reason; this is the same complaint arriving from the one
+     * direction that cannot be fixed by moving focus, because the operator is USING the thing that
+     * holds it.
+     *
+     * **A post-processor rather than a dispatcher, and that is the whole design.** The focus manager
+     * runs these AFTER an event has been offered to the component that has the keyboard, and offers
+     * only what came back unconsumed - so a key the focused component wanted is a key this never
+     * sees. Arrow keys still move a table's selection, space still presses the button under the
+     * focus, a combo keeps its own type-ahead; what reaches the map is what nothing else claimed.
+     * Sending the keys the other way about - claiming them first and handing on the rest - would mean
+     * this window deciding, for every widget in it, which keys that widget needs, and being wrong
+     * about one of them quietly.
+     *
+     * **Typing is the one case the toolkit cannot settle for us**, because a text component consumes a
+     * letter on KEY_TYPED and this is looking at KEY_PRESSED. So text components are stepped around
+     * explicitly, which is the same rule `focusTheKeyboard` follows and for the same reason: taking a
+     * letter out of a half-typed line is a worse fault than the one being fixed.
+     *
+     * Only for THIS window: the processor is global to the JVM, so it asks where the focus is before
+     * doing anything - a dialog, the layout editor or another application answers no.
+     */
+    private void letTheWholeWindowDriveTrains()
+    {
+        if (this.theMapForTheWholeWindow != null) return;
+
+        this.theMapForTheWholeWindow = (java.awt.event.KeyEvent pressed) ->
+        {
+            // NOT CONSUMED means nothing that already saw it wanted it.  This is the whole of the
+            // precedence rule, and it is the toolkit's rather than ours.
+            if (pressed.getID() != KeyEvent.KEY_PRESSED || pressed.isConsumed()) return false;
+
+            if (this.model == null) return false;
+
+            // THE COMPONENT THE KEY WAS ACTUALLY GIVEN TO, and the focus owner only when the event
+            // does not name one.  They are the same component in every real keystroke; asking the
+            // event first is what lets a test post one at a named component and see this run, and it
+            // is the more direct question in any case - what matters is where this key went, not
+            // where the keyboard is by the time the answer comes back.
+            java.awt.Component owner = pressed.getComponent() != null ? pressed.getComponent()
+                : java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+            // THIS WINDOW, not any window. A dialog's components do not descend from the frame, so a
+            // modal dialog over this window answers no here - which is right: its keys are its own.
+            if (owner == null || !javax.swing.SwingUtilities.isDescendingFrom(owner, this)) return false;
+
+            // SOMEBODY IS TYPING. See the note above: a text component claims a letter on KEY_TYPED,
+            // which is after this, so it cannot be left to the consumed test.
+            if (owner instanceof javax.swing.text.JTextComponent) return false;
+
+            // ALREADY DEALT WITH, and this one is insurance rather than a measured need.
+            //
+            // The map is also attached as a KeyListener to the tabbed pane and a few panels, and if a
+            // post-processor could see an event that listener had just handled, every shortcut would
+            // fire twice from those components - two pages, two dialogs, two emergency stops.  On
+            // Windows it does not: measured 2026-09-11 by taking this line out, and
+            // `regression.testTheKeyMapReachesTheWholeWindow` stayed green - which that test says in
+            // its own words rather than claiming a proof it does not have.
+            //
+            // It stays because "does a post-processor see what the focus owner already handled" is a
+            // question about the toolkit on the machine it is running on, not about the language.
+            if (pressed == this.theKeyTheMapAlreadySaw) return false;
+
+            LocControlPanelKeyPressed(pressed);
+
+            return false;
+        };
+
+        java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+            .addKeyEventPostProcessor(this.theMapForTheWholeWindow);
+
+        // AND TAKEN OFF AGAIN WHEN THE WINDOW GOES.  The focus manager is one per JVM and outlives any
+        // window, so a processor left behind holds a disposed frame for the life of the process - and
+        // in a test run that is dozens of them.
+        addWindowListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent closed)
+            {
+                stopDrivingTrainsFromTheWholeWindow();
+            }
+        });
+    }
+
+    /**
+     * Takes this window's map off the focus manager.
+     *
+     * Public because a window that is disposed without being closed - which is what the tests do -
+     * never sees `windowClosed`, and the processor would outlive it.
+     */
+    public void stopDrivingTrainsFromTheWholeWindow()
+    {
+        if (this.theMapForTheWholeWindow == null) return;
+
+        java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+            .removeKeyEventPostProcessor(this.theMapForTheWholeWindow);
+
+        this.theMapForTheWholeWindow = null;
     }
 
     /**
@@ -18039,6 +18158,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void LocControlPanelKeyPressed(java.awt.event.KeyEvent evt)//GEN-FIRST:event_LocControlPanelKeyPressed
     {//GEN-HEADEREND:event_LocControlPanelKeyPressed
+        // WHICH EVENT THIS WAS, so that `letTheWholeWindowDriveTrains` can tell a key it still has to
+        // deliver from one the focused component's own listener has already brought here.
+        this.theKeyTheMapAlreadySaw = evt;
+
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
         boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;

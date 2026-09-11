@@ -912,6 +912,38 @@ an arm that took every letter whether or not Control was held, so Control+B and 
 locomotive button; `regression.testNoTwoShortcutsShareAKey` reads both windows' handlers on every run
 and prints what is free in both.
 
+### The main window's key map reaches the whole window
+
+Adam, 2026-09-11: *"any part of the app should respect the key mapping (locomotive selector) and all
+related keyboard shortcuts."*
+
+The map is a `KeyListener`, and a listener hears only the component holding the keyboard. It is
+attached to the tabbed pane and a few panels, so the letters drove trains while one of those had the
+focus and did nothing from anywhere else - click a row in the route table or a button in the autonomy
+editor and the railway stopped answering the keyboard, with nothing on screen to say why.
+
+**Four rounds of `OB-170` answered that by moving the focus back**, and that is right when nothing in
+particular holds it: a window that has just opened, or one being alt-tabbed back to. It cannot be the
+answer when the operator is USING what holds the focus, because the fix would be to take the keyboard
+off them.
+
+So `TrainControlUI.letTheWholeWindowDriveTrains` registers a **key event post-processor**. The focus
+manager runs those after the focused component has been offered a key, and only for keys that came
+back unconsumed - so the precedence rule is the toolkit's rather than a list kept here:
+
+- a component that wants a key keeps it: arrows still move a table's selection, space still presses the
+  focused button, a list keeps its type-ahead;
+- what nothing claimed reaches the map;
+- **typing is stepped around by name**, because a text component claims a letter at KEY_TYPED, which is
+  after this runs, and taking a letter out of a half-typed line is worse than the fault being fixed;
+- and only in this window: a dialog's components do not descend from the frame, so its keys stay its
+  own.
+
+The focus-moving of `OB-170` stays as it was. It is no longer what makes the keys work, and the two do
+not fight: the post-processor only ever sees what the focus owner did not want.
+
+`regression.testTheKeyMapReachesTheWholeWindow` holds the three halves of that rule.
+
 ---
 
 ## 6. Parking and Return Home

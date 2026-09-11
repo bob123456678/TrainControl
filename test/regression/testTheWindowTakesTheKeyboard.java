@@ -251,11 +251,26 @@ public class testTheWindowTakesTheKeyboard
     {
         for (java.awt.Component child : in.getComponents())
         {
-            if (isTheKeyboard(child, keyboard)) continue;
+            // THE PANE ITSELF, not everything inside it (2026-09-11).
+            //
+            // This skipped the whole tabbed pane AND its descendants - and at start-up every focusable
+            // component that is SHOWING is inside it, because a tab that is not selected is not
+            // showing.  So it searched a window with nothing left in it, and the class failed on its
+            // own precondition: "the fixture is wrong, not the window" was right, and it was this line.
+            if (child == keyboard) continue;
 
+            // A COMPONENT WITH CHILDREN IS STILL A COMPONENT.  This also asked for a leaf, and the
+            // only things in this window that are focusable, showing and childless are inside the
+            // keyboard itself - so between the two conditions the search could not succeed.  What
+            // matters is that the keyboard can be PUT somewhere the map does not listen; whether that
+            // somewhere contains other components is not part of the question.
+            //
+            // AND NOTHING THAT CARRIES THE MAP ITSELF.  The letters are read by KeyListeners on several
+            // components here, and focus resting on one of those is not the state this is about - it
+            // would still hear the keys.
             if (child.isFocusable() && child.isShowing() && child.isEnabled()
-                && !(child instanceof javax.swing.text.JTextComponent)
-                && !(child instanceof java.awt.Container && ((java.awt.Container) child).getComponentCount() > 0))
+                && child.getKeyListeners().length == 0
+                && !(child instanceof javax.swing.text.JTextComponent))
             {
                 return child;
             }
