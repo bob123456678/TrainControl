@@ -844,17 +844,29 @@ the top that a known limit is stated here.
    So this is the rule rather than a limitation. It errs towards refusing, which is the safe direction,
    and the remedy in the operator's hands is to measure the rest of the tiles.
 
-2. **The walk stops at a reversal as well as at a switch.** It ran backwards from the berth and stopped
-   at the last SWITCH only, so on a route with no switch between the turn and the berth it summed the
-   whole path: a 10 + 1 + 2 route admitted an eight-unit train into three units of room. Asked whether
-   *"the track segments leading up to it"* means up to the reversal or up to the berth: *"it can be
-   either the reversal or the berth, depending on where switches are.  both need to be long enough."*
+2. **What a reversal does to the sum is STILL OPEN**, and an attempt to close it on 2026-09-11 was
+   reverted the same day. The walk runs backwards from the berth and stops at the last SWITCH only.
 
-   Stopping at whichever is met first walking back is that ruling in one walk - the nearer of the two
-   gives the smaller sum, and a train that fits in the smaller fits in the larger. Any reversing point
-   on the way counts, whether or not the train turns at it, which is the same simplification he gave
-   for switches: *"for the switches, for simplicity, let's use any direction, that way we are
-   guaranteed to be safe."* `core.testTheRoomStopsAtAReversal` holds it, with his own figures.
+   Adam was asked whether *"the track segments leading up to it"* means up to the reversal or up to the
+   berth, and answered: *"it can be either the reversal or the berth, depending on where switches are.
+   both need to be long enough."* That was read as "stop at whichever is met first walking back", and
+   built - and the battery refused it, which is the useful part:
+
+   - `core.testNonReversibleTrains.testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` asserts that a
+     four-unit train fits a three-unit berth with a two-unit approach behind a REVERSING point: *"a
+     train that fits in the berth and its approach was refused, so the rule refuses more than it was
+     asked to."*
+   - `testTheRoomIsEverySegmentLeadingUpToTheReversal` asserts that an eight-unit train fits a nine-unit
+     run-in with a reversing point in the middle of it: *"the room is being measured over part of the
+     approach rather than all of it."*
+
+   Both are deliberate, both quote earlier rulings of his, and both say the approach BEYOND the reversal
+   counts. So either they are wrong, or the reading of this ruling was - and the physical argument is
+   not obviously on the side of the reading: a train that turns at a point and backs into a berth comes
+   to rest with its tail running back over that point and onto the track it arrived by, which is
+   continuous rails. The 10 + 1 + 2 case in this bullet's earlier wording assumed it cannot.
+
+   It goes back to Adam with that evidence rather than being decided here.
 
 **Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
 (MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever
