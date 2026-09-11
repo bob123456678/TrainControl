@@ -3872,7 +3872,7 @@ public class AutonomyCompanionStore
         fields.put("stations", Held.SQUARE_LIST);
         fields.put("disabledLinks", Held.SQUARE_LIST);
         fields.put("excludedPages", Held.PAGE_LIST);
-        fields.put("pagesKeptDespiteRepeats", Held.PAGE_LIST);
+        fields.put("keptDespiteRepeats", Held.PAGE_LIST);
 
         return java.util.Collections.unmodifiableMap(fields);
     }
@@ -4697,7 +4697,7 @@ public class AutonomyCompanionStore
 
         // Beside it, and the same shape: page NAMES rather than squares, translated on write the way
         // `excludedPages` is, so a rename carries the decision with it (TST-B15).
-        all.add(new PageSetKept("pagesKeptDespiteRepeats", keptDespiteRepeats));
+        all.add(new PageSetKept("keptDespiteRepeats", keptDespiteRepeats));
         // Called disabledLinks in the file and disabledPortals in the code, which is the whole reason
         // the file's known-field list needed an exemption in the textual guard.  Named once, here.
         all.add(new SquareSetKept("disabledLinks", disabledPortals, true));

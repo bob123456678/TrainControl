@@ -69,7 +69,8 @@ public class testStoreCollectionsAreHandledEverywhere
     private static final Set<String> KEPT = new LinkedHashSet<>(java.util.Arrays.asList(
         "pointNames", "stations", "tileLengths", "tileDirections", "barredArrivals", "portals",
         "blockedPoints",
-        "stationSignals", "captions", "linkNames", "excludedPages", "disabledPortals"));
+        "stationSignals", "captions", "linkNames", "excludedPages", "keptDespiteRepeats",
+        "disabledPortals"));
 
     /**
      * Everything else the store holds, and why it is not setup.
@@ -160,6 +161,10 @@ public class testStoreCollectionsAreHandledEverywhere
         // hand-written pair still need it here.
         EXEMPT.put("reconcile:excludedPages", "reconcile compares SQUARES against the diagram");
 
+        // Its twin, and keyed by page for the same reason: it records which PAGES the operator
+        // turned back on after the repeated-sensor rule shut them (TST-B15).
+        EXEMPT.put("reconcile:keptDespiteRepeats", "reconcile compares SQUARES against the diagram");
+
         // HELD_FIELDS is keyed by the name in the FILE, like everything else that reads or writes one.
         EXEMPT.put("heldFields:disabledPortals", "listed by its JSON name, disabledLinks");
 
@@ -173,7 +178,8 @@ public class testStoreCollectionsAreHandledEverywhere
         // and no use for. This is the one site where "handled everywhere" is the wrong rule, so it is
         // written down once, here, rather than argued about each time somebody reads that method.
         for (String notTrack : new String[] {"pointNames", "stations", "tileLengths", "barredArrivals",
-            "stationSignals", "captions", "linkNames", "excludedPages", "blockedPoints"})
+            "stationSignals", "captions", "linkNames", "excludedPages", "keptDespiteRepeats",
+            "blockedPoints"})
         {
             EXEMPT.put("applyTo:" + notTrack, "applyTo populates the tile GRAPH, which models track - "
                 + "pairings, switched-off links and directions. This is not a property of track");

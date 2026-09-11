@@ -175,6 +175,7 @@ public class testAutonomyStoreSettingsMatrix
      */
     private static final Set<String> NOT_KEYED_BY_SQUARE = new LinkedHashSet<>(Arrays.asList(
         "excludedPages",         // by page
+        "keptDespiteRepeats",    // by page - the pages the operator turned back on (TST-B15)
         "unknownSharedFields",   // whatever a newer TrainControl wrote, kept so it can be written back
         "pageNameToId",          // by page
         "pageIdToName",          // by page id
