@@ -55,6 +55,9 @@ public class testTimetableCaptureThroughARealRun
 
     private static final long RUN_MS = 45000;
 
+    /** Where this test puts its train.  A station, so autonomy will dispatch from it. */
+    private static final String START = "Station 1";
+
     /**
      * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).
      *
@@ -275,6 +278,28 @@ public class testTimetableCaptureThroughARealRun
 
                 why.append("\n    ").append(loc.getName()).append(": ")
                     .append(reason == null ? "free to be given a route" : reason);
+
+                // AND WHERE IT COULD ACTUALLY GO, which is the question the line above does not ask.
+                //
+                // `explainCannotStart` asks four things about the TRAIN - paused, on the graph, on a
+                // destination, active - so a railway where every train is blocked by the others reads
+                // as every train being free. Two batteries were diagnosed with that and were not.
+                if (reason == null)
+                {
+                    java.util.Map<String, String> destinations = layout.explainDestinations(loc);
+
+                    int open = 0;
+
+                    for (String each : destinations.keySet())
+                    {
+                        if (destinations.get(each) == null) open++;
+                    }
+
+                    why.append(" - ").append(open).append(" of ").append(destinations.size())
+                        .append(" destinations open");
+
+                    if (open == 0) why.append(", so it has nowhere to go: ").append(destinations);
+                }
             }
 
             why.append("\n  Auto running: ").append(layout.isAutoRunning());
@@ -358,6 +383,80 @@ public class testTimetableCaptureThroughARealRun
         assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
         assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
 
+        emptyTheRailway(layout);
+
+        putOneTrainOn(layout);
+
         return layout;
+    }
+
+    /**
+     * Takes every train off, so this test starts from a railway nobody else has arranged.
+     *
+     * Adam, 2026-09-11: *"let's get it to start with an empty layout onto which you place locomotives,
+     * with other locomotives removed."*
+     *
+     * **What the fixture was.** `autonomy_sanity.json` places three trains, at Station 1, 2 and 3. The
+     * railway has four destinations - those three and StationArrival - and every journey runs the same
+     * single-track corridor:
+     *
+     * `Station 1/2/3 -> Departure -> Main Track -> StationArrival -> Station 1/2/3`
+     *
+     * So it ran permanently at capacity minus one: exactly one free platform, one shared corridor, and
+     * therefore one train able to move at a time and only into the slot the last one left. That is a
+     * fine thing to test autonomy's contention handling with, and a bad thing to rest a test about
+     * CAPTURE on - the run this class needs is one where a train moves, and three trains sharing one
+     * corridor is the arrangement least likely to produce that on a loaded machine.
+     *
+     * It is what made this class fail two batteries with *"no locomotive moved in 480 seconds"* while
+     * passing on its own, and the diagnostic could not tell: `explainCannotStart` asks four questions
+     * about a train - paused, on the graph, on a destination, active - and none of them is "is there
+     * anywhere it can go right now", so three trains blocking each other read as three trains "free to
+     * be given a route".
+     *
+     * Through `moveLocomotive(null, ..., true)`, which is the door the diagram's Cut uses, rather than
+     * by reaching into the Points - so what this arranges is a state the application can also be in.
+     *
+     * @param layout the freshly parsed railway
+     */
+    private static void emptyTheRailway(Layout layout) throws Exception
+    {
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null)
+            {
+                layout.moveLocomotive(null, point.getName(), true);
+            }
+        }
+
+        assertTrue(layout.getLocomotivesToRun().isEmpty(),
+            "the railway still has " + layout.getLocomotivesToRun().size() + " train(s) on it after "
+            + "being emptied, so this test is not starting from the state it says it is: "
+            + layout.getLocomotivesToRun());
+    }
+
+    /**
+     * And puts back exactly the train this test drives.
+     *
+     * **One, deliberately.** What this class asserts is that a real run fills the timetable and says
+     * so; a second train adds nothing to that and halves the free platforms on a railway whose corridor
+     * is single-track. The realism that matters here is the one the class javadoc names - a real
+     * configuration, real autonomy picking its own paths, a real train moving - and none of it is about
+     * how many trains there are.
+     *
+     * @param layout the emptied railway
+     */
+    private static void putOneTrainOn(Layout layout) throws Exception
+    {
+        assertTrue(layout.moveLocomotive(LOCO_NAMES[0], START, false),
+            "the railway would not accept " + LOCO_NAMES[0] + " at " + START + ", so there is nothing "
+            + "to run and every assertion below would be about an empty railway");
+
+        assertEquals(layout.getLocomotivesToRun().size(), 1,
+            "this test drives one train and the railway reports " + layout.getLocomotivesToRun().size()
+            + ": " + layout.getLocomotivesToRun());
+
+        assertNotNull(layout.getPoint(START).getCurrentLocomotive(),
+            "the train is not standing where it was put");
     }
 }
