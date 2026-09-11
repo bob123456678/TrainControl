@@ -2439,7 +2439,10 @@ public class RouteEditorFrame extends JFrame
 
         int address = numberOr(target, 0);
 
-        if (address <= 0 || !Accessory.isValidAddress(address, speaks))
+        // THE LOGICAL ADDRESS, ASKED AS ONE (S14-C1).  Accessory's maxima are raw and say so, and this
+        // passed the operator's number in unconverted - so logical MM2 320 and logical DCC 2048 were
+        // refused here and accepted by the diagram editor, which converts.
+        if (address <= 0 || !Accessory.isValidLogicalAddress(address, speaks))
         {
             wrong.add(I18n.f("route.ui.frameNotAnAddress", target + " (" + speaks + ")"));
         }

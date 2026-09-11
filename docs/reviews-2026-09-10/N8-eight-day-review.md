@@ -2,7 +2,7 @@
 
 **Prefix for citing these findings elsewhere:** `N8`
 
-**Status:** open
+**Status:** closed 2026-09-10.  One finding was re-graded to B and two to C by `NSV`; all eight are fixed and tested, and `N8-A1` is closed on Adam's ruling that a page link stays a sorted index.
 
 Reviewed 2026-09-10 on branch `autonomy-diagram-r0`. The brief named `d86914a9` plus twenty
 uncommitted files; **those files were committed while this pass was running**, as `a281e3a2` ("The
@@ -76,9 +76,11 @@ it renders. Each finding says which of the two it rests on.
 
 | id | what | disposition |
 |---|---|---|
-| N8-A1 | a page link's stored address is a POSITION in the name-sorted page list, so every Manage Pages operation silently re-aims every arrow on the layout | open |
+| N8-A1 | a page link's stored address is a POSITION in the name-sorted page list, so every Manage Pages operation silently re-aims every arrow on the layout | closed |
 
 ### N8-A1 — adding, renaming, duplicating or deleting a page repoints every page-link arrow, and the paragraph added yesterday says the ordering decides nothing
+
+**Status:** closed 2026-09-10, at B - NSV re-graded it, because no train is routed through an arrow.  **The number stays a sorted index**, which is Adam's ruling: *"right now, let's make artikel be the sorted index of the page."*  So the fix is that every page operation re-aims the arrows, and that rule lives in `LayoutDiagram.writeIndexAndKeepLinksAimed` because TWO classes write this index - `LayoutPageEdit` for Add, Rename and Duplicate and `TrainControlUI` for Delete and Combine - and a rule in one of two writers is this project's most repeated defect.  The order the arrows were written against is read from the index inside that method, before the write destroys it, so a caller cannot get it wrong.  A rename carries its arrows with it.  A deleted page leaves its arrows at -1, which clicks to nothing and says so in the tooltip, and a link can no longer be aimed at the page it is drawn on - both Adam's rulings of the same day.  `behaviour.md` section 8 records all of it, and the paragraph the finding says was too wide is narrowed to ids.
 
 **What is wrong.** A `pfeil` tile stores an index, and the index is resolved against
 `MarklinControlStation.getLayoutList()`, which sorts by name (`MarklinControlStation.java:3638-3644`).
@@ -168,11 +170,13 @@ sentence narrowed to ids, and a line saying what a page link is stored as.
 
 | id | what | disposition |
 |---|---|---|
-| N8-B1 | the duplicate-id withdrawal deletes scroll offsets the file attributes unambiguously, and on the genuine export the code it replaced put them on the right page | open |
-| N8-B2 | making the graph rebuild conditional on the STORE removed it from four callers whose DIAGRAM changed, which is the case the comment above it says it is owed for | open |
-| N8-B3 | the finding catalogue holds fifteen findings `X8V` never made, four of them at severity A, and one real disposition overwritten — and the guard that calls it "current" checks only that three files exist | open |
+| N8-B1 | the duplicate-id withdrawal deletes scroll offsets the file attributes unambiguously, and on the genuine export the code it replaced put them on the right page | closed |
+| N8-B2 | making the graph rebuild conditional on the STORE removed it from four callers whose DIAGRAM changed, which is the case the comment above it says it is owed for | closed |
+| N8-B3 | the finding catalogue holds fifteen findings `X8V` never made, four of them at severity A, and one real disposition overwritten — and the guard that calls it "current" checks only that three files exist | closed |
 
 ### N8-B1 — `0 stationer` loses the scroll position the station wrote inside it, and it did not before
+
+**Status:** closed 2026-09-10, at C - NSV re-graded it and its own measurement is what settled the fix.  The finding is right on both halves: the withdrawal deleted `0 stationer`'s scroll offsets, which the file states unambiguously, and a reissued id is computed above every id in the file so the code it replaced could not have misattributed anything here.  The ambiguity was in the MAP KEY, not in the file, so the kept lines are keyed by page NAME and looked up through the same rename map the id lookup uses.  No page can inherit another's keys and the withdrawal is gone.  `core.testParseCS2Layout.testEachPageKeepsItsOwnUnmodelledKeys` asserts it in both shapes - the synthetic pair X8V-B1 was written against and the real one, a first page with no `.id` - and the mutation that hands out any page's keys is caught three times over.
 
 **What is wrong.** `LayoutDiagram.attribute` (`LayoutDiagram.java:1138-1156`) withdraws an id that two
 pages claim, so neither page's unmodelled keys are kept:
@@ -247,6 +251,8 @@ keeps its keys, and the page that is reissued gets none.
 
 ### N8-B2 — the rebuild was made conditional on the store, and four of the five callers change the diagram
 
+**Status:** closed 2026-09-10, at C - NSV re-graded it, and its per-caller table is what the fix follows.  The rebuild is unconditional again, because it is owed to the DIAGRAM: the graph is traced from the squares, so building over a blank one changes it even when the store held nothing.  What X8V-B2 was really protecting - writing every file of the setup, per square, to a OneDrive folder - is gated at the call sites by the return value and stays gated.  And the gesture that made even the rebuild expensive now asks once: `deleteSelection` collects the whole selection and makes ONE `forgetTiles` call, where it used to make one per picked square.  The keys come from the selection rather than from the labels, because a label held across a repaint reports -1,-1.
+
 **What is wrong.** `AutonomySession.java:2112`:
 
 ```java
@@ -314,6 +320,8 @@ saving `X8V-B2` was after is the `saveQuietly` the caller now declines, not the 
 
 ### N8-B3 — the catalogue that outlives the reviews holds fifteen findings `X8V` never made, and the test that calls it current cannot see any of it
 
+**Status:** closed 2026-09-10, and the cause is NSV-B1's rather than the one filed - which mattered, because deleting the rows would not have kept them deleted.  `catalog-findings.py` read any table row whose first cell looked like a finding id, so X8V's Method table became fifteen findings; short-form rows are now only read below the document's first severity banner, and the LAST matching row wins rather than the first, which is what had overwritten `X8V-C1`'s real disposition.  Re-adding a folder is authoritative for the documents in it, so the fifteen could actually be removed - they were, by name, and the run printed each one.  `regression.testEveryCitationResolves.testNoCataloguedFindingHasASubLetterItsDocumentDoesNotWrite` guards the shape, narrowly and deliberately: the guard the finding proposed would have failed on 64 legitimate rows before reaching these.
+
 **What is wrong.** `docs/manual-tests/triage.db`, and the `findings.tsv` rendered from it, hold rows for
 `X8V-validation.md` that do not correspond to findings:
 
@@ -372,12 +380,14 @@ catalogue with the same disposition. That is the one check that makes deleting a
 
 | id | what | disposition |
 |---|---|---|
-| N8-C1 | `fillCombinedPage` grows a page past `MAX_SIZE` with no check — the sibling `X8-C5`'s consolidation did not sweep | open |
-| N8-C2 | `behaviour.md` says nothing about the route-command delay floor, which now rewrites what the operator typed and what the editor shows | open |
-| N8-C3 | `Layout.java:2404`'s rewritten citation names the method the comment is already inside | open |
-| N8-C4 | `TrainControlUI.java:18559-18561`'s rewritten citation now says the same thing twice | open |
+| N8-C1 | `fillCombinedPage` grows a page past `MAX_SIZE` with no check — the sibling `X8-C5`'s consolidation did not sweep | closed |
+| N8-C2 | `behaviour.md` says nothing about the route-command delay floor, which now rewrites what the operator typed and what the editor shows | closed |
+| N8-C3 | `Layout.java:2404`'s rewritten citation names the method the comment is already inside | closed |
+| N8-C4 | `TrainControlUI.java:18559-18561`'s rewritten citation now says the same thing twice | closed |
 
 ### N8-C1 — the one ceiling is asked by every gesture that grows a page except the one that can grow it most
+
+**Status:** closed 2026-09-10.  `fillCombinedPage` asks the ceiling before it empties the page it was copied from, which is the point of putting the check there rather than at the grow: `made.clear()` throws that page away, and a page above the ceiling can never be grown again.
 
 `X8-C5` and `X8V-C2` turned three copies of `MAX_SIZE` into `LayoutEditor.roomToGrow` (`:4479`) on the
 stated grounds that everything which grows a page should ask one predicate. `growEdges` (`:4896`),
@@ -413,6 +423,8 @@ ask `roomToGrow` in `fillCombinedPage` and refuse before the page is created rat
 
 ### N8-C2 — the editor now rewrites the number the operator typed, and `behaviour.md` has never mentioned delays
 
+**Status:** closed 2026-09-10.  `behaviour.md` section 7b states the floor, that the editor shows the number the railway will wait rather than the number typed, and that zero is not a delay.
+
 `X8-C2` and `X8V-C7` made the 150 ms floor visible: `RouteEditorFrame.delayTheRailwayWillUse`
 (`:2755-2762`) raises any delay between 1 and 149 to 150, and it is asked twice — by `delayOf` as the
 number is typed, and by the delay column's `getValueAt` as it is shown. Both are right and both are
@@ -430,6 +442,8 @@ Page" removed, "Combine linked pages" moved — are in the same position: tested
 
 ### N8-C3 — a citation rewritten to name the method it is already inside
 
+**Status:** closed 2026-09-10.  The comment names the check by what it does rather than by the method it is already inside, and says why.
+
 `X8V-C1` asked for `Layout.java:2404` to be repointed at *"`isPathClear`'s inactive-endpoint check"*.
 It now reads:
 
@@ -442,6 +456,8 @@ It is not wrong, which is why it is C and not a reopening of `X8V-C1` — but `C
 method name" because a name is supposed to locate the code, and this one does not. Read only.
 
 ### N8-C4 — the `showTab` citation now says it twice
+
+**Status:** closed 2026-09-10.  The sentence says it once.
 
 `TrainControlUI.java:18559-18561`:
 

@@ -232,6 +232,19 @@ public class MarklinRoute extends Route
                 }
             });
 
+            // A DAEMON, AND NAMED (S14-C2).
+            //
+            // It parks on an untimed wait in the feedback handler and `disable()` only clears a flag it
+            // will not look at until the sensor next fires - so it never returns on its own, and a
+            // non-daemon thread in that state keeps the JVM alive after the window has closed.  Every
+            // other long-lived thread in this program was made a daemon for exactly that reason.
+            //
+            // Named so that a thread dump says which route is waiting, which is the only way to tell
+            // several of these apart.
+            this.monitorThread.setDaemon(true);
+
+            this.monitorThread.setName("route monitor " + this.getId() + " " + this.getName());
+
             this.monitorThread.start();
 
             return true;

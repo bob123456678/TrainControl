@@ -271,11 +271,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // GUI reference
     private final View view;
     
-    // Is network communication on?
-    private boolean on;
+    // Is network communication on?  volatile for the same reason as powerState below (S14-C6):
+    // written by setNetworkCommState from the menu and read by exec() from every command thread,
+    // with no monitor on either side.
+    private volatile boolean on;
     
-    // Is the power turned on?
-    private boolean powerState = true; // default to true unless power is turned off
+    // IS THE POWER TURNED ON, AND volatile BECAUSE THE READER DOES NOT TAKE THE MONITOR (S14-C6).
+    //
+    // setPowerState writes this inside synchronized(this) with a notifyAll, and waitForPowerState reads
+    // it under the same monitor - but getPowerState() does not, and that is the reader everyone uses:
+    // MarklinRoute on the route thread, LayoutLabel and TrainControlUI on the event thread.  With no
+    // happens-before edge a route thread could see the power as on after a STOP had been processed, and
+    // skip the branch that refuses to run a route with the power off.
+    //
+    // The monitor stays for waitForPowerState, which needs it for the wait; volatile alongside it is what
+    // locIdCache does in this same file, for the same reason and with the same note.
+    private volatile boolean powerState = true; // default to true unless power is turned off
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
@@ -862,8 +873,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * ACKNOWLEDGEMENT of a command TrainControl itself just sent, over a local network, and it either
      * comes back in milliseconds or it is not coming.
      *
-     * Untimed, it could park a caller for the rest of the session.  The power state is written in
-     * exactly one place - the inbound GO/STOP echo - so nothing local can ever release the wait, and
+     * Untimed, it could park a caller for the rest of the session.  The power state is written by the
+     * inbound GO/STOP echo and nowhere else that can release this wait - the one other write, in
+     * simulate mode during construction, assigns the field directly and runs before anybody can be
+     * waiting (NSV-C6: this used to say "exactly one place", which is the sentence a reader checks
+     * this design against, and it was false) - so nothing local ever will, and
      * the socket is unconnected, which means a datagram sent to a Central Station that has been
      * switched off or dropped off the network SUCCEEDS and simply disappears.  No error is raised
      * anywhere; the caller just waits for ever.  The tile handler that does this runs on a single
@@ -2456,7 +2470,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     feedback.parseMessage(message);
                 }
-                else
+                // A DEVICE IS NOT CREATED FROM A FRAME THE PARSER WILL NOT READ (S14-C7).
+                //
+                // isFeedbackCommand answers for three commands - 0x11, 0x21 and 0x23 - and
+                // MarklinFeedback.parseMessage acts on one of them, 0x11.  `id` here is bytes 2 and 3 of
+                // the payload, which for the other two are not a sensor number at all, so an unknown id
+                // created a feedback module under whatever those bytes held, parsed nothing into it, and
+                // saveState then persisted it.
+                //
+                // Creating a device from a message we have already decided we cannot read is the step
+                // that makes the mistake permanent, so that is the step this refuses.  An existing
+                // module is still handed every frame, exactly as before - parseMessage does its own
+                // checking and this must not become a second, disagreeing one.
+                //
+                // Measured as a trap rather than a live defect: Adam's saved LocDB.data holds no
+                // feedback-named string at all, so nothing suggests phantom modules have been
+                // accumulating.  The predicate's own naming is the wider question and is left alone -
+                // it is read by isUnknownCommand and by the message description, so narrowing it would
+                // change what the log says about two commands this branch no longer acts on.
+                else if (message.getCommand() == CS2Message.CMD_ACC_SENSOR)
                 {
                     newFeedback(id, message);
                 }

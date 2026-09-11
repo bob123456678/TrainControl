@@ -2401,8 +2401,13 @@ public class Layout
         //
         // THE START STAYS EXEMPT, which is the whole of the exception: a train standing on a square
         // that has been switched off is driven out by hand, and that is what closing a square around a
-        // train is for.  `isPathClear`'s stricter form - any edge with an inactive endpoint - keeps
-        // its `isAutoRunning` fence, because it refuses the start too.
+        // train is for.  The stricter test a few lines above - every edge refused when either endpoint
+        // is inactive, and only while autonomy is running - keeps its `isAutoRunning` fence, because it
+        // refuses the start too.
+        //
+        // Named by what it does rather than by `isPathClear`, which is the method this comment is
+        // already inside: a citation is supposed to locate the code and that one pointed a reader back
+        // here (N8-C3).
         if (!path.get(path.size() - 1).getEnd().isActive())
         {
             logPathError(
@@ -8280,8 +8285,10 @@ public class Layout
      * needs.  That is what turns a sequential plan into as much parallelism as the layout allows,
      * without a scheduler - and it is why the order matters and must not be rearranged.
      *
-     * Capture is forced off for the load: with it on, every move would be appended to the timetable a
-     * second time as though the operator had recorded it.
+     * Capture is NOT touched here, and this paragraph used to say it was forced off (S14-C3).  Nothing
+     * in this method reads or writes `timetableCapture`; the moves are kept out of the timetable during
+     * the RUN instead, by `addTimetableEntry`, which refuses while `timetableExecuting` is set - see the
+     * comment in the body, and that flag's own reason where it is declared.
      *
      * @return the plan, whether or not it could be loaded - check isPossible()
      */
@@ -8299,8 +8306,12 @@ public class Layout
         }
 
         // Capture is left exactly as the operator set it.  Turning it off around the load covered the
-        // load only, and the moves are appended during the RUN - addTimetableEntry now excludes them
-        // for as long as timetableSequential is set, which is the whole duration.
+        // load only, and the moves are appended during the RUN - addTimetableEntry excludes them for as
+        // long as timetableExecuting is set, which is the whole duration.
+        //
+        // The flag name here said `timetableSequential`, which is the one this replaced (S14-C3).  The
+        // guard is on `timetableExecuting` and is STRONGER than the old comment claimed, so the
+        // behaviour was right and only the explanation was about a flag that had moved on.
         List<TimetablePath> staged = new LinkedList<>();
 
         for (HomeStaging.Move move : plan.getMoves())

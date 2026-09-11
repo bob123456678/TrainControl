@@ -589,7 +589,11 @@ public class TileGraph
     private final List<Problem> problems = new ArrayList<>();
 
     /**
-     * Every page in the layout IN FILE ORDER, excluded ones included.
+     * Every page in the layout IN THE ORDER THE WINDOW LISTS THEM, excluded ones included.
+     *
+     * Which is sorted by NAME, not file order, and this said file order (NSV-C5).  TrainControl
+     * builds this list from getLayoutList(), which sorts - and the distinction is the whole reason
+     * the list exists, because a link tile indexes into it.
      *
      * A link tile records where it goes as a raw address counting from zero, so the page it means is
      * this list's nth entry - the same arithmetic the tooltip does when it prints a destination. It has

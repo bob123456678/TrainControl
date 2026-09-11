@@ -1068,21 +1068,21 @@ MON-C6	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - four javadocs and two t
 MON-C7	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-C8	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the index re-counted against its own sections; three other documents qu
 MON-C9	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the arithmetic recorded, and BOTH unadjudicated sub-findings ruled: C19
-N8-A1	N8-eight-day-review.md	-	open
+N8-A1	N8-eight-day-review.md	-	closed
 N8-A1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: B**
-N8-B1	N8-eight-day-review.md	-	open
+N8-B1	N8-eight-day-review.md	-	closed
 N8-B1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
-N8-B2	N8-eight-day-review.md	-	open
+N8-B2	N8-eight-day-review.md	-	closed
 N8-B2	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
-N8-B3	N8-eight-day-review.md	-	open
+N8-B3	N8-eight-day-review.md	-	closed
 N8-B3	NSV-validation.md	-	**CONFIRMED** (count and mechanism exact; the stated cause and the proposed fix are both w
-N8-C1	N8-eight-day-review.md	-	open
+N8-C1	N8-eight-day-review.md	-	closed
 N8-C1	NSV-validation.md	-	**CONFIRMED**
-N8-C2	N8-eight-day-review.md	-	open
+N8-C2	N8-eight-day-review.md	-	closed
 N8-C2	NSV-validation.md	-	**CONFIRMED** (same defect as `S14-C8`)
-N8-C3	N8-eight-day-review.md	-	open
+N8-C3	N8-eight-day-review.md	-	closed
 N8-C3	NSV-validation.md	-	**CONFIRMED**
-N8-C4	N8-eight-day-review.md	-	open
+N8-C4	N8-eight-day-review.md	-	closed
 N8-C4	NSV-validation.md	-	**CONFIRMED**
 N8-D1	N8-eight-day-review.md	-	clean
 N8-D2	N8-eight-day-review.md	-	clean, and it settles what `X8` left unfiled
@@ -1101,16 +1101,16 @@ NR-6	2026-08-23-night-review.md	Closed	High
 NR-7	2026-08-23-night-review.md	Closed	High
 NR-8	2026-08-23-night-review.md	Closed	High
 NR-9	2026-08-23-night-review.md	Closed	Medium
-NSV-B1	NSV-validation.md	-	open
-NSV-B2	NSV-validation.md	-	open
-NSV-B3	NSV-validation.md	-	open
-NSV-C1	NSV-validation.md	-	open
-NSV-C2	NSV-validation.md	-	open
-NSV-C3	NSV-validation.md	-	open
-NSV-C4	NSV-validation.md	-	open
-NSV-C5	NSV-validation.md	-	open
-NSV-C6	NSV-validation.md	-	open
-NSV-C7	NSV-validation.md	-	open
+NSV-B1	NSV-validation.md	-	closed
+NSV-B2	NSV-validation.md	-	closed
+NSV-B3	NSV-validation.md	-	closed
+NSV-C1	NSV-validation.md	-	closed
+NSV-C2	NSV-validation.md	-	closed
+NSV-C3	NSV-validation.md	-	closed
+NSV-C4	NSV-validation.md	-	closed
+NSV-C5	NSV-validation.md	-	closed
+NSV-C6	NSV-validation.md	-	closed
+NSV-C7	NSV-validation.md	-	closed
 NSV-D1	NSV-validation.md	-	**`S14-C5` refuted**; it is one of six exports with the same shape, and nothing can be los
 NSV-D2	NSV-validation.md	-	clean, measured
 NSV-D3	NSV-validation.md	-	clean, with the correction in adjudication 2
@@ -1452,33 +1452,33 @@ RV-D1	2026-08-01-reversing-destinations-review.md	Closed	Clean - except its thro
 RV-D2	2026-08-01-reversing-destinations-review.md	Closed	Verified
 RV-D3	2026-08-01-reversing-destinations-review.md	Closed	Concurs
 S14-A1	NSV-validation.md	-	**CONFIRMED** - and demonstrated by execution
-S14-A1	S14-application-review.md	-	open
+S14-A1	S14-application-review.md	-	closed
 S14-A2	NSV-validation.md	-	**CONFIRMED**
-S14-A2	S14-application-review.md	-	open
+S14-A2	S14-application-review.md	-	closed
 S14-B1	NSV-validation.md	-	**CONFIRMED**
-S14-B1	S14-application-review.md	-	open
+S14-B1	S14-application-review.md	-	closed
 S14-B2	NSV-validation.md	-	**CONFIRMED**
-S14-B2	S14-application-review.md	-	open
+S14-B2	S14-application-review.md	-	closed
 S14-B3	NSV-validation.md	-	**CONFIRMED**
-S14-B3	S14-application-review.md	-	open
+S14-B3	S14-application-review.md	-	closed
 S14-B4	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: A**
-S14-B4	S14-application-review.md	-	open
+S14-B4	S14-application-review.md	-	closed
 S14-C1	NSV-validation.md	-	**CONFIRMED**
-S14-C1	S14-application-review.md	-	open
+S14-C1	S14-application-review.md	-	closed
 S14-C2	NSV-validation.md	-	**CONFIRMED**
-S14-C2	S14-application-review.md	-	open
+S14-C2	S14-application-review.md	-	closed
 S14-C3	NSV-validation.md	-	**CONFIRMED**
-S14-C3	S14-application-review.md	-	open
+S14-C3	S14-application-review.md	-	closed
 S14-C4	NSV-validation.md	-	**CONFIRMED**
-S14-C4	S14-application-review.md	-	open
+S14-C4	S14-application-review.md	-	closed
 S14-C5	NSV-validation.md	-	**REFUTED**
-S14-C5	S14-application-review.md	-	open
+S14-C5	S14-application-review.md	-	refuted
 S14-C6	NSV-validation.md	-	**CONFIRMED** (one factual error in it, and it missed the stronger sibling)
-S14-C6	S14-application-review.md	-	open
+S14-C6	S14-application-review.md	-	closed
 S14-C7	NSV-validation.md	-	**CONFIRMED**
-S14-C7	S14-application-review.md	-	open
+S14-C7	S14-application-review.md	-	closed
 S14-C8	NSV-validation.md	-	**CONFIRMED** (same defect as `N8-C2`)
-S14-C8	S14-application-review.md	-	open
+S14-C8	S14-application-review.md	-	closed
 S14-D1	S14-application-review.md	-	withdrawn, opened as a suspected A: the conditional `touched()` does not leave the autonom
 S14-D2	S14-application-review.md	-	`readLayoutIndexIds` returning a duplicate is deliberate and pinned - which is what narrow
 S14-D3	S14-application-review.md	-	a route that names a signal registering a switch is not a defect

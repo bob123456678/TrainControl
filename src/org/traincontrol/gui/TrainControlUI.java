@@ -18557,9 +18557,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.KeyboardTab.setSelectedIndex(index);
     }
 
-    // UXR-C21: showTab(Icon) removed. Dead code - its only call site
-    // (the commented-out showTab in LocomotiveSelector.addLocomotiveActionPerformed) has been
-    // commented out, and it never picked up C20's
+    // UXR-C21: showTab(Icon) removed. Dead code - its only call site was the showTab in
+    // LocomotiveSelector.addLocomotiveActionPerformed, which is itself commented out, and it never
+    // picked up C20's
     // isEnabledAt/getTabCount guard, so reviving it would revive OB-128 (a program-driven tab switch
     // landing on a greyed, empty tab) with it.
 

@@ -2099,17 +2099,24 @@ public class AutonomySession
         // move paid for two full passes: a fresh TileGraph over every page, a GraphReducer.reduce, and
         // an AutonomyBuilder naming run, twice.  Nothing between them could have changed.
         //
-        // STILL UNCONDITIONAL FOR A MOVE, AND THAT IS THE LOAD-BEARING HALF (X8V-B2).  A move changes
-        // the DIAGRAM, and the graph is built from the diagram - so the rebuild is owed whatever the
-        // store happened to be holding about those squares, and making it conditional on the store
-        // would leave autonomy describing track that has walked away.
+        // UNCONDITIONAL, BECAUSE THE REBUILD IS OWED TO THE DIAGRAM (N8-B2).
         //
-        // For a built-over-only call - `forgetTiles`, which is what a delete, a paste, a fill and a
-        // clear reach - there is nothing to rebuild FROM unless something was stored, and the caller
-        // who asked is about to decide whether to write the setup to disk on the strength of the
-        // answer.  That is the case this restores to what it was before `X8-B4` moved `delete` onto
-        // this method.
-        if (changed || (moves != null && !moves.isEmpty())) touched();
+        // It was made conditional on `changed` for everything except a move, on the grounds that there
+        // is "nothing to rebuild from unless something was stored".  That is not so: the graph is traced
+        // from the SQUARES, so building over a blank square changes it even though the store held
+        // nothing about that square - measured, a placement on a blank square did not reach the tile
+        // graph at all, and with this unconditional it does.  A paste, a fill, a palette drop and a
+        // clear all reach here with squares that were empty.
+        //
+        // The cost that made it conditional is still gated, and it was always the right thing to gate:
+        // what is expensive is WRITING the setup, and every caller decides that from the return value
+        // below - `delete` says so in as many words.  A rebuild is memory; a write is every file of the
+        // setup, in a folder under OneDrive.
+        //
+        // And the gesture that made even the rebuild expensive asks once now: `deleteSelection` used to
+        // call this per picked square, so a rubber-band delete paid for a fresh TileGraph over every
+        // page once per square.
+        touched();
 
         return changed;
     }

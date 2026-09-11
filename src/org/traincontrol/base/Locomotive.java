@@ -1009,7 +1009,12 @@ public abstract class Locomotive
     }
     
     /**
-     * Turns a function on for one second, then off
+     * Turns a function on for a pulse, then off - for as long as the subclass says (S14-C4).
+     *
+     * This said "one second", which no caller can obtain: every concrete locomotive in the application
+     * is a MarklinLocomotive, which overrides this with PULSE_FUNCTION_DURATION - 300 ms - so the body
+     * below is unreachable and the number in the javadoc was never the one used.  A number in a javadoc
+     * that nothing can produce is worse than no number.
      * @param f
      * @return 
      */

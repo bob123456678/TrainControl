@@ -2,7 +2,7 @@
 
 **Prefix for citing these findings elsewhere:** `NSV`
 
-**Status:** open
+**Status:** closed 2026-09-10.  All ten of its own findings are fixed; its verdicts on the two reviews it validated are recorded in those documents, including the one finding it refuted and the four severities it moved.
 
 **What was validated.** Every A, B and C finding of
 [`N8-eight-day-review.md`](N8-eight-day-review.md) (1 A, 3 B, 4 C) and
@@ -481,11 +481,13 @@ and lowered are recorded in the table above.
 
 | id | what | disposition |
 |---|---|---|
-| NSV-B1 | `catalog-findings.py` re-ingests `N8-B3`'s fifteen phantom findings on every run, so deleting the rows fixes nothing - and the guard `N8-B3` proposes would fail on sixty-four legitimate rows | open |
-| NSV-B2 | `preSetLinkedLocomotives`/`setLinkedLocomotives` is an unlocked two-call protocol on a shared field, which `S14-B4`'s remedy does not touch | open |
-| NSV-B3 | a page whose file will not parse shortens the page list, so every link index past it resolves one page early - `N8-A1` with no edit in it, beside the comment that fixed the same hazard for page ids | open |
+| NSV-B1 | `catalog-findings.py` re-ingests `N8-B3`'s fifteen phantom findings on every run, so deleting the rows fixes nothing - and the guard `N8-B3` proposes would fail on sixty-four legitimate rows | closed |
+| NSV-B2 | `preSetLinkedLocomotives`/`setLinkedLocomotives` is an unlocked two-call protocol on a shared field, which `S14-B4`'s remedy does not touch | closed |
+| NSV-B3 | a page whose file will not parse shortens the page list, so every link index past it resolves one page early - `N8-A1` with no edit in it, beside the comment that fixed the same hazard for page ids | closed |
 
 ### NSV-B1 - the fifteen phantom findings come from a parser, and they come back
+
+**Status:** closed 2026-09-10 with `N8-B3`, and this is the finding the fix followed: the cause is the parser, so the rows had to stop being produced before they could be removed, and removing them needed `add_findings` to stop being add-only.  `triagedb.prune_findings` makes a re-add authoritative for the documents in it and prints every removal, because it drops our own status notes with the row.
 
 `N8-B3`'s count and mechanism are exact. Queried read-only against `triage.db`, the refs filed under
 `X8V-validation.md` that the document never makes are `X8V-A1a A1b A1c A2 B1a B1b B2a B2b B3a B3b B4
@@ -533,6 +535,8 @@ catalogue only twelve refs carry a sub-letter and eleven are X8V's.
 
 ### NSV-B2 - the sibling race `S14-B4`'s fix would not close
 
+**Status:** closed 2026-09-10.  `setLinkedLocomotives(Map)` stages and applies in one call, and the three callers that hold their own list use it - the two repair loops in `MarklinControlStation` and the multi-unit dialog.  The two-call form stays for `restoreState`, which cannot resolve a member by name until every locomotive is loaded, and which runs before the window exists.  `testApplyingAListDoesNotDisturbWhatIsStaged` pins that the one-call form does not touch the staging field at all, and catches the mutation that makes it delegate to the pair.
+
 `MarklinLocomotive.preSetLinkedLocomotives` (`:1170-1173`) stages a list on the instance field
 `preLinkedLocomotives` (`:64`), and `setLinkedLocomotives` (`:1195`, `:1206`) reads it. Nothing
 serialises the pair. Both callers of the pair run on different threads - `MarklinControlStation:1508-1509`
@@ -546,6 +550,8 @@ This is the same window as `S14-B4` on a different variable, and making the thre
 project keeps repeating: the fix enumerated the readers and the field beside them was not in the list.
 
 ### NSV-B3 - a skipped page re-aims every link after it, with no edit at all
+
+**Status:** closed 2026-09-10 by Adam's ruling: *"make the page blank and put a text label in it saying it could not be loaded (label as a tile itself, as if you had parsed a .text at 1,1 with that message."*  So a page whose file will not read keeps its place in the list, which is what stops every arrow after it resolving one page early.  It carries the page's id, so the autonomy setup stays attached, and it is marked unreadable: `saveChanges` refuses on it, because writing a blank page over the file being recovered would turn a page that cannot be read into one that no longer exists.  `TileGraph.allPages`'s javadoc goes with it (`NSV-C5`).
 
 `CS2File.java:2446-2460` skips a page the index names whose file will not parse, and advances
 `pageIndex` deliberately - the comment says why: *"so a skipped page does not renumber the ones after
@@ -572,15 +578,17 @@ the layout IN FILE ORDER"* (`:591`) is false and should go with it: the list is 
 
 | id | what | disposition |
 |---|---|---|
-| NSV-C1 | `newRoute`'s null-name early return does not disable the route it refuses, where the arm below it does | open |
-| NSV-C2 | the CS3 route import does not clamp a speed, and its own comment says it does | open |
-| NSV-C3 | `LayoutEditor.addRowsAndColumns` asks the ceiling about one row and one column, then adds `rows` and `cols` | open |
-| NSV-C4 | `MarklinLocomotive.setSpeed` clamps a member's scaled speed at the top of the range and not at the bottom | open |
-| NSV-C5 | `fillCombinedPage`'s javadoc states as settled fact the thing `N8-A1` shows is false | open |
-| NSV-C6 | `powerState` has a second writer that bypasses `setPowerState`, falsifying the comment that justifies the wait design | open |
-| NSV-C7 | `lastLatency` is a non-volatile `double` written on the message thread and read by the UI, between two fields made volatile for that reason | open |
+| NSV-C1 | `newRoute`'s null-name early return does not disable the route it refuses, where the arm below it does | closed |
+| NSV-C2 | the CS3 route import does not clamp a speed, and its own comment says it does | closed |
+| NSV-C3 | `LayoutEditor.addRowsAndColumns` asks the ceiling about one row and one column, then adds `rows` and `cols` | closed |
+| NSV-C4 | `MarklinLocomotive.setSpeed` clamps a member's scaled speed at the top of the range and not at the bottom | closed |
+| NSV-C5 | `fillCombinedPage`'s javadoc states as settled fact the thing `N8-A1` shows is false | closed |
+| NSV-C6 | `powerState` has a second writer that bypasses `setPowerState`, falsifying the comment that justifies the wait design | closed |
+| NSV-C7 | `lastLatency` is a non-volatile `double` written on the message thread and read by the UI, between two fields made volatile for that reason | closed |
 
 ### NSV-C1 - the disable was added to one arm of the method, not both
+
+**Status:** closed 2026-09-10 with `S14-A1`.  Both arms of `newRoute` retire the monitor of a route they refuse; the reason does not depend on why it was refused.
 
 `MarklinControlStation.newRoute(MarklinRoute r)` (`:2054-2077`) opens with
 
@@ -599,6 +607,8 @@ literal form of this project's most repeated mistake: the guard went to one arm 
 written in.
 
 ### NSV-C2 - a second unclamped speed door, at the station rather than the keyboard
+
+**Status:** closed 2026-09-10 with `S14-B2`.  The clamp is at `RouteCommandLocomotiveSpeed`, which the CS3 import builds its commands through, so this door is covered without touching `CS2File`.
 
 `CS2File.java:1290`, the CS3 route import:
 
@@ -620,6 +630,8 @@ Whether a CS3 can emit `wert > 1000` is unverifiable by reading. C on that basis
 
 ### NSV-C3 - the ceiling is asked about the wrong amount
 
+**Status:** closed 2026-09-10.  `addRowsAndColumns` asks `roomToGrow(rows, cols)`.  Pinned at the predicate rather than at the call, and the test says why: the guard's failure branch is a modal dialog, so a test that drives the refusal HANGS rather than fails - which it did, for ten minutes, leaving a JVM holding the runner's lock.
+
 `LayoutEditor.addRowsAndColumns` (`:5039-5041`) is `if (!roomToGrow(1, 1))` and then adds `rows` and
 `cols`. Its only caller is `drawGrid:5299` padding a blank page to 16 x 21, so it cannot overflow
 today. It is `X8-C5`'s own "one predicate" rule applied to the wrong argument, in one of the methods
@@ -627,6 +639,8 @@ today. It is `X8-C5`'s own "one predicate" rule applied to the wrong argument, i
 same consolidation.
 
 ### NSV-C4 - the clamp protects the members at one end of the range only
+
+**Status:** closed 2026-09-10 with `S14-B2`.  The member clamp is two-sided and `setSpeed` clamps its own argument.
 
 `MarklinLocomotive.setSpeed` (`:807`) is `roundedSpeed = Math.min(roundedSpeed, 100);`, with a comment
 explaining that `_setSpeed` ignores rather than clamps an out-of-range value and that the member then
@@ -638,6 +652,8 @@ clamp wants to be two-sided in both places.
 
 ### NSV-C5 - a javadoc that asserts what `N8-A1` measures to be false
 
+**Status:** closed 2026-09-10 with `NSV-B3`.  `TileGraph.allPages` says it is in the order the window lists them, which is sorted by name, and says why the distinction matters.
+
 `TrainControlUI:24945-24946`: *"A link on a combined page keeps pointing at the page it always pointed
 at: it is a redrawing, and following it should still arrive where the original does."* With the default
 combined-page name the program itself offers - `layout.ui.combinedPageName={0} and neighbours`, which
@@ -648,6 +664,8 @@ separately from `N8-A1` because it is stated as a settled property and will be t
 
 ### NSV-C6 - the "written in exactly one place" justification is not true
 
+**Status:** closed 2026-09-10.  The sentence names the one other write and says why it cannot release the wait, rather than claiming there is none.
+
 `MarklinControlStation:856-857` justifies `waitForPowerState`'s design with *"the power state is
 written in exactly one place - the inbound GO/STOP echo"*. `model.powerState = true;` at `:4349`
 bypasses `setPowerState` and its `notifyAll()`. It runs during construction in simulate mode, so it is
@@ -655,6 +673,8 @@ probably harmless - but it is the sentence a reader checks the wait design again
 Found while checking `S14-C6`; separate from it because `S14-C6` is about the reads.
 
 ### NSV-C7 - the volatile sweep stopped one field short
+
+**Status:** closed 2026-09-10.  `lastLatency` is volatile, with the tearing reason its two siblings carry.
 
 `lastLatency` (`:319`) is a plain `double`, written on the message-processor thread at `:2565` - on the
 same line that reads the `volatile pingStart` - and read by `getLastLatency()` (`:2602`) from the UI. A

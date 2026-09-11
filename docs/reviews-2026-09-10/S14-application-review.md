@@ -1,6 +1,6 @@
 # A pass over the application, in the parts the other four did not open
 
-**Status:** open
+**Status:** closed 2026-09-10.  Thirteen of the fourteen A/B/C findings are fixed and tested - two on Adam's rulings, which made both of them smaller than proposed - and `S14-C5` is refuted.  `S14-B4` was raised to A by `NSV`.
 
 **Prefix for citing these findings elsewhere:** S14
 
@@ -47,10 +47,12 @@ needed.
 
 | id | what | disposition |
 |---|---|---|
-| S14-A1 | `importRoutes` starts every imported route's s88 monitor during the parse, so an import double-watches every sensor and a parse that fails part way leaves live monitors no list can show and nothing can disable | open |
-| S14-A2 | the duplicate-page-id guard went to `readLayoutIndexPageExtras` and not to `readLayoutIndexIds`, which is the reader the autonomy setup is keyed by - so two pages sharing an id share one setup | open |
+| S14-A1 | `importRoutes` starts every imported route's s88 monitor during the parse, so an import double-watches every sensor and a parse that fails part way leaves live monitors no list can show and nothing can disable | closed |
+| S14-A2 | the duplicate-page-id guard went to `readLayoutIndexPageExtras` and not to `readLayoutIndexIds`, which is the reader the autonomy setup is keyed by - so two pages sharing an id share one setup | closed |
 
 ### S14-A1 — `importRoutes` starts the new routes' sensor monitors before it deletes the old ones, and a parse that throws part way leaves them running
+
+**Status:** closed 2026-09-10 by Adam's ruling, which made the fix smaller than the finding proposed: *"they should not be armed.  The user can choose to do this when they are ready."*  So `parseRoutesFromJson` disarms each route in the statement after the one that builds it - there is no window to reason about because there are no statements in it - and `importRoutes` juggles no flags.  Both halves go at once: a parse that throws leaves nothing armed, and an import can no longer have the old route and its replacement watching one sensor.  `core.testRoutes.testAHalfReadRouteFileLeavesNothingWatchingASensor` pulses the sensor and asks whether the turnout moved, which is how the defect was confirmed in the first place; `testARouteReadFromAFileArrivesDisabled` pins the ruling; and `testAParkedRouteStillFiresOnceItIsReleased` pins the half that would otherwise fail silently - an imported route the operator turns on must still fire.  `NSV-C1`'s sibling is fixed with it: `newRoute`'s nameless arm retires the monitor too.
 
 `MarklinControlStation.importRoutes` (`src/org/traincontrol/marklin/MarklinControlStation.java:3781`)
 and `parseRoutesFromJson` (`:3769`); `MarklinRoute.fromJSON` (`src/org/traincontrol/marklin/MarklinRoute.java:1310`)
@@ -117,6 +119,8 @@ State the rule where `executeAutoRoute` is called, because this is the second ca
 expect it.
 
 ### S14-A2 — two pages holding one id share one autonomy setup, because the guard was added to the other reader
+
+**Status:** closed 2026-09-10 by Adam's ruling, at the root rather than by a guard: *"no .id means id 0 implicitly."*  `pageIdOrPosition` returns 0 for an absent id, so the collision the finding is about cannot arise on any real file - reading it as the page's POSITION is what gave the first page of every genuine export the number the second page states.  Measured across every index file here: four have a first page with no `.id`, their stated ids run 1..n, and none states `.id=0`; on the station's own export the pages are named `0 stationer`..`7 autonom annotated` against stated ids 1..7.  The two comments that asserted the old rule now state this one and say what it cost.  A corrupt `.id=` line still falls back to the position, which is deliberate and stated: a damaged page is not a terse one, and zero would give every damaged page the same id.
 
 `LayoutDiagram.readLayoutIndexIds` (`src/org/traincontrol/base/LayoutDiagram.java:935-1014`) against
 `readLayoutIndexPageExtras` (`:1039-1113`) and `attribute` (`:1136-1151`).
@@ -253,12 +257,14 @@ Either way, say in `behaviour.md` what a duplicate id means, since §8 now state
 
 | id | what | disposition |
 |---|---|---|
-| S14-B1 | `setF` fans a function out to every multi-unit member before bounds-checking it, so a function the head does not have is switched on on the members and can never be switched off | open |
-| S14-B2 | `RouteCommand.fromJSON` does not clamp a locomotive speed where its sibling does, and `setSpeed` clamps the members and not the head - so an imported route sends a consist's members to full speed | open |
-| S14-B3 | `Edge.toJSON` does not write `entrySide`, which `Layout.fromJSON` reads and the field's own javadoc says travels in the configuration - so Export JSON then Load JSON loses every edge's arrival side | open |
-| S14-B4 | the save path reads `linkedLocomotives` with no lock, while the rebuild that was made atomic for `setSpeed` and `setDirection` clears and refills it | open |
+| S14-B1 | `setF` fans a function out to every multi-unit member before bounds-checking it, so a function the head does not have is switched on on the members and can never be switched off | closed |
+| S14-B2 | `RouteCommand.fromJSON` does not clamp a locomotive speed where its sibling does, and `setSpeed` clamps the members and not the head - so an imported route sends a consist's members to full speed | closed |
+| S14-B3 | `Edge.toJSON` does not write `entrySide`, which `Layout.fromJSON` reads and the field's own javadoc says travels in the configuration - so Export JSON then Load JSON loses every edge's arrival side | closed |
+| S14-B4 | the save path reads `linkedLocomotives` with no lock, while the rebuild that was made atomic for `setSpeed` and `setDirection` clears and refills it | closed |
 
 ### S14-B1 — `setF` tells every multi-unit member about a function number the head does not have
+
+**Status:** closed 2026-09-10.  The fan-out moved inside `validF`, so a function the head does not have is not a command to pass on.  Pinned by `core.testMultiUnitMembership.testAFunctionTheHeadDoesNotHaveIsNotSentToTheMembers`, with the control that a function the head DOES have still reaches the member - without it the test would pass with the fan-out deleted entirely.
 
 `MarklinLocomotive.setF` (`src/org/traincontrol/marklin/MarklinLocomotive.java:879-913`):
 
@@ -312,6 +318,8 @@ this is the one direction that leaks. Whichever way it is fixed, write the rule 
 neither carries an index.
 
 ### S14-B2 — a route imported from JSON can ask for a speed above 100, and the clamp that exists protects the members and not the head
+
+**Status:** closed 2026-09-10, clamped at the factory as the finding asked, which covers the third door `NSV-C2` found at the CS3 import as well as both parsers.  A negative still normalises to -1, because `execRoute` reads that as an instant stop.  `setSpeed` clamps its own argument too, and the member clamp became two-sided (`NSV-C4`).  Two tests, both mutation-verified.
 
 Three places, and the defect is the gap between them.
 
@@ -385,6 +393,8 @@ the worst of the three possible answers. Note while fixing it that `fromLine` ma
 
 ### S14-B3 — `Edge.toJSON` does not write `entrySide`, and the field's javadoc says it does
 
+**Status:** closed 2026-09-10.  `Edge.toJSON` writes `entrySide` when there is one, like `roomAtTheEnd` beside it.  `core.testAutoLayout.testAnEdgeKeepsItsArrivalSideThroughTheJSON` round-trips the baseline configuration and counts: 101 edges in, 101 back, where it was 101 in and 0 back.  The first version of that test was pointed at the sample layout and its own floor refused it - no edge there has an arrival side, so it would have passed vacuously.
+
 `Edge.toJSON` (`src/org/traincontrol/automation/Edge.java:607-652`) writes exactly six keys:
 `start`, `end`, `length`, `roomAtTheEnd` (conditionally), `commands` and `lockedges`. It does not write
 `entrySide`.
@@ -453,6 +463,8 @@ sentence that replaces it should say what an exported configuration therefore ca
 
 ### S14-B4 — the save path reads `linkedLocomotives` without the lock the rebuild was given
 
+**Status:** closed 2026-09-10 at A, which is NSV's re-grade on a call graph six readers longer than the finding described.  `linkedLocomotives` is a volatile reference to an unmodifiable map, replaced in one assignment: no reader can see it empty because no published map is ever edited.  Locking the readers was the other candidate and was rejected - there are nine of them, one on a thread of its own, and an event-thread save would then wait behind a fan-out holding the monitor across a UDP send.  `unlinkLocomotive` copies rather than removes, and `getLinkedLocomotives` hands out an unmodifiable view.  Two tests: a rebuild does not change the map a reader is holding, and the consist handed out cannot be edited.
+
 `MarklinLocomotive.setLinkedLocomotives` (`src/org/traincontrol/marklin/MarklinLocomotive.java:1180-1240`)
 was made atomic on purpose, and says why:
 
@@ -500,16 +512,18 @@ that obeys it (`MarklinControlStation:3147`).
 
 | id | what | disposition |
 |---|---|---|
-| S14-C1 | the route editor validates a logical accessory address against the raw maximum, so the top address of each protocol is refused as "not an address" | open |
-| S14-C2 | the s88 route monitor is not a daemon thread, where the three executors beside it were made daemons with a comment saying why | open |
-| S14-C3 | `loadReturnToHomeTimetable`'s javadoc contradicts its own body in three places, and the comment that replaced one of them names the wrong flag | open |
-| S14-C4 | `toggleF(int)`'s javadoc says one second; every locomotive that exists overrides it with 300ms | open |
-| S14-C5 | `AutoJSONExport` is the one writer in the project that truncates its target instead of writing atomically | open |
-| S14-C6 | `getPowerState()` reads, unsynchronised, a field written under the monitor - where four siblings in the same file were made volatile with reasons | open |
-| S14-C7 | `isFeedbackCommand` claims three commands, one is parsed, and the unknown-id branch creates and persists a feedback module from the other two's bytes | open |
-| S14-C8 | the route delay floor silently overrides what the operator typed and is not in `behaviour.md` | open |
+| S14-C1 | the route editor validates a logical accessory address against the raw maximum, so the top address of each protocol is refused as "not an address" | closed |
+| S14-C2 | the s88 route monitor is not a daemon thread, where the three executors beside it were made daemons with a comment saying why | closed |
+| S14-C3 | `loadReturnToHomeTimetable`'s javadoc contradicts its own body in three places, and the comment that replaced one of them names the wrong flag | closed |
+| S14-C4 | `toggleF(int)`'s javadoc says one second; every locomotive that exists overrides it with 300ms | closed |
+| S14-C5 | `AutoJSONExport` is the one writer in the project that truncates its target instead of writing atomically | refuted |
+| S14-C6 | `getPowerState()` reads, unsynchronised, a field written under the monitor - where four siblings in the same file were made volatile with reasons | closed |
+| S14-C7 | `isFeedbackCommand` claims three commands, one is parsed, and the unknown-id branch creates and persists a feedback module from the other two's bytes | closed |
+| S14-C8 | the route delay floor silently overrides what the operator typed and is not in `behaviour.md` | closed |
 
 ### S14-C1 — a logical address checked against the raw maximum refuses the top address of each protocol
+
+**Status:** closed 2026-09-10.  `Accessory.isValidLogicalAddress` states the conversion once and the route editor asks it, so logical MM2 320 and DCC 2048 are accepted there as they already were in the diagram editor.
 
 `RouteEditorFrame.addressProblem` (`src/org/traincontrol/gui/RouteEditorFrame.java:2432-2451`):
 
@@ -553,6 +567,8 @@ call sites and they disagree.
 
 ### S14-C2 — the s88 route monitor keeps the JVM alive, which is the defect its neighbours were fixed for
 
+**Status:** closed 2026-09-10.  The route monitor is a daemon and is named after its route, so it cannot hold the JVM open after the window closes and a thread dump says which route is waiting.
+
 `MarklinRoute.executeAutoRoute` (`src/org/traincontrol/marklin/MarklinRoute.java:172-235`) builds its
 thread with `new Thread(() -> {...})` and calls `start()` at `:235`. No `setDaemon(true)`, no
 `setName`. The thread parks in `Locomotive.waitForClearThenOccupied` on an untimed `wait`, and
@@ -580,6 +596,8 @@ The naming is not cosmetic here: these threads execute routes, and a stack trace
 gives nobody a starting point.
 
 ### S14-C3 — `loadReturnToHomeTimetable`'s javadoc argues against its own body
+
+**Status:** closed 2026-09-10.  The javadoc says capture is not touched here and names the flag that actually keeps the moves out - `timetableExecuting` - and the body comment no longer names the flag it replaced.
 
 `Layout.loadReturnToHomeTimetable` (`src/org/traincontrol/automation/Layout.java:8270-8332`). The
 javadoc says:
@@ -615,6 +633,8 @@ nineteen lines down for the sentence that says it is not.
 
 ### S14-C4 — "one second" is never true
 
+**Status:** closed 2026-09-10.  The base javadoc says the subclass decides the duration rather than stating a number no caller can obtain.
+
 `Locomotive.toggleF(int)` (`src/org/traincontrol/base/Locomotive.java:1011-1019`):
 
 ```java
@@ -640,6 +660,8 @@ it, or delete the base implementation and make the method abstract. A number in 
 caller can obtain is worse than no number.
 
 ### S14-C5 — the export writes straight over its target
+
+**Status:** **REFUTED** by `NSV-D1`, and recorded rather than removed.  The claim was that `AutoJSONExport` is the one writer in the project that truncates its target; five others do, the inventory is nine rather than eight, and the nine atomic writers all protect ACCUMULATED state, which a freshly timestamped export from a Save dialog is not.  Nothing was changed.
 
 `AutoJSONExport.jsonSaveAsActionPerformed` (`src/org/traincontrol/gui/AutoJSONExport.java:125`):
 
@@ -668,6 +690,8 @@ asymmetry a reader otherwise has to explain.
 
 ### S14-C6 — `powerState` is read without the monitor it is written under
 
+**Status:** closed 2026-09-10.  `powerState` and `on` are volatile, with the reason their four siblings in that file already carry.  The monitor stays for `waitForPowerState`, which needs it for the wait.
+
 `MarklinControlStation:277-278` declares it plain:
 
 ```java
@@ -695,6 +719,8 @@ siblings' comments. A stale read, not corruption, and I did not measure one.
 correct and is what `locIdCache` does.
 
 ### S14-C7 — two of the three commands routed to feedback are never parsed, and an unknown id creates a module
+
+**Status:** closed 2026-09-10 in the half that persists the mistake, and the other half is left alone on purpose.  A feedback module is no longer CREATED from a frame the feedback parser will not read, which is the step that made a phantom device permanent.  `isFeedbackCommand` itself is unchanged: it is read by `isUnknownCommand` and by the message description, so narrowing it would change what the log says about two commands this branch no longer acts on - a wider decision than the finding asks for, and one nothing here can measure.
 
 `CS2Message.isFeedbackCommand` (`src/org/traincontrol/marklin/udp/CS2Message.java:378-383`) answers for
 three commands:
@@ -736,6 +762,8 @@ message `parseMessage` would refuse: creating a device from a frame you have dec
 the step that persists the mistake.
 
 ### S14-C8 — the railway overrides a typed delay and `behaviour.md` does not say so
+
+**Status:** closed 2026-09-10.  `behaviour.md` section 7b, with `N8-C2`.
 
 `MarklinRoute.execRoute` (`src/org/traincontrol/marklin/MarklinRoute.java:1022`) waits
 `Math.max(rc.getDelay(), DEFAULT_SLEEP_MS)` plus `SLEEP_INTERVAL` between commands, so a delay between

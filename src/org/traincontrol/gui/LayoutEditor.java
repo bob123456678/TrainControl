@@ -3568,18 +3568,42 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.pauseRepaint = true;
 
+        // AUTONOMY IS TOLD ONCE, ABOUT THE WHOLE SELECTION (N8-B2).
+        //
+        // Every per-square delete used to tell it separately, and each of those calls rebuilds the tile
+        // graph over every page - so a rubber-band delete over thirty squares paid for thirty full
+        // rebuilds, and, before the write was gated, thirty writes of every file of the setup.
+        //
+        // The keys come from the SELECTION rather than from the labels, because a label is a view of a
+        // square and the grid is rebuilt on every repaint: one held across the loop reports -1,-1 and
+        // the edit lands on the wrong square, or silently on none.
+        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> emptied =
+            new java.util.ArrayList<>();
+
         try
         {
             for (org.traincontrol.base.TileSelection.At at : this.selection.all())
             {
                 LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
-                if (label != null) this.delete(label, tellAutonomy);
+                if (label == null) continue;
+
+                emptied.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), at.getX(), at.getY()));
+
+                this.delete(label, false);
             }
         }
         finally
         {
             this.pauseRepaint = was;
+        }
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (tellAutonomy && autonomy != null && !emptied.isEmpty() && autonomy.forgetTiles(emptied))
+        {
+            rememberAutonomy(autonomy);
         }
 
         this.clearSelection();
