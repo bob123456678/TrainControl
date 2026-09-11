@@ -26,6 +26,19 @@ public class AddLocomotive extends javax.swing.JFrame
      */
     public AddLocomotive(ViewListener model, TrainControlUI ui)
     {
+        // THE APPLICATION'S LOOK AND FEEL, BEFORE ANYTHING IS BUILT (Adam, 2026-09-11).
+        //
+        // In the running program this is already installed and the call does nothing. Built COLD -
+        // which is what a test does - this window would otherwise be drawn in Metal, with Metal's
+        // fonts and insets, and would not be the window the operator sees. Adam saw it as the menu
+        // bar's font: "some tests start with the small font in the UI menu bar ... while others have
+        // the same font as the production app."
+        //
+        // Here rather than in each test, because a rule that has to be remembered by the next test
+        // somebody writes is a rule that will be forgotten - and `regression.testEveryWindowWearsTheApplicationsLook`
+        // holds this line in place.
+        TrainControlUI.installLookAndFeel();
+
         this.model = model;
         this.parent = ui;   
         

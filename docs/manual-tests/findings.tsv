@@ -1308,6 +1308,49 @@ REG8-C3	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-08 (MON-C6 sweep) - 
 REG8-C4	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (1bd81f53) - the test's rationale names the idle reconcile, and its guard
 REG8-C5	REG8-regressions-2026-09-07.md	Closed	Fixed 2026-09-07 (1bd81f53) - the three orphan keys are gone from all eight bundles
 REG8-C6	REG8-regressions-2026-09-07.md	Closed	Open
+REG9-A1	REG9-acceptance-and-regression.md	-	open
+REG9-A1	REG9V-validation.md	-	both guards disabled together; 8 classes / 87 tests green, 3 of them classes REG9 did not 
+REG9-A2	REG9-acceptance-and-regression.md	-	open
+REG9-A2	REG9V-validation.md	-	guard removed; 8 classes / 109 tests green, 4 of them classes REG9 did not run. REG9 misse
+REG9-B1	REG9-acceptance-and-regression.md	-	open
+REG9-B1	REG9V-validation.md	-	red at `:741`, `expected [32] but found [34]`. But **four** assertions are shadowed, not o
+REG9-B2	REG9-acceptance-and-regression.md	-	open
+REG9-B2	REG9V-validation.md	-	repair(" test/` returns nothing; 97 files use `LayoutSandbox` and all are users. Claimed f
+REG9-C1	REG9-acceptance-and-regression.md	-	open
+REG9-C1	REG9V-validation.md	-	offsets measured: `writes` = 286525 (line 5959, inside `takeThePendingTurns()`), `levels` 
+REG9-C2	REG9-acceptance-and-regression.md	-	open
+REG9-C2	REG9V-validation.md	-	defect restored verbatim; 10 classes / 85 tests green, against REG9's 3 / 24.
+REG9-D1	REG9-acceptance-and-regression.md	-	covered - mutation red
+REG9-D1	REG9V-validation.md	-	`testAnUnreadablePageDoesNotDeleteTheSensorsOnlyItHad` fails at `:230`, message names RC-A
+REG9-D10	REG9-acceptance-and-regression.md	-	deliberate, documented, and an open product defect
+REG9-D10	REG9V-validation.md	-	the only `@Test(enabled = false)` in the suite, at `testAutonomyDiagramSession.java:3679`;
+REG9-D11	REG9-acceptance-and-regression.md	-	not a defect; for the acceptance decision
+REG9-D11	REG9V-validation.md	-	362 entries; 285 `fixed validated`, 32 `superseded`, 33 `needs test`, 12 `fixed unvalidate
+REG9-D12	REG9-acceptance-and-regression.md	-	-
+REG9-D12	REG9V-validation.md	-	the document states its own coverage three different ways - `REG9V-C1`.
+REG9-D2	REG9-acceptance-and-regression.md	-	covered - mutation red
+REG9-D2	REG9V-validation.md	-	`testTheOldChoiceIsKeptUntilSomethingCanStoreIt` fails at `:333`, `expected [SHORTEST_LENG
+REG9-D3	REG9-acceptance-and-regression.md	-	covered - mutation red
+REG9-D3	REG9V-validation.md	-	`if (false)` reddens the two OB-183 tests; MT-337 is reddened by the **opposite** mutation
+REG9-D4	REG9-acceptance-and-regression.md	-	covered - mutation red
+REG9-D4	REG9V-validation.md	-	`testLegacyNamesLandOnTheSquaresCarryingTheirSensors` fails at `:2731`, `expected [240] bu
+REG9-D5	REG9-acceptance-and-regression.md	-	covered - mutation red
+REG9-D5	REG9V-validation.md	-	both tests red, but by `NoSuchFileException` in a helper, not by their own assertion - `RE
+REG9-D6	REG9-acceptance-and-regression.md	-	covered; the mutation is not a live defect
+REG9-D6	REG9V-validation.md	-	reachability probe reproduces (3/3 and 1/2). Forcing the reconcile to proceed under `save(
+REG9-D7	REG9-acceptance-and-regression.md	-	covered, by a different class than the one that claims it
+REG9-D7	REG9V-validation.md	-	same measurement as C1.
+REG9-D8	REG9-acceptance-and-regression.md	-	clean
+REG9-D8	REG9V-validation.md	-	213 `test-one-class` entries, 0 duplicates, 214 `test*.java` on disk, one missing: `testAu
+REG9-D9	REG9-acceptance-and-regression.md	-	clean
+REG9-D9	REG9V-validation.md	-	221 files, 1758 `@Test` methods, **0** self-comparing assertions, **12** assertion-free bo
+REG9V-A1	REG9V-validation.md	-	open
+REG9V-B1	REG9V-validation.md	-	open
+REG9V-B2	REG9V-validation.md	-	open
+REG9V-C1	REG9V-validation.md	-	open
+REG9V-C2	REG9V-validation.md	-	open
+REG9V-D1	REG9V-validation.md	-	clean, worth knowing
+REG9V-D2	REG9V-validation.md	-	clean
 REL-A1	2026-09-03-release-review.md	Closed	`LayoutLabel.java:655`, `:1459`
 REL-A2	2026-09-03-release-review.md	Closed	`AutonomySession.java:3051`, `Layout.java:7718/7744/7779/7818`
 REL-B1	2026-09-03-release-review.md	Closed	`AutonomySession.java:3434`

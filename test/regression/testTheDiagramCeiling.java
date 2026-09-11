@@ -238,6 +238,15 @@ public class testTheDiagramCeiling
                 "precondition: the question the guard used to ask - room for one more of EACH - is no "
                 + "on this page, which is what makes this test able to tell the two apart");
 
+            // MEASURED AFTER THE EDITOR HAS SETTLED, not the moment it was constructed.
+            //
+            // Building an editor grows the page to fit - `growEdges` - and that lands through the
+            // event queue, so the width read straight after the constructor can still be the one the
+            // page was born with. In the battery this test failed "expected [15] but found [21]":
+            // 10 + 5 against 16 + 5, the difference being whether the growth had happened yet. It
+            // passed run on its own, which is what a race looks like from outside (2026-09-11).
+            settle();
+
             final int wasWide = page.getSx();
 
             SwingUtilities.invokeAndWait(() -> editor.addRowsAndColumns(0, 5));
@@ -323,6 +332,19 @@ public class testTheDiagramCeiling
      * The hover fields are private and are normally set by a mouse event; the shift predicates ask them
      * before they ask the ceiling, so a test of the ceiling has to get past that first.
      */
+    /**
+     * Lets everything the editor posted for itself finish.
+     *
+     * Several passes, because a posted task may post another - the same helper the window tests use.
+     */
+    private static void settle() throws Exception
+    {
+        for (int pass = 0; pass < 5; pass++)
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+        }
+    }
+
     private static void hoverAt(LayoutEditor editor, int x, int y) throws Exception
     {
         java.lang.reflect.Field fx = LayoutEditor.class.getDeclaredField("lastHoveredX");

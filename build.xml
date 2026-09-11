@@ -299,6 +299,10 @@
         <test-one-class class="testATrainIsDispatchedOnce"/>
         <test-one-class class="testTheRefusalsAreAskedAtTheDoors"/>
         <test-one-class class="testTheSandboxPutsThePreferenceBack"/>
+
+        <!-- Added 2026-09-11: Adam - the menu font differed between test windows and the production
+             app, because a window built cold installed no look and feel at all. -->
+        <test-one-class class="testEveryWindowWearsTheApplicationsLook"/>
         <test-one-class class="testTheHoveredSquareIsForgotten"/>
         <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
         <test-one-class class="testTwoCentralStationMultiUnitsShareAMember"/>

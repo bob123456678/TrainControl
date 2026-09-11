@@ -718,6 +718,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static void installLookAndFeel()
     {
+        // ALREADY INSTALLED IS DONE (Adam, 2026-09-11: *"some tests start with the small font in the
+        // UI menu bar ... can you make this be consistent?"*).
+        //
+        // Every window of this application now asks for this before it builds itself, so that a window
+        // built cold - which is what a test does - looks like the same window built by the running
+        // program. That is only safe to do from a constructor if asking a second time is genuinely
+        // free: re-installing a look and feel mid-session replaces the UIManager defaults under
+        // windows that are already on screen, which is a different risk from the one being fixed.
+        //
+        // So this is an INSTALL, in the sense of "make sure it is installed", and the work below runs
+        // once per process.
+        if (javax.swing.UIManager.getLookAndFeel() instanceof FlatLightLaf) return;
+
         // AWT FIRST, and this is the line that decides how big the whole interface is.
         //
         // FlatLaf works out a UI SCALE once, when it installs itself, and caches it - on a 120-dpi
