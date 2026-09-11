@@ -590,4 +590,52 @@ public class testAccessory
                 "setState(" + setting + ") must leave the accessory in the state isThrow reports");
         }
     }
+    /**
+     * The top address of each protocol is one the protocol has (S14-C1, REG9-C2).
+     *
+     * `MAX_MM2_ADDRESS` and `MAX_DCC_ADDRESS` are RAW - they count from zero, and the constant says so
+     * - while the number an operator types counts from one. Two callers disagreed about that: the
+     * diagram editor converted before asking and the route editor did not, so logical MM2 320 and
+     * logical DCC 2048 were accepted in one place and refused in the other.
+     *
+     * **Both ends, because an off-by-one is only visible at the boundary.** A rule that accepted
+     * everything would pass a test that only tried 320; a rule that still counted from zero would pass
+     * one that only tried 321.
+     *
+     * The fix was to state the conversion once, here, rather than as a subtraction at each call site.
+     * `ui.testRouteEditorValidation.testTheTopAddressOfEachProtocolIsAccepted` is the same claim at the
+     * door that used to get it wrong - the rule and the door that asks it, which is the split
+     * `testLocomotiveAddressRules` argues for.
+     *
+     * MUTATION: drop the `- 1` from `isValidLogicalAddress` and the two top addresses are refused.
+     */
+    @Test
+    public void testTheTopLogicalAddressOfEachProtocolIsValid()
+    {
+        assertTrue(Accessory.isValidLogicalAddress(1, Accessory.accessoryDecoderType.MM2),
+            "logical address 1 is the first address MM2 has");
+
+        assertTrue(Accessory.isValidLogicalAddress(Accessory.MAX_MM2_ADDRESS + 1,
+            Accessory.accessoryDecoderType.MM2),
+            "logical MM2 " + (Accessory.MAX_MM2_ADDRESS + 1) + " was refused. The maximum is a RAW "
+            + "address counting from zero, so the last one an operator can type is one higher - and "
+            + "Adam would rather have no check than one that refuses something legal");
+
+        assertFalse(Accessory.isValidLogicalAddress(Accessory.MAX_MM2_ADDRESS + 2,
+            Accessory.accessoryDecoderType.MM2),
+            "one past the top MM2 address was accepted, so the rule now refuses nothing at the end it "
+            + "is for");
+
+        assertTrue(Accessory.isValidLogicalAddress(Accessory.MAX_DCC_ADDRESS + 1,
+            Accessory.accessoryDecoderType.DCC),
+            "logical DCC " + (Accessory.MAX_DCC_ADDRESS + 1) + " was refused, for the same reason");
+
+        assertFalse(Accessory.isValidLogicalAddress(Accessory.MAX_DCC_ADDRESS + 2,
+            Accessory.accessoryDecoderType.DCC),
+            "one past the top DCC address was accepted");
+
+        assertFalse(Accessory.isValidLogicalAddress(0, Accessory.accessoryDecoderType.MM2),
+            "zero is not an address an operator can type - the numbering starts at one");
+    }
+
 }

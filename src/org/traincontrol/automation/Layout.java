@@ -2233,6 +2233,37 @@ public class Layout
     }
 
     /**
+     * Whether this locomotive is already out - running, or claiming a route it has not set off on yet.
+     *
+     * **The two halves are not the same question, and a dispatch has to refuse both.** A locomotive
+     * joins `activeLocomotives` only after `configureAndLockPath` RETURNS, and that call is seconds
+     * long: it throws every turnout and signal on the path with a wait between each and then validates
+     * the actuation. For the whole of that window "is it running" answers no, so a second dispatch of
+     * the same train passed every check and started too - two threads driving one physical train, each
+     * one's completion unlocking points the other is still relying on. Two gestures a couple of seconds
+     * apart reach it: double-click a route in the Auto tab, then dispatch from the diagram's
+     * right-click menu, whose items do not re-check when they are clicked.
+     *
+     * `takingPath` had been maintained since the lock-symmetry work and was only ever COUNTED, for the
+     * maximum-trains cap - never asked about a particular locomotive.
+     *
+     * **One method rather than two guards** (REG9V-B2): they sat nine lines apart, each with its own
+     * `containsKey`, and both logged `autolayout.errorLocomotiveBusy` - one rule with two spellings,
+     * indistinguishable from outside, and the sequential half was reachable with no race at all. It is
+     * also the seam `core.testATrainIsDispatchedOnce` needs: the alternative to asking this is a real
+     * dispatch, which waits on sensors.
+     *
+     * Identity, not equality, because both maps are keyed by the locomotive object the layout holds.
+     *
+     * @param loc the locomotive
+     * @return whether a dispatch of it should be refused as already under way
+     */
+    public boolean isAlreadyUnderway(Locomotive loc)
+    {
+        return this.activeLocomotives.containsKey(loc) || this.takingPath.containsKey(loc);
+    }
+
+    /**
      * How many trains are out, counting the ones that have claimed a route but not yet set off.
      *
      * A union rather than a sum, so that a locomotive which is both claiming and registered - the
@@ -6254,29 +6285,13 @@ public class Layout
             return false;
         }
 
-        if (this.activeLocomotives.containsKey(loc))
-        {
-            this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
-            return false;
-        }
-
-        // Already being DISPATCHED, which is not the same as already running.
+        // ALREADY OUT, in either of the two senses (REG9-A2, REG9V-B2, 2026-09-11).
         //
-        // A locomotive joins activeLocomotives only after configureAndLockPath returns, and that call
-        // is seconds long: it throws every turnout and signal on the path with a wait between each, and
-        // then validates the actuation. For the whole of that window the check above answers "not
-        // busy", so a second dispatch of the SAME locomotive passed every test and started too.
-        //
-        // Both threads then drive one physical train and each one's completion unlocks points the other
-        // is still relying on - which is the invariant Point.reserve's comment describes, broken from
-        // above. Two gestures a couple of seconds apart reach it: double-click a route in the Auto tab
-        // and then dispatch another from the diagram's right-click menu, whose items do not re-check
-        // when they are clicked.
-        //
-        // takingPath has been maintained since the lock-symmetry work and was only ever counted, for
-        // the maximum-trains cap - never asked whether a particular locomotive is in it. Found by
-        // review.
-        if (this.takingPath.containsKey(loc))
+        // This was two guards, nine lines apart, each with its own `containsKey` and BOTH logging
+        // `autolayout.errorLocomotiveBusy` - so from outside this method they were one rule with two
+        // spellings and nothing downstream could tell which had spoken. Asked once now, through
+        // `isAlreadyUnderway`, which is also what a test can ask.
+        if (this.isAlreadyUnderway(loc))
         {
             this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
             return false;

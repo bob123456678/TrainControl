@@ -294,6 +294,11 @@
         <!-- Added 2026-09-11: Adam's ruling that the locomotive keys work from any part of the app,
              which focus alone could never deliver. -->
         <test-one-class class="testTheKeyMapReachesTheWholeWindow"/>
+
+        <!-- Added 2026-09-11: REG9-A2 and REG9V-B2, the dispatch guard that nothing asserted. -->
+        <test-one-class class="testATrainIsDispatchedOnce"/>
+        <test-one-class class="testTheRefusalsAreAskedAtTheDoors"/>
+        <test-one-class class="testTheSandboxPutsThePreferenceBack"/>
         <test-one-class class="testTheHoveredSquareIsForgotten"/>
         <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
         <test-one-class class="testTwoCentralStationMultiUnitsShareAMember"/>

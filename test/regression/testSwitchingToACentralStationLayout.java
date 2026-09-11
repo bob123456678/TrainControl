@@ -738,10 +738,18 @@ public class testSwitchingToACentralStationLayout
         // builds editors over pages past MAX_SIZE, because the ceiling is a property of the
         // editor and the pages it asks about have to exist.  It sandboxes `single-switch`, opened
         // before the model, and the pages it measures are built in memory.
-        assertEquals(checked, 32,
-            checked + " test classes were found to build a window, not the 32 there were when this "
-            + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
-            + "thinks; more means a new class builds a window and this line wants updating");
+        //
+        // THIRTY-FOUR since 2026-09-11, and both arrivals need a real window for the same reason -
+        // what they ask about belongs to the window rather than to a panel:
+        //
+        //   - `testAPlacedTrainRecordsWhereItCameFrom` (REV9-B2) builds the assign dialog, which
+        //     takes a `TrainControlUI` and reads the locomotive list off it;
+        //   - `testTheKeyMapReachesTheWholeWindow` (Adam, 2026-09-11) presses keys at components in
+        //     the window and asks what the map did, which is a question about a window or nothing.
+        //
+        // Both sandbox through `Scenario.folderFor` / `LayoutSandbox.open()`, opened before the
+        // model, as the rule above requires.  Neither was pinned here when it was written, which is
+        // what REG9-B1 caught - see the note at the ratchet itself.
 
         // AND THE MODEL HALF, ratcheted (2026-08-28).
         //
@@ -787,15 +795,19 @@ public class testSwitchingToACentralStationLayout
             }
         }
 
+        // THE HARD RULE FIRST.  A window that opens the operator's own layout is the case this
+        // method was written for, so it is asserted before anything that is merely a number.
+        assertEquals(offenders.toString(), "[]",
+            "these tests open whatever layout the machine has, which on Adam\u2019s is his real "
+            + "railway - they read it, write it back, and can raise a modal dialog that stalls the "
+            + "battery: " + offenders);
+
         assertTrue(loose <= MODELS_WITHOUT_A_SANDBOX,
             "there are now " + loose + " test classes that build a model without pointing the layout "
             + "preference at a sandbox first, up from " + MODELS_WITHOUT_A_SANDBOX
             + ". Every one of them loads whatever layout the machine has, which on Adam\u2019s is his "
             + "real railway");
 
-        assertEquals(loose, MODELS_WITHOUT_A_SANDBOX,
-            loose + " such classes remain, fewer than the " + MODELS_WITHOUT_A_SANDBOX
-            + " recorded. Lower MODELS_WITHOUT_A_SANDBOX to " + loose + " so the improvement is kept.");
 
         // The count alone can absorb a repair and a new violation in the same round (VAL-C8): fix one
         // class, break a different one, and the number never moves. Pin WHICH classes too, so a swap
@@ -815,10 +827,30 @@ public class testSwitchingToACentralStationLayout
             + "lower MODELS_WITHOUT_A_SANDBOX; if a new one appeared, give it a sandbox instead of "
             + "adding it to the list.");
 
-        assertEquals(offenders.toString(), "[]",
-            "these tests open whatever layout the machine has, which on Adam\u2019s is his real "
-            + "railway - they read it, write it back, and can raise a modal dialog that stalls the "
-            + "battery: " + offenders);
+        // AND THE TWO STALENESS RATCHETS, LAST OF ALL (REG9-B1, REG9V-B1, 2026-09-11).
+        //
+        // **A staleness detector that runs before a safety check is worse than no ratchet**, and this
+        // method is where that was learnt.  `checked` was pinned at 32 and had been 34 since three
+        // test classes were added on 2026-09-11; TestNG stops a method at its first failed assertion,
+        // so for as long as that number was stale the FOUR assertions after it never ran - including
+        // the offender list above, which is the whole reason this method exists and the check written
+        // after Adam's railway was damaged on 2026-08-30.
+        //
+        // The class read as "one failure, a number wants bumping" while running one of its five
+        // checks.  Moving the count below the offender list is not enough - there were three more
+        // detectors between them - so the rule is the stronger one: every SAFETY assertion first, in
+        // descending order of what it protects, and every number that merely records where we are
+        // afterwards.  A stale ratchet now hides nothing.
+        assertEquals(checked, 34,
+            checked + " test classes were found to build a window, not the 34 there were when this "
+            + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
+            + "thinks; more means a new class builds a window and this line wants updating - and "
+            + "nothing else in this method is hidden by that any more, because the checks that "
+            + "protect the railway all ran before it");
+
+        assertEquals(loose, MODELS_WITHOUT_A_SANDBOX,
+            loose + " such classes remain, fewer than the " + MODELS_WITHOUT_A_SANDBOX
+            + " recorded. Lower MODELS_WITHOUT_A_SANDBOX to " + loose + " so the improvement is kept.");
     }
 
     /**

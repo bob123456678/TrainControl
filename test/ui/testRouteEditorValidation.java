@@ -151,6 +151,58 @@ public class testRouteEditorValidation
     }
 
     /**
+     * The route editor asks about a LOGICAL address (S14-C1, REG9-C2).
+     *
+     * It checked the number the operator types - counting from one - against `MAX_MM2_ADDRESS`, which
+     * is RAW and counts from zero. Exactly one address per protocol was refused here and accepted by
+     * the diagram editor, which converts before it asks. The fix shipped with no test:
+     * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
+     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green (REG9-C2).
+     *
+     * **Why this is a shape check and not a behavioural one, which is worth knowing about this whole
+     * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
+     * model - and `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before
+     * it reaches any per-row rule. So NO row-level complaint is reachable from this fixture: not the
+     * address, not "no such locomotive", not "no such route". The behavioural version of this test was
+     * written first and passed on an editor that never looked at the address at all; a control that
+     * asked whether address 99999 is complained about is what caught it. Measured, 2026-09-11.
+     *
+     * The rule itself is asserted behaviourally, at both ends of both protocols, by
+     * `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`. What is left for here is that
+     * this door asks that rule rather than the raw one - which is the half that was wrong, and the
+     * half a shape check can see.
+     *
+     * MUTATION: put `Accessory.isValidAddress(address, speaks)` back in `addressProblem` and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheAddressCheckAsksTheLogicalRule() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/RouteEditorFrame.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int at = source.indexOf("private void addressProblem(");
+
+        assertTrue(at > 0, "addressProblem has been renamed or removed - this check now guards nothing "
+            + "and needs rewriting rather than deleting");
+
+        int end = source.indexOf("\n    private ", at + 20);
+
+        String body = end < 0 ? source.substring(at) : source.substring(at, end);
+
+        assertTrue(body.contains("Accessory.isValidLogicalAddress("),
+            "the route editor no longer asks the logical-address rule. Accessory's maxima are RAW and "
+            + "say so; asking them with the number the operator typed refuses the last address of each "
+            + "protocol - 320 on MM2, 2048 on DCC - which the diagram editor accepts, and Adam would "
+            + "rather have no check than one that refuses something legal (S14-C1)");
+
+        assertFalse(body.contains("Accessory.isValidAddress("),
+            "the route editor asks the RAW rule as well as the logical one. Two rules over one number "
+            + "is how these two editors came to disagree in the first place");
+    }
+
+    /**
      * A three-way row starts with the pause its two motors need.
      */
     @Test

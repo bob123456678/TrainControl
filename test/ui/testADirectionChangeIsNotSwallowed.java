@@ -123,18 +123,69 @@ public class testADirectionChangeIsNotSwallowed
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
 
-        int levels = ui.indexOf("lastSeenDirection.put(loc.getName(), loc.goingForward())");
+        // INSIDE THE METHOD, not across the file (REG9-C1, 2026-09-11).
+        //
+        // These two offsets were taken with `ui.indexOf` over the whole of TrainControlUI.java, and
+        // `takeReversalsOnArrival()` appears TWICE in it: once in `takeThePendingTurns`, which has
+        // nothing to do with this rule, and once here. `indexOf` returns the first, so the comparison
+        // was between two lines in two different methods and was satisfied by their accident of
+        // position. The ordering INSIDE this method - the whole claim - was never looked at.
+        //
+        // Measured: the drain in `reconcileFacingWhenIdle` was replaced with an empty map, so that no
+        // destination turn reached the graph at all - strictly worse than the ordering defect this
+        // describes - and this class stayed green while
+        // `regression.testTheTurnAtTheDestinationReachesTheDiagram` went red on two of four.
+        //
+        // Scoped the way `testTheRunningGuardComesBeforeTheRecording` below already scopes its own,
+        // which is the idiom this class had and this method did not use.
+        String body = bodyOfReconcile(ui);
+
+        int levels = body.indexOf("lastSeenDirection.put(loc.getName(), loc.goingForward())");
 
         assertTrue(levels > 0,
             "nothing levels the baseline from live state any more, so the reconcile no longer does the"
             + " job its name claims");
 
-        int writes = ui.indexOf("takeReversalsOnArrival()");
+        int writes = body.indexOf("takeReversalsOnArrival()");
 
-        assertTrue(writes > 0 && writes < levels,
+        assertTrue(writes > 0,
+            "reconcileFacingWhenIdle no longer drains the destination turns at all. The behaviour is"
+            + " really pinned by regression.testTheTurnAtTheDestinationReachesTheDiagram, which drives"
+            + " it; this assertion only says the mechanism is still in the method it belongs to");
+
+        assertTrue(writes < levels,
             "the reversals the railway made at a destination are not written to the graph before the"
             + " baseline is levelled - so the levelling wipes the only record of them, which is the"
-            + " defect IND9-B4 fixed");
+            + " defect IND9-B4 fixed. Offsets within reconcileFacingWhenIdle: the write is at " + writes
+            + " and the levelling at " + levels);
+    }
+
+    /**
+     * The body of `reconcileFacingWhenIdle`, so an offset in it means something.
+     *
+     * To the next declaration at the same indent, which is how the ordering check further down this
+     * class already bounds `followDirectionChanges`.
+     *
+     * @param ui the whole source of the window
+     * @return the method body
+     */
+    private static String bodyOfReconcile(String ui)
+    {
+        int start = ui.indexOf("private void reconcileFacingWhenIdle()");
+
+        if (start < 0) start = ui.indexOf("public void reconcileFacingWhenIdle()");
+
+        assertTrue(start > 0, "reconcileFacingWhenIdle has gone - see the assertion above, which says"
+            + " what that means");
+
+        int end = ui.indexOf("\n    private ", start + 20);
+        int alt = ui.indexOf("\n    public ", start + 20);
+
+        if (alt > 0 && (end < 0 || alt < end)) end = alt;
+
+        if (end < 0) end = ui.length();
+
+        return ui.substring(start, end);
     }
 
     /**
