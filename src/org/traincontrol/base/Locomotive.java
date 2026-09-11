@@ -1787,6 +1787,14 @@ public abstract class Locomotive
     abstract public void setModelMultiUnitLocomotives(Map<String, Double> l);
     abstract public Map<Locomotive, Double> getLinkedLocomotives();
     abstract public int setLinkedLocomotives();
+
+    // THE ONE-CALL FORM, which is what a caller holding its list should use (NSV-B2).  The pair
+    // below stages on an instance field and reads it back, and two threads rebuild consists - a
+    // Central Station sync off the event thread, and the multi-unit dialog on it - so one caller's
+    // list could be applied to the other caller's consist.  The pair remains for the one caller
+    // that cannot hold its list: restoring saved state, where a member cannot be resolved by name
+    // until every locomotive has been loaded.
+    abstract public int setLinkedLocomotives(Map<String, Double> locList);
     abstract public void preSetLinkedLocomotives(Map<String, Double> locList);
     abstract public boolean canBeLinkedTo(Locomotive other, boolean logError);
     abstract public boolean hasLinkedLocomotives();

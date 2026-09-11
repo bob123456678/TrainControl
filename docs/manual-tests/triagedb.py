@@ -362,6 +362,48 @@ def add_findings(conn, rows):
     return added, updated
 
 
+def prune_findings(conn, rows):
+    """Deletes catalogued rows for these documents that the documents no longer make.
+
+    `add_findings` only ever adds or updates, which is what makes it safe to re-run - and it is also why
+    a row the catalogue should never have had cannot be removed by running it again.  A parser fault put
+    fifteen findings into the catalogue under `X8V-validation.md` that the document never made, taken
+    from a table in its Method section, and fixing the parser did not remove them (NSV-B1).
+
+    So re-adding a folder is AUTHORITATIVE for the documents in it: whatever those documents say now is
+    what the catalogue holds for them.  Nothing else is touched - a document not in `rows` keeps every
+    row it has.
+
+    **This deletes our own answers along with the row** - `status` and `status_note` go with it - so
+    every removal is printed.  That is the cost of the rule, and it is the right way round: a row whose
+    document does not make the finding is a row nobody can act on, and a catalogue that cannot drop one
+    is a catalogue that accumulates them.
+
+    :param conn: an open connection
+    :param rows: the freshly parsed rows, from `docs/tools/catalog-findings.py`
+    :return: the (document, ref) pairs removed
+    """
+    current = {}
+
+    for r in rows:
+        current.setdefault(r.get("document"), set()).add(r.get("ref"))
+
+    removed = []
+
+    for document, refs in current.items():
+        held = conn.execute("SELECT ref FROM finding WHERE document = ?", (document,)).fetchall()
+
+        for row in held:
+            if row[0] not in refs:
+                conn.execute("DELETE FROM finding WHERE ref = ? AND document = ?", (row[0], document))
+
+                removed.append((document, row[0]))
+
+    conn.commit()
+
+    return removed
+
+
 def load_dead(conn, orphans):
     """Stores the ids that are cited from the code and are findings nowhere.
 

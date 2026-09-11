@@ -710,6 +710,258 @@ public class testRoutes
     }
 
     /**
+     * A route file that fails half way through leaves nothing watching a sensor (S14-A1).
+     *
+     * **Constructing a `MarklinRoute` arms it.** The complete constructor ends in `executeAutoRoute()`,
+     * which parks a thread on the route's s88 and fires the route whenever it triggers.
+     * `parseRoutesFromJson` builds the routes in a loop and `MarklinRoute.fromJSON` throws out of that
+     * loop on a malformed entry - so every route built before the bad one is armed, is in no database,
+     * appears in no list, and has nothing that can reach `disable()`: `deleteRoute` walks
+     * `routeDB.getItems()`, which never held it. It throws switches for the rest of the session and the
+     * operator cannot even see that it exists.
+     *
+     * `X8-D4` cleared this same method and was right about what it examined - the route DATABASE cannot
+     * lose routes to a bad file, because the parse happens first. The layer below it is that the parse
+     * has a side effect on the railway.
+     *
+     * **Asserted by the railway rather than by a flag**, because the flag is not the hazard: the test
+     * pulses the sensor and asks whether the turnout moved. `testFailedRouteImportLeavesExistingRoutesIntact`
+     * covers the same bad file from the database's side.
+     *
+     * The valid route is built with `auto` false so that building the FIXTURE does not arm anything, and
+     * the JSON is then edited to say true - the file under test is one that asks for an enabled route.
+     *
+     * MUTATION: take the `catch` out of `parseRoutesFromJson` and this fails, reporting that the turnout
+     * was thrown by a route that exists nowhere.
+     */
+    @Test
+    public void testAHalfReadRouteFileLeavesNothingWatchingASensor() throws Exception
+    {
+        final int sensor = 8841;
+        final int turnout = 289;
+
+        model.newFeedback(sensor, null);
+        model.setFeedbackState(String.valueOf(sensor), false);
+
+        MarklinAccessory acc = model.getAccessoryByAddress(turnout, MarklinAccessory.accessoryDecoderType.MM2);
+
+        acc.setSwitched(false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, MM2, true));
+
+        // auto=false, so nothing is armed by building the fixture itself.
+        MarklinRoute fixture = new MarklinRoute(model, "A1 orphan probe", 9811, commands, sensor,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        org.json.JSONObject valid = fixture.toJSON();
+
+        valid.put("auto", true);
+
+        JSONArray routes = new JSONArray();
+
+        routes.put(valid);
+
+        // The shape testInvalidInput already uses as a file that throws: a route with nothing but a
+        // name.
+        routes.put(new org.json.JSONObject().put("name", "incomplete"));
+
+        org.json.JSONObject file = new org.json.JSONObject();
+
+        file.put("routes", routes);
+
+        try
+        {
+            model.parseRoutesFromJson(file.toString());
+
+            fail("the malformed second entry was accepted, so this test proves nothing");
+        }
+        catch (Exception expected)
+        {
+        }
+
+        // Let anything that was armed reach its blocking wait, as testDisableAndReEnable... does.
+        Thread.sleep(600);
+
+        pulseFeedback(String.valueOf(sensor));
+
+        assertFalse(acc.isSwitched(),
+            "the sensor was pulsed and the turnout moved, so a route built by a parse that then threw "
+            + "is still watching its sensor.  It is in no database and on no list, so nothing in the "
+            + "program can stop it before a restart (S14-A1)");
+    }
+
+    /**
+     * A route parked during an import and released afterwards still watches its sensor (S14-A1).
+     *
+     * This is the half that fails silently if it is wrong. An imported route arrives disabled - Adam,
+     * 2026-09-10: *"they should not be armed. The user can choose to do this when they are ready."* - so
+     * the operator turning one on afterwards is the ONLY way a freshly imported automatic route ever
+     * starts watching its sensor. If that release did not work, the file would import cleanly and the
+     * railway would simply never respond, with nothing to say why.
+     *
+     * **Not driven through `importRoutes` itself, on purpose.** That method deletes every route in the
+     * database before adding the file's, and the database here is the operator's own.
+     * `testFailedRouteImportLeavesExistingRoutesIntact` drives it with files that always throw, which is
+     * the only safe way to reach it. What is asserted instead is the mechanism the import now depends on,
+     * at the route: parked, released, and still firing.
+     *
+     * `testDisableAndReEnableDoesNotStartASecondMonitor` pins the other side of the same sequence - that
+     * releasing does not add a second monitor. Together they say the route fires exactly once.
+     *
+     * MUTATION: make `enable()` a no-op and this fails. The limit worth stating is that it exercises
+     * the pair directly rather than through the route editor's own enable path, which needs a window.
+     */
+    @Test
+    public void testAParkedRouteStillFiresOnceItIsReleased() throws Exception
+    {
+        final int sensor = 8851;
+        final int turnout = 291;
+
+        model.newFeedback(sensor, null);
+        model.setFeedbackState(String.valueOf(sensor), false);
+
+        MarklinAccessory acc = model.getAccessoryByAddress(turnout, MarklinAccessory.accessoryDecoderType.MM2);
+
+        acc.setSwitched(false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, MM2, true));
+
+        MarklinRoute route = new MarklinRoute(model, "A1 release probe", 9812, commands, sensor,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            // Let the monitor the constructor started reach its wait, then park it the way the import
+            // does between the parse and the database.
+            Thread.sleep(600);
+
+            route.disable();
+
+            // Released once it is held, as importRoutes does after newRoute succeeds.
+            route.enable();
+            route.executeAutoRoute();
+
+            pulseFeedback(String.valueOf(sensor));
+
+            assertTrue(acc.isSwitched(),
+                "a route that was disabled and re-enabled no longer fires on its sensor, so every "
+                + "automatic route in an imported file would arrive switched off (S14-A1)");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    /**
+     * A speed outside 0-100 is clamped where the command is built, not in each parser (S14-B2, NSV-C2).
+     *
+     * **`fromLine` clamped and `fromJSON` did not.** A route imported from JSON - which is how a
+     * hand-edited or shared file enters the database, through Routes then Import - could therefore carry
+     * a speed of 150, and `execRoute` passes it straight to `setSpeed`.
+     *
+     * There is a third door neither parser covers: the CS3 route import computes the speed as
+     * `wert / 1000 * 100` with a comment promising the range it did not enforce. Clamping in the FACTORY
+     * covers all three, which is why the fix is here rather than in `fromJSON`.
+     *
+     * **A negative is load-bearing and is not clamped to zero.** `fromLine` normalises any negative to
+     * `-1` and `execRoute` reads `-1` as an instant stop, so the clamp has to be that rule and not
+     * `clamp(0, 100)`.
+     *
+     * The editor is not a door: `RouteEditorFrame` range-checks a typed speed and refuses to save. What
+     * changes for an imported out-of-range route is that it now shows as 100 rather than being refused at
+     * Save.
+     *
+     * MUTATION: store `speed` unchanged in `RouteCommandLocomotiveSpeed` and the first two claims fail.
+     */
+    @Test
+    public void testASpeedOutsideTheRangeIsClampedWhereTheCommandIsBuilt() throws Exception
+    {
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", 150).getSpeed(), 100,
+            "a speed of 150 was stored as given.  execRoute passes it to setSpeed, where _setSpeed "
+            + "discards an out-of-range value and the head re-transmits its PREVIOUS speed while every "
+            + "member is sent 100 (S14-B2)");
+
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", -5).getSpeed(), -1,
+            "a negative speed must normalise to -1, which is what execRoute reads as an instant stop - "
+            + "not to 0, which would turn a stop command into a speed command");
+
+        // AND INSIDE THE RANGE NOTHING MOVES, which is what makes this a clamp rather than a default.
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", 0).getSpeed(), 0,
+            "zero is a speed");
+
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", 100).getSpeed(), 100,
+            "the top of the range is unchanged");
+
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", 40).getSpeed(), 40,
+            "an ordinary speed is unchanged");
+
+        assertEquals(RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", -1).getSpeed(), -1,
+            "instant stop survives the clamp");
+
+        // AND THE TWO PARSERS NOW AGREE, which is the divergence the finding is about.  The text form
+        // clamped already; the JSON form is the one that did not.
+        RouteCommand viaJson = RouteCommand.fromJSON(
+            RouteCommand.RouteCommandLocomotiveSpeed("Test loc 1", 100).toJSON());
+
+        assertEquals(viaJson.getSpeed(), 100, "the JSON round trip changed the speed");
+    }
+
+    /**
+     * A route read from a file arrives disabled, whatever the file says (Adam, 2026-09-10; S14-A1).
+     *
+     * *"They should not be armed. The user can choose to do this when they are ready."*
+     *
+     * This is the one thing about an import that is deliberately NOT a faithful restoration of the file:
+     * the `auto` flag is read, and then overridden. An imported file does not start driving the railway
+     * until the operator says so - which also removes, at the root, both halves of the defect this was
+     * found through: a parse that throws leaves nothing armed, and an import can no longer have the old
+     * route and its replacement watching one sensor at the same time.
+     *
+     * Driven through `parseRoutesFromJson` rather than `importRoutes`, which deletes every route in the
+     * database before adding the file's - and the database here is the operator's own.
+     *
+     * MUTATION: remove the `route.disable()` from the parse loop and this fails.
+     */
+    @Test
+    public void testARouteReadFromAFileArrivesDisabled() throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(293, MM2, true));
+
+        // Built with auto false so the fixture itself arms nothing; the FILE then asks for auto.
+        MarklinRoute fixture = new MarklinRoute(model, "A1 arrival probe", 9813, commands, 8861,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        org.json.JSONObject asked = fixture.toJSON();
+
+        asked.put("auto", true);
+
+        assertTrue(asked.getBoolean("auto"), "precondition: the file asks for an enabled route");
+
+        org.json.JSONObject file = new org.json.JSONObject();
+
+        file.put("routes", new JSONArray().put(asked));
+
+        List<MarklinRoute> parsed = model.parseRoutesFromJson(file.toString());
+
+        assertEquals(parsed.size(), 1, "the file should have produced one route");
+
+        assertFalse(parsed.get(0).isEnabled(),
+            "a route read from a file came back armed.  Constructing a MarklinRoute parks a thread on "
+            + "its s88, so it is watching the railway before anything holds it - and the operator, not "
+            + "the file, decides when an imported route starts driving (Adam, 2026-09-10)");
+
+        // And the rest of the route is intact, so this is not passing because the parse produced
+        // something empty.
+        assertEquals(parsed.get(0).getS88(), 8861, "control: the route came back with its sensor");
+
+        assertEquals(parsed.get(0).getRoute().size(), 1, "control: and with its command");
+    }
+
+    /**
      * A route may only ever have one monitor thread.
      *
      * disable() just clears a flag; the thread stays parked in its feedback wait until the sensor next
@@ -995,7 +1247,44 @@ public class testRoutes
             }  
         }
 
-        assertTrue(currentRoutes.equals(finalRoutes));
+        assertSameApartFromArming(currentRoutes, finalRoutes);
+    }
+
+    /**
+     * Two lists of routes hold the same routes, except that the parsed ones are disarmed.
+     *
+     * `MarklinRoute.equals` compares `enabled`, and a route read from a file arrives disabled whatever
+     * the file says - Adam, 2026-09-10: *"they should not be armed.  The user can choose to do this when
+     * they are ready."*  So a round trip can no longer be asserted with `equals`, and the interesting
+     * claim is the one that is left: everything else came back.
+     *
+     * The arming is asserted too, in the same place, so that a round trip which started returning armed
+     * routes would fail here rather than quietly passing a weaker test.
+     */
+    private static void assertSameApartFromArming(List<MarklinRoute> expected, List<MarklinRoute> actual)
+    {
+        assertEquals(actual.size(), expected.size(), "the round trip changed the number of routes");
+
+        for (int i = 0; i < expected.size(); i++)
+        {
+            MarklinRoute was = expected.get(i);
+            MarklinRoute now = actual.get(i);
+
+            assertEquals(now.getName(), was.getName(), "route " + i + " came back under another name");
+            assertEquals(now.getId(), was.getId(), "route " + was.getName() + " changed id");
+            assertEquals(now.getS88(), was.getS88(), "route " + was.getName() + " changed sensor");
+            assertEquals(now.getTriggerType(), was.getTriggerType(),
+                "route " + was.getName() + " changed trigger type");
+            assertEquals(now.getConditions(), was.getConditions(),
+                "route " + was.getName() + " changed conditions");
+            assertEquals(now.getRoute(), was.getRoute(),
+                "route " + was.getName() + " changed commands");
+
+            assertFalse(now.isEnabled(),
+                "route " + was.getName() + " came back armed from a file.  Constructing a route parks a "
+                + "thread on its s88, and the operator - not the file - decides when an imported route "
+                + "starts driving the railway (Adam, 2026-09-10)");
+        }
     }
     
     @Test
@@ -1105,8 +1394,11 @@ public class testRoutes
         
         List<MarklinRoute> finalRoutes = model.parseRoutesFromJson(json);
 
-        // Routes in JSON should equal routes in model
-        assertTrue(model.getRoutes().equals(finalRoutes));
+        // Routes in JSON should equal routes in model, except for the arming: a parsed route is
+        // disarmed whatever the file says (Adam, 2026-09-10).  The routes in the model at this point
+        // have not been through a file and may be armed.
+        assertSameApartFromArming(model.getRoutes(), finalRoutes);
+
         assertTrue(!model.getRoutes().equals(currentRoutes));
         
         // Actually import the routes into the model

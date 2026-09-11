@@ -2162,7 +2162,11 @@ public final class CS2File
      * does: it stores its setup against pages, and a page name is something a user renames while an id
      * is not, so keeping the id lets a setup survive a rename.
      *
-     * The first page carries no id of its own and is page 1, which is what the Central Station assumes.
+     * A page that carries no `.id` of its own has id ZERO - Adam, 2026-09-10: *"no .id means id 0
+     * implicitly"*, the ordinary CS2 convention that an omitted key is the zero value.  This used to
+     * say it was page 1, which gave the first page of every genuine export the number the SECOND page
+     * states - two pages holding one id, and one page's autonomy setup coming back on the other's
+     * track.  See `LayoutDiagram.pageIdOrPosition`, which both readers of this file ask.
      *
      * A list rather than a map from name to id: two pages may carry the same name, and collapsing them
      * here would silently drop one from every caller, including the download that writes the files back.
@@ -2706,6 +2710,44 @@ public final class CS2File
 
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
                     null, false);
+
+                // AND THE PAGE KEEPS ITS PLACE IN THE LIST (NSV-B3, Adam's ruling of 2026-09-10).
+                //
+                // Skipping it entirely left `getLayoutList()` one entry short, and a link tile holds a
+                // POSITION in that list - so every arrow at or past this page resolved one page early,
+                // with nobody having edited anything.  An unhydrated OneDrive placeholder is enough to
+                // cause it, which `readLayoutIndexIds`'s own comment calls an ordinary Tuesday on this
+                // railway.  It also reaches a railway decision: `TileGraph.leadsOutsideAutonomy` asks
+                // where a link goes, and what it answers decides whether an unpaired portal blocks an
+                // autonomy build or only warns.
+                //
+                // *"Make the page blank and put a text label in it saying it could not be loaded (label
+                // as a tile itself, as if you had parsed a .text at 1,1 with that message."*  So the
+                // operator opens the page and reads what happened, rather than finding it missing.
+                //
+                // It carries the page's ID, so the autonomy setup stays attached to it, and it is marked
+                // unreadable so that nothing can save a blank page over the file being recovered.
+                try
+                {
+                    LayoutDiagram missing = new LayoutDiagram(name, 16, 8, getLayoutURL(name),
+                        this.control);
+
+                    missing.setPageId(index.get(pageIndex).get("id"));
+
+                    missing.markUnreadable();
+
+                    missing.addComponent(LayoutDiagramComponent.componentType.TEXT, 1, 1, 0, 0, 0, -1,
+                        null, I18n.f("layout.pageCouldNotBeReadTile", name));
+
+                    out.add(missing);
+                }
+                catch (Exception | Error worse)
+                {
+                    // The placeholder is a courtesy; a failure to build one must not cost the rest of
+                    // the layout, which is the same rule the catch above it exists for.
+                    logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(worse)),
+                        null, true);
+                }
             }
         }
         

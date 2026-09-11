@@ -810,25 +810,62 @@ public class testParseCS2Layout
     }
 
     /**
-     * Two pages claiming one id give their unmodelled keys to NOBODY (X8V-B1).
+     * Each page keeps the unmodelled keys the file states for it, even when two pages claim one id
+     * (N8-B1, X8V-B1).
      *
-     * **Keying by id was right and incomplete.** A map keyed by id keeps the last page written under a
-     * duplicate, and `writeLayoutIndex` resolves a duplicate by reissuing the LATER page - so the first
-     * page looked up that id and got the second page's scroll offsets, while the second got none.
+     * **The ambiguity was in the map key, not in the file.** `readLayoutIndexPageExtras` was keyed by
+     * page id, and two pages can resolve to one: a map keeps the last, and `writeLayoutIndex` reissues
+     * the LATER page's id - so the page that kept the id inherited the keys of the page that lost it.
+     * That much was `X8V-B1`, and it was real.
      *
-     * **The shape is in this repository.** `Oles kreds/config/gleisbild.cs2` opens with a `seite`
-     * carrying no `.id` at all, which resolves to its position - 1 - and the page after it states
-     * `.id=1`. It survives today only because one of the two carries offsets and the other does not.
+     * **Its fix withdrew the contested id, and that threw away a real page's keys.** `Oles kreds` - the
+     * genuine Central Station export in this repository - opens with a `seite` that carries
+     * `.xoffset=1`, `.yoffset=3` and no `.id`, which resolves to its position, 1, while the page after it
+     * states `.id=1`. Withdrawing id 1 deleted the offsets the file states for the first page
+     * unambiguously. Nothing was gained: `writeLayoutIndex` computes a reissued id as one above every id
+     * in the file, so a reissued page can never find anything in a map keyed by ids read from that same
+     * file - the misattribution needs the keys to sit on the page that LOSES, and the loser is the later
+     * one in name order, which is the synthetic shape below and not the real one.
      *
-     * Withdrawn rather than resolved, because both answers are guesses and this one fails safe: a page
-     * that loses a scroll position is a page the station will set again, and a page given somebody
-     * else's is a page nothing will correct.
+     * So the lines are keyed by the page's NAME, which identifies a page everywhere else in this program
+     * and which the file states on every block.
      *
-     * MUTATION: take the `claimed` set out of `readLayoutIndexPageExtras` and this fails, naming the
-     * page that inherited the offsets.
+     * **Both shapes, because only one of them was ever tested.** Alpha/Beta is the synthetic pair that
+     * `X8V-B1` was written against; Gamma/Delta is the shape in the repository, where the first page
+     * states no id at all.
+     *
+     * MUTATION: key the map by `pageIdOrPosition(idText, position)` again and the first case puts Beta's
+     * offsets on Alpha; add the withdrawal back and the second case loses Gamma's entirely.
      */
     @Test
-    public void testTwoPagesClaimingOneIdKeepNeithersKeys() throws Exception
+    public void testEachPageKeepsItsOwnUnmodelledKeys() throws Exception
+    {
+        // The synthetic pair: both pages state id 1, and only the LATER one carries offsets.
+        assertKeysStayWithTheirPage(
+            "seite\n .id=1\n .name=Alpha\n"
+            + "seite\n .id=1\n .name=Beta\n .xoffset=42\n .yoffset=43\n",
+            java.util.Arrays.asList("Alpha", "Beta"), "Beta", "Alpha", ".xoffset=42");
+
+        // The shape `Oles kreds` actually has: the FIRST page carries the offsets and states no id, and
+        // the page after it states the id that page's position resolves to.
+        assertKeysStayWithTheirPage(
+            "seite\n .name=Gamma\n .xoffset=1\n .yoffset=3\n"
+            + "seite\n .id=1\n .name=Delta\n",
+            java.util.Arrays.asList("Gamma", "Delta"), "Gamma", "Delta", ".xoffset=1");
+    }
+
+    /**
+     * Writes an index holding the given `seite` blocks, then asserts the named key came back under
+     * `keeper` and not under `other`.
+     *
+     * @param pages the seite blocks, verbatim
+     * @param order the page list handed to the writer, which is name-sorted in production
+     * @param keeper the page the file states the key for
+     * @param other the page that must not inherit it
+     * @param key the line to look for
+     */
+    private static void assertKeysStayWithTheirPage(String pages, java.util.List<String> order,
+        String keeper, String other, String key) throws Exception
     {
         java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
 
@@ -838,36 +875,34 @@ public class testParseCS2Layout
 
             assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
 
-            // Only BETA carries the offsets, and both pages state id 1.
             java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
-                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
-                    + "seite\n .id=1\n .name=Alpha\n"
-                    + "seite\n .id=1\n .name=Beta\n .xoffset=42\n .yoffset=43\n")
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n" + pages)
                     .getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
-                java.util.Arrays.asList("Alpha", "Beta"));
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(), order);
 
             String after = new String(
                 java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 
-            int alpha = after.indexOf(".name=Alpha");
-            int beta = after.indexOf(".name=Beta");
-            int offset = after.indexOf(".xoffset=42");
+            int at = after.indexOf(key);
 
-            assertTrue(alpha >= 0 && beta >= 0, "precondition: both pages have to be written:\n" + after);
+            assertTrue(at >= 0,
+                key + " is gone from the file entirely.  The page it belongs to states it, and these "
+                + "are the lines this writer does not model - a scroll position the station set, or the "
+                + "next key a firmware adds (N8-B1).  File was:\n" + after);
 
-            assertTrue(!(offset > alpha && offset < beta),
-                "Alpha was given Beta's scroll position.  Two pages claimed id 1, the map keyed by id "
-                + "kept Beta's keys, and the writer reissued Beta - so the page that kept the id "
-                + "inherited the keys of the page that lost it (X8V-B1).  File was:\n" + after);
+            int keeperAt = after.indexOf(".name=" + keeper);
+            int otherAt = after.indexOf(".name=" + other);
 
-            // AND IT IS WITHDRAWN, not merely moved: neither page gets them.
-            assertTrue(offset < 0,
-                "the offsets were reattached to one of the two pages.  An id two pages claim says "
-                + "nothing about either of them, and guessing is what put them on the wrong page "
-                + "(X8V-B1).  File was:\n" + after);
+            assertTrue(keeperAt >= 0 && otherAt >= 0,
+                "precondition: both pages have to be written:\n" + after);
+
+            // The key belongs to whichever block it falls inside, which is the block whose name is the
+            // closest one above it.
+            assertTrue(at > keeperAt && (otherAt < keeperAt || at < otherAt),
+                key + " came back under " + other + " rather than under " + keeper + ", which is the "
+                + "page the file states it for.  File was:\n" + after);
         }
         finally
         {

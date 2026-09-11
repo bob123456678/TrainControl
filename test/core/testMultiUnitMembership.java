@@ -101,6 +101,286 @@ public class testMultiUnitMembership
         assertEquals(members.size(), 2, "the other member went missing: " + members);
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // What a reader of the consist can see while it is being rebuilt (S14-B4, raised to A by NSV).
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Rebuilding a consist does not change the map somebody is already reading.
+     *
+     * **The save path is the reader that matters.** `MarklinSimpleComponent` reads
+     * `getLinkedLocomotives()` with no lock, and `restoreState` rebuilds every consist from exactly
+     * that field - so a save that reads the map while a rebuild has emptied it writes a locomotive with
+     * NO members into `locdb.data`, and the consist is gone after the next start with the file as the
+     * only record.  The rebuild runs off the event thread inside `syncWithCS2`; the save runs on the
+     * window-closing path and on Backup Data's own thread, and nothing serialises them.
+     *
+     * **A race cannot be asserted, so the property that removes it is.** The defect was `clear()` then
+     * `putAll()` on the live map: every reader holds the same instance, so there is a window in which it
+     * is empty, and no reader can tell that window from a consist with no members.  A map that is
+     * replaced rather than edited has no such window - whatever a reader is holding stays as it was, and
+     * the assertion below is that exact property, which is deterministic.
+     *
+     * Rebuilt with DIFFERENT contents on purpose.  Refilling with the same two members leaves the live
+     * map equal to what it was, so a test that rebuilds the same consist passes on the broken code.
+     *
+     * MUTATION: go back to `this.linkedLocomotives.clear(); this.linkedLocomotives.putAll(staged);` and
+     * the first assertion fails, reporting 1 member in a map that was read when it had 2.
+     */
+    @Test
+    public void testARebuildDoesNotChangeTheMapAReaderIsHolding()
+    {
+        MarklinLocomotive head = model.newDCCLocomotive("MU head H", 73);
+        MarklinLocomotive m1 = model.newDCCLocomotive("MU member H1", 74);
+        MarklinLocomotive m2 = model.newDCCLocomotive("MU member H2", 75);
+
+        try
+        {
+            link(head, m1, m2);
+
+            // What the save path holds: the map itself, taken once, exactly as MarklinSimpleComponent
+            // takes it.
+            Map<Locomotive, Double> whatTheSaveSees = head.getLinkedLocomotives();
+
+            assertEquals(whatTheSaveSees.size(), 2, "precondition: both members linked");
+
+            // And now the sync rebuilds the consist with one member, on another thread.
+            link(head, m1);
+
+            assertEquals(whatTheSaveSees.size(), 2,
+                "the rebuild edited the map the save path was already holding - it now reports "
+                + whatTheSaveSees.size() + " members.  Mid-rebuild that value is ZERO, and a save in "
+                + "that window writes a consist with no members into locdb.data, which restoreState "
+                + "then rebuilds from (S14-B4)");
+
+            // The control: the rebuild did happen, so the assertion above is not passing because
+            // nothing moved.
+            assertEquals(head.getLinkedLocomotives().size(), 1,
+                "control: the rebuild to one member did not take effect, so this test is not "
+                + "measuring what it claims to");
+        }
+        finally
+        {
+            deleteAll("MU head H", "MU member H1", "MU member H2");
+        }
+    }
+
+    /**
+     * The consist handed out is a snapshot, not the live map.
+     *
+     * `getLinkedLocomotives()` returned the field itself, so any caller could empty a consist by
+     * accident and every caller shared one instance with the rebuild.  Nothing in the tree mutates it -
+     * checked across `src/` and `test/` - which is why handing out an unmodifiable view costs nothing
+     * and closes the door for the next caller.
+     *
+     * MUTATION: return `this.linkedLocomotives` unwrapped and this fails.
+     */
+    @Test
+    public void testTheConsistHandedOutCannotBeEdited()
+    {
+        MarklinLocomotive head = model.newDCCLocomotive("MU head H", 73);
+        MarklinLocomotive m1 = model.newDCCLocomotive("MU member H1", 74);
+
+        try
+        {
+            link(head, m1);
+
+            try
+            {
+                head.getLinkedLocomotives().clear();
+
+                fail("a caller emptied a consist through getLinkedLocomotives(), which hands back the "
+                    + "live map every other reader and the rebuild share");
+            }
+            catch (UnsupportedOperationException expected)
+            {
+            }
+
+            assertEquals(head.getLinkedLocomotives().size(), 1, "and the consist is intact");
+        }
+        finally
+        {
+            deleteAll("MU head H", "MU member H1");
+        }
+    }
+
+    /**
+     * Applying a list in one call does not touch what another thread has staged (NSV-B2).
+     *
+     * `preSetLinkedLocomotives` writes an instance field and `setLinkedLocomotives()` reads it back,
+     * with nothing between them.  Two threads rebuild consists - `syncWithCS2` off the event thread and
+     * the multi-unit dialog on it - so one thread's list could be overwritten before its own apply read
+     * it, and the consist was rebuilt from the other thread's list.  Both calls return success either
+     * way, which is why nothing noticed.
+     *
+     * **What is asserted is that the one-call form does not go through the field at all.** A list staged
+     * and not yet applied is still there afterwards, which is the property a second thread needs.  The
+     * interleaving itself cannot be asserted; this is the invariant that makes it harmless.
+     *
+     * MUTATION: make `setLinkedLocomotives(Map)` do `preSetLinkedLocomotives(locList); return
+     * setLinkedLocomotives();` and the last assertion fails, because the staged member has become the
+     * one the other caller passed.
+     */
+    @Test
+    public void testApplyingAListDoesNotDisturbWhatIsStaged()
+    {
+        MarklinLocomotive head = model.newDCCLocomotive("MU head I", 76);
+        MarklinLocomotive m1 = model.newDCCLocomotive("MU member I1", 77);
+        MarklinLocomotive m2 = model.newDCCLocomotive("MU member I2", 78);
+
+        try
+        {
+            // Thread A stages, and has not applied yet.
+            Map<String, Double> staged = new HashMap<>();
+
+            staged.put(m1.getName(), 1.0);
+
+            head.preSetLinkedLocomotives(staged);
+
+            // Thread B applies its own list, in one call.
+            Map<String, Double> theirs = new HashMap<>();
+
+            theirs.put(m2.getName(), 1.0);
+
+            assertEquals(head.setLinkedLocomotives(theirs), 1, "the one-call form linked the member");
+
+            assertTrue(head.getLinkedLocomotiveNames().containsKey(m2.getName()),
+                "and it linked the member it was given");
+
+            // Thread A now applies what IT staged, and must get what it staged.
+            assertEquals(head.setLinkedLocomotives(), 1, "the staged list still applies");
+
+            assertTrue(head.getLinkedLocomotiveNames().containsKey(m1.getName()),
+                "the one-call form overwrote the list another caller had staged, so that caller's "
+                + "consist was rebuilt from somebody else's members (NSV-B2).  The consist is now "
+                + head.getLinkedLocomotiveNames().keySet());
+        }
+        finally
+        {
+            deleteAll("MU head I", "MU member I1", "MU member I2");
+        }
+    }
+
+    /**
+     * A function the head does not have is not passed on to the members (S14-B1).
+     *
+     * **The fan-out came before the bounds check.** `setF` looped over the members first and asked
+     * `validF(fNumber)` afterwards, and the check is the HEAD's: `getMaxNumF` gives MM2 five functions,
+     * DCC twenty-nine and MFX thirty-two. `canBeLinkedTo` refuses self, a Central Station multi-unit, a
+     * member that is already a head, and an address clash - and says nothing about decoder types, so an
+     * MM2 head with an MFX member is a supported consist.
+     *
+     * On that consist `setF(6, true)` switched f6 on at the member and recorded nothing at the head,
+     * whose `functionState` is five long. Three things follow, and the third is why this is not cosmetic:
+     * no button exists for it, `functionsOff()` loops to `getNumF()` and can never clear it - which is
+     * what autonomy calls on arrival - and `TrainControlUI.switchF` sends `!getF(fn)`, which is always
+     * `true` out of range, so **every press sends ON and no press ever sends OFF**. The only way back is
+     * to select the member and clear it there.
+     *
+     * The keyboard reaches this: the bare function keys are bound to `switchF(0)` through `switchF(30)`
+     * with no gate on the active locomotive's function count.
+     *
+     * The opposite direction - a member with FEWER functions than the head - was already safe, by the
+     * member's own check. This is the one that leaked.
+     *
+     * MUTATION: put the loop back above `if (this.validF(fNumber))` and the first assertion fails.
+     */
+    @Test
+    public void testAFunctionTheHeadDoesNotHaveIsNotSentToTheMembers()
+    {
+        MarklinLocomotive head = model.newMM2Locomotive("MU head J", 79);
+        MarklinLocomotive member = model.newMFXLocomotive("MU member J1", 80);
+
+        try
+        {
+            assertEquals(head.getNumF(), 5, "precondition: an MM2 head has five functions");
+
+            assertTrue(member.getNumF() > 6,
+                "precondition: the MFX member has more functions than the head, which is the whole "
+                + "configuration under test");
+
+            link(head, member);
+
+            assertEquals(head.getLinkedLocomotives().size(), 1, "precondition: the member is linked");
+
+            head.setF(6, true);
+
+            assertFalse(member.getF(6),
+                "f6 was switched on at the member by a head that has no f6.  Nothing records it at the "
+                + "head, so no button shows it, functionsOff() cannot clear it, and every further press "
+                + "of that key sends ON again (S14-B1)");
+
+            // THE CONTROL: a function the head DOES have still reaches the member, so the assertion
+            // above is not passing because the fan-out stopped working.
+            head.setF(3, true);
+
+            assertTrue(member.getF(3),
+                "control: f3 did not reach the member, so this test would pass with the fan-out removed "
+                + "entirely");
+        }
+        finally
+        {
+            deleteAll("MU head J", "MU member J1");
+        }
+    }
+
+    /**
+     * `setSpeed` clamps its own argument the way it already clamps its members' (S14-B2, NSV-C4).
+     *
+     * `_setSpeed` is wrapped in `if (speed >= 0 && speed <= 100)` with no `else`, so an out-of-range
+     * value is DISCARDED and `getSpeed()` still reports whatever it was - and the head then
+     * re-transmits that old speed while every member is sent `min(speed x multiplier, 100)`. That is
+     * exactly the failure the clamp inside the member loop was written for, quoted in its own comment as
+     * *"the two engines of one consist pulled against each other"*, one level up from where it was
+     * fixed.
+     *
+     * The member clamp was also one-sided: a negative argument scaled by a multiplier stays negative,
+     * `_setSpeed` ignores it for the same reason, and the member re-transmits its old speed too
+     * (NSV-C4).
+     *
+     * `setSpeed` is public and is reached from a route, from autonomy and from the throttle, so this is
+     * worth having even with the command's own clamp in place - "ignored, and the previous speed re-sent"
+     * is the worst of the three possible answers to a bad number.
+     *
+     * MUTATION: take the clamp back out of `setSpeed` and both halves fail.
+     */
+    @Test
+    public void testSetSpeedClampsItsOwnArgument()
+    {
+        MarklinLocomotive head = model.newDCCLocomotive("MU head K", 81);
+        MarklinLocomotive member = model.newDCCLocomotive("MU member K1", 82);
+
+        try
+        {
+            link(head, member);
+
+            head.setSpeed(40);
+
+            assertEquals(head.getSpeed(), 40, "precondition: an ordinary speed is set");
+
+            head.setSpeed(150);
+
+            assertEquals(head.getSpeed(), 100,
+                "a speed of 150 was discarded, so the head still reports " + head.getSpeed()
+                + " and re-transmits it while every member is sent 100 - the two engines of one consist "
+                + "pulling against each other (S14-B2)");
+
+            assertEquals(member.getSpeed(), 100, "and the member is at the clamped speed, not past it");
+
+            head.setSpeed(-20);
+
+            assertEquals(head.getSpeed(), 0,
+                "a negative speed was discarded rather than clamped, so the head kept the speed it had "
+                + "(NSV-C4).  instantStop is what a route's -1 reaches; setSpeed's argument is a speed");
+
+            assertEquals(member.getSpeed(), 0, "and the member is stopped with it");
+        }
+        finally
+        {
+            deleteAll("MU head K", "MU member K1");
+        }
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {

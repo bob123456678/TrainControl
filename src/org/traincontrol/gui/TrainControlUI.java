@@ -18616,13 +18616,84 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.
+     *
+     * **A LINK TILE HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), so every operation that
+     * changes the set of page names changes what the arrows mean.  Four of the five items on Manage
+     * Pages do: Add, Rename, Duplicate and Delete, and Combine is the fifth.  Nothing re-aimed them,
+     * so they silently came to point somewhere else and the new number was written to the file -
+     * measured on the five pages of the sample layout, adding one page repointed FOUR OF SEVEN arrows.
+     *
+     * **Every page operation goes through here**, which is the point of the method.  The three callers
+     * each used to write the index themselves, and a repair applied to one of three call sites and not
+     * its twins is the defect this project produces most often.  The order the arrows were written
+     * against is read from the index BEFORE it is overwritten, so a caller cannot get that wrong
+     * either.
+     *
+     * A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into its
+     * place - Adam, 2026-09-10.  See `LayoutDiagramComponent.setLinkedPageIndex`.
+     *
+     * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
+     * @param renamed old name -&gt; new name, or null
+     * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
+     * @throws java.io.IOException if the index cannot be written, which is the caller's to report
+     */
+    private void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
+        java.util.Collection<String> keepAbsent) throws java.io.IOException
+    {
+        // The rule itself is in LayoutDiagram, because LayoutPageEdit writes this index too - see that
+        // method.  What is here is collecting the pages, saving the ones that moved, and the logging.
+        for (LayoutDiagram changed : LayoutDiagram.writeIndexAndKeepLinksAimed(
+            this.getLocalLayoutPath(), layoutList, renamed, pageIdFloor(), keepAbsent,
+            this.everyLoadedPage()))
+        {
+            try
+            {
+                changed.saveChanges(null, false);
+            }
+            catch (Exception cannotSave)
+            {
+                // The arrows are right in memory either way, and the page list has already been
+                // written; refusing here would leave the index and the pages disagreeing.
+                this.model.log(cannotSave);
+            }
+        }
+    }
+
+    /**
+     * Every page of the local layout, as objects.
+     *
+     * @return the loaded pages, in the order the window lists them
+     */
+    private List<LayoutDiagram> everyLoadedPage()
+    {
+        List<LayoutDiagram> pages = new ArrayList<>();
+
+        for (String name : this.model.getLayoutList())
+        {
+            LayoutDiagram page = this.model.getLayout(name);
+
+            if (page != null) pages.add(page);
+        }
+
+        return pages;
+    }
+
+    /**
      * Navigates to a specific layout page
-     * @param index 
+     * @param index the page's place in the name-sorted list, or -1 for a link that points at no page
      */
     public void goToLayoutPage(int index)
     {
+        // A LINK TO NOTHING CLICKS TO NOTHING (Adam, 2026-09-10).  An arrow whose page was deleted
+        // carries -1, and *"this shouldn't throw any errors, and simply resolve to nothing when
+        // clicked.  Then, the user can set it to the right page on their next edit."*  Silent rather
+        // than logged: the tooltip already says the link points at no page, and an error in the log
+        // about a square the operator can see is labelled would be noise.
+        if (index < 0) return;
+
         int page = index + 1;
-        
+
         if (this.LayoutList.getModel().getSize() > index && index >= 0)
         {
             this.model.logf(
@@ -19728,8 +19799,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }
 
-            l.preSetLinkedLocomotives(newLinkedLocos);
-            l.setLinkedLocomotives();
+            // One call (NSV-B2): this runs on the event thread and syncWithCS2 rebuilds consists
+            // off it, and the two-call form stages on a field they would share.
+            l.setLinkedLocomotives(newLinkedLocos);
             this.repaintLoc(true, null);
 
             // Ensure there are no conflicts on the graph
@@ -24831,8 +24903,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(combined);
 
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null,
-                    pageIdFloor(), keepAbsent);
+                writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
 
                 // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk.
                 // Included for even one build, every sensor on it becomes a second Point for a sensor
@@ -24962,6 +25033,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             width = Math.max(width, page.getSx());
             height += page.getSy() + 1;
+        }
+
+        // THE CEILING EVERY OTHER GROWING GESTURE ASKS (N8-C1).
+        //
+        // This goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling - the same door
+        // X8-C5 found shiftDown going through - and it is the gesture that can grow a page MOST, by the
+        // height of every page it combines. Measured on the five pages of the sample layout: combining
+        // the three that 1 - Main links to comes out 24 x 51 against a ceiling of 60, so one more linked
+        // page puts it over.
+        //
+        // Refused BEFORE the page is emptied, which is the whole reason the check is here rather than at
+        // the grow: `made.clear()` below throws away the page this was copied from, and a page above the
+        // ceiling can never be grown again - Increase Size is greyed on it, with a tooltip about a limit
+        // the operation that made it did not apply.
+        if (height > LayoutEditor.MAX_SIZE || width > LayoutEditor.MAX_SIZE)
+        {
+            throw new Exception(I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
         }
 
         made.clear();
@@ -25260,8 +25348,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // No rename map: the deleted page's id is retired, and every surviving page keeps
                     // the one it had.  That is the whole reason a delete no longer disturbs anything.
-                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null,
-                        pageIdFloor(), keepAbsent);
+                    writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
 
                     this.layoutEditingComplete();
                 }

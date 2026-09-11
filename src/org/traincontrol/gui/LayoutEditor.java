@@ -3861,7 +3861,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 // 91g == addr 183
                 
                 // Create and display the JPanel LayoutEditorAddressPopup
-                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc, parent);
+                // Told which page this square is on, so a link is not offered it (Adam, 2026-09-10).
+                LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc, parent,
+                    layout == null ? null : layout.getName());
                 
                 addressPopup.setAddress(Integer.toString(lc.getLogicalAddress()));
                 addressPopup.getGreenButton().setSelected(lc.isLogicalGreen());
@@ -5038,7 +5040,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void addRowsAndColumns(int rows, int cols)
     {
-        if (!roomToGrow(1, 1))  // ONE PREDICATE (X8-C5)
+        // ASKED ABOUT WHAT IS BEING ADDED (NSV-C3).  `roomToGrow(1, 1)` is the question "is there room
+        // for one more of each", which a call adding twenty rows can pass and then overflow.  It could
+        // not today - the one caller pads a blank page to 16 x 21 - and it is X8-C5's own "one
+        // predicate" rule asked about the wrong amount, in a method X8-C5 touched.
+        if (!roomToGrow(rows, cols))  // ONE PREDICATE (X8-C5)
         {
             JOptionPane.showMessageDialog(
                 this,

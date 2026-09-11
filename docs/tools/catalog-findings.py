@@ -103,6 +103,13 @@ FULL_ROW = r"\|\s*[`*]{0,2}\s*([A-Z][A-Z0-9]{1,7}-[A-Z]?\d+[a-z]?)\s*[`*]{0,2}\s
 SHORT_ROW = r"\|\s*[`*]{0,2}\s*([A-Z]\d{1,3}[a-z]?)\s*[`*]{0,2}\s*\|(.*)$"
 
 
+# The first severity section of a document, after which its tables are about findings.
+#
+# Before it, a document's tables are about anything - a method, a measurement, a corpus.  See
+# table_rows.
+SEVERITY_BANNER = r"^##\s+[A-D]\b"
+
+
 def table_rows(text, prefix=None):
     """Every `| REF | ... |` row in a document, as its list of cells, by ref.
 
@@ -110,10 +117,34 @@ def table_rows(text, prefix=None):
     catalogue that only reads per-finding tables sees 182 of 1252.  The last cell of such a row is the
     disposition by the README's own layout; where it is not, it is still the most specific thing the
     document says about that ref in one line.
+
+    TWO RULES ABOUT WHICH ROWS COUNT, both of which cost real data before they were here (NSV-B1).
+
+    **Short-form rows are only read after the document's first severity banner.**  `| A1a | ... |` is a
+    finding in a status table and a measurement in a Method table, and nothing in the row says which.
+    `X8V-validation.md` opens with a mutation table whose first column reads A1a, B1a, C1 - and fifteen
+    of its rows were catalogued as findings that document never made, four of them at severity A against
+    an A section that says "Nothing".  A document with no banner at all is read whole, which is the
+    behaviour every older document relies on.
+
+    **The LAST matching row wins, not the first.**  A document states a ref's disposition in its status
+    table, which by the README's layout sits at the head of its severity section - below anything
+    earlier.  Keeping the first match meant the mutation row above it was kept and the real disposition
+    discarded: `X8V-C1` was catalogued as "2 of 2 red" while its own table said closed.
     """
     out = {}
 
-    for line in text.split("\n"):
+    lines = text.split("\n")
+
+    findings_start = 0
+
+    for i, line in enumerate(lines):
+        if re.match(SEVERITY_BANNER, line.strip()):
+            findings_start = i
+
+            break
+
+    for i, line in enumerate(lines):
         bare = line.strip()
 
         m = re.match(FULL_ROW, bare)
@@ -122,8 +153,9 @@ def table_rows(text, prefix=None):
 
         # SHORT FORM.  A document that declares a prefix numbers its table rows the same way it numbers
         # its headings, so `| C2 |` in the DOC review is DOC-C2.  Only tried when a prefix is known,
-        # which keeps it away from tables of plain data.
-        if not m and prefix:
+        # which keeps it away from tables of plain data - and only below the first severity banner,
+        # which keeps it away from the document's own working tables.
+        if not m and prefix and i >= findings_start:
             m = re.match(SHORT_ROW, bare)
 
             ref = prefix + "-" + m.group(1) if m else None
@@ -136,7 +168,7 @@ def table_rows(text, prefix=None):
         cells = [c for c in cells if c]
 
         if cells:
-            out.setdefault(ref, cells)
+            out[ref] = cells
 
     return out
 
@@ -573,6 +605,12 @@ def add_one_folder(folder):
     conn = triagedb.connect()
 
     added, updated = triagedb.add_findings(conn, rows)
+
+    # AUTHORITATIVE FOR THESE DOCUMENTS (NSV-B1).  A row the catalogue holds for a document that the
+    # document does not make is a row nobody can act on, and adding cannot remove one - which is how
+    # fifteen rows read out of a Method table survived the fix to the parser that read them.
+    for document, ref in triagedb.prune_findings(conn, rows):
+        print("  removed %s, which %s does not make" % (ref, document))
 
     print("%s: %d findings, %d new, %d updated" % (folder, len(rows), added, updated))
 

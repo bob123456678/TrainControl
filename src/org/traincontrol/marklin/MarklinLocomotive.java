@@ -60,7 +60,23 @@ public class MarklinLocomotive extends Locomotive
     
     // Locomotives linked to this locomotive that will operate as a multi-unit
     // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
-    private final Map <Locomotive, Double> linkedLocomotives = new LinkedHashMap<>();     
+    // REPLACED, NEVER EDITED, AND READ WITHOUT A LOCK BY DESIGN (S14-B4).
+    //
+    // The save path is the reader that decides the shape of this field: MarklinSimpleComponent reads
+    // getLinkedLocomotives() with no lock, and restoreState rebuilds every consist from exactly what it
+    // wrote - so a save that sees this map empty writes a locomotive with NO members into locdb.data,
+    // and the consist is gone after the next start with the file as the only record.  The rebuild runs
+    // off the event thread inside syncWithCS2; the save runs from the window-closing path and from
+    // Backup Data's own thread, and nothing serialises them.
+    //
+    // It was a live LinkedHashMap cleared and refilled in place, so every reader shared one instance and
+    // there was a window in which it was empty.  Locking the readers was the other candidate and was
+    // rejected: there are nine of them, one on a thread of its own in applyPreferredFunctions, and an
+    // event-thread save would then wait behind a fan-out that holds this monitor across a UDP send.
+    //
+    // So: every published value is unmodifiable, a rebuild ASSIGNS a new one, and a reader keeps
+    // whatever it was holding.  volatile is what makes that assignment visible to the threads above.
+    private volatile Map <Locomotive, Double> linkedLocomotives = java.util.Collections.emptyMap();     
     private Map <String, Double> preLinkedLocomotives;
     
     // For informational purposes, this is the list of locomotives in a central station (not a TrainControl) multi unit
@@ -784,6 +800,20 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {
+        // CLAMPED BEFORE ANYTHING IS SENT (S14-B2, NSV-C4).
+        //
+        // _setSpeed is wrapped in `if (speed >= 0 && speed <= 100)` with no else, so an out-of-range
+        // value is DISCARDED: getSpeed() still reports whatever it was, and the head then re-transmits
+        // that old speed while every member is sent the scaled value clamped to 100.  The members were
+        // protected from this and the head was not, one level above where the member clamp was written -
+        // and its comment describes exactly this outcome, "the two engines of one consist pulled against
+        // each other".
+        //
+        // Clamped to 0 rather than to -1, which is the opposite of RouteCommand's rule and deliberately
+        // so: -1 means instant stop to a ROUTE, and execRoute calls instantStop() for it rather than
+        // coming here.  This method's argument is a speed.
+        speed = Math.max(0, Math.min(speed, 100));
+
         // Pass through commands
         for (Map.Entry<Locomotive, Double> entry : this.linkedLocomotives.entrySet())
         {
@@ -804,7 +834,10 @@ public class MarklinLocomotive extends Locomotive
             // rather than clamping it, and the member then transmits its previous speed - so past the
             // threshold (67 for a 1.5x member) the member silently froze while the head kept
             // accelerating, and the two engines of one consist pulled against each other.
-            roundedSpeed = Math.min(roundedSpeed, 100);
+            // TWO-SIDED (NSV-C4).  A negative argument scaled by a multiplier stays negative, and
+            // _setSpeed ignores it for the same reason it ignores 150 - so the member re-transmitted
+            // its old speed at this end of the range too.
+            roundedSpeed = Math.max(0, Math.min(roundedSpeed, 100));
 
             entry.getKey().setSpeed(roundedSpeed);
         }
@@ -879,14 +912,28 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
-        // Pass through commands
-        for (Locomotive l : this.linkedLocomotives.keySet())
-        {
-            l.setF(fNumber, state);
-        }
-        
         if (this.validF(fNumber))
         {
+            // PASSED ON ONLY IF THE HEAD HAS THIS FUNCTION (S14-B1).
+            //
+            // The fan-out used to come first, and the check below is the HEAD's: MM2 has five functions,
+            // DCC twenty-nine, MFX thirty-two, and canBeLinkedTo says nothing about decoder types - so an
+            // MM2 head with an MFX member is a consist the program allows.  On that consist f6 went on at
+            // the member and was recorded nowhere, because the head's functionState is five long: no
+            // button showed it, functionsOff() loops to getNumF() and could not clear it, and switchF
+            // sends !getF(fn), which is true out of range, so every further press sent ON again.
+            //
+            // The head is the thing being commanded.  A function it does not have is not a command to
+            // pass on.  The other direction - a member with fewer functions - was already safe, by the
+            // member's own check on the recursive call.
+            //
+            // setSpeed and setDirection fan out unconditionally and correctly: neither carries an index,
+            // so there is nothing about them the head could fail to have.
+            for (Locomotive l : this.linkedLocomotives.keySet())
+            {
+                l.setF(fNumber, state);
+            }
+
             // Force last known direction if this is the first command to move
             if (this.lastStartTime == 0)
             {
@@ -1173,12 +1220,45 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
+     * Stages a list and applies it in one call, so no second thread can be staging at the same time.
+     *
+     * **`preSetLinkedLocomotives` writes an INSTANCE FIELD and `setLinkedLocomotives` reads it, with
+     * nothing serialising the pair** (NSV-B2).  Two threads rebuild consists: `syncWithCS2`, which the
+     * window runs off the event thread, and the multi-unit dialog, on the event thread.  One thread's
+     * staged list could be overwritten before its own apply read it, and the consist was then rebuilt
+     * from the other thread's list - silently, because both calls succeed.
+     *
+     * Every caller that has its list in hand should use this.  The two-call form remains for the one
+     * caller that cannot: `restoreState` stages each consist while the locomotives are still being
+     * loaded and applies them all afterwards, because a member cannot be resolved by name until it
+     * exists.  That runs before the window is built, so nothing else is staging.
+     *
+     * @param locList member name to speed adjustment, as `preSetLinkedLocomotives` takes it
+     * @return the number of members linked, or -1 where a Central Station multi-unit refuses linking
+     */
+    public int setLinkedLocomotives(Map<String, Double> locList)
+    {
+        return this.applyLinkedLocomotives(locList);
+    }
+
+    /**
      * Processes the preset list and maps locomotives to be linked to this one
-     * @return 
+     * @return
      */
     @Override
-    public int setLinkedLocomotives() 
-    {       
+    public int setLinkedLocomotives()
+    {
+        return this.applyLinkedLocomotives(this.preLinkedLocomotives);
+    }
+
+    /**
+     * Validates a list of member names and publishes the consist it describes.
+     *
+     * @param preLinkedLocomotives the staged list; null or a Central Station multi-unit clears
+     * @return the number of members linked, or -1
+     */
+    private int applyLinkedLocomotives(Map<String, Double> preLinkedLocomotives)
+    {              
         // Staged in a local map and swapped in one step, rather than clearing the live map and
         // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
         // locomotive's monitor; rebuilding it unsynchronised let a fan-out land mid-rebuild and either
@@ -1195,10 +1275,8 @@ public class MarklinLocomotive extends Locomotive
         if (preLinkedLocomotives == null || !(preLinkedLocomotives instanceof Map) 
                 || this.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
         {
-            synchronized (this)
-            {
-                this.linkedLocomotives.clear();
-            }
+            // One assignment - see the field.
+            this.linkedLocomotives = java.util.Collections.emptyMap();
 
             return -1;
         }
@@ -1224,19 +1302,18 @@ public class MarklinLocomotive extends Locomotive
             }
         }
         
-        synchronized (this)
-        {
-            this.linkedLocomotives.clear();
-            this.linkedLocomotives.putAll(staged);
-        }
-        
+        // ONE ASSIGNMENT, of a map nothing will edit again - see the field.  This is what the staging
+        // above was already most of the way towards; what it still did was clear() then putAll() on the
+        // instance every reader holds.
+        this.linkedLocomotives = java.util.Collections.unmodifiableMap(staged);
+
         // Ensure the correct direction - commands should automatically cascade
-        if (!this.linkedLocomotives.isEmpty())
+        if (!staged.isEmpty())
         {
             this.setDirection(this.getDirection());
         }
-        
-        return this.linkedLocomotives.size();
+
+        return staged.size();
     }
     
     /**
@@ -1334,7 +1411,12 @@ public class MarklinLocomotive extends Locomotive
     @Override
     public Map<Locomotive, Double> getLinkedLocomotives()
     {
-        return this.linkedLocomotives;
+        // Unmodifiable at the door as well as at the assignment.  Every published value is already
+        // unmodifiable, and this covers the one path that does not come from setLinkedLocomotives: a
+        // MarklinLocomotive restored by Java serialization, whose map comes back as whatever was
+        // written.  Nothing in src/ or test/ mutates what this returns - checked - so wrapping costs a
+        // caller nothing and closes the door for the next one.
+        return java.util.Collections.unmodifiableMap(this.linkedLocomotives);
     }
     
     /**
@@ -1361,7 +1443,21 @@ public class MarklinLocomotive extends Locomotive
      */
     synchronized public boolean unlinkLocomotive(Locomotive member)
     {
-        return this.linkedLocomotives.remove(member) != null;
+        Map<Locomotive, Double> current = this.linkedLocomotives;
+
+        if (!current.containsKey(member)) return false;
+
+        // COPIED, not edited, for the reason the field gives: a save or a fan-out may be holding this
+        // map, and removing from underneath it is the same defect as rebuilding in place.  The javadoc
+        // above described the monitor as what made the removal safe; the monitor only ever covered the
+        // readers that take it, which the save path does not.
+        Map<Locomotive, Double> without = new LinkedHashMap<>(current);
+
+        without.remove(member);
+
+        this.linkedLocomotives = java.util.Collections.unmodifiableMap(without);
+
+        return true;
     }
     
     /**

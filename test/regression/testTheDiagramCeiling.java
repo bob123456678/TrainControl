@@ -1,6 +1,7 @@
 package regression;
 
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -194,6 +195,49 @@ public class testTheDiagramCeiling
         finally
         {
             dispose(full);
+        }
+    }
+
+    /**
+     * The ceiling is asked about the amount being added, not about one (NSV-C3).
+     *
+     * `LayoutEditor.addRowsAndColumns(rows, cols)` asked `roomToGrow(1, 1)` - "is there room for one
+     * more of each" - and then added `rows` and `cols`. It is `X8-C5`'s own one-predicate rule asked
+     * about the wrong amount, in one of the methods `X8-C5` touched. It cannot overflow today because
+     * its only caller pads a blank page to 16 x 21, which is why this is a trap rather than a defect.
+     *
+     * **Asserted at the predicate, because the refusal cannot be driven from a test.** The guard's
+     * failure branch is `JOptionPane.showMessageDialog`, which is modal: calling `addRowsAndColumns`
+     * with an amount it refuses blocks the event thread until somebody clicks OK, so a test that drives
+     * it hangs rather than fails. That is not hypothetical - it hung this class for ten minutes and left
+     * a JVM holding the runner's lock. What is pinned here is that the predicate DISCRIMINATES BY
+     * AMOUNT on the page the caller would be asking about; that the caller passes its own arguments is
+     * one line above it and is not covered.
+     *
+     * MUTATION: make `roomToGrow` ignore its arguments and use 1 and this fails.
+     */
+    @Test
+    public void testTheCeilingIsAskedAboutTheAmount() throws Exception
+    {
+        // One row short of the ceiling: room for one more, and not for twenty.
+        LayoutEditor editor = editorOver(10, LayoutEditor.MAX_SIZE - 1);
+
+        try
+        {
+            assertTrue(editor.roomToGrow(1, 0),
+                "a page one row below the ceiling has room for one more row");
+
+            assertFalse(editor.roomToGrow(20, 0),
+                "a page one row below the ceiling was told it had room for twenty more.  The guard in "
+                + "addRowsAndColumns asked exactly this, about ONE, and then added twenty (NSV-C3)");
+
+            // The same in the other dimension, so this is not passing because rows are special.
+            assertFalse(editor.roomToGrow(0, LayoutEditor.MAX_SIZE),
+                "a page was told it had room for another " + LayoutEditor.MAX_SIZE + " columns");
+        }
+        finally
+        {
+            dispose(editor);
         }
     }
 

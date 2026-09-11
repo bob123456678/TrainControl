@@ -151,7 +151,25 @@ public class RouteCommand implements java.io.Serializable
     public static RouteCommand RouteCommandLocomotiveSpeed(String name, int speed)
     {
         RouteCommand r = new RouteCommand(TYPE_LOCOMOTIVE);
-        
+
+        // CLAMPED HERE, WHICH IS WHERE EVERY DOOR MEETS (S14-B2).
+        //
+        // fromLine clamped and fromJSON did not, so a route imported from a hand-edited or shared JSON
+        // file could carry a speed of 150.  execRoute passes it to setSpeed, and _setSpeed DISCARDS an
+        // out-of-range value rather than clamping it - so the head re-transmitted its previous speed
+        // while every member was sent min(150 x multiplier, 100), which is the two engines of one
+        // consist pulling against each other.
+        //
+        // There is a third door neither parser covers: the CS3 route import computes a speed as
+        // wert / 1000 * 100, with a comment promising a range it does not enforce.  All three build the
+        // command here.
+        //
+        // A NEGATIVE IS NOT CLAMPED TO ZERO.  fromLine normalises any negative to -1 and execRoute reads
+        // -1 as an instant stop, so clamping to 0 would turn a stop into a speed command.  This is
+        // fromLine's rule, moved to where both parsers pass through.
+        if (speed < 0) speed = -1;
+        if (speed > 100) speed = 100;
+
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_SPEED, Integer.toString(speed));
         

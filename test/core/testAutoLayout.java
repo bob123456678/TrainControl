@@ -3,8 +3,10 @@ package core;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -79,6 +81,254 @@ public class testAutoLayout
         }
     }
     
+    /**
+     * A route autonomy activates really is watching its sensor afterwards (Adam, 2026-09-10).
+     *
+     * **`testAutoRoute` above asserts the flag, and the flag is not the railway.** `enable()` sets a
+     * boolean; `executeAutoRoute()` is what parks a thread on the s88. Remove the second call from
+     * `applyAutonomyRouteActivations` and every assertion in `testAutoRoute` still passes while no
+     * activated route ever fires again - the configuration would load, the log would say the route was
+     * enabled, and the railway would do nothing.
+     *
+     * So this pulses the sensor and asks whether the turnout moved.
+     *
+     * MUTATION: delete `r.executeAutoRoute();` from `applyAutonomyRouteActivations` and this fails while
+     * `testAutoRoute` stays green.
+     */
+    @Test
+    public void testAnActivatedRouteIsArmedAndNotJustFlagged() throws Exception
+    {
+        final int sensor = 8871;
+        final int turnout = 295;
+        final int routeId = 9821;
+
+        model.newFeedback(sensor, null);
+        model.setFeedbackState(String.valueOf(sensor), false);
+
+        MarklinAccessory acc = model.getAccessoryByAddress(turnout, MarklinAccessory.accessoryDecoderType.MM2);
+
+        acc.setSwitched(false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, Accessory.accessoryDecoderType.MM2, true));
+
+        // Built disabled, so nothing is armed until autonomy says so - which is the sequence under test.
+        model.newRoute("AR arm probe", routeId, commands, sensor,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            MarklinRoute route = model.getRoute("AR arm probe");
+
+            assertFalse(route.isEnabled(), "precondition: the route starts disarmed");
+
+            Layout layout = model.getAutoLayout();
+
+            layout.setActivateRouteIDs(Collections.singletonList(routeId));
+            layout.setActivateRoutes(true);
+
+            model.applyAutonomyRouteActivations();
+
+            assertTrue(route.isEnabled(), "precondition: autonomy reports the route as enabled");
+
+            pulseFeedback(String.valueOf(sensor));
+
+            assertTrue(acc.isSwitched(),
+                "autonomy enabled the route and the sensor then fired, but the turnout did not move - "
+                + "so the route carries the flag and nothing is watching the railway.  enable() sets a "
+                + "boolean; executeAutoRoute() is what parks the monitor");
+        }
+        finally
+        {
+            model.deleteRoute("AR arm probe");
+        }
+    }
+
+    /**
+     * A route autonomy switches off really stops firing (Adam, 2026-09-10).
+     *
+     * The other half of the same gap: `testAutoRoute` asserts that every route outside the list reports
+     * itself disabled, which `disable()` makes true by definition. What matters is that the parked
+     * monitor honours it - it tests `enabled` after each feedback wait and returns - and that is what is
+     * asserted here, with a control first so the test cannot pass because the route was never firing.
+     *
+     * MUTATION: take the `r.disable()` out of the non-listed branch of `applyAutonomyRouteActivations`
+     * and this fails.
+     */
+    @Test
+    public void testADeactivatedRouteStopsFiring() throws Exception
+    {
+        final int sensor = 8872;
+        final int turnout = 297;
+        final int routeId = 9822;
+
+        model.newFeedback(sensor, null);
+        model.setFeedbackState(String.valueOf(sensor), false);
+
+        MarklinAccessory acc = model.getAccessoryByAddress(turnout, MarklinAccessory.accessoryDecoderType.MM2);
+
+        acc.setSwitched(false);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute("AR disarm probe", routeId, commands, sensor,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            MarklinRoute route = model.getRoute("AR disarm probe");
+
+            route.enable();
+            route.executeAutoRoute();
+
+            Thread.sleep(600);
+
+            // THE CONTROL: it fires while it is armed, so the assertion below is about the disarming.
+            pulseFeedback(String.valueOf(sensor));
+
+            assertTrue(acc.isSwitched(),
+                "control: the route did not fire even while armed, so this test cannot tell a disarmed "
+                + "route from a broken fixture");
+
+            acc.setSwitched(false);
+
+            // Autonomy now loads a configuration that does not list this route.
+            Layout layout = model.getAutoLayout();
+
+            layout.setActivateRouteIDs(Collections.singletonList(routeId + 1));
+            layout.setActivateRoutes(true);
+
+            model.applyAutonomyRouteActivations();
+
+            assertFalse(route.isEnabled(), "precondition: autonomy reports the route as disabled");
+
+            pulseFeedback(String.valueOf(sensor));
+
+            assertFalse(acc.isSwitched(),
+                "the route was switched off by autonomy and still threw its turnout when the sensor "
+                + "fired.  Two systems command this railway and the operator was told this one had "
+                + "stopped");
+        }
+        finally
+        {
+            model.deleteRoute("AR disarm probe");
+        }
+    }
+
+    /**
+     * A route with no sensor cannot be activated, and is not reported as activated.
+     *
+     * `applyAutonomyRouteActivations` guards the enable on `hasS88()` and logs
+     * `autolayoutErrorS88RequiredForAutoFire` instead - a route with no sensor has nothing to watch, so
+     * enabling it would leave a route that claims to be automatic and can never fire.
+     */
+    @Test
+    public void testAListedRouteWithNoSensorIsNotActivated() throws Exception
+    {
+        final int routeId = 9823;
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(299, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute("AR sensorless probe", routeId, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            MarklinRoute route = model.getRoute("AR sensorless probe");
+
+            assertFalse(route.hasS88(), "precondition: the route has no sensor");
+
+            Layout layout = model.getAutoLayout();
+
+            layout.setActivateRouteIDs(Collections.singletonList(routeId));
+            layout.setActivateRoutes(true);
+
+            model.applyAutonomyRouteActivations();
+
+            assertFalse(route.isEnabled(),
+                "a route with no sensor was marked as automatically firing, which it can never do");
+        }
+        finally
+        {
+            model.deleteRoute("AR sensorless probe");
+        }
+    }
+
+    /**
+     * Drives a sensor clear then occupied, holding each state past FEEDBACK_DURATION_THRESHOLD, then
+     * allows time for the route body to run.  The same shape testRoutes uses.
+     */
+    private static void pulseFeedback(String feedbackName) throws InterruptedException
+    {
+        model.setFeedbackState(feedbackName, false);
+        Thread.sleep(400);
+        model.setFeedbackState(feedbackName, true);
+        Thread.sleep(1500);
+    }
+
+    /**
+     * An edge's arrival side survives Export JSON and Load JSON (S14-B3).
+     *
+     * `entrySide` is the side of the end point an edge arrives by. `AutonomyBuilder` writes it when it
+     * traces the diagram, `Layout.fromJSON` reads it back, and the field's own javadoc says it *"travels
+     * in the configuration"* - but `Edge.toJSON` never wrote it. So the program's own export was not a
+     * configuration the program could reload: every edge came back with no arrival side.
+     *
+     * What that costs is arrival-side reasoning - which side of a station a train comes in on, and
+     * therefore what counts as a reversal - on any layout that has been through Export JSON.
+     *
+     * Measured over the whole live configuration rather than one edge, because the defect is that NONE of
+     * them carried it: a single-edge assertion would pass on a fixture that happened to have no sides.
+     *
+     * MUTATION: drop the `entrySide` line from `Edge.toJSON` and this fails, reporting 0 sides written of
+     * however many the layout has.
+     */
+    @Test
+    public void testAnEdgeKeepsItsArrivalSideThroughTheJSON() throws Exception
+    {
+        // THE BASELINE CONFIGURATION, not the sample layout.  entrySide is written by AutonomyBuilder
+        // when it traces a track diagram, so the legacy sample has none and a test against it would
+        // pass with nothing to preserve - which is what the floor below is for.
+        String file = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get(System.getProperty("baseline.dir", "test/baseline"),
+                "configuration.json")), java.nio.charset.StandardCharsets.UTF_8);
+
+        Layout layout = Layout.fromJSON(file, model);
+
+        assertNotNull(layout, "precondition: the baseline configuration could not be read");
+
+        int sides = 0;
+
+        for (Edge e : layout.getEdges())
+        {
+            if (e.getEntrySide() != null) sides++;
+        }
+
+        assertTrue(sides > 0,
+            "precondition: no edge in the baseline configuration has an arrival side, so this test "
+            + "would pass vacuously.  AutonomyBuilder is what writes them");
+
+        // The program's own export, read back by the program's own reader.
+        Layout back = Layout.fromJSON(layout.toJSON().toString(), model);
+
+        assertNotNull(back, "the exported configuration could not be read back at all");
+
+        int sidesBack = 0;
+
+        for (Edge e : back.getEdges())
+        {
+            if (e.getEntrySide() != null) sidesBack++;
+        }
+
+        assertEquals(sidesBack, sides,
+            "the layout has " + sides + " edges with an arrival side and the export brought back "
+            + sidesBack + ".  Edge.toJSON did not write entrySide, which Layout.fromJSON reads and the "
+            + "field's javadoc says travels in the configuration - so Export JSON then Load JSON lost "
+            + "the arrival side of every edge (S14-B3)");
+    }
+
     /**
      * Test multi unit creation
      */

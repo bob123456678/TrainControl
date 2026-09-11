@@ -1068,6 +1068,30 @@ MON-C6	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - four javadocs and two t
 MON-C7	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-C8	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the index re-counted against its own sections; three other documents qu
 MON-C9	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the arithmetic recorded, and BOTH unadjudicated sub-findings ruled: C19
+N8-A1	N8-eight-day-review.md	-	open
+N8-A1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: B**
+N8-B1	N8-eight-day-review.md	-	open
+N8-B1	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
+N8-B2	N8-eight-day-review.md	-	open
+N8-B2	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: C**
+N8-B3	N8-eight-day-review.md	-	open
+N8-B3	NSV-validation.md	-	**CONFIRMED** (count and mechanism exact; the stated cause and the proposed fix are both w
+N8-C1	N8-eight-day-review.md	-	open
+N8-C1	NSV-validation.md	-	**CONFIRMED**
+N8-C2	N8-eight-day-review.md	-	open
+N8-C2	NSV-validation.md	-	**CONFIRMED** (same defect as `S14-C8`)
+N8-C3	N8-eight-day-review.md	-	open
+N8-C3	NSV-validation.md	-	**CONFIRMED**
+N8-C4	N8-eight-day-review.md	-	open
+N8-C4	NSV-validation.md	-	**CONFIRMED**
+N8-D1	N8-eight-day-review.md	-	clean
+N8-D2	N8-eight-day-review.md	-	clean, and it settles what `X8` left unfiled
+N8-D3	N8-eight-day-review.md	-	clean
+N8-D4	N8-eight-day-review.md	-	clean, measured
+N8-D5	N8-eight-day-review.md	-	measured — it is `N8-B2`'s evidence, not a finding of its own
+N8-D6	N8-eight-day-review.md	-	recorded
+N8-D7	N8-eight-day-review.md	-	**withdrawn** — originally C; the case cannot arise
+N8-D8	N8-eight-day-review.md	-	clean
 NR-1	2026-08-23-night-review.md	Closed	Medium-high
 NR-2	2026-08-23-night-review.md	Closed	High
 NR-3	2026-08-23-night-review.md	Closed	High
@@ -1077,6 +1101,22 @@ NR-6	2026-08-23-night-review.md	Closed	High
 NR-7	2026-08-23-night-review.md	Closed	High
 NR-8	2026-08-23-night-review.md	Closed	High
 NR-9	2026-08-23-night-review.md	Closed	Medium
+NSV-B1	NSV-validation.md	-	open
+NSV-B2	NSV-validation.md	-	open
+NSV-B3	NSV-validation.md	-	open
+NSV-C1	NSV-validation.md	-	open
+NSV-C2	NSV-validation.md	-	open
+NSV-C3	NSV-validation.md	-	open
+NSV-C4	NSV-validation.md	-	open
+NSV-C5	NSV-validation.md	-	open
+NSV-C6	NSV-validation.md	-	open
+NSV-C7	NSV-validation.md	-	open
+NSV-D1	NSV-validation.md	-	**`S14-C5` refuted**; it is one of six exports with the same shape, and nothing can be los
+NSV-D2	NSV-validation.md	-	clean, measured
+NSV-D3	NSV-validation.md	-	clean, with the correction in adjudication 2
+NSV-D4	NSV-validation.md	-	measured
+NSV-D5	NSV-validation.md	-	recorded
+NSV-D6	NSV-validation.md	-	verified
 OPV-B1	2026-09-04-opus-validation.md	Closed	fixed for the finding's headline case - `testALockPhaseFailureLeavesTheTrainWhereItStands`
 OPV-C1	2026-09-04-opus-validation.md	Closed	fixed - the key is `block`, and each of the three markers is now asserted separately, beca
 OPV-C2	2026-09-04-opus-validation.md	Closed	fixed - the ACC-C2 disposition now says the paragraph is in the generator and the checked-
@@ -1411,6 +1451,41 @@ RV-C2	2026-08-01-reversing-destinations-review.md	Closed	Fixed - the probe now a
 RV-D1	2026-08-01-reversing-destinations-review.md	Closed	Clean - except its through-traffic bullet, whose judgment `b56b407` reverses; see "The thi
 RV-D2	2026-08-01-reversing-destinations-review.md	Closed	Verified
 RV-D3	2026-08-01-reversing-destinations-review.md	Closed	Concurs
+S14-A1	NSV-validation.md	-	**CONFIRMED** - and demonstrated by execution
+S14-A1	S14-application-review.md	-	open
+S14-A2	NSV-validation.md	-	**CONFIRMED**
+S14-A2	S14-application-review.md	-	open
+S14-B1	NSV-validation.md	-	**CONFIRMED**
+S14-B1	S14-application-review.md	-	open
+S14-B2	NSV-validation.md	-	**CONFIRMED**
+S14-B2	S14-application-review.md	-	open
+S14-B3	NSV-validation.md	-	**CONFIRMED**
+S14-B3	S14-application-review.md	-	open
+S14-B4	NSV-validation.md	-	**CONFIRMED AT A DIFFERENT SEVERITY: A**
+S14-B4	S14-application-review.md	-	open
+S14-C1	NSV-validation.md	-	**CONFIRMED**
+S14-C1	S14-application-review.md	-	open
+S14-C2	NSV-validation.md	-	**CONFIRMED**
+S14-C2	S14-application-review.md	-	open
+S14-C3	NSV-validation.md	-	**CONFIRMED**
+S14-C3	S14-application-review.md	-	open
+S14-C4	NSV-validation.md	-	**CONFIRMED**
+S14-C4	S14-application-review.md	-	open
+S14-C5	NSV-validation.md	-	**REFUTED**
+S14-C5	S14-application-review.md	-	open
+S14-C6	NSV-validation.md	-	**CONFIRMED** (one factual error in it, and it missed the stronger sibling)
+S14-C6	S14-application-review.md	-	open
+S14-C7	NSV-validation.md	-	**CONFIRMED**
+S14-C7	S14-application-review.md	-	open
+S14-C8	NSV-validation.md	-	**CONFIRMED** (same defect as `N8-C2`)
+S14-C8	S14-application-review.md	-	open
+S14-D1	S14-application-review.md	-	withdrawn, opened as a suspected A: the conditional `touched()` does not leave the autonom
+S14-D2	S14-application-review.md	-	`readLayoutIndexIds` returning a duplicate is deliberate and pinned - which is what narrow
+S14-D3	S14-application-review.md	-	a route that names a signal registering a switch is not a defect
+S14-D4	S14-application-review.md	-	Adam's own railway has no duplicate page id, so `S14-A2` does not affect it today
+S14-D5	S14-application-review.md	-	the route editor's displayed delay floor does not write itself into a stored route
+S14-D6	S14-application-review.md	-	`roomToGrow`'s per-dimension rewrite is asked by the menu and by every gesture that grows
+S14-D7	S14-application-review.md	-	the working tree changed under this pass, and one test failure belongs to that rather than
 SA-A1	2026-08-18-station-arrivals-review.md	Closed	fixed, `d4cc22a`
 SA-A2	2026-08-18-station-arrivals-review.md	Closed	fixed, `a5de425`
 SA-A3	2026-08-18-station-arrivals-review.md	Closed	fixed, next commit
@@ -2401,28 +2476,13 @@ X8-D5	X8-independent-review.md	-	complete but for `locked`
 X8-D6	X8-independent-review.md	-	cannot bite - the timetable is a `List`
 X8-D7	X8-independent-review.md	-	it can
 X8-D8	X8-independent-review.md	-	it asks both, and that is what makes `X8-A2` narrow
-X8V-A1a	X8V-validation.md	-	2 red: `testTheHeaderKeyOfAPageSurvivesASave`, `testAPageWithNoBlocksStillKeepsItsHeaderKe
-X8V-A1b	X8V-validation.md	-	the same 2 red
-X8V-A1c	X8V-validation.md	-	**1** red: `testAPageWithNoBlocksStillKeepsItsHeaderKey` alone — the discriminator that te
-X8V-A2	X8V-validation.md	-	2 of 2 red
 X8V-B1	X8V-validation.md	-	closed
-X8V-B1a	X8V-validation.md	-	2 of 2 red
-X8V-B1b	X8V-validation.md	-	**1** red: the blank-square control, which is the column-drag case the commit message says
 X8V-B2	X8V-validation.md	-	closed
-X8V-B2a	X8V-validation.md	-	3 red: the page-edit, no-id and renamed claims
-X8V-B2b	X8V-validation.md	-	**1** red: `testAPageWithNoIdKeepsWhatTheStationWroteInsideIt` alone
-X8V-B3a	X8V-validation.md	-	**1** red: `testAConditionalRouteFirstInTheFileIsNotDropped`. `testConditionsOnTheRealRout
-X8V-B3b	X8V-validation.md	-	**2** red — including `testConditionsOnTheRealRouteFile`, so the second half is pinned by 
-X8V-B4	X8V-validation.md	-	1 of 1 red
-X8V-B5	X8V-validation.md	-	1 red: `testEditingARouteKeepsItsLock`
-X8V-B6	X8V-validation.md	-	1 red: `testARouteRunByHandIgnoresItsConditions`
-X8V-C1	X8V-validation.md	-	1 red: `testNoCommentCitesALineNumber`
+X8V-C1	X8V-validation.md	-	closed
 X8V-C2	X8V-validation.md	-	closed
-X8V-C2a	X8V-validation.md	-	**nothing red** (`X8V-C5`)
-X8V-C3	X8V-validation.md	-	open
+X8V-C3	X8V-validation.md	-	closed
 X8V-C4	X8V-validation.md	-	closed
 X8V-C5	X8V-validation.md	-	closed
-X8V-C5a	X8V-validation.md	-	**nothing red** (`X8V-C2`)
 X8V-C6	X8V-validation.md	-	closed
 X8V-C7	X8V-validation.md	-	closed
 X8V-C8	X8V-validation.md	-	closed

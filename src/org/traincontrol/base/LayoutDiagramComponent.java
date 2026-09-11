@@ -553,6 +553,39 @@ public class LayoutDiagramComponent
     {
         return rawAddress;
     }
+
+    /**
+     * Points a link tile at a page, by its place in the name-sorted page list, or at nothing.
+     *
+     * **A LINK HOLDS A POSITION, and the positions move.**  Adam, 2026-09-10: *"right now, let's make
+     * artikel be the sorted index of the page"*.  So adding, renaming, duplicating, deleting or
+     * combining a page changes what every arrow on the layout means, and the operations that do it call
+     * `LayoutDiagram.repointPageLinks` to rewrite the numbers - which needs a way in, since
+     * `setLogicalAddress` is the operator's door and refuses what this must be able to write.
+     *
+     * **-1 IS A LINK TO NOTHING**, which is what an arrow becomes when the page it pointed at is
+     * deleted.  Adam, same ruling: *"set the ID to -1.  This shouldn't throw any errors, and simply
+     * resolve to nothing when clicked.  Then, the user can set it to the right page on their next
+     * edit."*  Clicking it does nothing, the tooltip says so, and `.artikel=-1` is already the file's
+     * own way of writing "no address" - it is what a text tile carries.
+     *
+     * @param index the page's place in the name-sorted list, or -1 for no page
+     */
+    public void setLinkedPageIndex(int index)
+    {
+        if (!this.isLink()) return;
+
+        this.rawAddress = index < 0 ? -1 : index;
+        this.address = this.rawAddress;
+    }
+
+    /**
+     * @return true when this is a link tile that points at no page
+     */
+    public boolean linksNowhere()
+    {
+        return this.isLink() && this.rawAddress < 0;
+    }
     
     public Accessory getAccessory()
     {
@@ -713,6 +746,11 @@ public class LayoutDiagramComponent
         }
         else if (this.isLink())
         {
+            // The page it pointed at was deleted, and the operator sets it again when they next edit
+            // the square (Adam, 2026-09-10).  Saying so is the whole of what "resolves to nothing"
+            // looks like from the outside - an arrow that silently did nothing would read as broken.
+            if (this.linksNowhere()) return I18n.t("layout.linkPageNone");
+
             return I18n.f("layout.linkPage", this.getRawAddress() + 1);
         }
         else

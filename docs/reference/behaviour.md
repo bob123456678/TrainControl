@@ -1100,6 +1100,37 @@ The help text used to say only *"The route is held until these are true"*, with 
 firing, so a user who added a condition, pressed Test, was told the route would not fire, and then
 pressed Play got every switch in it thrown. It now says which firing it means.
 
+## 7b. Routes that come from a file, and the pause between their commands
+
+**A route read from a file arrives switched off.** Adam, 2026-09-10: *"they should not be armed.  The
+user can choose to do this when they are ready."*  So Routes then Import reads each route's automatic
+flag and then overrides it: nothing in an imported file starts watching a sensor until the operator
+turns it on.  That is the one thing about an import which is deliberately not a faithful restoration of
+what the file says.
+
+It is also what makes the import safe.  Building a route ARMS it - a route with a sensor and its flag
+set parks a thread on that sensor as soon as it exists - so before this, a file that failed to parse
+half way through left the routes it had already built running for the rest of the session: in no
+database, on no list, reachable by nothing, and throwing switches for a route the operator could not
+see (S14-A1).  And on an import that succeeded, the route being replaced and its replacement both
+watched the same sensor until the old one was deleted, so a trigger in that window fired both.
+
+**The railway leaves at least 150 ms between two route commands, whatever the route says.**  A command
+may carry its own delay, and the executor waits the LARGER of that delay and 150 ms - so a delay below
+the floor is not a shorter pause, it is the same pause.  The editor shows the number the railway will
+actually wait rather than the number that was typed, in both directions: a delay that arrived from an
+earlier build, from a station or from a JSON file is shown raised too (X8-C2, X8V-C7).
+
+Zero is not a delay.  It means no pause was asked for, which is what an untouched command holds, and it
+is not raised.  `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above the floor, which is what makes the
+gap a three-way switch needs between its two commands real rather than inert.
+
+**A speed in a route is between 0 and 100, and a negative speed means an instant stop.**  Any number
+outside that range is clamped where the command is built, so every door agrees - typed into the editor,
+read from a JSON file, or imported from a Central Station (S14-B2).  Before that an imported route could
+ask for 150, which the head of a multi-unit discarded while every member was sent 100: the two engines
+of one consist pulling against each other.
+
 ## 8. Things that are true of the whole system
 
 **Pages are ordered by name, not by the number the Central Station orders them with.** Adam,
@@ -1108,9 +1139,42 @@ name, which is the simpler behavior."* `getLayoutList` sorts, and that sort is w
 every menu show.
 
 An id is still an identity - the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps
-each page's id rather than renumbering by position - but it is not a position here. The same goes for
-the `page=N` line at the top of a page file: it is preserved exactly as the station wrote it (X8-A1),
-and if a reissued id later disagrees with it, neither number decides anything TrainControl does.
+each page's id rather than renumbering by position - but it is not a position. The same goes for the
+`page=N` line at the top of a page file: it is preserved exactly as the station wrote it (X8-A1), and
+if a reissued id later disagrees with it, neither number decides where the page appears.
+
+**A page that states no `.id` has id 0.** Adam, 2026-09-10: *"no .id means id 0 implicitly."* That is
+the ordinary CS2 convention - a key the station omits carries the zero value - and it is what the files
+say: of the index files here, four have a first page with no `.id`, their stated ids run 1..n, and none
+states `.id=0`. On the genuine station export the pages are named `0 stationer` .. `7 autonom
+annotated` against stated ids 1..7, so the absent one is 0 and the ids line up with the names.
+
+Reading it as the page's POSITION instead is what made two pages hold one id, which keyed both of them
+into one space in the autonomy setup (S14-A2).
+
+**A PAGE LINK IS STORED AS A POSITION, and it is the only thing that is.** Adam, 2026-09-10: *"right
+now, let's make artikel be the sorted index of the page - which i believe is already how it worked."*
+So an arrow tile holds the destination's place in the name-sorted list, not its id.
+
+Three things follow, and they are the behaviour rather than the implementation:
+
+- **Every operation that changes the set of page names re-aims the arrows.** Adding, renaming,
+  duplicating, deleting and combining all move the alphabet, and an arrow follows the page it pointed
+  at. Before this it silently came to mean another page and the new number was written to the file -
+  measured on the five pages of the sample layout, adding one page repointed four of seven arrows
+  (N8-A1).
+- **An arrow whose page is deleted points at nothing.** Adam: *"set the ID to -1. This shouldn't throw
+  any errors, and simply resolve to nothing when clicked. Then, the user can set it to the right page
+  on their next edit."* Clicking it does nothing and its tooltip says so.
+- **An arrow may not point at the page it is drawn on.** Adam: *"make sure links can only go to other
+  pages, not themselves."* The page being edited is not offered in the list.
+
+**A page whose file will not read keeps its place in the list.** It comes back blank with a text tile
+at 1,1 saying it could not be loaded - Adam, 2026-09-10, and the reason the page cannot simply be
+dropped is the rule above it: the list is what every arrow indexes into, so a missing page silently
+re-aimed every arrow after it, with nobody having edited anything (NSV-B3). An unhydrated cloud file is
+enough to cause that. Such a page is never saved, because writing a blank page over the file somebody
+is trying to recover is worse than not showing it.
 
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it
   means, or it is asking a question the graph does not answer.

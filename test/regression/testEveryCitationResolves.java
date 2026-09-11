@@ -274,6 +274,88 @@ public class testEveryCitationResolves
     }
 
     /**
+     * No catalogued finding carries a sub-letter its document does not write (N8-B3, NSV-B1).
+     *
+     * **A parser read a mutation table as findings.** `catalog-findings.py` accepted any table row whose
+     * first cell looked like `A1a` as a finding of the document's declared prefix, and
+     * `X8V-validation.md` opens with a Method table keyed exactly that way - so fifteen findings entered
+     * the catalogue that the document never made, four of them at severity A against an A section that
+     * says "Nothing". The same rows outranked the real status table, so `X8V-C1` was catalogued as
+     * "2 of 2 red" where its own table said closed.
+     *
+     * **Why the guard is this narrow.** The obvious check - every catalogued ref must appear in its
+     * document - is red on arrival: sixty documents declare a prefix and then number their headings
+     * `### A1`, so the full ref never appears in the text, and that check would fail on 64 legitimate
+     * rows before reaching the bad ones. What the fifteen had in common, and what no legitimate row in
+     * the catalogue has, is a SUB-LETTER: `A1a`, `B2b`. Across 2,486 rows only twelve carry one and
+     * eleven were X8V's. So a sub-lettered ref whose document does not write it out is the signature of
+     * this fault and of nothing else.
+     *
+     * This reads the mirror rather than the database, for the reason the test above does: the mirror is
+     * what is committed and greppable, and a Java test cannot run the generator.
+     *
+     * MUTATION: put any of the fifteen refs back in the mirror and this names it.
+     */
+    @Test
+    public void testNoCataloguedFindingHasASubLetterItsDocumentDoesNotWrite() throws Exception
+    {
+        String mirror = new String(java.nio.file.Files.readAllBytes(
+            new File("docs/manual-tests/findings.tsv").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        java.util.regex.Pattern sublettered =
+            java.util.regex.Pattern.compile("\\b([A-Z][A-Z0-9]{1,7}-[A-D]\\d{1,3}[a-z])\\b");
+
+        List<String> unwritten = new ArrayList<>();
+
+        int seen = 0;
+
+        for (String row : mirror.split("\n"))
+        {
+            String[] cells = row.split("\t");
+
+            if (cells.length < 2) continue;
+
+            java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
+
+            if (!m.matches()) continue;
+
+            seen++;
+
+            // The document is the second column by the mirror's own layout.  A sub-lettered ref is only
+            // legitimate if the document writes it out, which is what the fifteen did not.
+            File document = null;
+
+            for (File candidate : filesUnder(new File("docs"), ".md"))
+            {
+                if (candidate.getName().equals(cells[1].trim()))
+                {
+                    document = candidate;
+
+                    break;
+                }
+            }
+
+            // A document that has been deleted cannot be checked, and most of them have been - the
+            // folder was retired on 2026-09-08.  Those rows are the catalogue's whole purpose.
+            if (document == null) continue;
+
+            String body = new String(java.nio.file.Files.readAllBytes(document.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            if (!body.contains(cells[0].trim())) unwritten.add(cells[0].trim() + " in " + cells[1].trim());
+        }
+
+        assertTrue(unwritten.isEmpty(),
+            "the catalogue holds " + unwritten.size() + " finding(s) whose own document never writes "
+            + "them, of " + seen + " sub-lettered rows checked.  That is the signature of a table being "
+            + "read as findings - a Method or mutation table whose first column is A1a, B1a - and those "
+            + "rows cannot be acted on by anybody, while one of them outranked a real disposition "
+            + "(NSV-B1).  Re-run `python docs/tools/catalog-findings.py --add <folder>`, which is "
+            + "authoritative for the documents in it.  Found:\n  " + String.join("\n  ", unwritten));
+    }
+
+    /**
      * The catalogue is regenerable and current.
      *
      * It is rendered from `docs/manual-tests/triage.db` by `triagedb.render_findings`, and a generated

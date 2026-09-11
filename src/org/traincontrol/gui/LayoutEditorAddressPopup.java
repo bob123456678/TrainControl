@@ -14,7 +14,12 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 {
     private final TrainControlUI tcui;
     private final LayoutDiagramComponent lc;
-    
+
+    /**
+     * The page this square is on, so a link cannot be offered it (Adam, 2026-09-10).  May be null.
+     */
+    private final String onPage;
+
     /**
      * Creates new form LayourEditorAddressPopup
      * @param lc
@@ -22,10 +27,24 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
      */
     public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui)
     {
+        this(lc, tcui, null);
+    }
+
+    /**
+     * Creates new form LayourEditorAddressPopup, told which page the square is on.
+     *
+     * @param lc the square being edited
+     * @param tcui the window
+     * @param onPage the name of the page this square is on, so a link is not offered it.  Null to offer
+     *        every page, which is the old behaviour and is what a caller that does not know gets
+     */
+    public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui, String onPage)
+    {
         initComponents();
-        
+
         this.tcui = tcui;
         this.lc = lc;
+        this.onPage = onPage;
         
         this.mm2Radio.setVisible(false);
         this.dccRadio.setVisible(false);
@@ -39,10 +58,16 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 I18n.t("layout.ui.helpSelectPageLink")
             );
 
+            // EVERY PAGE BUT THIS ONE (Adam, 2026-09-10): *"make sure links can only go to other
+            // pages, not themselves."*  An arrow to the page it is drawn on is a square that looks like
+            // a way somewhere and is not.
+            //
+            // Which means the combo's own index is no longer the page's index, and the two used to be
+            // the same number - so the selection is mapped through the page NAME in both directions
+            // below.  That is also the more durable of the two: a name is what every other part of this
+            // program identifies a page by.
             this.addressSelector.setModel(
-                new DefaultComboBoxModel<>(
-                    tcui.getModel().getLayoutList().toArray(new String[0])
-                )
+                new DefaultComboBoxModel<>(this.pagesThatCanBeLinkedTo().toArray(new String[0]))
             );
             this.addressSelector.setVisible(true);
             this.address.setVisible(false);
@@ -126,6 +151,16 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             {
                 this.addressSelector.setSelectedItem(addRouteId(tcui.getModel().getRoute(Integer.parseInt(addr))));
             }
+            else if (lc.isLink())
+            {
+                // `addr` is the page's place in the FULL list, one-based, which is what
+                // getLogicalAddress hands out - and the combo no longer holds the full list.
+                List<String> all = tcui.getModel().getLayoutList();
+
+                int at = Integer.parseInt(addr) - 1;
+
+                if (at >= 0 && at < all.size()) this.addressSelector.setSelectedItem(all.get(at));
+            }
             else
             {
                 if (this.addressSelector.getItemCount() > Integer.parseInt(addr) - 1)
@@ -170,6 +205,18 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             {
                 return extractRouteId(this.addressSelector.getSelectedItem().toString());
             }
+            else if (lc.isLink())
+            {
+                // Back to the page's place in the FULL list, since that is what a link stores - see the
+                // combo model above.  Nothing selected leaves the square as it was.
+                Object chosen = this.addressSelector.getSelectedItem();
+
+                if (chosen == null) return Integer.toString(lc.getLogicalAddress());
+
+                int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
+
+                return Integer.toString(at + 1);
+            }
             else
             {
                 return Integer.toString(this.addressSelector.getSelectedIndex() + 1);
@@ -177,6 +224,25 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
     }
     
+    /**
+     * Every page a link on this square may point at - which is every page except the one it is on.
+     *
+     * @return the page names, in the window's own order
+     */
+    private List<String> pagesThatCanBeLinkedTo()
+    {
+        List<String> out = new java.util.ArrayList<>();
+
+        for (String page : tcui.getModel().getLayoutList())
+        {
+            if (onPage != null && onPage.equals(page)) continue;
+
+            out.add(page);
+        }
+
+        return out;
+    }
+
     public Accessory.accessoryDecoderType getProtocol()
     {
         if (this.mm2Radio.isSelected())

@@ -316,7 +316,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private volatile long pingOutstandingSince;
 
-    private double lastLatency;
+    /**
+     * The last measured round trip, in milliseconds.
+     *
+     * volatile for the same reason as the two fields above, which is the reason that sweep should have
+     * reached this one (NSV-C7): it is written on the message-processor thread - on the very line that
+     * reads the volatile pingStart - and read by getLastLatency() from the interface.  A non-volatile
+     * double can also TEAR, so a reader could see half of one measurement and half of another, and this
+     * figure is what the latency display and the cutoff are built on.
+     */
+    private volatile double lastLatency;
 
     /**
      * Whether the locomotive database was there and would not read.
@@ -1505,8 +1514,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         {
                             if (other.hasLinkedLocomotives())
                             {
-                                other.preSetLinkedLocomotives(other.getLinkedLocomotiveNames());
-                                other.setLinkedLocomotives();
+                                // ONE CALL (NSV-B2).  The two-call form stages on an instance
+                                // field, and this loop runs off the event thread inside syncWithCS2
+                                // while the multi-unit dialog can be staging on the event thread -
+                                // so a consist could be rebuilt from the other thread's list.
+                                other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
                             }
                         }
                     }
@@ -2056,6 +2068,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Routes are indexed by name, so an unnamed route cannot be added
         if (r == null || r.getName() == null)
         {
+            // AND THIS ARM RETIRES THE MONITOR TOO (NSV-C1).  The arm below says why: a route is armed
+            // by its own constructor, so a route this method refuses is left watching its sensor with
+            // nothing holding it.  The reason does not depend on WHY it was refused, and a nameless
+            // route is one a hand-edited file produces just as readily as a duplicate.
+            if (r != null) r.disable();
+
             return false;
         }
 
@@ -3060,8 +3078,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             if (other.hasLinkedLocomotives())
             {
-                other.preSetLinkedLocomotives(other.getLinkedLocomotiveNames());
-                other.setLinkedLocomotives();
+                // One call - see the syncWithCS2 repair above, and NSV-B2 at the method itself.
+                other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
             }
         }
     }
@@ -3764,12 +3782,42 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 I18n.t("route.errorNotAValidRouteFile"), notRouteJson);
         }
 
+        // AN IMPORTED ROUTE IS NOT ARMED.  Adam, 2026-09-10: *"they should not be armed.  The user
+        // can choose to do this when they are ready."*  (S14-A1.)
+        //
+        // Constructing a MarklinRoute arms it: the complete constructor ends in executeAutoRoute(),
+        // which parks a thread on the route's s88 and fires the route whenever it triggers.  So a route
+        // built here is watching the railway before it has been offered to any database, and three
+        // things followed from that.
+        //
+        // A malformed entry throws out of this loop, and the routes built before it stayed armed for
+        // the rest of the session - in no database, on no list, and unreachable by deleteRoute, which
+        // walks routeDB.getItems() and never held them.  Measured: a file whose second entry was
+        // {"name": "incomplete"} left the first route's turnout moving on the next pulse of its sensor,
+        // with nothing in the program able to stop it before a restart.
+        //
+        // And on an import that SUCCEEDS, the route being replaced and its replacement both watched the
+        // same sensor from the end of the parse until the old one was deleted.  A trigger in that window
+        // fired both, throwing different commands at the same turnouts - where the import changed the
+        // route, which is the reason to import one.
+        //
+        // Both go away by disarming at the point of construction, and the operator decides when a
+        // freshly imported file starts driving the railway.  The disable is the statement AFTER the
+        // constructor and before anything else, which is the whole of the guarantee - there is no window
+        // to reason about because there are no statements in it.
+        //
+        // disable() is enough: the monitor tests `enabled` after every feedback wait and returns.  The
+        // thread stays parked until the sensor next fires and then exits, which is the same shape
+        // newRoute relies on when it refuses a duplicate.
         for (int i = 0; i < dataArray.length(); i++)
         {
             MarklinRoute route = MarklinRoute.fromJSON(dataArray.getJSONObject(i), this);
+
+            route.disable();
+
             routes.add(route);
-        } 
-        
+        }
+
         return routes;
     }
     
@@ -3781,13 +3829,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public void importRoutes(String json)
     {
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
-        
+
+        // EVERY ROUTE HERE IS DISARMED, and stays that way - parseRoutesFromJson says why, and it is
+        // Adam's ruling: an imported file does not start driving the railway until the operator turns
+        // its routes on.  A file's `auto` flag is therefore read and then overridden, which is the one
+        // thing about an import that is not a faithful restoration of what the file says.
         this.logf("route.deletingExisting");
         for (MarklinRoute r : this.routeDB.getItems())
         {
             this.deleteRoute(r.getName());
         }
-        
+
         // If all read successfully, remove existing routes and update route DB
         for (MarklinRoute route : routes)
         {

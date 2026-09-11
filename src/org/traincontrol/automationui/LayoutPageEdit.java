@@ -262,7 +262,40 @@ public class LayoutPageEdit
 
         if (rename) renamed.put(currentLayout, newLayoutName);
 
-        LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session),
-            keepAbsent);
+        // AND EVERY ARROW KEEPS ITS AIM (N8-A1).  A link tile holds a POSITION in the name-sorted page
+        // list, so adding, renaming or duplicating a page changes what every arrow on the layout means -
+        // measured on the five pages of the sample layout, adding one page repointed four of seven.
+        //
+        // The rule is in LayoutDiagram because TrainControlUI writes this same index for Delete and
+        // Combine, and a rule implemented in one of two writers is the defect this project produces
+        // most often.
+        List<LayoutDiagram> pages = new java.util.ArrayList<>();
+
+        // `log` is the ViewListener this was handed - the model - and it is the only way in here to the
+        // page objects.  Null in the overload that takes none, in which case there is nothing to re-aim.
+        if (log != null)
+        {
+            for (String name : log.getLayoutList())
+            {
+                LayoutDiagram each = log.getLayout(name);
+
+                if (each != null) pages.add(each);
+            }
+        }
+
+        for (LayoutDiagram moved : LayoutDiagram.writeIndexAndKeepLinksAimed(layoutPath, layoutList,
+            renamed, pageIdFloor(session), keepAbsent, pages))
+        {
+            try
+            {
+                moved.saveChanges(null, false);
+            }
+            catch (Exception cannotSave)
+            {
+                // The arrows are right in memory either way and the index is already written; refusing
+                // here would leave the two disagreeing.
+                if (log != null) log.log(cannotSave);
+            }
+        }
     }
 }

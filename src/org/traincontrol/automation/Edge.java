@@ -638,6 +638,19 @@ public class Edge
         // what every hand-written and pre-3.0.0 configuration should read as.
         if (this.crossesASwitch()) jsonObj.put("roomAtTheEnd", this.getRoomAtTheEnd());
 
+        // THE ARRIVAL SIDE, WHICH THIS METHOD DID NOT WRITE (S14-B3).
+        //
+        // Layout.fromJSON reads `entrySide`, AutonomyBuilder writes it when it traces a diagram, and the
+        // field's own javadoc says it travels in the configuration - so the program's export was not a
+        // configuration the program could reload.  Measured on the baseline configuration: 101 edges have
+        // an arrival side and Export JSON then Load JSON brought back none of them, which costs
+        // arrival-side reasoning - which side of a station a train comes in on, and so what counts as a
+        // reversal - on any layout that has been through the export.
+        //
+        // Written only when there is one, like roomAtTheEnd above: an absent key means "not traced", which
+        // is what a hand-written configuration and anything built before the diagram work should read as.
+        if (this.entrySide != null) jsonObj.put("entrySide", this.entrySide);
+
         if (!commandList.isEmpty())
         {
             jsonObj.put("commands", new JSONArray(commandList));
