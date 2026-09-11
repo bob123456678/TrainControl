@@ -1,6 +1,6 @@
 # GAP - what holds each rule the specification states?
 
-**Status:** closed 2026-09-11 - one real gap found and closed, two items returned to Adam as decisions
+**Status:** open 2026-09-11 - one real gap found and closed (`GAP-B1`), one open and unblocked (`GAP-C1`)
 
 **Prefix:** `GAP`
 
@@ -40,7 +40,7 @@ no comment in the code can point at, which is its own small finding.
 | Nothing on the event thread may call a synchronized Layout method | `D3-B2` | covered, under a sibling id - `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` cites `D3-A1` |
 | An unreadable page's autonomy settings are kept | `T10-C3` | covered - `core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged`; behaviour.md now names it |
 | Two things the room sum is known to get wrong | `MON-C13` | **not a gap - a disclosed limitation waiting on Adam**, see below |
-| An emergency stop is obeyed whatever else is true | `SVN-A4` | **held only by a manual test**, `MT-247`, which is itself a decision - see below |
+| An emergency stop is obeyed whatever else is true | `SVN-A4` | **REAL GAP - open**, and not blocked: `MT-247` was ruled on 2026-09-06 and built - see below |
 
 ### GAP-B1 - the placement rule had nothing holding it
 
@@ -71,9 +71,14 @@ One test file mentions an emergency stop at all
 (`regression.testARouteDoesNotThrowSwitchesUnderATrain`), and what it pins is which switches a conflict
 skips, not that the stop is obeyed.
 
-**Left open deliberately.** The test to write depends on which way Adam answers `MT-247`, and writing one
-first would pin whichever behaviour happens to exist today - which is the defect this project has
-produced most often.
+**Corrected the same day.** I wrote the paragraph above believing `MT-247` was still an open question.
+It is not: Adam ruled on 2026-09-06 - *"cancel should cancel everything. OK should fire everything...
+don't run the conflicting switch commands, but do run the power off and others. make test cases for
+this"* - and it was built on 2026-09-08 in `c22c9d90`, with the rule in `behaviour.md` section 7a.
+
+So this gap is real and has no blocker: the behaviour is settled, the code is written, and the test
+cases Adam asked for in that same sentence are the part still missing. **Open, and mine to do**, not
+his to decide.
 
 ### GAP-D1 - the room sum's two known-wrong cases
 

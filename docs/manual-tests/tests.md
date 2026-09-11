@@ -7513,6 +7513,8 @@ the requirements are too long.  I can't cleanly view the testing requirements fo
 
 **Claude, 2026-09-11.** Flagged for your review: this one is a DECISION, not a run. It says so in its own first line - *"a design decision, and I would rather you made it than have me pick"* - and no amount of hands-on testing settles it. `regression.testTheRefusalsAreAskedAtTheDoors` now pins the half that is not in question (every door asks before it acts, REG9-A1); what is still open is what the rebuild should do about the OTHER trains.
 
+**Claude, 2026-09-11, correcting the note above.** That note was wrong and it was mine: it read this entry's opening line and not its end. The design question WAS put to you and you answered it - the triage of 2026-09-06 reads *"Works"*, against `409d4ce8`. What is left is only that this entry asks to be run TWICE, once for the locomotive doors and once with trains running to check the Layouts menu refuses delete, rename, duplicate and combine, and nothing records which of the two that "Works" covered. A word settles it.
+
 ### MT-142 - 2026-08-24 - A page keeps its identity when other pages change
 
 **Disposition:** fixed validated
@@ -14188,6 +14190,10 @@ in its comment instead.
 
 **Claude, 2026-09-11.** Flagged for your review: also a decision as much as a test - *"when you decline the conflict dialog, the code has to decide what you meant, and today the answer differs depending on which door the route came through"*. The two doors' behaviour is pinned by `regression.testARouteDoesNotThrowSwitchesUnderATrain` and `regression.testAConflictSkipsOnlyTheSwitchUnderTheTrain`; which answer is right is yours.
 
+**Claude, 2026-09-11, correcting the note above.** Wrong, and mine. You ruled on this on 2026-09-06 - *"cancel should cancel everything. OK should fire everything... don't run the conflicting switch commands, but do run the power off and others. make test cases for this"* - and it was built on 2026-09-08 in `c22c9d90`, with the rule written into `behaviour.md` section 7a. This needs the re-test the entry already describes, not a decision: a route with a switch under a train and other switches elsewhere, where the others should throw.
+
+The test cases you asked for are the half still missing, and `GAP-C1` is about exactly that: *"an emergency stop is obeyed whatever else is true"* is stated in `behaviour.md` and nothing in the suite holds it. I had left that alone on the belief that the ruling was still open. It is not, so it can be written.
+
 ### MT-248 - 2026-09-01 - The length notice and the guard it is meant to arm
 
 **Disposition:** superseded
@@ -15288,6 +15294,10 @@ narrowing below and is built - the count was already in the popup, the list is n
 <a id="mt-261"></a>
 
 **Claude, 2026-09-11.** Flagged for your review, and it is the one I would put first: six questions, each sitting under a finding that is otherwise understood and could be built either way. A word each is enough, and answering them unblocks work in six different places. None of it needs the railway.
+
+**Claude, 2026-09-11, correcting the note above.** Wrong, and mine - this is the entry I said to put first, and it is the one that needed it least. All six were answered on 2026-09-02, three closed their findings with no code, and rulings 1, 2 and 4 were built in `3f829ced`. What this entry needs is the five-step run it already lists - the length notice asking about the stretch back to the last switch, a long train refused where that stretch is short, a short one still going, and a locomotive delete naming the routes it edits.
+
+One thing under it IS still open, and it is not one of the six: [MT-257](#mt-257) ruling 5, Test Connection, which its own table records as *"open - needs his word"*.
 
 ### MT-261 - 2026-09-02 - Four things the C sweep needs you to choose
 
