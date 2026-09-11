@@ -1263,6 +1263,17 @@ public class AutonomySession
         {
             if (store.getExcludedPages().contains(page.getName())) continue;
 
+            // AND A PAGE THE OPERATOR TURNED BACK ON IS LEFT ALONE (TST-B15, Adam 2026-09-11).
+            //
+            // This method has two callers and the second is a legacy import into an EXISTING setup,
+            // run after the operator has had every chance to change their mind.  It only skipped pages
+            // already in the excluded set, so a page it had shut and the operator had switched back on
+            // looked exactly like a page nobody had ever considered - and it shut it again.
+            //
+            // The 2026-08-29 ruling that an import "may override" still holds for pages nobody has had
+            // an opinion about, which is what it was asked about.  An explicit re-enable is an opinion.
+            if (store.getPagesKeptDespiteRepeats().contains(page.getName())) continue;
+
             Set<Integer> here = new LinkedHashSet<>();
 
             boolean repeats = false;

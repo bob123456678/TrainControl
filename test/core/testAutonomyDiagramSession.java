@@ -3586,10 +3586,16 @@ public class testAutonomyDiagramSession
      * protection as "the caller", so this checks the caller.
      *
      * TWO CALL SITES, BOTH SANCTIONED (OB-130, settled 2026-08-29). Configuration creation (:885) and
-     * legacy import into an existing setup (:1137). The second was raised as TST-B15 on the reading
-     * that it silently re-excludes a page the user had switched back on, and Adam has ruled on it:
-     * "yes, it may override." So this is no longer a count held while an argument runs - it is the
-     * number of places the behaviour is wanted, and a third would still be one nobody has argued for.
+     * legacy import into an existing setup (:1137). So this is no longer a count held while an argument
+     * runs - it is the number of places the behaviour is wanted, and a third would still be one nobody
+     * has argued for.
+     *
+     * The second was raised as TST-B15 on the reading that it silently re-excludes a page the user had
+     * switched back on. Adam ruled twice, and the two rulings are about different things: on
+     * 2026-08-29 that the import "may override" pages he had chosen to keep - a page whose sensors
+     * repeat another's is not a preference - and on 2026-09-11 that a page he had deliberately turned
+     * BACK ON stays on, which is a decision rather than the absence of one. Both call sites are still
+     * wanted; what changed is what the method itself skips.
      */
     @Test
     public void testExcludeRepeatedSensorPagesHasOnlyOneCallSite() throws IOException
@@ -3667,16 +3673,25 @@ public class testAutonomyDiagramSession
      * record of a page having been deliberately turned back on, so re-running it after that happens
      * treats the page exactly like one that was never looked at, and re-excludes it.
      *
-     * DISABLED ON PURPOSE (TST-B15, open - see the ratchet test above). This assertion encodes what the
-     * javadoc promises, not what the code does: with the production behaviour above, this test fails,
-     * which is the correct and expected outcome - it is a real bug the 2026-08-28 test-suite review
-     * found, not a test defect. Left here, off, rather than deleted, so the failure is not hidden: it is
-     * a step away from proving the bug, and enabling it is the reproduction. Re-enable once
-     * AutonomyViewerPanel's second call site either preserves a re-enabled page's choice or the "must
-     * not" promise is deliberately relaxed - whichever way Adam's ruling goes - and update this comment
-     * to say which.
+     * CLOSED, AND ENABLED (TST-B15, Adam 2026-09-11). Asked which way it should go, he took the first:
+     * a page the operator turned back on stays on. `AutonomyCompanionStore` now remembers a deliberate
+     * re-enable - `getPagesKeptDespiteRepeats`, written when a page that really was excluded is
+     * switched off again - and `excludeRepeatedSensorPages` skips those pages.
+     *
+     * **The 2026-08-29 ruling still stands, and this does not contradict it.** Asked whether the import
+     * may shut pages he had chosen to keep, Adam said *"yes, it may override"*, and that is about pages
+     * nobody has had an opinion on: a page whose sensors repeat another's is not a preference, it is a
+     * diagram the reduction cannot make sense of. An explicit re-enable IS an opinion, and the method's
+     * own javadoc already drew that line - *"turning one back on is not undone by adding a
+     * configuration"*. The legacy import was the one door that undid it.
+     *
+     * This test was off for two weeks because enabling it was the reproduction. It is the assertion
+     * that closes the finding, so it goes back on with the fix rather than being rewritten to match it.
+     *
+     * MUTATION: take the `getPagesKeptDespiteRepeats` skip out of `excludeRepeatedSensorPages` and this
+     * is the only test in the class that fails.
      */
-    @Test(enabled = false)
+    @Test
     public void testALegacyImportDoesNotReExcludeAPageTheOperatorTurnedBackOn() throws Exception
     {
         LayoutDiagram first = pageOnDisk();

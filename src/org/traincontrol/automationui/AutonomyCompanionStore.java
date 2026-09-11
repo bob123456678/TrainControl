@@ -387,6 +387,9 @@ public class AutonomyCompanionStore
     private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
     private final Set<String> excludedPages = new LinkedHashSet<>();
 
+    /** Pages the operator turned back on after the repeated-sensor rule shut them (TST-B15). */
+    private final Set<String> keptDespiteRepeats = new LinkedHashSet<>();
+
     private String activeConfiguration = null;
 
     // Anything a newer version wrote that this one does not understand, kept so a round trip through an
@@ -1737,15 +1740,44 @@ public class AutonomyCompanionStore
         return Collections.unmodifiableSet(excludedPages);
     }
 
+    /**
+     * The pages the operator has deliberately turned back on (TST-B15).
+     *
+     * **A decision, as opposed to the absence of one.** `excludeRepeatedSensorPages` shuts a page whose
+     * sensors repeat another's, and Adam ruled on 2026-08-29 that a legacy import may do that even to
+     * pages he had chosen to keep: *"yes, it may override"*, because a page the reduction cannot make
+     * sense of is not a preference. That stands, and it is about pages nobody has had an opinion on.
+     *
+     * A page the tool excluded and the operator then switched back ON is an opinion. Without this set
+     * the second call site could not tell the two apart - it only skips pages already in the excluded
+     * set - so re-running it treated a re-enabled page exactly like one that had never been looked at,
+     * and shut it again. Adam, 2026-09-11, asked which way to close that: the page you turned on stays
+     * on.
+     *
+     * @return the page names, unmodifiable
+     */
+    public Set<String> getPagesKeptDespiteRepeats()
+    {
+        return Collections.unmodifiableSet(keptDespiteRepeats);
+    }
+
     public void setPageExcluded(String page, boolean excluded)
     {
         if (excluded)
         {
             excludedPages.add(page);
+
+            // Excluding it again withdraws the decision: what is remembered is "turned back on", and
+            // this is the operator turning it off.  Without this the set would only ever grow, and a
+            // page could end up both excluded and remembered as kept.
+            keptDespiteRepeats.remove(page);
         }
         else
         {
-            excludedPages.remove(page);
+            // TURNED BACK ON, and only when it really was off (TST-B15).  Un-ticking a box that was
+            // never ticked is not a decision about repeated sensors, and recording it as one would
+            // make every page the operator so much as looked at immune to the rule.
+            if (excludedPages.remove(page)) keptDespiteRepeats.add(page);
         }
     }
 
@@ -2519,6 +2551,10 @@ public class AutonomyCompanionStore
         // page that is gone cannot be excluded from autonomy.  Left behind, the name sits in the set
         // for ever, and a page later created with the same name would silently start out excluded.
         excludedPages.remove(page);
+
+        // And the decision about it, for the same reason: a page that is gone cannot be one the
+        // operator is keeping, and a name left behind would apply to whatever is created with it next.
+        keptDespiteRepeats.remove(page);
 
         // And the record of what that page was called, which is the same one line forgetHeldPages
         // ends with - and the twin this method was missing (store review, B1).
@@ -3836,6 +3872,7 @@ public class AutonomyCompanionStore
         fields.put("stations", Held.SQUARE_LIST);
         fields.put("disabledLinks", Held.SQUARE_LIST);
         fields.put("excludedPages", Held.PAGE_LIST);
+        fields.put("pagesKeptDespiteRepeats", Held.PAGE_LIST);
 
         return java.util.Collections.unmodifiableMap(fields);
     }
@@ -4657,6 +4694,10 @@ public class AutonomyCompanionStore
         all.add(new PairMapKept("captions", captions, true));
         all.add(new StringMapKept("linkNames", linkNames));
         all.add(new PageSetKept("excludedPages", excludedPages));
+
+        // Beside it, and the same shape: page NAMES rather than squares, translated on write the way
+        // `excludedPages` is, so a rename carries the decision with it (TST-B15).
+        all.add(new PageSetKept("pagesKeptDespiteRepeats", keptDespiteRepeats));
         // Called disabledLinks in the file and disabledPortals in the code, which is the whole reason
         // the file's known-field list needed an exemption in the textual guard.  Named once, here.
         all.add(new SquareSetKept("disabledLinks", disabledPortals, true));
