@@ -327,11 +327,17 @@ public class GraphLocAssign extends javax.swing.JPanel
         this.arrivedFrom = new javax.swing.JComboBox<>(entries.toArray(new String[0]));
         this.arrivedFrom.setFont(new java.awt.Font("Segoe UI", 0, 14));
 
-        // THE CAPTION THE MENU ALREADY USES.  `buildArrivedFromMenu` offers this same setting from
-        // the right-click menu on both surfaces and calls it `autosetup.ui.menuArrivedFrom`; a new key
-        // here would be a second wording of one setting, in eight bundles, free to drift from the
-        // first at the next edit.
-        this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autosetup.ui.menuArrivedFrom"));
+        // ITS OWN CAPTION, AND NOT THE MENU'S (Adam, OB-203).
+        //
+        // *"Change 'Train arrived from' to 'Train Arrived', and align horizontally with the other
+        // labels."*  This used the menu's key, on the reasoning that a second wording of one setting is
+        // free to drift from the first - and the two really do want different words. A menu item reads
+        // as the start of a sentence its submenu finishes, "Train arrived from > north"; a label in a
+        // column of Title Case nouns - Arrival Function, Departure Function - reads as one of those.
+        //
+        // So the drift argument is answered rather than ignored: they are two wordings because they are
+        // two things, and each says so where it is.
+        this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autolayout.ui.trainArrived"));
         this.arrivedFromLabel.setFont(new java.awt.Font("Segoe UI", 0, 14));
         this.arrivedFromLabel.setForeground(new java.awt.Color(0, 0, 115));
 
@@ -535,17 +541,73 @@ public class GraphLocAssign extends javax.swing.JPanel
     {
         if (this.arrivedFrom == null) return this;
 
-        javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout(6, 0));
+        // LAID OUT LIKE THE ROWS ABOVE IT (Adam, OB-203).
+        //
+        // The form's own rows are label at the left, field at the RIGHT, with the gap between them
+        // stretching - `addComponent(label)`, `addPreferredGap(RELATED, DEFAULT_SIZE, MAX_VALUE)`,
+        // `addComponent(field, PREFERRED_SIZE)`.  This row put the combo in CENTER, which stretched the
+        // COMBO instead of the gap, so it started right after its label and ran the full width while
+        // every field above it sat at its natural size against the right edge.  EAST is the same shape
+        // as the form uses.
+        final javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout(6, 0));
         row.setOpaque(false);
         row.add(this.arrivedFromLabel, java.awt.BorderLayout.WEST);
-        row.add(this.arrivedFrom, java.awt.BorderLayout.CENTER);
+        row.add(this.arrivedFrom, java.awt.BorderLayout.EAST);
 
         javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
         wrapper.setOpaque(false);
         wrapper.add(this, java.awt.BorderLayout.CENTER);
         wrapper.add(row, java.awt.BorderLayout.SOUTH);
 
+        // AND INSET TO THE FORM'S OWN COLUMN, measured rather than guessed.
+        //
+        // The row is a sibling of the form, so it spans the whole wrapper while the form's contents sit
+        // inside a container gap - which left this label a few pixels to the left of every label above
+        // it. The gap is the look and feel's, not a number this file may write down, so it is read off
+        // a laid-out label instead and applied once the sizes are real.
+        this.addComponentListener(new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent resized)
+            {
+                lineTheRowUpWithTheForm(row);
+            }
+        });
+
         return wrapper;
+    }
+
+    /**
+     * Indents the arrived-from row to the form's own left and right margins (OB-203).
+     *
+     * Read from `arrivalFuncLabel`, which is the row directly above it: its x is the container gap the
+     * look and feel chose, and the distance from `arrivalFunc`'s right edge to the form's edge is the
+     * matching one on the other side.
+     *
+     * **Only when the numbers have changed**, because setting a border revalidates the wrapper and this
+     * runs from a resize - an unconditional set would be a layout that never settles.
+     *
+     * @param row the panel holding the label and the combo
+     */
+    private void lineTheRowUpWithTheForm(javax.swing.JPanel row)
+    {
+        if (this.arrivalFuncLabel == null || this.arrivalFunc == null || getWidth() <= 0) return;
+
+        int left = this.arrivalFuncLabel.getX();
+
+        int right = getWidth() - (this.arrivalFunc.getX() + this.arrivalFunc.getWidth());
+
+        if (left < 0 || right < 0) return;
+
+        javax.swing.border.Border was = row.getBorder();
+
+        java.awt.Insets now = was == null ? null : was.getBorderInsets(row);
+
+        if (now != null && now.left == left && now.right == right) return;
+
+        row.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, left, 0, right));
+
+        row.revalidate();
     }
 
     /**

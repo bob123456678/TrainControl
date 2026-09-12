@@ -649,6 +649,81 @@ public class testMessageBundles
         return null;
     }
     /**
+     * The terminus error names the menu that actually closes a side (Adam, 2026-09-12).
+     *
+     * The rule was right the first time and the sentence was not.  It said *"Bar one way in with the
+     * arrows"*, and the arrows are the DEPARTURE setting - so Adam did what it told him and reported
+     * *"error shows, but clicking on it and making one outbound arrow red does not clear the error"*,
+     * then diagnosed it himself: *"can't arrive is different than can't depart.  Just make the message
+     * more explicit."*
+     *
+     * **An error that stops the railway has to name a control the reader can find**, and this one is
+     * two menus away from the one it used to point at. So each bundle's sentence quotes its OWN
+     * `menuArrivalsGroup` label, and this is what keeps the two in step: rename the menu and the error
+     * goes on naming a control that is no longer there, which is the same fault in a slower form.
+     *
+     * Compared without the trailing ellipsis, so that a cosmetic change to the label does not fail this.
+     *
+     * MUTATION: putting `menuConnections` in the message instead - which is the mistake that was made -
+     * fails every bundle.
+     */
+    @Test
+    public void testTheTerminusErrorNamesTheArrivalsMenu() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String error = values.getProperty("autosetup.ui.checkTerminusTwoWaysIn");
+
+            String arrivals = trimmed(values.getProperty("autosetup.ui.menuArrivalsGroup"));
+
+            String departures = trimmed(values.getProperty("autosetup.ui.menuConnections"));
+
+            if (error == null || arrivals == null)
+            {
+                offenders.add(bundle.getName() + " is missing one of the two keys");
+
+                continue;
+            }
+
+            if (!error.contains(arrivals))
+            {
+                offenders.add(bundle.getName() + " does not name \"" + arrivals + "\": " + error);
+            }
+
+            // AND IT SAYS WHAT THE OTHER MENU IS NOT, which is the half that cost the time: naming the
+            // right control is not enough when the wrong one is the obvious thing to reach for.
+            if (departures != null && !error.contains(departures))
+            {
+                offenders.add(bundle.getName() + " does not say that \"" + departures + "\" is a"
+                    + " different thing: " + error);
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "the terminus error is a blocking one and has to say which menu closes a side - Adam lost"
+            + " an evening to it naming the arrows, which are the departures: " + offenders);
+    }
+
+    /**
+     * A menu label without its trailing ellipsis, so a cosmetic change to it does not fail a test.
+     *
+     * @param label the label, or null
+     * @return the label up to the first "...", or null
+     */
+    private static String trimmed(String label)
+    {
+        if (label == null) return null;
+
+        int at = label.indexOf("...");
+
+        return at < 0 ? label.trim() : label.substring(0, at).trim();
+    }
+
+    /**
      * The two train-length warnings name what they are about (OB-153, OB-154).
      *
      * Adam, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train

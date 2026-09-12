@@ -17427,6 +17427,12 @@ The edit is there, and the log says the exit save was skipped.
 **The cost:** this session's train positions are not remembered, which the next run re-establishes -
 against authored data that nothing else would bring back.
 
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+I don't understand this test- autonomy shouldn't be editable/startable while running.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-327"></a>
@@ -17453,6 +17459,12 @@ The log says autonomy was not running and there is nothing to restart, and tells
 that locomotive is standing. It used to say *"Autonomy has stopped itself so the railway can be parked
 and started again"*, which sent you to press Start over something that was never running.
 
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+I don't know how to trigger this error condition.  Seems like something to test offline.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-328"></a>
@@ -17474,6 +17486,12 @@ The old sentence: the run really has stopped itself, and Start really is what pu
 
 If both cases say the same thing, the flag that chooses between them is being read after the stop has
 already cleared it.
+
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+same issue as 327
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18773,6 +18791,20 @@ Ruling implemented. You were right that the placement half works and right about
 
 Three conditions keep it off railways that are correct: must-turn rather than may-turn (a may-turn station with two ways in is the ordinary one a train can run through OR reverse in), stations only (a must-turn square that is not a station is emitted as a plain reversing point, and two ways into one of those is an ordinary mid-layout turn-round), and barred sides do not count - that being one of the three remedies the message names. MT-366 is the hands-on half.
 
+**Adam, 2026-09-12 (triage).** Does not work.
+
+error shows, but clicking on it and making one outbound arrow red does not clear the error.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12.**
+
+The rule was right and the sentence was not. It said "Bar one way in with the arrows" - and the arrows are **Trains May Depart**, a different setting from **Trains May Arrive**, which is what you found: closing a way OUT leaves the way IN open, so the square still has two ways in (and, on its own, leaves a train able to arrive there and unable to leave).
+
+The message now names the arrivals menu, says outright that the departures menu is not the same thing, and says what closing only the way out would leave behind - in all eight languages. `core.testMessageBundles.testTheTerminusErrorNamesTheArrivalsMenu` holds it: each bundle's sentence has to quote that bundle's own `menuArrivalsGroup` label and mention `menuConnections` as the one that is different, so renaming either menu cannot leave the error pointing at a control that is no longer there. Planting the original mistake back - naming the departures menu - fails it.
+
+MT-366's own step 4 carried the same wrong wording and is corrected.
+
 ---
 
 <a id="mt-362"></a>
@@ -18962,14 +18994,20 @@ the defect MT-313 and Control+E both had - but the key handler itself lives in t
 1. In the autonomy editor, find a station with track on BOTH sides and set it to **must turn round**.
 2. Run the checks.
 3. Try to start autonomy.
-4. Bar one of the two ways in with the arrows, and run the checks again.
-5. Put the arrow back, set the square to **may turn round** instead, and run the checks again.
+4. Untick one of the two sides under the square's **Trains May Arrive...** menu, and run the checks
+   again.
+5. Tick it back, set the square to **may turn round** instead, and run the checks again.
 
 **Expected**
 
 - Step 2: an **ERROR** naming the square and saying how many sides reach it, with the three remedies.
 - Step 3: refused, because there is an error.
 - Steps 4 and 5: the error is gone. Each remedy clears it on its own.
+
+**Step 4 said "bar one of the two ways in with the arrows" when this was written, and that was wrong** -
+the arrows are the DEPARTURE setting, and closing a way out is not closing a way in. Adam lost a run to
+it: *"error shows, but clicking on it and making one outbound arrow red does not clear the error."*  The
+error's own sentence named the arrows too and now names the menu, which is the fix.
 
 *What this is:* Adam on MT-361: *"terminuses (stations that must reverse) are currently allowed to have
 ingress from two sides.  Make this be an autonomy ERROR that the user has to fix."*  A terminus is the
@@ -18981,5 +19019,11 @@ they came.
 months. So it was counted first - zero of seventeen must-turn squares on his own layout and on the frozen
 snapshot have more than one unbarred way in. **If this fires on your railway unexpectedly, that is the
 measurement having gone out of date and worth saying so.**
+
+**Adam, 2026-09-12 (triage).** Does not work.
+
+see MT-361 comments
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
