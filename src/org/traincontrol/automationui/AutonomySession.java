@@ -3317,6 +3317,40 @@ public class AutonomySession
     }
 
     /**
+     * The sides a train may actually have ARRIVED at this square by (OB-204).
+     *
+     * `arrivalSides` is the geometry: every side a reduced edge reaches this square by.  It is the right
+     * answer for the editor's own "Trains May Arrive" menu, which has to offer a barred side so it can
+     * be un-barred - and the wrong answer for anything asking where a train came FROM, because a side
+     * the operator has closed is a side nothing arrives by.
+     *
+     * **What that cost, measured on Adam's own railway.**  BottomMainA bars its arrival from E, so it has
+     * one way in.  Asked of the geometry it has two, which defeats `ArrivalSidePrompt.suggestedFor`'s
+     * first and best rule - *"one way in that is not the way it is pointing"* - and drops it through to
+     * the compass assumption, which reads the train's facing.  The facing alternates, because the square
+     * it was moved from turns every train round, so the recorded arrival side alternated with it: *"it
+     * does not always show the orange tail facing west.  seems to appear about half the time."*
+     *
+     * Barred sides are not SUBTRACTED blindly: `getBarredArrivals` already narrows a stored set to the
+     * sides the square really has, so a setting left behind by an edit cannot remove a side that exists.
+     *
+     * @param tile the square
+     * @return the sides, in the build's own order, with the barred ones left out
+     */
+    public List<Side> unbarredArrivalSides(TileKey tile)
+    {
+        List<Side> sides = new java.util.ArrayList<>(arrivalSides(tile));
+
+        sides.removeAll(getBarredArrivals(tile));
+
+        // EVERY SIDE BARRED IS NOT AN ANSWER.  The editor will not let the last way in be closed, but a
+        // diagram edit can arrive at it from the other side - and a placement door handed an empty list
+        // falls back to the geometry, which is what it did before this method existed. Better the old
+        // answer than none.
+        return sides.isEmpty() ? arrivalSides(tile) : sides;
+    }
+
+    /**
      * The squares where a train may turn round, which the builder emits as several Points each.
      *
      * Two ways to be one, and they are the same physical act seen from either side of the station

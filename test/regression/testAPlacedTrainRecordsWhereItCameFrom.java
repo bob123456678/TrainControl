@@ -108,6 +108,107 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
+     * A side the operator has barred is not a side a train can have arrived by (Adam, OB-204).
+     *
+     * *"when copying (moving) a locomotive from bottommainc to bottommaina, it does not always show the
+     * orange tail facing west.  seems to appear about half the time."*
+     *
+     * **"About half the time" was the diagnosis.**  `AutonomyBuilder.splitSides` - which is what every
+     * placement door reads, through `StationIndex.arrivalSidesAt` - walks the reduced edges arriving at
+     * a square and collects their entry sides with no reference to the barred list. So a square with one
+     * way in and one barred side looked two-sided, `ArrivalSidePrompt.suggestedFor`'s first and best rule
+     * (*"one way in that is not the way it is pointing"*) could not fire, and it fell through to the
+     * compass assumption - which reads the train's FACING. The facing alternates when the square the
+     * train came from turns it round, and so did the recorded side.
+     *
+     * So the claim is about STABILITY, not about a particular side: the same square, the same train, two
+     * facings, one answer. A test that asserted "west" would pass on a railway where the rule had simply
+     * stopped working and always said west.
+     *
+     * **The control is the other half**, and it is what makes this a measurement: asked with the RAW
+     * geometric sides - what the doors used to be handed - the two facings give different answers. If
+     * they ever stop doing so, this fixture can no longer show the defect and the claim above is
+     * vacuous, which the skip says out loud.
+     *
+     * Searched rather than named, like everything else in this class: a station named here is a station
+     * somebody re-plumbs.
+     */
+    @Test
+    public void testABarredSideIsNotASideATrainArrivedBy() throws Exception
+    {
+        Layout layout = model.getAutoLayout();
+
+        Point narrowed = null;
+
+        TileKey square = null;
+
+        for (Point point : layout.getPoints())
+        {
+            TileKey at = session.getStationIndex().squareOf(point.getName());
+
+            if (at == null) continue;
+
+            // The shape the defect needs, defined from the STORED data rather than from the method
+            // under test: the geometry says two ways in and the operator has closed all but one of
+            // them. Asking `unbarredArrivalSides` here instead would make this search agree with
+            // whatever that method does, so breaking it would SKIP this test rather than fail it.
+            if (session.arrivalSides(at).size() > 1
+                && session.arrivalSides(at).size() - session.getBarredArrivals(at).size() == 1)
+            {
+                narrowed = point;
+
+                square = at;
+
+                break;
+            }
+        }
+
+        if (narrowed == null)
+        {
+            throw new SkipException("no square on this fixture has a barred arrival, so there is"
+                + " nothing here that the barred list changes");
+        }
+
+        assertEquals(session.unbarredArrivalSides(square).size(), 1,
+            "this square has " + session.arrivalSides(square).size() + " sides and "
+            + session.getBarredArrivals(square) + " barred, so one way in is left - and"
+            + " `unbarredArrivalSides` answered " + session.unbarredArrivalSides(square)
+            + ". A side the operator has closed is not a side a train arrived by (Adam, OB-204)");
+
+        // THE CLAIM: the same square, two facings, one answer.
+        String facingOne = ArrivalSidePrompt.suggestedFor(layout, narrowed, "E", false,
+            session.unbarredArrivalSides(square));
+
+        String facingOther = ArrivalSidePrompt.suggestedFor(layout, narrowed, "W", false,
+            session.unbarredArrivalSides(square));
+
+        assertEquals(facingOne, facingOther,
+            "the arrival side recorded at " + square + " depends on which way the train happens to be"
+            + " facing - " + facingOne + " against " + facingOther + " - and the facing alternates every"
+            + " time the train is turned round somewhere. That is Adam's \"about half the time\":"
+            + " the square has ONE way in, and a side the operator barred was being counted as a second");
+
+        assertNotNull(facingOne,
+            "a square with one unbarred way in answered nothing at all, so a train placed there records"
+            + " no tail and the track behind it is left open");
+
+        // THE CONTROL: with the raw geometry - what the doors were handed before OB-204 - the two
+        // facings really do disagree here, so the claim above is measuring something.
+        String rawOne = ArrivalSidePrompt.suggestedFor(layout, narrowed, "E", false,
+            session.arrivalSides(square));
+
+        String rawOther = ArrivalSidePrompt.suggestedFor(layout, narrowed, "W", false,
+            session.arrivalSides(square));
+
+        if (java.util.Objects.equals(rawOne, rawOther))
+        {
+            throw new SkipException("the raw geometric sides give one answer for both facings at "
+                + square + ", so this fixture cannot show the defect and the claim above passes"
+                + " whatever the code does");
+        }
+    }
+
+    /**
      * Picks one square with a choice of arrival sides and one with none.
      *
      * Searched rather than named: the fixture is a snapshot of a real railway and a station named here
@@ -126,7 +227,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
             if (square == null) continue;
 
-            int sides = ArrivalSidePrompt.choicesFor(layout, point, session.arrivalSides(square)).size();
+            int sides = ArrivalSidePrompt.choicesFor(layout, point, session.unbarredArrivalSides(square)).size();
 
             if (sides > 1 && junction == null)
             {
@@ -285,7 +386,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             + "looks like a decision and is not");
 
         List<String> only = ArrivalSidePrompt.choicesFor(model.getAutoLayout(), single,
-            session.arrivalSides(terminus));
+            session.unbarredArrivalSides(terminus));
 
         assertEquals(forced.getArrivedFrom(), only.get(0),
             "the dialog showed no combo AND answered nothing, so a train placed at a terminus - where "

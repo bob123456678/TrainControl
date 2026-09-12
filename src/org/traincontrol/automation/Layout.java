@@ -4443,7 +4443,36 @@ public class Layout
     {
         if (end == null || !end.isActive()) return false;
 
-        return loc == null || !end.getExcludedLocs().contains(loc);
+        if (loc != null && !end.getExcludedLocs().isEmpty()
+            && end.getExcludedLocs().contains(loc)) return false;
+
+        // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (Adam, OB-205).
+        //
+        // *"75 407 DB can go from Tunnel to BottomMainC manually, even though it is not reversible and
+        // this is not a parking berth (excluded from autonomy).  it should not be allowed to be
+        // chosen."*
+        //
+        // **This narrows his own ruling of 2026-09-01, and that is worth stating rather than quietly
+        // doing.**  The terminus rule used to live in `isPathClear` and was moved out to `pickPath` on
+        // the doctrine this file states everywhere - filter at selection, never refuse at execution -
+        // with the reason written at that call site: *"a locomotive that cannot reverse is stranded by a
+        // terminus, so full autonomy does not choose one for it - and the operator asking for that BERTH
+        // by hand is no longer refused, which is what the move is for."*
+        //
+        // The word that did the work there was "berth", and the rule that was written did not carry it:
+        // every terminus became hand-reachable, including the ordinary ones autonomy uses.  So the
+        // exemption keeps the case it was made for and loses the one it was not: a square autonomy never
+        // chooses is somewhere the operator is deliberately putting a train away and will fetch it by
+        // hand, and an ordinary terminus is a place a non-reversible train simply cannot leave.
+        //
+        // `isAutoDestination` is the switch the menu calls "Can Be Chosen By Autonomy", which is what he
+        // means by "excluded from autonomy".
+        if (loc != null && !loc.isReversible() && end.isTerminus() && end.isAutoDestination())
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -5630,7 +5659,29 @@ public class Layout
         // half to fix is the PROMPT.  `forJourney` no longer asks about a journey that ends at a
         // terminus, because there is no answer it could give that this rule would honour.  Asking
         // less is the repair; honouring more would strand trains.
-        if (destination != null && destination.isTerminus()) return current.isReversing();
+        // THE TURNING COPY OF A MAY-TURN SQUARE IS ALSO A TERMINUS (Adam, OB-205 claims 2 and 3).
+        //
+        // *"from the current position, 75 407 DB can go from Tunnel to BottomMainB and is reversed
+        // without a direction prompt"*, and *"when I set it as reversible, there is still no 'should it
+        // change direction' prompt."*
+        //
+        // Both are this line.  `AutonomyBuilder` emits the turning copy of a MAY-turn square with
+        // `terminus: true` - `json.put(stops ? "terminus" : "reversing", true)` - so `isTerminus()` is
+        // true at a square the operator was promised a question about, this branch answered
+        // `current.isReversing()` (true, at that copy) and nobody was asked.  Worse, `forJourney` read
+        // the same flag and returned KEEP_DIRECTION, so the prompt's own answer was the opposite of what
+        // happened: the train turned against the only answer it could have given.
+        //
+        // **The door is asked, because the door is the only thing that knows.**  That sentence is
+        // already in this method, fifty lines below, about `current` - `asksAbout` comes from
+        // `mayTurnTiles()`, the reversible squares MINUS the compulsory ones - and it was never applied
+        // to the destination. A destination the door asks about is a may-turn square, and a turn there
+        // is the operator's call; one it does not ask about is a real terminus, where the turn is how the
+        // train gets in and MT-245 says so.
+        if (destination != null && destination.isTerminus() && !reversals.asksAbout(destination))
+        {
+            return current.isReversing();
+        }
 
         // AND IN MANUAL MODE, THE DOOR DECIDES WHICH SQUARES ARE ASKED ABOUT (Adam, 2026-09-06).
         //

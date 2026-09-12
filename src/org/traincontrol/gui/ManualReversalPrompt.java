@@ -84,7 +84,18 @@ public final class ManualReversalPrompt
         {
             org.traincontrol.automation.Edge last = path.get(path.size() - 1);
 
-            if (last != null && last.getEnd() != null && last.getEnd().isTerminus())
+            // UNLESS THE DOOR ASKS ABOUT IT (Adam, OB-205 claims 2 and 3).
+            //
+            // `isTerminus()` is true at the turning copy of a MAY-turn square as well as at a real
+            // terminus - the builder emits both that way - so this returned KEEP_DIRECTION for exactly
+            // the journey Adam was promised a question about, while `Layout.shouldReverseAt` read the
+            // same flag and turned the train anyway. A prompt that is not shown AND an outcome that
+            // contradicts what it would have said.
+            //
+            // `asksAbout` is answered from the setup - `mayTurnTiles()`, which is the reversible squares
+            // minus the compulsory ones - so it separates the two where the flag cannot.
+            if (last != null && last.getEnd() != null && last.getEnd().isTerminus()
+                && !asking.asksAbout(last.getEnd()))
             {
                 return KEEP_DIRECTION;
             }
@@ -108,7 +119,11 @@ public final class ManualReversalPrompt
         Point arrival = path == null || path.isEmpty() ? null
             : path.get(path.size() - 1).getEnd();
 
-        if (arrival != null && !arrival.isTerminus() && asking.asksAbout(arrival))
+        // `!arrival.isTerminus()` IS GONE FROM THIS TEST (OB-205).  It was there to keep the prompt
+        // away from a real terminus, and `asksAbout` already does that - it is `mayTurnTiles()`, which
+        // excludes the compulsory turns - while `isTerminus()` also excluded the turning copy of a
+        // may-turn square, which is the one square this door exists to ask about.
+        if (arrival != null && asking.asksAbout(arrival))
         {
             first = arrival;
         }

@@ -367,7 +367,9 @@ public class GraphLocAssign extends javax.swing.JPanel
     {
         org.traincontrol.automationui.TileGraph.TileKey tile = square();
 
-        return this.session == null || tile == null ? null : this.session.arrivalSides(tile);
+        // THE UNBARRED SIDES (OB-204).  A side the operator has closed is not a side a train arrived
+        // by, and treating it as one is what made the suggested side alternate with the train's facing.
+        return this.session == null || tile == null ? null : this.session.unbarredArrivalSides(tile);
     }
 
     /**

@@ -3034,7 +3034,10 @@ public class AutonomyEditorPanel extends JPanel
         // is what both the arrival write and the tail walk consult - so offering it here stores a value
         // they can match rather than one that quietly blocks nothing.
         java.util.List<String> sides = new java.util.ArrayList<>(
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(session.arrivalSides(target)));
+            // UNBARRED (OB-204): this menu records where a train CAME FROM, and a side nothing may
+            // arrive by is not one of those.  The "Trains May Arrive" menu above still offers every
+            // side, because its whole job is to open and close them.
+            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(session.unbarredArrivalSides(target)));
 
         final String recorded = session.getArrivedFrom(target);
 

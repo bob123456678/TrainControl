@@ -1153,15 +1153,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             //
             // BEFORE THE MOVE, so that a dismissal can leave the railway as it was.  Asked afterwards
             // there would be nothing left to decline, which is the mistake the paste door made first.
+            // THE UNBARRED SIDES, here and in the `wouldAsk` below it (OB-204) - the two have to be
+            // handed the same list or one asks a question the other does not expect an answer to.
             tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(running, landing,
                 facing == null ? null : facing.name(), mayTurnHere(), ui,
-                session == null ? null : session.arrivalSides(station));
+                session == null ? null : session.unbarredArrivalSides(station));
 
             // A DISMISSAL, and not the other two nulls (IND9-B5): `forPlacement` also answers null when
             // the square offers nothing to choose between, and refusing to place there would be a
             // silent, permanent refusal with no dialog to explain it.
             if (tail == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(running, landing,
-                mayTurnHere(), session == null ? null : session.arrivalSides(station)))
+                mayTurnHere(), session == null ? null : session.unbarredArrivalSides(station)))
             {
                 return;
             }

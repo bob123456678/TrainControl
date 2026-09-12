@@ -72,8 +72,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-364](#mt-364) | 2026-09-11 | The editor says when a platform claims more train than its track measures | fixed unvalidated | Adam's request of 2026-09-11 |
 | [MT-365](#mt-365) | 2026-09-12 | Control+B sets the maximum train length from the autonomy editor | fixed unvalidated | Adam's request of 2026-09-12 |
 | [MT-366](#mt-366) | 2026-09-12 | A terminus with two ways in stops the setup running | fixed unvalidated | MT-361 (Adam's ruling of 2026-09-12) |
+| [MT-367](#mt-367) | 2026-09-12 | A train that cannot reverse is not offered a terminus it could not leave | fixed unvalidated | OB-205 claims 1 and 2 |
+| [MT-368](#mt-368) | 2026-09-12 | The direction prompt appears at a station trains MAY turn round at | fixed unvalidated | OB-205 claim 3 |
+| [MT-369](#mt-369) | 2026-09-12 | The tail after a move points the same way every time | fixed unvalidated | OB-204 |
+| [MT-370](#mt-370) | 2026-09-12 | Return Home says which station a train could not reach | fixed unvalidated | OB-206 |
 
-Everything else - 321 of 366 - needs nothing from you unless the area changes again:
+Everything else - 321 of 370 - needs nothing from you unless the area changes again:
 285 **fixed validated** and 36 **superseded**.
 
 ---
@@ -16246,6 +16250,12 @@ choice on the diagram's text labels. If you had turned text off in the plain edi
 autonomy editor with Station Names selected, the text comes back on. Say if you would rather it did
 not.
 
+**Adam, 2026-09-12 (triage).** Does not work.
+
+none is shown in the dropdown, but station names are still drawn.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-293"></a>
@@ -16346,6 +16356,12 @@ every choice blank. That is harder to reach deliberately - re-plumb a square a t
 read the expectation rather than hunting for it, and if you meet it in the wild it should look like the
 greyed entry described above.
 
+**Adam, 2026-09-12 (triage).** Works, with notes.
+
+works, but the "recorded but could not arrived" piece doesn't make sense.  why not just record something valid in the first place?
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-295"></a>
@@ -16401,6 +16417,12 @@ train length** is the number the old file gave it, and the square's own **track 
 Those two were confused before: a station's capacity was written into the square's length, which is
 what the shortest-track and longest-track routing rules are computed from.
 
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+too much manual effort, make a test case for this and validate that state matches by having two fixtures in the test.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-297"></a>
@@ -16424,6 +16446,12 @@ what the shortest-track and longest-track routing rules are computed from.
 
 Every route that was enabled is still enabled, both times. Nothing about importing a graph should
 switch a route off.
+
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+write a test case for this, should be trivial to see if the treads are live.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16633,6 +16661,12 @@ MT-246 asked for the opposite - turned round on the way, backing in, and an impo
 that was `mustBackIn`, removed on 2026-09-04 when Return Home became manual operation. See
 [MT-250](#mt-250).
 
+**Adam, 2026-09-12 (triage).** Works.
+
+works- these maneuvers should be manually allowed since both points are not allowed in full autonomy (orange).
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-305"></a>
@@ -16820,6 +16854,10 @@ also, after the parking completed, all of bottommaina stayed shaded, which it sh
 **Claude, 2026-09-08.**
 
 Both halves. (1) The wash is replaced by an orange line along the road the train is on, which is your double-curve complaint answered directly - commit `e2d6e4de`. (2) The shading that would not clear was recomputed to the wrong answer, not left stale: coverage is per EDGE, and an edge is one hop between sensors, so a train of length 1 washed seventeen squares. It walks square by square now - commit `6bb0a0fc`. **To re-test:** park EN57-203 and confirm the mark is one square long.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18335,6 +18373,10 @@ At the terminus the locomotive's direction flips when it stops. At the through p
 terminus had no such test at all until 2026-09-10 - only tests that the application changed its own
 mind. This is the same claim on real metal.
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-350"></a>
@@ -18805,6 +18847,10 @@ The message now names the arrivals menu, says outright that the departures menu 
 
 MT-366's own step 4 carried the same wrong wording and is corrected.
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-362"></a>
@@ -19025,5 +19071,122 @@ measurement having gone out of date and worth saying so.**
 see MT-361 comments
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-367"></a>
+
+### MT-367 - 2026-09-12 - A train that cannot reverse is not offered a terminus it could not leave
+
+**Disposition:** fixed unvalidated
+**From:** OB-205 claims 1 and 2
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Take a locomotive that is NOT reversible - 75 407 DB on your railway.
+2. Right-click it and look at where it may be sent. Look for BottomMainC, which must turn every train
+   round and which autonomy may choose.
+3. Look for a parking berth that also turns trains round - one with **Can Be Chosen By Autonomy** off.
+4. Mark the locomotive reversible and look again.
+
+**Expected**
+
+- Step 2: BottomMainC is **not** offered.
+- Step 3: the berth **is** still offered - putting a train away by hand is what that exemption is for.
+- Step 4: BottomMainC is offered again.
+
+*What this is:* Adam, OB-205: *"75 407 DB can go from Tunnel to BottomMainC manually, even though it is
+not reversible and this is not a parking berth (excluded from autonomy).  it should not be allowed to be
+chosen."*
+
+**This narrows his own ruling of 2026-09-01**, which moved the terminus rule out of `isPathClear` so that
+*"the operator asking for that BERTH by hand is no longer refused"*. The word doing the work there was
+berth, and the rule that was written did not carry it. Step 3 is that half, and it still stands.
+
+---
+
+<a id="mt-368"></a>
+
+### MT-368 - 2026-09-12 - The direction prompt appears at a station trains MAY turn round at
+
+**Disposition:** fixed unvalidated
+**From:** OB-205 claim 3
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Take a REVERSIBLE locomotive and send it by hand to a station marked **may turn round** -
+   BottomMainB on your railway.
+2. Answer the prompt with "keep direction", and see which way the train ends up facing.
+3. Send it again and answer "turn round".
+4. Now send a train by hand to a station that MUST turn every train round, and to a real terminus.
+
+**Expected**
+
+- Step 1: the "should it change direction" prompt appears.
+- Steps 2 and 3: the train does what you answered - both answers are honoured.
+- Step 4: no prompt at either. A compulsory turn is not a preference, and the turn into a terminus is
+  how the train gets there.
+
+*What this is:* the turning copy of a may-turn square is emitted with `terminus: true`, exactly like a
+real terminus - so both doors that decide whether to ask read a flag that cannot tell them apart. The
+prompt was skipped AND the train was turned anyway, which means the answer it would have given was the
+opposite of what happened.
+
+---
+
+<a id="mt-369"></a>
+
+### MT-369 - 2026-09-12 - The tail after a move points the same way every time
+
+**Disposition:** fixed unvalidated
+**From:** OB-204
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Move a locomotive onto BottomMainA - the square whose arrival from the east you have barred - from
+   BottomMainC, which turns every train round.
+2. Look at the orange tail.
+3. Do it several times, so the train arrives facing each way at least once.
+
+**Expected**
+
+- The tail runs west every time, not about half the time.
+
+*What this is:* Adam, OB-204: *"it does not always show the orange tail facing west.  seems to appear
+about half the time."*  The builder's arrival sides take no notice of barred arrivals, so a square with
+one way in looked two-sided; the rule that answers "the one way in that is not the way it is pointing"
+could not fire, and the fallback reads the train's facing - which alternates every time it is turned.
+
+---
+
+<a id="mt-370"></a>
+
+### MT-370 - 2026-09-12 - Return Home says which station a train could not reach
+
+**Disposition:** fixed unvalidated
+**From:** OB-206
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Assign homes to two locomotives and make one of them unreachable - bar the way in, or switch a
+   square out of service.
+2. Press Return Home.
+
+**Expected**
+
+- The message names the locomotive AND its home station, so you do not have to look up which train was
+  trying to get where.
+
+*What this is:* Adam, OB-206: *"when you say 'these locomotives cannot reach their home stations:
+<locomotive>', update the error message to provide the station name."*  The station is named by its base
+name, not the copy's - a message about "BottomMainB (westbound, reverse)" would be worse than none.
 
 ---

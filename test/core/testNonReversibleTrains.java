@@ -1318,6 +1318,162 @@ public class testNonReversibleTrains
     }
 
     /**
+     * A train that cannot reverse is not OFFERED an ordinary terminus by hand (Adam, OB-205 claim 1).
+     *
+     * *"75 407 DB can go from Tunnel to BottomMainC manually, even though it is not reversible and this
+     * is not a parking berth (excluded from autonomy).  it should not be allowed to be chosen."*
+     *
+     * **This narrows his ruling of 2026-09-01 rather than reversing it**, and the two halves are both
+     * asserted here because the earlier one is still live: the terminus rule was moved out of
+     * `isPathClear` so that *"the operator asking for that BERTH by hand is no longer refused"*.  A
+     * berth - a square autonomy never chooses - is still offered. An ordinary terminus is not.
+     *
+     * MUTATION: dropping `isAutoDestination` from the clause fails the third assertion, which is the
+     * half of his 2026-09-01 ruling that survives.
+     */
+    @Test
+    public void testANonReversibleTrainIsNotOfferedAnOrdinaryTerminus() throws Exception
+    {
+        Layout layout = backingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean was = loc.isReversible();
+
+        Point terminus = layout.getPoint("BACK_end");
+
+        try
+        {
+            assertTrue(terminus.isTerminus(), "the fixture did not take: BACK_end must be a terminus");
+
+            assertTrue(terminus.isAutoDestination(),
+                "the fixture did not take: BACK_end must be a square autonomy may choose, or the berth"
+                + " exemption below is what is being measured rather than the rule");
+
+            loc.setReversible(false);
+
+            assertFalse(layout.isOfferableToOperator(terminus, loc),
+                "a train that cannot reverse was offered an ordinary terminus by hand. It arrives and"
+                + " cannot leave: the turn is the only way out and it cannot make it (Adam, OB-205)");
+
+            // AND A TRAIN THAT CAN REVERSE IS STILL OFFERED IT.
+            loc.setReversible(true);
+
+            assertTrue(layout.isOfferableToOperator(terminus, loc),
+                "a train that CAN reverse was refused a terminus, so the rule refuses on the square"
+                + " alone and has stopped being about the locomotive");
+
+            // AND THE HALF OF HIS 2026-09-01 RULING THAT SURVIVES: a berth is still offered by hand.
+            loc.setReversible(false);
+
+            terminus.setAutoDestination(false);
+
+            assertTrue(layout.isOfferableToOperator(terminus, loc),
+                "a parking berth was refused to a train that cannot reverse. That is the case the rule"
+                + " was moved out of `isPathClear` FOR - \"the operator asking for that berth by hand is"
+                + " no longer refused\" - and it is still his ruling");
+        }
+        finally
+        {
+            terminus.setAutoDestination(true);
+
+            loc.setReversible(was);
+        }
+    }
+
+    /**
+     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus.
+     *
+     * Adam, OB-205 claims 2 and 3: *"is reversed without a direction prompt, even though it is not
+     * reversible"*, and *"when I set it as reversible, there is still no 'should it change direction'
+     * prompt."*
+     *
+     * **One cause.**  `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus:
+     * true`, so `isTerminus()` cannot tell it from a compulsory terminus - and both doors that decide
+     * whether to ask read exactly that flag.  `shouldReverseAt` answered `current.isReversing()`, which
+     * is true at that copy, so the train turned; `ManualReversalPrompt.forJourney` read the same flag and
+     * returned KEEP_DIRECTION, so the prompt was not shown and its answer would have been the opposite
+     * of what happened.
+     *
+     * The distinction cannot be drawn from the graph - this method's own javadoc says so about `current`
+     * - so the DOOR is asked. This drives that directly: the same call, twice, with the only difference
+     * being what the policy says it asks about.
+     *
+     * MUTATION: taking `!reversals.asksAbout(destination)` back out fails the second half.
+     */
+    @Test
+    public void testTheOperatorIsAskedAboutATurnAtAMayTurnDestination() throws Exception
+    {
+        Layout layout = backingInLayout();
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Point turn = layout.getPoint("BACK_mid");
+        Point end = layout.getPoint("BACK_end");
+
+        assertTrue(turn.isReversing(), "the fixture did not take: BACK_mid must be a reversing point");
+        assertTrue(end.isTerminus(), "the fixture did not take: BACK_end must be a terminus");
+
+        // A REAL TERMINUS: the door does not ask about it, and the turn is how the train gets in.
+        final boolean[] consulted = {false};
+
+        Layout.ReversalPolicy silent = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                consulted[0] = true;
+
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return false;
+            }
+        };
+
+        assertTrue(layout.shouldReverseAt(turn, end, loc, silent),
+            "the turn on the way into a real terminus became a preference. It is how a train backs in -"
+            + " MT-245, and `testATrainThatCannotReversemayBackIntoATerminus` two methods up");
+
+        assertFalse(consulted[0],
+            "the policy was asked about a journey into a real terminus, where there is no answer it"
+            + " could give that this rule would honour - which is why the prompt stopped being shown");
+
+        // THE SAME CALL, with a door that says this destination is one the operator marked may-turn.
+        final boolean[] asked = {false};
+
+        Layout.ReversalPolicy asking = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                asked[0] = true;
+
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == end || at == turn;
+            }
+        };
+
+        assertFalse(layout.shouldReverseAt(turn, end, loc, asking),
+            "the train was turned at a destination the operator marked \"may turn round\" without the"
+            + " answer being read. The turning copy of a may-turn square is emitted as a terminus, so"
+            + " the terminus branch answered for it - and the prompt, reading the same flag, was never"
+            + " shown (Adam, OB-205)");
+
+        assertTrue(asked[0],
+            "the policy was never consulted about a may-turn destination, so whatever the operator"
+            + " answers cannot reach the railway");
+    }
+
+    /**
      * Four points, so the run in to the terminus is three segments long.
      */
     private static Layout longerBackingInLayout() throws Exception

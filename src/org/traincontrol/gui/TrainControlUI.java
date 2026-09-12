@@ -24124,7 +24124,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     I18n.t("ui.main.gracefulStop"));
 
             case IMPOSSIBLE:
-                return I18n.f("autolayout.ui.errorCannotReachHome", namesOf(blocked));
+                return I18n.f("autolayout.ui.errorCannotReachHome", namesWithHomes(blocked));
 
             // Its own sentence, and not the default one (SG-A3).
             //
@@ -24146,6 +24146,58 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param blocked the locomotives, or null
      * @return their names, comma separated
      */
+    /**
+     * The blocked locomotives with the station each of them could not reach (Adam, OB-206).
+     *
+     * *"when you say 'these locomotives cannot reach their home stations: <locomotive>', update the error
+     * message to provide the station name."*
+     *
+     * The message told the operator which trains were stuck and left them to work out where each was
+     * trying to get to - which on a railway with four homes assigned is a lookup in another window.
+     *
+     * Falls back to the locomotive alone where the home cannot be named, which is not a case that should
+     * arise - this outcome means a home was assigned and could not be reached - but a sentence that
+     * drops a train because its station could not be looked up would hide the very thing it is reporting.
+     *
+     * @param blocked the locomotives, possibly null
+     * @return a readable list
+     */
+    private String namesWithHomes(List<Locomotive> blocked)
+    {
+        java.util.Map<Locomotive, org.traincontrol.automation.Point> homes =
+            this.model != null && this.model.hasAutoLayout()
+                ? this.model.getAutoLayout().getHomeStations() : null;
+
+        List<String> named = new ArrayList<>();
+
+        for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
+        {
+            org.traincontrol.automation.Point home = homes == null ? null : homes.get(l);
+
+            named.add(home == null ? l.getName()
+                : I18n.f("autolayout.ui.locomotiveAndHome", l.getName(), stationName(home)));
+        }
+
+        return String.join(", ", named);
+    }
+
+    /**
+     * What to call a home station in a sentence - the base name, not the copy's.
+     *
+     * A station is several Points and their names carry the arrival side, so the raw name reads
+     * "BottomMainB (westbound, reverse)" in a message about where a train was going.
+     *
+     * @param home the point
+     * @return a name fit to show
+     */
+    private String stationName(org.traincontrol.automation.Point home)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session == null || session.getStationIndex() == null
+            ? home.getName() : session.getStationIndex().describe(home);
+    }
+
     private String namesOf(List<Locomotive> blocked)
     {
         List<String> names = new ArrayList<>();
