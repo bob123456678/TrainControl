@@ -640,7 +640,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     };
         
     /**
-     * The interface scale, or empty to let FlatLaf work it out from the display.
+     * The dots per inch an unscaled display has, which is what the UI scale is measured against.
+     *
+     * Not a setting - every desktop uses 96 as the baseline, so a 120-dpi display is 1.25 and a 144-dpi
+     * one is 1.5. Named because `dpi / 96.0` in the middle of an install reads like a magic number.
+     */
+    private static final int REFERENCE_DPI = 96;
+
+    /**
+     * The interface scale, or empty to take it from the display.
      *
      * Adam, 2026-09-08, on everything above the track diagram shrinking: *"the font is still small...
      * notice how the fonts above the track diagram are also smaller now, and the padding on the button
@@ -651,8 +659,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * is 1.25, and the difference between it applying and not is a 12-point interface against a
      * 15-point one, with every margin scaled to match.
      *
-     * Set this to "1.25" to force the larger interface, or "1" for the smaller one. Left empty it
-     * follows the display, which is right on any machine.
+     * Set this to "1.25" to force the larger interface, or "1" for the smaller one. Left empty it is
+     * computed from the display - `dpi / 96` - which is right on any machine.
+     *
+     * **Empty used to mean "let FlatLaf decide", and that is what was wrong** (Adam, 2026-09-11, for the
+     * third time: *"I still see small menu bar text in some of the test windows that pop up."*). FlatLaf's
+     * automatic answer depends on what had touched AWT before it installed: a Swing component built first
+     * gave 1.25 and a look-and-feel query first gave 1.0, on the same machine. Empty now means the
+     * display is asked here, so the answer is the same however this method is reached.
      */
     public static final String UI_SCALE = "";
 
@@ -731,23 +745,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // once per process.
         if (javax.swing.UIManager.getLookAndFeel() instanceof FlatLightLaf) return;
 
-        // AWT FIRST, and this is the line that decides how big the whole interface is.
-        //
-        // FlatLaf works out a UI SCALE once, when it installs itself, and caches it - on a 120-dpi
-        // display it is 1.25, which is the difference between a 12-point interface and a 15-point one.
-        // Measured 2026-09-08: installing cold, before anything has touched AWT, produced
-        // `Label.font` at 12; installing after a call into the toolkit produced 15. Same machine, same
-        // display, same code - only what had run first.
-        //
-        // That is why moving this method could change the size of every font and every button's padding
-        // at once, and why nobody could find it by reading either version.  Asking the toolkit here
-        // makes the answer the same wherever this is called from, which is the whole point.
-        java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
+        // NOTHING TO DRAW, NOTHING TO INSTALL.  A headless JVM has no screen to ask about and the query
+        // below throws there; this also makes the method safe to call from a static initialiser, where a
+        // throw would poison the class for the rest of the process.
+        if (java.awt.GraphicsEnvironment.isHeadless()) return;
 
-        // AND THE SCALE CAN BE PINNED, if the automatic answer is ever wrong.  Empty means "let FlatLaf
-        // decide", which is the default; "1.25" or "1" forces it.  It is a system property rather than
-        // a UI default because FlatLaf reads it while installing.
-        if (!UI_SCALE.isEmpty()) System.setProperty("flatlaf.uiScale", UI_SCALE);
+        // THE UI SCALE, ASKED OF THE DISPLAY RATHER THAN LEFT TO WHATEVER RAN FIRST.
+        //
+        // This is the line that decides how big the whole interface is: FlatLaf works out one scale
+        // when it installs itself and caches it for the process, and every font, inset and button
+        // padding is multiplied by it.
+        //
+        // **It used to be decided by AWT state, and the guard above was steering it wrong.** Measured
+        // 2026-09-11 on a 120-dpi display, same machine, same code, only the order changed:
+        //
+        //     new JLabel("x") then install ............ scale 1.25, every font 15
+        //     UIManager.getLookAndFeel() then install .. scale 1.0,  every font 12
+        //
+        // The second line is this method's own first statement. So the early return added that morning
+        // to make every window look alike is what made the fonts small - which is why Adam reported the
+        // menu bar three times and twice got an answer that could not have fixed it: *"some tests start
+        // with the small font in the UI menu bar ... while others have the same font as the production
+        // app."*  Those were the two orders.
+        //
+        // `getScreenResolution()` used to be here on its own, on the belief that touching the toolkit
+        // normalised the answer. It does not - it is measured above with the toolkit touched - so the
+        // answer is now STATED rather than coaxed, and the same wherever this is called from.
+        //
+        // 96 dpi is the unscaled baseline every desktop uses: 120 dpi is 1.25, 144 is 1.5, and a plain
+        // display is 1. Pinning it reproduces FlatLaf's own automatic answer exactly - measured
+        // 2026-09-11, both give Segoe UI 15 on every key and the same window size to the pixel - with
+        // the difference that it no longer depends on what happened to run first.
+        int dpi = java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
+
+        // AND IT CAN BE OVERRIDDEN, which is what UI_SCALE is for.  A system property rather than a UI
+        // default because FlatLaf reads it while installing.
+        System.setProperty("flatlaf.uiScale",
+            !UI_SCALE.isEmpty() ? UI_SCALE
+                : String.valueOf(dpi > 0 ? dpi / (double) REFERENCE_DPI : 1.0));
 
         // BEFORE setup(), because FlatLaf reads these when it installs itself - afterwards is too late
         // for the window decorations, which are decided once.
@@ -808,8 +843,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public TrainControlUI()
     {
-        installLookAndFeel();
-        
+        // THE LOOK AND FEEL IS ALREADY IN, and asking here would be too late anyway (Adam, 2026-09-11).
+        //
+        // This line used to be the first statement of this constructor. It is gone because by the time
+        // it ran, `PositionAwareJFrame`'s constructor had already created this window's root pane - so
+        // the window got FlatLaf's components and Metal's chrome, which is neither look. The install is
+        // now in `PositionAwareJFrame`'s static initialiser, which runs before this class is ever
+        // instantiated; `init` asks as well, for the case where no window is built at all.
         initComponents();
         
         // Set internationalized options

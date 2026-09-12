@@ -14,7 +14,7 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 /**
- * A window of this application looks the same whoever built it.
+ * A window of this application looks the same whoever built it, and is the same SIZE.
  *
  * Adam, 2026-09-11: **"Some tests start with the small font in the UI menu bar (suggesting the UI isn't
  * initialized the same way as in the production app), while others have the same font as the production
@@ -32,8 +32,29 @@ import org.testng.annotations.Test;
  * window would have to remember, and this suite has watched that fail often enough to stop writing
  * rules that way.
  *
- * MUTATION: take the `installLookAndFeel()` call out of `RouteEditorFrame` and the first test fails,
- * naming the look and feel it got instead; take it out of any window class and the second names it.
+ * **THIS CLASS REPORTED CLEAN THROUGH TWO FAILED FIXES, and that is the lesson in it.** Adam reported
+ * the menu bar on 2026-09-08, on 2026-09-11, and again on 2026-09-11 after the second answer. Both
+ * answers were reasoned about rather than measured, and both were wrong, while these claims stayed green
+ * - because they asked whether the look and feel was FlatLaf and whether the menu font had CHANGED, and
+ * both were true in every failing case. What nobody had measured was the SIZE it changed to, and the
+ * window's own chrome.
+ *
+ * Measured on 2026-09-11, same machine, same code, only the order changed:
+ *
+ * <pre>
+ *   a Swing component built, then the install ... scale 1.25, every font 15
+ *   the look and feel queried, then the install .. scale 1.0,  every font 12
+ *   installed in the constructor, built cold ..... MetalRootPaneUI, OS title bar,  166x77
+ *   installed at class load, built cold ......... FlatRootPaneUI,  FlatLaf's bar,  166x78
+ * </pre>
+ *
+ * The query in the second line is `installLookAndFeel`'s own first statement - the early return added
+ * that morning to make windows consistent - so the second fix made the fonts small. The scale is now
+ * stated from the display and the install happens at class load, and the two claims below measure both.
+ *
+ * MUTATIONS: stop stating the scale and the first test fails on a scaled display, naming both numbers;
+ * move any window class's install from its static block back into its constructor and the same test
+ * names the root pane it got; take it out altogether and the second test names the file.
  *
  * @author Adam
  */
@@ -102,6 +123,50 @@ public class testEveryWindowWearsTheApplicationsLook
                 + menuFontBefore + "), which was the default look and feel's rather than the "
                 + "application's. This is the difference Adam reported: a test window whose menu bar "
                 + "does not match the production app's");
+
+            // AND THE SIZE IS THE DISPLAY'S, which is the half that was actually wrong (2026-09-11).
+            //
+            // FlatLaf fixes one scale per process when it installs, and until this was measured it was
+            // decided by AWT state: a Swing component built first gave 1.25 on this display and a look
+            // and feel QUERY first gave 1.0 - and the query is `installLookAndFeel`'s own first line.
+            // So the fonts were 12 where the operator sees 15, and the two earlier answers to Adam's
+            // report could not have fixed it because neither touched the scale.
+            //
+            // Asserted against the display rather than against a number written here, so it holds on any
+            // machine - and the message says what to do when it does not.
+            double expected = java.awt.Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+
+            assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), (float) expected, 0.001f,
+                "the interface is scaled " + com.formdev.flatlaf.util.UIScale.getUserScaleFactor()
+                + " on a display that implies " + expected + ", so every font, inset and button padding "
+                + "in this window is the wrong size - and the wrongness depends on what ran first, which "
+                + "is why some test windows match the production app and others do not. "
+                + "`TrainControlUI.installLookAndFeel` states this scale; if it has stopped being "
+                + "stated, or UI_SCALE has been pinned to something else, this is where it shows");
+
+            // ON A PLAIN DISPLAY THE CLAIM ABOVE IS TRUE EITHER WAY, so the symptom is asserted too:
+            // where the display is scaled, the fonts must be bigger than the unscaled ones.
+            if (expected > 1.0)
+            {
+                assertTrue(menusNow.getSize() > 12,
+                    "the menu font is " + menusNow.getSize() + " point on a display scaled " + expected
+                    + ", which is the unscaled size. This is the small menu bar Adam reported three "
+                    + "times");
+            }
+
+            // AND THE WINDOW'S OWN CHROME, which a constructor cannot fix and a static block can.
+            //
+            // `JFrame`'s constructor creates the root pane before any subclass constructor body runs, so
+            // a window that installs the look and feel in its own constructor gets FlatLaf's components
+            // and METAL'S root pane - an operating-system title bar with the menu bar below it, where
+            // the running program has FlatLaf's title bar with the menu bar inside it. Measured
+            // 2026-09-11: the same window packed to 166x77 one way and 166x49 the other.
+            assertTrue(built[0].getRootPane().getUI() instanceof com.formdev.flatlaf.ui.FlatRootPaneUI,
+                "this window's root pane is a "
+                + built[0].getRootPane().getUI().getClass().getSimpleName()
+                + ", so it has the operating system's title bar and not the application's. The look and "
+                + "feel has to be installed before the window is CONSTRUCTED, which is why every window "
+                + "class asks in a static initialiser rather than in its constructor");
         }
         finally
         {
@@ -148,18 +213,20 @@ public class testEveryWindowWearsTheApplicationsLook
 
         for (Map.Entry<String, String> window : windows.entrySet())
         {
-            if (window.getValue().contains("installLookAndFeel()")) continue;
+            if (asksAtClassLoad(window.getValue())) continue;
 
-            // Or it inherits the call from a window class in this package that does ask.
+            // Or it inherits the block from a window class in this package that has one.
             if (inheritsTheAsk(window.getValue(), windows)) continue;
 
             bare.add(window.getKey());
         }
 
         assertEquals(bare.toString(), "[]",
-            "these windows do not install the application's look and feel, so one built cold - which "
-            + "is what a test does - is drawn in Metal and is not the window the operator sees "
-            + "(Adam, 2026-09-11): " + bare);
+            "these windows do not install the application's look and feel in a STATIC INITIALISER, so "
+            + "one built cold - which is what a test does - gets the root pane of whatever look and "
+            + "feel was installed when `JFrame`'s constructor ran, before theirs. A call in the "
+            + "constructor is not enough and was what this test used to accept (Adam, 2026-09-11): "
+            + bare);
     }
 
     /**
@@ -272,12 +339,29 @@ public class testEveryWindowWearsTheApplicationsLook
         {
             String name = other.getKey().replace(".java", "");
 
-            if (source.contains("extends " + name) && other.getValue().contains("installLookAndFeel()"))
+            if (source.contains("extends " + name) && asksAtClassLoad(other.getValue()))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether this source installs the look and feel at CLASS LOAD rather than in a constructor.
+     *
+     * The distinction is the whole of the 2026-09-11 fix: class initialisation finishes before the first
+     * instance exists, so a static block is in front of `JFrame`'s own constructor and a constructor body
+     * is behind it - and the root pane is created there.
+     *
+     * @param source the class's text
+     * @return true when a static initialiser asks for it
+     */
+    private static boolean asksAtClassLoad(String source)
+    {
+        return java.util.regex.Pattern
+            .compile("(?s)\\bstatic\\s*\\{[^}]*installLookAndFeel\\s*\\(")
+            .matcher(source).find();
     }
 }

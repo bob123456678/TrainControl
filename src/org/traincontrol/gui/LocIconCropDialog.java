@@ -57,6 +57,25 @@ import org.traincontrol.util.ImageUtil;
  */
 public class LocIconCropDialog extends JDialog
 {
+    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
+    //
+    // **A static block rather than the first line of the constructor, and the difference was measured.**
+    // `JDialog`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
+    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
+    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
+    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
+    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
+    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
+    //
+    // Class initialisation always finishes before the first instance is created, so this is early enough.
+    //
+    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // the process, which is a worse failure than a window in the wrong font.
+    static
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+    }
+
     /**
      * How far the picture may be enlarged beyond the point where it just fills the crop window.
      *
@@ -117,19 +136,6 @@ public class LocIconCropDialog extends JDialog
         int outHeight)
     {
         super(owner, title, ModalityType.APPLICATION_MODAL);
-
-        // THE APPLICATION'S LOOK AND FEEL, BEFORE ANYTHING IS BUILT (Adam, 2026-09-11).
-        //
-        // In the running program this is already installed and the call does nothing. Built COLD -
-        // which is what a test does - this window would otherwise be drawn in Metal, with Metal's
-        // fonts and insets, and would not be the window the operator sees. Adam saw it as the menu
-        // bar's font: "some tests start with the small font in the UI menu bar ... while others have
-        // the same font as the production app."
-        //
-        // Here rather than in each test, because a rule that has to be remembered by the next test
-        // somebody writes is a rule that will be forgotten - and `regression.testEveryWindowWearsTheApplicationsLook`
-        // holds this line in place.
-        TrainControlUI.installLookAndFeel();
 
 
         // OB-124.  A dialog does not reliably inherit its owner's icon, so it is asked for.
