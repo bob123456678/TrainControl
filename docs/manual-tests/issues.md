@@ -812,6 +812,40 @@ add a text box so users can type a station or train name (string match against t
 
 when at tunnellongpark, en57-203 blocks most of the track leading up to bottommaina, even though it is of length 1, and the track next to it is of length 2.  too much blocked for such a short train.
 
+**Claude, 2026-09-12 - diagnosed, not fixed, and the reason is worth reading before anybody patches it.**
+
+`Layout.edgesCoveredByStandingTrains` walks back from the square a train stands on and blocks whole EDGES
+until it has covered the train's length:
+
+    covered.put(segment, loc);
+    remaining -= segment.getLength();
+
+**Blocking a whole edge is right, and that is the part not to change.** An edge is a run between two
+Points with nowhere to stop in between, so any route using it passes end to end - a train sent over that
+edge meets the standing train however far into it the tail actually reaches. What looks like "most of the
+track leading up to BottomMainA" is ONE logical edge that happens to be physically long.
+
+**The only real over-blocking is a train that never reaches the edge at all**, which is exactly this
+case: EN57-203 is one unit long and is standing on its own square, so nothing behind it is fouled. The
+walk starts `remaining = trainLength` and blocks the first edge before crediting the square the train is
+standing on, so a one-unit train always fouls one whole edge.
+
+**Why crediting the square is not a one-line fix.** Nothing at runtime knows how long a square is: a
+`Point` carries `maxTrainLength` and no length of its own, and lengths live on edges - where
+`GraphReducer` already folds the far tile in (`sumLength(path) + lengthOf(tile)`). So the fix is
+
+  1. emit a per-point length from `AutonomyBuilder`, read it in `parseAuto`, hold it on `Point`; and
+  2. credit it once, carefully: the first edge's length ALREADY includes that tile, so subtracting the
+     full edge length after crediting the square double-counts it.
+
+**And on this railway it would change nothing yet.** `setup.json` carries three measured tiles -
+`5:19,12`, `5:13,12` and `5:10,10` - and TunnelLongPark is not one of them. With the square unmeasured
+the walk cannot know the train fits on it, and "unmeasured is unknown, not zero" says block. So measuring
+the berth squares is what turns this off today, and the change above is what makes the measurement pay.
+
+Left open deliberately: this is the guard that stops one train being routed into another, and the change
+is a model change plus an arithmetic trap. It wants its own pass rather than the end of a long one.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
