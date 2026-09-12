@@ -344,6 +344,31 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int REFUSED_ON_THE_WAY_AT_MOST = 1800;
 
     /**
+     * Route-journeys refused at a square the train turns at (Adam, 2026-09-11).
+     *
+     * 19045 when the bound was measured, against 1848 routable pairs and six census trains - so it is
+     * met on most routes that pass a reversing point, which on this railway is most long routes.
+     *
+     * **And the journey-level effect went the OTHER way, which is the part worth writing down.**
+     * `refused only on the way` was 1670 before the two bounds and 1635 after, with
+     * `REFUSED_AT_THE_BERTH` unmoved: thirty-five journeys that used to be refused now run, and none
+     * that used to run are refused.
+     *
+     * That is not a bound failing to bite.  It is `measuredRoomAtTheEndOf` measuring a SHORTER stretch
+     * and finding nothing measured in it, which under Adam's own doctrine - *"it is only indeterminate
+     * if the entire logical segment has length 0"*, and before that *"generally, allow it"* - is no
+     * information rather than no room.  Those thirty-five have a long measured approach and an
+     * unmeasured berth beyond the turn, and the honest answer about them is that nobody knows; the way
+     * to a real answer is to measure that berth, which is what the editor's notice now asks for.
+     */
+    private static final int AT_A_TURN_AT_LEAST = 15000;
+
+    /**
+     * The other end of that band.  See `AT_A_TURN_AT_LEAST`.
+     */
+    private static final int AT_A_TURN_AT_MOST = 23000;
+
+    /**
      * Journeys refused at the destination, which is what the rule did before the ruling.
      *
      * 1892 while this census read Adam's live railway; 1760 on the frozen snapshot, which is the
@@ -412,6 +437,13 @@ public class testTheRoomRuleCensusOnTheRealLayout
         int refusedAtTheBerth = 0;
         int refusedOnTheWay = 0;
 
+        // WHAT THE REVERSAL BOUND COSTS ON THIS RAILWAY (Adam, 2026-09-11).
+        //
+        // His ruling gave the room two bounds rather than one: the berth beyond the turn, and the
+        // track the train waits on while it changes direction.  Both are new, and the question a
+        // census can answer that a fixture cannot is how many journeys they take away from HIM.
+        int refusedAtATurn = 0;
+
         // Counted per ROUTE rather than per journey, and it is a measure of the CONDITION rather
         // than of the rule: how many refusals the walk would make with nothing but the start of the
         // route to stop it.  See the loop that raises it.
@@ -461,10 +493,17 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
                             List<Edge> prefix = route.subList(0, i + 1);
 
-                            Integer here = last ? Layout.measuredRoomAtTheEndOf(route, train)
+                            // A SQUARE THE TRAIN TURNS AT IS JUDGED LIKE A BERTH, because it is
+                            // one: `whyTooLongForThisRoute` asks `comesToRest`, and a replica of
+                            // production that is missing a condition counts a railway nobody runs.
+                            boolean comesToRest = last || route.get(i).getEnd().isReversing();
+
+                            Integer here = comesToRest ? Layout.measuredRoomAtTheEndOf(prefix, train)
                                 : Layout.roomAfterASwitchOnTheWay(prefix, train);
 
                             if (here == null || train.getTrainLength() <= here) continue;
+
+                            if (!last) refusedAtATurn++;
 
                             where = route.get(i).getEnd().getName();
 
@@ -524,6 +563,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         System.out.println("  squares that refuse, by name: " + squares);
         System.out.println("  refusals the unbounded walk would have added: "
             + offTheEndOfTheRoute);
+        System.out.println("  refusals at a square the train turns at: " + refusedAtATurn);
 
         // ASSERTED, NOT ONLY PRINTED (the review's C2).  `behaviour.md` section 5a says every refusal
         // this ruling adds is bounded by a switch, and leans on this census for it - a claim a
@@ -535,6 +575,27 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // it says is that on THIS railway every refusal the ruling adds has a switch behind it - which
         // is the sentence behaviour.md section 5a leans on, and the reason the condition costs nothing
         // here.
+        // AND THE REVERSAL BOUND IS NOT IDLE ON THIS RAILWAY (Adam, 2026-09-11).
+        //
+        // 19045 route-journeys meet it, which is the answer to the question a fixture cannot be asked:
+        // his ruling is about his own layout, and without this the only evidence that the two bounds
+        // do anything at all would be three hand-built points.
+        //
+        // WHAT THIS MEASURES IS THE RAILWAY, NOT THE GUARD - the same caveat as the assertion below
+        // it.  The loop above is a REPLICA of `whyTooLongForThisRoute`, so taking `comesToRest` out of
+        // production leaves this number exactly where it is; what fails then is
+        // `core.testNonReversibleTrains`, which goes through the real door.  Measured both ways.
+        //
+        // A band rather than a figure, for the reason `REFUSED_ON_THE_WAY_AT_LEAST` gives: this counts
+        // per ROUTE, and which routes the search returns moves by a couple of per cent between JVMs.
+        // The floor catches the bound being taken out, the ceiling catches it refusing everything, and
+        // the exact number is printed above.
+        assertTrue(refusedAtATurn >= AT_A_TURN_AT_LEAST && refusedAtATurn <= AT_A_TURN_AT_MOST,
+            refusedAtATurn + " route-journeys are refused at a square the train turns at, outside the"
+            + " measured band of " + AT_A_TURN_AT_LEAST + " to " + AT_A_TURN_AT_MOST + ". Below it,"
+            + " the bound Adam ruled on 2026-09-11 has stopped reaching this railway; above it, it is"
+            + " refusing journeys it was not asked to");
+
         assertEquals(offTheEndOfTheRoute, 0,
             offTheEndOfTheRoute + " of the refusals on the way would come from the walk running off"
             + " the start of the route rather than from a switch behind the square. behaviour.md"

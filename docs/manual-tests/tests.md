@@ -66,8 +66,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
 | [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
+| [MT-361](#mt-361) | 2026-09-11 | A train placed from either menu records which way it came in | needs test | REV9-B2, W21-C9 |
+| [MT-362](#mt-362) | 2026-09-11 | The locomotive keys work from any part of the window | needs test | OB-170 |
+| [MT-363](#mt-363) | 2026-09-11 | A train that turns round has to fit on both sides of the turn | fixed unvalidated | MON-C13, Adam's ruling of 2026-09-11 |
+| [MT-364](#mt-364) | 2026-09-11 | The editor says when a platform claims more train than its track measures | fixed unvalidated | Adam's request of 2026-09-11 |
 
-Everything else - 321 of 360 - needs nothing from you unless the area changes again:
+Everything else - 321 of 364 - needs nothing from you unless the area changes again:
 285 **fixed validated** and 36 **superseded**.
 
 ---
@@ -18711,6 +18715,8 @@ that he would rather have no check than one that refuses something legal.
 
 ---
 
+<a id="mt-361"></a>
+
 ### MT-361 - 2026-09-11 - A train placed from either menu records which way it came in
 
 **Disposition:** needs test
@@ -18745,6 +18751,8 @@ user, or randomly."*
 
 ---
 
+<a id="mt-362"></a>
+
 ### MT-362 - 2026-09-11 - The locomotive keys work from any part of the window
 
 **Disposition:** needs test
@@ -18774,5 +18782,88 @@ keyboard. Adam: *"any part of the app should respect the key mapping (locomotive
 related keyboard shortcuts."* The keys are now routed to the map by a post-processor, which the focus
 manager runs only for keys the focused component did not want - so step 5 is the half that says the
 routing did not take anything it should not have.
+
+---
+
+<a id="mt-363"></a>
+
+### MT-363 - 2026-09-11 - A train that turns round has to fit on both sides of the turn
+
+**Disposition:** fixed unvalidated
+**From:** MON-C13, Adam's ruling of 2026-09-11
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Pick a station trains reverse at on the way to their berth - or set one up: a reversing square with
+   a platform beyond it.
+2. Measure the track on both sides of it: a few units between the reversal and the platform, a few
+   units behind the reversal.
+3. Send a train SHORTER than both stretches there.
+4. Send a train LONGER than the stretch between the reversal and the platform, but short enough to fit
+   the whole run in end to end.
+5. Send a train longer than the stretch BEHIND the reversal, with a long platform stretch beyond it.
+6. Ask Why Not Moving, or read the refusal in the log, for 4 and 5.
+
+**Expected**
+
+- Step 3: it runs.
+- Step 4: refused, and the refusal names the PLATFORM.
+- Step 5: refused, and the refusal names the REVERSING SQUARE, not the platform.
+
+*What this is:* Adam, 2026-09-11: *"four-unit train in a three-unit berth with a two-unit approach:
+refused both because of the berth (3<4) and the track length that potentially couldn't fit the train
+while reversing.  if the train isn't reversing, then it should be accepted as long as the berth is long
+enough."*  The room now has two bounds rather than one, and which square the refusal names is the only
+way to see from outside which bound fired.
+
+**And one thing to watch for on the railway rather than in a test:** the census measured this as giving
+thirty-five journeys BACK and taking none away - a shorter stretch with nothing measured in it is
+unknown rather than short, so some paths that used to be refused are now merely unjudged. If a train
+turns round somewhere and ends up standing across the reversing square, that is the case to report, and
+the remedy is a length on the track beyond the turn.
+
+---
+
+<a id="mt-364"></a>
+
+### MT-364 - 2026-09-11 - The editor says when a platform claims more train than its track measures
+
+**Disposition:** fixed unvalidated
+**From:** Adam's request of 2026-09-11
+
+**Written:** 2026-09-11
+
+**Steps**
+
+1. Open the autonomy editor on your own railway and run the checks.
+2. Look for the NOTICE saying a platform is set to take a train of N while only M of track is measured
+   between it and the switch or reversal behind it.
+3. Find a station where that is true and where you know it is fine - your own example was a platform of
+   four made of two stretches of two either side of a switch - and leave it alone.
+4. Find one where it is not fine, measure the track beyond the switch, and run the checks again.
+5. Count how many of these notices you get in total.
+
+**Expected**
+
+- Step 2: the notice is in the NOTICE section, not among the warnings, and it carries both numbers - the
+  maximum you typed first, the measured track second.
+- Step 4: it goes when the track beyond the switch is long enough for the maximum.
+- Step 5: a handful, not a wall. **If it is a wall, say so and it gets narrowed** - it only ever fires
+  where you have typed a maximum AND measured the track, so it should be a short list.
+
+*What this is:* Adam, 2026-09-11: *"let's add an autonomy editor notice that alerts the user if a run-in
+is shorter than the berth length, that way they can decide if it makes sense or not.  for example, a
+station of length 4 may have two segments of tracks on either side of a switch, of length 2.  that is
+acceptable and its limitations are understood."*  Two numbers decide whether a train may stop somewhere
+and different hands set them; where the measured one is smaller, the one you typed never binds and the
+refusal quotes a number you never typed.
+
+**One open question behind it, and it needs a word rather than a test.** *"If the max train length at
+the berth was set to 8, we would be OK"* was read as "if the berth could hold 8" - so the typed maximum
+is still an EXTRA limit and never overrules the measured track. If you meant the other thing - that
+typing a maximum should let a train into a stretch the track says is too short - say so, because that
+turns a refusal into permission and is a bigger change than this notice.
 
 ---

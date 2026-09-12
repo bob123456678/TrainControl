@@ -833,7 +833,7 @@ that could have run.
 
 **Two things about the room sum were open, and Adam settled both on 2026-09-11** (MON-C13). They had
 lived only in a comment at `Layout.isPathClear` until 2026-09-08, against this document's own promise at
-the top that a known limit is stated here.
+the top that a known limit is stated here. The second took two rulings and one reverted commit.
 
 1. **A positive length counts, and that is deliberate.** On a diagram-built graph an edge's length is
    the sum of `max(0, tileLength)` over the tiles it spans, so one measured tile out of five gives a
@@ -844,29 +844,79 @@ the top that a known limit is stated here.
    So this is the rule rather than a limitation. It errs towards refusing, which is the safe direction,
    and the remedy in the operator's hands is to measure the rest of the tiles.
 
-2. **What a reversal does to the sum is STILL OPEN**, and an attempt to close it on 2026-09-11 was
-   reverted the same day. The walk runs backwards from the berth and stops at the last SWITCH only.
+2. **A REVERSAL SPLITS THE RUN IN, AND THE TRAIN HAS TO FIT IN BOTH HALVES** (Adam, 2026-09-11).
 
-   Adam was asked whether *"the track segments leading up to it"* means up to the reversal or up to the
-   berth, and answered: *"it can be either the reversal or the berth, depending on where switches are.
-   both need to be long enough."* That was read as "stop at whichever is met first walking back", and
-   built - and the battery refused it, which is the useful part:
+   Asked whether *"the track segments leading up to it"* means up to the reversal or up to the berth:
+   *"it can be either the reversal or the berth, depending on where switches are.  both need to be long
+   enough."*  That was read as one bound - stop the walk at whichever is met first - and two tests
+   refused it, so it was put to him again with the figures, and he gave them:
 
-   - `core.testNonReversibleTrains.testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` asserts that a
-     four-unit train fits a three-unit berth with a two-unit approach behind a REVERSING point: *"a
-     train that fits in the berth and its approach was refused, so the rule refuses more than it was
-     asked to."*
-   - `testTheRoomIsEverySegmentLeadingUpToTheReversal` asserts that an eight-unit train fits a nine-unit
-     run-in with a reversing point in the middle of it: *"the room is being measured over part of the
-     approach rather than all of it."*
+   > four-unit train in a three-unit berth with a two-unit approach: refused both because of the berth
+   > (3<4) and the track length that potentially couldn't fit the train while reversing.  if the train
+   > isn't reversing, then it should be accepted as long as the berth is long enough.
 
-   Both are deliberate, both quote earlier rulings of his, and both say the approach BEYOND the reversal
-   counts. So either they are wrong, or the reading of this ruling was - and the physical argument is
-   not obviously on the side of the reading: a train that turns at a point and backs into a berth comes
-   to rest with its tail running back over that point and onto the track it arrived by, which is
-   continuous rails. The 10 + 1 + 2 case in this bullet's earlier wording assumed it cannot.
+   > 8 unit train on a 9-unit runin would just be refused because 3<8.  if the max train length at the
+   > berth was set to 8, we would be OK.  in short, your tests should consider both.
 
-   It goes back to Adam with that evidence rather than being decided here.
+   So there are **two stretches and two comparisons**, and a train has to fit in each:
+
+   | Where the train stands | The stretch it has to fit in |
+   | --- | --- |
+   | the berth, after turning | back from the berth to the reversal, or to the last switch, whichever is met first |
+   | the reversing point, while it changes direction | back from the reversal to the last switch, or to the start of the route |
+
+   The first is the walk's own stop (`Layout.measuredRoomAtTheEndOf`); the second is a square the train
+   **comes to rest on**, so `whyTooLongForThisRoute` judges it the way it judges a berth rather than the
+   way it judges a square the train rolls over. Where nothing on the route turns the train neither
+   stretch exists and the sum is the whole run in, which is his other sentence - *"if the train isn't
+   reversing, then it should be accepted as long as the berth is long enough."*
+
+   `core.testNonReversibleTrains` holds both, each isolated by making the other stretch long enough that
+   it cannot be the one objecting, and reading the refusal's sentence rather than its yes-or-no.
+
+   **His 3 is neither of the numbers the rule produces on that fixture** - the berth beyond the turn is
+   4 and the approach behind it 5 - and both refuse an eight-unit train, so the verdict is his and the
+   arithmetic is the rule's. Recorded rather than rounded off, because the next person to read the
+   ruling will do the same sum.
+
+   **The first attempt was reverted on the strength of a test that was a guess.** Those two tests
+   asserted that a four-unit train fits a three-unit berth with a two-unit approach, and that an
+   eight-unit train fits a nine-unit run in split by a reversal - both because the figures add up end to
+   end. Nobody had ruled on either. A test that encodes a reading of an unstated rule is indistinguishable
+   from a test that encodes the rule, and reverting working code to keep one green cost half a day.
+
+   **What it does to his railway: thirty-five journeys BACK, and none taken away.** The census measured
+   1670 journeys refused on the way before the two bounds and 1635 after, with the berth count unmoved -
+   because a shorter stretch with nothing measured in it is no information rather than no room, which is
+   bullet 1's doctrine again. Those thirty-five have a long measured approach and an unmeasured berth
+   beyond the turn; the way to a real answer about them is to measure that berth, and
+   `autosetup.ui.checkRunInShorterThanTheBerth` is the notice that asks.
+
+**A STATION TOLD IT HOLDS MORE TRAIN THAN ITS TRACK MEASURES GETS A NOTICE** (Adam, 2026-09-11):
+*"let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth length,
+that way they can decide if it makes sense or not.  for example, a station of length 4 may have two
+segments of tracks on either side of a switch, of length 2.  that is acceptable and its limitations are
+understood."*
+
+Two numbers can refuse a train a platform and different hands set them: `maxTrainLength` is what somebody
+typed, and the measured room is what the track says. Where the measured room is smaller the typed maximum
+never binds, and a train inside it is refused by a rule quoting a number nobody typed.
+
+- It fires per STATION, on the SMALLEST room any of its approaches has, and the sentence carries both
+  numbers - the maximum first, the room second.
+- The room is `ReducedEdge.getRoomAtTheEnd()`: the track from the last switch on the arriving edge to the
+  platform, which is what `Layout.measuredRoomAtTheEndOf` counts. **A notice quoting a number the refusal
+  would not quote sends the reader to measure the wrong stretch.**
+- An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
+  guard walks on back through earlier edges, so that edge bounds nothing.
+- Silent where either side is missing: no typed maximum is `checkNoMaxTrainLength`'s sentence, an
+  unmeasured stretch is `checkReversalNeedsLength`'s, and a railway measuring no track at all has decided
+  not to model lengths.
+- A **NOTICE**, not a warning, and that is his ruling rather than a grading: his own example is a railway
+  with nothing wrong with it, and a setup where that is understood should not carry a warning for ever.
+
+`core.testAutonomyDiagramSession.testTheEditorSaysWhenAPlatformHoldsLessTrackThanItClaims` holds it, on
+his own 2 + 2 example and on the reversal branch.
 
 **Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
 (MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever

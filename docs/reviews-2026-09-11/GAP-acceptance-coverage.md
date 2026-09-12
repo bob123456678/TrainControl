@@ -39,7 +39,7 @@ no comment in the code can point at, which is its own small finding.
 | A paste onto a square no train could leave is refused | `MT-136` | on the manual list, where it belongs - it needs a diagram and a pointer |
 | Nothing on the event thread may call a synchronized Layout method | `D3-B2` | covered, under a sibling id - `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` cites `D3-A1` |
 | An unreadable page's autonomy settings are kept | `T10-C3` | covered - `core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged`; behaviour.md now names it |
-| Two things the room sum is known to get wrong | `MON-C13` | **not a gap - a disclosed limitation waiting on Adam**, see below |
+| Two things the room sum is known to get wrong | `MON-C13` | **not a gap - both ruled on and closed the same day**, see below |
 | An emergency stop is obeyed whatever else is true | `SVN-A4` | **half a gap, closed** - the screening was held all along and this finding missed it; the execution was not - see below |
 
 ### GAP-B1 - the placement rule had nothing holding it
@@ -95,6 +95,12 @@ thrown - because obeying the stop by running the whole route would be worse than
 `MON-C13` is not a gap. Both were found the day the rule was written, both are stated in the document,
 and both were left because fixing either changes what the railway does. They belong with `MT-260`'s six
 questions: work waiting on a ruling, not on a test.
+
+**Both were ruled on the same day and are closed** (2026-09-11). A positive length counts, which needed no
+code; and a reversal splits the run in, which needed two bounds rather than the one a first reading built
+and a test then reverted. `behaviour.md` section 5a carries both, `core.testNonReversibleTrains` holds the
+second, and `core.testTheRoomRuleCensusOnTheRealLayout` measures what it costs on his railway - thirty-five
+journeys back, none taken away. `MT-363` is the hands-on half.
 
 ## What I did not cover
 

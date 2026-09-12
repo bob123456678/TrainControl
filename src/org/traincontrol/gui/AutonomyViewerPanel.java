@@ -1569,7 +1569,8 @@ public class AutonomyViewerPanel extends JPanel
             // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
             // this list changes, and lets the two that need a name use {1}.
                 new Object[] {finding.getTile(),
-                    describe(finding.getMessageKey(), subject, finding.getSubject(), finding.getCount())});
+                    describe(finding.getMessageKey(), subject, finding.getSubject(),
+                        finding.getCount(), finding.getDetail())});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it

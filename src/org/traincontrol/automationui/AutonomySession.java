@@ -4602,8 +4602,9 @@ public class AutonomySession
             // passed through and not stopped at, a closed square is not passed through at all
             // (V31-C3).
             shutTiles(),
-            // The two halves of the length rule (FR-046).
-            placedTrainsWithoutLength(), stationsWithoutMaxLength(),
+            // The two halves of the length rule (FR-046), and the two of them disagreeing about one
+            // platform (Adam, 2026-09-11).
+            placedTrainsWithoutLength(), stationsWithoutMaxLength(), runInsShorterThanTheBerth(),
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
             repeatedSensorPages(),
             // Squares trains reverse at that nobody has measured (Adam, 2026-09-01).
@@ -7164,6 +7165,83 @@ public class AutonomySession
             int max = value instanceof Number ? ((Number) value).intValue() : 0;
 
             if (max <= 0) out.add(square);
+        }
+
+        return out;
+    }
+
+    /**
+     * Stations told they hold more train than their track measures (Adam, 2026-09-11).
+     *
+     * *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth
+     * length, that way they can decide if it makes sense or not.  for example, a station of length 4 may
+     * have two segments of tracks on either side of a switch, of length 2.  that is acceptable and its
+     * limitations are understood."*
+     *
+     * **The measured room is the guard's own number, not a second opinion.**  It is
+     * `ReducedEdge.getRoomAtTheEnd()` - the track from the last switch on the arriving edge to the
+     * platform, which is exactly what `Layout.measuredRoomAtTheEndOf` counts when that edge crosses a
+     * switch.  A notice quoting a number the refusal would not quote is worse than no notice: the reader
+     * measures the wrong stretch.
+     *
+     * **An edge crossing no switch is skipped unless the train turns at its far end.**  There the guard
+     * carries on backwards through earlier edges, so this edge alone bounds nothing and any number taken
+     * from it would be too small - except where the edge begins at a square trains turn round on, which
+     * is where the walk stops under his other ruling of the same day.  `unmeasuredAfterTheLastSwitch`
+     * makes the same choice and for the same reason, written out in its javadoc: asking about a whole
+     * route is a nag rather than a notice.
+     *
+     * **Silent where either side is missing**, which is three separate cases and all three are somebody
+     * else's notice or nobody's business: no stated maximum is `NO_MAX_TRAIN_LENGTH`, an unmeasured
+     * stretch is `REVERSAL_NEEDS_LENGTH` where it matters most, and a railway that measures no track at
+     * all has decided not to model lengths - Adam's own condition, *"a railway that measures nothing has
+     * decided not to model them"*.
+     *
+     * @return the station squares, each mapped to {the stated maximum, the smallest measured room}
+     */
+    java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
+    {
+        java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
+
+        if (reducer == null || store == null) return out;
+
+        if (!store.measuresAnyTrack()) return out;
+
+        for (TileKey square : reducer.getPoints().keySet())
+        {
+            if (!store.isStation(square)) continue;
+
+            Object value = getPointProperty(square, "maxTrainLength");
+
+            int max = value instanceof Number ? ((Number) value).intValue() : 0;
+
+            if (max <= 0) continue;
+
+            int worst = -1;
+
+            for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
+            {
+                if (!arriving.getEnd().equals(square)) continue;
+
+                int room = arriving.getRoomAtTheEnd();
+
+                if (room == Integer.MIN_VALUE)
+                {
+                    // No switch on this edge, so the guard keeps walking back - unless the train turns
+                    // round where this edge starts, which is where it stops instead.
+                    if (!isTurnAround(arriving.getStart())) continue;
+
+                    room = arriving.getLength();
+                }
+
+                // UNMEASURED IS UNKNOWN, NOT SHORT - the doctrine the guard itself follows, and `-1` is
+                // the reduction's word for "bounded, and nothing in it is measured".
+                if (room <= 0 || room >= max) continue;
+
+                if (worst < 0 || room < worst) worst = room;
+            }
+
+            if (worst >= 0) out.put(square, new int[] {max, worst});
         }
 
         return out;

@@ -2923,6 +2923,202 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The editor says when a platform is told to hold more train than its track measures.
+     *
+     * Adam, 2026-09-11: *"Let's add an autonomy editor notice that alerts the user if a run-in is
+     * shorter than the berth length, that way they can decide if it makes sense or not.  for example, a
+     * station of length 4 may have two segments of tracks on either side of a switch, of length 2.  that
+     * is acceptable and its limitations are understood."*
+     *
+     * **Two numbers set by two different hands.**  `maxTrainLength` is what somebody typed on the
+     * platform; the measured room is what the track says, counted back from the platform to whichever of
+     * the last switch and a reversal is met first.  Where the second is smaller the first never binds,
+     * and a train inside the stated maximum is refused by a rule quoting a number nobody typed.
+     *
+     * **His own example is the first half of this test**, because it is the case that is NOT a fault: a
+     * four-unit platform whose track is two stretches of two either side of a switch.  Nothing is wrong
+     * with that railway - the geometry is finer than one number per station - and the notice exists so he
+     * can say so and move on, which is why it is a NOTICE and not a warning.
+     *
+     * **The second half is the reversal**, which is the branch the switch case cannot reach: an edge
+     * crossing no switch does not bound anything on its own, because the guard carries on walking back
+     * through earlier edges - unless the train turns round where that edge starts, which is where the
+     * walk stops under Adam's other ruling of the same day.
+     *
+     * **And three silences, each about a different missing half**, because a notice that fires when it
+     * cannot know anything is the wall this list has twice been called.
+     *
+     * MUTATIONS: comparing against the edge's whole length rather than `getRoomAtTheEnd` loses the
+     * switch case; taking the `isTurnAround` test out reports every station with a short arriving edge,
+     * most of which the guard never judges on that edge; dropping the `room > 0` test reports every
+     * unmeasured approach; and reporting the room as `{2}` and the maximum as `{3}` swaps the sentence
+     * round, which the two assertions on the numbers catch.
+     */
+    @Test
+    public void testTheEditorSaysWhenAPlatformHoldsLessTrackThanItClaims() throws Exception
+    {
+        session.open(Arrays.asList(platformBehindASwitch()));
+        session.initialize("Short");
+
+        TileKey platform = new TileKey("main", 5, 1);
+        TileKey start = new TileKey("main", 1, 1);
+
+        session.setStation(platform, true);
+        session.setPointProperty(platform, "maxTrainLength", 4);
+        session.rebuild();
+
+        // NOTHING MEASURED: a railway that records no track lengths has decided not to model them, and
+        // there is nothing to compare the maximum against.
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+            "a railway that measures no track was told its platforms are shorter than their maxima, "
+            + "which is a comparison with one side missing");
+
+        // HIS EXAMPLE: a platform of four whose track is two either side of the switch.
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding notice =
+            findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
+
+        assertNotNull(notice, "a platform set to hold four units of train has two units of track "
+            + "between it and the switch behind it, so a three-unit train is refused there whatever "
+            + "the maximum says - and nothing told the operator (Adam, 2026-09-11)");
+
+        assertEquals(notice.getSubject(), session.pointNameForTile(platform),
+            "the notice is about some other square: " + notice);
+
+        assertEquals(notice.getCount(), 4,
+            "the first number in the sentence is the maximum somebody typed, which is 4 here");
+
+        assertEquals(notice.getDetail(), 2,
+            "the second number is the room the guard will actually measure, which is the two units "
+            + "beyond the switch - not the four units of track on the edge");
+
+        assertEquals(notice.getSeverity(),
+            org.traincontrol.automationui.AutonomyChecks.Severity.NOTICE,
+            "Adam's own example of this is a railway with nothing wrong with it - \"that is acceptable "
+            + "and its limitations are understood\" - so it does not belong among the warnings");
+
+        // AND IT GOES WHEN THE TRACK BEYOND THE SWITCH IS LONG ENOUGH.  The stretch before the switch
+        // is left short on purpose: it is not the stretch the rule measures, so it must not matter.
+        session.setTileLength(new TileKey("main", 4, 1), 4);
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+            "four units of track beyond the switch hold the four-unit train the platform claims, and "
+            + "the notice is still asking about it");
+
+        // A PLATFORM WITH NO STATED MAXIMUM IS NOT ASKED ABOUT: that is NO_MAX_TRAIN_LENGTH's sentence,
+        // and a comparison needs two numbers.
+        session.setPointProperty(platform, "maxTrainLength", 0);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+            "a platform with no stated maximum was compared against one");
+
+        // AND AN UNMEASURED STRETCH IS UNKNOWN, NOT SHORT - the doctrine the guard itself follows.
+        session.setPointProperty(platform, "maxTrainLength", 4);
+        session.setTileLength(new TileKey("main", 4, 1), 0);
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+            "the track beyond the switch has no length recorded and the platform was reported as "
+            + "short. Unmeasured is unknown, not zero - and REVERSAL_NEEDS_LENGTH is the notice that "
+            + "asks for a number where one is needed");
+
+        // THE OTHER BRANCH: no switch between the two squares, and the train turns round at the far end.
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("ShortTurn");
+
+        TileKey turns = new TileKey("main", 1, 1);
+        TileKey berth = new TileKey("main", 4, 1);
+
+        session.setStation(turns, true);
+        session.setPointProperty(turns, "canReverse", Boolean.TRUE);
+        session.setStation(berth, true);
+        session.setPointProperty(berth, "maxTrainLength", 9);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 3, 1), 2);
+        session.rebuild();
+
+        assertTrue(session.isTurnAround(turns),
+            "the fixture did not take: trains must turn round at the far end of this run");
+
+        org.traincontrol.automationui.AutonomyChecks.Finding afterATurn =
+            findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
+
+        assertNotNull(afterATurn, "a platform set to hold nine units is four units of track from the "
+            + "square trains turn round at, and the walk stops at a reversal just as it stops at a "
+            + "switch (Adam, 2026-09-11) - so nine can never be reached there and nothing said so");
+
+        assertEquals(afterATurn.getSubject(), session.pointNameForTile(berth),
+            "the notice is about the wrong end of the run: " + afterATurn);
+
+        assertEquals(afterATurn.getDetail(), 4,
+            "the room is the four measured units between the turn and the platform");
+
+        // AND THE SAME RUN WITH NOTHING TURNING AT ITS FAR END IS NOT ASKED ABOUT, because there the
+        // guard walks on back through earlier edges and this edge bounds nothing.
+        session.setPointProperty(turns, "canReverse", Boolean.FALSE);
+        session.rebuild();
+
+        assertFalse(session.isTurnAround(turns), "the fixture did not take: nothing should turn here now");
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+            "an edge that crosses no switch and starts nowhere trains turn round bounds nothing - the "
+            + "guard carries on back through the route - so the number this would quote is not the "
+            + "number that would refuse the train");
+    }
+
+    /**
+     * The first finding carrying a message key, or null.
+     *
+     * @param messageKey the check to look for
+     * @return the finding, or null when nothing raised it
+     */
+    private org.traincontrol.automationui.AutonomyChecks.Finding findingFor(String messageKey)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getMessageKey().equals(messageKey)) return finding;
+        }
+
+        return null;
+    }
+
+    /**
+     * A platform with a switch in its approach, which is Adam's own example of a station whose track is
+     * finer than one number: *"a station of length 4 may have two segments of tracks on either side of a
+     * switch, of length 2."*
+     *
+     * The switch needs an address wired onto it or autonomy will not route over it, and its branch needs
+     * somewhere to go or it is a dead end rather than a fork.
+     */
+    private LayoutDiagram platformBehindASwitch() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        // The branch off the switch, lying north-south so that it has a port facing the switch at all.
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.getComponent(3, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
+            "Switch 7", false, 0));
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
      * And the station-capacity notice is gated the same way (SVN-C3).
      *
      * The two halves of the length rule are `placedTrainsWithoutLength` and `stationsWithoutMaxLength`,

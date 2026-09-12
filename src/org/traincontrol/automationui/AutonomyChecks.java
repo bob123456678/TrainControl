@@ -68,6 +68,7 @@ public class AutonomyChecks
         private final String subject;
         private final TileKey tile;
         private final int count;
+        private final int detail;
 
         Finding(Severity severity, String messageKey, String subject, TileKey tile)
         {
@@ -81,11 +82,40 @@ public class AutonomyChecks
          */
         Finding(Severity severity, String messageKey, String subject, TileKey tile, int count)
         {
+            this(severity, messageKey, subject, tile, count, 0);
+        }
+
+        /**
+         * The same, with a SECOND number, because one of the findings is a comparison.
+         *
+         * `RUN_IN_SHORTER_THAN_THE_BERTH` says what the station was told it can hold and what the track
+         * actually measures, and a sentence carrying one of those sends the reader to look up the other.
+         * It is the same reason `autolayout.errorTrainTooLongForBerth` carries both numbers: *"a refusal
+         * that says only 'too long' leaves nothing to measure"*.
+         *
+         * @param detail the second number, or zero when this finding is not a comparison
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail)
+        {
             this.severity = severity;
             this.messageKey = messageKey;
             this.subject = subject;
             this.tile = tile;
             this.count = count;
+            this.detail = detail;
+        }
+
+        /**
+         * The second number, rendered as `{3}`.
+         *
+         * After the count, so no existing message changes and only the one that needs it asks.
+         *
+         * @return the number, or zero when this finding is not a comparison
+         */
+        public int getDetail()
+        {
+            return detail;
         }
 
         /**
@@ -222,6 +252,31 @@ public class AutonomyChecks
     public static final String NO_TRAIN_LENGTH = "autosetup.ui.checkNoTrainLength";
 
     /**
+     * A station told it can hold more train than its track measures (Adam, 2026-09-11).
+     *
+     * *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth
+     * length, that way they can decide if it makes sense or not.  for example, a station of length 4 may
+     * have two segments of tracks on either side of a switch, of length 2.  that is acceptable and its
+     * limitations are understood."*
+     *
+     * **Two rules can refuse a train a platform and they are set by different hands.**  The station's
+     * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
+     * measured run in is what the track says, counted back from the platform to whichever of the last
+     * switch and a reversal is met first.  Where the second is smaller the first never binds: a train
+     * inside the stated maximum is refused on the track measurement instead, by a rule that names a
+     * different number.
+     *
+     * **It is a NOTICE and not a warning, and that is his ruling rather than a grading.**  His own
+     * example is a four-unit platform whose track is 2 + 2 across a switch - nothing is wrong with it,
+     * the geometry is simply finer than one number per station, and he wants to be told so he can
+     * decide.  A railway where that is understood should not carry a warning about it for ever.
+     *
+     * Reported per STATION, not per arrival: a platform reached two ways is one platform, and the
+     * number given is the smallest room any of its approaches has, which is the one that binds.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_BERTH = "autosetup.ui.checkRunInShorterThanTheBerth";
+
+    /**
      * The other end of the same sum: a station that will take a train of any length (FR-046).
      *
      * Said separately because the two are set in different places by different people - the length on
@@ -266,6 +321,8 @@ public class AutonomyChecks
      * @param withoutTrainLength squares whose locomotive has no length recorded (FR-046)
      * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
      * @param withoutMaxLength station squares with no maximum train length
+     * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
+     *        mapped to {the stated maximum, the smallest measured room} (Adam, 2026-09-11)
      *
      * The two halves of the length comparison, supplied rather than derived: one lives on the
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
@@ -278,6 +335,7 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> closed,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
+        Map<TileKey, int[]> shortRunIns,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
@@ -288,7 +346,8 @@ public class AutonomyChecks
         findings.addAll(checkFacings(reducer, facingsImpossible));
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
-        findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, placedLocomotives));
+        findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
+            placedLocomotives));
         findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
 
         findings.addAll(checkArrivalsLeft(reducer, shutStations));
@@ -894,7 +953,7 @@ public class AutonomyChecks
      * @return one warning per square
      */
     private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
-        Set<TileKey> withoutMaxLength, Map<TileKey, String> placed)
+        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Map<TileKey, String> placed)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -916,6 +975,22 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.WARNING, NO_MAX_TRAIN_LENGTH,
                 point == null ? String.valueOf(square) : point.getName(), square));
+        }
+
+        // AND THE TWO OF THEM DISAGREEING, which is the case where both are filled in (Adam,
+        // 2026-09-11).  The stated maximum first, because it is the number the reader typed; the
+        // measured room second, because it is the one that will actually refuse the train.
+        if (shortRunIns != null)
+        {
+            for (Map.Entry<TileKey, int[]> station : shortRunIns.entrySet())
+            {
+                GraphReducer.ReducedPoint point =
+                    reducer == null ? null : reducer.getPoints().get(station.getKey());
+
+                findings.add(new Finding(Severity.NOTICE, RUN_IN_SHORTER_THAN_THE_BERTH,
+                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    station.getKey(), station.getValue()[0], station.getValue()[1]));
+            }
         }
 
         return findings;

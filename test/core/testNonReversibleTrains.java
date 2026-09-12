@@ -943,14 +943,26 @@ public class testNonReversibleTrains
      * at all is unaffected; a layout that records some gets a notice in the editor asking for the ones
      * that matter, which is the other half of what he asked for.
      *
-     * MUTATION: dropping the reversal test refuses nothing.
+     * **TWO BOUNDS, NOT ONE** (Adam, 2026-09-11), and this fixture is the one he gave them on:
+     * *"four-unit train in a three-unit berth with a two-unit approach: refused both because of the
+     * berth (3<4) and the track length that potentially couldn't fit the train while reversing.  if
+     * the train isn't reversing, then it should be accepted as long as the berth is long enough."*
      *
-     * The second mutation this used to name - "comparing against the whole path rather than the track
-     * at the reversal" - was two things wrong (TS3-C3).  This fixture cannot tell them apart: its path
-     * is two edges of 2 and 3 against a train of 10, so 5 and 3 both refuse.  And since Adam's ruling
-     * of 2026-09-01 the whole run in IS the rule - `measuredRoomAtTheEndOf` sums every segment - so
-     * it described the shipped code rather than a mutation.  What covers that distinction properly is
-     * `testTheRoomIsEverySegmentLeadingUpToTheReversal`, two methods down, on a three-segment fixture.
+     * So there are two stretches and the train has to fit in each: the berth, measured back to
+     * whichever of the last switch and the reversal is met first, and the track the train waits on
+     * while it changes direction.  Each is checked here on its own, with the other made long enough
+     * that it cannot be the one objecting, and the refusal's SENTENCE is read rather than its
+     * yes-or-no - two bounds that both refuse everything would pass a pair of assertFalses.
+     *
+     * **This test asserted the opposite of his ruling for ten days, and the assertion was a guess.**
+     * It said a four-unit train fits a three-unit berth with a two-unit approach, because 3 + 2 holds
+     * four units of train end to end - and on the strength of that assertion the first attempt at the
+     * berth bound was reverted as over-strict the same morning.  Nobody had ever ruled on it.  A test
+     * that encodes a reading of an unstated rule reads exactly like a test that encodes the rule.
+     *
+     * MUTATIONS: dropping the reversal test from `measuredRoomAtTheEndOf` admits the four-unit train
+     * at the berth; dropping `comesToRest` from `whyTooLongForThisRoute` admits it at the turn; and
+     * making either bound unconditional fails the last assertion, where both are long enough.
      */
     @Test
     public void testATrainTooLongForTheBerthIsNotBackedOverTheSwitch() throws Exception
@@ -976,12 +988,51 @@ public class testNonReversibleTrains
                 "a train ten long was sent to reverse into a berth of three with an approach of two, "
                 + "so it would stand across the switch behind it and nothing objected");
 
-            // And the same railway with a train that fits.
+            // HIS FIGURES AND HIS VERDICT (Adam, 2026-09-11): three-unit berth, two-unit approach,
+            // four-unit train, *"refused both because of the berth (3<4) and the track length that
+            // potentially couldn't fit the train while reversing."*
             loc.setTrainLength(4);
 
+            assertFalse(layout.isPathClear(pathThrough(layout), loc, false),
+                "a four-unit train was admitted to a three-unit berth with a two-unit approach. Both "
+                + "of Adam's bounds refuse it (2026-09-11): the berth beyond the turn is 3, and the "
+                + "track it stands on while it changes direction is 2");
+
+            // WHICH BOUND, ONE AT A TIME.  A long approach, so only the berth can object.
+            layout.getEdge("BACK_start", "BACK_mid").setLength(9);
+
+            String atTheBerth = Layout.whyTooLongForThisRoute(pathThrough(layout), loc);
+
+            assertNotNull(atTheBerth, "a four-unit train was admitted to a three-unit berth because "
+                + "the nine units of approach behind the reversal were counted towards it. The train "
+                + "turns at BACK_mid and comes to rest beyond it, so only the track beyond it is room");
+
+            assertTrue(atTheBerth.contains("BACK_end"),
+                "the berth is the short stretch here and the refusal should name it: " + atTheBerth);
+
+            // A long berth and the short approach back, so only the turn can object.
+            layout.getEdge("BACK_start", "BACK_mid").setLength(2);
+            layout.getEdge("BACK_mid", "BACK_end").setLength(9);
+
+            String atTheTurn = Layout.whyTooLongForThisRoute(pathThrough(layout), loc);
+
+            assertNotNull(atTheTurn, "a four-unit train was sent to change direction on two units of "
+                + "track. It stands still at BACK_mid with its body stretched back over the approach, "
+                + "so the approach has to hold it - Adam's second reason, 2026-09-11");
+
+            assertTrue(atTheTurn.contains("BACK_mid"),
+                "the track the train waits to turn on is the short stretch here, and the refusal "
+                + "should name that square rather than the berth: " + atTheTurn);
+
+            // AND WITH BOTH LONG ENOUGH IT RUNS.  Two bounds that refused everything would pass every
+            // assertion above and this is the one they fail - *"both need to be long enough"* is a
+            // rule about two stretches, not a reason to stop running trains into reversing stations.
+            layout.getEdge("BACK_start", "BACK_mid").setLength(4);
+            layout.getEdge("BACK_mid", "BACK_end").setLength(4);
+
             assertTrue(layout.isPathClear(pathThrough(layout), loc, false),
-                "a train that fits in the berth and its approach was refused, so the rule refuses "
-                + "more than it was asked to");
+                "a four-unit train was refused a four-unit berth with a four-unit approach, both of "
+                + "which are long enough, so one of the bounds is refusing more than it measures");
 
             // AND THE CONTROL: with nothing measured anywhere the rule cannot know, and says nothing.
             layout.getEdge("BACK_mid", "BACK_end").setLength(0);
@@ -1001,27 +1052,45 @@ public class testNonReversibleTrains
     }
 
     /**
-     * With no switch on the route, the room is the WHOLE run in (Adam, 2026-09-01).
+     * A reversal on the route splits the run in, and the train has to fit in both halves.
      *
-     * "Do you sum the track segments leading up to it?  if they are long enough, then we are good.  if
-     * segments < train length, then we can't reverse over the switch."
+     * **Adam, 2026-09-11, on this fixture's own figures:** *"8 unit train on a 9-unit runin would just
+     * be refused because 3<8.  if the max train length at the berth was set to 8, we would be OK.  in
+     * short, your tests should consider both."*  Nine units of run in, a reversing point in the middle
+     * of it, and an eight-unit train is refused - which is the opposite of what this test asserted
+     * until that ruling.
      *
-     * **NARROWED on 2026-09-02, and this test is the half that survived.**  He ruled that the
-     * measurement is "between the switch and the station", so the whole-route sum now applies only
-     * where the route crosses no switch at all - which is this fixture, whose edges are hand-built and
-     * carry no switch.  `testTheRoomIsMeasuredFromTheLastSwitch` is the other half.
+     * His figure is neither of the two the rule produces, and that is worth writing down rather than
+     * rounding off: the berth beyond the turn measures 4 and the approach behind it 2 + 3 = 5.  Both
+     * refuse an eight-unit train, so the verdict is his and the number is not; the refusal reported is
+     * the one met first walking forwards, which is the approach.
      *
-     * The first version of the guard added the last two edges, reading "the station track plus switch
-     * track" as a count of segments rather than as an example of them - which is stricter than his
-     * rule everywhere the run in is longer than that, and refuses trains that fit.
+     * **What this test used to say, and why it was wrong.**  Adam, 2026-09-01: *"do you sum the track
+     * segments leading up to it?  if they are long enough, then we are good"* - read as "the whole run
+     * in, always", which is true only where nothing on the route stops the count.  A switch stops it
+     * (2026-09-02) and so does a reversal (2026-09-11): a train that turns part way along comes to
+     * rest beyond the turn, and what it waits on before turning is the track behind it.  Neither half
+     * is the whole nine.
      *
-     * Three segments is the shortest fixture that can tell the two apart: 2 + 3 + 4 is nine, the last
-     * two are seven, and a train of eight fits under his rule and not under the first one.
+     * The whole-run-in rule is still here and still tested - in the last section, where nothing on the
+     * route turns the train.  That is Adam's other sentence of 2026-09-11: *"if the train isn't
+     * reversing, then it should be accepted as long as the berth is long enough."*
      *
-     * MUTATION: summing only the last two edges fails the first assertion.
+     * **Renamed** from `testTheRoomIsEverySegmentLeadingUpToTheReversal`, which the ruling made false
+     * in both halves of its name.
+     *
+     * MUTATIONS, run rather than reasoned about: dropping `comesToRest` from
+     * `whyTooLongForThisRoute` fails this; so does applying either bound where nothing turns round.
+     *
+     * **Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT fail this test**, and the
+     * first version of this paragraph said it did.  Every refusal here is reached at the TURN, which
+     * comes first walking forwards, so the berth bound is never the thing that objects.
+     * `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` is what holds that half - it makes the
+     * approach long so that only the berth can refuse, and reads the refusal's sentence to be sure it
+     * did.  Said here because a mutation list is only worth having if somebody ran it.
      */
     @Test
-    public void testTheRoomIsEverySegmentLeadingUpToTheReversal() throws Exception
+    public void testTheRoomIsBoundedAtTheReversalAndAtTheBerth() throws Exception
     {
         Layout layout = longerBackingInLayout();
 
@@ -1040,9 +1109,63 @@ public class testNonReversibleTrains
 
             loc.setTrainLength(8);
 
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "an eight-unit train was accepted onto a nine-unit run in with a reversing point in "
+                + "the middle of it. Adam, 2026-09-11: \"8 unit train on a 9-unit runin would just be "
+                + "refused\" - it comes to rest on the 4 beyond the turn, having waited on the 5 "
+                + "behind it, and nine units is neither stretch");
+
+            // WHICH STRETCH OBJECTS FIRST - the approach, because the route reaches it first.
+            String why = Layout.whyTooLongForThisRoute(longPath(layout), loc);
+
+            assertTrue(why != null && why.contains("LONG_mid"),
+                "the refusal should name the square the train waits to turn on, whose approach is the "
+                + "first stretch too short for it: " + why);
+
+            // HIS OWN ESCAPE: *"if the max train length at the berth was set to 8, we would be OK."*
+            // Both stretches made long enough for the train, and it runs.
+            layout.getEdge("LONG_a", "LONG_b").setLength(4);
+            layout.getEdge("LONG_b", "LONG_mid").setLength(4);
+            layout.getEdge("LONG_mid", "LONG_end").setLength(8);
+
             assertTrue(layout.isPathClear(longPath(layout), loc, false),
-                "a train of eight was refused a run in of nine, so the room is being measured over "
-                + "part of the approach rather than all of it");
+                "an eight-unit train was refused an eight-unit berth with eight units of approach "
+                + "behind the turn, so a bound is refusing more than it measures");
+
+            // AND THE BERTH ALONE IS NOT ENOUGH: the same eight-unit berth with a short approach back,
+            // so the train would hang off the end of the measured track while it waited to turn.
+            layout.getEdge("LONG_a", "LONG_b").setLength(2);
+            layout.getEdge("LONG_b", "LONG_mid").setLength(3);
+
+            assertFalse(layout.isPathClear(longPath(layout), loc, false),
+                "an eight-unit train was sent to change direction on five units of track because the "
+                + "berth beyond the turn is long enough. Both stretches have to hold it (Adam, "
+                + "2026-09-11: \"both need to be long enough\")");
+
+            // AND WHERE NOTHING TURNS THE TRAIN, THE WHOLE RUN IN COUNTS.
+            //
+            // Adam, 2026-09-01: *"do you sum the track segments leading up to it?  if they are long
+            // enough, then we are good"*, and on 2026-09-11: *"if the train isn't reversing, then it
+            // should be accepted as long as the berth is long enough."*  A train that does not turn
+            // comes to rest with its head at the destination and its tail lying back over the run in,
+            // which is one continuous stretch - so nothing splits it, and the count runs back to the
+            // last switch or to the start of the route.
+            //
+            // This is what the test asserted on the fixture above before the reversal stop existed,
+            // kept here on the railway where it is actually true.  A reversible locomotive, because
+            // the reversing point is what let a non-reversible one into a terminus.
+            layout.getPoint("LONG_mid").setReversing(false);
+
+            loc.setReversible(true);
+
+            layout.getEdge("LONG_a", "LONG_b").setLength(2);
+            layout.getEdge("LONG_b", "LONG_mid").setLength(3);
+            layout.getEdge("LONG_mid", "LONG_end").setLength(4);
+
+            assertTrue(layout.isPathClear(longPath(layout), loc, false),
+                "an eight-unit train was refused a nine-unit run in that nothing splits - no switch "
+                + "on it and nothing turning the train - so the room is being measured over part of "
+                + "the approach rather than all of it");
 
             // And ten does not fit in nine.
             loc.setTrainLength(10);
@@ -1055,19 +1178,19 @@ public class testNonReversibleTrains
             // This required the whole path to go unjudged the moment any segment was unmeasured, on
             // the reasoning that "an unknown length is not a zero one".  He overruled it: **"you need
             // to measure total distance between points, not validate that every edge has a length > 0.
-             // It is only indeterminate if the entire logical segment has length 0."**
+            // It is only indeterminate if the entire logical segment has length 0."**
             //
             // What it cost him: a four-unit train admitted to a berth measured at one, because the
             // unmeasured track behind that one unit made the whole run unjudgeable.  The measured
             // evidence was there and was thrown away for the company it kept.
             //
-            // So the measured segments still bind.  Nine units remain measured here and ten does not
-            // fit in nine, whatever the unmeasured piece turns out to be.
+            // So the measured segments still bind.  The four beyond the unmeasured piece remain
+            // measured, and ten does not fit in four whatever the unmeasured piece turns out to be.
             layout.getEdge("LONG_b", "LONG_mid").setLength(0);
 
             assertFalse(layout.isPathClear(longPath(layout), loc, false),
                 "an unmeasured segment cancelled a refusal the measured ones had already earned. Ten "
-                + "does not fit in the nine units that ARE measured, and an unknown length behind them "
+                + "does not fit in the units that ARE measured, and an unknown length behind them "
                 + "cannot unprove it (Adam, 2026-09-06)");
 
             // AND WITH NOTHING MEASURED AT ALL there is no evidence, which is the half of the old

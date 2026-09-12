@@ -7598,12 +7598,34 @@ public class Layout
         {
             boolean berth = i == ordered.size() - 1;
 
-            Integer room = berth ? measuredRoomAtTheEndOf(ordered, loc)
+            Point here = ordered.get(i).getEnd();
+
+            // A SQUARE THE TRAIN TURNS AT IS JUDGED LIKE A BERTH (Adam, 2026-09-11).
+            //
+            // *"Refused both because of the berth (3<4) and the track length that potentially couldn't
+            // fit the train while reversing"* - his four-unit train, three-unit berth, two-unit
+            // approach.  The berth half is the walk's own reversal stop.  This is the other half: the
+            // train stands still at the reversing point with its body stretched back over the approach,
+            // and if the approach is shorter than the train it is hanging off the end of the measured
+            // track while it waits to change direction.
+            //
+            // **Why it cannot be left to `roomAfterASwitchOnTheWay`.**  That judges a pass-through
+            // square only where a switch lies behind it on the route, because at a square the train
+            // merely rolls over, "the path ran out" is not a measurement of anything (see its javadoc).
+            // A reversing square is not one the train rolls over - it is one the train STOPS on - so
+            // the route behind it is what the train lies back across, which is exactly the condition
+            // that makes the question answerable at the destination.
+            //
+            // So `berth` became `comesToRest`, and the two cases ask the identical question of their
+            // own prefix.  `measuredRoomAtTheEndOf(ordered, loc)` and
+            // `measuredRoomAtTheEndOf(ordered.subList(0, size), loc)` are the same call, so the
+            // destination is still the last iteration rather than a second rule.
+            boolean comesToRest = berth || (here != null && here.isReversing());
+
+            Integer room = comesToRest ? measuredRoomAtTheEndOf(ordered.subList(0, i + 1), loc)
                 : roomAfterASwitchOnTheWay(ordered.subList(0, i + 1), loc);
 
             if (room == null || loc.getTrainLength() <= room) continue;
-
-            Point here = ordered.get(i).getEnd();
 
             if (here == null || berth)
             {
@@ -7742,6 +7764,45 @@ public class Layout
         for (int i = path.size() - 1; i >= 0; i--)
         {
             Edge segment = path.get(i);
+
+            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does (Adam, 2026-09-11).
+            //
+            // Asked whether *"the track segments leading up to it"* means up to the berth or up to the
+            // reversal: **"it can be either the reversal or the berth, depending on where switches
+            // are.  both need to be long enough."**  Put to him again with a worked example, because
+            // the first reading of that sentence was built and two tests refused it:
+            //
+            //     "four-unit train in a three-unit berth with a two-unit approach: refused both
+            //      because of the berth (3<4) and the track length that potentially couldn't fit the
+            //      train while reversing.  if the train isn't reversing, then it should be accepted as
+            //      long as the berth is long enough."
+            //
+            // So the answer is BOTH bounds, each over its own stretch, and this is the first of them:
+            // a train that turns part way along comes to rest on the track after the turn only.  The
+            // second is at the turn itself and lives in `whyTooLongForThisRoute`, which judges a
+            // reversing square the way it judges a berth.
+            //
+            // **The case it was reverted over, and why the revert was wrong.**  His three-unit berth
+            // with a two-unit approach fits a four-unit train end to end, so `core.testNonReversibleTrains`
+            // asserted it was accepted, and that assertion looked like evidence.  It was a guess about
+            // a rule nobody had stated: he refuses it, because the tail would lie back across the
+            // square where the train turned.  Both tests there now carry his figures and his verdict.
+            //
+            // The END of this segment, not its start: that point is where the train turned, so the
+            // segments before it are behind the turn.  The last edge of whatever list is handed in is
+            // exempt, because its end is the square being asked about - a train arriving at a
+            // reversing platform comes to rest there, and what it does on departure is another journey.
+            // That holds for a prefix as well as for a whole route, which is how the reversal square
+            // gets judged on its own approach.
+            //
+            // ANY reversing point, whether or not this train would turn at it - the same
+            // simplification Adam gave for switches on 2026-09-02: *"for the switches, for simplicity,
+            // let's use any direction, that way we are guaranteed to be safe."*  A reversing point
+            // turns every locomotive, reversible or not, so in practice there is nothing to exempt.
+            if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
+            {
+                return room > 0 ? room : null;
+            }
 
             if (segment.crossesASwitch())
             {
