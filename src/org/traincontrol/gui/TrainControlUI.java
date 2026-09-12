@@ -6782,12 +6782,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // entry side into the configuration and `Layout.entrySideOf` is what both the arrival write
             // and the tail walk read.  One vocabulary, so this can safely speak it.
                 mayTurnHere(aimed), this,
-                getAutonomySession() == null ? null : getAutonomySession().arrivalSides(aimed));
+                getAutonomySession() == null ? null : getAutonomySession().unbarredArrivalSides(aimed));
 
             if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 mayTurnHere(aimed), getAutonomySession() == null
-                    ? null : getAutonomySession().arrivalSides(aimed)))
+                    ? null : getAutonomySession().unbarredArrivalSides(aimed)))
             {
                 // Nothing moved, and the clipboard still holds it, so the next square accepts the
                 // same paste.  A dismissed question leaves the railway exactly as it was.

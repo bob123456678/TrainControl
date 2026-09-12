@@ -1605,17 +1605,19 @@ public class testEditorSurfaceRules
             java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
             StandardCharsets.UTF_8));
 
-        assertTrue(ui.contains("getAutonomySession().arrivalSides(aimed)"),
+        assertTrue(ui.contains("getAutonomySession().unbarredArrivalSides(aimed)"),
             "the paste door offers the geometric sides again - the side a NEIGHBOUR lies on rather than"
-            + " the side the track comes in by, which is OB-182 as reported");
+            + " the side the track comes in by, which is OB-182 as reported; and since OB-204 the sides"
+            + " a train may actually have ARRIVED by, which leaves out the ones the operator has barred");
 
         String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
             StandardCharsets.UTF_8));
 
-        assertTrue(panel.contains("sidesOf(session.arrivalSides(target))"),
+        assertTrue(panel.contains("sidesOf(session.unbarredArrivalSides(target))"),
             "the arrived-from menu offers the geometric sides again, so it and the paste prompt can"
-            + " name different sides for the same square");
+            + " name different sides for the same square - and a side the operator barred is not one a"
+            + " train arrived by at all (OB-204)");
     }
     /**
      * One menu holds both ends of the train, headed, and the viewer gets it too.

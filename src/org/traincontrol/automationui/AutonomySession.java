@@ -5317,35 +5317,42 @@ public class AutonomySession
      */
     public Set<TileKey> tilesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
     {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        if (running == null || reducer == null || getStationIndex() == null) return out;
-
-        for (org.traincontrol.automation.Edge edge
-            : running.edgesCoveredByStandingTrains().keySet())
-        {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
-
-            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
-
-            if (from == null || to == null) continue;
-
-            List<GraphReducer.TileStep> between = pathBetween(from, to);
-
-            // Null where the reduction knows of no edge joining the two squares - a portal hop, or a
-            // diagram edited under a covered set computed before it.  The railway still refuses that
-            // track; what cannot be said is which squares to draw, and a wash in the wrong place is
-            // worse than none.
-            if (between == null) continue;
-
-            for (GraphReducer.TileStep step : between)
-            {
-                if (step.getTile() != null) out.add(step.getTile());
-            }
-        }
-
-        return out;
+        // WHERE THE TRAIN IS, NOT EVERY TILE OF THE EDGE IT STANDS ON (Adam, OB-207).
+        //
+        // *"When at tunnellongpark, en57-203 blocks most of the track leading up to bottommaina, even
+        // though it is of length 1, and the track next to it is of length 2.  too much blocked for such
+        // a short train."*  And, when the first answer here missed it: *"I still don't understand how
+        // this train can be blocking anything based on the set lengths."*
+        //
+        // He was right, and the numbers say how far wrong this was. Measured on his own layout, the
+        // edge behind that square is
+        //
+        //     TunnelLongPark -> BottomMainA   length 4, 12 tiles, THREE switches
+        //     10,10{2} 10,11[SW] 11,11 11,12[SW] 12,12 13,12{1} 14,12[SW] 15,12 ... 19,12{1}
+        //
+        // and this method greyed all twelve for a train that lies inside 10,10 alone - a tile measured
+        // at 2, against a train of 1. The lengths were never consulted: it walked the tiles of every
+        // COVERED EDGE, and an edge is covered whole.
+        //
+        // **What was written here before, and why it was wrong.** *"The whole edge, which is what
+        // routing actually refuses ... between the two marks the picture and the guard agree again."*
+        // The first half is true and the conclusion does not follow. The walk's first hop always has the
+        // train's own square as one endpoint, and `Layout.isPathClear` already refuses any path through
+        // an occupied point - so the extra thing the wide mark drew was already refused by occupancy,
+        // and what it cost was twelve tiles of picture for one tile of train.
+        //
+        // **So the extent is the narrow one**, which has consumed the tile lengths since MT-309 and
+        // stops the moment the train is used up. The two marks now cover the same squares and say
+        // different things about them: this one washes the tile, `routesCoveredByStandingTrains` draws
+        // the line along the road - which is also the answer to *"graying makes it look confusing on
+        // double curve tiles"*, since a tile is only washed now if the train is really on it.
+        //
+        // **What this gives up, said plainly:** a train long enough to reach back past a Point leaves
+        // the far part of the last edge it enters refused by routing and no longer washed. That is an
+        // under-statement of a few tiles at the end of a long train, against an over-statement of a
+        // whole edge behind every short one. Adam's railway has trains of one and two units on edges of
+        // twelve tiles, so the trade is not close.
+        return tilesCoveredByStandingTrains(running);
     }
 
     /**

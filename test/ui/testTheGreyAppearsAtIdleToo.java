@@ -303,17 +303,32 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testBlockedTrackIsGreyAtIdle()
     {
-        assertEquals(orangePixels(idleBlocked), 0,
-            "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
-            + "on rather than one merely blocked by it, and this test is asking about the wrong tile");
-
-        assertTrue(contrast(idleBlocked) < contrast(bareBlocked) - 2,
-            "the square " + blockedSquare + " is drawn no fainter while a standing train blocks it ("
-            + contrast(idleBlocked) + ") than with nothing standing anywhere ("
-            + contrast(bareBlocked) + "), and NOTHING IS RUNNING.  The refusal is not fenced on a "
+        // THE SQUARE THE TRAIN IS ON, at idle, with nothing running.  Adam: *"yes, this greyout should
+        // appear at idle"* - that is what this class was written for and it is unchanged.
+        assertTrue(contrast(idleCovered) < contrast(bareCovered) - 2,
+            "the square " + coveredSquare + " is drawn no fainter with a train standing on it ("
+            + contrast(idleCovered) + ") than with nothing standing anywhere ("
+            + contrast(bareCovered) + "), and NOTHING IS RUNNING.  The refusal is not fenced on a "
             + "running railway - `Layout.isPathClear` sweeps the covered edges in every tier - so a "
             + "manual send across this square is refused while the diagram paints it as free "
-            + "(W7B-B1).  Adam: \"yes, this greyout should appear at idle\"");
+            + "(W7B-B1)");
+
+        // AND THE TRACK BEYOND WHAT THE TRAIN REACHES IS NOT GREY (Adam, OB-207).
+        //
+        // `blockedSquare` is a tile of the same covered EDGE that the train does not reach - it carries
+        // no orange line, which is the test's own way of saying so. It used to be washed, because the
+        // wash took every tile of every covered edge: *"when at tunnellongpark, en57-203 blocks most of
+        // the track leading up to bottommaina, even though it is of length 1, and the track next to it
+        // is of length 2."*  Measured on his railway, one unit of train washed twelve tiles across
+        // three switches.
+        assertEquals(orangePixels(idleBlocked), 0,
+            "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
+            + "on rather than one beyond its reach, and the claim below is about the wrong tile");
+
+        assertFalse(contrast(idleBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is washed although the train does not reach it - it is "
+            + "simply another tile of the edge the train stands on. That is OB-207: the wash is where "
+            + "the train IS now, and the tile lengths decide how far that goes");
     }
 
     /**
@@ -322,9 +337,14 @@ public class testTheGreyAppearsAtIdleToo
     @Test(dependsOnMethods = "testBlockedTrackIsGreyAtIdle")
     public void testTheIdleMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
-        int changed = differingPixels(idleBlocked, bareBlocked);
+        // ON THE COVERED SQUARE SINCE OB-207, because there is no longer a square that is washed and
+        // not covered - the wash follows the train. The orange line is drawn on this tile as well, so
+        // more pixels differ than the fade alone accounts for; that makes the "a real fraction of the
+        // square changed" claim below EASIER to satisfy and so weaker than it was. Said rather than
+        // left to be discovered: what it still catches is the wash disappearing altogether.
+        int changed = differingPixels(idleCovered, bareCovered);
 
-        int drawn = drawnPixels(bareBlocked);
+        int drawn = drawnPixels(bareCovered);
 
         // A REAL FRACTION OF THE SQUARE, not one pixel (E8-C6).  `drawn > 0` admits a tile with
         // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
@@ -607,6 +627,18 @@ public class testTheGreyAppearsAtIdleToo
      */
     private static Set<TileKey> blockedSquares()
     {
+        // ASKED, NOT RE-DERIVED (OB-207).  This held its own copy of "which squares are washed" - every
+        // tile of every covered edge - and when Adam overruled that extent the copy went on asserting
+        // the old rule against a window that had moved. A test that re-implements the thing it is
+        // measuring can only ever catch the window drifting from the test.
+        return session.tilesBlockedByStandingTrains(layout);
+    }
+
+    /**
+     * The old whole-edge answer, kept because two claims below are about the difference.
+     */
+    private static Set<TileKey> everyTileOfEveryCoveredEdge()
+    {
         Set<TileKey> out = new LinkedHashSet<>();
 
         for (Edge edge : layout.edgesCoveredByStandingTrains().keySet())
@@ -660,7 +692,10 @@ public class testTheGreyAppearsAtIdleToo
 
             pump();
 
-            Set<TileKey> blocked = blockedSquares();
+            // THE OLD WIDE ANSWER, to pick the tiles this class is about (OB-207).  `blockedSquare`
+            // has to be a tile of the covered EDGE that the train does not reach - which is exactly
+            // the difference between the two answers, and no longer something the washed set contains.
+            Set<TileKey> blocked = everyTileOfEveryCoveredEdge();
 
             TileKey onTheTrain = null;
             TileKey blockedOnly = null;
