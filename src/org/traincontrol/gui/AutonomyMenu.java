@@ -76,29 +76,17 @@ public class AutonomyMenu extends JMenu
      */
     public final void refreshEnabled()
     {
-        // UXR-C17: was `!ui.getModel().getLayoutList().isEmpty()`, asked directly at whatever instant
-        // refreshEnabled happened to run - the exact question TrainControlUI.isLayoutLoaded's own
-        // javadoc says was centralised into one stored answer precisely so it stops being asked live at
-        // sixteen (now seventeen, eighteen) separate places that can each catch a different moment of a
-        // refreshLayouts() rebuild. refreshEnabled only runs from the constructor and
-        // autonomyMenuActed(), so this was a snapshot that could disagree with every other consumer.
-        boolean hasLayout = ui.getModel() != null && ui.isLayoutLoaded();
-
-        // And a LOCAL one.  A setup lives in files beside the diagram, so a diagram read straight from
-        // the Central Station has nowhere to keep one - which was true before and simply not said, so
-        // every autonomy gesture came back having done nothing and the captions never appeared.
-        boolean local = ui.canUseAutonomy();
-
-        // AND NOT WHILE THE WINDOW IS STILL CONNECTING (OB-187).
+        // THE QUESTION LIVES ON THE WINDOW NOW (OB-202), because this menu is no longer the only
+        // thing that asks it: `autonomyTopMenu` holds this slot until there is a session to build a
+        // real menu from, and it has to be greyed for the same reasons and say the same sentence.  Two
+        // copies of a three-part condition is two answers waiting to disagree.
         //
-        // This menu is mounted from `setViewListener`, so it arrives on a bar every other menu of
-        // which `showConnecting` has already greyed - and it arrived enabled, which is Adam's "the
-        // menu options ungrey at different times".  `ungreyTheMenus` asks this method again at the
-        // one moment the hold comes off, so nothing is lost by waiting.
-        setEnabled(hasLayout && local && !ui.menusAreHeldByTheNotice());
+        // What the three parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable`
+        // - a layout (UXR-C17), a LOCAL one, and not while the connecting notice holds the bar
+        // (OB-187).
+        setEnabled(ui.autonomyMenuIsUsable());
 
-        setToolTipText(AutonomyEditorPanel.wrapped(!hasLayout ? I18n.t("autosetup.ui.tooltipNoLayout")
-            : !local ? I18n.t("autosetup.ui.tooltipNeedsLocalLayout") : null));
+        setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyIsUnavailable()));
     }
 
     /**

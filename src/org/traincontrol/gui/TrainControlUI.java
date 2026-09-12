@@ -866,6 +866,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // odds and ends, so the translations say tools rather than functions - Werkzeuge, Utilitaires,
         // Hulpmiddelen.
         this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
+
+        // THE AUTONOMY MENU'S SLOT, HELD FROM THE FIRST FRAME (OB-202).
+        //
+        // Adam: *"while the hourglass is open, the autonomy jmenu isn't visible.  the sudden appearance
+        // looks odd.  I added autonomyTopMenu, anchor your menu there, and grey it out if there is no
+        // autonomy."*
+        //
+        // The real menu is built from the configurations on disk, which cannot be read until the
+        // connect is over - so it used to be added to the bar part-way through start-up, and the bar
+        // grew a heading while the operator was looking at it.  This is the same heading, in the same
+        // place, from the moment the window appears: greyed, with the reason on its tooltip, and
+        // replaced by the real menu when there is one.
+        //
+        // Its text comes from the bundle rather than from the form, which has "Autonomy" hard-coded -
+        // the same reason `functionsMenu` above is set here.  Not focusable, like everything else in
+        // this bar: the window drives locomotives from bare key presses.
+        this.autonomyTopMenu.setText(I18n.t("autosetup.ui.menuAutonomy"));
+        this.autonomyTopMenu.setFocusable(false);
+
+        refreshAutonomyAnchor();
         this.SizeList.setModel(new javax.swing.DefaultComboBoxModel<String>() {{
             layoutSizes.keySet().forEach(this::addElement);
         }});
@@ -3608,16 +3628,91 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The autonomy menu, beside Layouts.
      *
-     * Added in code rather than in the form: the menu bar is generated, and everything autonomy has
-     * added to this window is hand-written for exactly that reason.
+     * Built in code because its items are: they are rebuilt from the configurations on disk every time
+     * it opens.  What holds its PLACE in the bar is `autonomyTopMenu`, which is in the form - see
+     * `mountAutonomyMenu`.
      */
     private AutonomyMenu autonomyMenu;
 
     /**
-     * Puts the autonomy menu in the bar, once, immediately after Layouts.
+     * Whether the autonomy menu can do anything, asked in one place (OB-202).
      *
-     * Beside it because a setup belongs to a layout and cannot exist without one - the same reason the
-     * menu switches itself off when there is no layout to set up.
+     * Three conditions, and each of them has already been a defect on its own:
+     *
+     *   - a layout, asked of `isLayoutLoaded` rather than of the list, because UXR-C17 found this
+     *     question being asked live at eighteen places that each caught a different moment of a
+     *     rebuild;
+     *   - a LOCAL one, because a setup lives in files beside the diagram and a diagram read straight
+     *     from the Central Station has nowhere to keep one;
+     *   - not while the connecting notice still holds the bar, which is OB-187 - Adam's *"the menu
+     *     options ungrey at different times"*.
+     *
+     * Here rather than in `AutonomyMenu` because the menu is not the only thing that asks now: the
+     * placeholder that holds its slot during start-up asks the same question, and two copies of it
+     * would be two answers.  That is the same rule as `guard-and-affordance-same-question`.
+     *
+     * @return whether the menu should be enabled
+     */
+    public boolean autonomyMenuIsUsable()
+    {
+        return getModel() != null && isLayoutLoaded() && canUseAutonomy()
+            && !menusAreHeldByTheNotice();
+    }
+
+    /**
+     * Why the autonomy menu is switched off, as a sentence, or null when it is not.
+     *
+     * Disabled rather than hidden, with the reason on the tooltip: a menu that vanishes teaches
+     * nothing, and *"why is there no autonomy menu"* is a harder question than *"what do I do first"*.
+     *
+     * @return the tooltip, or null
+     */
+    public String whyAutonomyIsUnavailable()
+    {
+        if (getModel() == null || !isLayoutLoaded()) return I18n.t("autosetup.ui.tooltipNoLayout");
+
+        if (!canUseAutonomy()) return I18n.t("autosetup.ui.tooltipNeedsLocalLayout");
+
+        return null;
+    }
+
+    /**
+     * Brings whatever is currently standing in the autonomy slot into line with the answer above.
+     *
+     * **Two things can be in that slot** and only one of them exists at a time: `autonomyTopMenu` while
+     * the window is starting up, and the real `AutonomyMenu` once there is a session to build it from.
+     * Everything that used to ask the menu to refresh itself asks this instead, so the placeholder is
+     * not left saying something the menu would not.
+     */
+    public void refreshAutonomyAnchor()
+    {
+        if (autonomyMenu != null)
+        {
+            autonomyMenu.refreshEnabled();
+
+            return;
+        }
+
+        if (autonomyTopMenu == null) return;
+
+        autonomyTopMenu.setEnabled(autonomyMenuIsUsable());
+
+        autonomyTopMenu.setToolTipText(
+            AutonomyEditorPanel.wrapped(whyAutonomyIsUnavailable()));
+    }
+
+    /**
+     * Puts the autonomy menu in the bar, once, in the slot the placeholder was holding.
+     *
+     * **It takes `autonomyTopMenu`'s place rather than being appended beside Layouts** (OB-202). The
+     * placeholder is in the form, immediately after Layouts, and is dressed at construction with this
+     * menu's own heading - so the bar has an Autonomy menu from the first frame and this swap changes
+     * nothing an operator can see except that it becomes usable. Appending was what made the heading
+     * appear part-way through start-up, which is what Adam reported.
+     *
+     * Beside Layouts either way, because a setup belongs to a layout and cannot exist without one -
+     * the same reason the menu switches itself off when there is no layout to set up. The fallback
+     * keeps that true if the placeholder is ever taken out of the form.
      */
     public void mountAutonomyMenu()
     {
@@ -3625,19 +3720,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             autonomyMenu = new AutonomyMenu(this);
 
-            int at = mainMenuBar.getMenuCount();
+            int at = -1;
 
             for (int i = 0; i < mainMenuBar.getMenuCount(); i++)
             {
-                if (mainMenuBar.getMenu(i) == layoutMenu)
+                if (mainMenuBar.getMenu(i) == autonomyTopMenu)
                 {
-                    at = i + 1;
+                    at = i;
                     break;
+                }
+            }
+
+            if (at >= 0)
+            {
+                mainMenuBar.remove(autonomyTopMenu);
+            }
+            else
+            {
+                // No placeholder: put it after Layouts, which is where one would have been.
+                at = mainMenuBar.getMenuCount();
+
+                for (int i = 0; i < mainMenuBar.getMenuCount(); i++)
+                {
+                    if (mainMenuBar.getMenu(i) == layoutMenu)
+                    {
+                        at = i + 1;
+                        break;
+                    }
                 }
             }
 
             mainMenuBar.add(autonomyMenu, at);
             mainMenuBar.revalidate();
+            mainMenuBar.repaint();
         }
 
         autonomyMenu.refreshEnabled();
@@ -3690,7 +3805,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void autonomyMenuActed()
     {
-        if (autonomyMenu != null) autonomyMenu.refreshEnabled();
+        refreshAutonomyAnchor();
 
         autonomySetupChanged();
     }
@@ -9180,12 +9295,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // AND THE MENUS THAT WERE NOT ON THE BAR WHEN IT WAS GREYED (OB-187).
         //
-        // The list above holds what `greyTheMenus` took, and it cannot hold the autonomy menu: that
-        // menu is created and added by `mountAutonomyControls`, from `setViewListener`, which runs
-        // while the notice is up.  It is asked here rather than added to the list because its answer
-        // is a rule about the layout - `refreshEnabled` - and enabling it blindly would switch it on
-        // for a Central Station diagram that cannot hold a setup at all.
-        if (autonomyMenu != null) autonomyMenu.refreshEnabled();
+        // The list above holds what `greyTheMenus` took, and the autonomy menu may not be on it: the
+        // real menu is created and added by `mountAutonomyControls`, from `setViewListener`, which runs
+        // while the notice is up.  It is asked here rather than added to the list because its answer is
+        // a rule about the layout, and enabling it blindly would switch it on for a Central Station
+        // diagram that cannot hold a setup at all.
+        //
+        // `refreshAutonomyAnchor` rather than the menu directly (OB-202): until the swap happens it is
+        // the PLACEHOLDER standing in that slot, and it was greyed by the walk above like every other
+        // menu in the form - so enabling it there would have switched on a menu that opens onto
+        // nothing.
+        refreshAutonomyAnchor();
     }
 
     /**
@@ -12614,6 +12734,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         switchCSLayoutMenuItem = new javax.swing.JMenuItem();
         downloadCSLayoutMenuItem = new javax.swing.JMenuItem();
         openCS3AppMenuItem = new javax.swing.JMenuItem();
+        autonomyTopMenu = new javax.swing.JMenu();
         routesMenu = new javax.swing.JMenu();
         exportRoutesMenuItem = new javax.swing.JMenuItem();
         importRoutesMenuItem = new javax.swing.JMenuItem();
@@ -17854,6 +17975,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(openCS3AppMenuItem);
 
         mainMenuBar.add(layoutMenu);
+
+        autonomyTopMenu.setText("Autonomy");
+        mainMenuBar.add(autonomyTopMenu);
 
         routesMenu.setText(bundle.getString("ui.main.toolbar.routes")); // NOI18N
 
@@ -29028,6 +29152,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JTextArea autonomyJSON;
     private javax.swing.JPanel autonomyPanel;
     private javax.swing.JMenu autonomyToolbarMenu;
+    private javax.swing.JMenu autonomyTopMenu;
     private javax.swing.JCheckBox autosave;
     private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup2;

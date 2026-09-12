@@ -272,6 +272,7 @@
         <test-one-class class="testACompulsoryTurnIsChosenLikeAnyOtherStation"/>
         <test-one-class class="testNoTwoShortcutsShareAKey"/>
         <test-one-class class="testControlBAsksTheMenusQuestion"/>
+        <test-one-class class="testTheAutonomyMenuHoldsItsSlot"/>
         <test-one-class class="testControlEAsksTheMenusQuestion"/>
 
         <!-- Added 2026-09-10 out of the Opus review of 5948a88a.  The first is the number a journey
