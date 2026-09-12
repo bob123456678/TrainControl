@@ -1357,10 +1357,48 @@ public final class LayoutLabel extends JLabel
 
         if (refused)
         {
+            // ONE ROAD OF A DOUBLE CURVE, WHERE THAT IS WHAT IS COVERED (Adam, 2026-09-12).
+            //
+            // *"The graying doesn't seem to work - the other track on the double curve still gets
+            // grayed along with the main one."*  Narrowing the EXTENT (OB-207) stopped tiles the train
+            // never reaches being washed; it could not help here, because this is one tile carrying two
+            // roads and the wash fades the whole square.
+            //
+            // Null everywhere else, and deliberately: on a tile with one road the square IS the road,
+            // and fading the square is simpler and is what he asked for when the wash was added -
+            // *"can we just grey out the tiles just like blocked edges"*.
+            java.awt.Shape road = theRoadToFade();
+
+            if (road != null)
+            {
+                // THE REST OF THE TILE AT FULL STRENGTH FIRST.  The fade is the tile drawn at reduced
+                // alpha, so painting only the road would leave the rest of the square unpainted - the
+                // tile is opaque and nothing else draws it.
+                java.awt.Graphics2D rest = (java.awt.Graphics2D) g.create();
+
+                try
+                {
+                    java.awt.geom.Area outside = new java.awt.geom.Area(
+                        new java.awt.Rectangle(0, 0, getWidth(), getHeight()));
+
+                    outside.subtract(new java.awt.geom.Area(road));
+
+                    rest.clip(outside);
+
+                    super.paintComponent(rest);
+                }
+                finally
+                {
+                    rest.dispose();
+                }
+            }
+
             java.awt.Graphics2D faded = (java.awt.Graphics2D) g.create();
 
             try
             {
+                if (road != null) faded.clip(road);
+
                 faded.setComposite(java.awt.AlphaComposite.getInstance(
                     java.awt.AlphaComposite.SRC_OVER, BLOCKED_ALPHA));
 
@@ -1565,6 +1603,69 @@ public final class LayoutLabel extends JLabel
 
             g.drawLine(a[0], a[1], b[0], b[1]);
         }
+    }
+
+    /**
+     * The shape to fade when only SOME of this square's roads are covered, or null to fade all of it.
+     *
+     * **Only where the square really carries more than one road and the train is on fewer of them.**
+     * A double curve is two curves crossing in one tile with no connection between them, and a wash over
+     * the whole square says a train is on both - which is Adam's report. Everywhere else the square is
+     * the road, and fading the whole tile is simpler and is what he asked for when the wash was added.
+     *
+     * A band along the road rather than the road's own artwork: the tile is an image and there is no
+     * region of it this code can name. The band runs between the midpoints of the two sides the road
+     * joins, which is the same geometry `coveredRoads` uses to draw the orange line - so the fade and
+     * the line cannot come to describe different roads.
+     *
+     * @return the region to fade, or null to fade the whole square
+     */
+    private java.awt.Shape theRoadToFade()
+    {
+        if (component == null || tcUI == null || square == null) return null;
+
+        if (getWidth() <= 0 || getHeight() <= 0) return null;
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Route> covered = coveredRoads();
+
+        if (covered.isEmpty()) return null;
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads =
+            tcUI.coveredRoutesAt(square);
+
+        if (roads.isEmpty()) return null;
+
+        // EVERY ROAD THIS SQUARE HAS, in the state the covered one was found in - which is the state the
+        // reduction walked it in.  A switch has one road per state and is not what this is for.
+        java.util.List<org.traincontrol.automationui.TilePorts.Route> all =
+            org.traincontrol.automationui.TilePorts.ports(component.getType(),
+                component.getOrientation(), roads.iterator().next().getState());
+
+        // Nothing to separate: one road, or the train is on all of them.
+        if (all.size() < 2 || covered.size() >= all.size()) return null;
+
+        java.awt.geom.Area shape = new java.awt.geom.Area();
+
+        // Wide enough to cover the drawn rail, and no wider: a band that reached the corners would fade
+        // the other road where the two cross, which is the whole complaint.
+        float band = Math.max(6f, Math.min(getWidth(), getHeight()) / 3f);
+
+        for (org.traincontrol.automationui.TilePorts.Route road : covered)
+        {
+            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
+                road.getA(), getWidth(), getHeight());
+
+            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
+                road.getB(), getWidth(), getHeight());
+
+            if (a == null || b == null) return null;
+
+            shape.add(new java.awt.geom.Area(new java.awt.BasicStroke(band,
+                java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND)
+                .createStrokedShape(new java.awt.geom.Line2D.Double(a[0], a[1], b[0], b[1]))));
+        }
+
+        return shape.isEmpty() ? null : shape;
     }
 
     /**
