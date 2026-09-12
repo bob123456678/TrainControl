@@ -228,6 +228,39 @@ public class AutonomyChecks
     public static final String NO_ARRIVALS_LEFT = "autosetup.ui.checkNoArrivalsLeft";
 
     /**
+     * A station every train must turn round at, with track reaching it from more than one side (MT-361).
+     *
+     * Adam, 2026-09-12: *"terminuses (stations that must reverse) are currently allowed to have ingress
+     * from two sides.  Make this be an autonomy ERROR that the user has to fix."*
+     *
+     * **A terminus is the end of the line, and this is a statement that cannot be true.**  A square
+     * marked "must turn round" is emitted as one Point per arrival side, each leaving the way it came -
+     * so a square with two ways in becomes two termini, and a train sent to either leaves back the way
+     * it arrived while the track out of the other side is never used. Whatever the operator meant, the
+     * diagram and the marking disagree.
+     *
+     * **AN ERROR, which stops autonomy starting, and that was measured before it was chosen.**
+     * `checkBadCopies` a few hundred lines up argued itself out of an ERROR within the hour on the
+     * grounds that *"an error here would have stopped Adam's railway starting over two tunnel berths he
+     * has been running for months"* - so this was counted first, over a sandbox copy of his own railway
+     * and of `test/layouts/live-snapshot`: zero of seventeen must-turn squares have more than one
+     * unbarred way in on either. Nothing he runs today is blocked by this.
+     *
+     * **STATIONS ONLY.**  A must-turn square that is not a station is emitted as a plain reversing
+     * point, and a reversing point with two ways in is an ordinary mid-layout turn-round - the
+     * `BACK_mid` of `core.testNonReversibleTrains`. Reporting those would make the rule fire on
+     * railways that are correct.
+     *
+     * **Barred arrivals do not count.**  Shutting one side with the arrows is one of the three ways to
+     * fix this, so counting a side the operator has already barred would leave a finding they cannot
+     * clear - and the message names that remedy.
+     *
+     * **A side the grid does not have is not a way in.**  A square reached only through a portal has no
+     * entry side at all, which is why the count is of SIDES rather than of arriving edges.
+     */
+    public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
+
+    /**
      * One locomotive recorded as standing in two places.
      *
      * An ERROR, and the strongest kind: the running model does not skip the second placement, it
@@ -323,6 +356,8 @@ public class AutonomyChecks
      * @param withoutMaxLength station squares with no maximum train length
      * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
      *        mapped to {the stated maximum, the smallest measured room} (Adam, 2026-09-11)
+     * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
+     *        unbarred way in, mapped to how many (MT-361)
      *
      * The two halves of the length comparison, supplied rather than derived: one lives on the
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
@@ -335,7 +370,7 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> closed,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, int[]> shortRunIns,
+        Map<TileKey, int[]> shortRunIns, Map<TileKey, Integer> terminiWithTwoWaysIn,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
@@ -349,6 +384,7 @@ public class AutonomyChecks
         findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
             placedLocomotives));
         findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
+        findings.addAll(checkTermini(reducer, terminiWithTwoWaysIn));
 
         findings.addAll(checkArrivalsLeft(reducer, shutStations));
 
@@ -991,6 +1027,35 @@ public class AutonomyChecks
                     point == null ? String.valueOf(station.getKey()) : point.getName(),
                     station.getKey(), station.getValue()[0], station.getValue()[1]));
             }
+        }
+
+        return findings;
+    }
+
+    /**
+     * Stations that must turn every train round and have more than one way in (MT-361).
+     *
+     * Handed the answer rather than working it out, like every other check here that needs to know
+     * something about the setup: whether a square is a station lives on the store, which this class
+     * cannot reach.
+     *
+     * @param reducer for the names
+     * @param termini the squares, mapped to how many unbarred sides reach them
+     * @return one error per square
+     */
+    private static List<Finding> checkTermini(GraphReducer reducer, Map<TileKey, Integer> termini)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (termini == null) return findings;
+
+        for (Map.Entry<TileKey, Integer> each : termini.entrySet())
+        {
+            ReducedPoint point = reducer == null ? null : reducer.getPoints().get(each.getKey());
+
+            findings.add(new Finding(Severity.ERROR, TERMINUS_WITH_TWO_WAYS_IN,
+                point == null ? String.valueOf(each.getKey()) : point.getName(), each.getKey(),
+                each.getValue()));
         }
 
         return findings;

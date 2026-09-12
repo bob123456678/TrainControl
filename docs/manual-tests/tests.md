@@ -66,13 +66,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
 | [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
 | [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
-| [MT-361](#mt-361) | 2026-09-11 | A train placed from either menu records which way it came in | needs test | REV9-B2, W21-C9 |
+| [MT-361](#mt-361) | 2026-09-11 | A train placed from either menu records which way it came in | fixed unvalidated | REV9-B2, W21-C9 |
 | [MT-362](#mt-362) | 2026-09-11 | The locomotive keys work from any part of the window | needs test | OB-170 |
 | [MT-363](#mt-363) | 2026-09-11 | A train that turns round has to fit on both sides of the turn | fixed unvalidated | MON-C13, Adam's ruling of 2026-09-11 |
 | [MT-364](#mt-364) | 2026-09-11 | The editor says when a platform claims more train than its track measures | fixed unvalidated | Adam's request of 2026-09-11 |
 | [MT-365](#mt-365) | 2026-09-12 | Control+B sets the maximum train length from the autonomy editor | fixed unvalidated | Adam's request of 2026-09-12 |
+| [MT-366](#mt-366) | 2026-09-12 | A terminus with two ways in stops the setup running | fixed unvalidated | MT-361 (Adam's ruling of 2026-09-12) |
 
-Everything else - 321 of 365 - needs nothing from you unless the area changes again:
+Everything else - 321 of 366 - needs nothing from you unless the area changes again:
 285 **fixed validated** and 36 **superseded**.
 
 ---
@@ -17144,6 +17145,10 @@ behind, and the link stayed shut with nothing on screen saying so.
 *Doing it the other way round - toggle, then edit, then Ctrl+Z - is not this test and will leave the
 link shut, correctly.*
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-319"></a>
@@ -18259,6 +18264,10 @@ destination. The destination has room; sending you to measure it again would hel
 
 Set the small length back to 0 and the destination comes back: an unmeasured stretch is not a refusal.
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-348"></a>
@@ -18720,7 +18729,7 @@ that he would rather have no check than one that refuses something legal.
 
 ### MT-361 - 2026-09-11 - A train placed from either menu records which way it came in
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** REV9-B2, W21-C9
 
 **Written:** 2026-09-11
@@ -18749,6 +18758,20 @@ without working it out at all, so nothing behind it was blocked. The side is wha
 `edgesCoveredByStandingTrains` walks back along to keep other trains off the track a standing train is
 lying across. Adam's ruling: *"the missing arrival side should be set - either from the data, by the
 user, or randomly."*
+
+**Adam, 2026-09-12 (triage).** Does not work.
+
+All this works, but terminuses (stations that must reverse) are currently allowed to have ingress from two sides.  Make this be an autonomy ERROR that the user has to fix.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12.**
+
+Ruling implemented. You were right that the placement half works and right about what is wrong beside it: a station marked "must turn round" with track reaching it from two sides is emitted as TWO termini, each sending its trains back the way they came, while the track out of the far side is never used. `autosetup.ui.checkTerminusTwoWaysIn` is an ERROR, which is what you asked for, and `errorCount() > 0` refuses to start autonomy at all.
+
+**It was counted before it was chosen**, because `checkBadCopies` argued itself out of an ERROR within the hour in D3F-C1 on the grounds that one "would have stopped Adam's railway starting over two tunnel berths he has been running for months". Measured over a sandbox copy of your own cs2_sample_layout and of test/layouts/live-snapshot: **zero of seventeen** must-turn squares have more than one unbarred way in, on either. Nothing you run today is blocked.
+
+Three conditions keep it off railways that are correct: must-turn rather than may-turn (a may-turn station with two ways in is the ordinary one a train can run through OR reverse in), stations only (a must-turn square that is not a station is emitted as a plain reversing point, and two ways into one of those is an ordinary mid-layout turn-round), and barred sides do not count - that being one of the three remedies the message names. MT-366 is the hands-on half.
 
 ---
 
@@ -18783,6 +18806,12 @@ keyboard. Adam: *"any part of the app should respect the key mapping (locomotive
 related keyboard shortcuts."* The keys are now routed to the map by a post-processor, which the focus
 manager runs only for keys the focused component did not want - so step 5 is the half that says the
 routing did not take anything it should not have.
+
+**Adam, 2026-09-12 (triage).** Works, with notes.
+
+Works, but the user should not be allowed to type anything into the log.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18824,6 +18853,10 @@ thirty-five journeys BACK and taking none away - a shorter stretch with nothing 
 unknown rather than short, so some paths that used to be refused are now merely unjudged. If a train
 turns round somewhere and ends up standing across the reversing square, that is the case to report, and
 the remedy is a length on the track beyond the turn.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18867,6 +18900,12 @@ is still an EXTRA limit and never overrules the measured track. If you meant the
 typing a maximum should let a train into a stretch the track says is too short - say so, because that
 turns a refusal into permission and is a bigger change than this notice.
 
+**Adam, 2026-09-12 (triage).** Works, with notes.
+
+Partially works.  I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is 2.  But it is still asking for the tile at 10,9 (TunneLongPark) to get a length.  The calculation should add 10,10's length plus 10,9's length, both of which are past the switch at 10,8.
+
+*Run against commit ac960047, build\classes, compiled 11 Sep 22:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-365"></a>
@@ -18902,5 +18941,45 @@ including this editor. Told what was free in both windows, he chose **B**, for b
 automated test compares the key's predicate against the menu's over every square of a page, which is
 the defect MT-313 and Control+E both had - but the key handler itself lives in the editor's own
 `keyPressed`, and only pressing it says whether the editor has the keyboard when you expect it to.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-366"></a>
+
+### MT-366 - 2026-09-12 - A terminus with two ways in stops the setup running
+
+**Disposition:** fixed unvalidated
+**From:** MT-361 (Adam's ruling of 2026-09-12)
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. In the autonomy editor, find a station with track on BOTH sides and set it to **must turn round**.
+2. Run the checks.
+3. Try to start autonomy.
+4. Bar one of the two ways in with the arrows, and run the checks again.
+5. Put the arrow back, set the square to **may turn round** instead, and run the checks again.
+
+**Expected**
+
+- Step 2: an **ERROR** naming the square and saying how many sides reach it, with the three remedies.
+- Step 3: refused, because there is an error.
+- Steps 4 and 5: the error is gone. Each remedy clears it on its own.
+
+*What this is:* Adam on MT-361: *"terminuses (stations that must reverse) are currently allowed to have
+ingress from two sides.  Make this be an autonomy ERROR that the user has to fix."*  A terminus is the
+end of the line; with two ways in the square becomes two termini, each sending its trains back the way
+they came.
+
+**Why an ERROR was safe to choose:** `errorCount() > 0` refuses to start autonomy at all, and
+`checkBadCopies` turned down an ERROR in D3F-C1 for fear of stopping a railway that had been running for
+months. So it was counted first - zero of seventeen must-turn squares on his own layout and on the frozen
+snapshot have more than one unbarred way in. **If this fires on your railway unexpectedly, that is the
+measurement having gone out of date and worth saying so.**
 
 ---

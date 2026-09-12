@@ -4605,6 +4605,8 @@ public class AutonomySession
             // The two halves of the length rule (FR-046), and the two of them disagreeing about one
             // platform (Adam, 2026-09-11).
             placedTrainsWithoutLength(), stationsWithoutMaxLength(), runInsShorterThanTheBerth(),
+            // A terminus with two ways in, which is a statement that cannot be true (MT-361).
+            terminiWithTwoWaysIn(),
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
             repeatedSensorPages(),
             // Squares trains reverse at that nobody has measured (Adam, 2026-09-01).
@@ -7242,6 +7244,61 @@ public class AutonomySession
             }
 
             if (worst >= 0) out.put(square, new int[] {max, worst});
+        }
+
+        return out;
+    }
+
+    /**
+     * Stations every train must turn round at, reached from more than one side (MT-361).
+     *
+     * Adam, 2026-09-12: *"terminuses (stations that must reverse) are currently allowed to have ingress
+     * from two sides.  Make this be an autonomy ERROR that the user has to fix."*
+     *
+     * The three conditions, and each of them keeps the rule off a railway that is correct:
+     *
+     *   - **must turn, not may.**  A may-turn square with two ways in is the ordinary station a train
+     *     can either run through or reverse in, which is what "may" is FOR.
+     *   - **a station.**  A must-turn square that is not one is emitted as a plain reversing point, and
+     *     a reversing point with two ways in is a mid-layout turn-round - not a terminus at all.
+     *   - **unbarred sides.**  Shutting one side with the arrows is one of the three remedies the
+     *     message names, so a side already barred must not go on being counted.
+     *
+     * Counted as SIDES rather than as arriving edges: two edges can reach one square by the same side,
+     * and an arrival through a portal has no side on the grid at all.
+     *
+     * @return the squares, mapped to how many unbarred sides reach them, empty when none do
+     */
+    public java.util.Map<TileKey, Integer> terminiWithTwoWaysIn()
+    {
+        java.util.Map<TileKey, Integer> out = new LinkedHashMap<>();
+
+        if (reducer == null || store == null) return out;
+
+        java.util.Map<TileKey, java.util.Set<Side>> barred = barredArrivals();
+
+        for (TileKey tile : mandatoryTurnTiles())
+        {
+            if (!store.isStation(tile)) continue;
+
+            java.util.Set<Side> sides = new LinkedHashSet<>();
+
+            for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
+            {
+                if (!arriving.getEnd().equals(tile)) continue;
+
+                Side entry = arriving.getEntrySide();
+
+                if (entry == null) continue;
+
+                java.util.Set<Side> shut = barred.get(tile);
+
+                if (shut != null && shut.contains(entry)) continue;
+
+                sides.add(entry);
+            }
+
+            if (sides.size() > 1) out.put(tile, sides.size());
         }
 
         return out;

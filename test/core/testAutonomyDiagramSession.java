@@ -3119,6 +3119,122 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station every train must turn round at may have only one way in (MT-361).
+     *
+     * Adam, 2026-09-12, on MT-361: *"terminuses (stations that must reverse) are currently allowed to have
+     * ingress from two sides.  Make this be an autonomy ERROR that the user has to fix."*
+     *
+     * A terminus is the end of the line. A square marked "must turn round" is emitted as one Point per
+     * arrival side, each leaving the way it came - so with two ways in it becomes two termini, a train
+     * sent to either leaves back the way it arrived, and the track out of the other side is never used.
+     *
+     * **An ERROR is the strongest thing this file can say**: `errorCount() > 0` refuses to start autonomy
+     * at all. The severity is asserted here rather than assumed, because that is the whole of what he
+     * asked for - a warning would let the configuration run.
+     *
+     * **And the three remedies the message names all clear it**, which is what makes an error fair: bar
+     * one way in, change the square to "may turn round", or stop calling it a station. The last is the
+     * interesting one - a must-turn square that is not a station is emitted as a plain reversing point,
+     * and a reversing point with two ways in is an ordinary mid-layout turn-round, the `BACK_mid` of
+     * `core.testNonReversibleTrains`. A rule that reported those would fire on railways that are right.
+     *
+     * MUTATIONS: dropping the `isStation` test reports the reversing point; dropping the barred-arrival
+     * test leaves the first remedy unable to clear it; using `isTurnAround` instead of
+     * `mandatoryTurnTiles` reports the may-turn square, which is the ordinary through station.
+     */
+    @Test
+    public void testATerminusWithTwoWaysInIsAnError() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Termini");
+
+        TileKey middle = new TileKey("main", 3, 1);
+
+        session.setStation(middle, true);
+        session.setPointProperty(middle, "mustReverse", Boolean.TRUE);
+        session.rebuild();
+
+        assertTrue(session.isMustTurnAround(middle),
+            "the fixture did not take: " + middle + " has to be a square every train must turn at");
+
+        assertTrue(session.getStore().isStation(middle),
+            "the fixture did not take: " + middle + " has to be a station");
+
+        assertEquals(session.terminiWithTwoWaysIn().get(middle), Integer.valueOf(2),
+            "the middle sensor of this page has track on both sides, so two sides reach it - and the"
+            + " rule counted " + session.terminiWithTwoWaysIn().get(middle) + ".  Without two this test"
+            + " is about a fixture that cannot show the fault: " + session.terminiWithTwoWaysIn());
+
+        assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
+            "a station where every train must turn round has track reaching it from both sides and"
+            + " nothing objected. It is two termini, each sending its trains back the way they came,"
+            + " and the track out of the far side is never used (Adam, MT-361)");
+
+        // AN ERROR, NOT A WARNING, which is the whole of what was asked: `errorCount() > 0` is what
+        // refuses to start autonomy, and a warning would let this configuration run.
+        assertEquals(severityOf(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
+            org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
+            "the finding is not an ERROR, so autonomy still starts on a railway carrying it - which is"
+            + " exactly what Adam asked to stop: \"make this be an autonomy ERROR that the user has to"
+            + " fix\"");
+
+        assertTrue(session.errorCount() > 0,
+            "the finding is an error and `errorCount()` does not count it, so every door that asks that"
+            + " question - the Start button, the refusal - would still offer to run this setup");
+
+        // REMEDY ONE: bar one way in with the arrows.
+        session.setBarredArrivals(middle,
+            java.util.Collections.singleton(org.traincontrol.automationui.TilePorts.Side.W));
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
+            "one way in is barred, so this square has one way in - and the error the message tells the"
+            + " operator to fix that way is still there, which would leave them nothing to do");
+
+        // REMEDY TWO: let trains run through it instead.
+        session.setBarredArrivals(middle, java.util.Collections.<org.traincontrol.automationui.TilePorts.Side>emptySet());
+        session.setPointProperty(middle, "mustReverse", Boolean.FALSE);
+        session.setPointProperty(middle, "canReverse", Boolean.TRUE);
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
+            "a station where trains MAY turn round is reported as a terminus with two ways in. That is"
+            + " the ordinary station a train can either run through or reverse in, which is what \"may\""
+            + " is for - and the rule has taken the operator's choice away");
+
+        // REMEDY THREE, and the square this rule must leave alone: a must-turn square that is not a
+        // station is a reversing point, and two ways into one of those is a mid-layout turn-round.
+        session.setPointProperty(middle, "canReverse", Boolean.FALSE);
+        session.setPointProperty(middle, "mustReverse", Boolean.TRUE);
+        session.setStation(middle, false);
+        session.rebuild();
+
+        assertFalse(session.getStore().isStation(middle),
+            "the fixture did not take: the square has to stop being a station for this claim");
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
+            "a square that turns every train round and is NOT a station is reported as a terminus. It is"
+            + " emitted as a plain reversing point, and a reversing point with track on both sides is an"
+            + " ordinary mid-layout turn-round - `core.testNonReversibleTrains` is built on one");
+    }
+
+    /**
+     * The severity of the first finding carrying a key, or null.
+     *
+     * @param messageKey the check
+     * @return its severity, or null when nothing raised it
+     */
+    private org.traincontrol.automationui.AutonomyChecks.Severity severityOf(String messageKey)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getMessageKey().equals(messageKey)) return finding.getSeverity();
+        }
+
+        return null;
+    }
+
+    /**
      * And the station-capacity notice is gated the same way (SVN-C3).
      *
      * The two halves of the length rule are `placedTrainsWithoutLength` and `stationsWithoutMaxLength`,
