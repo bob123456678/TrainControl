@@ -885,6 +885,46 @@ So the choice, and it is his:
 (1) is safe and cheap. (2) is the one that makes the screenshot right, and it is a change to the guard
 that stops one train being routed into another.
 
+**Claude, 2026-09-12, third measurement - (1) is done and it is NOT enough, and the reason is a mechanism
+neither of the notes above accounts for.**
+
+Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, and then, at
+lengths of 1 and 2, *"this part still needs to be fixed."*  Asked of his own layout:
+
+    length 1: clear=false  why=null
+              lastError = Disallowed because EN57-203 is standing across
+                          BottomMainAPre (eastbound) -> BottomMainA (eastbound)
+    length 2: clear=false  why=too long ... which measures 1
+    length 3: clear=false  why=too long ... which measures 1
+
+Two different refusals, and the interesting one is the first.
+
+**The path does not use the covered edge at all.**  EN57-203 covers `BottomMainA (westbound) ->
+TunnelLongPark`; the path is `Tunnel (southbound) -> BottomMainAPre (eastbound) -> BottomMainA
+(eastbound)`.  What refuses it is `isPathClear`'s SHARED-METAL sweep: for each edge of the path it asks
+whether any edge sharing tiles with it is covered, through `getLockEdges()`.  Those two edges run over the
+same rails - 15,12 to 19,12 - so the covered one fouls the other.
+
+**And that is right in principle and wrong here**, because the covered edge is covered WHOLE while
+EN57-203 lies inside 10,10 alone.  A one-unit train therefore makes BottomMainA unreachable from
+anywhere.
+
+**It also corrects the note above.**  "The first hop's edge covering is redundant for routing, because it
+always has the train's own occupied square as an endpoint" is false: through shared metal it refuses edges
+whose endpoints are both free.  Narrowing the picture could never have fixed this, and did not.
+
+**What the real fix needs, and why it was not done tonight.**  Per-TILE coverage: the guard must ask
+whether another edge uses a tile the train is actually lying on. The runtime cannot ask that - `Edge`
+holds start, end, length, roomAtTheEnd and lockEdges, and **no tiles** - so it needs the builder to emit
+each edge's tiles AND their lengths, `parseAuto` to read them, and `Edge` to hold them. Only then can
+`edgesCoveredByStandingTrains` answer in tiles and the shared-metal sweep intersect against them.
+
+Measuring more track does NOT work around it: the first edge is covered whole whatever the lengths say.
+
+Left for a fresh pass, deliberately. This is the guard that stops one train being routed into another, the
+change is a model change, and the last two answers written on this issue were both wrong in a way that
+only measuring caught.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
