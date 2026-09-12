@@ -1352,10 +1352,19 @@ public class AutonomyEditorPanel extends JPanel
 
                 int maxLength = number(target, "maxTrainLength", 0);
 
-                stationMenu.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
+                javax.swing.JMenuItem maximum = item(I18n.f("autolayout.ui.menuMaxTrainLength",
                     maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
                     () -> promptNumber(target, "maxTrainLength",
-                        "autolayout.ui.promptEnterMaxTrainLength", 0)));
+                        "autolayout.ui.promptEnterMaxTrainLength", 0));
+
+                // WHAT THE NUMBER MEANS, AND THE KEY THAT SETS IT (Adam, 2026-09-12).
+                //
+                // The label carries the value and the units are the operator's own, so "4" on its own
+                // says nothing about whether it is carriages, centimetres or squares - and the one
+                // thing a reader cannot discover by opening the dialog is that a shortcut exists.
+                maximum.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipMaxTrainLength")));
+
+                stationMenu.add(maximum);
             }
 
 
@@ -4900,6 +4909,87 @@ public class AutonomyEditorPanel extends JPanel
         if (pageOf(tile) != null && (onPage == null || onPage.isText())) return false;
 
         return !isIgnored(tile);
+    }
+
+    /**
+     * The Control+B door: how long a train may be to stop at the station under the pointer.
+     *
+     * Adam, 2026-09-12, having asked for Control+M and been told it toggles the menu bar: *"map it to
+     * the station maximum train length, and add a tooltip."*  He picked **B** off the free list, for
+     * the word this project uses for the platform the maximum belongs to - `behaviour.md` and
+     * `Layout.measuredRoomAtTheEndOf` both call it the berth.
+     *
+     * **The same method the menu item calls, on the same square**, which is the rule Control+E and
+     * Control+S already follow here: two doors onto one action, so they cannot come to disagree about
+     * what it does or where it lands.  `offersAMaximumTrainLength` is the predicate both use.
+     *
+     * The refusal says which of the two reasons it is, because "nothing happened" on a key press is
+     * indistinguishable from a key that is not bound at all.
+     *
+     * @param tile the square under the pointer
+     */
+    public void promptMaxTrainLengthFor(TileKey tile)
+    {
+        if (!offersAMaximumTrainLength(tile))
+        {
+            if (tile != null && session != null && session.getGraph() != null)
+            {
+                say(hint, isIgnored(tile) ? I18n.t("autosetup.ui.infoTileIgnored")
+                    : I18n.t("autosetup.ui.infoNotAStationHere"));
+            }
+
+            return;
+        }
+
+        promptNumber(squareTheMaximumWouldGoOn(tile), "maxTrainLength",
+            "autolayout.ui.promptEnterMaxTrainLength", 0);
+    }
+
+    /**
+     * The square a maximum typed for this one actually lands on, or null where none would be asked for.
+     *
+     * **The menu's target, not the pointer's** - the same reason `squareTheLengthWouldGoOn` exists. A
+     * run of plain track has one tile that speaks for it, `buildTileMenu` hands every item that tile,
+     * and a key that wrote to the hovered square instead would put the number somewhere the menu never
+     * shows it.
+     *
+     * Public because `promptMaxTrainLengthFor` opens a modal dialog and no test can call it and read
+     * the answer, so what a test compares is the two doors' targets.
+     * `regression.testControlBAsksTheMenusQuestion` is that test.
+     *
+     * @param tile the square under the pointer
+     * @return the square the maximum would be written to, or null when nothing would be asked
+     */
+    public TileKey squareTheMaximumWouldGoOn(TileKey tile)
+    {
+        return offersAMaximumTrainLength(tile) ? leaderOf(tile) : null;
+    }
+
+    /**
+     * Whether **Maximum Train Length** is on this square's right-click menu, and so whether Control+B
+     * means anything here.
+     *
+     * The menu's own question rather than a second opinion, which is the lesson `MT-313` taught about
+     * Control+S: that key asked only whether the tile was null, so it renamed plain track that has
+     * nothing to hold a name. The three conditions the menu reaches the item by:
+     *
+     *   1. everything `offersALength` asks - a page the session knows, not a text label, not ignored -
+     *      because those are `buildTileMenu`'s early returns and the station menu is behind them too;
+     *   2. the reduction has a POINT here, which is the `isPoint` the station menu is nested in;
+     *   3. the square is a station, which is the `isStation` the item itself is nested in.
+     *
+     * @param tile the square
+     * @return whether the menu offers to set a maximum on it
+     */
+    public boolean offersAMaximumTrainLength(TileKey tile)
+    {
+        if (!offersALength(tile)) return false;
+
+        TileKey target = leaderOf(tile);
+
+        return session.getReducer() != null
+            && session.getReducer().getPoints().containsKey(target)
+            && session.getStore().isStation(target);
     }
 
     /**

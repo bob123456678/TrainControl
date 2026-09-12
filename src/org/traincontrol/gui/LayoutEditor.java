@@ -7214,6 +7214,36 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return;
             }
 
+            // Control+B is the same door onto the STATION's own maximum (Adam, 2026-09-12).
+            //
+            // He asked for Control+M - *"is control+M taken in the autonomy editor?  If not, map it to
+            // the station maximum train length"* - and it is: the main window toggles the menu bar with
+            // it, and since 2026-09-11 a `KeyEventPostProcessor` delivers the main window's shortcuts
+            // from anywhere in it that is not a text box, so that reaches this editor too. Shift does
+            // not help either; that map never looks at it.
+            //
+            // `regression.testNoTwoShortcutsShareAKey` printed what was actually free in both windows -
+            // B J O P Q U W - and he chose **B**, for berth, which is the word this project already
+            // uses for the platform the maximum belongs to.
+            //
+            // Above the page-turning guard for the same reason Control+E is: setting a maximum neither
+            // places, cuts, rotates nor retextures a tile.
+            //
+            // `hoveredSquare` rather than the placement variables, again for Control+E's reason: those
+            // are deliberately not set in autonomy mode, so asking them gets -1,-1 and a key that fires
+            // and finds nothing.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_B)
+            {
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+
+                if (over != null && autonomyPanel != null)
+                {
+                    autonomyPanel.promptMaxTrainLengthFor(over);
+                }
+
+                return;
+            }
+
             // Plus and minus walk through the pages, in BOTH editors (FR-036).
             //
             // Above the guard below, and for the reason its own sentence gives: moving to another page

@@ -70,8 +70,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-362](#mt-362) | 2026-09-11 | The locomotive keys work from any part of the window | needs test | OB-170 |
 | [MT-363](#mt-363) | 2026-09-11 | A train that turns round has to fit on both sides of the turn | fixed unvalidated | MON-C13, Adam's ruling of 2026-09-11 |
 | [MT-364](#mt-364) | 2026-09-11 | The editor says when a platform claims more train than its track measures | fixed unvalidated | Adam's request of 2026-09-11 |
+| [MT-365](#mt-365) | 2026-09-12 | Control+B sets the maximum train length from the autonomy editor | fixed unvalidated | Adam's request of 2026-09-12 |
 
-Everything else - 321 of 364 - needs nothing from you unless the area changes again:
+Everything else - 321 of 365 - needs nothing from you unless the area changes again:
 285 **fixed validated** and 36 **superseded**.
 
 ---
@@ -18865,5 +18866,41 @@ the berth was set to 8, we would be OK"* was read as "if the berth could hold 8"
 is still an EXTRA limit and never overrules the measured track. If you meant the other thing - that
 typing a maximum should let a train into a stretch the track says is too short - say so, because that
 turns a refusal into permission and is a bigger change than this notice.
+
+---
+
+<a id="mt-365"></a>
+
+### MT-365 - 2026-09-12 - Control+B sets the maximum train length from the autonomy editor
+
+**Disposition:** fixed unvalidated
+**From:** Adam's request of 2026-09-12
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Open the autonomy editor and hover a square that IS a station. Press **Ctrl+B**.
+2. Type a number and accept. Right-click the same square and open the station submenu.
+3. Hover a square that is a sensor but NOT a station, and press Ctrl+B.
+4. Hover plain track, and press Ctrl+B.
+5. Right-click a station and rest the pointer on the **Maximum Train Length** item.
+
+**Expected**
+
+- Step 1: the same dialog the menu item opens, showing the current value.
+- Step 2: the menu item's label now carries the number you typed.
+- Step 3: nothing opens, and the banner says the square is not a station.
+- Step 4: nothing opens, and the banner says the same or that autonomy ignores the square.
+- Step 5: a tooltip saying what the number means, that 0 is any length, and that Ctrl+B sets it.
+
+*What this is:* Adam asked for Ctrl+M and it is taken - the main window toggles the menu bar with it,
+and since 2026-09-11 a key-event post-processor delivers that shortcut from anywhere in the window,
+including this editor. Told what was free in both windows, he chose **B**, for berth.
+
+**The half a test cannot check:** whether the key reaches this editor at all on the real machine. The
+automated test compares the key's predicate against the menu's over every square of a page, which is
+the defect MT-313 and Control+E both had - but the key handler itself lives in the editor's own
+`keyPressed`, and only pressing it says whether the editor has the keyboard when you expect it to.
 
 ---
