@@ -846,6 +846,45 @@ the berth squares is what turns this off today, and the change above is what mak
 Left open deliberately: this is the guard that stops one train being routed into another, and the change
 is a model change plus an arithmetic trap. It wants its own pass rather than the end of a long one.
 
+**Claude, 2026-09-12, re-measured against Adam's screenshot - and the paragraph above is WRONG where it
+says blocking a whole edge is right.**
+
+He said it plainly: *"we have a train of length 1 standing on a track of length 2, so it does not protrude
+past the switches."*  Measured on his own layout, the edge the walk blocks is:
+
+    TunnelLongPark -> BottomMainA   length 4, 12 tiles, THREE switches
+    10,10{2} 10,11[SW] 11,11 11,12[SW] 12,12 13,12{1} 14,12[SW] 15,12 16,12 17,12 18,12 19,12{1}
+
+So a one-unit train lying inside tile 10,10 - which is measured at 2, and is the only tile it reaches -
+marks all twelve, across three switches, to the far end at BottomMainA. That is the screenshot.
+
+**Why the earlier reasoning was wrong.** It said a route using the edge passes end to end through the
+occupied part, so blocking it all costs nothing. That is true of the ROUTING, and it is not the whole
+story: this edge shares its first seven tiles with `-> RampDown` and `-> BottomCrossover`, which diverge at
+the switches inside it. The picture greys all twelve for every one of them.
+
+**And the first edge's covering is redundant for routing anyway.** The walk's first hop always has the
+train's own square as one endpoint, and `isPathClear` already refuses a path through an occupied point.
+So what the wide mark protects, occupancy protects already; what it costs is the picture.
+
+**There are already TWO marks and only one of them is coarse.**
+`AutonomySession.routesCoveredByStandingTrains` is per square AND per ROAD - it was built for MT-309, when
+Adam said *"graying makes it look confusing on double curve tiles"* - and it walks back only as far as the
+train reaches. The greying beside it, added 2026-09-09, is per EDGE and per whole tile. **The double-curve
+confusion he reports today is the second mark, not the first**, and the machinery to draw it selectively
+already exists in the first.
+
+So the choice, and it is his:
+
+  1. **Draw the wide mark per road**, as the narrow one already is. No effect on routing, and it answers
+     *"selectively gray the right half of it"* without a warning on every double curve.
+  2. **Stop the tail at the first switch**, which is his own vocabulary from the room rule - *"the train
+     comes to rest clear of the points"*. This narrows the GUARD, not just the picture, and a one-unit
+     train would then mark tile 10,10 and nothing else.
+
+(1) is safe and cheap. (2) is the one that makes the screenshot right, and it is a change to the guard
+that stops one train being routed into another.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
