@@ -2741,9 +2741,16 @@ WK3-C2	2026-09-02-week-of-commits-review.md	Closed	`TrainControlUI.java:16115`, 
 WK3-C3	2026-09-02-week-of-commits-review.md	Closed	`AutonomySession.java:3364`, `:4041`, `:4083`
 WK3-D1	2026-09-02-week-of-commits-review.md	Closed	`MarklinControlStation.java:552`
 WK7-B1	2026-09-14-WK7-seven-day-review.md	-	Held
+WK7-B1	2026-09-14-WKV-fix-validation.md	-	The reason overstated MT-432: its steps drive and look, and do not rebuild; its warning li
 WK7-C1	2026-09-14-WK7-seven-day-review.md	-	Fixed
+WK7-C1	2026-09-14-WKV-fix-validation.md	-	Test comments still gave the old "every square" reading: `testTheWashIsNoLongerThanTheTrai
 WK7-C2	2026-09-14-WK7-seven-day-review.md	-	Fixed
+WK7-C2	2026-09-14-WKV-fix-validation.md	-	`testSwitchingToACentralStationLayout` still named the old class; the renamed class's java
 WK7-C3	2026-09-14-WK7-seven-day-review.md	-	Fixed
+WK7-C3	2026-09-14-WKV-fix-validation.md	-	Confirmed fixed
+WKV-B1	2026-09-14-WKV-fix-validation.md	-	Fixed
+WKV-B2	2026-09-14-WKV-fix-validation.md	-	Fixed
+WKV-C1	2026-09-14-WKV-fix-validation.md	-	Held
 WP-A1	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
 WP-A2	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
 WP-A3	2026-08-17-whole-project-review.md	Closed	Fixed (stated in the body)
