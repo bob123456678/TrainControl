@@ -243,6 +243,153 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             "a page this layout has was reported as left out: " + store.getPagesLeftOutOfLastImport());
     }
 
+    /**
+     * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the
+     * unloaded page keeps its settings and its protection (TDR-B6).
+     *
+     * The page record merged "theirs wins per id", so their "Main" with id 7 overwrote this layout's record
+     * that id 7 is "Away" - a OneDrive page still downloading.  Away's held settings then resolved to Main
+     * and were read onto it, and Away stopped being reported as a page that is merely not loaded.
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testTheirIdForAnotherPageDoesNotTakeOverAnUnloadedOne() throws IOException
+    {
+        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+
+        Map<String, String> both = pages("Main", "1");
+
+        both.put("Away", "7");
+
+        before.setPageIds(both);
+        before.setPointName(new TileKey("Main", 1, 1), "Mine");
+        before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
+        before.save();
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "1"));
+        store.load();
+
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Main", "7"));
+        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
+        source.createConfiguration("Theirs", null);
+
+        store.importBundle("Theirs", source.exportBundle("Theirs"));
+
+        assertEquals(store.getPointName(new TileKey("Main", 4, 4)), "Theirs On Main",
+            "precondition: their Main did not land on this layout's Main, so nothing below is about an import"
+            + " that did anything");
+
+        assertEquals(store.getPointName(new TileKey("Main", 3, 3)), null,
+            "the unloaded page Away's own station name was read onto Main, because their Main carries Away's"
+            + " id and the page record merged by id (TDR-B6)");
+
+        assertTrue(store.pagesNotLoaded(Collections.singletonList("Main")).contains("Away"),
+            "Away, a page this layout has and cannot load right now, stopped being reported as not loaded -"
+            + " the protection for a OneDrive page still downloading is gone (TDR-B6)");
+
+        // And it is all still there for Away when Away comes back.
+        store.save();
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
+
+        reopened.setPageIds(both);
+        reopened.load();
+
+        assertEquals(reopened.getPointName(new TileKey("Away", 3, 3)), "Waiting To Download",
+            "Away's own setting did not survive the import and a save (TDR-B6)");
+    }
+
+    /**
+     * Their copy of a page this layout has but cannot load right now is held for that page, not put on the
+     * loaded page that happens to share their id for it (TDR-B6).
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testTheirUnloadedPagesSettingsWaitForItNotForTheIdHere() throws IOException
+    {
+        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+
+        Map<String, String> both = pages("Main", "1");
+
+        both.put("Away", "7");
+
+        before.setPageIds(both);
+        before.setPointName(new TileKey("Main", 1, 1), "Mine");
+        before.save();
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "1"));
+        store.load();
+
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Away", "1"));
+        source.setPointName(new TileKey("Away", 5, 5), "Their Away");
+        source.createConfiguration("Theirs", null);
+
+        store.importBundle("Theirs", source.exportBundle("Theirs"));
+
+        assertEquals(store.getPointName(new TileKey("Main", 5, 5)), null,
+            "their Away's station name was read onto this layout's Main, because their Away and this Main"
+            + " both carry id 1 (TDR-B6)");
+
+        store.save();
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
+
+        reopened.setPageIds(both);
+        reopened.load();
+
+        assertEquals(reopened.getPointName(new TileKey("Away", 5, 5)), "Their Away",
+            "their Away's setting was not held for this layout's Away, which is the page it names (TDR-B6)");
+    }
+
+    /**
+     * A list naming a foreign square loses that member only, and a value that merely looks like a page id
+     * is not a page (TDR-B7).
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testOnlyTheForeignPiecesAreLeftOut() throws IOException
+    {
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        Map<String, String> theirPages = pages("Main", "1");
+
+        theirPages.put("2", "2");
+
+        theirPages.put("Yard", "3");
+
+        source.setPageIds(theirPages);
+        source.setPointName(new TileKey("Main", 1, 1), "2");
+        source.setBlockingPoints(new TileKey("Main", 1, 1),
+            Arrays.asList(new TileKey("Main", 2, 2), new TileKey("Yard", 3, 3)));
+        source.createConfiguration("Theirs", null);
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "4"));
+
+        store.importBundle("Theirs", source.exportBundle("Theirs"));
+
+        assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "2",
+            "a station on Main named \"2\" was left out because a foreign page's id is also 2 - a name is"
+            + " not a page (TDR-B7)");
+
+        assertEquals(store.getBlockingPoints(new TileKey("Main", 1, 1)),
+            Collections.singletonList(new TileKey("Main", 2, 2)),
+            "the station's hold-back list lost its member on this layout's Main along with the one on the"
+            + " foreign Yard - only the foreign member should go (TDR-B7)");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------

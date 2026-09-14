@@ -2313,7 +2313,7 @@ public class Layout
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorEdgeOccupied", e.getOppositeName())
+                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(this.getEdge(e.getOppositeName())))
                 );
                 return false;
             }
@@ -3326,6 +3326,12 @@ public class Layout
     private static String placeNameOf(Edge edge)
     {
         if (edge == null) return "";
+
+        // An edge between two copies of ONE square - a turn in place - is that square, not "X -> X".
+        if (edge.getStart() != null && edge.getStart().isSamePlaceAs(edge.getEnd()))
+        {
+            return placeNameOf(edge.getStart());
+        }
 
         return placeNameOf(edge.getStart()) + " -> " + placeNameOf(edge.getEnd());
     }
@@ -5143,7 +5149,7 @@ public class Layout
                 if (held != null)
                 {
                     why = I18n.f("autolayout.errorDestinationBlockedByPoint",
-                        end.getName(), held.getName());
+                        placeNameOf(end), placeNameOf(held));
 
                     continue;
                 }
@@ -8590,7 +8596,7 @@ public class Layout
                 if (!claimed.contains(place)) continue;
 
                 return I18n.f("autolayout.errorBerthWouldFoulAnotherRoad", loc.getName(),
-                    berth.getName(), sharing.getName(), loc.getTrainLength());
+                    placeNameOf(berth), placeNameOf(sharing), loc.getTrainLength());
             }
         }
 
@@ -8636,7 +8642,7 @@ public class Layout
         // a station - and true for a limit of zero, which is how every square starts.
         if (!ending.validateTrainLength(loc))
         {
-            return I18n.f("autolayout.errorTrainLengthTooLong", ending.getName());
+            return I18n.f("autolayout.errorTrainLengthTooLong", placeNameOf(ending));
         }
 
         // AND THE TRACK, AT EVERY SQUARE THE ROUTE RUNS THROUGH (Adam, 2026-09-09).
@@ -8744,11 +8750,11 @@ public class Layout
             if (here == null || berth)
             {
                 return I18n.f("autolayout.errorTrainTooLongForBerth", loc.getName(),
-                    ending.getName(), room, loc.getTrainLength());
+                    placeNameOf(ending), room, loc.getTrainLength());
             }
 
-            return I18n.f("autolayout.errorTrainTooLongOnTheWay", loc.getName(), here.getName(),
-                room, loc.getTrainLength(), ending.getName());
+            return I18n.f("autolayout.errorTrainTooLongOnTheWay", loc.getName(), placeNameOf(here),
+                room, loc.getTrainLength(), placeNameOf(ending));
         }
 
         return null;

@@ -274,7 +274,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
     /** Until every render the window has queued is finished, and the event thread has run what they posted. */
     @SuppressWarnings("unchecked")
-    private static void waitForTheRender() throws Exception
+    private static boolean waitForTheRender() throws Exception
     {
         Field futures = TrainControlUI.class.getDeclaredField("locFutures");
 
@@ -295,13 +295,23 @@ public class testTheFunctionButtonsFollowTheConsist
                 }
             }
 
-            if (done) break;
+            if (done) return pumped();
 
             Thread.sleep(20);
         }
 
+        // SAID HERE, not as a greyed f6 three lines later that would blame the rule for a stuck render.
+        throw new AssertionError("the window's render did not finish within ten seconds, so the buttons"
+            + " below would be read from whatever it last drew");
+    }
+
+    private static boolean pumped() throws Exception
+    {
+
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        return true;
     }
 
     /** The button for a function number, out of the window's own map. */

@@ -1588,8 +1588,8 @@ public final class HomeStaging
      *
      * The same questions `plan` asks before it calls a train unreachable, broken into their parts, so
      * the log can say which part: the square it stands on, the home itself, or the way between.  A
-     * home is a SQUARE, so a home rule is reported only when NO copy of the square would take the
-     * train - the answer `canRestOnSquare` gives, taken apart.
+     * home is a SQUARE, so a home rule is reported only when no copy of it a train can STOP at would
+     * take the train - a copy that is not a destination has no say in it (TDR-B3).
      *
      * @param loc the locomotive
      * @param from where it stands

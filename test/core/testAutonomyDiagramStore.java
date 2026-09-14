@@ -1761,7 +1761,7 @@ public class testAutonomyDiagramStore
      * different page now holds this id".
      */
     @Test
-    public void testImportingABundleCanStillSpotARenumberedPage() throws IOException
+    public void testImportingABundleFromARenumberedLayoutLandsOnTheRightPages() throws IOException
     {
         java.util.Map<String, String> theirs = new java.util.LinkedHashMap<>();
         theirs.put("Yard", "2");
@@ -1788,11 +1788,18 @@ public class testAutonomyDiagramStore
 
         store.importBundle("Imported", bundle);
 
-        assertFalse(store.getPageIdConflicts().isEmpty(),
-            "importing a bundle from a layout whose pages are numbered differently reported no "
-            + "conflict. The check compares the names in the file against my own - and the merge had "
-            + "already replaced theirs with mine, so it was comparing my names with my names and could "
-            + "never disagree (UR-10)");
+        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-B6, 2026-09-14).
+        //
+        // This asserted that the renumber was DETECTED - and it was, while the settings it warned about
+        // went onto the wrong page anyway: their id 2 overwrote my record of id 2, so my own Main was read
+        // back as Yard.  An import now translates their ids into mine by page name before it merges, so
+        // there is nothing left to warn about - and the claim is the outcome the warning existed to protect.
+        assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
+            "importing from a layout that calls id 2 Yard moved MY Main's settings: my id 2 was re-read"
+            + " through their name for it (TDR-B6, UR-10)");
+
+        assertEquals(store.getPointName(new TileKey("Yard", 3, 3)), "Their siding",
+            "their Yard's siding did not land on my Yard, which carries a different id here (TDR-B6)");
     }
 
     /**

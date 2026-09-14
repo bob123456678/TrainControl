@@ -1979,27 +1979,31 @@ public class AutonomyCompanionStore
 
         if (incoming == null) return 0;
 
-        // WHICH OF THEIR PAGES THIS LAYOUT HAS, decided BY NAME and before anything is merged (TDR-B4).
+        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged (TDR-B4, TDR-B6).
         //
-        // Adam's ruling of 2026-09-13 - "keep only the pages, and alert the user" - was first carried out
-        // AFTER the read, by forgetting the pages the read had taken in.  That was too late: page ids are
-        // numbered from the same start on every railway, and a key is resolved by id when its recorded name
-        // is unknown here, so the exporter's "Yard" with id 1 had already been read onto this layout's
-        // "Main" with id 1 - and the forgetting then dropped held entries by that id, which can be this
-        // layout's own.
+        // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same
+        // start on every railway - so their id means nothing here until it is turned back into the page it
+        // names.  The merge used to adopt their page record per id instead ("theirs wins"), and every way
+        // that goes wrong was real:
         //
-        // A page is foreign when its NAME is neither loaded nor one this setup already knew.  A page this
-        // setup knew and cannot load right now is a OneDrive page still downloading, and is not foreign.
-        // Everything the file says about a foreign id is left out of the merge, and the page is reported.
-        Set<String> knownBefore = new LinkedHashSet<>(pageNamesWhenWritten.values());
-
-        knownBefore.addAll(pageIdToName.values());
-
-        Set<String> foreignIds = new LinkedHashSet<>();
-
+        //   - their "Yard" as id 1 read onto my "Main" as id 1, and was then reported as left out (TDR-B4);
+        //   - their "Yard" as id 2 re-labelled my own id 2, so MY Main's settings were read back as Yard's;
+        //   - their "Main" as id 7 overwrote my record that 7 is "Away", a page still downloading, so Away's
+        //     held settings landed on Main and Away stopped being protected (TDR-B6).
+        //
+        // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id
+        // this setup recorded for a page it knows and cannot load right now.  A name that is neither is a
+        // page this layout does not have - Adam, 2026-09-13: "keep only the pages, and alert the user" - and
+        // maps to nothing.  Their page record is never merged: the translated keys are in MY numbering.
+        //
+        // Only when both sides have a numbering at all.  A file with no page record, or a store with no
+        // index, is keyed however it is keyed, and is merged as it always was.
         JSONObject theirPages = incoming.optJSONObject("pages");
 
-        if (theirPages != null)
+        Map<String, String> theirIdToMine = theirPages == null || pageIdToName.isEmpty()
+            ? null : new java.util.HashMap<String, String>();
+
+        if (theirIdToMine != null)
         {
             for (String id : theirPages.keySet())
             {
@@ -2007,11 +2011,23 @@ public class AutonomyCompanionStore
 
                 if (!(called instanceof String)) continue;
 
-                if (knownBefore.contains(called) || pageNameToId.containsKey(called)) continue;
+                String mine = pageNameToId.get(called);
 
-                foreignIds.add(id);
+                if (mine == null)
+                {
+                    for (Map.Entry<String, String> known : pageNamesWhenWritten.entrySet())
+                    {
+                        if (called.equals(known.getValue())) mine = known.getKey();
+                    }
+                }
 
-                if (!pagesLeftOutOfLastImport.contains(called)) pagesLeftOutOfLastImport.add((String) called);
+                // A null value is a page this layout does not have: `containsKey` still answers true.
+                theirIdToMine.put(id, mine);
+
+                if (mine == null && !pagesLeftOutOfLastImport.contains(called))
+                {
+                    pagesLeftOutOfLastImport.add((String) called);
+                }
             }
         }
 
@@ -2023,7 +2039,10 @@ public class AutonomyCompanionStore
         {
             if ("version".equals(key)) continue;
 
-            Object value = withoutPages(incoming.get(key), foreignIds, "pages".equals(key));
+            // Their page record is how their ids were translated, not a setting to adopt (TDR-B6).
+            if (theirIdToMine != null && "pages".equals(key)) continue;
+
+            Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
             // "pages" is not a setting being merged - it is the exporter's record of what each of
             // THEIR ids was called, and it is the only evidence a renumber can be detected from.  Under
@@ -2122,8 +2141,8 @@ public class AutonomyCompanionStore
             try
             {
                 // Through the same door load() uses, so the page-id translation happens once and here.
-                // The pages this layout does not have were taken out of `incoming` before the merge, so
-                // nothing read here belongs to one of them.
+                // The merged fields are already in this layout's numbering, and the pieces naming a page
+                // this layout does not have were taken out of them before the merge.
                 clearShared();
                 readShared(merged);
             }
@@ -2150,51 +2169,119 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One incoming shared field with everything naming a foreign page taken out (TDR-B4).
+     * One incoming shared field, rewritten from the exporter's page ids into this layout's (TDR-B6), with
+     * only the PIECES naming a page this layout does not have taken out (TDR-B7).
      *
-     * A field is an object keyed by square, an array of squares or page ids, or a scalar.  An entry is
-     * dropped when its key or its value names one of the ids - `mentionsAny`, the same test
-     * `forgetHeldPages` uses.  The "pages" record is keyed by id, so it is filtered by key alone.
+     * Read by the field's declared shape in `HELD_FIELDS` - the same map the hold and the merge read - so a
+     * value is treated as a square only where the field says it is one.  `mentionsAny`, which this replaced,
+     * took any string without a colon for a page id, so a station named "2" was dropped whenever a foreign
+     * page had id 2; and it dropped a whole hold-back list for one foreign member.
      *
+     *   keyed fields    an entry whose KEY is on a foreign page goes; so does one whose square value is
+     *   square lists    each member is translated, and a foreign member goes on its own; an entry whose
+     *                   list is left empty goes, because it said nothing but the foreign squares
+     *   page lists      each page id is translated, and a foreign one goes
+     *
+     * A square whose page part the file's record does not name is left exactly as it is - an old file keyed
+     * by name, say - and so is a field this store does not model.
+     *
+     * @param field the field's name in the file
      * @param value the field as the file carries it
-     * @param foreignIds the file's ids for pages this layout does not have
-     * @param pagesRecord whether this is the "pages" record
-     * @return a filtered copy, or the value itself when there is nothing to take out
+     * @param theirIdToMine their id to this layout's, a null value for a page not here; null to translate nothing
+     * @return the rewritten field
      */
-    private Object withoutPages(Object value, Set<String> foreignIds, boolean pagesRecord)
+    private static Object intoThisLayoutsPages(String field, Object value, Map<String, String> theirIdToMine)
     {
-        if (foreignIds.isEmpty()) return value;
+        Held shape = theirIdToMine == null ? null : HELD_FIELDS.get(field);
 
-        if (value instanceof JSONObject)
+        if (shape == null) return value;
+
+        if (shape == Held.SQUARE_LIST || shape == Held.PAGE_LIST)
         {
-            JSONObject src = (JSONObject) value;
-            JSONObject keep = new JSONObject();
+            if (!(value instanceof JSONArray)) return value;
 
-            for (String key : src.keySet())
-            {
-                boolean foreign = pagesRecord ? foreignIds.contains(key)
-                    : mentionsAny(key, foreignIds) || mentionsAny(src.get(key), foreignIds);
-
-                if (!foreign) keep.put(key, src.get(key));
-            }
-
-            return keep;
-        }
-
-        if (value instanceof JSONArray)
-        {
             JSONArray src = (JSONArray) value;
             JSONArray keep = new JSONArray();
 
             for (int at = 0; at < src.length(); at++)
             {
-                if (!mentionsAny(src.get(at), foreignIds)) keep.put(src.get(at));
+                String each = String.valueOf(src.get(at));
+
+                String mine = shape == Held.PAGE_LIST
+                    ? pageIntoMine(each, theirIdToMine) : squareIntoMine(each, theirIdToMine);
+
+                if (mine != null) keep.put(mine);
             }
 
             return keep;
         }
 
-        return value;
+        if (!(value instanceof JSONObject)) return value;
+
+        JSONObject src = (JSONObject) value;
+        JSONObject keep = new JSONObject();
+
+        for (String key : src.keySet())
+        {
+            String mineKey = squareIntoMine(key, theirIdToMine);
+
+            if (mineKey == null) continue;
+
+            Object entry = src.get(key);
+
+            if (shape == Held.SQUARE_VALUE && entry instanceof String)
+            {
+                entry = squareIntoMine((String) entry, theirIdToMine);
+
+                if (entry == null) continue;
+            }
+            else if (shape == Held.SQUARE_LIST_VALUE)
+            {
+                if (entry instanceof String)
+                {
+                    entry = squareIntoMine((String) entry, theirIdToMine);
+
+                    if (entry == null) continue;
+                }
+                else if (entry instanceof JSONArray)
+                {
+                    JSONArray members = new JSONArray();
+
+                    for (int at = 0; at < ((JSONArray) entry).length(); at++)
+                    {
+                        String member = squareIntoMine(String.valueOf(((JSONArray) entry).get(at)), theirIdToMine);
+
+                        if (member != null) members.put(member);
+                    }
+
+                    if (members.length() == 0) continue;
+
+                    entry = members;
+                }
+            }
+
+            keep.put(mineKey, entry);
+        }
+
+        return keep;
+    }
+
+    /** A stored square in their numbering, in mine; null when its page is not here; as it was when unknown. */
+    private static String squareIntoMine(String stored, Map<String, String> theirIdToMine)
+    {
+        int colon = stored.lastIndexOf(':');
+
+        if (colon < 0) return stored;
+
+        String page = pageIntoMine(stored.substring(0, colon), theirIdToMine);
+
+        return page == null ? null : page + stored.substring(colon);
+    }
+
+    /** A page id in their numbering, in mine; null when the page is not here; as it was when the file's record does not name it. */
+    private static String pageIntoMine(String theirs, Map<String, String> theirIdToMine)
+    {
+        return theirIdToMine.containsKey(theirs) ? theirIdToMine.get(theirs) : theirs;
     }
 
     /**

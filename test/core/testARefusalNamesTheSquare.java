@@ -106,6 +106,42 @@ public class testARefusalNamesTheSquare
     }
 
     /**
+     * A station too short for the train is named by its square too (TDR-C5, the length refusals).
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAStationTooShortIsNamedWithoutItsHeading() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RN Begin (westbound)", true, model.newFeedback(2340, null).getName());
+        layout.createPoint("RN Short (eastbound, reverse)", true, model.newFeedback(2341, null).getName());
+        layout.createEdge("RN Begin (westbound)", "RN Short (eastbound, reverse)");
+
+        layout.getPoint("RN Short (eastbound, reverse)").setMaxTrainLength(2);
+
+        Integer was = loc.getTrainLength();
+
+        try
+        {
+            loc.setTrainLength(5);
+
+            String said = refusalOf(layout, "RN Begin (westbound)", "RN Short (eastbound, reverse)");
+
+            assertTrue(said.contains("RN Short"),
+                "precondition: the refusal does not name the station: " + said);
+
+            assertFalse(said.contains("eastbound") || said.contains("reverse"),
+                "the length refusal names the builder's copy of the station, heading and all: \"" + said + "\"");
+        }
+        finally
+        {
+            loc.setTrainLength(was);
+        }
+    }
+
+    /**
      * The control: a name with a parenthesis that is not a heading keeps it.
      *
      * @throws Exception from the railway
