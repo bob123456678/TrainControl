@@ -21651,6 +21651,10 @@ The condition reads back exactly as built, and **Test** evaluates it as that exp
 
 **Claude: the same editor changed underneath this test on 2026-09-14 (OB-220).**  The first line can now be indented, and a joining word deeper than a condition beside it is drawn in red and cannot be saved.  While you indent one line at a time a word can be red for a moment - indent the line after it and it clears.  Run the steps as written; if the finished `3 or (4 and (1 or 2))` shows anything in red, that fails.
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit ab35b970, build\classes, compiled 14 Sep 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-417"></a>
