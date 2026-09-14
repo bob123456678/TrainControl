@@ -62,12 +62,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-413](#mt-413) | 2026-09-14 | Why Not Moving shows its reasons in the banner | fixed unvalidated | OB-191 |
 | [MT-414](#mt-414) | 2026-09-14 | The locomotive dialog's arrival row matches the rows above it | fixed unvalidated | OB-203 |
 | [MT-415](#mt-415) | 2026-09-14 | Clearing every locomotive warns that Cancel will not bring them back | fixed unvalidated | OB-194 |
-| [MT-416](#mt-416) | 2026-09-14 | A route condition with a group that is not the first term can be built | fixed unvalidated | FR-068 |
 | [MT-425](#mt-425) | 2026-09-14 | A route condition can start with a group, and a stranded word is red | fixed unvalidated | OB-220 |
 | [MT-426](#mt-426) | 2026-09-14 | Reads as shows the joining words in bold and the settings in colour | fixed unvalidated | FR-081 |
+| [MT-427](#mt-427) | 2026-09-14 | Opening a condition's Kind box and leaving it changes nothing | fixed unvalidated | OB-221 |
+| [MT-428](#mt-428) | 2026-09-14 | A red word in a route's conditions has a warning triangle that says why | fixed unvalidated | FR-082 |
 
-Everything else - 388 of 426 - needs nothing from you unless the area changes again:
-342 **fixed validated** and 46 **superseded**.
+Everything else - 389 of 428 - needs nothing from you unless the area changes again:
+343 **fixed validated** and 46 **superseded**.
 
 ---
 
@@ -21629,7 +21630,7 @@ The tooltip and the confirmation both name the locomotives it will lift, say how
 
 ### MT-416 - 2026-09-14 - A route condition with a group that is not the first term can be built
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-068
 
 **Written:** 2026-09-14
@@ -21928,6 +21929,68 @@ Your FR-081: *"In the 'reads as', can we also bold the operators, make on/straig
 - Everything else - names, numbers, a locomotive's direction - is in the ordinary colour, and nothing shows as markup such as `<b>`.
 
 *What this is:* FR-081.  The colour follows the word, because the same setting is "on" for a sensor and "turn" for a switch.  `ui.testRouteEditorValidation.testReadsAsBoldsTheWordsAndColoursTheSettings`.
+
+#### Comments
+
+---
+
+<a id="mt-427"></a>
+
+### MT-427 - 2026-09-14 - Opening a condition's Kind box and leaving it changes nothing
+
+**Disposition:** fixed unvalidated
+**From:** OB-221
+
+**Written:** 2026-09-14
+
+Your OB-221: *"I start with Switch 1.  Then I set address to 40, which makes it a Signal.  Then, if I click on Kind -> Signal and exit out, it snaps back to Switch 1."*
+
+**Steps**
+
+1. In the route editor, add a condition, set it to **Switch**, and type the address of one of your signals (40).
+2. Click its **Kind** cell, choose **Signal**, and click away.
+3. Add a sensor condition, give it address **5**, then click its **Kind** cell, choose **Sensor** again, and click away.
+4. On a line showing a switch, choose **Signal** from its Kind box.
+
+**Expected**
+
+- Step 1: the line becomes **Signal 40**, as before.
+- Steps 2 and 3: nothing changes - Signal 40 and sensor 5 keep their addresses and settings.
+- Step 4: the address and setting stay.  The line may still read **Switch**, because a condition is saved as an accessory command and your layout says what is at that address; only a signal's address reads as Signal.
+
+*What this is:* the Kind box reset the line to its kind's first address on every close, whether or not the kind changed.  `ui.testRouteEditorValidation.testChoosingTheKindALineAlreadyIsKeepsIt` and `testSwitchingBetweenSwitchAndSignalKeepsTheAddress`, both seen red first.
+
+#### Comments
+
+---
+
+<a id="mt-428"></a>
+
+### MT-428 - 2026-09-14 - A red word in a route's conditions has a warning triangle that says why
+
+**Disposition:** fixed unvalidated
+**From:** FR-082
+
+**Written:** 2026-09-14
+
+Your FR-082: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong next to it?"*
+
+**Steps**
+
+1. In the route editor, type the conditions `2 or 3 and 4` flat, one per line.
+2. Hover over the triangle after the red **and**.
+3. Make a new condition `2 or 3`, flat, and indent only the **or**.  Hover over its triangle.
+4. Fix both - indent `2 or 3` in the first, and indent the conditions either side in the second.
+5. Switch TrainControl to another language and repeat step 2.
+
+**Expected**
+
+- Step 2: a small amber triangle after the red word; the tooltip says the word is not the same as the one already joining its level, and to indent the conditions you meant to group or use the same word.
+- Step 3: the tooltip says instead that the word is indented further than the condition next to it, so it joins nothing.
+- Step 4: the red and the triangles go together, and no other line ever shows a triangle.
+- Step 5: the tooltip is in that language.
+
+*What this is:* FR-082.  The two reasons are put right differently, so the tooltip names the one that applies.  `core.testConditionOutline.testEachFlagSaysWhy`; `ui.testRouteEditorValidation.testARedWordCarriesAWarningThatSaysWhy`, mutation-checked with the triangle removed and with it left on the next line painted.
 
 #### Comments
 
