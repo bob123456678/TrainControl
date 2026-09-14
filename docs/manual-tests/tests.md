@@ -51,9 +51,29 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-402](#mt-402) | 2026-09-14 | A Return Home plan that fails says why in the log, by square | fixed unvalidated | FR-078 |
 | [MT-403](#mt-403) | 2026-09-14 | The function buttons follow the locomotive you switched to last | fixed unvalidated | TDR-B5 |
 | [MT-404](#mt-404) | 2026-09-14 | A square cannot be named with the editor's own direction heading | fixed unvalidated | TDR-C11 |
+| [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
+| [MT-406](#mt-406) | 2026-09-14 | Escape puts the autonomy editor's tool down | fixed unvalidated | OB-119 |
+| [MT-407](#mt-407) | 2026-09-14 | Escape closes the autonomy and track editors, with the usual warning | fixed unvalidated | FR-065 |
+| [MT-408](#mt-408) | 2026-09-14 | The menus come back together when connecting finishes | fixed unvalidated | OB-187 |
+| [MT-409](#mt-409) | 2026-09-14 | The Autonomy menu is in the menu bar from the first moment | fixed unvalidated | OB-202 |
+| [MT-410](#mt-410) | 2026-09-14 | The two locomotive buttons in the home dialog do not touch | fixed unvalidated | OB-188 |
+| [MT-411](#mt-411) | 2026-09-14 | A hand-driven train reverses on arrival exactly as you answered | fixed unvalidated | OB-189 |
+| [MT-412](#mt-412) | 2026-09-14 | The diagram arrow turns when a hand-driven train reverses on arrival | fixed unvalidated | OB-190 |
+| [MT-413](#mt-413) | 2026-09-14 | Why Not Moving shows its reasons in the banner | fixed unvalidated | OB-191 |
+| [MT-414](#mt-414) | 2026-09-14 | The locomotive dialog's arrival row matches the rows above it | fixed unvalidated | OB-203 |
+| [MT-415](#mt-415) | 2026-09-14 | Clearing every locomotive warns that Cancel will not bring them back | fixed unvalidated | OB-194 |
+| [MT-416](#mt-416) | 2026-09-14 | A route condition with a group that is not the first term can be built | fixed unvalidated | FR-068 |
+| [MT-417](#mt-417) | 2026-09-14 | A square that turns every train, switched off, is drawn as switched off | fixed unvalidated | OB-167 |
+| [MT-418](#mt-418) | 2026-09-14 | Destructive confirmations default to No | fixed unvalidated | OB-134 |
+| [MT-419](#mt-419) | 2026-09-14 | The greyed Edit Layout button says the real reason | fixed unvalidated | OB-126 |
+| [MT-420](#mt-420) | 2026-09-14 | Every window shows the TrainControl icon | fixed unvalidated | OB-124 |
+| [MT-421](#mt-421) | 2026-09-14 | The + row in a route's conditions is never greyed | fixed unvalidated | OB-121 |
+| [MT-422](#mt-422) | 2026-09-14 | Test a path does not draw into a station from a side it refuses | fixed unvalidated | OB-120 |
+| [MT-423](#mt-423) | 2026-09-14 | An empty station's name sits over the track | fixed unvalidated | OB-118 |
+| [MT-424](#mt-424) | 2026-09-14 | The left and right facing arrows are as tall as the up and down ones | fixed unvalidated | OB-116 |
 
-Everything else - 380 of 404 - needs nothing from you unless the area changes again:
-335 **fixed validated** and 45 **superseded**.
+Everything else - 380 of 424 - needs nothing from you unless the area changes again:
+334 **fixed validated** and 46 **superseded**.
 
 ---
 
@@ -9379,7 +9399,7 @@ silently has nothing to put in the archive.
 
 ### MT-170 - 2026-08-24 - Backing up a layout that lives on the Central Station
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** FR-020
 **Written:** 2026-08-24
 
@@ -9456,6 +9476,10 @@ CS2 path.
 CS3 dedicated files are still mising, see other bug
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: superseded by MT-405.**  This entry's own subject - backing up a layout that lives on the Central Station - passed; your last verdict, *"CS3 dedicated files are still mising"*, is about the follow-up you asked for in it, FR-062.  That now has an entry of its own, starting at needs test, so this one no longer reads as validated and broken at once.
 
 ---
 
@@ -21339,6 +21363,478 @@ Your instruction of 2026-09-14: *"refuse and close, but make sure the words are 
 
 *What this is:* such a name read as another square wherever a message names squares.  Names already in your
 setup are left alone.  `core.testANameCannotEndInAHeading`.
+
+#### Comments
+
+---
+
+<a id="mt-405"></a>
+
+### MT-405 - 2026-09-14 - A Central Station download also brings the CS3's own data files
+
+**Disposition:** needs test
+**From:** FR-062
+
+**Written:** 2026-09-14
+
+Your note on MT-170: *"if the user confirms the CS download, we should also download CS3 data files if using a CS3."*  Built in `1467f978` - but your last run of MT-170, on a build made after that commit, said *"CS3 dedicated files are still mising"*, so this starts at **needs test**.
+
+**Steps**
+
+1. Connected to a **CS3**, choose the Central Station layout download and confirm it.
+2. Open the layout folder it wrote.
+
+**Expected**
+
+Beside the ordinary layout files, the CS3's own files are there too - `CS3_mags.json` and the CS3 route file.
+
+#### Comments
+
+---
+
+<a id="mt-406"></a>
+
+### MT-406 - 2026-09-14 - Escape puts the autonomy editor's tool down
+
+**Disposition:** fixed unvalidated
+**From:** OB-119
+
+**Written:** 2026-09-14
+
+From OB-119: *Escape did not put the autonomy editor's tools down.*
+
+**Steps**
+
+1. In the autonomy editor, arm a tool - **One-Way Run** from Bulk Tools, or **Test a path**.
+2. Press **Escape** once.
+
+**Expected**
+
+The tool is put down - nothing armed, the status line back to normal - and the editor stays open.
+
+#### Comments
+
+---
+
+<a id="mt-407"></a>
+
+### MT-407 - 2026-09-14 - Escape closes the autonomy and track editors, with the usual warning
+
+**Disposition:** fixed unvalidated
+**From:** FR-065
+
+**Written:** 2026-09-14
+
+Your FR-065: *"escape closes autonomy/track editor - same as closing via button, with warning shown as needed"*.
+
+**Steps**
+
+1. Open the autonomy editor with no tool armed and press **Escape**.
+2. Open it again, change something, and press **Escape**.
+3. Do the same two things in the track diagram editor.
+
+**Expected**
+
+- Unchanged: the editor closes.
+- Changed: the same save-or-discard question the close button asks, and the editor closes only as that answer says.
+
+#### Comments
+
+---
+
+<a id="mt-408"></a>
+
+### MT-408 - 2026-09-14 - The menus come back together when connecting finishes
+
+**Disposition:** fixed unvalidated
+**From:** OB-187
+
+**Written:** 2026-09-14
+
+Your note on MT-264: *"when the loading finishes, the menu options ungrey at different times."*
+
+**Steps**
+
+1. Start TrainControl connected to the Central Station and watch the menu bar while it loads.
+
+**Expected**
+
+Every menu that was greyed during the connect comes back at the same moment, not one after another.
+
+#### Comments
+
+---
+
+<a id="mt-409"></a>
+
+### MT-409 - 2026-09-14 - The Autonomy menu is in the menu bar from the first moment
+
+**Disposition:** fixed unvalidated
+**From:** OB-202
+
+**Written:** 2026-09-14
+
+From OB-202: the Autonomy heading used to appear part-way through start-up, after the rest of the bar.
+
+**Steps**
+
+1. Start TrainControl and watch the menu bar from the moment the window appears.
+
+**Expected**
+
+**Autonomy** is there from the first frame, greyed until the connect finishes, with the reason on its tooltip - it never appears late, and nothing shifts along when it does become usable.
+
+#### Comments
+
+---
+
+<a id="mt-410"></a>
+
+### MT-410 - 2026-09-14 - The two locomotive buttons in the home dialog do not touch
+
+**Disposition:** fixed unvalidated
+**From:** OB-188
+
+**Written:** 2026-09-14
+
+Your OB-188: *"add some spacing between the two buttons, as they currently touch (in the set home locomotive popup)"*.
+
+**Steps**
+
+1. Right-click a station in the autonomy editor and set its home locomotive.
+
+**Expected**
+
+The "use current" and "use active" buttons have a visible gap between them.
+
+#### Comments
+
+---
+
+<a id="mt-411"></a>
+
+### MT-411 - 2026-09-14 - A hand-driven train reverses on arrival exactly as you answered
+
+**Disposition:** fixed unvalidated
+**From:** OB-189
+
+**Written:** 2026-09-14
+
+Your OB-189: *"I send EN57-203 from BottomMainA to BottomMainPost.  I say to No to keep current direction, but it does not reverse on arrival."*
+
+**Steps**
+
+1. Send **EN57-203** from **BottomMainA** to **BottomMainPost** and answer **No** (keep the direction).
+2. Send it back to BottomMainA, then to BottomMainPost again, answering **Yes**.
+
+**Expected**
+
+- Step 1: it arrives still facing the way it drove.
+- Step 2: it reverses on arrival.
+
+If the route to BottomMainPost passes a square that turns every train, a compulsory turn there comes first - that is OB-190's open question, not this test.
+
+#### Comments
+
+---
+
+<a id="mt-412"></a>
+
+### MT-412 - 2026-09-14 - The diagram arrow turns when a hand-driven train reverses on arrival
+
+**Disposition:** fixed unvalidated
+**From:** OB-190
+
+**Written:** 2026-09-14
+
+From OB-190, the half of your OB-189 instruction about the diagram: *"if yes, emit reversal command and update on the graph."*
+
+**Steps**
+
+1. Send a train by hand to a square trains may turn at, and answer **Yes** to reversing.
+2. Watch its arrow on the track diagram as it arrives, without touching anything else.
+
+**Expected**
+
+The arrow turns round when the train does, within a moment - not only after something else refreshes the diagram.
+
+#### Comments
+
+---
+
+<a id="mt-413"></a>
+
+### MT-413 - 2026-09-14 - Why Not Moving shows its reasons in the banner
+
+**Disposition:** fixed unvalidated
+**From:** OB-191
+
+**Written:** 2026-09-14
+
+Your OB-191: *"when i click on DRG 06 001, 'why not moving' in the autonomy editor correctly paints the paths, but it does not show the list of reasons in the top banner"*.
+
+**Steps**
+
+1. In the autonomy editor, choose **Why Not Moving?** and click **DRG 06 001** (or any train that cannot move).
+
+**Expected**
+
+The banner opens with the reasons written in it - readable text, not an empty strip.
+
+#### Comments
+
+---
+
+<a id="mt-414"></a>
+
+### MT-414 - 2026-09-14 - The locomotive dialog's arrival row matches the rows above it
+
+**Disposition:** fixed unvalidated
+**From:** OB-203
+
+**Written:** 2026-09-14
+
+From OB-203: the arrival row was the only one in that dialog not laid out like the others.
+
+**Steps**
+
+1. Open a locomotive's settings dialog and look at the row for what happens when the train arrives.
+
+**Expected**
+
+Its label reads **Train Arrived**, in the same style as the labels above it, and its drop-down sits at its natural size against the right edge like the fields above - not stretched across the dialog.
+
+#### Comments
+
+---
+
+<a id="mt-415"></a>
+
+### MT-415 - 2026-09-14 - Clearing every locomotive warns that Cancel will not bring them back
+
+**Disposition:** fixed unvalidated
+**From:** OB-194
+
+**Written:** 2026-09-14
+
+Your note on MT-311: *"clearning locomotives in the autonomy editor cannot be undone by a cancel.  Make this clear in the popup."*
+
+**Steps**
+
+1. In the autonomy editor, open **Bulk Tools** and hover over the clear-locomotives item, then choose it.
+
+**Expected**
+
+The tooltip and the confirmation both name the locomotives it will lift, say how many squares it empties, and say that Cancel will not put them back.  Answer No.
+
+#### Comments
+
+---
+
+<a id="mt-416"></a>
+
+### MT-416 - 2026-09-14 - A route condition with a group that is not the first term can be built
+
+**Disposition:** fixed unvalidated
+**From:** FR-068
+
+**Written:** 2026-09-14
+
+From FR-068, your question: *"it should be representable already in the UI, right?"*
+
+**Steps**
+
+1. In the route editor, build the condition `3 or (4 and (1 or 2))` by typing its terms as lines and indenting the grouped ones.
+2. Save the route, close the editor, and open the route again.
+
+**Expected**
+
+The condition reads back exactly as built, and **Test** evaluates it as that expression.
+
+#### Comments
+
+---
+
+<a id="mt-417"></a>
+
+### MT-417 - 2026-09-14 - A square that turns every train, switched off, is drawn as switched off
+
+**Disposition:** fixed unvalidated
+**From:** OB-167
+
+**Written:** 2026-09-14
+
+Your OB-167: *"station no + must reverse + disabled gets the same icon as a terminus"*.
+
+**Steps**
+
+1. In the autonomy editor, take a square that is not a station, mark it **Trains Must Change Direction Here**, and switch it out of service.
+
+**Expected**
+
+It is drawn with the out-of-service mark, not with the terminus icon.
+
+#### Comments
+
+---
+
+<a id="mt-418"></a>
+
+### MT-418 - 2026-09-14 - Destructive confirmations default to No
+
+**Disposition:** fixed unvalidated
+**From:** OB-134
+
+**Written:** 2026-09-14
+
+From OB-134: *six destructive confirmations still pre-selected Yes.*
+
+**Steps**
+
+1. Start each of these and look at which button is highlighted before you choose: deleting a locomotive, deleting a route, clearing the timetable, and clearing every home locomotive or every placement from Bulk Tools.
+
+**Expected**
+
+**No** (or Cancel) is the highlighted default every time, so pressing Enter changes nothing.
+
+#### Comments
+
+---
+
+<a id="mt-419"></a>
+
+### MT-419 - 2026-09-14 - The greyed Edit Layout button says the real reason
+
+**Disposition:** fixed unvalidated
+**From:** OB-126
+
+**Written:** 2026-09-14
+
+From OB-126: *the grey Edit Layout button named one of its three reasons whatever was true.*
+
+**Steps**
+
+1. Hover over **Edit Layout** while autonomy is running.
+2. Hover over it again with a layout that cannot be edited here, such as one read from the Central Station.
+
+**Expected**
+
+Each time it is grey, the tooltip names the reason that is actually true at that moment.
+
+#### Comments
+
+---
+
+<a id="mt-420"></a>
+
+### MT-420 - 2026-09-14 - Every window shows the TrainControl icon
+
+**Disposition:** fixed unvalidated
+**From:** OB-124
+
+**Written:** 2026-09-14
+
+From OB-124: *four windows had no application icon.*
+
+**Steps**
+
+1. Open the route editor, the track diagram editor, the autonomy editor and a locomotive's settings, and look at each title bar and taskbar entry.
+
+**Expected**
+
+Every one shows the TrainControl icon, not the default Java cup.
+
+#### Comments
+
+---
+
+<a id="mt-421"></a>
+
+### MT-421 - 2026-09-14 - The + row in a route's conditions is never greyed
+
+**Disposition:** fixed unvalidated
+**From:** OB-121
+
+**Written:** 2026-09-14
+
+From OB-121: *the + row in the conditions list was handed the previous cell's grey by a recycled renderer.*
+
+**Steps**
+
+1. Open a route with several conditions, some of them shown greyed, and scroll to the **+** row at the bottom.
+
+**Expected**
+
+The + row is drawn normally, never in the grey of the row above it.
+
+#### Comments
+
+---
+
+<a id="mt-422"></a>
+
+### MT-422 - 2026-09-14 - Test a path does not draw into a station from a side it refuses
+
+**Disposition:** fixed unvalidated
+**From:** OB-120
+
+**Written:** 2026-09-14
+
+From OB-120: *Test a path drew routes into stations that refuse arrivals from that side.*
+
+**Steps**
+
+1. Pick a station with an arrival side barred, and run **Test a path** to it from a square that can only reach it from the barred side.
+
+**Expected**
+
+No route is drawn into it from that side - the test reports it cannot be reached that way.
+
+#### Comments
+
+---
+
+<a id="mt-423"></a>
+
+### MT-423 - 2026-09-14 - An empty station's name sits over the track
+
+**Disposition:** fixed unvalidated
+**From:** OB-118
+
+**Written:** 2026-09-14
+
+From OB-118: *an empty station's caption sat at the left of its square rather than over the track.*
+
+**Steps**
+
+1. On the track diagram, look at the name of a station with no train on it.
+
+**Expected**
+
+The name sits over its track, centred on the rails.  Captions have been reworked more than once since this was fixed - if they are placed differently now and look right, this passes.
+
+#### Comments
+
+---
+
+<a id="mt-424"></a>
+
+### MT-424 - 2026-09-14 - The left and right facing arrows are as tall as the up and down ones
+
+**Disposition:** fixed unvalidated
+**From:** OB-116
+
+**Written:** 2026-09-14
+
+From OB-116: *the left and right facing arrows were half the height of the up and down ones.*
+
+**Steps**
+
+1. On the track diagram, compare the arrow of a train facing left or right with one facing up or down.
+
+**Expected**
+
+They are the same size.
 
 #### Comments
 
