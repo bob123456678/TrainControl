@@ -1,6 +1,6 @@
 # Ten days of commits, reviewed after the MT sweep of 2026-09-13
 
-**Status:** open 2026-09-14 - round 1 fixed, fix validation running
+**Status:** open 2026-09-14 - round 2 fixed, second fix validation running
 
 **Prefix:** TDR (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -27,8 +27,10 @@ failing for the reason stated - unless it says otherwise.
 | TDR-B1 | fixed `785d913a` | `Layout.standOnTheCopyItDidNotTurnOn` - the route was copied after the move had cleared it |
 | TDR-B2 | fixed `785d913a` | `AutonomySession.moveOntoFacingCopy` - carried the arrival side across a re-stand, not the route |
 | TDR-B3 | fixed `785d913a` | `HomeStaging.whyNotHome` - a barred copy hid "too short" and said "no route" |
-| TDR-B4 | fixed `785d913a` | `AutonomyCompanionStore.importBundle` - a page with an id in common was merged, then reported as left out |
+| TDR-B4 | fixed `785d913a`, completed by TDR-B6 | `AutonomyCompanionStore.importBundle` - a page with an id in common was merged, then reported as left out |
 | TDR-B5 | Open | `TrainControlUI.repaintLoc` - a repaint asked for while the last is still rendering is dropped |
+| TDR-A1 | fixed (round 2) | `AutonomyCompanionStore.importBundle` - the exporter's page record re-labelled this layout's own ids |
+| TDR-B7 | fixed (round 2) | `AutonomyCompanionStore.withoutPages` - filtered whole entries, and took a station named "2" for a page |
 
 ### TDR-B1 - a train that declines the turn at a may-turn square loses the route its tail follows
 
@@ -85,6 +87,10 @@ everything naming the others is taken out of the incoming fields; the post-read 
 `forgetHeldPages` call are gone. `core.testAnImportKeepsOnlyThisLayoutsPages` gains the collision and a
 control that a page this layout has lands on it under any id.
 
+**Fix validation, round 1: incomplete.** Only the drop decision was made by name; where the remaining
+entries LANDED was still by id, because their page record was still merged "theirs wins per id". That is
+TDR-A1, below, and the claim "decided BY NAME" in the first fix's comment overstated it.
+
 ### TDR-B5 - switching locomotives quickly can leave the previous one's function buttons on screen
 
 | | |
@@ -102,6 +108,45 @@ drive it.
 render path itself is the main window's busiest code and is left for Adam to prioritise. The shape of a
 repair is the one `askForReturnHomeTriage` already uses: coalesce, and let the last ask always land.
 
+### TDR-A1 - an import from a layout numbered differently re-labels this layout's own pages
+
+| | |
+|---|---|
+| **Disposition** | Fixed |
+
+Found by the first fix validation; older than the window (`09704f9c`, the "theirs wins per id" merge).
+An export keys every square by the exporter's page ids, and the merge adopted their page record over mine
+for every id both knew. Three things followed, each silent:
+
+- **Renumbered, both pages loaded.** Mine Main = 2, Yard = 3; theirs Yard = 2. The merged record said
+  2 and 3 were both Yard, so every setting on MY Main was read back as Yard's and saved that way.
+  `testAutonomyDiagramStore` had this exact fixture and asserted only that a conflict was reported.
+- **A page still downloading.** Mine Main = 1 loaded and Away = 7 known but absent; theirs Main = 7. Their
+  record overwrote "7 is Away", Away's held settings resolved to Main and were read onto it, and Away
+  stopped being reported as not loaded - so nothing protected it any more.
+- **The reverse.** Theirs Away = 1 against my Main = 1 put their Away's settings on Main.
+
+**Fixed:** each of their ids is translated to the id this layout uses for the same page NAME - a loaded
+page's, or the one this setup recorded for a page it knows and cannot load - before anything merges, and
+their page record is never adopted. A name this layout does not have translates to nothing and is
+reported as left out. The UR-10 claim now asserts where the settings land; two new claims in
+`core.testAnImportKeepsOnlyThisLayoutsPages` cover the unloaded page both ways. All three seen red.
+
+### TDR-B7 - the foreign-page filter was too coarse
+
+| | |
+|---|---|
+| **Disposition** | Fixed |
+
+Found by the first fix validation. `withoutPages` dropped an entry when its key OR its value mentioned a
+foreign id, through `mentionsAny` - which takes any string without a colon for a page id. So a hold-back list
+lost its local members along with one foreign square, and a station named "2" was dropped whenever a foreign
+page had id 2. Import only, so nothing local was lost; the cost was gaps an import should have filled.
+
+**Fixed:** the incoming fields are rewritten by each field's declared shape in `HELD_FIELDS` - keys and
+square values translated, list members one at a time, page lists element by element - so only the foreign
+pieces go. `testOnlyTheForeignPiecesAreLeftOut`, seen red.
+
 ---
 
 ## C - documentation, tests and minor
@@ -112,7 +157,7 @@ repair is the one `askForReturnHomeTriage` already uses: coalesce, and let the l
 | TDR-C2 | fixed `785d913a` (in part) | `core.testReturnHomeSaysWhy` - most FR-078 sentences had no claim |
 | TDR-C3 | fixed `785d913a` | `ui.testTheEditorNamesItsShortcuts` - raw NUL characters made git treat it as binary |
 | TDR-C4 | fixed `785d913a` | three javadocs orphaned by members inserted beneath them |
-| TDR-C5 | fixed | path refusals printed the builder's direction copies, not squares |
+| TDR-C5 | fixed `6c36d262`, completed in round 2 | path refusals printed the builder's direction copies, not squares |
 
 ### TDR-C1 - the "nothing to choose" message named points, and the list is stations
 
@@ -144,6 +189,12 @@ edge or point; the headings are how the builder tells a square's directions apar
 the copy machinery is masked from the user. **Fixed:** they name squares through `placeNameOf`, and an edge
 as its two squares. `core.testARefusalNamesTheSquare`, with a control that a name like "Yard (old)" keeps
 its parenthesis.
+
+**Fix validation, round 1: incomplete.** Six more refusals printed copy names - the opposite-direction edge,
+the manual send's held-back explanation, and the four length refusals - and an edge within one square read
+"X -> X". **Completed in round 2:** all six name squares, an edge within one square is named once, and a
+length refusal has a claim of its own. No code parses these messages; the cost, accepted with the ruling, is
+that the log no longer says which copy refused.
 
 ---
 
