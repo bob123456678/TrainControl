@@ -166,6 +166,83 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             "the layout's own unloaded page was reported as left out of the import");
     }
 
+    /**
+     * A foreign page that happens to carry the same id as one of this layout's pages is left out, and
+     * none of its settings land on the local page (TDR-B4).
+     *
+     * Page ids are numbered from the same start on every railway, so an export of a five-page layout into
+     * a one-page one almost always has an id in common with it.  The page record merges by id and a key
+     * is resolved by id when its recorded name is unknown here - so the exporter's "Yard", id 1, was read
+     * straight onto this layout's "Main", id 1, while the import dialog said Yard's settings "were left
+     * out, because there is nothing here for them to belong to".
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testAForeignPageWithAnIdInCommonIsLeftOutAndNotMergedOntoThisOne() throws IOException
+    {
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        Map<String, String> theirPages = pages("Yard", "1");
+
+        theirPages.put("Main", "2");
+
+        source.setPageIds(theirPages);
+        source.setPointName(new TileKey("Yard", 5, 5), "Yard Platform");
+        source.setPointName(new TileKey("Main", 1, 1), "Came Across");
+        source.createConfiguration("Theirs", null);
+
+        org.json.JSONObject bundle = source.exportBundle("Theirs");
+
+        assertNotNull(bundle, "the export produced nothing");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "1"));
+
+        store.importBundle("Theirs", bundle);
+
+        assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Came Across",
+            "precondition: the setting for the page both layouts have did not come across, by name, so"
+            + " nothing below is about an import that did anything");
+
+        assertEquals(store.getPointName(new TileKey("Main", 5, 5)), null,
+            "the exporter's Yard shares id 1 with this layout's Main, and Yard's station name was read onto"
+            + " Main's square 5,5 - a page of somebody else's names on the wrong track (TDR-B4)");
+
+        assertEquals(store.getPagesLeftOutOfLastImport(), Collections.singletonList("Yard"),
+            "the page this layout does not have was not reported as left out");
+    }
+
+    /**
+     * The control: the exporter's copy of a page this layout has lands on it whatever id either side
+     * gave it.
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testAPageThisLayoutHasLandsOnItUnderAnyId() throws IOException
+    {
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Main", "7"));
+        source.setPointName(new TileKey("Main", 4, 4), "Renumbered Elsewhere");
+        source.createConfiguration("Theirs", null);
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "1"));
+
+        store.importBundle("Theirs", source.exportBundle("Theirs"));
+
+        assertEquals(store.getPointName(new TileKey("Main", 4, 4)), "Renumbered Elsewhere",
+            "the exporter's Main, id 7, did not land on this layout's Main, id 1 - a page is matched by its"
+            + " name, and an id in the file is only how that file spelled it");
+
+        assertTrue(store.getPagesLeftOutOfLastImport().isEmpty(),
+            "a page this layout has was reported as left out: " + store.getPagesLeftOutOfLastImport());
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------

@@ -3267,6 +3267,10 @@ public class Layout
 
             String tail = arrived.getArrivedFrom();
 
+            // AND THE ROUTE, read here for the same reason as the side (TDR-B1): moving the train onto
+            // the sibling clears both on the copy it leaves, so what is read after the move is nothing.
+            java.util.List<Edge> along = arrived.getArrivedAlong();
+
             // `setLocomotive` takes the train off wherever else it is standing, so clearing the copy
             // it is leaving by hand first is redundant - and it was the line that gave up this run's
             // reservations early when this ran before the unlock (PRV-B2).
@@ -3275,8 +3279,8 @@ public class Layout
             sibling.setArrivedFrom(tail);
 
             // AND THE ROUTE, which describes the same arrival from this copy as from the one it
-            // declined (MT-335).
-            sibling.setArrivedAlong(arrived.getArrivedAlong());
+            // declined (MT-335) - the value read before the move, not after it.
+            sibling.setArrivedAlong(along);
 
             // THE STATION, NOT THE COPY (Adam, 2026-09-13: "the whole copy thing needs to be masked
             // from the user").  Both Points are one square; which of them the graph keeps the train on

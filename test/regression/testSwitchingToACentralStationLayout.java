@@ -841,8 +841,10 @@ public class testSwitchingToACentralStationLayout
         // detectors between them - so the rule is the stronger one: every SAFETY assertion first, in
         // descending order of what it protects, and every number that merely records where we are
         // afterwards.  A stale ratchet now hides nothing.
-        assertEquals(checked, 38,
-            checked + " test classes were found to build a window, not the 38 there were when this "
+        // 42 since 2026-09-14: ui.testBulkToolsHoldsTheWholeLayoutTools, ui.testOnlyAStationHoldsAnotherBack,
+        // ui.testReturnHomeShowsItIsWorking and ui.testTheEditorNamesItsShortcuts, each opening a sandbox first.
+        assertEquals(checked, 42,
+            checked + " test classes were found to build a window, not the 42 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

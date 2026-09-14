@@ -1584,21 +1584,6 @@ public final class HomeStaging
     }
 
     /**
-     * Whether this locomotive could get home at all, over any copy of the home square (2026-08-31).
-     *
-     * Deliberately one method rather than two. Resting and reaching are separate questions, and asking
-     * them separately over the copies would accept a home where one copy can be rested at and a
-     * DIFFERENT one can be reached - which is no home at all. They are asked of the same copy.
-     *
-     * Blind to occupancy, like `connected`, and for the same reason: a route blocked merely by another
-     * train is not impossible, and moving that train is what the planner is for.
-     *
-     * @param loc the locomotive
-     * @param from where it is standing
-     * @param home its home, or any copy of the home square
-     * @return true when some copy of that square would take it and can be reached
-     */
-    /**
      * Why one locomotive cannot get home, in words - one sentence per rule it breaks (FR-078).
      *
      * The same questions `plan` asks before it calls a train unreachable, broken into their parts, so
@@ -1629,24 +1614,38 @@ public final class HomeStaging
 
         boolean anyActive = false, anyAdmits = false, anyLongEnough = false, anyStation = false;
 
+        // OVER THE COPIES A TRAIN CAN STOP AT, and only those (TDR-B3).  A platform whose arrival from one
+        // side is barred is built as a destination copy and a copy that is not one, and
+        // `validateTrainLength` answers yes for a copy that is not a destination - so the barred copy
+        // answered the length question, the length sentence was never said, and the operator was told
+        // to check the connections instead.
         for (Point copy : copies)
         {
-            anyStation |= copy.isDestination();
+            if (!copy.isDestination()) continue;
+
+            anyStation = true;
             anyActive |= copy.isActive();
             anyAdmits |= !copy.getExcludedLocs().contains(loc);
             anyLongEnough |= copy.validateTrainLength(loc);
         }
 
-        if (!anyStation) out.add(I18n.f("autolayout.whyHomeNotAStation", home.getName()));
-
-        if (!anyActive) out.add(I18n.f("autolayout.whyHomeOutOfService", home.getName()));
-
-        if (!anyAdmits) out.add(I18n.f("autolayout.whyHomeExcludesIt", home.getName()));
-
-        if (!anyLongEnough)
+        if (!anyStation)
         {
-            out.add(I18n.f("autolayout.whyHomeTooShort", home.getName(),
-                String.valueOf(loc.getTrainLength()), String.valueOf(home.getMaxTrainLength())));
+            // Nothing else about the home is worth a sentence: the other three rules are about a place a
+            // train could stop, and there is none.
+            out.add(I18n.f("autolayout.whyHomeNotAStation", home.getName()));
+        }
+        else
+        {
+            if (!anyActive) out.add(I18n.f("autolayout.whyHomeOutOfService", home.getName()));
+
+            if (!anyAdmits) out.add(I18n.f("autolayout.whyHomeExcludesIt", home.getName()));
+
+            if (!anyLongEnough)
+            {
+                out.add(I18n.f("autolayout.whyHomeTooShort", home.getName(),
+                    String.valueOf(loc.getTrainLength()), String.valueOf(home.getMaxTrainLength())));
+            }
         }
 
         // THE ROUTE, asked only when the home itself would take the train: "no way there" about a
@@ -1746,6 +1745,21 @@ public final class HomeStaging
         if (!list.contains(sentence)) list.add(sentence);
     }
 
+    /**
+     * Whether this locomotive could get home at all, over any copy of the home square (2026-08-31).
+     *
+     * Deliberately one method rather than two. Resting and reaching are separate questions, and asking
+     * them separately over the copies would accept a home where one copy can be rested at and a
+     * DIFFERENT one can be reached - which is no home at all. They are asked of the same copy.
+     *
+     * Blind to occupancy, like `connected`, and for the same reason: a route blocked merely by another
+     * train is not impossible, and moving that train is what the planner is for.
+     *
+     * @param loc the locomotive
+     * @param from where it is standing
+     * @param home its home, or any copy of the home square
+     * @return true when some copy of that square would take it and can be reached
+     */
     private boolean canGetHome(Locomotive loc, Point from, Point home)
     {
         if (home == null) return false;

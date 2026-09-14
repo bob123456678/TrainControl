@@ -1979,6 +1979,42 @@ public class AutonomyCompanionStore
 
         if (incoming == null) return 0;
 
+        // WHICH OF THEIR PAGES THIS LAYOUT HAS, decided BY NAME and before anything is merged (TDR-B4).
+        //
+        // Adam's ruling of 2026-09-13 - "keep only the pages, and alert the user" - was first carried out
+        // AFTER the read, by forgetting the pages the read had taken in.  That was too late: page ids are
+        // numbered from the same start on every railway, and a key is resolved by id when its recorded name
+        // is unknown here, so the exporter's "Yard" with id 1 had already been read onto this layout's
+        // "Main" with id 1 - and the forgetting then dropped held entries by that id, which can be this
+        // layout's own.
+        //
+        // A page is foreign when its NAME is neither loaded nor one this setup already knew.  A page this
+        // setup knew and cannot load right now is a OneDrive page still downloading, and is not foreign.
+        // Everything the file says about a foreign id is left out of the merge, and the page is reported.
+        Set<String> knownBefore = new LinkedHashSet<>(pageNamesWhenWritten.values());
+
+        knownBefore.addAll(pageIdToName.values());
+
+        Set<String> foreignIds = new LinkedHashSet<>();
+
+        JSONObject theirPages = incoming.optJSONObject("pages");
+
+        if (theirPages != null)
+        {
+            for (String id : theirPages.keySet())
+            {
+                Object called = theirPages.get(id);
+
+                if (!(called instanceof String)) continue;
+
+                if (knownBefore.contains(called) || pageNameToId.containsKey(called)) continue;
+
+                foreignIds.add(id);
+
+                if (!pagesLeftOutOfLastImport.contains(called)) pagesLeftOutOfLastImport.add((String) called);
+            }
+        }
+
         JSONObject merged = sharedFields();
 
         int filled = 0;
@@ -1987,7 +2023,7 @@ public class AutonomyCompanionStore
         {
             if ("version".equals(key)) continue;
 
-            Object value = incoming.get(key);
+            Object value = withoutPages(incoming.get(key), foreignIds, "pages".equals(key));
 
             // "pages" is not a setting being merged - it is the exporter's record of what each of
             // THEIR ids was called, and it is the only evidence a renumber can be detected from.  Under
@@ -2083,50 +2119,13 @@ public class AutonomyCompanionStore
             // and was not.
             JSONObject wasThere = sharedFields();
 
-            // WHAT THIS SETUP ALREADY KNEW, loaded or not, taken before the read replaces it.  A page
-            // in here that is not loaded is one this layout HAS and cannot see right now - a OneDrive
-            // page still downloading - and must never be dropped by an import.
-            Set<String> knownBefore = new LinkedHashSet<>(pageNamesWhenWritten.values());
-
-            knownBefore.addAll(pageIdToName.values());
-
             try
             {
-                // Through the same door load() uses, so the page-id translation happens once and here
+                // Through the same door load() uses, so the page-id translation happens once and here.
+                // The pages this layout does not have were taken out of `incoming` before the merge, so
+                // nothing read here belongs to one of them.
                 clearShared();
                 readShared(merged);
-
-                // ONLY THE PAGES THIS LAYOUT HAS (Adam, 2026-09-13: "keep only the pages, and alert
-                // the user").
-                //
-                // An export describes the exporter's railway, and the read above took every page it
-                // names.  On 2026-09-13 an export of his five-page railway went into a one-page layout,
-                // which then recorded five pages it will never have - and a page the setup knows and
-                // cannot load is exactly what `AutonomySession.save` refuses to tidy around, so every
-                // save declined and said so.  The settings the file carried for those pages were held
-                // for them as well, and written back on every save.
-                //
-                // Dropped here through `forgetHeldPages`, which removes a page's held settings and its
-                // recorded name together and is the only way this store does that.  Inside the try, so
-                // an import that cannot be finished is rolled back whole rather than half pruned.
-                List<String> notHere = new ArrayList<>();
-
-                for (String page : new ArrayList<>(pageNamesWhenWritten.values()))
-                {
-                    if (page == null || knownBefore.contains(page) || pageNameToId.containsKey(page))
-                    {
-                        continue;
-                    }
-
-                    if (!notHere.contains(page)) notHere.add(page);
-                }
-
-                if (!notHere.isEmpty())
-                {
-                    forgetHeldPages(notHere);
-
-                    pagesLeftOutOfLastImport.addAll(notHere);
-                }
             }
             catch (RuntimeException e)
             {
@@ -2148,6 +2147,54 @@ public class AutonomyCompanionStore
         }
 
         return filled;
+    }
+
+    /**
+     * One incoming shared field with everything naming a foreign page taken out (TDR-B4).
+     *
+     * A field is an object keyed by square, an array of squares or page ids, or a scalar.  An entry is
+     * dropped when its key or its value names one of the ids - `mentionsAny`, the same test
+     * `forgetHeldPages` uses.  The "pages" record is keyed by id, so it is filtered by key alone.
+     *
+     * @param value the field as the file carries it
+     * @param foreignIds the file's ids for pages this layout does not have
+     * @param pagesRecord whether this is the "pages" record
+     * @return a filtered copy, or the value itself when there is nothing to take out
+     */
+    private Object withoutPages(Object value, Set<String> foreignIds, boolean pagesRecord)
+    {
+        if (foreignIds.isEmpty()) return value;
+
+        if (value instanceof JSONObject)
+        {
+            JSONObject src = (JSONObject) value;
+            JSONObject keep = new JSONObject();
+
+            for (String key : src.keySet())
+            {
+                boolean foreign = pagesRecord ? foreignIds.contains(key)
+                    : mentionsAny(key, foreignIds) || mentionsAny(src.get(key), foreignIds);
+
+                if (!foreign) keep.put(key, src.get(key));
+            }
+
+            return keep;
+        }
+
+        if (value instanceof JSONArray)
+        {
+            JSONArray src = (JSONArray) value;
+            JSONArray keep = new JSONArray();
+
+            for (int at = 0; at < src.length(); at++)
+            {
+                if (!mentionsAny(src.get(at), foreignIds)) keep.put(src.get(at));
+            }
+
+            return keep;
+        }
+
+        return value;
     }
 
     /**

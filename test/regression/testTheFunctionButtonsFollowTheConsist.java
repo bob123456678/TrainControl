@@ -256,10 +256,51 @@ public class testTheFunctionButtonsFollowTheConsist
 
         active.setAccessible(true);
 
+        // WAIT FOR THE WINDOW'S OWN RENDER, BEFORE AND AFTER (2026-09-14).
+        //
+        // `repaintLoc` returns without doing anything while an earlier render is still running, and the
+        // render itself goes to a worker and back through `invokeLater`.  So a `show` straight after
+        // another `show` - which is what `testTheWidenedButtonsCarryNoText` does after the all-MM2 claim
+        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 greyed
+        // for a consist that can drive it.  One pump of the event thread was never a wait for either.
+        waitForTheRender();
+
         active.set(ui, loc);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
 
+        waitForTheRender();
+    }
+
+    /** Until every render the window has queued is finished, and the event thread has run what they posted. */
+    @SuppressWarnings("unchecked")
+    private static void waitForTheRender() throws Exception
+    {
+        Field futures = TrainControlUI.class.getDeclaredField("locFutures");
+
+        futures.setAccessible(true);
+
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            boolean done = true;
+
+            synchronized (ui)
+            {
+                for (java.util.concurrent.Future<?> f
+                    : new java.util.ArrayList<>((java.util.List<java.util.concurrent.Future<?>>) futures.get(ui)))
+                {
+                    done &= f.isDone();
+                }
+            }
+
+            if (done) break;
+
+            Thread.sleep(20);
+        }
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 

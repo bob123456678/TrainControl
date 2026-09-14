@@ -602,6 +602,14 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             "the train was re-stood on the copy for its new facing and lost the side it came in by,"
             + " so the track its carriages are lying across stopped being blocked for exactly the"
             + " train that turned. Turning a train does not move its tail (REV9-B1)");
+
+        // AND THE ROUTE IT DROVE (TDR-B2).  A train that was driven here follows that route back past a
+        // junction (Adam, MT-335: "Follow its last route"), and this re-stand carried the side and not the
+        // route - so a train that turned lost it the moment the railway went idle.
+        assertNotNull(standing.getArrivedAlong(),
+            "the train drove here, turned, and was re-stood on the copy for its new facing WITHOUT the"
+            + " route it arrived along - so its tail stops at the first junction behind it instead of"
+            + " following the road it came in on (TDR-B2)");
     }
 
     private static Side sideNamed(String name)

@@ -24319,14 +24319,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     });
 
     /**
-     * Greys the return home button and says why.
-     *
-     * A dead control with a stale reason is worse than one with none: it answers a question the user
-     * did not ask and contradicts what they can see.
-     *
-     * @param reason
-     */
-    /**
      * The turning mark on Return Home while its plan is being worked out, or null (FR-077).
      *
      * A turning arc rather than the hourglass: the hourglass is the mark for a modal wait, and this is a
@@ -24436,6 +24428,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /**
+     * Greys the return home button and says why.
+     *
+     * A dead control with a stale reason is worse than one with none: it answers a question the user
+     * did not ask and contradicts what they can see.
+     *
+     * @param reason
+     */
     private void disableReturnHome(String reason)
     {
         this.returnHomeButton.setEnabled(false);

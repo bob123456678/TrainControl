@@ -269,7 +269,17 @@ public class testTheRoutePlayButton
             + "again - which lies the other way, telling the operator a slow route has finished when "
             + "pressing it again would still be refused");
 
-        assertFalse(code.contains("drawArc("),
+        // THE ROUTE CELL'S OWN PAINTING, not the whole window (FR-077).  The Return Home button turns an
+        // arc while its plan is worked out, on purpose and on a different control; what this guards is
+        // the route play button's spinner, which lived in the renderer that paints `paintingRoute`.
+        int renderer = code.indexOf("paintingRoute");
+
+        int rendererEnds = renderer < 0 ? -1 : code.indexOf("getTableCellRendererComponent(", renderer);
+
+        assertTrue(renderer >= 0 && rendererEnds > renderer,
+            "precondition: the route cell renderer could not be found, so nothing below looks at it");
+
+        assertFalse(code.substring(renderer, rendererEnds).contains("drawArc("),
             "the spinner arc is back; the button greys now instead");
     }
 

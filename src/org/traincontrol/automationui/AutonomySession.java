@@ -1488,6 +1488,12 @@ public class AutonomySession
         // Read from the copy it was ON, because that is the one the arrival wrote it to.
         final String tail = from == null ? null : from.getArrivedFrom();
 
+        // AND THE ROUTE IT DROVE, for the same reason (TDR-B2).  A train that was driven here follows that
+        // route back past a junction (Adam, MT-335: "Follow its last route"), and the clear below loses it
+        // exactly as it loses the side.
+        final java.util.List<org.traincontrol.automation.Edge> along =
+            from == null ? null : from.getArrivedAlong();
+
         // CLEARED FIRST, so the train is never on two copies of one square at once - which is the
         // state `DIR-C3` is about and which the checks report.
         for (org.traincontrol.automation.Point point : here)
@@ -1497,9 +1503,13 @@ public class AutonomySession
 
         onto.setLocomotive(train);
 
-        // Not overwritten where the destination copy already knows: a value written by an arrival on
-        // this very copy is the newer of the two.
-        if (tail != null && onto.getArrivedFrom() == null) onto.setArrivedFrom(tail);
+        // Put back unconditionally.  This used to decline where the destination copy "already knew", on
+        // the reasoning that an arrival on that copy wrote a newer value - but `setLocomotive` just above
+        // cleared both fields on it, because this train was not its occupant, so there was never anything
+        // newer to keep (TDR-B2).
+        if (tail != null) onto.setArrivedFrom(tail);
+
+        if (along != null) onto.setArrivedAlong(along);
     }
 
     /**

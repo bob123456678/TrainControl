@@ -390,6 +390,36 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
+     * And the route it drove comes with it, not only the side (TDR-B1).
+     *
+     * A train that was DRIVEN somewhere remembers the route it arrived along, and past a junction its tail
+     * follows that route rather than stopping at the fork (Adam, MT-333/MT-335, 2026-09-13: *"Follow its
+     * last route"*).  `standOnTheCopyItDidNotTurnOn` carried the side over, read before the move - and
+     * read the route AFTER it, when moving the train off the turning copy had already cleared it.  So
+     * every train that declined a turn at a may-turn square lost its route, and its tail stopped at the
+     * first junction again.
+     */
+    @Test(dependsOnMethods = "testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy")
+    public void testTheRouteComesWithIt()
+    {
+        Point plain = layout.getPoint("MT368_PLAINCOPY");
+
+        assertEquals(plain.getCurrentLocomotive(), loc,
+            "precondition: the train is not on the plain copy, so there is no route to check");
+
+        java.util.List<org.traincontrol.automation.Edge> along = plain.getArrivedAlong();
+
+        assertNotNull(along,
+            "the train was driven to the may-turn square, declined the turn, and was re-stood on "
+            + plain.getName() + " WITHOUT the route it drove - so its tail stops at the first junction"
+            + " behind it instead of following the road it came in on. Adam, MT-335: \"Follow its last"
+            + " route\" (TDR-B1)");
+
+        assertTrue(!along.isEmpty() && along.get(along.size() - 1).getEnd().isSamePlaceAs(plain),
+            "the route carried onto " + plain.getName() + " does not end at that square: " + along);
+    }
+
+    /**
      * A train that cannot reverse is not turned at a square where turning is optional.
      *
      * Adam, MT-368, 2026-09-13: **"I get the prompt, but I shouldn't because the train is not

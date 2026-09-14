@@ -4076,7 +4076,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks which squares hold this station back (FR-001).
      *
-     * A checklist of the other named points, rather than a picker of one: a station may be held back by
+     * A checklist of the other stations, rather than a picker of one: a station may be held back by
      * more than one place, and the question "which of these" is answered faster by reading a list than
      * by opening the same dialog repeatedly.
      *
@@ -4348,15 +4348,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Hands the next click on the diagram to this station's blocking list (FR-025).
-     *
-     * One method, because there are two doors into the same gesture - the checklist's button, and the
-     * "nothing is named yet" message that would otherwise be a dead end - and a gesture armed in two
-     * places is one that gets cancelled properly in only one of them.
-     *
-     * @param station the station being held back
-     */
-    /**
      * The Pick on the Diagram button as the "nothing to list" message shows it: present and greyed
      * (MT-376).  Its own method so a test can read what the operator is shown without a modal dialog.
      *
@@ -4384,6 +4375,15 @@ public class AutonomyEditorPanel extends JPanel
         return whyNotABlocker(station, tile);
     }
 
+    /**
+     * Hands the next click on the diagram to this station's blocking list (FR-025).
+     *
+     * One method, because there are two doors into the same gesture - the checklist's button, and the
+     * "nothing is named yet" message that would otherwise be a dead end - and a gesture armed in two
+     * places is one that gets cancelled properly in only one of them.
+     *
+     * @param station the station being held back
+     */
     private void armBlockerPick(TileKey station)
     {
         // In the deep menu the diagram is not this panel's to be clicked on - the same reason the
