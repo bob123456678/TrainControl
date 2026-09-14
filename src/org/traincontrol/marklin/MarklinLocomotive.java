@@ -1350,6 +1350,7 @@ public class MarklinLocomotive extends Locomotive
      *
      * @return the largest function count in this consist, including the head's own
      */
+    @Override
     public int drivableFunctionCount()
     {
         int most = this.getNumF();

@@ -107,6 +107,9 @@ public final class HomeStaging
      */
     private final Map<Edge, Locomotive> coveredAtStart;
 
+    /** The same, by place rather than by edge - what the shared-metal refusal is narrowed with. */
+    private final Map<String, Locomotive> placesCoveredAtStart;
+
 
     /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
     private final Set<String> launchPads;
@@ -125,6 +128,16 @@ public final class HomeStaging
         this.coveredAtStart = layout == null
             ? java.util.Collections.<Edge, Locomotive>emptyMap()
             : layout.edgesCoveredByStandingTrains();
+
+        // AND THE SAME SWEEP AT THE FINER GRAIN (PRW-B2).
+        //
+        // `edgesCoveredByStandingTrains` says WHICH edges a standing train's tail touches;
+        // `placesCoveredByStandingTrains` says which pieces of metal, and the runtime narrows its
+        // shared-metal refusal with it.  Taken here for the same reason as its coarser twin: asking
+        // the live layout during the search would be asking about a railway that has moved on.
+        this.placesCoveredAtStart = layout == null
+            ? java.util.Collections.<String, Locomotive>emptyMap()
+            : layout.placesCoveredByStandingTrains();
         this.homes = homes;
         this.stations = stations;
         this.sensorsSet = sensorsSet;
@@ -1035,10 +1048,66 @@ public final class HomeStaging
                 // SWITCH BOUNDS IT.  `Layout.roomAfterASwitchOnTheWay` carries the why - the short of
                 // it is that the walk's other stopping condition is the start of the route, which
                 // measures nothing and refused berths this planner could reach.
-                Integer room = next.equals(to) ? Layout.measuredRoomAtTheEndOf(route, loc)
-                    : Layout.roomAfterASwitchOnTheWay(route, loc);
+                if (next.equals(to))
+                {
+                    // AT THE DESTINATION, THE BERTH RULE AS WELL AS THE ROOM (PRW-B2 leg 3).
+                    //
+                    // Nothing asked `whyABerthCannotHoldIt` here, which is OB-073's shape: a plan that
+                    // sends a long train into a parking berth the runtime then refuses at the first
+                    // move, leaving the fleet half-staged.  Asked of the same static method
+                    // `isPathClear` asks, so the two cannot come to disagree - the pattern
+                    // `Point.heldBackBy` sets for FR-001.
+                    //
+                    // **AND THE PLATFORM RELAXATION, WHICH THE PLANNER USED TO MISS** (PRW-B2 leg
+                    // 2, Adam 2026-09-13: *"Do it."*).
+                    //
+                    // The room is still asked as `measuredRoomAtTheEndOf` rather than as the whole of
+                    // `whyTooLongForThisRoute`, and that was tried the other way first: the whole rule
+                    // also carries the station's stated capacity and the room test at EVERY square the
+                    // route runs through, so substituting it made this planner STRICTER than the
+                    // runtime it plans for and `core.testTrainsComeHomeToTheirPlatforms` came back
+                    // NO_PLAN_FOUND for all five trains, bisected.
+                    //
+                    // What was left open was the relaxation itself - a station autonomy may choose
+                    // takes a train as long as its whole approach - which the runtime allows and this
+                    // refused.  A planner stricter than the railway silently drops plans that would
+                    // have run, and nothing says so: the train simply stays where it is.
+                    //
+                    // So the relaxation was lifted out of `whyTooLongForThisRoute` into
+                    // `theApproachItselfHoldsIt` and both sides ask it.  One question, two callers -
+                    // the shape `whyABerthCannotHoldIt` already uses one line below.
+                    Integer room = Layout.measuredRoomAtTheEndOf(route, loc);
 
-                if (room != null && loc.getTrainLength() > room) continue;
+                    if (room != null && loc.getTrainLength() > room
+                        && !Layout.theApproachItselfHoldsIt(route, loc))
+                    {
+                        continue;
+                    }
+
+                    // THE STATION'S STATED CAPACITY IS NOT ASKED HERE, AND DOES NOT NEED TO BE.
+                    //
+                    // `whyTooLongForThisRoute` asks three things, and the reading that produced leg 2
+                    // was that this planner asked one of them.  It asks two: `canRest` ends with
+                    // `at.validateTrainLength(loc)`, so a home the operator has limited below the
+                    // train's length is refused before any route to it is searched.
+                    //
+                    // A copy of that test was added here on 2026-09-13 and taken out the same hour -
+                    // its own mutation caught it: deleting the new line changed no outcome, because
+                    // the rule was already enforced one call away.  A second spelling of a rule is
+                    // this project's most repeated defect, and one that agrees with the first today
+                    // is the kind that stops agreeing later.
+                    //
+                    // `core.testHomeStaging.testThePlannerRefusesAHomeTheOperatorSaidIsTooShort` pins
+                    // the behaviour wherever it is enforced from.
+
+                    if (Layout.whyABerthCannotHoldIt(route, loc) != null) continue;
+                }
+                else
+                {
+                    Integer room = Layout.roomAfterASwitchOnTheWay(route, loc);
+
+                    if (room != null && loc.getTrainLength() > room) continue;
+                }
 
                 String key = next.getUniqueId() + (turned ? "/turned" : "/straight");
 
@@ -1228,6 +1297,24 @@ public final class HomeStaging
                 if (onShared == null || onShared.equals(mover)) continue;
 
                 if (!sharing.getLockEdges().contains(edge)) continue;
+
+                // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (PRW-B2, OB-207).
+                //
+                // The runtime narrowed this to places on 2026-09-12 and the planner did not follow,
+                // so a plan declared impossible what the railway would have carried out - OB-207's own
+                // scenario, `Tunnel -> BottomMainA` past a one-unit tail twelve tiles away, was still
+                // IMPOSSIBLE to Return Home.  That is the direction this class must never take: "a
+                // proof may be looser than the search it guards, never tighter."
+                //
+                // `Layout.tailLiesOn` rather than a copy of it - the same method `isPathClear` asks,
+                // the pattern `Point.heldBackBy` sets for FR-001 - and the same fallback: both sides
+                // must be described in places or nothing is narrowed, so a configuration written
+                // before 3.0.0 keeps the whole-edge answer it always had.
+                if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
+                    && !Layout.tailLiesOn(edge, onShared, this.placesCoveredAtStart))
+                {
+                    continue;
+                }
 
                 lyingAcross = onShared;
 

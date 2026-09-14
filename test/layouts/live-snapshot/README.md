@@ -76,6 +76,8 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testACompulsoryTurnIsNotAQuestion`
 - `regression.testTheArrowsKeepTheirAim`
 - `regression.testAPlacedTrainRecordsWhereItCameFrom`
+- `core.testAPasteDoesNotTurnTheTrainRound`
+- `core.testAStationsSizeIsAnAllowance`
 - `core.testAPastedTrainKeepsItsDirection`
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`
@@ -103,3 +105,10 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `ui.testTheGreyAppearsAtIdleToo`
 - `ui.testTheShadingIsRedrawnWhenATrainMoves`
 - `ui.testTheTrainIsShownAsALine`
+- `core.testAShortTrainDoesNotBlockTheWholeRun`
+- `core.testALegacyImportMatchesTheFileItCameFrom`
+- `core.testAnImportDoesNotSwitchYourRoutesOff`
+- `regression.testARememberedNoneOpensWithTheCaptionsOff`
+- `core.testABerthAndAPlatformJudgeAnOverhangDifferently`
+- `core.testAMayTurnStationIsNotATerminus`
+- `core.testWhatCountsAsAParkingSquare`

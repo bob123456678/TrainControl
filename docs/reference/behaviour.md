@@ -529,6 +529,33 @@ way a train ends up facing is decided by the track between the two platforms and
 off — one that leaves southbound round a loop is northbound one square away. A square with one copy
 has one answer, which at a terminus is the reversal.
 
+**The walk answers with the nearest copy a train could be STANDING on**, and the same paste twice
+gives the same railway. Both halves of that were untrue until 2026-09-12, and the two compounded:
+`Layout.getNeighbors` shuffles on purpose - *"Randomize order to allow for variation in paths"*, which
+is right for autonomy picking a journey - and the walk answered with the first copy it touched, so on
+a square trains may turn round at, where the plain copy and the turning copy are always the same
+distance away and face **opposite** ways, the shuffle chose the direction. Measured on the frozen
+snapshot: 2-8-4 3505 SP put down on BottomMainB faced east 21 times out of 40 and west the other 19
+(Adam, MT-377: *"When 2-8-4 is pasted, it should always face east. Does it?"*).
+
+So the walk runs to the end and the distances decide - breadth-first measures those correctly through
+any expansion order - and the tie at the nearest distance goes to the copy a train would simply be
+standing on. **Putting a train down is not a decision to reverse it**; the turning copy IS that
+decision, and the facing menu is where an operator makes it. A compulsory turn emits no plain copy, so
+there is nothing to prefer and its turning copy is still the answer, which is Adam's *"for terminuses,
+they must reverse on paste"* falling out of the same rule rather than bolted beside it.
+
+This is the fourth site of one confusion: a may-turn square's turning copy is emitted with
+`terminus: true`, so `isTerminus()` cannot tell it from a real terminus (OB-205 claims 1-3, MT-368).
+
+**Where there is no path**, the heading the train already has is kept if the landing can hold it, and
+otherwise the first copy it could depart from is taken. Adam's 2026-09-06 wording for that arm was
+*"pick randomly from the allowed departure destinations"*, on the reasoning that nothing in the
+situation determines an answer; it is superseded by his ruling of 2026-09-12 - *"as long as the
+direction isnt flipped (which it was before)"* - because something does determine one, and a
+placement that answers differently each time it is repeated is drift (*"in all your simulations, state
+should never drift"*, 2026-09-07).
+
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
 
@@ -542,12 +569,87 @@ Only a **may-reverse** square can be dismissed. Everywhere else the side is work
 asked, so no answer means "there was nothing to record" rather than "the operator said no" — treating
 the two alike would refuse every paste onto plain track.
 
+**And a may-reverse square asks a second question: which way the train should face.**
+
+> *"If pasting at a 'may reverse' square, ask what direction the train should face."* - Adam,
+> 2026-09-13
+
+The two questions are about different things and only that square needs both. **Where the tail lies**
+is where the train came in from; **which way it faces** is where it will go next. On any other square
+the second follows from the first, and the walk answers it: a train is driven from where it stands to
+where it is being put down, and the copy it arrives on says which way it points. At a may-reverse
+square turning round is the point of the place, so both headings are reachable and the walk's answer is
+whichever copy it happened to land on.
+
+The headings offered are the ones the square can hold, deduplicated - a square with three copies facing
+east offers east once - and a square that can hold only one heading asks nothing. The walk's own answer
+is the default. A dismissed question abandons the paste exactly as the first one does, and the answer
+given is what is written: the choices offered were the square's own, so there is nothing left to
+filter.
+
+### What counts as a parking berth
+
+> *"For now, we consider anything with autodestination=false and only one way in/out as a parking
+> square. We can revisit dedicated marking if this doesn't work out with clean logic, or if it gets
+> too confusing to the user to manage."* - Adam, 2026-09-13, ruling on FR-060
+
+Two facts, and neither is enough alone. **Autonomy will not choose it** says the operator is keeping
+the square for himself, which is true of a berth and of a platform he wants to dispatch by hand.
+**One way in and out** says the track is a dead end, which is true of a berth and of a headshunt.
+Together they are what FR-060 wanted a fourth designation for, so there is nothing to mark and nothing
+to migrate. Measured on his railway the day of the ruling: 20 stations carry `autoDestination: false`
+and 12 of them are berths by this test.
+
+Counted in **squares**, not copies: a square split into a northbound and a southbound Point is one
+place with one way out, and a neighbour reached by two copies is one neighbour.
+
+**This is not the berth rule's gate.** "A berth may not block another road" (5b) applies wherever
+autonomy will not choose the square, which is deliberately wider - the example Adam ruled it on has
+three ways in and is not a parking berth by the test above. The two questions stay separate.
+
 **A paste onto a square no train could leave is refused**, naming the square, from both doors. The
 right-click menu had always greyed the item; the diagram drop said nothing and did it anyway
 (Adam, MT-136). The question is asked of the square rather than of one arbitrary copy, since the paste
 itself walks to a copy that can depart.
 
 ---
+
+## 4a. Station captions: a readout, not a name plate
+
+Adam, 2026-09-13: *"nothing seems to happen when I say 'show a different station here', is it meant to
+reset the label?  we should make it clear what this does."*  He had been using the feature for weeks;
+that the question could be asked at all is the reason this section exists.
+
+**A caption is a square that shows the live state of a station somewhere else on the diagram.**  It is
+not a label naming the square it sits on.  What it draws changes as the railway runs:
+
+| what the pill shows | what it means |
+|---|---|
+| a locomotive's name | that train is standing at the station |
+| an em dash | the station is empty |
+| an arrow | a train is passing through without stopping, pointing the way it is going |
+| three bullets | passing through, and the graph cannot say which way - an unsplit station, or a copy with no recorded facing |
+| a dark fill behind the name | a home locomotive that is NOT at its home |
+
+**A station square always shows its own station**, and the menu says so rather than offering a choice.
+Putting another platform's name on a platform is a mistake with no upside, and a list with the
+square's own name buried in it is a question whose answer is already known.  The item on such a square
+is present but disabled, with the reason on its tooltip - present rather than hidden, because a menu
+item that vanishes answers "what does this do" by refusing to say.
+
+**One station, one caption.**  Pointing a new square at a station clears the old one, so the diagram
+never names the same station twice with nothing to say which is current.
+
+**A caption may sit on blank space, and it may not sit under your own text.**  Text you have written
+on a square wins, so a caption there would be invisible; the editor says so and offers to replace it
+rather than doing so silently.  Deleting the square a caption sits on takes the caption with it, and
+deleting the STATION takes every caption naming it - text pointing at track that no longer exists is
+the orphan this design removed.
+
+**Why a station with no train reads as an em dash and not as its name**: the caption is about the
+station's state, and "empty" is a state.  That is also why an unlabelled square captioning an empty
+station tells you nothing about which station it is, which is what FR-014 was raised about - the menu
+names it in the "Stop Showing" item, and the tooltip explains the rest.
 
 ## 5. Length: will the train fit?
 
@@ -650,6 +752,44 @@ The rest of this section is about the **first** rule.
 - **The total across the stretch is what counts**, not any single tile: 2 + 2 admits a four-unit
   train, 1 + 2 does not.
 
+#### A train may overhang the points at a station, and may not at a parking berth
+
+> *"we need a clear rule to govern that this is OK, or simply make a rule that parking berths cant
+> block any other edges, but not make that check for active stations."* — Adam, 2026-09-12
+
+The rule above measures the room **past the last switch**, so a train longer than that stretch is
+refused because it would come to rest across the points. Adam's worked example: an approach measuring
+6 with a switch in the middle and 3 either side. A six-unit train there necessarily stands on the
+points — no distribution of the measurements changes that — and he rules it acceptable.
+
+**What decides is how long the train stays.**
+
+- At a **station autonomy may choose**, a train is PASSING. It fits if it fits past the last switch,
+  as above, **or** within its own approach. The bound is the approach's own length, so a train longer
+  than the whole run in is still refused: its tail would lie back over the edge before it, where
+  nothing has been measured.
+- At a **parking berth** — a square with *Can Be Chosen In Full Autonomy* off — a train is STAYING,
+  and a berth is not worth a road. On top of the room rule it must foul no track that is not a way in
+  or out of its own square. Its own roads are excluded because the train being there blocks them
+  anyway, and *"its own"* means the SQUARE: a split platform is several Points and one piece of track.
+
+**What this spends, said plainly.** A train standing at a platform across the points closes the roads
+through them while it is there. Measured on Adam's railway, a train at BottomMainA long enough to
+reach the switch closes both ways to the lower level and 33 ordered pairs of stations stop being
+reachable from one another. That is a STRANDING cost, not a collision one: since `OB-207` a standing
+train's tail claims the places it lies on and no route is cleared over them, so nothing can be sent
+into the overhang. The berth half is where the cost is refused, because a parked train pays it all
+evening.
+
+**A train that turns round at the destination is not excluded** from the relaxation. It stands there
+for the same reason and for the same time; what it does on departure is another journey.
+
+**Both halves are only as good as the measurements.** An unmeasured tile costs a tail nothing, so on
+unmeasured track a short train is modelled as lying across many tiles. Where an approach carries no
+places, or no length, both halves fall back to the answer 5a already gives.
+
+`core.testABerthAndAPlatformJudgeAnOverhangDifferently` is the test, on Adam's own two squares.
+
 ### 5b. What "unmeasured" means
 
 > *"You need to measure total distance between points, not validate that every edge has a length > 0.
@@ -682,6 +822,21 @@ The rest of this section is about the **first** rule.
   locking at the switch and call it a day."* One way back means the tail certainly lies there;
   several means the graph cannot say which.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
+- **The square the train is standing on is an allowance, not track it lies over.** Adam, 2026-09-13:
+  *"if the segment length is shorter, more should be blocked. The station size is an allowance, not a
+  length."* What a station measures is how much train it may HOLD - the question
+  `whyTooLongForThisRoute` asks - so a 2-unit train at a platform measured 10 still lies back over the
+  track behind the platform, and that track is still blocked. The square is claimed (the train is on
+  it) and its measurement is not spent, in the places budget and in the hop budget alike. Before this
+  a generously measured platform absorbed the whole of any train standing at it and blocked nothing
+  behind it, however long the train was. The berth rule reads the same square the same way, and the
+  two are written to agree rather than being one piece of code - which is where SEV-B1 and SVX-B1 both
+  came from, in opposite directions.
+- **The first hop takes the copy of the rail the train ARRIVED along** (SVZ-B1). A piece of rail is two
+  edges, one per direction, and at a berth both can report the same way in. An edge's places are the
+  path plus the square it arrives at, so only the arriving copy carries the square the train is on -
+  and taking the other one left that square claimed by nobody, at some stations and not at others.
+  Where there is no arriving copy - a square a train has been turned on - the other is still used.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
 - **And the track it shares metal with is closed too, which is the anti-collision rule at a switch.**
   Adam, 2026-09-07: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
@@ -696,6 +851,21 @@ The rest of this section is about the **first** rule.
   `core.testACoveredSwitchClosesTheOtherRoad` is the test that goes red when the rule is removed —
   it needs a turnout to express, so it runs on `test/layouts/single-switch`; the two older
   covered-track classes stayed fully green with the rule disabled (AUT9-B2).
+- **But only over the part of it the train is actually lying on** (Adam, OB-207, 2026-09-12: *"75 407
+  DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of
+  one). An edge was covered whole or not at all, so a one-unit train parked at the end of a
+  twelve-tile run fouled every road sharing any tile of it, and a station beyond it became
+  unreachable from anywhere. The build now writes each edge's **places** — the location identifiers
+  the lock relation is itself derived from, in order, each with what it measures — the tail walk
+  spends the train's length across them, and the shared-metal rule asks whether the tail lies on
+  metal *this* edge runs over. Adam proposed it as extra nodes at the switches; the places are the
+  same information without inventing a Point that has no sensor.
+  - The **direct** case stays whole-edge on purpose: a path uses all of its own edges, so a tail
+    anywhere on one is in the way. Only a **shared** edge can be touched at one end and no further.
+  - An edge with no places — a hand-written configuration, or one written before 3.0.0 — keeps the
+    whole-edge answer.
+  - `core.testAShortTrainDoesNotBlockTheWholeRun` is the test, with a control that a train long
+    enough to reach the shared metal still blocks it.
 - **Two marks, and they say different things** (Adam, 2026-09-09: *"'train is here' should also mean
   'track is blocked' - that is the whole point. it's the same as greying out edges, just in a
   different way."*). A square with **orange** on it is where a train IS. A square that is **grey and

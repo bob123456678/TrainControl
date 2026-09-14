@@ -851,7 +851,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // now in `PositionAwareJFrame`'s static initialiser, which runs before this class is ever
         // instantiated; `init` asks as well, for the case where no window is built at all.
         initComponents();
-        
+
+        // THE LOG IS SOMETHING TO READ (Adam, MT-362).
+        //
+        // *"Works, but the user should not be allowed to type anything into the log."*  A JTextArea is
+        // editable by default, so clicking in it and typing put text among the program's own messages -
+        // which then scrolls away with them and reads, later, like something TrainControl said.
+        //
+        // Set here rather than in the form: `debugArea` belongs to the generated block, and the next
+        // form change would overwrite anything put there.  The same rule every other property this
+        // window sets by hand follows.
+        //
+        // Editable is not the same as selectable: the text can still be selected and copied, which is
+        // what anybody actually wants from a log.
+        this.debugArea.setEditable(false);
+
         // Set internationalized options
 
         // THE UTILITIES MENU HEADING, set here rather than in the form.
@@ -2487,10 +2501,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (wouldCapture && setupEditDeclinedDuringRun)
         {
-            this.model.log("Where each locomotive finished has not been saved, because a setup edit"
-                + " made while autonomy was running could not be applied at the time.  Saving would"
-                + " have written the older layout back over that edit.  The edit itself is safe and"
-                + " will be there next time.");
+            this.model.logf("autosetup.log.placementsNotSaved");
         }
         else if (wouldCapture)
         {
@@ -2899,8 +2910,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (!editorOpen && session.revertUnfinishedEdit())
             {
-                this.model.log("The last layout edit did not finish; the autonomy setup has been put "
-                    + "back to how it was before it started");
+                this.model.logf("autosetup.log.unfinishedEditReverted");
             }
             else if (!editorOpen && session.unusableEditNote())
             {
@@ -2908,8 +2918,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // is kept - it belongs to whichever build wrote it, and a newer one will want it -
                 // so without this line it is refused again at every start and nothing ever mentions
                 // the file.
-                this.model.log("A record of an unfinished layout edit could not be used and has been "
-                    + "left in place: config/autonomy/setup-before-edit.json");
+                this.model.logf("autosetup.log.unfinishedEditNoteUnusable");
             }
 
             // AND THE PAGES IT DID REWRITE, which is the half that was silent (RGN-B1).
@@ -2933,12 +2942,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The setup is saved before any page is written, so a page whose write throws has
                 // its captions in the setup and its labels still on disk.  The count follows the
                 // writes - which is right - and so it belongs to the clause about the writes.
-                this.model.log("Station names written on the track diagram by an earlier version have"
-                    + " been taken into the autonomy setup and removed from these pages: "
-                    + String.join(", ", session.getMigratedPages())
-                    + " (" + session.getMigratedCaptions() + " name(s) in all)"
-                    + ".  Each of those pages has a .bak file beside its own .cs2, holding the"
-                    + " page as it stood the first time this version rewrote it");
+                this.model.logf("autosetup.log.captionsMigrated",
+                    String.join(", ", session.getMigratedPages()),
+                    session.getMigratedCaptions());
             }
 
             // Captions written into the layout file by an earlier version are brought into the setup
@@ -4216,24 +4222,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // valid" left the tab open with no configuration behind it.
         //
         // On the diagram path the question is whether a configuration is RUNNING.
-        // OR THERE IS NO DIAGRAM SETUP TO LOAD, which is what an upgrading user has (RGN-A2).
         //
-        // Adam asked for a test of this - "make a test case for this.  in my testing, it loaded OK" -
-        // and the test reproduces it: a LOCAL layout with an `autonomy.json` beside it and no diagram
-        // configuration at all greyed the Auto tab, which is the tab that holds the thing that user
-        // has been running for a year.
+        // AND THE LEGACY USER'S TAB STAYS SHUT UNTIL THEY IMPORT (Adam, 2026-09-13, MT-244).
         //
-        // The two halves that were here are both right and neither covers him.  A session exists,
-        // because the layout is local; no configuration is active, because there are none to activate.
-        // So `loaded` was false and the tab went out.
+        // A third clause used to open it for them - `getConfigurationNames().isEmpty()`, added under
+        // RGN-A2 on the reasoning that a setup with no configurations is the JSON path and is "loaded
+        // by definition", so an upgrading user would otherwise lose the tab holding the thing they
+        // had been running for a year.
         //
-        // The state this question is really about is "a valid graph with nothing behind it" - a blank
-        // default, or one left over from another layout - and that state has configurations to choose
-        // from.  A setup with NO configurations is the JSON path, and it is loaded by definition:
-        // `valid` above is what says so.
+        // **The premise of that has since stopped being true.**  Nothing at start-up parses or
+        // activates `autonomy.json` any more: the only two `parseAuto` callers in `src` are the
+        // diagram path and the Validate button on the JSON tab itself.  So the tab is not standing
+        // between that user and a running railway - there is nothing running - and leaving it open
+        // offers a route into a model the rest of the application has moved off.
+        //
+        // Asked and answered rather than inferred.  Adam, given both readings: *"The tab should stay
+        // shut until they import."*  The import is the way across, and `testTheRoutingChoiceSurvivesTheUpgrade`
+        // holds what it carries over.
         boolean loaded = getAutonomySession() == null
-            || this.activeDiagramConfiguration != null
-            || getAutonomySession().getStore().getConfigurationNames().isEmpty();
+            || this.activeDiagramConfiguration != null;
 
         // AND the layout has to be on this computer (OB-104).
         //
@@ -4467,11 +4474,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // on the next start would put back a locomotive the database no longer has.
             if (session.getStore().didTheNoteRepairFail())
             {
-                this.model.log("A record of an unfinished layout edit could not be updated for the"
-                    + " renamed locomotive, so it has been left naming the old one:"
-                    + " config/autonomy/setup-before-edit.json.  If TrainControl is restarted before"
-                    + " that edit is finished, the setup it puts back will name a locomotive that no"
-                    + " longer exists - delete that file to prevent it.");
+                this.model.logf("autosetup.log.noteRepairFailed");
             }
 
             session.getStore().save();
@@ -6255,10 +6258,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
-            this.model.log("A setup edit could not be applied to the running railway, because"
-                + " autonomy started between the edit and the moment it was to be applied.  The edit"
-                + " IS saved - stop autonomy and make it again to have it take effect now, or it will"
-                + " be picked up the next time the setup is loaded.");
+            this.model.logf("autosetup.log.setupEditNotApplied");
         }
 
         // AND THE SECOND HALF OF THAT PROMISE HAS TO BE MADE TRUE (ACC-B3).
@@ -6748,6 +6748,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 : getAutonomySession().facingByPath(this.model == null ? null
                     : this.model.getAutoLayout(), placing.getName(), aimed);
 
+            // A CUT TRAIN KEEPS THE HEADING IT WAS CUT WITH (Adam, MT-368, 2026-09-13).
+            //
+            // The walk above cannot answer for it - Control+X took it off the railway, so there is
+            // nowhere to walk from - and what it returns is the no-path arm's guess, made from a setup
+            // that predates the run.  The clipboard knows better: it recorded the heading at the
+            // moment of the cut.
+            //
+            // Only where the landing can HOLD it, which is Adam's rule for every other placement
+            // (`facingAfterAPaste`, MT-377: *"as long as the direction isnt flipped"*); where it
+            // cannot, the walk's answer stands and the facing menu asks.
+            //
+            // Only for the train on the clipboard, so an ordinary drag of a train that is still on the
+            // railway keeps the walked answer - which is the better one, because that walk really can
+            // say where the train would end up.
+            // AND ONLY WHILE IT IS ACTUALLY OFF THE RAILWAY (SVV-C5).
+            //
+            // `placing == this.cutLocomotive` is true for as long as the clipboard is loaded, and the
+            // cut train can be put back by another door in between - the placement menu, a drag, the
+            // editor.  Once it is standing somewhere again the walk CAN answer, and its answer is the
+            // better one; preferring the remembered heading there would be exactly the stale reading
+            // this fix was written to remove, pointing the other way.
+            //
+            // The condition the comment above always meant is "the walk had nowhere to start", and
+            // that is a question about the railway rather than about the clipboard.
+            boolean stillLifted = this.model == null || this.model.getAutoLayout() == null
+                || this.model.getAutoLayout().getLocomotiveLocation(placing) == null;
+
+            if (this.cutFacing != null && placing == this.cutLocomotive && stillLifted
+                && getAutonomySession() != null
+                && getAutonomySession().facingsFor(aimed).containsValue(this.cutFacing))
+            {
+                facingAtTheLanding = this.cutFacing;
+            }
+
             // AND WHERE ITS TAIL IS, ASKED BEFORE ANYTHING MOVES (Adam, 2026-09-07).
             //
             // **"Simply don't place the train, leave it on the clipboard as if no paste had been
@@ -6794,6 +6828,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return true;
             }
 
+            // AND WHICH WAY IT IS POINTING, WHICH IS A SECOND QUESTION HERE (Adam, 2026-09-13).
+            //
+            // *"If pasting at a 'may reverse' square, ask what direction the train should face."*
+            //
+            // The walk above answers the heading everywhere else: `facingByPath` drives the train to
+            // the landing square and the copy it arrives on says which way it points.  A may-reverse
+            // square is where that stops being a fact - turning round is what it is FOR, so both
+            // headings are reachable and the walk's answer is whichever copy it landed on.
+            //
+            // The same square, and only that square, is where the tail question above is asked, and
+            // for the same reason.  They are not the same question: one is the side the train came
+            // in by, the other the way it will leave, and a may-reverse square is exactly where one
+            // stops implying the other (behaviour.md 4).
+            //
+            // ASKED BEFORE THE MOVE, and a dismissal returns without moving anything - the rule Adam
+            // set for the first question: *"simply don't place the train, leave it on the clipboard
+            // as if no paste had been done."*
+            facingChosenAtTheLanding = null;
+
+            if (mayTurnHere(aimed) && getAutonomySession() != null)
+            {
+                java.util.Collection<org.traincontrol.automationui.TilePorts.Side> canHold =
+                    getAutonomySession().facingsFor(aimed).values();
+
+                if (org.traincontrol.gui.FacingPrompt.wouldAsk(canHold))
+                {
+                    facingChosenAtTheLanding = org.traincontrol.gui.FacingPrompt.forPlacement(
+                        canHold, facingAtTheLanding, point.getName(), this);
+
+                    if (facingChosenAtTheLanding == null) return true;
+                }
+            }
+
             // THE RAILWAY'S ANSWER DECIDES, HERE TOO (TWV-B4, after W21-B3).
             //
             // `isAutonomyBusy()` above closes the "autonomy started in between" door for this path, which
@@ -6812,11 +6879,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.cutLocomotive = null;
+
+            this.cutFacing = null;
         }
         else
         {
             // Remembered BEFORE the move, because moveLocomotive is what clears the square
             this.cutLocomotive = cut ? point.getCurrentLocomotive() : null;
+
+            // AND WHICH WAY IT WAS POINTING, for the same reason and one more (Adam, MT-368,
+            // 2026-09-13: *"when locomotive is cut and pasted, it goes back to its original facing
+            // pre-route."*).
+            //
+            // Control+X takes the train off the running layout, so by the time it is pasted
+            // `facingByPath` has nowhere to walk FROM: `walkTo` looks for the locomotive among the
+            // layout's Points and finds none.  Its no-path arm then asks the setup, which holds the
+            // placement as it stood before the run - the heading he watched it lose.
+            //
+            // This is the last moment anybody knows the answer, so it is taken here.  Read from the
+            // running layout rather than the setup, because a run moves trains and only the railway
+            // knows where they ended up (behaviour.md 6a).
+            this.cutFacing = !cut || getAutonomySession() == null ? null
+                : getAutonomySession().facingOf(
+                    point.getCurrentLocomotive() == null ? null
+                        : point.getCurrentLocomotive().getName(),
+                    this.model == null ? null : this.model.getAutoLayout());
 
             // AND THE HEADING FROM THE LAST DRAG GOES WITH IT (CONF-C3).  This branch clears a square
             // rather than filling one, so it leaves no heading behind - and a value left over from a
@@ -6875,6 +6962,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * returns in three places; threading it through would have meant touching each of them.
      */
     private org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
+
+    /**
+     * Which way the operator said the train should face, where they were asked (Adam, 2026-09-13).
+     *
+     * Null everywhere the question is not put - which is every square that is not a may-reverse one,
+     * and a may-reverse square with only one heading to offer. The write falls back to
+     * `facingAfterAPaste` there, which is what every paste did before this question existed.
+     *
+     * A field for the same reason `facingAtTheLanding` is one: the question and the write sit either
+     * side of a call that returns in three places.
+     */
+    private org.traincontrol.automationui.TilePorts.Side facingChosenAtTheLanding;
 
     /**
      * Levels the direction baseline whenever the railway is idle, so nothing is followed twice.
@@ -7576,8 +7675,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a
             // direction nobody had picked.  The heading is read before the move instead, in
             // `facingAtTheLanding`, and handed to the rule.
-            session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                session.facingsFor(tile), facingAtTheLanding, point.getName()));
+            // THE OPERATOR'S ANSWER WINS WHERE THEY GAVE ONE (Adam, 2026-09-13).
+            //
+            // `facingAfterAPaste` is the rule for a paste nobody was asked about: keep the heading
+            // the walk found where the landing can hold it, and MT-377's *"as long as the direction
+            // isnt flipped"* otherwise.  At a may-reverse square the question was put, so the answer
+            // is the heading - it needs no filtering, because the choices offered were the square's
+            // own.
+            session.setFacing(tile, facingChosenAtTheLanding != null ? facingChosenAtTheLanding
+                : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                    session.facingsFor(tile), facingAtTheLanding, point.getName()));
         }
 
         try
@@ -7599,6 +7706,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * would put one back on the keyboard rather than on the railway.
      */
     private Locomotive cutLocomotive;
+
+    /**
+     * Which way the cut locomotive was pointing when it was taken off the railway (MT-368).
+     *
+     * Held beside `cutLocomotive` because it is the same clipboard and has the same life: a train off
+     * the railway cannot be asked which way it faces, and the walk that answers that question for
+     * every other placement has nowhere to start for this one.
+     */
+    private org.traincontrol.automationui.TilePorts.Side cutFacing;
 
     public org.traincontrol.automationui.TileGraph.TileKey autonomyTileAt(
         String onPage, int x, int y)
@@ -12065,13 +12181,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     });         
                                 }
 
+                                // PAST THE HEAD'S OWN RANGE, THE CONSIST'S (Adam, MT-359, 2026-09-12).
+                                //
+                                // *"does it propagate to the UI check that determines which function
+                                // buttons are active?"*  It did not.  `setF` has accepted the whole
+                                // consist's range since the rule was built - an MM2 head with an MFX
+                                // member drives f6 through the member - and these buttons went on
+                                // offering the HEAD's range, so the function worked from a keyboard
+                                // shortcut, a route or autonomy and was greyed on screen.  The guard and
+                                // the affordance asking different questions is `OB-057`/`OB-090` again.
+                                //
+                                // **No icon and no function type for these**, on his word: *"It's ok if
+                                // those function types are default and the buttons show no icons if the
+                                // head is mm2."*  That is not a shortcut - `getFunctionType` and
+                                // `getFunctionIconUrl` read tables sized to THIS decoder, and the
+                                // warning at `getF` is about exactly that: a widened range reads past
+                                // the end of them.  What the button does is the member's business.
+                                //
+                                // **AND NO TEXT EITHER** (Adam, OB-213, 2026-09-13): *"For the buttons
+                                // on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print
+                                // 'F<x>' text labels on the function buttons - keep the label blank as
+                                // is the default."*
+                                //
+                                // The first cut wrote "F6" and so on into these, reasoning that a
+                                // button with neither icon nor text says nothing about itself.  It says
+                                // exactly what every other iconless function button on this window
+                                // says, which is the point: these are ordinary buttons whose decoder
+                                // has no picture for them, not a special kind that needs labelling.  A
+                                // number that appears on some buttons and not others reads as a
+                                // difference in KIND, and there is none.
+                                int drivable = this.activeLoc.drivableFunctionCount();
+
                                 for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
                                 {
-                                    this.rFunctionMapping.get(i).setVisible(true);
-                                    this.rFunctionMapping.get(i).setEnabled(false);
+                                    boolean theConsistCanDriveIt = i < drivable;
 
-                                    //this.rFunctionMapping.get(i).setText("F" + Integer.toString(i));
-                                    this.rFunctionMapping.get(i).setText("");                                    
+                                    this.rFunctionMapping.get(i).setVisible(true);
+                                    this.rFunctionMapping.get(i).setEnabled(theConsistCanDriveIt);
+
+                                    this.rFunctionMapping.get(i).setText("");
                                     this.rFunctionMapping.get(i).setIcon(null);
                                 }
 
@@ -12079,7 +12227,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 int currentFIndex = FunctionTabs.getSelectedIndex();
                                 
                                 // Hide unnecessary function tabs
-                                if (this.activeLoc.getNumF() < 20)
+                                // THE TAB FOLLOWS THE SAME NUMBER, or a consist that can drive f20
+                                // has no page to drive it from.
+                                if (drivable < 20)
                                 {
                                     FunctionTabs.remove(this.F20AndUpPanel);
                                 }
@@ -20503,7 +20653,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // is no longer in the database. Harmless in itself - it fails and logs - but it is the
                 // same shape as the five that were not harmless, and this is the door the source guard
                 // cannot see, because the holder is in the interface rather than in the layout.
-                if (l.equals(this.cutLocomotive)) this.cutLocomotive = null;
+                if (l.equals(this.cutLocomotive))
+                {
+                    this.cutLocomotive = null;
+
+                    // The heading goes with it, or a later cut of a DIFFERENT train would inherit it
+                    // where that train has none of its own.
+                    this.cutFacing = null;
+                }
 
                 // Every PAGE of mappings, not only the one on screen.
                 //
@@ -24141,12 +24298,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The blocked locomotives as a readable list, for the two outcomes that name any.
-     *
-     * @param blocked the locomotives, or null
-     * @return their names, comma separated
-     */
-    /**
      * The blocked locomotives with the station each of them could not reach (Adam, OB-206).
      *
      * *"when you say 'these locomotives cannot reach their home stations: <locomotive>', update the error
@@ -25275,9 +25426,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // is excluded in memory and not on disk, so the next load offers it to autonomy.
                     if (session.exists() && !session.saveQuietly() && this.model != null)
                     {
-                        this.model.log("Could not save the autonomy setup after combining pages, so"
-                            + " the new page may be offered to autonomy the next time the setup is"
-                            + " loaded.");
+                        this.model.logf("autosetup.log.saveFailedAfterCombine");
                     }
                 }
 

@@ -237,9 +237,26 @@ public class testTimetableCaptureThroughARealRun
         // with that, which is to say they were not.
         //
         // Only on the failing path, so the passing one still costs nothing.
-        String why = moved ? "" : whyNothingMoved(layout);
+        String why = moved ? "" : whyNothingMoved(layout, "with autonomy still running");
 
         layout.stopLocomotives();
+
+        // AND AGAIN WITH IT STOPPED, because the running answer is a SUBSTITUTION (MT-374).
+        //
+        // `explainDestinations` replaces the real reason with "Blocked by a train or a route in
+        // progress" whenever `isAutoRunning()`, and says why in its own comment: the reason it would
+        // otherwise quote comes from a static that every running locomotive's thread writes, so a
+        // message read while trains move can belong to a different train's candidate route.  The
+        // DECISION is sound and only the wording is untrustworthy - which is right for an operator
+        // and useless for a diagnosis.  The battery of 2026-09-13 failed here with all three
+        // destinations "blocked" on a railway holding ONE train, and named nothing to look at.
+        //
+        // So both are printed.  The comment above still stands - several of `explainCannotStart`'s
+        // rules are fenced on `isAutoRunning` and answer about the stopped railway once it stops - and
+        // that is why this is a SECOND reading rather than a replacement for the first.
+        if (!moved) why = why + whyNothingMoved(layout, "after being stopped, so the real refusal is"
+            + " no longer substituted - but the rules fenced on isAutoRunning now answer about a"
+            + " stopped railway");
 
         assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
             + "nothing was declined and nothing is proved." + why);
@@ -264,11 +281,14 @@ public class testTimetableCaptureThroughARealRun
      * specification, and a test that pinned those strings would fail whenever the wording improved.
      *
      * @param layout the railway that would not move
+     * @param when which reading this is - running or stopped - because the two do not agree and a
+     *        reader has to know which one they are looking at (MT-374)
      * @return the reasons, ready to append to a failure
      */
-    private String whyNothingMoved(Layout layout)
+    private String whyNothingMoved(Layout layout, String when)
     {
-        StringBuilder why = new StringBuilder("\n  What the railway says about each train:");
+        StringBuilder why = new StringBuilder("\n  What the railway says about each train, " + when
+            + ":");
 
         try
         {
@@ -303,6 +323,24 @@ public class testTimetableCaptureThroughARealRun
             }
 
             why.append("\n  Auto running: ").append(layout.isAutoRunning());
+
+            // AND WHETHER THIS IS THE LAYOUT THAT WOULD DISPATCH (MT-374).
+            //
+            // `loadedConfiguration` says why this can be false: "Layout's version counter is static
+            // and every construction retires the earlier instances - a retired Layout refuses to
+            // dispatch, SILENTLY".  A test watching a retired instance sees a railway that is running,
+            // has trains, has open destinations, and never moves - which is exactly the failure this
+            // method is called for, and nothing printed above can tell it from a busy machine.
+            //
+            // Measured with a probe on 2026-09-12: on this fixture, stopped, all destinations are
+            // open and a dispatch happens within three seconds.  So "nothing moved in 480 seconds" is
+            // not the railway refusing; the question is which object was asked.
+            why.append("\n  This layout is the one the model holds: ")
+                .append(model != null && model.getAutoLayout() == layout);
+
+            why.append("\n  Active on it: ").append(layout.getActiveLocomotives());
+
+            why.append("\n  Trains it would run: ").append(layout.getLocomotivesToRun());
         }
         catch (RuntimeException e)
         {
@@ -385,9 +423,46 @@ public class testTimetableCaptureThroughARealRun
 
         emptyTheRailway(layout);
 
+        clearTheSensors(layout);
+
         putOneTrainOn(layout);
 
         return layout;
+    }
+
+    /**
+     * Puts every sensor back to clear, which is the other half of starting from a known railway.
+     *
+     * **This is what made the class fail four batteries** (MT-374).  `emptyTheRailway` puts the trains
+     * back and nothing put the SENSORS back, so a feedback left occupied by the run in the test before
+     * this one stayed occupied - and a destination whose approach expects it clear is then shut for
+     * ever.  Measured on 2026-09-13, once the diagnostic could say so:
+     *
+     *     Station 2 = Expects feedback 5 to be clear
+     *     Station 3 = Expects feedback 5 to be clear
+     *     StationArrival = Expects feedback 5 to be clear
+     *
+     * One train on an empty railway, every destination shut, and 480 seconds of waiting to say so.
+     *
+     * **And it is load-dependent for a reason rather than by luck**, which is what the entry could not
+     * work out: whether the first run leaves a sensor set depends on where its trains had got to when
+     * it was stopped, and that depends on how fast the machine was going.  On a quiet machine the run
+     * finishes its legs and the sensors end clear; on a busy one it is cut off mid-leg.
+     *
+     * Every sensor the RAILWAY knows about, rather than every sensor in the model: this fixture shares
+     * a locomotive database with the rest of the suite, and clearing sensors that belong to somebody
+     * else's fixture would be the same fault pointing the other way.
+     *
+     * @param layout the freshly parsed railway
+     */
+    private static void clearTheSensors(Layout layout)
+    {
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getS88() == null) continue;
+
+            model.setFeedbackState(point.getS88(), false);
+        }
     }
 
     /**

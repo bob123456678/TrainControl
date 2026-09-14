@@ -1447,15 +1447,37 @@ public final class LayoutLabel extends JLabel
             // covers only the rails it claims - and where the two do meet, the path a train is
             // actually taking is the more urgent of the two: the arrows say what is permitted, which
             // is worth reading while a layout is being set up rather than while it is running.
-            if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
+            // TOLD WHETHER THE TILE IS ALREADY FAINT (Adam, OB-212).
+            //
+            // `refused` is what drew the art at `BLOCKED_ALPHA` above.  The annotation lays a wash of
+            // its own under its arrows, and on a square that has already been faded the two compound -
+            // *"keep one level of opacity, dont stack."*
+            // THE REGION ALREADY FADED, not merely whether any of it was (PRW-C1).
+            //
+            // On a double curve `theRoadToFade` fades one road and leaves the other alone, so passing
+            // a tile-wide "yes" made the annotation skip the wash under BOTH roads' arrows - the
+            // uncovered road losing a mark it should have had.  The shape says which part is already
+            // faint; on every other square it is the whole tile and nothing below changes.
+            java.awt.Shape faded = !refused ? null
+                : (theRoadToFade() == null
+                    ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : theRoadToFade());
+
+            if (annotation != null) annotation.paint(g2, getWidth(), getHeight(), faded);
 
             // Told where the track runs, so a run that ENDS here stops on the rail rather than in the
             // middle of the square (OB-026).  The annotation is the only thing that knows: it holds the
             // sides this tile's route uses, and it is already what places the badges.
             if (overlay != null)
             {
+                // TOLD WHETHER THE TILE IS ALREADY FAINT (Adam, MT-375).
+                //
+                // `refused` is what drew the art at `BLOCKED_ALPHA` above.  The overlay pales out
+                // track a route is holding, and on a square that is both blocked and held the two
+                // compound - which is the tone difference Adam can see between two neighbouring
+                // squares.  His ruling on MT-373 is that one grey covers both reasons.
                 overlay.paint(g2, getWidth(), getHeight(),
-                    annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
+                    annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()),
+                    faded);
             }
 
             // And the badge back on top of the line (MT-076).
@@ -1511,8 +1533,15 @@ public final class LayoutLabel extends JLabel
      * and the one strongly coloured line on an ordinary diagram: the greens and reds already mean
      * "trains may run this way" and "they may not", and yellow is the transient flash for something
      * that has just been switched. Orange is not spoken for.
+     *
+     * **The SAME orange the diagram already uses for a square autonomy does not choose** (Adam,
+     * 2026-09-12: *"make the orange of the lines match the orange of inactive stations"*).  That is
+     * `TileAnnotation.POINT_INACTIVE`, which is itself the graph window's own inactive colour - so the
+     * value is copied from there rather than picked again, and one orange now means one thing across
+     * three views.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
+     * reads as two colours that were each meant to be something.
      */
-    public static final Color TRAIN_MARK = new Color(255, 140, 0);
+    public static final Color TRAIN_MARK = new Color(255, 102, 0);
 
 
     /**

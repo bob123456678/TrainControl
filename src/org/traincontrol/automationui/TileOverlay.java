@@ -453,6 +453,55 @@ public class TileOverlay
      */
     public void paint(Graphics2D g, int width, int height, int[] trackCentre)
     {
+        paint(g, width, height, trackCentre, false);
+    }
+
+    /**
+     * The same, told whether the tile underneath has already been drawn faint (Adam, MT-375/OB-212).
+     *
+     * *"I still see two levels of fade when a train locks the same section a second time, i.e. if
+     * sending a train to bottommainb with the current bottommaina occupancy.  You can see the
+     * difference in the tone of 13,11 and 13,12."*
+     *
+     * **This is the third wash that can land on one square, and the one he was actually looking at.**
+     * `LayoutLabel` fades the tile art where the railway refuses the square; `TileAnnotation` lays one
+     * under its arrows, which `OB-212`'s first fix silenced; and this one pales out track an active
+     * route is HOLDING.  A square that is both blocked by a standing train and locked by a route got
+     * two of them, which is the tone difference he can see between 13,11 and 13,12.
+     *
+     * **His ruling settles which gives way** (MT-373): *"greyed out means either edge locked or path
+     * blocked."*  One grey, for either reason - so the second wash is not drawn, rather than the two
+     * being blended into some third tone.
+     *
+     * @param g where to draw
+     * @param width the tile
+     * @param height the tile
+     * @param trackCentre where this tile's own rails meet, for a run that ends here
+     * @param alreadyFaded whether the caller has drawn the WHOLE tile faint already
+     */
+    public void paint(Graphics2D g, int width, int height, int[] trackCentre, boolean alreadyFaded)
+    {
+        paint(g, width, height, trackCentre,
+            alreadyFaded ? new java.awt.Rectangle(0, 0, width, height) : null);
+    }
+
+    /**
+     * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
+     *
+     * A double curve is two roads in one tile with no connection between them, and a train covers one
+     * of them - so "is this tile already faded" has no answer, and the boolean form had to pick one.
+     * It picked "yes", and the road with no train on it lost the wash a route holding it should have
+     * put there.
+     *
+     * @param g the brush
+     * @param width the tile's width
+     * @param height its height
+     * @param trackCentre where this tile's rails meet, for a run that ends here
+     * @param alreadyFaint the region already drawn faint, or null when none of it is
+     */
+    public void paint(Graphics2D g, int width, int height, int[] trackCentre,
+        java.awt.Shape alreadyFaint)
+    {
         if (isBlank()) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
@@ -472,7 +521,7 @@ public class TileOverlay
             // would read as track that was never claimed.
             Color outline = segments.isEmpty() ? colourOf(state) : null;
 
-            if (!segments.isEmpty()) paintRun(g, width, height, trackCentre);
+            if (!segments.isEmpty()) paintRun(g, width, height, trackCentre, alreadyFaint);
 
             if (outline != null)
             {
@@ -636,7 +685,8 @@ public class TileOverlay
      * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
      * two different times - which way does this route run - so it is worth only learning to read once.
      */
-    private void paintRun(Graphics2D g, int width, int height, int[] trackCentre)
+    private void paintRun(Graphics2D g, int width, int height, int[] trackCentre,
+        java.awt.Shape alreadyFaint)
     {
         int span = Math.min(width, height);
         // Where a line stops when it has no side to leave by - the END of a run.
@@ -666,7 +716,20 @@ public class TileOverlay
 
         if (onlyHeld && !segments.isEmpty())
         {
+            // WHAT IS LEFT OF THE TILE (PRW-C1).  The whole of it on an ordinary square, which is
+            // MT-375's fix unchanged; on a double curve, everything but the road already faded - so
+            // the road a route is holding keeps its wash even when the other road carries a tail.
+            java.awt.geom.Area rest = new java.awt.geom.Area(
+                new java.awt.Rectangle(0, 0, width, height));
+
+            if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
+
+            if (rest.isEmpty()) return;
+
             java.awt.Composite before = g.getComposite();
+            java.awt.Shape beforeClip = g.getClip();
+
+            g.clip(rest);
 
             g.setComposite(java.awt.AlphaComposite.getInstance(
                 java.awt.AlphaComposite.SRC_OVER, LOCKED_WASH_ALPHA));
@@ -675,6 +738,7 @@ public class TileOverlay
             g.fillRect(0, 0, width, height);
 
             g.setComposite(before);
+            g.setClip(beforeClip);
         }
 
         // Track merely held clear is dropped where a path is actually running over the same square.

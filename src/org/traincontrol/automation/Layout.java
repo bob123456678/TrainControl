@@ -2518,7 +2518,11 @@ public class Layout
         //
         // A train never blocks ITSELF.  Its own tail is behind it by definition, and a route that
         // starts by pulling forward off its own tail is the ordinary way a train leaves a berth.
-        Map<Edge, Locomotive> coveredTrack = edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> coveredTrack = new LinkedHashMap<>();
+
+        Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
+
+        walkStandingTrains(coveredTrack, coveredPlaces);
 
         for (Edge e : path)
         {
@@ -2565,6 +2569,34 @@ public class Layout
                     // over-refusal against the whole of FR-001, and it is written down rather than
                     // left to be rediscovered.
                     if (!sharing.getLockEdges().contains(e)) continue;
+
+                    // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (OB-207).
+                    //
+                    // Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be
+                    // able to"*, at a train length of ONE.  Measured on his railway: EN57-203 stood at
+                    // TunnelLongPark covering `BottomMainA (westbound) -> TunnelLongPark`, twelve tiles
+                    // across three switches, and the way in to BottomMainA shares the LAST of those
+                    // tiles with it - so this rule refused the path on account of a train lying inside
+                    // the FIRST tile, nowhere near the shared metal.  A one-unit train made a station
+                    // unreachable from anywhere on the layout.
+                    //
+                    // The relation above is still the right one - a train lying across a switch fouls
+                    // every road through it - and what was wrong was its extent, because an edge was
+                    // covered whole or not at all.  With the build emitting each edge's places, the
+                    // question becomes the one it always meant: does the tail lie on metal THIS edge
+                    // runs over?
+                    //
+                    // Both sides must be described in places or nothing is narrowed: a configuration
+                    // that does not carry them keeps the whole-edge answer, which is what it had.
+                    //
+                    // The DIRECT case a few lines up is deliberately left whole.  A path uses all of its
+                    // own edges, so a tail anywhere on one of them is in the way; it is only a SHARED
+                    // edge that the path may touch at one end and no further.
+                    if (!e.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
+                        && !tailLiesOn(e, onShared, coveredPlaces))
+                    {
+                        continue;
+                    }
 
                     lyingAcross = onShared;
 
@@ -2622,6 +2654,21 @@ public class Layout
         if (tooLong != null)
         {
             logPathError(loc, path, logFailures, tooLong);
+
+            return false;
+        }
+
+        // AND A PARKING BERTH MAY NOT BLOCK A ROAD (Adam, 2026-09-12).
+        //
+        // The other half of the rule above, and the reason the rule above could be relaxed at all: a
+        // train that stands across the points at a platform is passing, one that does it at a berth is
+        // staying.  See `whyABerthCannotHoldIt`, which is pure for the same reason its neighbour is -
+        // the staging planner asks both rather than carrying copies.
+        String foulsARoad = whyABerthCannotHoldIt(path, loc);
+
+        if (foulsARoad != null)
+        {
+            logPathError(loc, path, logFailures, foulsARoad);
 
             return false;
         }
@@ -3161,6 +3208,163 @@ public class Layout
         }
 
         return taken;
+    }
+
+    /**
+     * Moves a train off the turning copy of a square it declined to turn at (PRW-A1).
+     *
+     * A may-turn square is emitted as a plain copy and a turning copy per arrival side, tied by a
+     * block and reached by the same edge, and they face opposite ways.  A train that arrived on the
+     * turning copy and did not turn is standing where the graph expects a train pointing the other
+     * way, so this stands it on the sibling that the same approach reaches and that is not a turning
+     * copy.
+     *
+     * **Chosen by the approach, not by the flags alone.**  A split square has a plain copy per arrival
+     * SIDE - two of them on Adam's four-copy squares - and only one of those is the one this train
+     * could have driven onto: the one with an incoming edge from the Point the last leg started at.
+     * Picking by "not a turning copy" alone would put an eastbound train on the westbound copy half
+     * the time, which is the same defect facing the other way.
+     *
+     * **Does nothing unless all of it is true**, which is most arrivals: the Point is not a turning
+     * copy, or it has no siblings, or none of them is reachable from where the train came.  A square
+     * where turning is COMPULSORY has no plain copy at all, so nothing is found and the train stays
+     * where it is - which is right, because there is nowhere else for it to be.
+     *
+     * The tail comes with it, for the reason `AutonomySession.moveOntoFacingCopy` gives: `setLocomotive`
+     * clears `arrivedFrom` on every change of occupant - "a different occupant did not come in that
+     * way" - and this is the same train being re-stood on a sibling copy of one square, whose
+     * carriages have not moved.
+     *
+     * @param arrived the Point the path ended on
+     * @param loc the train that has just arrived and did not turn
+     * @param path the path it drove, whose last leg says which approach it came by
+     */
+    private void standOnTheCopyItDidNotTurnOn(Point arrived, Locomotive loc, List<Edge> path)
+    {
+        if (arrived == null || loc == null || path == null || path.isEmpty()) return;
+
+        // Only a turning copy has anything to correct.  This is the same predicate the builder writes
+        // - `stops ? "terminus" : "reversing"` - and it cannot tell a turning copy from a real
+        // terminus on its own.  It does not have to: a real terminus has no plain sibling, so the
+        // search below finds nothing and this returns having done nothing.
+        if (!arrived.isTerminus() && !arrived.isReversing()) return;
+
+        Point cameFrom = path.get(path.size() - 1).getStart();
+
+        if (cameFrom == null) return;
+
+        for (Point sibling : this.points.values())
+        {
+            if (sibling == arrived || !arrived.isSamePlaceAs(sibling)) continue;
+
+            if (sibling.isTerminus() || sibling.isReversing()) continue;
+
+            // Reachable from the same approach, which is what makes it the copy THIS train would
+            // have driven onto rather than the one facing the other way.
+            if (this.getEdge(cameFrom.getName(), sibling.getName()) == null) continue;
+
+            if (sibling.getCurrentLocomotive() != null) continue;
+
+            String tail = arrived.getArrivedFrom();
+
+            // `setLocomotive` takes the train off wherever else it is standing, so clearing the copy
+            // it is leaving by hand first is redundant - and it was the line that gave up this run's
+            // reservations early when this ran before the unlock (PRV-B2).
+            sibling.setLocomotive(loc);
+
+            sibling.setArrivedFrom(tail);
+
+            // THE STATION, NOT THE COPY (Adam, 2026-09-13: "the whole copy thing needs to be masked
+            // from the user").  Both Points are one square; which of them the graph keeps the train on
+            // is bookkeeping, and naming them told the operator about machinery they cannot see.
+            this.control.logf("autolayout.log.stoodOnTheCopyItFaces", placeNameOf(arrived));
+
+            return;
+        }
+
+        // NOTHING TO MOVE IT TO, AND THAT IS WORTH SAYING WHERE THE TURN WAS OPTIONAL (PRV-C7).
+        //
+        // A real terminus has no plain sibling by construction, and this returning quietly is right
+        // there - there is no other copy and none should exist.
+        //
+        // A MAY-TURN square is different: the operator was asked, said keep the direction, and the
+        // train is left standing on the copy that faces the other way. `AutonomyBuilder.nodesFor`
+        // emits the plain copy only where the square has somewhere onward to go, so a may-turn dead
+        // end has only the turning copy for that side - the one case this method cannot repair is the
+        // one case it said nothing about.
+        //
+        // Measured on Adam's railway on 2026-09-12: not reachable. All twelve parking berths are
+        // compulsory turns, and all four may-turn squares have plain copies. So this is a line rather
+        // than a design change - if it ever prints, the railway has a shape nobody has seen yet and
+        // the answer he gave was not honoured.
+        if (!mustTurnAt(arrived))
+        {
+            this.control.logf("autolayout.log.noPlainCopyToStandOn", placeNameOf(arrived));
+        }
+    }
+
+    /**
+     * What a Point is called as a PLACE, for a sentence the operator reads.
+     *
+     * A square that became several Points carries its arrival in its name - "BottomMainB (eastbound,
+     * reverse)" - and that suffix is the builder's machinery, not something on the diagram (Adam,
+     * 2026-09-13: *"the whole copy thing needs to be masked from the user"*).
+     *
+     * The same stripping `StationIndex.withoutArrivalSuffix` does, and deliberately a mirror of it
+     * rather than a call: this package sits below `automationui` and does not reach up into it.  The
+     * four words are `AutonomyBuilder.heading`'s, and a name that ends in anything else is left alone,
+     * so a station somebody really did call "Yard (old)" keeps its name.
+     *
+     * @param point the Point being named
+     * @return its name without an arrival suffix
+     */
+    private static String placeNameOf(Point point)
+    {
+        if (point == null) return "";
+
+        String name = point.getName();
+
+        if (name == null || !name.endsWith(")")) return name;
+
+        int open = name.lastIndexOf(" (");
+
+        if (open <= 0) return name;
+
+        String inside = name.substring(open + 2, name.length() - 1);
+
+        int comma = inside.indexOf(',');
+
+        String heading = comma < 0 ? inside : inside.substring(0, comma);
+
+        for (String known : new String[]{"northbound", "southbound", "eastbound", "westbound"})
+        {
+            if (known.equals(heading)) return name.substring(0, open);
+        }
+
+        return name;
+    }
+
+    /**
+     * Whether turning is compulsory at this square rather than a choice the operator was given.
+     *
+     * A square whose copies are ALL turning copies is one the graph turns every train at; where a
+     * plain copy exists somewhere, turning there was optional.  `hasAWayThrough` asks the same
+     * question of the same relation and is private to the arrival rules; this is its complement,
+     * spelled out here so PRV-C7's log line says something true rather than something it inferred.
+     *
+     * @param square the copy the train arrived on
+     * @return whether every copy of that square turns trains
+     */
+    private boolean mustTurnAt(Point square)
+    {
+        for (Point copy : this.points.values())
+        {
+            if (!square.isSamePlaceAs(copy)) continue;
+
+            if (!copy.isTerminus() && !copy.isReversing()) return false;
+        }
+
+        return true;
     }
 
     /**
@@ -4467,12 +4671,99 @@ public class Layout
         //
         // `isAutoDestination` is the switch the menu calls "Can Be Chosen By Autonomy", which is what he
         // means by "excluded from autonomy".
-        if (loc != null && !loc.isReversible() && end.isTerminus() && end.isAutoDestination())
+        //
+        // **AND IT IS A QUESTION ABOUT THE SQUARE, NOT ABOUT THIS COPY OF IT** (Adam, MT-367).
+        //
+        // *"EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a
+        // terminus).  It is correctly barred from BottomMainC, a terminus."*
+        //
+        // This clause read `isTerminus()`, and claims 2 and 3 of the very issue that added it say that
+        // flag cannot be read for this: `AutonomyBuilder` emits the turning copy of a MAY-turn square
+        // with `terminus: true`, so it cannot tell one from a compulsory terminus.  Their fix was to
+        // ask the DOOR instead of the flag; claim 1 went in the same evening asking the flag, and a
+        // station trains may turn at became one a non-reversible train could not be sent to at all.
+        //
+        // A square is emitted as several Points - one per way of arriving - and `getBlock` says which
+        // of them are one piece of track.  So the question this rule always meant is answerable here:
+        // is there ANY way to stand on that square without being turned round?  Measured on his
+        // railway - BottomMainB has plain eastbound and westbound copies and BottomMainC has only a
+        // terminus and a reversing point, which is exactly the difference he is reporting.
+        //
+        // **A way through has to be neither a terminus nor a reversing point.**  The first cut of this
+        // asked only "is some copy not a terminus", which is true of BottomMainC too - its other copy
+        // reverses - and a probe caught it before it shipped.
+        //
+        // **AND THE COPY BEING ASKED ABOUT IS TESTED THE SAME WAY** (Adam, MT-367, 2026-09-13: *"still
+        // offered it for 2-8-4 3505"*).
+        //
+        // The rule below read `end.isTerminus()` alone, and a turning copy carries whichever of the
+        // two words the builder chose for it: `stops ? "terminus" : "reversing"`, decided by whether a
+        // train may stop there.  Measured on his railway, BottomMainC is emitted as ONE of each -
+        // `(eastbound, reverse)` as a terminus and `(westbound, reverse)` as a reversing point - so
+        // half of a compulsory-turn station was refused and half was offered, to the same locomotive,
+        // on the same railway.
+        //
+        // To a train that cannot reverse the two words say one thing: you must turn round here.  The
+        // same confusion as the `hasAWayThrough` test just above, which already reads both.
+        if (loc != null && !loc.isReversible() && (end.isTerminus() || end.isReversing())
+            && end.isAutoDestination()
+            && !hasAWayThrough(end))
         {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Whether a train can stand on this square without being turned round (MT-367).
+     *
+     * **PUBLIC because the repair above could not otherwise be tested** (SVV-C4, Adam 2026-09-13:
+     * *"make it public and add the tests"*).  Both callers inside this file hand it a copy they have
+     * already established is a turning copy, and a turning copy is never the answer - so including
+     * the asked-about copy or skipping it gives the identical answer at every call the program makes,
+     * and SEV-C1's repair was indistinguishable from the defect it repaired.  A rule nothing can tell
+     * apart from its own bug is a rule with no coverage, however green the suite is.
+     *
+     * The contract, which `core.testWhatHasAWayThrough` asks in all three shapes:
+     *
+     *   - a PLAIN copy answers true about itself - it is the way through;
+     *   - every copy of a compulsory turn answers false - there is no way to stand there facing on;
+     *   - a may-turn square answers true from either copy, because its plain sibling is one.
+     *
+     * It is a question about the GRAPH, not about a train: whether this particular locomotive would be
+     * turned there is `turnsOnArrival`, which reads this and the policy together.
+     *
+     * A square is emitted as one Point per way of arriving, and `Point.getBlock` is what says two of
+     * them are one piece of track.  A copy that neither turns trains nor is a reversing point is a way
+     * to be there and leave the way you came, which is what makes a square survivable for a locomotive
+     * that cannot reverse.
+     *
+     * False for a Point with no block - a hand-written configuration, or one built before the builder
+     * emitted them - which leaves the rule exactly as strict as it was for those.
+     *
+     * @param square any copy of the square
+     * @return true when some copy of it does not turn the train
+     */
+    public boolean hasAWayThrough(Point square)
+    {
+        if (square == null) return false;
+
+        // THE COPY BEING ASKED ABOUT COUNTS AS ONE OF THEM (SEV-C1).
+        //
+        // This skipped it, so a square with ONE copy that is not a turning copy answered false about
+        // that very copy - "there is no way to stand here without being turned round" said of a plain
+        // copy, which is itself the way. Harmless at today's two callers, because both ask it about a
+        // copy they have already established IS a turning copy, and a turning copy is never the answer
+        // anyway. It is a trap for the third caller, and this rule has had three in a fortnight.
+        for (Point copy : this.points.values())
+        {
+            if (!square.isSamePlaceAs(copy)) continue;
+
+            if (!copy.isTerminus() && !copy.isReversing()) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -5591,6 +5882,102 @@ public class Layout
     }
 
     /**
+     * Whether a train that has just arrived here is turned round (Adam, MT-368).
+     *
+     * **The `||` this replaces is the defect.**  The arrival read
+     * `arrived.isTerminus() || shouldReverseAt(...)`, and `AutonomyBuilder` emits the turning copy of
+     * a MAY-turn square with `terminus: true` - so at BottomMainB the left operand was true, the right
+     * was never evaluated, and the operator's answer was collected and discarded.  Adam ran it twice
+     * and got the same turn from "keep direction" and from "turn round":
+     * *"it is just always getting reversed."*
+     *
+     * **The same flag confusion `OB-205` claims 2 and 3 named, at a third site.**  Two were repaired
+     * that evening - `ManualReversalPrompt.forJourney` and `shouldReverseAt` - and this was not.
+     *
+     * **Three cases, and only the middle one changed.**
+     *
+     *   - A square the door ASKS about is a may-turn square, and the answer is the operator's.  That
+     *     is Adam's ruling of 2026-09-06 - *"may reverse should always prompt in manual mode"* - and
+     *     it now reaches the arrival, which is where a journey ends.
+     *   - A terminus nobody is asked about is compulsory: the turn is how the train gets in and how it
+     *     leaves again, and `MT-245` turns on it.  Still unconditional.
+     *   - Everything else is `shouldReverseAt`, unchanged.
+     *
+     * **Why `isTerminus` cannot simply be dropped.**  At a real terminus the arrival copy carries
+     * `terminus: true` and `reversing: false`, so `shouldReverseAt` answers `current.isReversing()` -
+     * false - and a train would arrive at a terminus and never turn.  The flag still has to be read;
+     * what it must not do is outrank a square the operator was promised a say over.
+     *
+     * **It is a METHOD so that what it does can be tested.**  The thing that let this survive was a
+     * guard asserting the old expression verbatim, which could not fail on behaviour and which broke
+     * when the line was corrected - so it argued for the bug.  `core.testTheArrivalHonoursTheAnswer`
+     * asks this what it answers.
+     *
+     * @param arrived where the train has stopped
+     * @param loc the train
+     * @param reversals the policy, or null for autonomy
+     * @return whether to turn it
+     */
+    public boolean turnsOnArrival(Point arrived, Locomotive loc, ReversalPolicy reversals)
+    {
+        if (arrived == null) return false;
+
+        // A TRAIN THAT CANNOT REVERSE IS NEVER TURNED WHERE TURNING IS OPTIONAL (Adam, MT-368,
+        // 2026-09-13).
+        //
+        // *"I get the prompt, but I shouldn't because the train is not reversible and the station is
+        // selectable in full autonomy."*  The prompt is the visible half; this is the half that
+        // decides, and without it suppressing the prompt would make things worse rather than better:
+        // `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE - "no opinion" - so the branch
+        // below is skipped and `arrived.isTerminus()` decides, which is TRUE at the turning copy of a
+        // may-turn square.  A train nobody asked about would be turned every time.
+        //
+        // `hasAWayThrough` is what tells an OPTIONAL turn from a compulsory one: a may-turn square
+        // keeps a plain copy, a compulsory turn does not.  So a terminus still turns a train that
+        // backed into it - Adam's ruling on MT-245, and
+        // `testATrainThatCannotReverseMayBackIntoATerminus` - and the only thing that changes is the
+        // square where turning was a preference nobody could act on.
+        // NOT WHERE A PLAN HAS ALREADY DECIDED (SEV-B2, the same day this clause was written).
+        //
+        // `executePath(path, loc, speed, ttp)` hands in `ALWAYS_REVERSE`, and that is the form
+        // autonomy and the staging planner use.  Without this fence the clause fired for them too: a
+        // plan that routed a non-reversible train to a turning copy - expecting it to turn, and having
+        // searched the next leg from that copy's edges - found the train re-stood on the plain copy
+        // instead, the next leg refused with `errorLocomotiveNotAtPathStart`, and Return Home
+        // abandoned half-staged after STAGING_MAX_ATTEMPTS.
+        //
+        // `shouldReverseAt` fifty lines below fences the identical question the identical way, and
+        // says why in four words: ALWAYS_REVERSE COUNTS AS NOBODY.  A policy that says "turn wherever
+        // the route turns" is a plan speaking, not an operator, and this rule is about what to do when
+        // nobody has decided.
+        //
+        // **What that leaves open**, and it is a routing question rather than an arrival one: whether
+        // autonomy should route a non-reversible train to a turning copy at all.  MT-367 stops it
+        // being OFFERED a compulsory turn; a may-turn square it can drive through is legitimately
+        // offered, and if the route then chooses the turning copy the turn is the route's own doing.
+        // Raised with Adam rather than decided here.
+        // NULL COUNTS AS A PLAN AS WELL (SVV-C1).  `shouldReverseAt` fences the identical question
+        // as `reversals == null || reversals == ALWAYS_REVERSE`, and this method's own @param calls a
+        // null policy autonomy.  Unreachable today - all four `executePath` sites resolve to
+        // ALWAYS_REVERSE or to a policy from `forJourney` - and a trap for the fifth.
+        if (loc != null && !loc.isReversible() && reversals != null && reversals != ALWAYS_REVERSE
+            && hasAWayThrough(arrived))
+        {
+            return false;
+        }
+
+        // A SQUARE THE DOOR ASKS ABOUT IS THE OPERATOR'S CALL, terminus flag or not.  `asksAbout`
+        // comes from `mayTurnTiles()` - the reversible squares MINUS the compulsory ones - which is
+        // the one place that distinction is actually recorded.
+        if (reversals != null && reversals != ALWAYS_REVERSE && reversals.asksAbout(arrived))
+        {
+            return reversals.shouldReverse(loc, arrived);
+        }
+
+        return arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals);
+    }
+
+    /**
      * Whether a train reaching this point is turned round here (Adam, 2026-09-06).
      *
      * **Three answers, and only one of them is a question.**
@@ -5623,6 +6010,7 @@ public class Layout
      * @param reversals the caller's policy, or null for "always"
      * @return whether to turn it round
      */
+
     public boolean shouldReverseAt(Point current, Point destination, Locomotive loc,
         ReversalPolicy reversals)
     {
@@ -5796,6 +6184,52 @@ public class Layout
     {
         Map<Edge, Locomotive> covered = new LinkedHashMap<>();
 
+        walkStandingTrains(covered, new LinkedHashMap<String, Locomotive>());
+
+        return covered;
+    }
+
+    /**
+     * The same walk, answered in PLACES rather than whole edges (OB-207).
+     *
+     * Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, with a
+     * train length of one.  An edge is covered whole or not at all, and `isPathClear` then refuses every
+     * edge sharing metal with a covered one - so a one-unit train parked at the far end of a
+     * twelve-tile run fouled the whole of it and made a station beyond it unreachable from anywhere.
+     *
+     * This says how far the tail actually reaches: the places are ordered along the edge and carry their
+     * own lengths, so the walk spends the train's length across them from whichever end it entered by
+     * and stops.  A place is claimed when the tail reaches it AT ALL, including an unmeasured one the
+     * train lies over for nothing, which keeps this on the refusing side of a rounding.
+     *
+     * Empty of any edge the build did not describe in places - a hand-written configuration, or one
+     * written before 3.0.0.  Readers pair it with `edgesCoveredByStandingTrains` and fall back to that,
+     * so an old file behaves as it always did rather than suddenly claiming nothing is fouled.
+     *
+     * @return every claimed place, with the locomotive whose tail lies over it
+     */
+    synchronized public Map<String, Locomotive> placesCoveredByStandingTrains()
+    {
+        Map<String, Locomotive> places = new LinkedHashMap<>();
+
+        walkStandingTrains(new LinkedHashMap<Edge, Locomotive>(), places);
+
+        return places;
+    }
+
+    /**
+     * The one walk behind both answers above, so the two can never disagree about where a tail is.
+     *
+     * Callers that want both - `isPathClear` does - come here directly rather than asking twice: the
+     * walk visits every point and rescans the edge table for each covered segment, and doing that twice
+     * per clearance check is real work for no new information.
+     *
+     * @param covered filled with every covered edge and the locomotive covering it
+     * @param places filled with every claimed place and the locomotive lying over it
+     */
+    private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
+    {
+
         for (Point standing : this.points.values())
         {
             Locomotive loc = standing.getCurrentLocomotive();
@@ -5811,6 +6245,14 @@ public class Layout
             Set<String> walked = new LinkedHashSet<>();
 
             walked.add(here.getName());
+
+            // WHAT THIS TRAIN HAS ALREADY PAID FOR (PRW-C3).
+            //
+            // Two hops share the square the walk turned at: it is the end of one edge and a place on
+            // the next.  Charged twice, the tail stops short of where it really reaches and the track
+            // under its back end is claimed by nobody - which is the permitting side of the guard
+            // between two trains.
+            Set<String> spent = new LinkedHashSet<>();
 
             while (remaining > 0)
             {
@@ -5848,12 +6290,40 @@ public class Layout
                         // doors offered the side the track comes in by, which differ on a curve.
                         String cameInBy = entrySideOf(candidate, here);
 
-                        if (cameInBy != null && standingHere.getArrivedFrom().equalsIgnoreCase(cameInBy))
+                        if (cameInBy == null
+                            || !standingHere.getArrivedFrom().equalsIgnoreCase(cameInBy))
+                        {
+                            continue;
+                        }
+
+                        // AND THE COPY THAT ARRIVES HERE, where the rail is written both ways (SVZ-B1).
+                        //
+                        // A piece of rail is two `Edge` objects, one per direction, and at a berth
+                        // both can report the same way in.  `getNeighborsAndIncoming` lists the
+                        // OUTGOING ones first, so the copy running away from the berth used to win -
+                        // and an edge's places are the path plus the square it ARRIVES at, so that
+                        // copy's places are the track behind and never the berth itself.  The square
+                        // a train was standing on was then claimed by nobody, at some stations and
+                        // not at others: measured at TopMainR0Park on 2026-09-13, where the claims
+                        // came back as the two tiles behind with the berth missing, while the same
+                        // claim at TunnelLongPark passed because no outgoing copy answers there.
+                        //
+                        // The train arrived along the copy that ENDS here - that is what
+                        // `arrivedFrom` records - and it is the one whose places describe where a
+                        // tail lies.  It also carries the standing square, which is what the
+                        // allowance rule below is written against.
+                        //
+                        // The other copy is still taken when there is no arriving one, which is the
+                        // case at a square a train has been turned on: it lies across that rail
+                        // whichever way traffic runs, and half an answer beats none.
+                        if (candidate.getEnd() == here)
                         {
                             segment = candidate;
 
                             break;
                         }
+
+                        if (segment == null) segment = candidate;
                     }
 
                     // Recorded, but naming a side no track leaves by - a stale value after an edit.
@@ -5890,7 +6360,20 @@ public class Layout
 
                 // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
                 // how much of the train would still be left after it.
-                if (segment.getLength() <= 0) break;
+                //
+                // AND THE STANDING SQUARE'S OWN MEASUREMENT DOES NOT COUNT AS ONE (SVX-B1).
+                //
+                // `getLength()` is the path PLUS the square the edge arrives at, and on the first hop
+                // that square is the one the train stands on - whose measurement Adam ruled an
+                // allowance rather than track.  So a berth measured on an otherwise unmeasured
+                // approach passed this test with nothing spendable behind it, and the walk then
+                // claimed every place on the approach.
+                //
+                // `whyABerthCannotHoldIt` was given the matching bound a round earlier and this was
+                // not, which left the pair worse than before either had it: the berth rule ACCEPTED
+                // the train and this guard then blocked the roads behind it.  That configuration is
+                // the one `Automation.md` produces first, because it tells him to measure the berth.
+                if (segment.getLength() - spendableAllowance(segment, here, standingHere) <= 0) break;
 
                 // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
                 //
@@ -5918,7 +6401,103 @@ public class Layout
                     }
                 }
 
-                remaining -= segment.getLength();
+                // AND HOW FAR ALONG IT THE TAIL ACTUALLY REACHES (OB-207).
+                //
+                // The line above records the whole segment, which is all this could say until the build
+                // began emitting each edge's places.  Spend the train's remaining length across them
+                // from the end the tail comes in by - the places are ordered from the edge's start, and
+                // their lengths sum to its length, so this is the same arithmetic at a finer grain.
+                //
+                // A place is claimed BEFORE its length is spent, so a tail that just reaches into one
+                // claims it, and an unmeasured place the train lies over for nothing is claimed too.
+                List<String> ids = segment.getPlaceIds();
+
+                List<Integer> spans = segment.getPlaceLengths();
+
+                // What the standing square's own measurement came to, where this hop had one to skip
+                // (SEV-B3).  Zero everywhere else, so the hop budget is unchanged there.
+                int allowance = 0;
+
+                // What the places walk actually charged, which is what this hop costs (PRW-C3).
+                // Negative until the places are walked at all, so the edge's own length can stand in
+                // for a configuration that does not carry them.
+                int chargedHere = -1;
+
+                if (!ids.isEmpty() && ids.size() == spans.size())
+                {
+                    boolean fromTheEnd = (segment.getEnd() == here);
+
+                    int left = remaining;
+
+                    chargedHere = 0;
+
+                    for (int step = 0; step < ids.size(); step++)
+                    {
+                        int at = fromTheEnd ? ids.size() - 1 - step : step;
+
+                        places.put(ids.get(at), loc);
+
+                        // THE SQUARE THE TRAIN IS STANDING ON IS AN ALLOWANCE, NOT RAIL TO SPEND.
+                        //
+                        // Adam, 2026-09-13: *"if the segment length is shorter, more should be
+                        // blocked.  The station size is an allowance, not a length."*  What a station
+                        // measures is how much train it may HOLD - the question `whyTooLongForThisRoute`
+                        // asks - and reading it here as well made one number answer two questions.  A
+                        // train at a generously-sized platform had its whole body absorbed by the
+                        // platform and blocked nothing behind it, however long it was.
+                        //
+                        // Claimed, though: it IS standing there.  Only the subtraction is skipped, and
+                        // only for the first square of the first hop - every square further back is
+                        // ordinary track the body really does lie over.
+                        //
+                        // This settles PRW-B4, which was filed on the guard and the picture charging
+                        // different squares.  `AutonomySession.walkBackFrom` never charged the standing
+                        // square; a repair that made the picture match the guard instead was tried on
+                        // 2026-09-12 and reverted the same day, because it left a train shorter than
+                        // its own square with nothing drawn behind it - failing two claims Adam had
+                        // already validated.  The picture was right and this was not.
+                        boolean onTheAllowance = fromTheEnd && step == 0 && here == standingHere;
+
+                        // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
+                        // last edge and a place on this one; charging it again shortens the tail by
+                        // its length and leaves the track under the train's back end unclaimed.
+                        if (!spent.add(ids.get(at))) continue;
+
+                        if (onTheAllowance)
+                        {
+                            // AND THE HOP BUDGET HAS TO SKIP IT TOO (SEV-B3).
+                            //
+                            // `remaining -= segment.getLength()` below spends the whole edge, and
+                            // `GraphReducer` builds an edge's length as the path PLUS the square it
+                            // arrives at - which on this first hop is the square the train is standing
+                            // on.  Skipping the allowance here and spending it there would leave the
+                            // two budgets disagreeing by exactly the allowance, and a train whose body
+                            // reaches into a second edge would have its last units silently dropped.
+                            allowance = Math.max(0, spans.get(at));
+                        }
+                        else
+                        {
+                            left -= Math.max(0, spans.get(at));
+
+                            chargedHere += Math.max(0, spans.get(at));
+                        }
+
+                        if (left <= 0) break;
+                    }
+                }
+
+                // ONE BUDGET, NOT TWO (PRW-C3, and the two rounds that found the same seam).
+                //
+                // This read `remaining -= segment.getLength() - allowance`, which is a second
+                // arithmetic over the same train: the places walk spends span by span and this spent
+                // the whole edge.  They agreed only while every square on the edge was measured, the
+                // standing square was ordinary track, and no square belonged to two hops - and each
+                // of those three assumptions has failed in turn (SEV-B3, SVX-B1, PRW-C3).
+                //
+                // What the finer walk charged IS what the hop costs.  The edge's own length is kept
+                // for a configuration that carries no places, where there is nothing finer to spend -
+                // an old file behaves as it always did.
+                remaining -= chargedHere >= 0 ? chargedHere : segment.getLength() - allowance;
 
                 Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
 
@@ -5928,8 +6507,121 @@ public class Layout
                 here = next;
             }
         }
+    }
 
-        return covered;
+    /**
+     * The part of this segment's length that is the standing square's allowance rather than track.
+     *
+     * `GraphReducer` builds an edge's length as the path plus the square it arrives at, and where that
+     * square is the one the train is STANDING on its measurement is an allowance - how much train the
+     * station may hold - rather than rail the body lies over (Adam, 2026-09-13).  Both the measurement
+     * test and the hop budget have to leave it out, or they disagree with the places walk beside them.
+     *
+     * Zero unless this really is the first hop and the train arrived along this edge, which is the
+     * only case where the square at the end of it is the one being stood on.
+     *
+     * @param segment the edge being walked back along
+     * @param here the point the walk has reached
+     * @param standingHere the point the train is actually standing on
+     * @return the allowance to leave out of this segment's length
+     */
+    private static int spendableAllowance(Edge segment, Point here, Point standingHere)
+    {
+        // ONLY THE FIRST HOP.  The places loop's own test is `fromTheEnd && step == 0 && here ==
+        // standingHere`, and the third clause is the one that matters here: on a later hop `here` is
+        // an intermediate square, and ITS measurement is ordinary track the body lies over. Without
+        // this the two would disagree the moment a tail reached a second edge, which is the defect
+        // SEV-B3 was about, pointing the other way.
+        if (segment == null || here != standingHere || segment.getEnd() != here) return 0;
+
+        List<Integer> spans = segment.getPlaceLengths();
+
+        if (spans.isEmpty()) return 0;
+
+        Integer own = spans.get(spans.size() - 1);
+
+        return own == null ? 0 : Math.max(0, own);
+    }
+
+    /**
+     * Whether this square is a PARKING BERTH: somewhere a train is meant to sit rather than pass.
+     *
+     * Adam, 2026-09-13, ruling on FR-060: **"For now, we consider anything with autodestination=false
+     * and only one way in/out as a parking square.  We can revisit dedicated marking if this doesn't
+     * work out with clean logic, or if it gets too confusing to the user to manage."**
+     *
+     * **Two facts, and neither is enough alone.**  `autoDestination` off says the OPERATOR does not
+     * want autonomy choosing this station - which is true of a parking berth and also of a platform
+     * they are keeping for themselves.  One way in and out says the TRACK is a dead end - which is
+     * true of a berth and also of a headshunt nobody parks on.  Together they are the thing FR-060
+     * asked for a new designation for, and they are already in the file, which is why he ruled that a
+     * fourth flag can wait.
+     *
+     * **Counted in SQUARES, not copies.**  A square split into a northbound and a southbound Point is
+     * still one place with one way out, and counting the copies would make every split berth look like
+     * a junction.  `Point.isSamePlaceAs` is what knows two Points are one piece of track - the same
+     * relation `whyABerthCannotHoldIt` uses to let a berth off its own approach.
+     *
+     * **What this does NOT decide.**  It is not the berth rule's gate: `whyABerthCannotHoldIt` applies
+     * wherever autonomy will not choose the square, which is wider than this on purpose - Adam's own
+     * example for that rule is TunnelLongPark, which has three ways in and is not a parking square by
+     * this test.  Narrowing the guard to this set would drop the case he validated it with.
+     *
+     * Measured on his railway on 2026-09-13: 20 stations carry `autoDestination: false` and 12 of them
+     * answer true here.  The other eight - BottomMainPost, RampDown, TunnelLongPark, ParkingTrack11,
+     * TunnelRightPark, LowerParkingOuter, TunnelCenterPark, TunnelLeftPark - are places he keeps for
+     * himself with track running through or past them.
+     *
+     * @param square any copy of the square
+     * @return whether this is somewhere trains are put away
+     */
+    public boolean isParkingSquare(Point square)
+    {
+        if (square == null || square.isAutoDestination()) return false;
+
+        List<Point> ways = new LinkedList<>();
+
+        for (Point copy : this.points.values())
+        {
+            if (!copy.isSamePlaceAs(square)) continue;
+
+            for (Edge touching : this.getNeighborsAndIncoming(copy))
+            {
+                Point other = touching.getStart() == copy
+                    ? touching.getEnd() : touching.getStart();
+
+                if (other == null || other.isSamePlaceAs(square)) continue;
+
+                boolean known = false;
+
+                for (Point already : ways)
+                {
+                    if (already.isSamePlaceAs(other)) known = true;
+                }
+
+                if (!known) ways.add(other);
+            }
+        }
+
+        return ways.size() == 1;
+    }
+
+    /**
+     * Whether a named locomotive's tail lies over any of the metal this edge runs on (OB-207).
+     *
+     * @param edge the edge being asked about
+     * @param who the locomotive standing somewhere on the layout
+     * @param claimed the places its tail reaches, from `walkStandingTrains`
+     * @return true when the two meet
+     */
+    static boolean tailLiesOn(Edge edge, Locomotive who, Map<String, Locomotive> claimed)
+    {
+        for (String place : edge.getPlaceIds())
+        {
+            if (who.equals(claimed.get(place))) return true;
+        }
+
+        return false;
     }
     /**
      * Which compass side of `from` the point `to` lies on.
@@ -6939,6 +7631,10 @@ public class Layout
             path.get(0).getStart().setArrivedFrom(null);
         }
 
+        // Set when the arrival declined a turn at a square that may turn, and acted on after the
+        // path is unlocked (PRW-A1, PRV-B2).
+        boolean restandAfterUnlocking = false;
+
         // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
         // may-reverse ruling of 2026-09-06).
         //
@@ -6947,7 +7643,7 @@ public class Layout
         // reads this file as a string and asserts this exact statement, which is a fair guard - the
         // defect it pins is the arrival deciding a reversal WITHOUT the policy - and a shape it does
         // not recognise reads to it as the rule having gone.
-        if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))
+        if (turnsOnArrival(arrived, loc, reversals))
         {
             this.control.logf(
                 "autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation",
@@ -6975,15 +7671,54 @@ public class Layout
             // given key.
             if (loc.getName() != null) this.reversedOnArrival.put(loc.getName(), arrived.getName());
         }
-        else if (loc.getName() != null)
+        else
         {
-            // AND AN ARRIVAL THAT DID NOT TURN CLEARS IT.  The record means "this train is standing
-            // where it turned and the graph has not been told"; once it has run on, this arrival has
-            // placed it on the copy its journey ended at and the graph is already right about it.
-            // Left behind, a turn made earlier in an autonomy session would be applied to the square
-            // the train has since left - or worse, to the square it is standing on now, as though it
-            // had turned there.
-            this.reversedOnArrival.remove(loc.getName());
+            if (loc.getName() != null)
+            {
+                // AND AN ARRIVAL THAT DID NOT TURN CLEARS IT.  The record means "this train is
+                // standing where it turned and the graph has not been told"; once it has run on, this
+                // arrival has placed it on the copy its journey ended at and the graph is already
+                // right about it.  Left behind, a turn made earlier in an autonomy session would be
+                // applied to the square the train has since left - or worse, to the square it is
+                // standing on now, as though it had turned there.
+                this.reversedOnArrival.remove(loc.getName());
+            }
+
+            // AND IT MUST NOT BE LEFT STANDING ON THE COPY THAT EXPECTED IT TO TURN (PRW-A1).
+            //
+            // A square trains MAY turn at is two Points per arrival side: the plain copy, facing the
+            // way a train that drove in is pointing, and the turning copy, facing the other way.  Both
+            // are reached by the same edge, so a path to that square can legitimately end on either -
+            // and the menu routinely offers the turning one.  Measured on the frozen snapshot: the
+            // path offered to BottomMainC ends on `BottomMainC (eastbound, reverse)` for both of
+            // Adam's reversible trains, five runs out of five, because `distinctDestinations` keeps
+            // the first path per square and the enumeration behind it walks the shuffling
+            // `getNeighbors`.
+            //
+            // So a train that arrives there and declines the turn faces one way while the Point it
+            // stands on says the other.  Nothing on the railway is wrong - the train is exactly where
+            // it should be - but the graph is, and the next dispatch reads this Point's outgoing
+            // edges, which are the edges for a train pointing the other way.  It drives off its route.
+            //
+            // **This became reachable when the answer started being honoured** (MT-368).  The arrival
+            // used to turn every train at a may-turn square whatever the operator said, and a turned
+            // train agrees with the turning copy - so the copy was right for the wrong reason.
+            //
+            // The mirror case has had its repair since 2026-09-06: a train that DOES turn is re-stood
+            // by `AutonomySession.faceTheWayItCameIn`, which writes the side it came in by and calls
+            // `moveOntoFacingCopy`.  This is that repair for the other answer, done here rather than
+            // in the drain because the harm is the NEXT dispatch and the drain runs when the railway
+            // next goes idle - which is after it.
+            //
+            // The setup's own record still belongs to the drain and to `captureFromLayout`: this moves
+            // the train on the running graph only, which is the half that decides where it can go.
+            //
+            // NOT HERE, THOUGH - after the path is unlocked (PRV-B2).  `Point.setLocomotive` sweeps
+            // the train off every other Point, and until `unlockPath` has run those Points are this
+            // run's remaining reservations; moving the train first gives them up early, which is the
+            // hazard this method writes down twice elsewhere.  The flag is set and the move is made
+            // below.
+            restandAfterUnlocking = true;
         }
         
         if (loc.hasCallback(CB_ROUTE_END))
@@ -6994,10 +7729,17 @@ public class Layout
         synchronized (this.activeLocomotives)
         {
             this.unlockPath(path, loc);
-        
+
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
             this.clearedEdges.remove(loc);
+
+            // AND NOW THE TRAIN MAY BE MOVED ONTO THE COPY IT FACES (PRW-A1, placed here by PRV-B2).
+            //
+            // After the unlock, because `Point.setLocomotive` sweeps the locomotive off every other
+            // Point and before this line those Points are still this run's reservations.  Inside the
+            // monitor, because everything else that rearranges the railway at the end of a path is.
+            if (restandAfterUnlocking) standOnTheCopyItDidNotTurnOn(arrived, loc, path);
                                   
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
@@ -7066,7 +7808,10 @@ public class Layout
                     || p.getCurrentLocomotive() != null && !l.isSimultaneousMultiUnitCompatible(p.getCurrentLocomotive())
                 )
                 {
-                    this.control.log("Auto layout warning: removed locomotive " + p.getCurrentLocomotive().getName() + " from " + p.getName() + " because it confliced with " + l.getName());
+                    // Through the bundles, like the other eighty warnings in this class (PFX-C1).
+                    // It also said "confliced".
+                    this.control.logf("autolayout.warnRemovedConflictingLocomotive",
+                        p.getCurrentLocomotive().getName(), p.getName(), l.getName());
                     p.setLocomotive(null);
                 }          
             }
@@ -7575,6 +8320,204 @@ public class Layout
     }
 
     /**
+     * Whether a station autonomy may choose takes this train because its whole approach is long enough.
+     *
+     * **Adam's relaxation of 2026-09-12, and the reason it is a method rather than a line.**  On a
+     * platform whose approach measures 6 with a switch in the middle and 3 either side: *"it would not
+     * fit just past 14,12.  14,12 would be blocked and the 6 units would be between bottommainapre and
+     * bottommaina.  so we need a clear rule to govern that this is OK, or simply make a rule that
+     * parking berths cant block any other edges, but not make that check for active stations."*
+     *
+     * At a station autonomy may choose, a train is PASSING: it stands across the points until it is
+     * given its next route, and the cost of that is other trains waiting rather than a collision -
+     * since OB-207 a standing tail claims the places it lies on and nothing is cleared over them.  At
+     * a parking berth the train is STAYING and the road would be shut all evening, which is what
+     * `whyABerthCannotHoldIt` refuses.
+     *
+     * **It only ever ALLOWS**, and only where the room rule has already refused.  The bound is the
+     * approach's own measured length, so a train longer than the whole run in is still refused: its
+     * tail would lie back over the edge before it, where nothing has been measured.
+     *
+     * **Lifted out of `whyTooLongForThisRoute` for PRW-B2 leg 2 (Adam, 2026-09-13: "Do it").**  The
+     * staging planner needs this answer and cannot take the whole rule to get it - that was tried on
+     * 2026-09-13 and reverted, because `whyTooLongForThisRoute` also carries the station's stated
+     * capacity and the room test at EVERY square on the way, and asking it made the planner stricter
+     * than the runtime it is planning for: five trains came back NO_PLAN_FOUND on the frozen railway.
+     * A relaxation bundled with two refusals cannot be bought separately, so it is unbundled.
+     *
+     * @param path the route, in order, ending at the square the train comes to rest on
+     * @param loc the train
+     * @return whether the approach itself is long enough to hold it at a station autonomy may choose
+     */
+    public static boolean theApproachItselfHoldsIt(List<Edge> path, Locomotive loc)
+    {
+        if (path == null || path.isEmpty() || loc == null) return false;
+
+        if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return false;
+
+        Edge lastLeg = path.get(path.size() - 1);
+
+        Point ending = lastLeg.getEnd();
+
+        // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".  Whether
+        // the square is switched on at all is a different question, asked long before anything gets
+        // here.
+        return ending != null && ending.isAutoDestination() && lastLeg.getLength() > 0
+            && loc.getTrainLength() <= lastLeg.getLength();
+    }
+
+    /**
+     * Why a PARKING BERTH cannot hold this train: it would lie across somebody else's road.
+     *
+     * Adam's ruling of 2026-09-12, the other half of the relaxation in `whyTooLongForThisRoute`:
+     * *"make a rule that parking berths cant block any other edges, but not make that check for active
+     * stations."*  A train at a platform is passing and may stand across the points; a train at a berth
+     * is staying, and a berth is not worth a road.
+     *
+     * **Measured on his own railway before it was written.**  A three-unit train at TunnelLongPark lies
+     * over `BottomMainAPre -> RampDown` and `-> BottomCrossover`, the only two roads to the lower level,
+     * and 90 ordered pairs of stations stop being reachable from one another while it is there.  A
+     * two-unit train lies over nothing at all while the tile behind the berth is unmeasured - which is
+     * what that railway said when this was written, and not a promise about a short train (SVX-C1).
+     * Once that tile IS measured the same two units reach back over it, because the berth's own
+     * measurement is an allowance and is not spent.
+     *
+     * **Which places the train would claim is the same arithmetic the tail walk uses** - spend the
+     * train's length across the approach's places from the end it comes in by, claiming each before
+     * spending it, and SKIPPING the berth's own square, whose measurement says how much train the
+     * station may hold rather than how much rail the body lies over (Adam, 2026-09-13).
+     *
+     * The two walks are written to agree and are not one piece of code, which is where SEV-B1 and
+     * SVX-B1 both came from: the allowance reached one of them a round before the other, and in each
+     * direction the pair was worse than either half alone.  The measurement test and the hop budget in
+     * `walkStandingTrains` leave the same square out, through `spendableAllowance`; the bound below
+     * does it here.  A reader who needs them to agree should check both, not trust this sentence.
+     *
+     * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own
+     * square is blocked by the train being there at all, whichever copy of a split square it is
+     * recorded on; refusing on those would make every berth refuse itself.  `Point.isSamePlaceAs` is
+     * what knows that two Points are one piece of track.
+     *
+     * **Shared metal only**, told from an FR-001 restriction by symmetry, exactly as the covered-track
+     * sweep in `isPathClear` tells them apart: sharing a tile is mutual and the reducer records both
+     * directions, while a restriction is one-directional.
+     *
+     * Silent on an edge the build did not describe in places - a hand-written configuration, or one
+     * written before 3.0.0 - so an old file keeps the answer it always had, from the room rule alone.
+     *
+     * Pure, like `whyTooLongForThisRoute` beside it, so the staging planner can ask the same question
+     * rather than carry a copy of it.
+     *
+     * @param path the route, in order
+     * @param loc the train
+     * @return why the berth cannot hold it, or null when it can or when the question does not arise
+     */
+    public static String whyABerthCannotHoldIt(List<Edge> path, Locomotive loc)
+    {
+        if (path == null || path.isEmpty() || loc == null) return null;
+
+        if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
+
+        Edge approach = path.get(path.size() - 1);
+
+        Point berth = approach.getEnd();
+
+        // STATIONS ARE EXEMPT, which is the whole of his ruling.
+        if (berth == null || berth.isAutoDestination()) return null;
+
+        List<String> ids = approach.getPlaceIds();
+
+        List<Integer> spans = approach.getPlaceLengths();
+
+        if (ids.isEmpty() || ids.size() != spans.size()) return null;
+
+        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED (PRW-B1).
+        //
+        // The walk below spends the train's length backwards over the places and stops when it runs
+        // out.  Against all zeroes it never runs out: it claims the WHOLE approach and then refuses
+        // the berth against any road sharing any part of it - a refusal invented out of the absence
+        // of a measurement rather than derived from one.
+        //
+        // Measured on the frozen snapshot: all 41 of Adam's non-station approaches are wholly
+        // unmeasured and 26 of them refused a three-unit train, so in practice every train with a
+        // length was refused every parking berth, by hand and through Return Home.
+        //
+        // This is the room rule's own answer at the other end of the same question -
+        // `walkStandingTrains` claims nothing on an unmeasured segment and declines to judge - and
+        // Adam's ruling of 2026-09-06 on MT-364: *"a stretch is only indeterminate when ALL of it is
+        // zero"*.  One measurement is something to reason from and the walk uses it; none is nothing,
+        // and a guard that refuses on nothing is the over-strict check he would rather not have at
+        // all.
+        // MEASURED WHERE IT COUNTS - which is everywhere the walk can actually SPEND (SVV-B1).
+        //
+        // This counted every place including the last, and the last place is the berth itself, whose
+        // measurement the walk stopped spending when Adam ruled a station's size an allowance.  So a
+        // berth measured on an otherwise unmeasured approach turned the rule back on with nothing
+        // spendable behind it: the walk claims every place and refuses the berth against any road
+        // sharing any of them, which is PRW-B1's invented refusal returning by the back door.
+        //
+        // It is not hypothetical - `Automation.md`'s section on lengths tells him to measure the berth
+        // square first, so that is the layout the advice produces.
+        boolean anyMeasured = false;
+
+        for (int n = 0; n < spans.size() - 1; n++)
+        {
+            Integer span = spans.get(n);
+
+            if (span != null && span > 0) anyMeasured = true;
+        }
+
+        if (!anyMeasured) return null;
+
+        Set<String> claimed = new LinkedHashSet<>();
+
+        int left = loc.getTrainLength();
+
+        for (int n = ids.size() - 1; n >= 0; n--)
+        {
+            claimed.add(ids.get(n));
+
+            // THE BERTH'S OWN MEASUREMENT IS AN ALLOWANCE, NOT RAIL TO SPEND (Adam, 2026-09-13;
+            // SEV-B1).
+            //
+            // *"The station size is an allowance, not a length."*  `walkStandingTrains` stopped
+            // spending the standing square on that ruling, and this walk - which asks the same
+            // question about the same train, "where does its body lie" - went on spending the berth's
+            // own span.  The two then disagree by exactly that span about one train on one piece of
+            // track, and the guard is the stricter and the later: a train this rule accepts is claimed
+            // by the guard once it is parked, fouling a road that nothing refused it.
+            //
+            // The last place is the square being arrived at - `placesAlong` orders them from the
+            // edge's start - so this is the same "first square of the walk" the guard skips.
+            boolean onTheAllowance = (n == ids.size() - 1);
+
+            if (!onTheAllowance) left -= Math.max(0, spans.get(n));
+
+            if (left <= 0) break;
+        }
+
+        for (Edge sharing : approach.getLockEdges())
+        {
+            if (sharing == null || !sharing.getLockEdges().contains(approach)) continue;
+
+            if (berth.isSamePlaceAs(sharing.getStart()) || berth.isSamePlaceAs(sharing.getEnd()))
+            {
+                continue;
+            }
+
+            for (String place : sharing.getPlaceIds())
+            {
+                if (!claimed.contains(place)) continue;
+
+                return I18n.f("autolayout.errorBerthWouldFoulAnotherRoad", loc.getName(),
+                    berth.getName(), sharing.getName(), loc.getTrainLength());
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Why this train does not fit anywhere this path would put it, or null when it does (MT-262).
      *
      * **Every square on the route, not only the last one** (Adam, 2026-09-09).  See the walk below for
@@ -7599,6 +8542,7 @@ public class Layout
      * @param loc the train
      * @return the refusal, already translated, or null when the train fits
      */
+
     public static String whyTooLongForThisRoute(List<Edge> path, Locomotive loc)
     {
         if (path == null || path.isEmpty() || loc == null) return null;
@@ -7677,6 +8621,45 @@ public class Layout
                 : roomAfterASwitchOnTheWay(ordered.subList(0, i + 1), loc);
 
             if (room == null || loc.getTrainLength() <= room) continue;
+
+            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN AS LONG AS ITS WHOLE APPROACH.
+            //
+            // Adam, 2026-09-12, on a platform whose approach measures 6 with a switch in the middle and
+            // 3 on either side: *"it would not fit just past 14,12.  14,12 would be blocked and the 6
+            // units would be between bottommainapre and bottommaina.  so we need a clear rule to govern
+            // that this is OK, or simply make a rule that parking berths cant block any other edges,
+            // but not make that check for active stations."*
+            //
+            // **So the kind of square decides, and it decides because of how long the train stays.**  At
+            // a station autonomy may choose a train is PASSING: it stands across the points for as long
+            // as it takes to be given its next route, and the cost of that is measured - on his railway
+            // it closes the roads to the lower level while it is there.  He accepts that cost at a
+            // platform and refuses it at a parking berth, where a train is STAYING and the road would be
+            // shut all evening.  `whyABerthCannotHoldIt` is the other half.
+            //
+            // **Safety is not what changed.**  Since OB-207 a standing train's tail claims the places it
+            // lies on and `isPathClear` refuses any route over them, so nothing can be sent into the
+            // overhang.  What this relaxation spends is the ability of OTHER trains to get past, which
+            // is a stranding question rather than a collision one - and stranding is what he is ruling
+            // on.
+            //
+            // **It only ever ALLOWS.**  The room rule above has already refused, and this hands back the
+            // one case his ruling names; nothing that was accepted before is now refused.  The bound is
+            // the approach's own length, so a train longer than the whole run in is still refused - the
+            // tail would lie back over the edge before it, where this has measured nothing.
+            //
+            // A train that turns round at the destination is deliberately NOT excluded.  It is standing
+            // there for the same reason and for the same length of time; what it does on departure is
+            // another journey, which is the rule `measuredRoomAtTheEndOf` already applies to the last
+            // edge of any path.
+            //
+            // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".
+            // Whether the square is switched on at all is a different question and is asked long before
+            // anything reaches here.
+            if (berth && theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
+            {
+                continue;
+            }
 
             if (here == null || berth)
             {
@@ -9657,6 +10640,64 @@ public class Layout
                 if (edge.has("entrySide") && edge.get("entrySide") instanceof String)
                 {
                     e.setEntrySide(edge.getString("entrySide"));
+                }
+
+                // WHERE THIS EDGE RUNS, place by place (OB-207).
+                //
+                // Optional like the two above, and absent from every hand-written configuration.  When
+                // it is missing the covered-track sweep falls back to the whole edge, which is what it
+                // did before this existed.
+                if (edge.has("places") && edge.get("places") instanceof JSONArray)
+                {
+                    List<String> ids = new LinkedList<>();
+
+                    List<Integer> spans = new LinkedList<>();
+
+                    JSONArray places = edge.getJSONArray("places");
+
+                    // ALL OF THEM OR NONE OF THEM (SVX-C9).
+                    //
+                    // These are read POSITIONALLY: the last entry is the square the edge arrives at,
+                    // and where a train is standing there that square's measurement is an allowance
+                    // rather than track - `spendableAllowance` and `whyABerthCannotHoldIt`'s own
+                    // bound both take the last element and nothing checks it against `getEnd()`.
+                    //
+                    // Skipping a malformed entry and carrying on therefore does not produce a shorter
+                    // list of places; it produces a list whose positions mean something else.  Drop
+                    // the FINAL entry and the tile behind the berth becomes "the berth", the
+                    // allowance is subtracted from the wrong square, and every rule downstream is
+                    // quietly out by one tile - on the permitting side.
+                    //
+                    // A build never writes one - `GraphReducer.placesAlong` always appends the end
+                    // place - so this is a hand-edited or truncated file, and the honest answer for
+                    // one is the answer for a file with no places at all: fall back to the whole
+                    // edge, which is what every reader already handles and is the refusing side.
+                    boolean whole = true;
+
+                    for (int at = 0; at < places.length(); at++)
+                    {
+                        JSONObject place = places.optJSONObject(at);
+
+                        if (place == null || !place.has("at"))
+                        {
+                            whole = false;
+
+                            break;
+                        }
+
+                        ids.add(place.getString("at"));
+
+                        spans.add(Math.max(0, place.optInt("length", 0)));
+                    }
+
+                    if (whole)
+                    {
+                        e.setPlaces(ids, spans);
+                    }
+                    else
+                    {
+                        control.logf("autolayout.warnEdgePlacesIncomplete", e.getName());
+                    }
                 }
 
                 if (edge.has("length"))

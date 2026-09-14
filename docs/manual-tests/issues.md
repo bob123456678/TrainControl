@@ -423,6 +423,52 @@ we would need if non-reversible trains could not back into termini - *"Otherwise
 of station."* He chose not to need one then. This is that idea arriving on its own terms, wanted for
 what it enables rather than to avoid something.
 
+**Claude, 2026-09-13: left out of the FR migration, and this is why.**
+
+Adam: *"migrate FR tests into MT's as I have no other way of triaging them."*  Every feature request
+that has been BUILT now has an MT.  This one has none because nothing has been built - the section
+above is a design proposal, and it ends in a list of what it would need.
+
+The part that decides how big it is, and the part only he can answer:
+
+> **The twenty squares on his railway already carrying `autoDestination: false` are parking in
+> everything but name.  Do they become parking tracks automatically when the designation arrives, or
+> one at a time by hand?**
+
+Automatically is one migration, and the risk that a square meant as manual-only quietly gains a new
+behaviour.  By hand is twenty right-clicks and nothing surprising.
+
+**Adam, 2026-09-13 - and the answer is neither of those.**
+
+> *"For now, we consider anything with autodestination=false and only one way in/out as a parking
+> square.  We can revisit dedicated marking if this doesn't work out with clean logic, or if it gets
+> too confusing to the user to manage."*
+
+So there is no fourth flag, nothing to migrate and nothing to mark: a parking berth is derived from two
+facts the setup already holds.  Neither is enough alone - `autoDestination` off is also true of a
+platform he dispatches by hand, and one way in and out is also true of a headshunt - and together they
+are what the designation was wanted for.
+
+Measured on his railway the day of the ruling: of the 20 stations carrying `autoDestination: false`,
+**12** are berths by this test.  The other eight - BottomMainPost, RampDown, TunnelLongPark,
+ParkingTrack11, TunnelRightPark, LowerParkingOuter, TunnelCenterPark, TunnelLeftPark - have track
+running through or past them and stay what they are: squares he keeps for himself.
+
+**What it does NOT change**, deliberately, and recorded so a later reader does not "tidy" it:
+
+- **Not the berth rule's gate.**  *"Parking berths cant block any other edges"* (2026-09-12) applies
+  wherever autonomy will not choose the square, which is wider than this on purpose - the square he
+  measured that ruling against is TunnelLongPark, which has three ways in.  Narrowing the guard to the
+  twelve would drop the case it was written for.
+- **Not `isParking`/`isAutoDestination` in the setup.**  Those are the switch he sets, and the derived
+  answer reads them rather than replacing them.
+
+`Layout.isParkingSquare` is the one definition; `core.testWhatCountsAsAParkingSquare` pins both halves
+and the fact that the berth rule is not gated on it; `docs/reference/behaviour.md` section 4 says it in
+prose.  The rest of FR-060 - a backwards approach the planner will build, and something drawn on the
+diagram - is not built, and the backing-in half of it has been moot since 2026-09-04, when the rule
+that refused such an arrival came out on his ruling that *"Return home is manual"*.
+
 ### OB-173 - 2026-09-04 - autonomy editor does not appear on top of the main window
 
 **Kind:** bug  
@@ -925,6 +971,174 @@ Left for a fresh pass, deliberately. This is the guard that stops one train bein
 change is a model change, and the last two answers written on this issue were both wrong in a way that
 only measuring caught.
 
+**Claude, 2026-09-12 - FIXED, along the line Adam proposed.**
+
+*"Wouldn't the best solution be to create / leverage additional edges, as there has to be a computed
+pre-reduction point where the switch is?"*  There is, and the reduction has always had it: `locationsOf`
+gives every step of an edge a place id, and `deriveLocks` builds the whole shared-metal relation by
+intersecting those sets. Only the RESULT reached the runtime - "edge A cannot run with edge B" - so
+`Layout` could answer at whole-edge grain and no finer.
+
+So the places themselves now travel, rather than new nodes being invented for them: splitting the graph at
+switches would rename every edge that crosses one (an edge's identity is the pair of Point names) and put
+a Point with no feedback in the middle of the clearance check, when a Point in this model is a sensor.
+
+  - `GraphReducer.placesAlong` - each edge's places in order, each with what it measures. Far endpoint
+    included, near one not, so they sum to the edge's own length by construction.
+  - `AutonomyBuilder` writes them, `Edge.toJSON` re-writes them (S14-B3), `Layout.fromJSON` reads them.
+  - `Layout.walkStandingTrains` - the one tail walk, now answering in both edges and PLACES: it spends the
+    train's length across the places from the end it entered by, claiming each before spending it.
+  - `isPathClear`'s shared-metal sweep asks `tailLiesOn`: is the tail on metal THIS edge runs over? The
+    DIRECT case stays whole-edge - a path uses all of its own edges, so a tail anywhere on one is in the
+    way; only a SHARED edge can be touched at one end and no further.
+
+An edge with no places keeps the whole-edge answer, so a hand-written configuration behaves as it did.
+
+Measured on Adam's layout, same probe as the third measurement above:
+
+    length 1: clear=TRUE
+    length 2: clear=false  why=too long ... which measures 1
+    length 3: clear=false  why=too long ... which measures 1
+
+Test: `core.testAShortTrainDoesNotBlockTheWholeRun`, seen red first with exactly this refusal. It states
+the geometry it needs (the tile behind the park measured at 2), asserts the covering is real and PARTIAL -
+the train lies on some but not all of the covered run's places - and carries a control that a fifty-unit
+train there still blocks. Both claims also assert every edge involved carries places, so neither can be
+answered by the whole-edge fallback. Mutating `tailLiesOn` to a constant fails one claim each way.
+
+**What remained after this, and it is now settled.** Length 2 was still refused, by the ROOM rule
+rather than by EN57-203: `BottomMainAPre (eastbound) -> BottomMainA (eastbound)` measures 2 and its room
+after the last switch is 1, because the switch sits inside that stretch. Adam read it as *"there are 2
+units of room between BottomMainAPre and BottomMainA (2>=2)"*.
+
+**Claude, 2026-09-12 - his reading is now the rule, and it is his ruling that made it one.**
+
+Measured for him first, because the example he reached for did not say what he expected. With the figures
+he gave - the run is really 6, split 3 either side of the switch at 14,12 - a six-unit train at
+BottomMainA lies on the points whatever way the units are distributed, and closes both roads to the lower
+level: 33 ordered pairs of stations stop being reachable. His own stated criterion, *"it doesn't interfere
+with any other path to a primary station"*, refuses it. And the protruding train at TunnelLongPark he
+wanted told apart from it does the identical thing one junction along.
+
+So there is no property of the track that separates them, and he ruled on the difference himself: *"make
+a rule that parking berths cant block any other edges, but not make that check for active stations."*
+What decides is how long the train stays. `behaviour.md` section 5a carries the rule and what it spends;
+`core.testABerthAndAPlatformJudgeAnOverhangDifferently` is the test, with all four mutations run.
+
+On his layout as it stands today, `Tunnel -> BottomMainA` is now clear at lengths 1 AND 2 - the approach
+measures 2, so his 2>=2 is exactly what admits it - and still refused at 3.
+
+### OB-208 - 2026-09-12 - the grey mark and what routing refuses no longer agree
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-12  
+
+`ui.testBlockedTrackIsGreyWhileAutonomyRuns` is red, and it is red because its subject stopped existing when the wash was narrowed on your instruction - so this is a question rather than a fix.
+
+**What the test asserts.** Three kinds of square, each drawn differently: orange (a train is lying there), grey and no orange (track a train's presence has made unusable), neither (free). It derives the blocked extent from `Layout.edgesCoveredByStandingTrains` - whole edges - and then picks a square in that set that the orange line does NOT cover. On the current build there is no such square, so nothing is drawn fainter and both claims fail at alpha 255.
+
+**Why.** `AutonomySession.tilesBlockedByStandingTrains` delegates to `tilesCoveredByStandingTrains`, which is the per-square walk that pays each square its own length - the narrowing behind *"the visuals look perfect now"*. The grey and the orange therefore now mark the SAME squares, and the middle category is empty.
+
+**What routing still refuses, after OB-207.** A path is refused if it uses a covered edge at all (whole-edge, deliberately left so - a path uses all of its own edges), or if it shares metal with a place the tail actually lies on. The second half now agrees with the picture exactly, which is new. The first does not: an edge is refused over its whole length while only the train's part of it is drawn.
+
+**That may be fine.** A path through a covered edge runs over the square the train is standing on, and that square IS drawn - in orange. So the picture arguably says enough, and the grey is now redundant rather than wrong.
+
+**Your call, and the test follows it either way:**
+
+  1. **The grey stays as it is** - the same squares as the orange, saying "unusable" where the line says "train". Then this test's middle category is gone for good and the class is rewritten around two kinds of square instead of three.
+  2. **The grey goes back to what routing refuses** - whole covered edges, plus the edges sharing the tail's places. Then the picture is stricter than the train's extent again, which is what MT-309 moved away from, and the double-curve work stays as it is.
+
+I have not picked one. The last two answers written on this question were both wrong, and this one sits between a ruling of yours about the drawing and a ruling of yours about the guard.
+
+### OB-209 - 2026-09-12 - timetable capture test times out under load
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-12  
+
+`core.testTimetableCaptureThroughARealRun.testARealRunCapturesNothingWithCaptureOff` fails intermittently under load, and it is a timeout rather than a refusal.
+
+Measured on 2026-09-12: red in the full battery, then red three times standalone immediately after it while the machine was still busy, then green three times in a row once it had settled - identical source each time. It appeared once before, in the battery of 2026-09-11 09:35, with the two batteries after it green.
+
+The message is *"no locomotive moved in 480 seconds"*, with the one train reporting all three destinations as `autolayout.why.blockedWhileRunning`. That sentence is a SUBSTITUTION, not a diagnosis: `whyNothingMoved` replaces the real reason with it whenever autonomy is running, so what the failure prints cannot say which rule refused. Adding a probe that prints `Layout.getLastError()` instead made the test pass, which is the usual sign of a timing window rather than a rule.
+
+**Not OB-207.** Disabling the new place narrowing (`tailLiesOn` forced true, which restores the pre-2026-09-12 whole-edge sweep) leaves it red, so the change of that evening is not the cause.
+
+Left as a report rather than a fix: it needs the real refusal reason to be visible on the failing path before anything can be said about which rule is slow, and that is the same gap OB-199 describes about `whyNothingMoved` being asked after the flag it reports has been cleared.
+
+### OB-210 - 2026-09-12 - a non-reversible train is offered a terminus from the locomotive tab
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-12  
+
+Adam, 2026-09-12: *"In the current setup, why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC (terminus, train is non reversible, not a berth)?"*  And, on the diagnosis: *"there is no debate that bottommainc is a terminus."*
+
+**A rule enforced at one door of two, and the second door is mine.**  OB-205 put the rule in `Layout.isOfferableToOperator` - a train that cannot reverse is not offered an ordinary terminus, while a parking berth stays offered - and only `LayoutRightclickAutonomyMenu` asked it.  The Locomotive commands tab builds its list from `getPossiblePaths` and marks what autonomy will not choose with a DASH, which is right for a berth and wrong here: a dash is a label, not a refusal, and the row still executes on a double click.
+
+`AutoLocomotiveStatus.whatTheOperatorMayChoose` now filters that list through the same rule, inside the funnel both of its call sites already share.  **The rule itself, not a copy.**  `notChosenByAutonomy` beside it is a deliberate lock-free copy because it runs on the event thread three times per repaint; this runs where the path search runs, which is off the event thread for every caller with a worker and on it only for the fallback that was already taking the monitor for a whole-graph search on the same line.  `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` carries that reasoning as its allowance.
+
+**The dash keeps its terminus limb** and it is not dead: a terminus that is ALSO a parking berth is still offered, still dashed.  That is the line Adam drew in OB-205 and the filter respects it.
+
+`regression.testTheDestinationDoorsAgree.testEveryDoorThatOffersADestinationAsksTheRule` is a source census over both doors, the shape `core.testNonReversibleTrains.testEveryManualDoorHandsOverAPrompt` already uses for this question.  Seen red on the Locomotive tab before the fix; taking the call back out fails it again.
+
+### OB-211 - 2026-09-12 - the ... under the destination list shows when nothing was truncated
+
+**Kind:** bug  
+**Raised from:** the triage API  
+**Filed:** 2026-09-12  
+
+Adam, 2026-09-12: *"why is the ... below the list of options visible?  shouldn't this be only shown if there are many more regular destinations than can be displayed?"*
+
+**Yes - and OB-205 is what made it fire constantly.**  The ellipsis compared against `PathOptions.possible`, a count of everything the search returned taken BEFORE the menu dropped the squares it never shows.  So it fired whenever anything at all had been filtered: a switched-off square, one excluding this train, and - after OB-205 - every ordinary terminus whenever the train cannot reverse.  On a non-reversible locomotive that is nearly every right-click, which is the complaint FR-058 was filed about arriving from a new direction.
+
+The rule has a name now, `theListWasCutShort`, and it means one thing: **more ordinary destinations than fitted**.  A square this menu deliberately hides is not a destination missing from the list; it is one somebody went out of their way to switch off, and the autonomy tab lists it - which is Adam's own ruling of 2026-09-01 about switched-off squares.
+
+**`possible` is deleted rather than corrected**, so there is no wrong number left to hand the rule.
+
+**Corrected the same evening, and the correction is the interesting part.**  The first fix kept a SECOND site for the case where the train has nowhere at all to go, on the reasoning that it needs a way to the tab that explains why.  Adam: *"I still see ... for 74 407 DB at Tunnel, even though it has no valid paths"*.  That was my judgement rather than his instruction - his was *"only shown if there are many more regular destinations than can be displayed"* - and it left the reported symptom in place for the train with the least to show.
+
+So the item is now decided in exactly ONE place, and nothing is lost that is not said better elsewhere: the "No available paths" tooltip names every station and why each was refused, and the setup editor's *Why not Moving?* answers the same question on the diagram.  A bare "..." said neither.
+
+`regression.testTheDestinationDoorsAgree.testTheEllipsisMeansTheListWasCutShort` carries three claims, and the last two exist because the first cannot catch this on its own.  The arithmetic pins what the rule computes.  The second asserts that no pre-filter count exists on `PathOptions` - what was wrong was never the comparison but WHICH NUMBER was passed to it.  The third counts the places the menu draws the item and requires exactly one - a second site sits outside the rule, which is how the rule could be right and the symptom stay.
+
+### OB-212 - 2026-09-12 - multiple opacity changes
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-12 10:29  
+**Build:** commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+minor: a parked (blocking in orange) train will be further shaded if an active autonomy route near it also locks that edge.  keep one level of opacity, dont stack.
+
+### FR-074 - 2026-09-12 - usability of unavailable while occupied station list in autonomy editor.
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-12 18:38  
+**Build:** commit ac960047, build\classes, compiled 12 Sep 18:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+sort unavailable while occupied list alphabetically.  lightly grey out stations that can't be chosen in full autonomy.
+
+### FR-075 - 2026-09-13 - bulk tools
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 08:48  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+to bulk tools in the autonomy editor, add an option to mass mark current train locations as their homes
+
+### OB-213 - 2026-09-13 - multi-unit function cascading UI
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 09:06  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+For the buttons on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print "F<x>" text labels on the function buttons- keep the label blank as is the default.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -939,17 +1153,27 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-13 | FR-075 | feature request | Adam: *"to bulk tools in the autonomy editor, add an option to mass mark current train locations as their homes."*  **Home All Trains Where They Stand** sits beside the three clears and is built like them: one bulk door on the session so the station index is re-derived once rather than once per train, the count in the label, and a tooltip that is the same sentence the confirmation shows.  It is the only one of the four that ADDS, so the confirmation names what it will overwrite rather than what it will lose - a train homed here loses its home elsewhere and a square homed to another train is reassigned, both of which follow from `AutonomySession.setHome`, where the one-locomotive-one-station rule lives and which the bulk door calls rather than writing the property itself. | - | `MT-378` |
+| 2026-09-13 | OB-213 | bug | Adam: *"For the buttons on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print 'F<x>' text labels on the function buttons - keep the label blank as is the default."*  A tweak to MT-359's fix: the buttons past an MM2 head's own range are offered because the CONSIST can drive them and carry no icon because the icon and function-type tables are sized to the head's decoder, and the first cut filled that gap with the function's number.  It says what every other iconless function button says, which is the point - a number on some buttons and not others reads as a difference in kind where there is none. | - | `MT-392` |
+| 2026-09-12 | MT-368 | bug | Adam: *"When 2-8-4 is pasted, it should always face east.  Does it?"*  It did not - measured on the frozen snapshot, **east 21 of 40 and west the other 19** from an unchanged setup in one process.  `facingByPath` answered with the first copy of the target its walk touched, and `Layout.getNeighbors` shuffles by design (*"Randomize order to allow for variation in paths"*), so on a square trains may turn at - where the plain copy and the turning copy sit the same distance away facing opposite ways - the shuffle chose the direction.  The walk now runs to the end and lets the distances decide, and prefers the copy a train could be standing on over the one it would have had to turn round on; a compulsory turn has no plain copy, so it still reverses.  The no-path arm kept a `new Random()` as well, and now keeps the train's own heading where the landing can hold it - Adam's Option 1 - and is otherwise deterministic.  `MT-377` | fixed unvalidated | - |
+| 2026-09-12 | FR-074 | feature request | Two small things in the **Unavailable While Occupied** dialog. Sorted alphabetically on the text each row actually shows - `describeTile`, not the point name, because an entry that has lost its name renders as its sensor or coordinates and sorting by something invisible puts it where the reader cannot predict; the old order was `getNamedTiles()` with stored-but-unlisted entries appended, so ticked ones collected at the bottom. And a square autonomy will never choose is drawn in a lighter grey with a tooltip saying why, asked of `stationsAutonomyWillNotChoose` - the runtime's own rule, the same one the captions and the no-available-paths window use, so this does not become a third answer. A foreground colour rather than a disabled box, deliberately: these are perfectly valid to block with, which is what FR-001 exists for, so the mark says what kind of square it is and not that it cannot be picked. `MT-376` | fixed unvalidated | - |
+| 2026-09-12 | OB-212 | bug | Two washes, each right on its own, landing on one square. `LayoutLabel` draws the tile art at `BLOCKED_ALPHA` where the railway refuses the square, and `TileAnnotation` lays a white wash at `DIM` under its arrows so thin arrows lift off busy tile art - neither knew about the other, so a square that is both blocked and annotated was faded twice. The annotation's is the one that gives way: on a tile already at 40% its purpose has been served, while dropping the other would lose what the fade is SAYING. `ui.testTheWashDoesNotStack` paints onto a known ground and reads the corners back, because every model-level question answers the same with the stacking present and absent; both mutations caught | fixed unvalidated | `MT-375` |
+| 2026-09-12 | OB-209 | bug | **Promoted to an MT, not fixed** - Adam: *"there are MT's that you filed as OB's - I can't act on those in the system."* An intermittent failure of `core.testTimetableCaptureThroughARealRun` under load: red in a battery and three times standalone right after it, green three times once the machine settled, identical source. Not OB-207 - forcing `tailLiesOn` true leaves it red. What blocks a diagnosis is that `whyNothingMoved` substitutes `blockedWhileRunning` for the real reason whenever autonomy is running, so the failure cannot say which rule refused | - | `MT-374` |
+| 2026-09-12 | OB-208 | bug | **Promoted to an MT, not fixed** - it is a decision of Adam's and the issue list is not somewhere he can rule. Narrowing the wash to the train's extent, which he approved, made the grey mark the same squares as the orange line, so the "blocked but no train on it" category is empty and `ui.testBlockedTrackIsGreyWhileAutonomyRuns` asserts three kinds of square where two exist. Two ways to go, both written up on the MT: leave the grey as it is and rewrite the test around two categories, or put it back to what routing refuses. Not picked, because it sits between his ruling about the drawing and his ruling about the guard | - | `MT-373` |
+| 2026-09-12 | OB-211 | bug | The "..." under the destination list compared against a count taken BEFORE the menu dropped the squares it never shows, so it fired whenever anything at all had been filtered - and OB-205 added a whole new class of those, every ordinary terminus whenever the train cannot reverse, which on a non-reversible locomotive is nearly every right-click. The rule has a name now and means one thing: more ordinary destinations than fitted. `possible` is deleted rather than corrected, so no wrong number is left to pass. The first fix kept a SECOND site for a menu with nothing at all to offer, on my reasoning rather than his instruction, and Adam reported the symptom again - *"I still see ... for 74 407 DB at Tunnel, even though it has no valid paths"* - so that site is gone too and the item is decided in exactly one place. `regression.testTheDestinationDoorsAgree` pins the arithmetic, asserts the pre-filter count no longer exists, and counts the sites: what was wrong was never the comparison but which number reached it, and then which places bypassed it | fixed unvalidated | `MT-372` |
+| 2026-09-12 | OB-210 | bug | A rule at one door of two, and the second door was mine. OB-205 refused a non-reversible train an ordinary terminus in `isOfferableToOperator`, and only the track diagram's menu asked it; the Locomotive commands tab listed the terminus with a DASH, which is right for a parking berth and wrong here - a dash is a label, not a refusal, and the row still executed on a double click. `AutoLocomotiveStatus.whatTheOperatorMayChoose` now filters through the same rule, in the funnel both call sites already shared, and asks the RULE rather than carrying a fourth copy of it - the monitor guard carries the thread reasoning as its allowance. The dash keeps its terminus limb and it is not dead: a terminus that is also a berth stays offered and stays dashed. `regression.testTheDestinationDoorsAgree` is a census over both doors, seen red on the Locomotive tab | fixed unvalidated | `MT-372` |
+| 2026-09-12 | OB-207 | bug | A one-unit train parked at TunnelLongPark made BottomMainA unreachable from anywhere. Coverage was recorded per EDGE and `isPathClear` refuses any edge sharing metal with a covered one, so a train lying in the FIRST tile of a twelve-tile run fouled the far end of it. Diagnosed wrong twice before it was measured - first *"blocking a whole edge is right"*, then *"the first hop's covering is redundant because its endpoint is occupied"*, and the shared-metal sweep refutes both by refusing edges whose endpoints are free. Fixed along Adam's own line - *"there has to be a computed pre-reduction point where the switch is"* - by carrying the reduction's PLACES to the runtime rather than inventing nodes for them: `locationsOf` already gives every step a place id and `deriveLocks` builds the whole shared-metal relation by intersecting those sets, so only the result was reaching `Layout`. `GraphReducer.placesAlong` writes them, `AutonomyBuilder` and `Edge.toJSON` emit them, `parseAuto` reads them, one tail walk answers in both edges and places, and the sweep asks `tailLiesOn`. The direct case stays whole-edge - a path uses all of its own edges - and an edge with no places keeps the old answer. Length 2 is still refused, by the ROOM rule and not by the standing train, which is a separate question for Adam. `core.testAShortTrainDoesNotBlockTheWholeRun`, seen red first, asserts the covering is PARTIAL and that every edge involved carries places so neither claim can be met by the fallback | fixed unvalidated | - |
 | 2026-09-12 | OB-206 | bug | The Return Home refusal listed the trains that could not get home and left the operator to work out where each was going. It names the station too now, by its BASE name - a message about "BottomMainB (westbound, reverse)" would be worse than none - falling back to the locomotive alone if the home cannot be looked up, because a sentence that drops a train to avoid an awkward name hides the thing it is reporting. `MT-370` | fixed unvalidated | - |
 | 2026-09-12 | OB-205 | bug | Three claims, two causes. **(1)** `isOfferableToOperator` asked only whether the square was active and the locomotive not excluded, so a train that cannot reverse was offered an ordinary terminus by hand; the terminus rule was moved out of `isPathClear` on 2026-09-01 so that *"the operator asking for that BERTH by hand is no longer refused"*, and the rule that was written did not carry the word berth. It does now: a square autonomy never chooses is still offered, an ordinary terminus is not. **(2) and (3) are one cause** - `AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`, so `isTerminus()` cannot tell it from a compulsory terminus, and both doors that decide whether to ask read exactly that flag. `ManualReversalPrompt.forJourney` returned KEEP_DIRECTION without asking and `Layout.shouldReverseAt` returned `current.isReversing()`, which is true there - so the operator was not asked AND the train was turned against the only answer the prompt could have given. Both now ask the DOOR, which is the lesson `shouldReverseAt` already wrote down about `current` and never applied to `destination`. `core.testNonReversibleTrains` gains two claims, each planted. `MT-367`, `MT-368` | fixed unvalidated | - |
 | 2026-09-12 | OB-204 | bug | *"About half the time"* was the diagnosis. `AutonomyBuilder.splitSides` collects the entry side of every reduced edge arriving at a square and takes no notice of the barred list, so BottomMainA - which bars its arrival from the east - looked two-sided to every placement door. That defeats `ArrivalSidePrompt.suggestedFor`'s first and best rule, *"one way in that is not the way it is pointing"*, and drops it through to the compass assumption, which reads the train's FACING - and the facing alternates, because the square it was moved from turns every train round. `unbarredArrivalSides` is what the doors ask now. The test is about STABILITY rather than about west: the same square and two facings must give one answer, with the raw geometry as a control that still gives two, so a rule that had simply stopped working could not pass it. `MT-369` | fixed unvalidated | - |
 | 2026-09-12 | OB-203 | bug | The arrived-from row is the only one in that dialog not laid out by the form, and it showed: it used the MENU's caption - "Train arrived from", which reads as the start of a sentence its submenu finishes - in a column of Title Case nouns, and it put the combo in `BorderLayout.CENTER`, so the combo stretched the full width while every field above it sat at its natural size against the right edge. The label has its own key now, `trainArrived`, in eight languages (the drift argument in the old comment is answered rather than ignored: they are two wordings because a menu item and a form label are two things). The combo moved to `EAST`, which is the shape the form's own rows use, and the row is inset to the form's left and right margins - **read off a laid-out `arrivalFuncLabel` rather than written down**, because the container gap is the look and feel's to choose and this window has two of those depending on how it was built | fixed unvalidated | - |
 | 2026-09-12 | OB-202 | bug | The real Autonomy menu is built from the configurations on disk, so it could not exist until the connect was over and was APPENDED to the bar from `setViewListener` - the heading grew in front of the operator part-way through start-up. `autonomyTopMenu`, which Adam added to the form immediately after Layouts, holds that slot from the first frame now: dressed at construction with the real menu's own heading from the bundle (the form hard-codes "Autonomy", which would have been English in all eight languages), greyed, with the reason on its tooltip - and `mountAutonomyMenu` REPLACES it rather than adding beside it, so the bar's shape never changes. The three-part condition behind the greying moved onto the window as `autonomyMenuIsUsable` / `whyAutonomyIsUnavailable`, because the placeholder and the menu both ask it now and two copies would be two answers waiting to disagree. `regression.testTheAutonomyMenuHoldsItsSlot` asserts the heading is there before any mount, that the count and the index do not move across the swap, that exactly one autonomy heading exists afterwards, and that whatever holds the slot agrees with the window - **written but not yet run**, because it builds the real window through `LayoutSandbox` and Adam's own TrainControl was open | fixed unvalidated | - |
-| 2026-09-10 | FR-069 | feature request | Adam: *"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear the segment lengths across all pages, after the user confirms in a popup."* **Clear All Track Lengths (N)** sits beside the two clears already there and is built like them: one bulk door on the session so the reducer is re-derived once rather than once per measured square, the count in the label, and a tooltip that is the same sentence the confirmation shows - from one builder, which is the arrangement OB-194 put there so the two cannot drift. The dialog says how many squares it is about to empty and that typing them again is the only way back, because there is no undo and no file to restore from until Save. Greyed when nothing is measured, and the guard asks again when it is pressed - the affordance and the guard being one question is `guard-and-affordance-same-question`. `regression.testClearAllTrackLengths` measures squares on more than one page and asserts none survives, which is the half a per-page clear would pass | fixed unvalidated | - |
+| 2026-09-10 | FR-069 | feature request | Adam: *"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear the segment lengths across all pages, after the user confirms in a popup."* **Clear All Track Lengths (N)** sits beside the two clears already there and is built like them: one bulk door on the session so the reducer is re-derived once rather than once per measured square, the count in the label, and a tooltip that is the same sentence the confirmation shows - from one builder, which is the arrangement OB-194 put there so the two cannot drift. The dialog says how many squares it is about to empty and that typing them again is the only way back, because there is no undo and no file to restore from until Save. Greyed when nothing is measured, and the guard asks again when it is pressed - the affordance and the guard being one question is `guard-and-affordance-same-question`. `regression.testClearAllTrackLengths` measures squares on more than one page and asserts none survives, which is the half a per-page clear would pass | - | `MT-350` |
 | 2026-09-10 | OB-198 | bug | Fixed in one place rather than three, which is what makes it stay fixed. `LayoutEditor.autonomyHover` was set on hover and never cleared, and Control+H, Control+S and Control+E each read it and built a `TileKey` out of whatever coordinates it gave - so after a page step all three named a square on the page before, `getCoordinates` answered -1,-1, and the key acted on `(page, -1, -1)`. There is one question now, `hoveredSquare()`, which answers null when the remembered label is not on the grid it is asked about and **forgets it while it is there**, so nothing can read it twice; `leaveFor` clears it on the way out of a page as well. `regression.testTheHoveredSquareIsForgotten` hovers a real label off the rendered editor, then one that is not in the grid, and asserts the second names nothing - two of its three claims go red with the check removed | fixed unvalidated | - |
 | 2026-09-10 | OB-199 | bug | Two things, and the diagnostic half was fixed first: `whyNothingMoved` was asked AFTER `stopLocomotives()` and reports exactly the flag that call clears, so it was a constant on the failing path. The flake itself: both tests in the class call `loadedConfiguration()`, which parses a NEW `Layout` while the one before it is still driving trains - `stopLocomotives` stops them *gracefully*, at their next station, so it returns long before the railway is quiet, and the locomotives belong to the MODEL and are shared. So the second test can start against a fleet the first is still driving, `getActiveLocomotives()` on the new layout stays empty, and the wait runs to its ceiling. `loadedConfiguration` now waits for the railway in force to go quiet, and says so loudly if it does not inside a minute. **This is a mechanism, not a proof** - it matches the shape (four failures in a battery, none standalone) and the change is right on its own terms whether or not it is the cause, and the diagnostic will now say if it was not | fixed unvalidated | - |
 | 2026-09-10 | OB-196 | bug | **Not a defect.** Adam: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing. Actual tracks are much longer... these are not realistic lengths, and I need to change them on the diagram."* So the eight squares that offer a train of two units or more nowhere at all are an artefact of three test measurements, not of the rule - and the answer is a tape measure on the diagram, which is his to do. What came out of it: `test/layouts/live-snapshot` now carries **no lengths at all**, on his instruction *"remove all currently set segment lengths and set custom lengths where it makes sense for your tests"*, and the two censuses set the three tight tiles themselves and say in the file that it is a deliberate stress configuration rather than a measurement of his railway. Every figure they report was really about those three tiles | declined | - |
 | 2026-09-10 | OB-197 | bug | Adam: *"it should stop doing that. that was not intended."* `TrainControlUI`'s key chain ended `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping` holds all 26 letters - so Control plus every letter no named shortcut caught selected a locomotive button exactly as the bare letter does. That is also why the shortcut guard's printout was wrong about which keys were free, and FR-066's key was picked off that list. One clause, plus the guard that keeps it: `regression.testNoTwoShortcutsShareAKey.testTheFallThroughStillFiltersControl` fails if the filter comes off, and everything that class prints about free keys rests on it | fixed unvalidated | - |
-| 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** opens the length dialog on the square under the pointer in the autonomy editor. **The first cut had two defects and a review found both**, each the shape `promptLengthFor`'s own javadoc said it avoided: it asked `isIgnored`, which is one of THREE questions `buildTileMenu` asks before it reaches Set Length, so it opened the dialog on a text label whose menu offers no length at all; and it wrote to the hovered square where the menu writes to the run's LEADER, so the two doors put the same number in two places and a run measured through both counted twice. There is one door now - `buildTileMenu` adds its item inside `if (offersALength(tile))` and binds it to `applyLength(squareTheLengthWouldGoOn(tile))`, which is what the key calls - and `regression.testControlEAsksTheMenusQuestion` compares the two over every square of a page rather than over two named ones. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is free in both - which became true only with `OB-197` | fixed unvalidated | - |
+| 2026-09-09 | FR-066 | feature request | Adam picked the key himself once both handlers had been read - **"let's do E"** - Control+D, which the ticket proposed, being taken twice over by the editor's address toggle and the main window's locomotive adder. **Control+E** opens the length dialog on the square under the pointer in the autonomy editor. **The first cut had two defects and a review found both**, each the shape `promptLengthFor`'s own javadoc said it avoided: it asked `isIgnored`, which is one of THREE questions `buildTileMenu` asks before it reaches Set Length, so it opened the dialog on a text label whose menu offers no length at all; and it wrote to the hovered square where the menu writes to the run's LEADER, so the two doors put the same number in two places and a run measured through both counted twice. There is one door now - `buildTileMenu` adds its item inside `if (offersALength(tile))` and binds it to `applyLength(squareTheLengthWouldGoOn(tile))`, which is what the key calls - and `regression.testControlEAsksTheMenusQuestion` compares the two over every square of a page rather than over two named ones. `regression.testNoTwoShortcutsShareAKey` reads both key handlers on every run, fails on a key bound twice in one window, and prints what is free in both - which became true only with `OB-197` | - | `MT-341, MT-342, MT-343` |
 | 2026-09-09 | OB-195 | bug | Adam: *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the 'allow in autonomy' option is checked, otherwise the train may only pass through in its current direction."* `AutonomySession.stationsAutonomyWillNotChoose` carried a second clause, `isMustTurnAround`, and a comment claiming it was the runtime's rule; it is not, because a compulsory turn that stops is built as a TERMINUS and `Layout.isSendableDestination` admits one. The clause is gone and nothing replaces it: **Can Be Chosen in Full Autonomy** is the one switch that decides, and turning round says what happens when a train arrives rather than who may send one. `core.testACompulsoryTurnIsChosenLikeAnyOtherStation` asserts both halves on `single-switch`, where the two markings can disagree - on Adam's own railway every compulsory turn is also marked manual-only, which is why this survived. behaviour.md section 3 carries the ruling | fixed unvalidated | - |
 | 2026-09-09 | OB-193 | bug | TopMainR2 is `1 - Main:6,4`, and the snapshot captions it twice - on `6,4` and on `6,5` - which is the state `migrateStationLabels` can produce without anybody asking, because it writes captions through the raw store door and that door does not sweep the old one away. Already fixed on 2026-09-08 by **05c7f48e** (MT-337): `TrainControlUI.autonomyCaptionAt` makes a SELF-caption give way when another square is already naming that station, so the offset label - the one somebody placed - is the one that survives. Verified rather than believed: `regression.testTheHomeLabelIsDrawnOnce` now names that square and asserts one label on it, and goes red with the fix removed | fixed validated | - |
 | 2026-09-09 | OB-194 | bug | Adam: *“Warning if using the bulk tool”* - so the warning rather than a real undo. The confirmation was a fixed sentence about home assignments; it now names every locomotive it is about to lift, says how many squares it will empty, and says that Cancel will not put them back. It cannot, since OB-183: placements are read from the railway rather than from the setup, so closing the editor restores the file and not the trains. One builder feeds both the dialog and the menu item's tooltip, so the warning cannot arrive only after the click. `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` asks the editor for the string and checks all three, in whichever of the eight languages the run is in | fixed unvalidated | - |
@@ -962,7 +1186,7 @@ not, never both.
 | 2026-09-08 | OB-185 | bug | a one-way restriction changes no tile art - what moves is the arrow drawn over it - and the only redraw door rebuilt every label on the page. There is a light door beside the heavy one now, and the running layout is still rebuilt because that half was never the flicker | fixed unvalidated | MT-334 |
 | 2026-09-08 | OB-186 | bug | the menu bar moved into the window title and the whole interface shrank, after the look and feel was installed earlier so that tests would stop running against a program drawn in Metal. FlatLaf decides its scale AND its window decorations once at install and caches both, so one line's position changed every font and margin. Both are declared constants now, and the install touches AWT first so the scale cannot depend on call order | fixed unvalidated | MT-340 |
 | 2026-09-07 | OB-179 | bug | the column and row numbers stopped being a setting of their own: they are part of the grid, on with it and off without, and the "Show Coordinates" item is off both editors' right-click menus. Control+K now turns the grid, which is the only switch either of them has | fixed unvalidated | - |
-| 2026-09-07 | FR-061 | feature request | what a caption says is one **Text Labels** dropdown above Track Directions - Station Names (default, remembered), Parked Locomotives, Home Locomotives, None - replacing a master switch and two boxes that were not independent of it | fixed unvalidated | - |
+| 2026-09-07 | FR-061 | feature request | what a caption says is one **Text Labels** dropdown above Track Directions - Station Names (default, remembered), Parked Locomotives, Home Locomotives, None - replacing a master switch and two boxes that were not independent of it | - | `MT-274, MT-282, MT-283` |
 | 2026-09-06 | OB-178 | bug | a route with auto-fire unchecked and a blank s88 refused to save, demanding an integer; blank now reads as 0 | fixed unvalidated | - |
 | 2026-09-05 | OB-177 | bug | the "<locomotive> is facing" menu showed nothing ticked when the recorded facing was one the square cannot hold; it now lists that facing too, so the menu says what the train is down as | fixed unvalidated | - |
 | 2026-09-05 | OB-176 | bug | the track-length box is selected when its dialog opens | fixed unvalidated | - |
@@ -973,14 +1197,14 @@ not, never both.
 | 2026-09-04 | OB-172 | bug | one missing square could delete an axis number; the ruler now looks in three rows, and the numbers follow the grid setting | - | [MT-268](tests.md#mt-268) |
 | 2026-09-03 | FR-058 | feature request | the diagram's right-click menu lists only what autonomy would choose; everything else valid is under **More Destinations**, uncapped | - | [MT-266](tests.md#mt-266) |
 | 2026-09-03 | OB-171 | bug | the reversal-length notice fired on every square of the run in; one notice per square trains turn at now, saying how many squares still need a length | fixed unvalidated | - |
-| 2026-09-02 | FR-057 | feature request | the diagram prints its column and row numbers, on by default. **Its toggle is gone as of OB-179** - the numbers follow the grid now, so they have no menu item and no preference of their own, and Control+K turns the grid instead | fixed unvalidated | - |
+| 2026-09-02 | FR-057 | feature request | the diagram prints its column and row numbers, on by default. **Its toggle is gone as of OB-179** - the numbers follow the grid now, so they have no menu item and no preference of their own, and Control+K turns the grid instead | - | `MT-274, MT-277, MT-284, MT-291` |
 | 2026-09-02 | OB-170 | bug | the window still came up without the keyboard, and the request was never made again | - | [MT-259](tests.md#mt-259) |
-| 2026-09-02 | FR-056 | feature request | right-clicking a tunnel flashes the square it is joined to, when that square is on this page | fixed unvalidated | - |
+| 2026-09-02 | FR-056 | feature request | right-clicking a tunnel flashes the square it is joined to, when that square is on this page | - | `MT-391` |
 | 2026-09-02 | R28-C1 | feature request | "Clear All Home Locomotives" restored to the autonomy editor, with a confirmation | - | [MT-254](tests.md#mt-254) |
 | 2026-09-02 | OB-167 | bug | station no + must reverse + disabled gets the same icon as a terminus | fixed unvalidated | - |
 | 2026-09-02 | OB-169 | bug | clicking a palette tile then an occupied square no longer placed it | - | [MT-252](tests.md#mt-252) |
 | 2026-09-02 | OB-168 | bug | the window came up without the keyboard, so the locomotive letters did nothing | - | [MT-251](tests.md#mt-251) |
-| 2026-09-01 | FR-054 | feature request | a drawn placeholder locomotive for one with no picture | fixed unvalidated | - |
+| 2026-09-01 | FR-054 | feature request | a drawn placeholder locomotive for one with no picture | - | `MT-390` |
 | 2026-08-31 | OB-166 | bug | a hand dispatch swept every protecting signal, so an empty platform was commanded green | - | [MT-246](tests.md#mt-246) |
 | 2026-08-31 | OB-165 | bug | Return Home stayed dark after a train left its claimed home | - | [MT-165](tests.md#mt-165) |
 | 2026-08-31 | OB-164 | bug | the diagram right-click menu offers no destinations in non-atomic mode - closed as a known limitation | declined | - |
@@ -1024,24 +1248,24 @@ not, never both.
 | 2026-08-29 | OB-135 | bug | The wait mark still does not animate on the track diagram | - | [MT-206](tests.md#mt-206) |
 | 2026-08-29 | OB-131 | bug | Start Autonomy never comes back if a train never berths | - | [MT-205](tests.md#mt-205) |
 | 2026-08-29 | FR-042 | feature request | Spot-check the newly translated autonomy strings | - | [MT-204](tests.md#mt-204) |
-| 2026-08-28 | FR-041 | feature request | A splash while the station is reached, before there is a window to put one in | fixed unvalidated | - |
+| 2026-08-28 | FR-041 | feature request | A splash while the station is reached, before there is a window to put one in | - | `MT-389` |
 | 2026-08-28 | OB-129 | bug | The wait mark counted timer ticks on an event thread that coalesces them, and was capped at 400 in a top-aligned parent | fixed unvalidated | - |
-| 2026-08-28 | FR-040 | feature request | The Layout menu names its data source instead of offering to tell you | fixed unvalidated | - |
+| 2026-08-28 | FR-040 | feature request | The Layout menu names its data source instead of offering to tell you | - | `MT-388` |
 | 2026-08-28 | OB-128 | bug | A greyed tab is not a closed door: nine methods opened it by index, and the panel kept the railway that had been unloaded | fixed validated | - |
 | 2026-08-28 | OB-127 | bug | An empty layout path is the working directory, and its index named five pages that were never deleted | fixed validated | - |
 | 2026-08-28 | OB-126 | bug | The grey Edit Layout button named one of its three reasons whatever was true | fixed unvalidated | - |
 | 2026-08-28 | OB-125 | bug | The crop editor reopens where the crop was taken, not on the default view | fixed unvalidated | - |
 | 2026-08-28 | FR-038 | feature request | Mis-filed: the crop editor quirk is a bug, re-filed as OB-125 | cancelled | - |
 | 2026-08-28 | FR-039 | feature request | The request to cancel FR-038, which is done - nothing of its own to work | cancelled | - |
-| 2026-08-27 | FR-036 | feature request | Plus and minus walk through the pages, through the switch that already existed | fixed unvalidated | - |
-| 2026-08-27 | FR-037 | feature request | Travel restrictions can be drawn on the ordinary track diagram, on by default | fixed unvalidated | - |
+| 2026-08-27 | FR-036 | feature request | Plus and minus walk through the pages, through the switch that already existed | - | `MT-386` |
+| 2026-08-27 | FR-037 | feature request | Travel restrictions can be drawn on the ordinary track diagram, on by default | - | `MT-387` |
 | 2026-08-27 | OB-122 | bug | Not a defect: the warning was right, and the track diagram was the thing at fault | fixed validated | - |
 | 2026-08-27 | OB-123 | bug | A reversing point is judged by where a train could go, not by what arrives | fixed unvalidated | - |
 | 2026-08-27 | OB-124 | bug | Four windows had no application icon, and the rule was written seven times | fixed unvalidated | - |
-| 2026-08-27 | FR-033 | feature request | Fifty locomotive mapping pages, refused in the method and greyed in the menu | fixed unvalidated | - |
+| 2026-08-27 | FR-033 | feature request | Fifty locomotive mapping pages, refused in the method and greyed in the menu | - | `MT-383` |
 | 2026-08-27 | OB-121 | bug | The + row in the conditions list was handed the previous cell’s grey by a recycled renderer | fixed unvalidated | - |
-| 2026-08-27 | FR-034 | feature request | The label chooser opens on the nearest station, and the last-clicked one is spent after one use | fixed unvalidated | - |
-| 2026-08-27 | FR-035 | feature request | Station labels can be dragged in the autonomy editor, by the label or by its square | fixed unvalidated | - |
+| 2026-08-27 | FR-034 | feature request | The label chooser opens on the nearest station, and the last-clicked one is spent after one use | - | `MT-384` |
+| 2026-08-27 | FR-035 | feature request | Station labels can be dragged in the autonomy editor, by the label or by its square | - | `MT-385` |
 | 2026-08-27 | OB-120 | bug | Test a path drew routes into stations that refuse arrivals from that side | fixed unvalidated | - |
 | 2026-08-27 | OB-119 | bug | Escape did not put the autonomy editor's tools down | fixed unvalidated | - |
 | 2026-08-27 | FR-032 | feature request | Crop or pan an icon again without reselecting the source | - | [MT-203](tests.md#mt-203) |
@@ -1099,11 +1323,11 @@ not, never both.
 | 2026-08-24 | OB-093 | bug | Autonomy checkbox visible beside a greyed tab; the notice now offers a download | - | [MT-177](tests.md#mt-177) |
 | 2026-08-24 | OB-092 | bug | Renaming a page to "5" excluded the page whose id is 5 and emptied it | - | [MT-161](tests.md#mt-161) |
 | 2026-08-24 | OB-090 | bug | Autonomy error count, and Fix it offered instead of Start | - | [MT-173](tests.md#mt-173) |
-| 2026-08-23 | FR-001 | feature request | Station unavailable while another point is in use, as lock edges | fixed unvalidated | - |
-| 2026-08-22 | FR-006 | feature request | Editor grid is a toggle, and hovering no longer resizes a tile | fixed unvalidated | - |
-| 2026-08-22 | FR-007 | feature request | Autonomy can be set up by importing, from the menu with nothing set up | fixed unvalidated | - |
-| 2026-08-23 | FR-010 | feature request | Home locomotive picker filters, and offers the one being driven | fixed unvalidated | - |
-| 2026-08-23 | FR-011 | feature request | Add to autonomy uses the same filtering picker | fixed unvalidated | - |
+| 2026-08-23 | FR-001 | feature request | Station unavailable while another point is in use, as lock edges | - | `MT-146, MT-345, MT-346` |
+| 2026-08-22 | FR-006 | feature request | Editor grid is a toggle, and hovering no longer resizes a tile | - | `MT-379` |
+| 2026-08-22 | FR-007 | feature request | Autonomy can be set up by importing, from the menu with nothing set up | - | `MT-380` |
+| 2026-08-23 | FR-010 | feature request | Home locomotive picker filters, and offers the one being driven | - | `MT-381` |
+| 2026-08-23 | FR-011 | feature request | Add to autonomy uses the same filtering picker | - | `MT-382` |
 | 2026-08-23 | FR-012 | feature request | A dozen editor cycles must retain nothing | fixed validated | - |
 | 2026-08-22 | FR-008 | feature request | Route editor: Highlight on Diagram dropped, Test renamed Test Condition | fixed validated | - |
 | 2026-08-23 | OB-054 | bug | Page link menu: a repeated heading and an empty section | - | [MT-143](tests.md#mt-143) |
@@ -1136,12 +1360,12 @@ not, never both.
 | 2026-08-24 | OB-082 | bug | The autonomy editor title used a dash rather than a colon | - | [MT-158](tests.md#mt-158) |
 | 2026-08-24 | OB-083 | bug | Cosmetics of the unavailable-while-occupied window | - | [MT-158](tests.md#mt-158) |
 | 2026-08-24 | OB-067 | bug | A page named after another page's id collected its settings | - | [MT-161](tests.md#mt-161) |
-| 2026-08-24 | FR-015 | feature request | Backup writes one archive holding all the state | fixed unvalidated | [MT-159](tests.md#mt-159) |
-| 2026-08-24 | FR-014 | feature request | The caption menu items name the station | fixed unvalidated | [MT-162](tests.md#mt-162) |
-| 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | fixed unvalidated | [MT-163](tests.md#mt-163) |
-| 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | fixed unvalidated | [MT-166](tests.md#mt-166) |
-| 2026-08-24 | FR-020 | feature request | Backing up a layout that lives on the Central Station | fixed unvalidated | [MT-170](tests.md#mt-170) |
-| 2026-08-24 | FR-021 | feature request | The route file is downloaded, so it reaches the backup | fixed unvalidated | [MT-172](tests.md#mt-172) |
+| 2026-08-24 | FR-015 | feature request | Backup writes one archive holding all the state | - | [MT-159](tests.md#mt-159) |
+| 2026-08-24 | FR-014 | feature request | The caption menu items name the station | - | [MT-162](tests.md#mt-162) |
+| 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | - | [MT-163](tests.md#mt-163) |
+| 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | - | [MT-166](tests.md#mt-166) |
+| 2026-08-24 | FR-020 | feature request | Backing up a layout that lives on the Central Station | - | [MT-170](tests.md#mt-170) |
+| 2026-08-24 | FR-021 | feature request | The route file is downloaded, so it reaches the backup | - | [MT-172](tests.md#mt-172) |
 | 2026-08-24 | OB-091 | bug | The autonomy editor reserves the same room for the grid | - | [MT-172](tests.md#mt-172) |
 | 2026-08-24 | OB-087 | bug | A deadlock reported on an old build; a real one found and reverted | - | [MT-167](tests.md#mt-167) |
 | 2026-08-24 | OB-088 | bug | Capture stopped whenever the setup was rebuilt | - | [MT-168](tests.md#mt-168) |
@@ -1194,7 +1418,7 @@ not, never both.
 | 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | - | [MT-095](tests.md#mt-095) |
 | 2026-08-22 | FR-003 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | - | [MT-097](tests.md#mt-097) |
 | 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
-| 2026-08-22 | FR-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
+| 2026-08-22 | FR-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | - | `MT-094` |
 | 2026-08-22 | FR-009 | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
 
 **OB-008 to OB-012 are fixed, 2026-08-22.** Two of them share `MT-102`, because they are the same

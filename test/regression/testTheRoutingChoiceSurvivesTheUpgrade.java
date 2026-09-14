@@ -662,22 +662,28 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * The Auto tab on a layout whose autonomy is an `autonomy.json` (RGN-A2, MT-244).
+     * The Auto tab on a layout whose autonomy is an `autonomy.json` stays SHUT (Adam, MT-244).
      *
-     * Adam asked for exactly this: *"make a test case for this.  in my testing, it loaded OK."*
+     * **This claim was inverted on 2026-09-13, and the inversion is the point.**
      *
-     * **What the finding says.**  `refreshAutonomyTabState` computes
-     * `loaded = getAutonomySession() == null || activeDiagramConfiguration != null`, and disables the
-     * tab when that is false.  A user upgrading from 2.7.4c has a local layout, a session (because the
-     * layout is local), and no diagram configuration - so the reasoning goes that their Auto tab is
-     * greyed and the thing they have been using for a year is unreachable.
+     * It was written under RGN-A2, on Adam's *"make a test case for this.  in my testing, it loaded
+     * OK"*, and asserted the opposite: that the tab is reachable, because an upgrading user's autonomy
+     * was loaded and live and this tab held the only way to reach it.
      *
-     * **What this asserts is the state, not the theory.**  It puts a window on a local layout that
-     * carries a legacy `autonomy.json` and no diagram configuration at all, parses that JSON the way
-     * the JSON path does, and asks the tab.
+     * **The half that made that argument has stopped being true.**  Nothing at start-up parses or
+     * activates `autonomy.json` any more - the only two `parseAuto` callers in `src` are the diagram
+     * path and the Validate button on the JSON tab.  So the tab is not standing between that user and
+     * a running railway; it is standing in front of an empty one, offering a route into a model the
+     * rest of the application has moved off.
+     *
+     * Put to Adam with both readings, and ruled: *"The tab should stay shut until they import."*
+     *
+     * The SOP's paragraph for exactly this: "When a root fix lands, expect tests of the old bug to
+     * fail at their preconditions - that is confirmation, not regression", and inverting into a guard
+     * on the new invariant beats deleting, because the scenario is still the one that matters.
      */
     @Test
-    public void testTheAutoTabIsReachableWithALegacyAutonomyJson() throws Exception
+    public void testTheAutoTabStaysShutWithALegacyAutonomyJson() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
         {
@@ -750,10 +756,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             assertTrue(pane.getTabCount() > 2, "the window has no Auto tab to ask about");
 
-            assertTrue(pane.isEnabledAt(2),
-                "the Auto tab is greyed on a local layout whose autonomy comes from an autonomy.json "
-                + "- which is every user upgrading from 2.7.4c, and the thing they have been using "
-                + "for a year (RGN-A2)");
+            // Before a session exists nothing has decided anything, and the tab's state here is
+            // whatever start-up left.  The claim is about the state AFTER one is built, below.
+            boolean beforeASession = pane.isEnabledAt(2);
 
             // AND WITH A SESSION IN EXISTENCE, which is the half the finding turns on.
             //
@@ -772,11 +777,13 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].refreshAutonomyTabState());
 
-            assertTrue(pane.isEnabledAt(2),
-                "the Auto tab is greyed once a session exists, on a layout whose autonomy is an "
-                + "autonomy.json and which has no diagram configuration - so an upgrading user loses "
-                + "the tab as soon as anything touches the editor.  This is RGN-A2, and it is the "
-                + "state Adam could not reproduce by hand");
+            assertFalse(pane.isEnabledAt(2),
+                "the Auto tab is OPEN on a layout whose autonomy is an autonomy.json and which has no"
+                + " diagram configuration. Adam, 2026-09-13: \"The tab should stay shut until they"
+                + " import.\" Nothing at start-up activates that file any more, so the tab is not"
+                + " holding a running railway for this user - it is offering a way into the old model"
+                + " instead of the import. (It was "
+                + (beforeASession ? "open" : "shut") + " before a session existed.)");
         }
         finally
         {

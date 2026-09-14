@@ -994,7 +994,54 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
 
-        return session == null ? paths : session.getStationIndex().distinctDestinations(paths);
+        List<List<Edge>> distinct =
+            session == null ? paths : session.getStationIndex().distinctDestinations(paths);
+
+        return whatTheOperatorMayChoose(distinct);
+    }
+
+    /**
+     * Drops the destinations this train may not be sent to at all (Adam, 2026-09-12).
+     *
+     * *"why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC
+     * (terminus, train is non reversible, not a berth)?"*  Because `OB-205` put that rule in
+     * `Layout.isOfferableToOperator` and only the track diagram's menu was asking it.  This list had a
+     * DASH for it - `notChosenByAutonomy` carries the terminus limb - and a dash is a label, not a
+     * refusal: the row was still there and still executed on a double click.
+     *
+     * **The dash and this filter are not the same question, and both are wanted.**  The dash says
+     * *autonomy will not choose this*, which is true of a parking berth the operator may perfectly
+     * well pick by hand - the reason this list offers berths at all.  This says *you may not send this
+     * train here*, which is true of a terminus it could not leave again.  Adam drew that line himself
+     * in `OB-205`: a square autonomy never chooses stays offered, an ordinary terminus does not.
+     *
+     * **The rule, not a copy of it.**  `notChosenByAutonomy` beside this is a deliberate lock-free
+     * copy because it runs on the event thread three times per repaint; this runs where the path
+     * search already runs, which is off the event thread for every caller that has a worker and on it
+     * only for the fallback that was already taking the monitor through `getPossiblePaths`.  So there
+     * is nothing here to fall out of step.
+     *
+     * @param paths the paths the search returned
+     * @return the ones the operator may actually choose
+     */
+    private List<List<Edge>> whatTheOperatorMayChoose(List<List<Edge>> paths)
+    {
+        if (paths == null || layout == null) return paths;
+
+        List<List<Edge>> allowed = new java.util.ArrayList<>();
+
+        for (List<Edge> path : paths)
+        {
+            if (path == null || path.isEmpty()) continue;
+
+            Point end = path.get(path.size() - 1).getEnd();
+
+            if (end != null && !layout.isOfferableToOperator(end, locomotive)) continue;
+
+            allowed.add(path);
+        }
+
+        return allowed;
     }
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
@@ -1066,6 +1113,27 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     if (tooLong != null)
                     {
                         JOptionPane.showMessageDialog(this, tooLong);
+
+                        return;
+                    }
+
+                    // AND THE OTHER REFUSAL THAT HAS A SENTENCE (PRW-C2).
+                    //
+                    // The berth rule refuses a train whose tail would lie across another road, and
+                    // says so in `errorBerthWouldFoulAnotherRoad` - which reached the log and never
+                    // the operator, because this door pre-checked only the length rule and everything
+                    // else fell through to "check the log".
+                    //
+                    // `error-must-have-a-remedy`: the remedy is in the message, and a door that has
+                    // the message and shows a different one is the case that rule is about.  Same
+                    // method the railway asks, for the reason given just above about the length rule.
+
+                    String foulsARoad =
+                        org.traincontrol.automation.Layout.whyABerthCannotHoldIt(chosen, locomotive);
+
+                    if (foulsARoad != null)
+                    {
+                        JOptionPane.showMessageDialog(this, foulsARoad);
 
                         return;
                     }

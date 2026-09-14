@@ -117,6 +117,81 @@ public class testNonReversibleTrains
         }
     }
 
+    /**
+     * Autonomy never picks a square a train that cannot reverse would have to turn on.
+     *
+     * Adam, 2026-09-13, asked whether autonomy should route such a train to a turning copy at all:
+     * **"Never, unless it's part of a 'return home' backing in manoeuvre."**
+     *
+     * **That is the behaviour, and it is spread across two methods.**  A TERMINUS copy is refused by
+     * `pickPath`'s own filter (`!end.isTerminus() || loc.isReversible()`); a REVERSING copy is refused
+     * for everybody inside `isSendableDestination`.  Nothing asked the DOOR whether the pair of them
+     * add up to his sentence, and the two are edited by different rounds for different reasons - MT-367
+     * moved one of them this month.
+     *
+     * **The exception is not this door.**  Return Home plans through `HomeStaging` and executes with
+     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator (SEV-B2); the
+     * execution tier permits it, which `testAReversingPointIsRefusedToANonReversibleLocomotive` above
+     * asserts by asking `isPathClear`. Backing into a terminus is how such a train gets home at all
+     * (MT-245), so a rule that refused everywhere would stop Return Home working.
+     *
+     * The control is the same train made reversible: without it this would pass on a layout where
+     * autonomy picks nothing for anybody.
+     *
+     * MUTATIONS, run 2026-09-13. Deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath`
+     * fails this. Deleting `!end.isReversing()` from `isSendableDestination` does NOT - a reversing
+     * point is refused to such a train by the execution tier too, which is the subject of the class's
+     * own reversing-point claim. So this holds the OUTCOME Adam asked for rather than one conjunct,
+     * and the reversing half is belt and braces: either rule alone keeps it true, which is worth
+     * knowing before somebody removes one of them on the strength of this being green.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAutonomyNeverPicksATurningCopyForATrainThatCannotReverse() throws Exception
+    {
+        for (boolean reversing : new boolean[]{ false, true })
+        {
+            Layout layout = twoPointLayout(reversing, true);
+
+            if (!reversing) layout.getPoint("REV_end").setTerminus(true);
+
+            Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+            boolean was = loc.isReversible();
+
+            String kind = reversing ? "a reversing point" : "a terminus";
+
+            try
+            {
+                assertTrue(layout.moveLocomotive(loc.getName(), "REV_start", false),
+                    "could not place the locomotive, so there is nothing for autonomy to route");
+
+                loc.setReversible(true);
+
+                if (!reversing)
+                {
+                    assertNotNull(layout.pickPath(loc),
+                        "autonomy picks nothing for a train that CAN reverse either, so the claim"
+                        + " below is about a layout where nothing is ever chosen");
+                }
+
+                loc.setReversible(false);
+
+                assertNull(layout.pickPath(loc),
+                    "autonomy chose " + kind + " for a train that cannot reverse. Adam, 2026-09-13:"
+                    + " \"Never, unless it's part of a 'return home' backing in manoeuvre\" - and"
+                    + " this is full autonomy, not Return Home. A train sent there is a train that"
+                    + " cannot leave.");
+            }
+            finally
+            {
+                loc.setReversible(was);
+                layout.moveLocomotive(null, "REV_start", true);
+            }
+        }
+    }
+
     // Where the reversing-point rule actually lives, so nobody looks for it here.
     //
     // "In full autonomy a train is only ever reversed at a terminus" is a rule about which routes
@@ -804,10 +879,28 @@ public class testNonReversibleTrains
         // forty lines below the loop by a different statement. So a hand-driven send whose
         // DESTINATION is a may-reverse point turned the train without a word - the literal case the
         // feature was built for. A call-site check that knew about one site reported clean about that.
-        assertTrue(flat.contains(
-            "if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))"),
-            "the arrival does not consult the policy, so a journey that ENDS at a may-reverse point "
-            + "turns the train without asking (DIR-A2)");
+        // **THIS USED TO PIN THE EXPRESSION VERBATIM, AND THAT IS HOW A BUG SURVIVED IT** (MT-368).
+        //
+        // It asserted that `Layout.java` contained
+        // `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))` -
+        // the statement, `||` and all.  A guard that requires an expression cannot fail on what
+        // that expression DOES, and this one required the defect: `AutonomyBuilder` emits the
+        // turning copy of a MAY-turn square with `terminus: true`, so the left operand short
+        // circuited and the operator's answer was collected and discarded.  Adam met it as
+        // *"it is just always getting reversed"*.
+        //
+        // Worse than failing to catch it: correcting the line BROKE this test, so the guard
+        // argued for the bug - and the comment beside the code asked that the shape be left
+        // alone for this test's sake.  Code and guard each cited the other and neither read the
+        // railway.
+        //
+        // What is pinned now is only that the arrival asks ONE NAMED RULE.  What that rule does
+        // is `core.testTheArrivalHonoursTheAnswer`, which answers "keep direction" and checks the
+        // train is not turned - a claim a source guard cannot make and should not have implied.
+        assertTrue(flat.contains("if (turnsOnArrival(arrived, loc, reversals))"),
+            "the arrival does not consult the policy through turnsOnArrival, so a journey that "
+            + "ENDS at a may-reverse point may turn the train without reading the answer "
+            + "(DIR-A2, MT-368)");
 
         // AND THE TRAIN IS STOPPED WHERE IT IS GOING TO BE TURNED.
         //

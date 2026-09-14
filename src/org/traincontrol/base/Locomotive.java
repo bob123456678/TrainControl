@@ -1186,8 +1186,26 @@ public abstract class Locomotive
     }
     
     /**
+     * How many functions this locomotive can drive.
+     *
+     * The same as `getNumF` for anything standing on its own.  A consist overrides it, because its
+     * range is the highest of its members rather than the head's - Adam, MT-359: *"Make the allowed
+     * function be the highest possible for the consist"*.
+     *
+     * On the base class so that a caller holding a plain `Locomotive` can ask without knowing whether
+     * it is one.  `TrainControlUI` is exactly that caller: it holds the active locomotive as a
+     * `Locomotive` and decides which function buttons to light from this.
+     *
+     * @return the highest function number that can be driven, exclusive
+     */
+    public int drivableFunctionCount()
+    {
+        return this.getNumF();
+    }
+
+    /**
      * Returns the number of functions
-     * @return 
+     * @return
      */
     public int getNumF()
     {

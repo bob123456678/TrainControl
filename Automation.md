@@ -140,6 +140,57 @@ The diagram marks this: a station that only takes trains one way shows a small a
 
 ---
 
+## Track lengths: what they are for
+
+Nothing above this line needs lengths. A layout with none set works, and TrainControl simply does not judge whether a train fits anywhere. Lengths only ever **refuse** — they are how you stop a train being sent somewhere it physically will not go, and how TrainControl knows that a long train standing at a short platform is hanging back over the track behind it.
+
+**The unit is yours.** A length is a number, not centimetres. Pick something — a coach, a foot, ten centimetres — and use the same thing everywhere. All that matters is that a train's length and a track's length are counted in the same unit.
+
+**Two different numbers, and they are easy to confuse.**
+
+| | Where you set it | What it means |
+| --- | --- | --- |
+| A square's **segment length** | Right-click the square -> **Segment Length...**, or Control+E with the pointer over it | How much train this piece of track physically holds |
+| A station's **maximum train length** | Right-click the station -> **Advanced Parameters...**, or Control+B | The longest train you are willing to have stop here, whatever the track says |
+
+The first is a measurement, the second is a preference. Both are checked and either can refuse. Turn on **Track Lengths** in the setup editor's Toggle Visibility box to see the measurements on the diagram; **Clear All Track Lengths** in the bulk tools starts you over.
+
+### What lengths govern
+
+**Whether a train may be sent somewhere at all.** A train longer than the station's maximum is not sent there. A train longer than the measured track leading in is not sent there either, and the message says which of the two refused it.
+
+**Whether a train would come to rest across a set of points.** This is the one that catches people out. The question is not "does the train fit between the two sensors" but "does it fit in the part after the last switch" — because a train standing on the points blocks every other road through them.
+
+**How much track a standing train is actually occupying.** A train longer than its platform hangs back over the approach, across track that has no sensor of its own. TrainControl blocks that track, and draws it: the orange line on the diagram is as long as the train. Without lengths it cannot know, and two trains can be routed into the same piece of rail.
+
+**Which route is picked**, if you have chosen *Over the shortest track* or *Over the longest track*. Both are measured in your lengths; with none set they have nothing to compare.
+
+### When to set them
+
+Measure **the squares a train comes to rest on, and the run back to the switch behind each one**. That is the stretch every rule above asks about. You do not have to measure the whole layout, and there is no benefit in measuring plain running line that nothing stops on.
+
+**Example: a platform with points just behind it.** The run in from the previous sensor is 6, with a switch in the middle — 3 before it, 3 after.
+
+- A **3-unit** train stops clear of the points. Nothing else on the layout is affected.
+- A **6-unit** train fits the run in, but stands across the points. This is allowed at a station, because the train is passing through and will move on. While it is there, anything routed over those points is refused — so if they are the only way to another part of your layout, that part waits.
+- A **7-unit** train is refused: it does not fit even the whole run in, so its back end would be somewhere nothing has been measured.
+
+**Example: the same track, used as a parking berth.** A berth is somewhere a train *stays* — a square with **Can Be Chosen In Full Autonomy** switched off. Here the 6-unit train is refused, because its back end would sit on the points and shut that road for the rest of the session. A platform may be blocked for a minute; a siding would block it all evening.
+
+> To park long trains, give the berth enough measured track **past** the switch behind it — or park them at a platform instead.
+
+**Example: a platform you want to keep short trains at.** Your platform measures 8 and you never want more than 4 units there. Set **Advanced Parameters...** -> maximum train length to 4. The measurement stays 8, because that is what says whether a train fits; the 4 is your preference on top.
+
+### The one thing to watch
+
+**Measure a whole run, or none of it.** An unmeasured square counts as nothing at all. A half-measured approach therefore understates how much room there is — which is safe, it refuses more than it needs to — but it also makes a *standing* train look longer than it is, because its back end runs over the unmeasured squares for free and blocks them too.
+
+So if a short train seems to be blocking a surprising amount of track, the answer is almost always an unmeasured square behind it, not a fault. Set its length and watch the orange line shrink.
+
+**And the square a train is standing on is how much it can HOLD, not track that swallows the train.** A 2-unit train at a platform measured 10 still lies back over the track behind the platform, and that track is still blocked — the 10 says a 10-unit train would fit there, and nothing more. Measuring a station generously does not make the trains standing at it get out of the way.
+
+---
+
 ## Watching it run
 
 While autonomy is running the diagram shows you what is happening, and it is worth learning to read.
@@ -218,7 +269,7 @@ These live under `Autonomy` -> `Autonomy Settings...`. Most layouts need to chan
 | Pre-arrival speed reduction | How much a train slows on the approach. This is what the third sensor is for |
 | Maximum active trains | How many run at once. Zero means as many as the track allows |
 | Atomic routes | Whether a train reserves its whole route before setting off, or releases track behind it as it goes. Off is more capable and needs your lengths to be right |
-| Train lengths | `Advanced Parameters...` on a station sets its maximum train length; a train too long for it will not be sent there |
+| Train lengths | `Advanced Parameters...` on a station sets its maximum train length; a train too long for it will not be sent there. See **[Track lengths](#track-lengths-what-they-are-for)** for that and for the track measurements it sits on top of |
 | Functions on departure and arrival | Whether each locomotive's preferred functions are switched on when it leaves and off when it arrives. Turn the arrival one off to keep sound running between routes |
 | Locomotive exclusions | Trains that must not stop at a particular station. Set on a non-station instead, and those trains will not pass through it at all |
 | Maximum inactive seconds | A train that has not run for this long is prioritised, so nothing sits forgotten |
@@ -247,7 +298,9 @@ This is the section to read first when nothing happens. In rough order of how of
 
 **A switch or signal on the route is not in the database.** A route is not used if one of its accessories is missing, because the alternative is a train running over track that was never set.
 
-**A train is standing somewhere in the way.** Not necessarily on the route itself — a train occupying a crossing or a shared block can hold up a route that merely passes nearby.
+**A train is standing somewhere in the way.** Not necessarily on the route itself — a train occupying a crossing or a shared block can hold up a route that merely passes nearby. A long train standing at a short platform reaches back further than it looks: the orange line on the diagram shows how far, and **[Track lengths](#track-lengths-what-they-are-for)** explains what to measure.
+
+**The train is too long for everywhere it could go.** If you have set lengths, a train can run out of destinations simply by being long — the tooltip on "No available paths" says so for each station in turn. This is the rule doing its job, but it is worth checking the measurements are right before you shorten the train.
 
 **Two places tell you which it is, rather than making you guess.**
 

@@ -546,6 +546,210 @@ public class testHomeStaging
         }
     }
     /**
+     * The planner offers a platform whose approach holds the train, as the railway does.
+     *
+     * **PRW-B2 leg 2** (Adam, 2026-09-13: *"Do it."*), on his own figures of 2026-09-12: *"it would
+     * not fit just past 14,12 ... so we need a clear rule to govern that this is OK, or simply make a
+     * rule that parking berths cant block any other edges, but not make that check for active
+     * stations."*
+     *
+     * The relaxation that came out of that ruling lived inside `whyTooLongForThisRoute`, bundled with
+     * the station's stated capacity and the room test at every square on the way. The planner could
+     * not take the whole rule to get it - tried on 2026-09-13, and five trains came back
+     * NO_PLAN_FOUND, because the bundle is strictly stricter than the planner's own arithmetic. So the
+     * relaxation is now `Layout.theApproachItselfHoldsIt` and both sides ask it.
+     *
+     * **What went wrong while they disagreed** is the quiet kind: the runtime would have run this
+     * arrival and the planner never offered it, so the train stayed where it was and nothing said why.
+     * The audit the class runs elsewhere compares refusals, and this is the opposite direction - a
+     * refusal the planner invented.
+     *
+     * **The fixture is his example.** HS D is a station autonomy may choose, reached over an edge
+     * measured 6 that crosses a switch with 3 beyond it, and the train is 6 long. Room after the last
+     * switch is 3 and refuses; the approach itself is exactly 6 and allows.
+     *
+     * MUTATION, run 2026-09-13: dropping `theApproachItselfHoldsIt` from the planner's destination
+     * test fails this; dropping it from `whyTooLongForThisRoute` fails the runtime half below.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testThePlannerBuysThePlatformRelaxationToo() throws Exception
+    {
+        Layout layout = load(platformWithASwitchBehindIt());
+
+        Locomotive train = loc(LOC_A);
+
+        Integer lengthWas = train.getTrainLength();
+        boolean reversibleWas = train.isReversible();
+
+        try
+        {
+            train.setTrainLength(6);
+            train.setReversible(true);
+
+            List<Edge> route = new ArrayList<>();
+
+            route.add(layout.getEdge("HS A", "HS D"));
+
+            // THE FIXTURE REALLY IS THE CASE: the room refuses and the approach allows.
+            assertEquals(Layout.measuredRoomAtTheEndOf(route, train), Integer.valueOf(3),
+                "the room after the last switch is not 3 on this fixture, so nothing refuses this"
+                + " arrival and the claim below cannot fail");
+
+            assertTrue(Layout.theApproachItselfHoldsIt(route, train),
+                "the approach does not hold the train on this fixture, so there is no relaxation to"
+                + " buy and the claim below would pass on a planner that never had one");
+
+            // THE RUNTIME ACCEPTS IT, which is the half Adam ruled on.
+            assertNull(Layout.whyTooLongForThisRoute(route, train),
+                "the railway refuses a six-unit train at a platform whose approach measures six,"
+                + " which is the arrival Adam's relaxation of 2026-09-12 exists to allow: "
+                + Layout.whyTooLongForThisRoute(route, train));
+
+            // AND SO DOES THE PLANNER.
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "the planner would not stage a train the railway would have run: " + plan.getOutcome()
+                + ". A planner stricter than its own runtime drops the plan silently - the train stays"
+                + " where it is and nothing says why - which is what PRW-B2 leg 2 was about.");
+
+            assertFalse(plan.getMoves().isEmpty(),
+                "the plan has no moves in it, so \"planned\" says nothing about this arrival");
+
+            applyPlan(layout, plan);
+        }
+        finally
+        {
+            train.setTrainLength(lengthWas);
+            train.setReversible(reversibleWas);
+        }
+    }
+
+    /**
+     * And the planner refuses a home the operator has said is too short for the train.
+     *
+     * **Written for PRW-B2 leg 2's refusing half, and it turned out there was nothing to repair.**  A
+     * station carries a stated maximum train length - the **Advanced Parameters** figure, a preference
+     * rather than a measurement - and `whyTooLongForThisRoute` enforces it at every runtime door. The
+     * reading that produced leg 2 was that the planner did not ask. It does: `HomeStaging.canRest`
+     * ends with `at.validateTrainLength(loc)`, so such a home is refused before any route to it is
+     * searched.
+     *
+     * A second copy of the test was added to the planner's destination branch the same day and taken
+     * out an hour later, when the mutation below showed it changing nothing.  What is left is this
+     * claim, which had nothing holding it before: nothing about the TRACK says no here - the room rule
+     * and the berth rule both measure, and this is a number he typed - so no other claim in this class
+     * covers it.
+     *
+     * MUTATION, run 2026-09-13: deleting `at.validateTrainLength(loc)` from `canRest` makes this plan
+     * READY, and the runtime then refuses the move it contains. The control beside it - the same
+     * railway with the limit raised - is what tells that from a fixture nothing could stage, and it
+     * was added because the first version of this claim passed under its own mutation.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testThePlannerRefusesAHomeTheOperatorSaidIsTooShort() throws Exception
+    {
+        Layout layout = load(platformWithAStatedLimit());
+
+        Locomotive train = loc(LOC_A);
+
+        Integer lengthWas = train.getTrainLength();
+        boolean reversibleWas = train.isReversible();
+
+        try
+        {
+            train.setTrainLength(6);
+            train.setReversible(true);
+
+            List<Edge> route = new ArrayList<>();
+
+            route.add(layout.getEdge("HS A", "HS D"));
+
+            // THE RUNTIME REFUSES IT, and says so in the sentence about the stated length.
+            assertNotNull(Layout.whyTooLongForThisRoute(route, train),
+                "the railway accepts a six-unit train at a platform the operator limited to four, so"
+                + " there is nothing here for the planner to agree with");
+
+            // SO THE PLANNER MUST NOT OFFER IT.
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            // THE CONTROL, IN THIS TEST.  The same railway with the limit raised plans fine, so the
+            // refusal below is this rule rather than a fixture nothing could stage.  Without it the
+            // claim passed under its own mutation - measured 2026-09-13, which is how it was found.
+            Layout generous = load(platformWithAStatedLimit()
+                .replace("\"maxTrainLength\": 4", "\"maxTrainLength\": 20"));
+
+            assertEquals(generous.planReturnToHome().getOutcome(), HomeStaging.Outcome.READY,
+                "the same railway with the operator's limit raised does not plan either, so the"
+                + " refusal below says nothing about the limit");
+
+            assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "the planner staged a train into a platform the operator said is too short for it."
+                + " The railway refuses that move, so the run stops with the fleet half staged and"
+                + " nothing to do about it - which is OB-073, from a number he typed rather than from"
+                + " a length he measured.");
+        }
+        finally
+        {
+            train.setTrainLength(lengthWas);
+            train.setReversible(reversibleWas);
+        }
+    }
+
+    /**
+     * A home the operator has limited to four units, reached over track long enough for six.
+     *
+     * The track says yes and the preference says no, which is the only shape in which this rule is
+     * the one deciding.
+     *
+     * @return the configuration
+     */
+    private static String platformWithAStatedLimit()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + "{'name': 'HS D', 'station': true, 's88': " + (S88_BASE + 3)
+            + ", 'maxTrainLength': 4, 'home': '" + LOC_A + "'}"
+            + "],'edges': ["
+            + "{'start': 'HS A', 'end': 'HS D', 'length': 20},"
+            + "{'start': 'HS D', 'end': 'HS A', 'length': 20},"
+            + "{'start': 'HS A', 'end': 'HS B', 'length': 20},"
+            + "{'start': 'HS B', 'end': 'HS A', 'length': 20}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * A platform reached over a six-unit approach with a switch three units from the end.
+     *
+     * Adam's figures from 2026-09-12, which is what makes this the relaxation's own fixture rather
+     * than a shape invented to exercise it.
+     *
+     * @return the configuration
+     */
+    private static String platformWithASwitchBehindIt()
+    {
+        return json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + "{'name': 'HS D', 'station': true, 's88': " + (S88_BASE + 3)
+            + ", 'home': '" + LOC_A + "'}"
+            + "],'edges': ["
+            // THE ONE THAT MATTERS: measured 6, crossing a switch with 3 beyond it.  `roomAtTheEnd`
+            // is what makes `crossesASwitch` true, and the two numbers are what the room rule and the
+            // relaxation read respectively.
+            + "{'start': 'HS A', 'end': 'HS D', 'length': 6, 'roomAtTheEnd': 3},"
+            + "{'start': 'HS D', 'end': 'HS A', 'length': 6, 'roomAtTheEnd': 3},"
+            + "{'start': 'HS A', 'end': 'HS B', 'length': 6},"
+            + "{'start': 'HS B', 'end': 'HS A', 'length': 6}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * The ring, with HS D a terminus reached over a short measured edge.
      *
      * @return the configuration
@@ -600,19 +804,35 @@ public class testHomeStaging
      *
      * "Free" means the station holds nobody else at the moment the move runs.
      *
-     * **It used to mean the FR-001 occupancy restriction as well, and no longer does (2026-09-09).**
-     * That assertion was added for OB-073: `moveLocomotive` PLACES a locomotive rather than refusing,
+     * **And the FR-001 occupancy restriction again, which this stopped asserting for a day and did not
+     * start again (2026-09-13).**
+     *
+     * The assertion was added for OB-073: `moveLocomotive` PLACES a locomotive rather than refusing,
      * so a replay could not notice a move into a station a restriction was holding back, and the
-     * railway then refused the leg the planner had offered.
+     * railway then refused the leg the planner had offered - the run retried until it gave up and
+     * stopped with the fleet half-staged.
      *
-     * Adam's ruling took the rule off both of the tiers this oracle grades: the planner does not apply
-     * it (see `HomeStaging.firstClearRoute`) and `isPathClear` fences it behind FULL autonomy, which a
-     * staging run is not. So an arrival at a held-back station is now a legal move, and asserting
-     * against it here would fail every correct plan on a layout that uses the setting - the oracle
-     * forbidding what the railway allows, which is the fault it was itself corrected for once before.
+     * It was taken out on 2026-09-09, when Adam ruled the restriction belonged to full autonomy alone:
+     * the planner would not apply it and `isPathClear` would fence it, so asserting against it here
+     * would have failed every correct plan.  **Both halves of that reason expired the next day.**  His
+     * ruling of 2026-09-10 - *"enforce the occupancy ruling in all modes and then rely on
+     * isPathClear"* - took the fence out (`isPathClear`'s own comment: "NO FENCE ... the restriction is
+     * enforced in every tier"), and `HomeStaging.canRest` reads `Point.heldBackBy` against the planned
+     * state once more.  So the planner applies it, the railway applies it, and the oracle that grades
+     * whether they agree was the only one of the three not asking.
      *
-     * `testAStagingRunIsNotRefusedByTheOccupancyRestriction` is what holds the other half now: it asks
-     * `isPathClear` itself, with the flags a staging run sets, about the very path a plan produced.
+     * The note left in its place said `testAStagingRunIsNotRefusedByTheOccupancyRestriction` held the
+     * invariant instead.  **No such method or class exists anywhere under `test/`**, and did not when
+     * the sentence was written - so OB-073's invariant was unguarded rather than moved, and the
+     * sentence is what made that invisible.
+     *
+     * Asked with the LIVE occupancy, which is what the replay has: the plan is being applied to the
+     * model move by move, so who is standing where at the moment a move runs is exactly what
+     * `Point.heldBackBy`'s two-argument form reads.
+     *
+     * MUTATION, run: dropping the `heldBackBy` line from `HomeStaging.canRest` fails
+     * `testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan` here, which is the plan OB-073 was
+     * reported against.
      */
     private static void applyPlan(Layout layout, HomeStaging.Plan plan)
     {
@@ -622,6 +842,25 @@ public class testHomeStaging
 
             assertNull(end.getCurrentLocomotive(),
                 "move \"" + move + "\" sends a locomotive into an occupied station");
+
+            // AND NOT HELD BACK BY A SQUARE SOMEBODY ELSE IS STANDING ON (FR-001, OB-073).
+            //
+            // The one the railway refuses AFTER the planner has offered it, which is the failure
+            // staging exists to avoid: a run that sets off, is refused half way, retries, and stops
+            // with the fleet scattered.  The locomotive being moved is exempt where it is itself the
+            // occupant, which `heldBackBy` applies - a train may leave the watched square for the
+            // station that square holds back.
+            org.traincontrol.automation.Point heldBy = org.traincontrol.automation.Point.heldBackBy(
+                end, move.getLocomotive());
+
+            assertNull(heldBy,
+                "move \"" + move + "\" sends a locomotive to a station held back while "
+                + (heldBy == null ? "" : heldBy.getName() + " is occupied by "
+                    + (heldBy.getCurrentLocomotive() == null
+                        ? "somebody" : heldBy.getCurrentLocomotive().getName()))
+                + ". The railway refuses that leg, so the plan cannot be carried out and the run"
+                + " stops with the fleet half-staged - which is OB-073, and the reason this oracle"
+                + " grades plans against the railway rather than against itself");
 
             assertTrue(
                 layout.moveLocomotive(move.getLocomotive().getName(), move.getEnd().getName(), false),

@@ -432,8 +432,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // undone.  `rememberAutonomy` has logged this since it was written; this door did not.
         if (!autonomy.saveQuietly() && parent.getModel() != null)
         {
-            parent.getModel().log("Could not save the autonomy setup after undoing a diagram edit,"
-                + " so the change may come back the next time the setup is loaded.");
+            parent.getModel().logf("autosetup.log.saveFailedAfterUndo");
         }
     }
 
@@ -568,7 +567,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // the only place that knows it happened.
             if (!this.autonomySessionForTheNote.endEditSession() && parent.getModel() != null)
             {
-                parent.getModel().log("Could not clear the record of this editing session");
+                parent.getModel().logf("autosetup.log.editSessionNotCleared");
             }
 
             this.autonomySessionForTheNote = null;
@@ -592,7 +591,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened)
             && parent.getModel() != null)
         {
-            parent.getModel().log("Could not put the autonomy setup back after cancelling");
+            parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
         }
 
         this.autonomyAsOpened = null;
@@ -604,7 +603,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!autonomy.saveQuietly() && parent.getModel() != null)
         {
-            parent.getModel().log("Could not save the autonomy setup after a diagram edit");
+            parent.getModel().logf("autosetup.log.saveFailedAfterEdit");
         }
     }
 
@@ -1944,6 +1943,14 @@ public class LayoutEditor extends PositionAwareJFrame
             // something else happened to rebuild them.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
+                // THE REMEMBERED CAPTION MODE, now that the panel is in a window (MT-292).
+                //
+                // It applied its own mode while it was being built, and the half that reaches this
+                // diagram asks `getWindowAncestor` - which was null then.  So a remembered None came
+                // back as a word and not as an effect.  Before the redraw below, so the grid is built
+                // once with the captions the operator asked for.
+                autonomyPanel.applyRememberedCaptionMode();
+
                 refreshGrid();
 
                 javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());

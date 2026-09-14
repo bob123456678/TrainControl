@@ -3,7 +3,9 @@ package org.traincontrol.automation;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -348,6 +350,60 @@ public class Edge
     }
 
     /**
+     * The places this edge runs over, in order from its start, and what each of them measures (OB-207).
+     *
+     * **Without these an edge is covered whole or not at all.** A standing train's tail is measured in
+     * units and an edge knew only its total, so `Layout` could say "this edge is fouled" and never
+     * "this edge is fouled as far as here" - and a one-unit train parked at the end of a twelve-tile
+     * run refused every path that shared any tile of it.
+     *
+     * Written by the builder from `GraphReducer.placesAlong`, which is where the lock relation comes
+     * from as well, so what an edge says about its own metal and what it says about its rivals cannot
+     * disagree. The lengths sum to `getLength()`: the arriving square counts and the departing one does
+     * not, the same convention the reducer measures by.
+     *
+     * Empty for a hand-written configuration, for one written before 3.0.0, and for a test graph built
+     * by hand. Every reader falls back to the whole-edge answer when they are empty, which is exactly
+     * what it did before - an old file is no worse off than it was.
+     */
+    private List<String> placeIds = Collections.emptyList();
+
+    private List<Integer> placeLengths = Collections.emptyList();
+
+    /**
+     * Records where this edge runs, as the build worked it out.
+     *
+     * Ignored unless the two lists agree in size, because a reader walks them in step.
+     *
+     * @param ids the place identifiers, in path order
+     * @param lengths what each of them measures, in the same order
+     */
+    public void setPlaces(List<String> ids, List<Integer> lengths)
+    {
+        if (ids == null || lengths == null || ids.size() != lengths.size()) return;
+
+        this.placeIds = Collections.unmodifiableList(new ArrayList<>(ids));
+
+        this.placeLengths = Collections.unmodifiableList(new ArrayList<>(lengths));
+    }
+
+    /**
+     * @return the places this edge runs over, in path order; empty when the build did not say
+     */
+    public List<String> getPlaceIds()
+    {
+        return this.placeIds;
+    }
+
+    /**
+     * @return what each of those places measures, in the same order; empty when the build did not say
+     */
+    public List<Integer> getPlaceLengths()
+    {
+        return this.placeLengths;
+    }
+
+    /**
      * Returns the edge length
      * @return 
      */
@@ -650,6 +706,26 @@ public class Edge
         // Written only when there is one, like roomAtTheEnd above: an absent key means "not traced", which
         // is what a hand-written configuration and anything built before the diagram work should read as.
         if (this.entrySide != null) jsonObj.put("entrySide", this.entrySide);
+
+        // AND THE PLACES, for the same reason S14-B3 gives just above: an export that drops them is not
+        // a configuration this program can reload, and reloading without them silently returns the
+        // whole-edge coverage that OB-207 is about.
+        if (!this.placeIds.isEmpty())
+        {
+            List<JSONObject> placeList = new LinkedList<>();
+
+            for (int i = 0; i < this.placeIds.size(); i++)
+            {
+                JSONObject place = new JSONObject();
+
+                place.put("at", this.placeIds.get(i));
+                place.put("length", this.placeLengths.get(i));
+
+                placeList.add(place);
+            }
+
+            jsonObj.put("places", new JSONArray(placeList));
+        }
 
         if (!commandList.isEmpty())
         {

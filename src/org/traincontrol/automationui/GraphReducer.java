@@ -1272,7 +1272,31 @@ public class GraphReducer
 
         if (edge == null) return out;
 
-        if (authored.getTileLength(edge.getEnd()) <= 0) out.add(edge.getEnd());
+        // AND IT STOPS ASKING ONCE THE STRETCH IS MEASURED AT ALL (Adam, MT-364, 2026-09-12).
+        //
+        // *"I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is
+        // 2.  But it is still asking for the tile at 10,9 (TunnelLongPark) to get a length.  The
+        // calculation should add 10,10's length plus 10,9's length, both of which are past the switch
+        // at 10,8."*
+        //
+        // **The notice and the guard disagreed about what "measured" means.**  `roomAfterTheLastSwitch`
+        // just above has followed his ruling of 2026-09-06 since it was written - *"It is only
+        // indeterminate if the entire logical segment has length 0"* - so a partly measured stretch
+        // answers with what it knows and binds on it.  This walk went on naming every square with no
+        // number of its own, so a stretch the guard could already judge still carried a notice asking
+        // for the rest of it.
+        //
+        // The call site's own comment put that question to him on `MT-305`, saying the cost had
+        // *"changed shape"* - a half-measured stretch makes the guard pessimistic rather than blind -
+        // and that whether it still earned a place *"in a list Adam has called a wall is his call"*.
+        // This is the call.
+        //
+        // **A stretch with nothing measured still names every square**, which is the other half of the
+        // same ruling and the case this notice exists for: there the guard is blind, not pessimistic,
+        // and somebody clearing the list would otherwise be left with a guard that judges nothing.
+        int measured = Math.max(0, authored.getTileLength(edge.getEnd()));
+
+        if (measured <= 0) out.add(edge.getEnd());
 
         List<TileStep> path = edge.getPath();
 
@@ -1282,12 +1306,15 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (component != null && component.isSwitch()) return out;
+            if (component != null && component.isSwitch()) break;
 
-            if (authored.getTileLength(tile) <= 0) out.add(tile);
+            int here = authored.getTileLength(tile);
+
+            if (here > 0) measured += here;
+            else out.add(tile);
         }
 
-        return out;
+        return measured > 0 ? new ArrayList<TileKey>() : out;
     }
 
     private int sumLength(List<TileStep> path)
@@ -1410,6 +1437,81 @@ public class GraphReducer
         {
             out.add(step.getTile().toString());
         }
+
+        return out;
+    }
+
+    /**
+     * One place an edge runs over, and what it measures.
+     */
+    public static final class Place
+    {
+        private final String id;
+
+        private final int length;
+
+        Place(String id, int length)
+        {
+            this.id = id;
+            this.length = length;
+        }
+
+        /**
+         * @return the location identifier, as `locationsOf` names it
+         */
+        public String getId()
+        {
+            return this.id;
+        }
+
+        /**
+         * @return what this place measures, never negative
+         */
+        public int getLength()
+        {
+            return this.length;
+        }
+    }
+
+    /**
+     * The places an edge runs over, in order from its start, each with what it measures (OB-207).
+     *
+     * **The reduction has always known this and never said it.** `locationsOf` gives every step a place
+     * id - the tile, or tile/route on an overpass - and `deriveLocks` builds the whole shared-metal
+     * relation by intersecting those sets between edges. What reached the runtime was only the RESULT,
+     * "edge A cannot run with edge B", so `Layout` could answer at whole-edge grain and no finer: a
+     * one-unit train lying in the FIRST tile of a twelve-tile run refused every path that shared any of
+     * the other eleven, and made a station on the far side unreachable from anywhere.
+     *
+     * Adam, 2026-09-12, proposing the fix as extra nodes: *"Wouldn't the best solution be to create /
+     * leverage additional edges, as there has to be a computed pre-reduction point where the switch
+     * is?"* There is, and this is it without the nodes - a Point in this model is a SENSOR, and an
+     * edge's identity is the pair of Point names, so splitting the graph at switches would rename every
+     * edge that crosses one and put a Point with no feedback in the middle of the clearance check.
+     *
+     * **The far endpoint is included and the near one is not**, which is exactly how an edge's length is
+     * built a few lines up: `sumLength(path) + lengthOf(tile)`. So these lengths sum to `getLength()`,
+     * and the runtime can walk them against a train's length without a second convention to keep in
+     * step. See `lengthOf` for why the arriving tile is the one that counts.
+     *
+     * @param edge the edge
+     * @return its places, in path order, empty for a null edge
+     */
+    public List<Place> placesAlong(ReducedEdge edge)
+    {
+        List<Place> out = new ArrayList<>();
+
+        if (edge == null) return out;
+
+        for (TileStep step : edge.getPath())
+        {
+            for (String id : locationsOf(step))
+            {
+                out.add(new Place(id, lengthOf(step.getTile())));
+            }
+        }
+
+        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd())));
 
         return out;
     }

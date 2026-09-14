@@ -2015,7 +2015,9 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
 
-        int placed = session == null ? 0 : session.tilesWithALocomotive().size();
+        // The same set the bulk home door writes (SEV-C3): `tilesWithALocomotive` reads every page and
+        // the door skips excluded ones, so the two disagreed on a layout with a page left out.
+        int placed = session == null ? 0 : session.placementsAutonomyWillWrite().size();
         int homed = session == null ? 0 : session.tilesWithAHome().size();
 
         javax.swing.JMenuItem clearLocs = item(
@@ -2064,7 +2066,82 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(clearLengths);
 
+        // HOME EVERY TRAIN WHERE IT STANDS (FR-075).  Adam: *"to bulk tools in the autonomy editor,
+        // add an option to mass mark current train locations as their homes."*
+        //
+        // Beside the three clears and built like them, down to the tooltip being the sentence the
+        // dialog shows.  It is the only one of the four that ADDS rather than removes, which is why
+        // its confirmation says what it will overwrite rather than what it will lose: homing a train
+        // here takes its home away from wherever else it had one, and a square already homed to a
+        // different train is reassigned.
+        //
+        // Counted off the same question that greys it - `placementsAutonomyWillWrite`, which is the
+        // set the door actually writes - so the affordance and the guard cannot answer differently
+        // (`guard-and-affordance-same-question`, and SEV-C3 where they did).
+        javax.swing.JMenuItem homeHere = item(
+            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", placed),
+            () -> homeEveryPlacedTrain());
+
+        homeHere.setEnabled(placed > 0);
+        homeHere.setToolTipText(wrapped(placed > 0
+            ? I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", placed)
+            : I18n.t("autosetup.ui.infoNoLocomotivesToHome")));
+
+        bulk.add(homeHere);
+
         return bulk;
+    }
+
+    /**
+     * Makes every placed train's current square its home, after confirming (FR-075).
+     *
+     * Built like `clearAllHomes` beside it: the emptiness check is kept even though the item greys
+     * itself on the same question, because the greying is the AFFORDANCE and this is the GUARD - the
+     * menu's state is refreshed when the panel is, and a train can be moved between one refresh and
+     * the next.
+     *
+     * The confirmation names what will be overwritten rather than what will be lost, because this is
+     * the one bulk tool that adds: a train homed here loses its home elsewhere, and a square homed to
+     * another train is reassigned. Both follow from `AutonomySession.setHome`, which is where the
+     * one-locomotive-one-station rule lives and is what the bulk door calls.
+     */
+    private void homeEveryPlacedTrain()
+    {
+        // COUNTED OFF THE SAME SET THE DOOR WALKS (SEV-C3).
+        //
+        // The label, the confirmation and this guard used `tilesWithALocomotive()`, which reads every
+        // page; the bulk door walks `placedLocomotives()`, which skips excluded ones. So on a layout
+        // with a page left out of autonomy the operator was told a number the gesture would not
+        // deliver - and `guard-and-affordance-same-question` is this file's own recurring defect.
+        java.util.List<TileKey> placed =
+            new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+
+        if (placed.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoLocomotivesToHome"));
+
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", placed.size()),
+            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", placed.size()),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        int assigned = session.homeEveryPlacedTrain();
+
+        say(hint, I18n.f("autosetup.ui.infoTrainsHomed", assigned));
+
+        refresh();
+
+        // THE RUNNING LAYOUT TOO, for the reason `clearAllHomes` gives (VD10-B2): without it the setup
+        // is saved and the running layout keeps the old homes, so Return Home goes on offering the
+        // arrangement the operator has just replaced.
+        setupChanged();
     }
 
     /**
@@ -2362,11 +2439,55 @@ public class AutonomyEditorPanel extends JPanel
         // The two keys still differ, and that difference is the part worth keeping: "a Station Name"
         // when the square shows none, "a Different Station" when it already shows one.  That says
         // which situation you are in without spending a line on which station it is.
-        javax.swing.JMenuItem name = item(showing == null ? I18n.t("autosetup.ui.menuShowStationHere")
-            : I18n.t("autosetup.ui.menuShowStationHereNamed"),
+        // A STATION SQUARE ALWAYS SHOWS ITS OWN STATION, AND THE MENU SAYS SO (Adam, 2026-09-13).
+        //
+        // *"nothing seems to happen when I say 'show a different station here', is it meant to reset
+        // the label?  we should make it clear what this does."*
+        //
+        // It was not meant to reset anything and it was not doing nothing: `promptStationLabel` takes
+        // the branch below for a station square - `applyCaption(tile, tile)` and return, with no
+        // chooser - because a station labelling itself has nothing to ask about.  A station square
+        // captions itself by default, so re-applying that is invisible, and the item promised a dialog
+        // with its wording and its ellipsis.
+        //
+        // Disabled and reworded rather than removed: he asked what it does, and an item that vanishes
+        // answers by hiding.  The tooltip carries the reason, so the rule is readable from the menu it
+        // governs instead of from this comment.
+        // A STATION SQUARE HAS THREE STATES, AND ONLY ONE OF THEM HAS NOTHING TO DO (SVV-C6, SVX-B2).
+        //
+        // `promptStationLabel` captions a STATION square with itself whatever it is showing - the test
+        // there is `isStation(tile)` alone - so no station square is ever offered a choice.  What
+        // differs is whether choosing it would CHANGE anything:
+        //
+        //   already showing itself    nothing to do.  Greyed, and the label says why.
+        //   showing another station   resets it to its own.  Live - a drag can produce this, and it
+        //                             was the case a narrower test left promising a dialog.
+        //   showing nothing           captions it with itself.  Live, and this is the state "Stop
+        //                             Showing" leaves behind - greying it here made that one-way
+        //                             (SVX-B2), while the greyed label went on asserting the square
+        //                             shows a station it no longer showed.
+        //
+        // Neither live case is offered as "a DIFFERENT station", because a station square cannot show
+        // one; both read as "Show a Station Name Here", which is what the action does.
+        boolean showsItself = session.getStore().isStation(tile) && tile.equals(captioned);
+
+        boolean aStationSquare = session.getStore().isStation(tile);
+
+        javax.swing.JMenuItem name = item(
+            showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
+                : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
+                : I18n.t("autosetup.ui.menuShowStationHereNamed"),
             () -> promptStationLabel(tile, component));
 
-        name.setToolTipText(mine ? null : wrapped(I18n.t("autosetup.ui.tooltipTextInTheWay")));
+        name.setEnabled(!showsItself);
+
+        // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
+        // are all the same reason: nothing else on this menu says that a caption is a live readout of
+        // another square rather than a name plate.
+        name.setToolTipText(wrapped(
+            showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+                : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
+                : I18n.t("autosetup.ui.tooltipShowStationHere")));
 
         menu.add(name);
 
@@ -3883,6 +4004,21 @@ public class AutonomyEditorPanel extends JPanel
 
         for (TileKey tile : session.getStore().getNamedTiles())
         {
+            // STATIONS ONLY (Adam, MT-376, 2026-09-13): *"works, but exclude non-station points from
+            // the list entirely."*
+            //
+            // The list offered every NAMED square, and a name is not a station: a caption square, an
+            // approach guard, or a plain piece of track somebody labelled all carry one. What this
+            // setting watches is whether somewhere is OCCUPIED, which is a question about a place
+            // trains stop.
+            //
+            // ...unless it is ALREADY STORED, which is the rule the filters below it already follow
+            // (FSR-C5). This dialog is the only way to edit `blockedPoints`, so a restriction it does
+            // not show is one nobody can ever take off - and `chosen` is built from what the list
+            // offers, so hiding a stored entry would delete it the moment somebody pressed OK, which
+            // is FBR-A2.
+            if (!session.getStore().isStation(tile) && !already.contains(tile)) continue;
+
             // Not the station itself: standing there already decides whether it is free, so watching
             // itself would make it a station nothing can be sent to.
             if (tile.equals(station)) continue;
@@ -3933,6 +4069,24 @@ public class AutonomyEditorPanel extends JPanel
             if (held != null && !choices.contains(held)) choices.add(held);
         }
 
+        // ALPHABETICAL, BY WHAT IS ACTUALLY SHOWN (Adam, FR-074).
+        //
+        // *"sort unavailable while occupied list alphabetically."*  The order was `getNamedTiles()`
+        // followed by whatever stored entries that loop never reached - so the ticked ones collected
+        // at the bottom and finding a station meant reading the whole list.
+        //
+        // Sorted on `describeTile`, which is the text on the check box, rather than on the point name:
+        // an entry that has lost its name renders as its sensor or its coordinates, and sorting by a
+        // name it does not display would put it somewhere the reader cannot predict.
+        java.util.Collections.sort(choices, new java.util.Comparator<TileKey>()
+        {
+            @Override
+            public int compare(TileKey a, TileKey b)
+            {
+                return String.CASE_INSENSITIVE_ORDER.compare(describeTile(a), describeTile(b));
+            }
+        });
+
         // Nothing to offer, which now also means nothing is stored - the loop above puts every stored
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
@@ -3971,6 +4125,18 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
 
+        // WHICH OF THESE AUTONOMY WOULD NEVER CHOOSE (Adam, FR-074).
+        //
+        // *"lightly grey out stations that can't be chosen in full autonomy."*  Read once, outside the
+        // loop: the rule walks the reduction, and asking it per row would walk it once per station.
+        //
+        // `stationsAutonomyWillNotChoose` rather than a test written here - it is the runtime's own
+        // rule, and the same one the diagram's captions and the "no available paths" window ask, so
+        // this does not become a third answer to a question that already has one.  It covers two
+        // reasons at once - a square marked manual-only and one switched out of service - and both
+        // are "autonomy will not send a train here", which is what the grey is saying.
+        java.util.Set<TileKey> notChosen = session.stationsAutonomyWillNotChoose();
+
         for (TileKey tile : choices)
         {
             // describeTile, not getPointName, and the carried entries above are the whole reason.
@@ -3985,6 +4151,18 @@ public class AutonomyEditorPanel extends JPanel
                 describeTile(tile), already.contains(tile));
 
             box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+            // LIGHTLY, which is the word Adam used and the reason this is a foreground colour rather
+            // than a disabled box.  These squares are perfectly valid to block with - a parking berth
+            // holding a platform back is the case FR-001 exists for - so the mark says what KIND of
+            // square it is, not that it cannot be picked.  A greyed-out check box would say the
+            // second, and would stop it being clickable into the bargain.
+            if (notChosen.contains(tile))
+            {
+                box.setForeground(NOT_CHOSEN_BY_AUTONOMY);
+
+                box.setToolTipText(I18n.t("autosetup.ui.tooltipBlockerNotAutoDestination"));
+            }
 
             boxes.add(box);
             panel.add(box);
@@ -5732,6 +5910,26 @@ public class AutonomyEditorPanel extends JPanel
     private int lastNamedCaptionMode = CAPTIONS_STATIONS;
 
     /**
+     * Asks again once this panel is in a window, which is when half of it can be answered (MT-292).
+     *
+     * Adam, 2026-09-12: *"none is shown in the dropdown, but station names are still drawn."*  The
+     * remembered mode is restored during CONSTRUCTION and applied there, and the half of
+     * `applyCaptionMode` that reaches the diagram goes through `owner()` -
+     * `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has been added to the
+     * editor.  So the two tick boxes were set and the text switch, which is what None IS, was not: the
+     * dropdown said None over a diagram still drawing every station name, which is precisely the state
+     * the four exclusive options exist to make impossible.
+     *
+     * Called by `LayoutEditor.setAutonomyMode` from the same posted block that redraws the grid, and
+     * for the same reason written there - *"the first draw happened before this window knew what it
+     * was"*.  Idempotent, like everything else on this path.
+     */
+    public void applyRememberedCaptionMode()
+    {
+        applyCaptionMode();
+    }
+
+    /**
      * Makes the window agree with the caption choice (FR-061).
      *
      * The two boxes are the internal representation - everything that draws a caption asks them, and
@@ -5822,6 +6020,15 @@ public class AutonomyEditorPanel extends JPanel
 
         if (where instanceof LayoutEditor) ((LayoutEditor) where).showTextLabels();
     }
+
+    /**
+     * The grey a square autonomy will never choose is written in, in the blocker list (FR-074).
+     *
+     * Light enough to read as a shade of the ordinary text rather than as a second colour - Adam asked
+     * for *"lightly grey"* - and dark enough to stay legible on the white this dialog uses.  It is not
+     * `Color.GRAY`, which at 50% on white reads as disabled, and these entries are not.
+     */
+    private static final java.awt.Color NOT_CHOSEN_BY_AUTONOMY = new java.awt.Color(120, 120, 120);
 
     /** 0 to 999: three digits is every length anybody means, and 100000 is not one (OB-048) */
     private static final int MAX_LENGTH_DIGITS = 3;
@@ -8406,7 +8613,18 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void clearAllPlacements()
     {
-        java.util.List<TileKey> placed = session.tilesWithALocomotive();
+        // THE SET `clearEveryPlacement` ACTUALLY WALKS (SEV-C3, swept from its sibling).
+        //
+        // The reviewer found the home door counting `tilesWithALocomotive()` - every page - while the
+        // bulk write walked `placedLocomotives()`, which skips pages excluded from autonomy. This door
+        // had the same split and was not reported: `clearEveryPlacement` walks `placedLocomotives()`
+        // too. So on a layout with an excluded page this dialog named a number the clear would not
+        // reach.
+        //
+        // `fix-one-site-sweep-the-siblings`: the real defect in this file is usually beside a comment
+        // describing the same fix somewhere else.
+        java.util.List<TileKey> placed =
+            new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
 
         if (placed.isEmpty())
         {

@@ -68,6 +68,31 @@ public class testTheMenusComeBackAtOneMoment
 
             assertTrue(before > 1, "one menu is not a menu bar");
 
+            // WHICH SLOT THE AUTONOMY HEADING IS IN, and what is sitting in it now.
+            //
+            // The menu used to be APPENDED during the connect, so "a menu arrived after the walk" was
+            // a count going up. OB-202 changed that on purpose: a placeholder holds the slot from the
+            // first frame, because the heading growing in front of the operator part-way through
+            // start-up was its own defect, and `mountAutonomyMenu` REPLACES it. The premise this test
+            // rests on is unchanged - something arrives in that slot after the bar has been greyed -
+            // so it is now read as identity rather than as a count.
+            int slot = -1;
+
+            for (int i = 0; i < bar.getMenuCount(); i++)
+            {
+                if (bar.getMenu(i) != null
+                    && org.traincontrol.util.I18n.t("autosetup.ui.menuAutonomy")
+                        .equals(bar.getMenu(i).getText()))
+                {
+                    slot = i;
+                }
+            }
+
+            assertTrue(slot >= 0, "no autonomy heading on the bar before the connect, so OB-202's"
+                + " placeholder is not holding the slot and this test cannot watch it being replaced");
+
+            javax.swing.JMenu placeholder = bar.getMenu(slot);
+
             // THE NOTICE GOES UP.  `greyTheMenus` is what `showConnecting` does to the bar, and it is
             // separate from it precisely so a test can do this without putting a window on somebody's
             // screen.
@@ -89,9 +114,14 @@ public class testTheMenusComeBackAtOneMoment
                 }
             });
 
-            assertTrue(bar.getMenuCount() > before,
-                "no menu was added to the bar during the connect, so this test is not asking about "
-                + "anything - OB-187 is about a menu that arrives after the bar has been greyed");
+            assertEquals(bar.getMenuCount(), before,
+                "the bar changed shape during the connect. OB-202's placeholder exists so that it"
+                + " cannot - the heading must be in its slot from the first frame and stay there");
+
+            assertNotSame(bar.getMenu(slot), placeholder,
+                "nothing replaced the placeholder during the connect, so this test is not asking"
+                + " about anything - OB-187 is about a menu that arrives after the bar has been"
+                + " greyed, and OB-202 turned that arrival from an append into a replacement");
 
             // THE CONTROL.  A menu that ought to be off anyway would be grey here for a reason that
             // has nothing to do with the notice, and the assertion below would pass for a build with

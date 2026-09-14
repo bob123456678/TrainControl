@@ -718,6 +718,50 @@ public class TileAnnotation
      */
     public void paint(Graphics2D g, int width, int height)
     {
+        paint(g, width, height, false);
+    }
+
+    /**
+     * The same, told whether the tile underneath has already been drawn faint (Adam, OB-212).
+     *
+     * *"a parked (blocking in orange) train will be further shaded if an active autonomy route near it
+     * also locks that edge.  keep one level of opacity, dont stack."*
+     *
+     * **Two washes that each make sense alone.**  `LayoutLabel` draws the tile art at `BLOCKED_ALPHA`
+     * where the railway refuses the square, and this class lays one at `DIM` under its arrows so that
+     * thin arrows lift off busy tile art.  Neither knew about the other, so a square that is both
+     * blocked and annotated was faded twice and read as much further gone than either reason justifies.
+     *
+     * **This wash is the one that gives way**, because on a tile already drawn at 40% its whole purpose
+     * has been served - there is no busy art left for an arrow to compete with.  Dropping the other
+     * would lose what the fade is SAYING, which is that the railway will not use this square.
+     *
+     * @param g where to draw
+     * @param width the tile
+     * @param height the tile
+     * @param alreadyFaded whether the caller has drawn the WHOLE tile faint already
+     */
+    public void paint(Graphics2D g, int width, int height, boolean alreadyFaded)
+    {
+        paint(g, width, height, alreadyFaded
+            ? new java.awt.Rectangle(0, 0, width, height) : null);
+    }
+
+    /**
+     * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
+     *
+     * A square is one road almost everywhere, and there the two forms say the same thing. A double
+     * curve is two roads in one tile, and a train covers one of them - so "is this tile already
+     * faded" has no answer and the boolean form had to pick one. It picked "yes", and the road with
+     * no train on it lost the wash under its arrows.
+     *
+     * @param g the brush
+     * @param width the tile's width
+     * @param height its height
+     * @param alreadyFaint the region already drawn faint, or null when none of it is
+     */
+    public void paint(Graphics2D g, int width, int height, java.awt.Shape alreadyFaint)
+    {
         if (isBlank()) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
@@ -800,14 +844,37 @@ public class TileAnnotation
             // and a link's art is a single bold arrow in a box with room around it.
             if (!marks.isEmpty() && !blockedOnly && !portal)
             {
-                java.awt.Composite before = g.getComposite();
+                // WHAT IS LEFT OF THE TILE, rather than all of it or none of it (PRW-C1).
+                //
+                // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary
+                // square that is the whole tile and nothing is washed here, which is Adam's ruling on
+                // MT-375 - *"keep one level of opacity, dont stack"* - unchanged.
+                //
+                // On a DOUBLE CURVE it is one road's band: two curves crossing in one tile with no
+                // connection between them, where a train covers one road and not the other. The flag
+                // this used to take was per TILE while the fade is per ROAD, so the uncovered road
+                // lost the wash under its own arrows. Clipping keeps the covered road at one level and
+                // gives the other road the wash it should have had.
+                java.awt.geom.Area rest = new java.awt.geom.Area(
+                    new java.awt.Rectangle(0, 0, width, height));
 
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, DIM));
-                g.setColor(DIM_COLOUR);
-                g.fillRect(0, 0, width, height);
+                if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
 
-                g.setComposite(before);
+                if (!rest.isEmpty())
+                {
+                    java.awt.Composite before = g.getComposite();
+                    java.awt.Shape beforeClip = g.getClip();
+
+                    g.clip(rest);
+
+                    g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, DIM));
+                    g.setColor(DIM_COLOUR);
+                    g.fillRect(0, 0, width, height);
+
+                    g.setComposite(before);
+                    g.setClip(beforeClip);
+                }
             }
 
             paintArrows(g, width, height);

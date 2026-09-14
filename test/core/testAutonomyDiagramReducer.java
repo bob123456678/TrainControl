@@ -406,6 +406,79 @@ public class testAutonomyDiagramReducer
             "the switch tile itself is being asked for, and the guard does not count it either: "
             + asked);
     }
+
+    /**
+     * And it stops asking once the stretch is measured AT ALL (Adam, MT-364).
+     *
+     * *"I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is 2.
+     * But it is still asking for the tile at 10,9 (TunnelLongPark) to get a length.  The calculation
+     * should add 10,10's length plus 10,9's length, both of which are past the switch at 10,8."*
+     *
+     * **The notice and the guard disagreed about what "measured" means.**  `roomAfterTheLastSwitch`
+     * has followed his ruling of 2026-09-06 since it was written - *"It is only indeterminate if the
+     * entire logical segment has length 0"* - so a partly measured stretch answers with what it knows.
+     * This walk kept naming every square that had no number of its own, so a stretch the guard could
+     * already judge still carried a notice asking for the rest.
+     *
+     * The comment at the notice's own call site says as much and puts the question to him on `MT-305`:
+     * *"whether it earns its place in a list Adam has called a wall is his call"*.  This is the answer.
+     *
+     * **What is NOT changed:** a stretch with nothing measured in it still names every square. That is
+     * the case the notice exists for - the guard is blind there, not merely pessimistic - and it is
+     * the other half of the same ruling.
+     *
+     * MUTATION: drop the running total and the first claim fails; make an unmeasured stretch answer
+     * empty too and the second does.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheEditorStopsAskingOnceTheStretchIsMeasured() throws Exception
+    {
+        // The same shape: sensor - track - SWITCH - track - track - sensor.
+        LayoutDiagram page = page("main", 9, 4);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        add(page, componentType.SWITCH_LEFT, 3, 1, 3, 7);
+        wire(page, 3, 1, 7, Accessory.accessoryType.SWITCH);
+        straight(page, 4, 1);
+        straight(page, 5, 1);
+        feedback(page, 6, 1, 12);
+        feedbackNS(page, 3, 0, 13);
+
+        // ONE OF THE TWO SQUARES PAST THE SWITCH MEASURED, which is exactly Adam's arrangement: he
+        // measured 10,10 and was still asked for 10,9.
+        HashMap<TileKey, Integer> lengths = new HashMap<>();
+
+        lengths.put(key("main", 4, 1), 2);
+
+        GraphReducer measured = reduce(graph(page), authored(lengths, null, null));
+
+        List<ReducedEdge> through = edgesBetween(measured, key("main", 1, 1), key("main", 6, 1));
+
+        assertEquals(through.size(), 1, "the fixture did not produce the one edge this is about");
+
+        assertTrue(through.get(0).getRoomAtTheEnd() > 0,
+            "precondition: the guard cannot judge this stretch either, so there is nothing for the"
+            + " notice to stop asking about");
+
+        assertTrue(measured.unmeasuredAfterTheLastSwitch(through.get(0)).isEmpty(),
+            "the editor is still asking for the rest of a stretch it can already measure. Adam,"
+            + " MT-364: \"I set the track at 10,10 to length 2 ... But it is still asking for the tile"
+            + " at 10,9 to get a length\". His ruling of 2026-09-06 is that a stretch is only"
+            + " indeterminate when ALL of it is zero, and the guard has followed that since it was"
+            + " written - the notice had not. Still asked for: "
+            + measured.unmeasuredAfterTheLastSwitch(through.get(0)));
+
+        // AND THE HALF THAT MUST NOT CHANGE: nothing measured is still every square.
+        GraphReducer blind = reduce(graph(page), authored(new HashMap<>(), null, null));
+
+        List<ReducedEdge> same = edgesBetween(blind, key("main", 1, 1), key("main", 6, 1));
+
+        assertFalse(blind.unmeasuredAfterTheLastSwitch(same.get(0)).isEmpty(),
+            "a stretch with NOTHING measured raises no notice, so the case the notice exists for is"
+            + " the one it stopped covering - the guard is blind there rather than pessimistic");
+    }
     private Side arrivalSideAt(GraphReducer reducer, TileKey from, TileKey to)
     {
         for (ReducedEdge edge : reducer.getEdges())

@@ -1080,6 +1080,27 @@ public class AutonomyBuilder
             // SPLIT on, so a value that disagreed with it would be describing a copy that does not exist.
             if (edge.getEntrySide() != null) json.put("entrySide", edge.getEntrySide().name());
 
+            // AND THE PLACES IT RUNS OVER, in order, each with what it measures (OB-207).
+            //
+            // The runtime has to say WHERE along an edge a train lies, not merely that it lies on it: a
+            // one-unit train in the first tile of a twelve-tile run was refusing every path that shared
+            // any of the other eleven.  `GraphReducer.placesAlong` is the reduction's own answer, built
+            // from the same location ids the lock relation below is derived from, so the two cannot
+            // drift apart - and the lengths sum to the `length` written above.
+            JSONArray places = new JSONArray();
+
+            for (GraphReducer.Place place : reducer.placesAlong(edge))
+            {
+                JSONObject at = new JSONObject();
+
+                at.put("at", place.getId());
+                at.put("length", place.getLength());
+
+                places.put(at);
+            }
+
+            if (places.length() > 0) json.put("places", places);
+
             // AND HOW MUCH OF IT IS AFTER THE LAST SWITCH (Adam's ruling, 2026-09-02).
             //
             // "Between the switch and the station, the length must be >= length of the train", and

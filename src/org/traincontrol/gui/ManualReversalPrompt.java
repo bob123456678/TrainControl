@@ -128,6 +128,41 @@ public final class ManualReversalPrompt
             first = arrival;
         }
 
+        // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (Adam, MT-368, 2026-09-13).
+        //
+        // *"I get the prompt, but I shouldn't because the train is not reversible."*  A square that
+        // MAY turn is a preference, and a locomotive that may not run backwards has no preference to
+        // express - the only answer it could give is the one it is going to get.
+        //
+        // Only where the turn is optional, which is what `asksAbout` already means: it is
+        // `mayTurnTiles()`, the reversible squares minus the compulsory ones.  A terminus is not
+        // reached by this line, and must not be - backing in is how a non-reversible train gets there
+        // (MT-245).
+        //
+        // `Layout.turnsOnArrival` carries the matching rule, and it has to: the policy returned here
+        // says "no opinion" rather than "no", so the arrival would otherwise read the terminus flag on
+        // a may-turn square's turning copy and turn the train anyway.
+        //
+        // THE TWO HALVES ASK DIFFERENT QUESTIONS, AND ONE SHAPE TELLS THEM APART (SVV-C2).
+        //
+        // This half fires on `asksAbout`, which is the SETUP's `mayTurnTiles()`.  The arrival's half
+        // fires on `hasAWayThrough`, which is the GRAPH's "some copy of this square is neither a
+        // terminus nor a reversing point".  They agree everywhere except at a square marked
+        // `canReverse` where an arriving train has nowhere to go but back: `AutonomyBuilder` emits no
+        // plain copy there at all, so `hasAWayThrough` is false, and the train IS turned - while this
+        // line has already decided not to ask about it.
+        //
+        // The outcome is right, and it is why the sentence above needs this one beside it: a dead end
+        // must turn a train or the train can never leave, which is Adam's MT-245 ruling.  What is not
+        // right there is the reason given - the answer the operator could have given is not the one
+        // they are going to get, it is the opposite - and the reason is the part a reader acts on.
+        //
+        // Measured as unreachable on Adam's railway (PRV-C7): all four may-turn squares have plain
+        // copies.  Left as two rules with one sentence rather than merged, because merging them would
+        // make this half ask the graph a question the setup can answer, and the setup is what the
+        // operator edited.
+        if (first != null && loc != null && !loc.isReversible()) return KEEP_DIRECTION;
+
         // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.
         if (first == null) return KEEP_DIRECTION;
 

@@ -714,11 +714,15 @@ public class Point
      * to the platform the yard holds back, and while it sat there the platform was shut to everybody
      * else too.
      *
-     * Note what this does NOT decide: whether the rule is in force at all.  The runtime fences it
-     * behind `isAutoRunning` because it shapes what AUTONOMY chooses, and the planner applies it always
-     * because staging executes with autonomy running.  That fence is a property of the caller, not of
-     * the rule, so it stays at the call sites - and the staging audit carries an exemption for exactly
-     * that difference (DR-B1).
+     * Note what this does NOT decide: whether the rule is in force at all.  That is a property of the
+     * caller, not of the rule, so it stays at the call sites.
+     *
+     * **And since 2026-09-10 no caller fences it.**  Adam: *"enforce the occupancy ruling in all modes
+     * and then rely on isPathClear."*  `isPathClear` says so where the fence used to be - "NO FENCE
+     * ... the restriction is enforced in every tier" - and `HomeStaging.canRest` asks it of the
+     * planned state.  The paragraph that stood here described the arrangement of the day before, when
+     * the runtime fenced it behind `isAutoRunning` and only the planner applied it always; reading it
+     * now would suggest a hand-driven send is exempt, and none is.
      *
      * @param destination the station being arrived at; a null destination is held back by nothing
      * @param arriving the locomotive arriving, exempt where it is itself the occupant

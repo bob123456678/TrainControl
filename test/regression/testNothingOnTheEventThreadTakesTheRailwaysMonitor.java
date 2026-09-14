@@ -201,9 +201,26 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
             + " CoveredTrackRenderer");
 
-        ALLOWED.put("AutonomySession.java#tilesBlockedByStandingTrains",
-            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
-            + " CoveredTrackRenderer");
+        ALLOWED.put("AutoLocomotiveStatus.java#whatTheOperatorMayChoose",
+            "OFF THE EVENT THREAD from findPaths, which is where the path search runs and why this"
+            + " class exists.  The one caller that reaches it on the event thread is the fallback for"
+            + " a caller with no worker, and that line already takes this monitor for a WHOLE-GRAPH"
+            + " search - getPossiblePaths - immediately before handing its answer here.  A handful of"
+            + " three-field reads after a graph search costs nothing the search has not already paid,"
+            + " and the alternative is a lock-free copy of isOfferableToOperator, which is a second"
+            + " answer to the question OB-205 exists to make there be one of (Adam, 2026-09-12)");
+
+        ALLOWED.put("TrainControlUI.java#namesWithHomes",
+            "OFF THE EVENT THREAD: reached only through describeStagingOutcome's IMPOSSIBLE branch,"
+            + " and only describeStagingPlan passes a blocked list - which is called from inside the"
+            + " Return Home worker thread, where the plan itself was made.  Every other caller of"
+            + " describeStagingOutcome passes LOCOMOTIVES_RUNNING with a null list and never reaches"
+            + " this (OB-206)");
+
+        // `tilesBlockedByStandingTrains` was here and is not any more.  It delegates to
+        // `tilesCoveredByStandingTrains` since the two marks were made one answer, so it no longer
+        // reaches the railway itself - and a permission left behind for a member that has stopped
+        // calling is a permission for whatever is written into it next.
 
         // ------------------------------------------------------------ on the event thread, and why
 

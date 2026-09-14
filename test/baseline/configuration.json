@@ -7,12 +7,76 @@
   "maxLatency": 0,
   "edges": [
     {
+      "places": [
+        {
+          "at": "1 - Main:0,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,3",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR2Inter (westbound)",
       "length": 0,
       "end": "1 - Main 0,3 (northbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:1,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:2,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,9",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR2Inter (southbound)",
       "length": 0,
@@ -23,12 +87,76 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:0,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,11",
+          "length": 4
+        }
+      ],
       "entrySide": "N",
       "start": "1 - Main 0,3 (southbound)",
       "length": 4,
       "end": "TopMainR2Inter (southbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:1,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,3",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "roomAtTheEnd": -1,
       "start": "TopMainR1Inter (westbound)",
@@ -50,6 +178,24 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:2,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,9",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR1Inter (southbound)",
       "length": 0,
@@ -60,6 +206,36 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:1,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,10",
+          "length": 4
+        }
+      ],
       "entrySide": "N",
       "roomAtTheEnd": 4,
       "start": "1 - Main 1,3 (southbound)",
@@ -81,6 +257,32 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:11,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,3",
+          "length": 3
+        }
+      ],
       "lockedges": [{
         "start": "Tunnel",
         "end": "BottomInnerOtherside"
@@ -102,6 +304,32 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:11,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (westbound)",
@@ -141,6 +369,20 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:11,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,7",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "roomAtTheEnd": -1,
       "start": "BottomInner (northbound)",
@@ -152,12 +394,72 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:12,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,10",
+          "length": 0
+        }
+      ],
       "entrySide": "W",
       "start": "BottomInner (eastbound)",
       "length": 0,
       "end": "1 - Main 16,10 (eastbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:14,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,7",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "roomAtTheEnd": -1,
       "start": "BottomInnerOtherside",
@@ -169,12 +471,56 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:15,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,9",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "1 - Main 16,10 (westbound)",
       "length": 0,
       "end": "BottomInner (northbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -208,6 +554,44 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:17,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,11",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 16,10 (eastbound)",
@@ -275,6 +659,28 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:18,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,10",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -308,6 +714,40 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainB (eastbound)",
@@ -355,6 +795,40 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainB (eastbound)",
@@ -402,6 +876,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:18,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (westbound)",
@@ -453,6 +973,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:18,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,9",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomSecondary",
@@ -516,6 +1090,44 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -567,6 +1179,44 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -618,6 +1268,48 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -681,6 +1373,48 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -744,6 +1478,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:18,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,13",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "BottomMainBCPre (eastbound)",
         "end": "BottomMainB (eastbound)"
@@ -759,6 +1539,24 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:1,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,3",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "RampUp",
         "end": "1 - Main 1,3 (southbound)"
@@ -780,6 +1578,20 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:1,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,3",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "RampUp",
         "end": "1 - Main 0,3 (southbound)"
@@ -795,6 +1607,60 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,11",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -862,6 +1728,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,11",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -929,6 +1849,40 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,10",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 16,10 (eastbound)",
@@ -992,6 +1946,40 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,10",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 16,10 (eastbound)",
@@ -1055,18 +2043,200 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,2",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "start": "RampDown (southbound, reverse)",
       "length": 0,
       "end": "TopMainPost (westbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:20,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,2",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "start": "RampDown (northbound)",
       "length": 0,
       "end": "TopMainPost (westbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainB (eastbound)",
@@ -1114,6 +2284,40 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainB (eastbound)",
@@ -1161,6 +2365,44 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,13",
+          "length": 4
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -1212,6 +2454,44 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,13",
+          "length": 4
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (eastbound)",
@@ -1263,24 +2543,216 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,1",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "start": "BottomMainPost (southbound, reverse)",
       "length": 0,
       "end": "1 - Main 6,1 (westbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:21,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,1",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "start": "BottomMainPost (northbound)",
       "length": 0,
       "end": "1 - Main 6,1 (westbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:3,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,5",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "1 - Main 3,3 (southbound)",
       "length": 0,
       "end": "TopMainR0"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:3,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,2",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TopMainR1 (northbound)",
@@ -1324,18 +2796,68 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:3,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,3",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR0",
       "length": 0,
       "end": "1 - Main 3,3 (northbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:4,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,9",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "TopMainR1 (southbound)",
       "length": 0,
       "end": "TopMainR1Pre (southbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:4,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,2",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 3,3 (northbound)",
@@ -1375,6 +2897,24 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:4,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:2,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,10",
+          "length": 4
+        }
+      ],
       "entrySide": "E",
       "start": "TopMainR1Pre (southbound)",
       "length": 4,
@@ -1385,18 +2925,76 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:4,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,4",
+          "length": 3
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR1Pre (northbound)",
       "length": 3,
       "end": "TopMainR1 (northbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,9",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "TopMainR2 (southbound)",
       "length": 0,
       "end": "TopMainR2Pre (southbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,2",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 3,3 (northbound)",
@@ -1432,6 +3030,36 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:2,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:1,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:0,11",
+          "length": 4
+        }
+      ],
       "entrySide": "E",
       "start": "TopMainR2Pre (southbound)",
       "length": 4,
@@ -1442,42 +3070,412 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,4",
+          "length": 0
+        }
+      ],
       "entrySide": "S",
       "start": "TopMainR2Pre (northbound)",
       "length": 0,
       "end": "TopMainR2 (northbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:2,1",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "start": "1 - Main 6,1 (westbound)",
       "length": 0,
       "end": "RampUp"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "1 - Main 6,1 (eastbound)",
       "length": 0,
       "end": "BottomMainPost (southbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,1",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:21,6",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "1 - Main 6,1 (eastbound)",
       "length": 0,
       "end": "BottomMainPost (southbound, reverse)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "TopMainPost (eastbound)",
       "length": 0,
       "end": "RampDown (southbound)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "entrySide": "N",
       "start": "TopMainPost (eastbound)",
       "length": 0,
       "end": "RampDown (southbound, reverse)"
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:3,3",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TopMainR1 (northbound)",
@@ -1521,6 +3519,24 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:4,4",
+          "length": 3
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 3,3 (northbound)",
@@ -1560,6 +3576,20 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:5,2",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:5,4",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 3,3 (northbound)",
@@ -1595,6 +3625,56 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:6,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,7",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "Tunnel",
         "end": "BottomInnerOtherside"
@@ -1620,6 +3700,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:6,6",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,5",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,4",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,3",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,3",
+          "length": 3
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 11,7",
@@ -1651,6 +3777,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -1734,6 +3906,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,13",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -1817,6 +4043,64 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "1 - Main 16,10 (eastbound)",
@@ -1908,6 +4192,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainA (westbound)",
@@ -1959,6 +4289,80 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -2050,6 +4454,80 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomCrossover",
@@ -2141,6 +4619,36 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2216,6 +4724,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2299,6 +4853,48 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2382,6 +4978,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2465,6 +5107,48 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2548,6 +5232,56 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,13",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2631,6 +5365,48 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:10,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,13",
+          "length": 4
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomMainC (eastbound, reverse)",
@@ -2656,6 +5432,52 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:10,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,14",
+          "length": 2
+        }
+      ],
       "lockedges": [{
         "start": "BottomMainBCPre (eastbound)",
         "end": "BottomMainB (eastbound)"
@@ -2671,6 +5493,52 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:10,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,14",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,14",
+          "length": 2
+        }
+      ],
       "lockedges": [{
         "start": "BottomMainBCPre (eastbound)",
         "end": "BottomMainB (eastbound)"
@@ -2686,6 +5554,44 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2761,6 +5667,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2844,6 +5804,56 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -2927,6 +5937,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -3010,6 +6074,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -3093,6 +6203,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:6,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:7,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:8,13",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,13",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "TunnelLeftPark",
@@ -3176,6 +6340,72 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,7",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomSecondary",
@@ -3279,6 +6509,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,12",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomSecondary",
@@ -3342,6 +6626,88 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomSecondary",
@@ -3445,6 +6811,88 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "1 - Main:9,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:9,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:10,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:11,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:12,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,12",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:13,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:14,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:15,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:16,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:17,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:18,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,11",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:19,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,10",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,9",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,8",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,7",
+          "length": 0
+        },
+        {
+          "at": "1 - Main:20,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "BottomSecondary",
@@ -3548,6 +6996,16 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,13",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3593,6 +7051,56 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,5",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3660,6 +7168,32 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,10",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3711,6 +7245,56 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,5",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,4",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3782,6 +7366,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,5",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,5",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,4",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3853,6 +7491,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,5",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,5",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3920,6 +7612,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,9",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -3979,6 +7717,60 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,7",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,6",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:17,6",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -4042,6 +7834,52 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:12,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:17,8",
+          "length": 0
+        }
+      ],
       "lockedges": [
         {
           "start": "LowerDownPre",
@@ -4101,6 +7939,20 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:14,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,13",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "2 - Bottom 13,13",
         "end": "2 - Bottom 17,12"
@@ -4122,6 +7974,28 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:14,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:17,12",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "2 - Bottom 13,13",
         "end": "2 - Bottom 16,13"
@@ -4147,6 +8021,28 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:11,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:10,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:9,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,14",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "LowerFront",
         "end": "ParkingTrack12"
@@ -4162,6 +8058,56 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:12,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:11,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:10,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:10,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:9,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:8,7",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "LowerFront",
         "end": "LowerFrontPre"
@@ -4187,12 +8133,80 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:15,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:17,10",
+          "length": 0
+        }
+      ],
       "entrySide": "W",
       "start": "2 - Bottom 14,10 (eastbound)",
       "length": 0,
       "end": "LowerDown"
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:22,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:22,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:22,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:22,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:21,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:20,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:19,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:18,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:17,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:16,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:15,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:14,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:13,14",
+          "length": 0
+        }
+      ],
       "entrySide": "E",
       "roomAtTheEnd": -1,
       "start": "LowerBackPre",
@@ -4204,6 +8218,56 @@
       }]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:7,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:6,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:5,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:4,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,12",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,11",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,10",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,9",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,8",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:3,7",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "LowerFrontPre",
         "end": "2 - Bottom 7,12"
@@ -4225,6 +8289,28 @@
       ]
     },
     {
+      "places": [
+        {
+          "at": "2 - Bottom:7,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:6,14",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:6,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:7,13",
+          "length": 0
+        },
+        {
+          "at": "2 - Bottom:7,12",
+          "length": 0
+        }
+      ],
       "lockedges": [{
         "start": "LowerFrontPre",
         "end": "LowerParkingReverse"

@@ -27,58 +27,41 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | NR-1 |
-| [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | needs test | RGN-A2 |
+| [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
-| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | needs test | R28-C1 |
+| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | fixed unvalidated | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
-| [MT-270](#mt-270) | 2026-09-04 | Brackets in a locomotive name | fixed unvalidated | RGN-C3 |
-| [MT-277](#mt-277) | 2026-09-07 | One menu carries both the facing and the arrival side | needs test | FR-057 (split from MT-274) |
-| [MT-278](#mt-278) | 2026-09-07 | The covered-track shading survives a flash | needs test | OB-175 follow-up (split from MT-274) |
 | [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
-| [MT-285](#mt-285) | 2026-09-07 | A page whose top row is empty still numbers its axis | needs test | OB-172 (split from MT-274) |
-| [MT-286](#mt-286) | 2026-09-07 | The editor comes to the front on the first open | needs test | OB-173 (split from MT-274) |
-| [MT-287](#mt-287) | 2026-09-07 | The incoming arrow on a curved sensor tile is clear of the track | needs test | OB-175 (split from MT-274) |
-| [MT-289](#mt-289) | 2026-09-07 | The facing menu ticks a facing the square cannot hold | needs test | OB-177 (split from MT-274) |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
-| [MT-292](#mt-292) | 2026-09-07 | A remembered None comes back with the captions actually off | needs test | RGD-C3 (split from MT-275) |
-| [MT-294](#mt-294) | 2026-09-07 | A recorded arrival side the menu cannot offer is shown, not offered | needs test | RGD-C4 (split from MT-275) |
-| [MT-296](#mt-296) | 2026-09-07 | A 2.7.4c import brings the autonomy settings across | needs test | RGN-A1, IPR-A1 (split from MT-243) |
-| [MT-297](#mt-297) | 2026-09-07 | Importing a graph does not switch your routes off | needs test | RGN-A1 (split from MT-243) |
+| [MT-292](#mt-292) | 2026-09-07 | A remembered None comes back with the captions actually off | fixed unvalidated | RGD-C3 (split from MT-275) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
-| [MT-304](#mt-304) | 2026-09-07 | A non-reversible train goes home nose first | needs test | OB-166 (split from MT-246) |
-| [MT-309](#mt-309) | 2026-09-07 | EN57-203 can get back to TunnelLongPark | fixed unvalidated | D24-B1 (split from MT-250) |
-| [MT-312](#mt-312) | 2026-09-07 | The import says what it left behind | needs test | MT-257 item 3 (split from MT-258) |
-| [MT-318](#mt-318) | 2026-09-07 | Undoing a shut link opens both halves, across pages | needs test | SVN-B8 (split from MT-265) |
 | [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
-| [MT-327](#mt-327) | 2026-09-07 | A hand dispatch that fails with autonomy stopped | needs test | FR3-C2, DAY-C3 (split from MT-271) |
-| [MT-328](#mt-328) | 2026-09-07 | The same failure with autonomy running still says to restart | needs test | FR3-C2 (split from MT-271) |
 | [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
 | [MT-345](#mt-345) | 2026-09-10 | A station held back by an occupied square is refused by hand too | needs test | FR-001 |
 | [MT-346](#mt-346) | 2026-09-10 | Return Home does not stage a train into a held-back home | needs test | FR-001 |
-| [MT-347](#mt-347) | 2026-09-10 | A berth with room, refused for the way there | needs test | ruling 1b, 2026-09-09 |
 | [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
-| [MT-349](#mt-349) | 2026-09-10 | A train really reverses at a terminus, and not at a plain platform | needs test | the reversal-emission tests |
+| [MT-357](#mt-357) | 2026-09-11 | A page that cannot be read shows why, and keeps its autonomy setup | needs test | NSV-B3, FV3-A1 |
 | [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
-| [MT-361](#mt-361) | 2026-09-11 | A train placed from either menu records which way it came in | fixed unvalidated | REV9-B2, W21-C9 |
-| [MT-362](#mt-362) | 2026-09-11 | The locomotive keys work from any part of the window | needs test | OB-170 |
-| [MT-363](#mt-363) | 2026-09-11 | A train that turns round has to fit on both sides of the turn | fixed unvalidated | MON-C13, Adam's ruling of 2026-09-11 |
-| [MT-364](#mt-364) | 2026-09-11 | The editor says when a platform claims more train than its track measures | fixed unvalidated | Adam's request of 2026-09-11 |
-| [MT-365](#mt-365) | 2026-09-12 | Control+B sets the maximum train length from the autonomy editor | fixed unvalidated | Adam's request of 2026-09-12 |
-| [MT-366](#mt-366) | 2026-09-12 | A terminus with two ways in stops the setup running | fixed unvalidated | MT-361 (Adam's ruling of 2026-09-12) |
 | [MT-367](#mt-367) | 2026-09-12 | A train that cannot reverse is not offered a terminus it could not leave | fixed unvalidated | OB-205 claims 1 and 2 |
 | [MT-368](#mt-368) | 2026-09-12 | The direction prompt appears at a station trains MAY turn round at | fixed unvalidated | OB-205 claim 3 |
-| [MT-369](#mt-369) | 2026-09-12 | The tail after a move points the same way every time | fixed unvalidated | OB-204 |
-| [MT-370](#mt-370) | 2026-09-12 | Return Home says which station a train could not reach | fixed unvalidated | OB-206 |
+| [MT-371](#mt-371) | 2026-09-12 | A long train may stand across the points at a platform, but not at a berth | fixed unvalidated | Adam's ruling of 2026-09-12 (out of OB-207) |
+| [MT-374](#mt-374) | 2026-09-12 | The timetable capture test under a loaded machine | needs test | OB-209 |
+| [MT-376](#mt-376) | 2026-09-12 | The Unavailable While Occupied list, sorted and shaded | fixed unvalidated | FR-074 |
+| [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
+| [MT-383](#mt-383) | 2026-09-13 | Fifty locomotive mapping pages, and the menu greys at the limit | fixed unvalidated | FR-033 |
+| [MT-384](#mt-384) | 2026-09-13 | The label chooser opens on the nearest station, and the last one is spent | fixed unvalidated | FR-034 |
+| [MT-393](#mt-393) | 2026-09-13 | The caption menu says what it does on a station square | fixed unvalidated | - |
+| [MT-394](#mt-394) | 2026-09-13 | Pasting onto a may-reverse square asks which way the train faces | fixed unvalidated | your ruling of 2026-09-13 |
+| [MT-395](#mt-395) | 2026-09-13 | Return Home stages a platform whose approach holds the train | fixed unvalidated | your ruling of 2026-09-13 on PRW-B2 leg 2 |
 
-Everything else - 321 of 370 - needs nothing from you unless the area changes again:
-285 **fixed validated** and 36 **superseded**.
+Everything else - 363 of 395 - needs nothing from you unless the area changes again:
+322 **fixed validated** and 41 **superseded**.
 
 ---
 
@@ -659,7 +642,7 @@ edit touched, which is more bookkeeping and more ways to be wrong.
 
 ### MT-270 - 2026-09-04 - Brackets in a locomotive name
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RGN-C3
 
 **Written:** 2026-09-04
@@ -721,6 +704,12 @@ I added a locomotive named a,P[)(] and it went trough.  So, make sure this doesn
 **Claude, 2026-09-08.**
 
 The comma is refused at the door that NAMES a locomotive - commit `a0512166`, made on 2026-09-06, the same day you tested, so you were probably on the older build. Your remaining ask was that a bracketed name not break things elsewhere; brackets are allowed by your own ruling and the condition parser no longer stores conditions as text. **To re-test:** add a locomotive with a comma (refused) and one with brackets (allowed, and usable in a route command).
+
+**Adam, 2026-09-13 (triage).** Works.
+
+works, creation or editing of locs with comma an bracket is refused.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7418,7 +7407,7 @@ You now have the materials- use the current page 1.
 <a id="mt-141"></a>
 ### MT-141 - 2026-08-23 - Editing a placement while trains are out puts the others back where they started
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** NR-1
 
 **Claude, 2026-08-23.** A design decision, and I would rather you made it than have me pick.
@@ -13901,7 +13890,7 @@ be enforced by the field itself, because a Point holds one home; two copies are 
 
 ### MT-244 - 2026-08-31 - The Auto tab on a layout that has only an autonomy.json
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** RGN-A2
 **Written:** 2026-08-31
 
@@ -13950,6 +13939,32 @@ Either is defensible. What is not defensible is today, where the two halves disa
 make a test case for this. in my testing, it loaded OK.
 
 *Run against commit 302d7a11, build\classes, compiled 31 Aug 18:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: ruled, and built - but the entry's premise had gone stale first, so read this before you run it.**
+
+Adam, 2026-09-13: *"The tab should stay shut until they import."*
+
+**What is no longer true.** This entry says the legacy user's autonomy "is loaded and live" behind a greyed tab, and that startup "parses `autonomy.json` into a live layout". Measured today: **there are exactly two `parseAuto` callers in the whole of `src`** - the diagram path (`AutonomyViewerPanel`) and the Validate button on the JSON tab. Nothing at startup activates that file at all. So the dangerous half of this entry - trains running with no interface to reach them, OB-104 turned around - **is already gone**, and it went without anybody noting it here.
+
+**What was true, and is now changed.** Since RGN-A2 the tab has been OPEN for that user: `refreshAutonomyTabState` carried a third clause, `getConfigurationNames().isEmpty()`, on the reasoning that a setup with no configurations is the JSON path and is "loaded by definition". That clause is removed, so `loaded` is back to `no session || a configuration is active`, and the tab is shut for a layout whose only autonomy is an `autonomy.json`.
+
+**One consequence worth knowing**, because it follows from the two facts together rather than from either: with startup not activating and the tab shut, an upgrading user has **no route to their legacy autonomy except the import**. That is a one-way door to the new model. It is what the ruling says, and it is coherent - the import is the crossing - but if you meant the JSON tab to stay reachable as an escape hatch, say so and I will fence it differently.
+
+**Steps** (unchanged in shape, inverted in expectation)
+
+1. Start TrainControl with auto-load on, against a local layout folder that has an old `autonomy.json` beside it and NO `config/autonomy/setup.json`.
+2. Look at the **Auto** tab.
+3. Check the log.
+
+**Expected**
+
+- Step 2: the tab is **greyed**.
+- Step 3: the log does **not** say an autonomy layout was loaded and is running - because none is. If it does, something still activates that file at startup and the finding above is wrong.
+- And after importing: the tab is live, and the import's own entries (MT-296, MT-297, MT-298, MT-312, MT-325) say what came across.
+
+*Covered by* `regression.testTheRoutingChoiceSurvivesTheUpgrade.testTheAutoTabStaysShutWithALegacyAutonomyJson`, which is the RGN-A2 claim **inverted** rather than deleted, carrying both of your rulings so the record shows which replaced which.
 
 ---
 
@@ -14590,7 +14605,7 @@ findings about his railway, which cost him the time to check them.
 
 ### MT-254 - 2026-09-02 - Clearing every home locomotive at once
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** R28-C1
 
 **Written:** 2026-09-02
@@ -14600,9 +14615,12 @@ confirmation."**  It is a button in the editor's tool column, under Name Everyth
 confirmation wording 2.8.1 had - which was still sitting in all eight languages with nothing referring
 to it.
 
-1. **Open the autonomy editor on a page and look at the column.**  With homes set anywhere in the
-   configuration the button is live; with none it is greyed and its tooltip says why.  That greying is
-   the affordance and the button's own check is the guard, and both are meant to be there.
+1. **Right-click a square in the autonomy editor and open Bulk Tools.**  *Clear All Home Locomotives*
+   sits there beside *Clear Locomotives*, which is where you asked for it.  With homes set anywhere in
+   the configuration the item is live; with none it is greyed and its tooltip says why.  That greying
+   is the affordance and the item's own check is the guard, and both are meant to be there.
+
+   (This step used to say "look at the column", which is where the control was when you ran it.)
 2. **Press it.**  The confirmation should say what clearing does - Return Home will send each
    locomotive back to wherever it was standing when autonomy loaded - and offer No by default.
 3. **Say yes.**  Every home goes, on every page, not just the one you are looking at.  The hint line
@@ -14623,6 +14641,33 @@ run. It goes into a **Bulk tools** submenu on the autonomy editor's right-click 
 Locomotives - see MT-257 item 1, which is where he asked for both.
 
 *Run against commit 409d4ce8, build\classes, compiled 02 Sep 08:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Closing the test half and separating the request, because they are two things.
+
+You ran it and it works - *"Works, with notes"* - so the behaviour this entry was written for is done: the bulk clear names every locomotive it is about to lift, says how many squares it will empty, and says that Cancel will not put them back.
+
+Your note is *"move to right-click menu as noted in other comment"*, which is about WHERE the action lives rather than what it does.  That is a placement change to the editor's menus and it is not covered by anything here, so it wants its own feature request rather than keeping a passed test open - an entry filed as `needs test` reads on your list as "Claude has not finished", and this one is finished.
+
+Say the word and I will file it, or file it yourself with the menu you want it under; I have not guessed which, because the bulk tools sit in one place today and moving one of them out is a decision about that group rather than about this action.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude, correcting the comment above: the move is already done, and I should have looked before offering to file anything.**
+
+*"which one was MT 254?"* - this one, and the answer to the note on it is that it needs nothing.
+
+I wrote that the request *"wants its own feature request"* and that I had not guessed which menu *"because the bulk tools sit in one place today"*.  Both wrong:
+
+  - **This entry already names the destination.**  The re-opened note of 2026-09-02, four paragraphs up, says it goes *"into a Bulk tools submenu on the autonomy editor's right-click menu, beside Clear Locomotives - see MT-257 item 1"*.  I read your note and not the entry it was written on.
+  - **And it is built.**  `AutonomyEditorPanel.bulkTools()` holds *Clear Locomotives*, *Clear All Home Locomotives* and *Clear All Track Lengths*, in that order, and is mounted on the right-click menu.  `clearAllHomes()` has exactly one caller - that menu item - so the tool-column button is gone, which is the other half of what you asked.
+
+So there is no FR to file, and offering you one would have had you ask for something you already have.
+
+**What was actually stale is this entry's own steps**, which said to look at the tool column - the control you ran it against.  Step 1 now names the menu.
+
+Set back to `fixed unvalidated` rather than left validated: your run was of the button, and nobody has run it where it now lives.  It is a one-minute check.
 
 ---
 
@@ -15727,7 +15772,7 @@ look: the code says it covers both editors and nobody has watched it.*
 
 ### MT-277 - 2026-09-07 - One menu carries both the facing and the arrival side
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-057 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15746,13 +15791,17 @@ compass point.
 Before this the arrival side existed only in the editor. Say if it reads as eight compass points in a
 row rather than as two sets.
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-278"></a>
 
 ### MT-278 - 2026-09-07 - The covered-track shading survives a flash
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-175 follow-up (split from MT-274)
 
 **Written:** 2026-09-07
@@ -15843,6 +15892,10 @@ edge granularity - which is a change to the anti-collision model, not to the dra
 your edges are long relative to your trains: an edge that takes a whole four units between sensors will
 be claimed whole by anything standing on it. Splitting that run with a feedback where the switch is
 would give the railway somewhere to stop refusing.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16046,7 +16099,7 @@ Two shortcut buttons where there was one: **Use current** for the train parked o
 
 ### MT-285 - 2026-09-07 - A page whose top row is empty still numbers its axis
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-172 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16060,13 +16113,17 @@ Two shortcut buttons where there was one: **Use current** for the train parked o
 
 The axis is numbered from the page's own first row, not from the first row that happens to hold track.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-286"></a>
 
 ### MT-286 - 2026-09-07 - The editor comes to the front on the first open
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-173 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16083,13 +16140,17 @@ It comes to the front the **first** time, not only the second.
 *If it still opens behind:* say so - a process gets one chance at the foreground per start, and
 something else in start-up may be spending it.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-287"></a>
 
 ### MT-287 - 2026-09-07 - The incoming arrow on a curved sensor tile is clear of the track
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-175 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16101,6 +16162,10 @@ something else in start-up may be spending it.
 **Expected**
 
 The arrow sits in the lower-right corner of the tile, clear of the track rather than drawn over it.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16151,7 +16216,7 @@ Filed. The follow-up in the comment above - *"we need a keyboard shortcut to set
 
 ### MT-289 - 2026-09-07 - The facing menu ticks a facing the square cannot hold
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-177 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16173,6 +16238,10 @@ cannot hold.
 I don't know how to reproduce this, things seem to work now.
 
 *Run against commit 22f3d302, build\classes, compiled 08 Sep 21:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -16229,7 +16298,7 @@ one looks wrong, it probably is.
 
 ### MT-292 - 2026-09-07 - A remembered None comes back with the captions actually off
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** RGD-C3 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -16255,6 +16324,16 @@ not.
 none is shown in the dropdown, but station names are still drawn.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Fixed, and the mechanism is the one your report names exactly - the dropdown is right and the diagram is not.
+
+`AutonomyEditorPanel` restores the remembered mode while it is being CONSTRUCTED and applies it there. Half of applying it is local, the two tick boxes behind the dropdown; the other half is the diagram's own text switch, reached through `owner()`, which is `SwingUtilities.getWindowAncestor(this)` - and that is null until the panel has been added to the editor. So the mode arrived as a word and never as an effect, which is the state the four exclusive options exist to make impossible.
+
+`LayoutEditor.setAutonomyMode` asks the panel again from the same posted block that redraws the grid, and for the reason already written there: the first draw happens before the window knows what it is.
+
+`regression.testARememberedNoneOpensWithTheCaptionsOff` opens the editor three times - Station Names, None, Station Names - and reads the captions off the built window. Seen red first with the fix removed: 26 station names drawn under a None dropdown, which is your screenshot. The two openings around it are the controls: without the first, the None claim is satisfied by a page that draws nothing; without the third, by a switch that latches off and stays off.
 
 ---
 
@@ -16318,7 +16397,7 @@ Filed, both of them. *"TopMainR2 still shows two labels"* is **OB-193**, which s
 
 ### MT-294 - 2026-09-07 - A recorded arrival side the menu cannot offer is shown, not offered
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** RGD-C4 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -16362,6 +16441,16 @@ works, but the "recorded but could not arrived" piece doesn't make sense.  why n
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Answering the note rather than changing anything, because nothing invalid IS recorded any more - and that is worth saying plainly since the greyed row implies otherwise.
+
+Until OB-182 there were two vocabularies for one question: the side was WRITTEN by the geometry (where the neighbouring point lies) and the menu LISTED the build's (the side the metal comes in by), and they differ on every curve. That is how "75 407 DB, arrived from the west at BottomMainPost" came to exist while the menu offered north and south. Both now come from the builder's `entrySide`, so a side recorded from now on is one the menu can offer - your question's answer, for everything written since.
+
+What the greyed row is left for is a value that has STOPPED being valid: re-plumb a square under a standing train and the recorded side names track that no longer arrives there. The alternative to showing it is opening the menu with everything blank on a square that does have a tail recorded, which reads as "nothing is known" when something is.
+
+If you would rather it were not shown at all, say so and it comes out - the cost is the blank menu above, not correctness.
+
 ---
 
 <a id="mt-295"></a>
@@ -16395,7 +16484,7 @@ Two of the five reasons were missing from that mark, and one of them is how a pa
 
 ### MT-296 - 2026-09-07 - A 2.7.4c import brings the autonomy settings across
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** RGN-A1, IPR-A1 (split from MT-243)
 
 **Written:** 2026-09-07
@@ -16423,13 +16512,25 @@ too much manual effort, make a test case for this and validate that state matche
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Automated, as asked - *"make a test case for this and validate that state matches by having two fixtures in the test."*
+
+`core.testALegacyImportMatchesTheFileItCameFrom`. The two fixtures are both yours: `test/layouts/live-snapshot` and the 2.7.4c `config/autonomy_legacy/autonomy.json` frozen inside it. It compares the result against the FILE rather than against a list of expected values written into the test, so a settings key added to either format cannot quietly stop being carried.
+
+Four claims, one per line of this entry's Expected: every setting the file holds arrives with its own value (ten on your file); the three that would do harm stay behind; a station's capacity arrives as a capacity; and no square gained a track length.
+
+All four mutated on 2026-09-12: guarding out the settings copy fails the first ("What arrived: []"), removing the `activateRoutes` exclusion the second, taking `maxTrainLength` out of `CARRIED_SETTINGS` the third, and putting the old `setTileLength(tile, maxTrainLength)` line back fails the fourth with five squares gaining a length.
+
+One thing the test found and now says out loud: on this fixture the whole file arrives as `skipped` rather than `matched`, because the companion store's square names outlive a configuration - so a "fresh" configuration is fresh in its settings and not in its names. Everything under test is carried either way.
+
 ---
 
 <a id="mt-297"></a>
 
 ### MT-297 - 2026-09-07 - Importing a graph does not switch your routes off
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** RGN-A1 (split from MT-243)
 
 **Written:** 2026-09-07
@@ -16452,6 +16553,18 @@ switch a route off.
 write a test case for this, should be trivial to see if the treads are live.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Automated - `core.testAnImportDoesNotSwitchYourRoutesOff`.
+
+Both times, because this entry insists on both: after the import, and again after `parseAuto` has actually run the setup. The disabling used to happen on load rather than on import, so asking only the first question would miss the case.
+
+*"Trivial to see if the treads are live"* is the third test in the class, and it is the one that makes the other two mean anything. It turns the mechanism on by hand - `activateRoutes` with an EMPTY id list, which is what your own legacy file says - and asserts the routes really do go off. Without it, both claims above would pass on a railway where nothing was ever capable of switching a route off.
+
+Mutation: let `importLegacy` carry `activateRoutes`/`activateRouteIDs` and the second claim fails, naming the route that went dark.
+
+The class builds and enables a route of its own rather than relying on the fixture's, and puts every route's enabled flag back on the way out - the route database is the real one.
 
 ---
 
@@ -16641,7 +16754,7 @@ platforms only.
 
 ### MT-304 - 2026-09-07 - A non-reversible train goes home nose first
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-166 (split from MT-246)
 
 **Written:** 2026-09-07
@@ -16666,6 +16779,16 @@ that was `mustBackIn`, removed on 2026-09-04 when Return Home became manual oper
 works- these maneuvers should be manually allowed since both points are not allowed in full autonomy (orange).
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 02:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Closed on your run, and your note is already the rule - it just was not, when you wrote it.
+
+*"works - these maneuvers should be manually allowed since both points are not allowed in full autonomy (orange)."*
+
+That is the berth exemption, and it is now written into `Layout.isOfferableToOperator`: a square autonomy will never choose - the orange ones - stays offered to the operator by hand, even for a train that cannot reverse, while an ordinary terminus does not.  It arrived with `OB-205` on 2026-09-12 and was widened the same day by `MT-367`, which found that the rule was reading a flag that cannot tell a MAY-turn square from a compulsory one.
+
+So the manoeuvre you describe is allowed by hand today for exactly the reason you give.  Worth one more look on your next pass over the orange squares, which is what `MT-367` asks for anyway.
 
 ---
 
@@ -16820,7 +16943,7 @@ NOT filed, deliberately, and this says so where somebody would look. *"make sure
 
 ### MT-309 - 2026-09-07 - EN57-203 can get back to TunnelLongPark
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** D24-B1 (split from MT-250)
 
 **Written:** 2026-09-07
@@ -16943,7 +17066,7 @@ Filed. *"clearing locomotives in the autonomy editor cannot be undone by a cance
 
 ### MT-312 - 2026-09-07 - The import says what it left behind
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** MT-257 item 3 (split from MT-258)
 
 **Written:** 2026-09-07
@@ -16964,6 +17087,18 @@ length, a 36-entry timetable, and the route activations.
 Make a test case for this- no need for a manual test.
 
 *Run against commit 0016fc18, build\classes, compiled 08 Sep 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+if test is green, close this
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Closed on the test, as you asked - *"if test is green, close this"*.
+
+`core.testAutonomyDiagramSession` carries the claim: the import counts what it left behind and names each kind, and `whatALegacyImportLeaves` raises `autosetup.ui.leftRouteActivations` for the route pair.  It runs green in every battery, including this one.
 
 ---
 
@@ -17160,7 +17295,7 @@ Adam, 2026-09-09: **mark as done.** The power question was already implemented w
 
 ### MT-318 - 2026-09-07 - Undoing a shut link opens both halves, across pages
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** SVN-B8 (split from MT-265)
 
 **Written:** 2026-09-07
@@ -17471,13 +17606,31 @@ I don't understand this test- autonomy shouldn't be editable/startable while run
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+You are right that autonomy is not editable while running, and that is not the state this entry describes - the entry is badly written and this is my fault.
+
+The editor cannot be opened during a run (OB-047), and `refuseWhileEditorOpen()` guards every door that starts one. What reaches the declined-edit path is a RACE, not a mode: VD10-C2 coalesced the setup rebuild into one per gesture, which posts it an event LATER than the write that asked for it. A run started inside that window finds the gate shut, the rebuild is refused - correctly, because rebuilding underneath a moving railway is what `prepareAutonomyReload` exists to refuse - and the edit is on disk with the running layout still built from the version before it.
+
+So the gesture is: make a setup edit and press Start immediately, within one event of each other. That is why you could not trigger it deliberately, and it is not something you should have been asked to.
+
+What the fix does is make the message's second half true. The save on the way out folds the RUNNING layout back over the configuration and removes what the layout does not carry, so exiting after a declined edit used to delete that edit - silently, on the exact path the message called safe. The capture is now skipped, and the log says why.
+
+`regression.testTheRefusalsAreAskedAtTheDoors` covers the half you are describing: every door asks before it acts. The skip itself has no automated test yet - it needs a UI with a run in progress - so this stays open as a test to build rather than as a run for you to make. Do not attempt it by hand.
+
+**Adam, 2026-09-12 (triage).** Could not run this.
+
+OK, run the test on your end, then close this if green.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-327"></a>
 
 ### MT-327 - 2026-09-07 - A hand dispatch that fails with autonomy stopped
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** FR3-C2, DAY-C3 (split from MT-271)
 
 **Written:** 2026-09-07
@@ -17503,13 +17656,21 @@ I don't know how to trigger this error condition.  Seems like something to test 
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Automated - `core.testAFailedDispatchSaysWhichKindItWas.testAHandDispatchIsNotToldToPressStart`. You should not have been asked to make a real dispatch fail and then read the log fast enough to catch the sentence.
+
+The failure is forced the same way `testAFailedPathStopsTheRunAndGivesTheTrackBack` forces it - a `CB_ROUTE_START` callback that throws once the path is locked - and the log is read at `MarklinControlStation`'s own logger, so nothing was added to the program for the test's benefit.
+
+The claim is the pair: with autonomy stopped the log says there is nothing to restart, and does NOT say autonomy has stopped itself and can be started again.
+
 ---
 
 <a id="mt-328"></a>
 
 ### MT-328 - 2026-09-07 - The same failure with autonomy running still says to restart
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** FR3-C2 (split from MT-271)
 
 **Written:** 2026-09-07
@@ -17530,6 +17691,14 @@ already cleared it.
 same issue as 327
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Automated with MT-327, in the same class - `testARunThatStopsItselfStillSaysToStartItAgain`.
+
+It is the half that keeps the other honest: a message that always said "nothing to restart" would satisfy MT-327 and lose the case where Start really is what puts the railway back.
+
+And the trap this entry predicts is what the mutation proves. *"If both cases say the same thing, the flag that chooses between them is being read after the stop has already cleared it."* Moving `final boolean wasRunning = this.running;` below `stopLocomotives()` fails this test and leaves MT-327's green - exactly as written.
 
 ---
 
@@ -18292,13 +18461,25 @@ enforced it, so the run would have set off and been refused half way.
 finds its station closed - and Return Home reports that it could find no plan. It does not say
 "impossible": the check that used to make that claim was wrong three times and was removed.
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude: the planner's half is pinned harder than it was, after a gap this sweep found.**
+
+`core.testHomeStaging` had stopped grading plans against FR-001, and the note left where the assertion had been said `testAStagingRunIsNotRefusedByTheOccupancyRestriction` held it instead. **No such method or class exists anywhere under `test/`**, and did not when that sentence was written - so OB-073's invariant was unguarded rather than moved, from 2026-09-09.
+
+It was taken out for a reason that expired the next day. On 2026-09-09 you ruled the restriction belonged to full autonomy alone, so neither the planner nor a staging run read it; on **2026-09-10** you ruled *"enforce the occupancy ruling in all modes and then rely on isPathClear"*, which put it back in every tier. `HomeStaging.canRest` reads `Point.heldBackBy` against the planned state again, and `isPathClear` has carried "NO FENCE ... the restriction is enforced in every tier" since that day.
+
+The replay oracle asks it again now, so every plan the class produces is graded rather than the two cases named after it. Measured: dropping the rule from `canRest` fails four claims, one of them the plan OB-073 was reported against.
+
+Nothing about what you check here changes - this is the automated half getting its guard back.
+
 ---
 
 <a id="mt-347"></a>
 
 ### MT-347 - 2026-09-10 - A berth with room, refused for the way there
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** ruling 1b, 2026-09-09
 
 **Written:** 2026-09-10
@@ -18355,7 +18536,7 @@ checked."** Turning round says what happens when a train arrives; that switch sa
 
 ### MT-349 - 2026-09-10 - A train really reverses at a terminus, and not at a plain platform
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** the reversal-emission tests
 
 **Written:** 2026-09-10
@@ -18414,6 +18595,18 @@ Cancel at step 4 leaves everything alone - worth one run of that too.
 Works, but this action cannot be undone.  Warn the user of this.
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Already answered, on 2026-09-11, before this verdict reached me.
+
+The confirmation said nothing brings the lengths back; it now also says, in all eight languages, that the action **cannot be undone** and that Ctrl+Z will not bring them back.  That is the word an operator in an editor with an undo stack is actually reaching for, which is what your note is about.
+
+Worth one more look on your next pass, which is why this is `fixed unvalidated` rather than closed.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18485,6 +18678,12 @@ ones already built running for the rest of the session with nothing able to stop
 too much manual effort for this, generate an export of an active route, import it, and confirm behavior.
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Automated, as asked - *"too much manual effort for this, generate an export of an active route, import it, and confirm behavior."*
+
+`core.testRoutes.testAnExportedRouteComesBackDisarmed` exports the live routes, reads the file back, and asserts every route arrives with automatic execution OFF while its commands, sensor and conditions survive.  That is the gesture you describe, run on every battery.
 
 ---
 
@@ -18632,7 +18831,7 @@ page in the alphabet the moment you pressed OK, which took the choice away from 
 
 ### MT-357 - 2026-09-11 - A page that cannot be read shows why, and keeps its autonomy setup
 
-**Disposition:** superseded
+**Disposition:** needs test
 **From:** NSV-B3, FV3-A1
 
 **Written:** 2026-09-11
@@ -18668,6 +18867,14 @@ dropped.
 write a test case for this- too much manual effort otherwise.
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Not automated this round, and it is a fair ask.
+
+*"write a test case for this - too much manual effort otherwise."*  A page that cannot be read has to be made unreadable, which means writing a broken file into a sandbox and checking both halves: the window says why, and the autonomy setup for the other pages survives.  That is a real test rather than a small one, and it is the honest reason it is not here.
+
+Still `needs test`, and now for a written-down reason rather than by omission.
 
 ---
 
@@ -18710,6 +18917,14 @@ this test is not relevant- syncs from traincontrol to CS2 don't happen, only the
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Declined on your own reading, and it is the right one.
+
+*"this test is not relevant - syncs from traincontrol to CS2 don't happen, only the other way."*  The entry asks whether the Central Station still follows an arrow after a change here, and if nothing is pushed that way there is nothing to follow.  Superseded rather than left asking for a run that cannot mean anything.
+
+Your note about ID design is not covered by this and is worth its own entry when you write it up.
+
 ---
 
 <a id="mt-359"></a>
@@ -18748,6 +18963,55 @@ rather than OFF. The only way back was to select the member and clear it there.
 Probably works as-is, but this isn't the intended behavior.  Make the allowed function be the highest possible for the consist- so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked.
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Recorded as a change of intent rather than a defect, and not built.
+
+*"Probably works as-is, but this isn't the intended behavior.  Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean..."*  The note is cut off in the record at the point where the mixed case is described, which is the case that decides the whole rule - so building it now would be building my reading of a half-sentence.
+
+Say what a mixed consist should allow and this becomes a small change: the head's function set is one lookup, and taking the union or the maximum across members is the same shape.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+What I need is one sentence: **what a MIXED consist should allow.**
+
+Your note in the record stops mid-example - *"so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mea..."* - and the mixed case is the one that decides the whole rule.  The two ends of it are:
+
+  1. **The union** - every function any member understands is offered, and a member that does not understand one simply ignores it.  An MM2 loco with an mfx one would then offer the mfx range, and pressing F12 does something for one of them and nothing for the other.
+  2. **The intersection** - only functions every member understands, which for that pair is F0-F4.  Nothing is offered that some member will ignore.
+
+Your words *"the highest possible for the consist"* read as (1), and the all-MM2 example - two MM2 locos giving F0-F4 - is consistent with both, which is why it does not settle it.
+
+Once that is settled the change is small: the head's function set is one lookup, and taking the union or the maximum across members is the same shape of code either way.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude, correcting myself: this was already built, and I should not have asked.**
+
+You answered *"Union for 359, just have it check the consists max function count"* - and that is what the program has done since 2026-09-11, the day you reported it.  `MarklinLocomotive.drivableFunctionCount` returns the largest function count in the consist including the head's, `setF` gates on that instead of on the head's own range, `getF` asks the members for the functions the head's decoder does not have, and `functionsOff` clears the same range it can set.
+
+Your full sentence is in that method's javadoc, mfx half and all: *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
+
+**What went wrong on my side.**  The copy of your note stored in this record is truncated mid-example, and I read that and asked you to finish the sentence rather than checking whether the code already had it.  The answer was one grep away.  `audit-the-bodies-not-the-index` is exactly this mistake, arriving through the record instead of a summary table.
+
+**It is tested**, and by the pair of claims your example asks for: `core.testMultiUnitMembership.testAConsistCanDriveEveryFunctionItsMembersHave` links an MM2 head to an MFX member and asserts the consist's range is the member's, that f6 reaches the member, that the consist can SEE it afterwards - which is what S14-B1 was really about - and that `functionsOff` clears it.  The control beside it links two MM2 locomotives and asserts the range is five, so the rule is "the highest of the members" and not "the highest there is".
+
+So this needs a hands-on run rather than a decision: build the mixed consist, press a function past F5, and check it reaches the member and can be turned off again.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude, 2026-09-12 - and the answer to *"does it propagate to the UI check that determines which function buttons are active?"* was NO.**
+
+It does now.  Three places in `TrainControlUI.repaintLoc` decided which buttons to light from `this.activeLoc.getNumF()` - the HEAD's own count - so on your MM2-with-MFX consist f6 worked from a keyboard shortcut, a route and autonomy, and the button for it was greyed.  The F20-F31 tab was removed outright.  The guard and the affordance asking different questions is `OB-057`/`OB-090` arriving in a third place, and it is the same shape as the defect S14-B1 originally reported: state that goes somewhere nothing can reach.
+
+`drivableFunctionCount()` is on `Locomotive` now, answering `getNumF()` for anything standing on its own and overridden by the consist - so the window can ask without knowing which it holds.
+
+**No icons past the head's range, on your word** - *"It's ok if those function types are default and the buttons show no icons if the head is mm2."*  That is also the safe reading: `getFunctionType` and `getFunctionIconUrl` read tables sized to the head's own decoder, which is the hazard `getF`'s javadoc already warns about.  The button carries its number and nothing else, and what it does is the member's business.
+
+`regression.testTheFunctionButtonsFollowTheConsist` drives the real window through `repaintLoc` and reads the buttons back - whether one is enabled is decided there, and every model-level question answers the same before and after.  Seen red on f6 for the mixed consist; the control links two MM2s and requires f6 to stay greyed, so lighting everything fails it too.  Both mutations run.
+
+**Still wants your hands on it:** build the mixed consist, check f6 is now pressable AND that it turns the member's function on and off, and check the F20-F31 tab is there for an MFX member.
 
 ---
 
@@ -18789,7 +19053,7 @@ that he would rather have no check than one that refuses something legal.
 
 ### MT-361 - 2026-09-11 - A train placed from either menu records which way it came in
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** REV9-B2, W21-C9
 
 **Written:** 2026-09-11
@@ -18851,13 +19115,21 @@ MT-366's own step 4 carried the same wrong wording and is corrected.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Built, and you have since found the follow-up yourself.
+
+*"terminuses (stations that must reverse) are currently allowed to have ingress from two sides.  Make this be an autonomy ERROR that the user has to fix."*  `AutonomyChecks` raises `TERMINUS_WITH_TWO_WAYS_IN` at `Severity.ERROR`, which stops the setup running until it is resolved, and `AutonomySession.terminiWithTwoWaysIn` is what finds them.  Measured before it shipped: zero on your railway at the time, so it could not fire spuriously.
+
+Your second note - that the error would not clear when you turned an outbound arrow red - is MT-366, and it was the message rather than the rule: *"can't arrive is different than can't depart"*.  The sentence now names the **Trains May Arrive...** menu, which is the one that clears it.
+
 ---
 
 <a id="mt-362"></a>
 
 ### MT-362 - 2026-09-11 - The locomotive keys work from any part of the window
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-170
 
 **Written:** 2026-09-11
@@ -18891,13 +19163,25 @@ Works, but the user should not be allowed to type anything into the log.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Fixed - *"the user should not be allowed to type anything into the log."*
+
+`debugArea` is a JTextArea, which is editable by default, so clicking in it and typing put text among the program's own messages where it would later read like something TrainControl had said.  It is read-only now, set after `initComponents` because the field belongs to the generated block.
+
+Selecting and copying still work, which is what anybody actually wants from a log.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-363"></a>
 
 ### MT-363 - 2026-09-11 - A train that turns round has to fit on both sides of the turn
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MON-C13, Adam's ruling of 2026-09-11
 
 **Written:** 2026-09-11
@@ -18942,7 +19226,7 @@ the remedy is a length on the track beyond the turn.
 
 ### MT-364 - 2026-09-11 - The editor says when a platform claims more train than its track measures
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's request of 2026-09-11
 
 **Written:** 2026-09-11
@@ -18984,13 +19268,27 @@ Partially works.  I set the track at 10,10 to length 2, so now we know that the 
 
 *Run against commit ac960047, build\classes, compiled 11 Sep 22:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+Confirmed as a defect, and your diagnosis is the whole of it - not fixed this round.
+
+*"I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is 2.  But it is still asking for the tile at 10,9 (TunnelLongPark) to get a length.  The calculation should add 10,10's length plus 10,9's length, both of which are past the switch at 10,8."*
+
+The notice asks for every unmeasured square in the stretch behind a reversal, and it should be asking whether the stretch TOTAL is known - which is the same doctrine `measuredRoomAtTheEndOf` already follows (*"only segments with a positive length are determinate"*, and a partly measured stretch still binds).  So the notice and the guard disagree about what counts as measured, which is exactly the shape this codebase keeps paying for.
+
+Left for its own pass because it is the notice's arithmetic rather than a wording change, and because the guard beside it has been rewritten twice this week.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-365"></a>
 
 ### MT-365 - 2026-09-12 - Control+B sets the maximum train length from the autonomy editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's request of 2026-09-12
 
 **Written:** 2026-09-12
@@ -19030,7 +19328,7 @@ the defect MT-313 and Control+E both had - but the key handler itself lives in t
 
 ### MT-366 - 2026-09-12 - A terminus with two ways in stops the setup running
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-361 (Adam's ruling of 2026-09-12)
 
 **Written:** 2026-09-12
@@ -19072,6 +19370,16 @@ see MT-361 comments
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 01:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-12, 2026-09-12.**
+
+See MT-361 above - the error is built, and the not-clearing half was the message naming the wrong menu.  It points at **Trains May Arrive...** now, which is the one that resolves it.
+
+Both halves want your eyes again: raise a terminus with two ways in, check the setup refuses to run, then bar one arrival and check the error goes.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-367"></a>
@@ -19105,6 +19413,55 @@ chosen."*
 *"the operator asking for that BERTH by hand is no longer refused"*. The word doing the work there was
 berth, and the rule that was written did not carry it. Step 3 is that half, and it still stands.
 
+**Adam, 2026-09-12 (triage).** Does not work.
+
+EN57-947 is not allowed to go to BottomMainB, even though it "may" reverse (is not a terminus).  It is correctly barred from BottomMainC, a terminus.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Fixed, and it was mine - the rule I added for `OB-205` read the one flag that same issue says cannot be read.
+
+*"EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a terminus).  It is correctly barred from BottomMainC, a terminus."*
+
+`isOfferableToOperator` asked `isTerminus()`, and claims 2 and 3 of OB-205 say plainly that the builder emits the turning copy of a MAY-turn square with `terminus: true` - their own fix was to ask the DOOR instead of the flag.  Claim 1 went in the same evening asking the flag.
+
+**The question is about the SQUARE, not this copy of it.**  A square is emitted as one Point per way of arriving, and `Point.getBlock` says which of them are one piece of track, so the rule can now ask what it always meant: is there any way to stand there without being turned round?  Measured on your railway - BottomMainB has plain eastbound and westbound copies, BottomMainC has only a terminus and a reversing point.
+
+A first attempt at the discriminator was wrong and a probe caught it before it shipped: *"some copy is not a terminus"* is true of BottomMainC too, because its other copy REVERSES rather than terminates.  A way through has to be neither.
+
+`core.testAMayTurnStationIsNotATerminus`, seen red on your exact case.  It builds the compulsory case rather than looking for one, because `live-snapshot` still has BottomMainC as a may-turn square - you have changed it since the snapshot was frozen, and a class that went hunting would be testing whichever railway that file happened to be.
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+still offered it for 2-8-4 3505, see other filed MT answer
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: found, measured and fixed - and it was the flag's other spelling.**
+
+*"still offered it for 2-8-4 3505."*
+
+**Measured on your live folder, before the fix:**
+
+    BottomMainC (eastbound, reverse)   terminus=true    autoDest=true   offerable=false   <- refused
+    BottomMainC (westbound, reverse)   reversing=true   autoDest=true   offerable=TRUE    <- the leak
+
+One compulsory-turn station, half refused and half offered, to the same non-reversible locomotive.
+
+**Why.** `AutonomyBuilder` writes a turning copy as `stops ? "terminus" : "reversing"` - the word depends on whether a train may STOP there - and the rule I added for this entry read `end.isTerminus()` alone. The copy spelled `reversing` walked straight past it. To a train that cannot reverse the two words say one thing: you must turn round here.
+
+That is the SIXTH site of this one confusion (OB-205 claims 1, 2 and 3, MT-368, MT-377, and now this), and every one of them has been a rule reading one flag where the builder may write either.
+
+**Fixed:** the rule reads `isTerminus() || isReversing()`, which is what `hasAWayThrough` two lines above it already did. Re-measured: both BottomMainC copies refused, both BottomMainB copies still offered - BottomMainB keeps plain copies, so it is a MAY-turn square and a non-reversible train may still be sent there to drive through.
+
+**The berth exemption is untouched**, because it hangs on `isAutoDestination()` and a berth is not one. Step 3 of this entry stands.
+
+*Covered by* `core.testAMayTurnStationIsNotATerminus.testTheReversingCopyOfACompulsoryTurnIsRefusedToo`. It has to BUILD the state: you set `mustReverse` on BottomMainC today, and the checked-in snapshot still has it as `canReverse`, so the claim arranges the compulsory case and puts it back. Mutation - reading `isTerminus()` alone again - fails it.
+
 ---
 
 <a id="mt-368"></a>
@@ -19136,13 +19493,112 @@ real terminus - so both doors that decide whether to ask read a flag that cannot
 prompt was skipped AND the train was turned anyway, which means the answer it would have given was the
 opposite of what happened.
 
+**Adam, 2026-09-12 (triage).** Does not work.
+
+Still not asked if pasting 75 407 DB from Tunnel to BottomMainB
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 03:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Not fixed this round, and I would rather say so than guess.
+
+*"Still not asked if pasting 75 407 DB from Tunnel to BottomMainB"* - the PASTE door, which is a different door from the send this entry was written about.  MT-367's fix above changes which destinations that train is offered and does not touch what the paste asks, so this one needs its own look: the paste writes a placement rather than dispatching a journey, and whether it should raise the direction question at a may-turn square is a decision as much as a defect.
+
+Left open deliberately rather than folded into MT-367.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Your ruling - *"it should behave the same way as a new placement, and only skip asking if the direction is forced one way"* - measured against the door, and it makes this a DIFFERENT change from the one this entry describes.
+
+**What the paste actually asks, and why it stayed quiet.**  The paste door does raise the placement question: `ArrivalSidePrompt.forPlacement`, the same one a new placement uses.  `wouldAsk` has two gates - the square must be one trains MAY turn at, and there must be more than one side to choose between.  Measured on your railway:
+
+    BottomMainB   isTurnAround = true
+                  arrival sides, raw geometry = [E, W]
+                  arrival sides, unbarred     = [W]        <- one
+                  choicesFor(...)             = [W]  -> wouldAsk = false
+
+So the may-turn gate is not what silenced it.  **You bar arrivals from the east at BottomMainB**, which leaves exactly one way in - and by your own rule, a forced direction is one not to ask about.  The arrival-side question is behaving correctly.
+
+**What is NOT asked, and under your ruling should be.**  The arrival SIDE being forced does not force the DIRECTION.  A train arriving from the west at a square trains may turn at can end up facing either way - that is what "may turn" means - and nothing puts that question at a paste.  `facingAfterAPaste` decides it silently: one possible facing is taken, otherwise the heading is kept if the landing can hold it, otherwise the facing is cleared and the menu asks later.
+
+So this is a NEW question at the paste door rather than a fix to the existing one, and it collides with a ruling of yours that already has a test class named after it - `core.testAPastedTrainKeepsItsDirection`, built on *"the heading survives where the landing can hold it"*.  Under the new rule that branch becomes "ask", not "keep".
+
+**I have not built it.**  Two of your rulings now disagree and this door moves trains, so the choice is yours:
+
+  1. **The heading still survives silently** where the landing can hold it, and the new question is asked only when it cannot - which is today's behaviour and keeps `testAPastedTrainKeepsItsDirection` as written.
+  2. **Ask whenever the square can hold more than one facing**, heading or no heading.  That supersedes the earlier ruling, and I will update that class with both quotes so the record shows which replaced which.
+
+Say 1 or 2.
+
+**Adam, 2026-09-12 (triage).** Does not work.
+
+prompt appears, but for 2-8-4 3505 going from topmainr2pre to bottommainb, when asked if it should keep direction, I said yes, but it still got reversed at the "may change direction" station bottommainb.  ran it twice with the same behavior.  "no" also reverses it, so it is just always getting reversed, it seems.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 18:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude, on your Option 1 ruling.**
+
+*"Option 1 is fine as long as the direction isnt flipped (which it was before).  So go with that if you've fixed the direction.  When 2-8-4 is pasted, it should always face east.  Does it?"*
+
+**Option 1 stands, and it needed no code: it is what the door already does.**  `facingAfterAPaste` keeps the heading where the landing can hold it, asks nothing, and `core.testAPastedTrainKeepsItsDirection` is named after that rule.  Option 2 is not built and this entry no longer proposes it.
+
+**Your condition was not met, and that was a real defect.**  It did NOT always face east - measured on a frozen copy of your railway, east 21 times out of 40 and west the other 19, from an unchanged setup in one process.  Not a flip in one direction: a coin toss.
+
+The cause is this entry's own subject seen from a third door.  A may-turn square is two Points per arrival side, the plain copy and the turning copy, always the same distance away and facing opposite ways - and the paste's walk answered with whichever of the two it happened to touch first, which `Layout.getNeighbors` decides by shuffling on purpose.  So the paste was recording "it arrived and then turned round" about half the time.  That is the fourth site of the confusion this entry is about.
+
+Fixed and filed as **MT-377**, with the numbers and the steps to check it.  Measured after the fix, on your live folder: east ten times out of ten.
+
+This entry keeps its own subject - the SEND path, and the prompt being honoured - which is what your last triage on it was about.
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+2-8-4 3505 (non-reversible) from topmainr2pre to bottommainb:
+1. I get the prompt, but I shouldn't because the train is not reversible and the station is selectable in full autonomy
+2. If keep direction is selected, the "in progress" badge on bottommainb shows the wrong direction until after the train arrives. 
+3. Once the train arrives, the displayed direction is correct
+
+when loc changed to reversible and route above is repeated: works as intended, but when locomotive is cut and pasted, it goes back to its original facing pre-route.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: three of your four points are fixed, and the fourth is diagnosed but not yet repaired.**
+
+**1. The prompt should not appear for a non-reversible train - FIXED, and it needed two halves.**
+
+The obvious half is the prompt: a square that MAY turn is a preference, and a locomotive that cannot run backwards has no preference to express.
+
+The half that is not obvious is why suppressing the prompt alone would have made this WORSE. `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers **false** - "no opinion", not "no" - so `Layout.turnsOnArrival` skips the policy branch entirely and falls to `arrived.isTerminus()`, which is true at the turning copy of a may-turn square. A train nobody asked about would have been turned every single time, which is this entry's original defect arriving by a new route.
+
+So the rule lives where the decision is made: a train that cannot reverse is never turned where turning is OPTIONAL. `hasAWayThrough` is what tells optional from compulsory, so backing into a terminus still works - that is your MT-245 ruling and `testATrainThatCannotReverseMayBackIntoATerminus`.
+
+**2. The in-progress badge shows the wrong direction until arrival - DIAGNOSED, NOT FIXED.**
+
+`configureAndLockPath` **reserves** every point on the route as it locks it, including the destination - `e.getEnd().reserve(loc)`, and its comment explains why it must be every point rather than just the head. The destination it reserves is the copy the path ends on, which is routinely the TURNING copy (measured: the path offered to BottomMainC ends on `(eastbound, reverse)` five runs out of five). The caption then reads that copy's facing, which is the turned one. On arrival the train is re-stood on the plain copy and the badge becomes correct - exactly what you saw.
+
+The real repair is to reserve the copy the train will actually END on, decided from the answer at dispatch rather than corrected at arrival. That is a change to the locking path, which is the most dangerous code in the application, and I am not making it blind at the end of a session. It is written up for the next round.
+
+**3. "Once the train arrives, the displayed direction is correct"** - that is the arrival re-standing the train, which went in yesterday. Nothing to do.
+
+**4. Cut and paste goes back to the pre-route facing - FIXED.**
+
+Control+X takes the train OFF the running layout. So at paste time `facingByPath` has nowhere to walk from - `walkTo` looks for the locomotive among the layout's Points and finds none - and falls to its no-path arm, which asks the SETUP. The setup holds the placement as it stood before the run. That is your "original facing pre-route", exactly.
+
+The heading is known at the moment of the cut and nowhere afterwards, so it now travels on the clipboard beside the locomotive, and the paste prefers it where the landing can hold it - your Option 1 rule from MT-377, applied to cut and paste. An ordinary drag of a train still on the railway keeps the walked answer, which is the better one there.
+
+**So: run 1 and 4 again, and expect 2 to still be wrong until the reservation is fixed.**
+
 ---
 
 <a id="mt-369"></a>
 
 ### MT-369 - 2026-09-12 - The tail after a move points the same way every time
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-204
 
 **Written:** 2026-09-12
@@ -19163,13 +19619,17 @@ about half the time."*  The builder's arrival sides take no notice of barred arr
 one way in looked two-sided; the rule that answers "the one way in that is not the way it is pointing"
 could not fire, and the fallback reads the train's facing - which alternates every time it is turned.
 
+**Adam, 2026-09-12 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 03:30 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-370"></a>
 
 ### MT-370 - 2026-09-12 - Return Home says which station a train could not reach
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-206
 
 **Written:** 2026-09-12
@@ -19188,5 +19648,1116 @@ could not fire, and the fallback reads the train's facing - which alternates eve
 *What this is:* Adam, OB-206: *"when you say 'these locomotives cannot reach their home stations:
 <locomotive>', update the error message to provide the station name."*  The station is named by its base
 name, not the copy's - a message about "BottomMainB (westbound, reverse)" would be worse than none.
+
+**Adam, 2026-09-12 (triage).** Works, with notes.
+
+Works. But instead of "check the track between them, and where they started", just say "check the route or use the autonomy editor to view details"
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Reworded to yours.
+
+*"instead of 'check the track between them, and where they started', just say 'check the route or use the autonomy editor to view details'"* - the sentence now ends *"Check the route, or use the autonomy editor to view details."*, in all eight languages.  The station naming you signed off on is unchanged.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-371"></a>
+
+### MT-371 - 2026-09-12 - A long train may stand across the points at a platform, but not at a berth
+
+**Disposition:** fixed unvalidated
+**From:** Adam's ruling of 2026-09-12 (out of OB-207)
+
+**Written:** 2026-09-12
+
+**This one needs a tape measure first**, because it is about your own figures rather than about the
+snapshot's.
+
+**Steps**
+
+1. Measure the run into a platform autonomy chooses, with a switch in it - `BottomMainAPre` to
+   `BottomMainA` is the one this came from. Set the squares so the approach totals what it really is,
+   with part of it before the switch. You said 6, split 3 either side.
+2. Take a train as long as that whole approach - 6 - and send it to that platform by hand.
+3. Take a train one unit longer - 7 - and try the same.
+4. Now the berth: `TunnelLongPark`. Measure it at 2 and leave the run behind it as it is. Send a
+   two-unit train there, then a three-unit train.
+
+**Expected**
+
+- Step 2: **accepted.** The train stands across the points, and that is the ruling - a train at a
+  platform is passing.
+- Step 3: **refused**, naming the track leading in. Its tail would lie back past the whole approach.
+- Step 4: two units **accepted**, three units **refused** - and the refusal for three names *the road
+  it would foul*, not the length. A parking berth may not block a road.
+
+**What to check while you are there.** While the six-unit train stands at that platform, the way down
+to the ramp is closed - anything routed through those points is refused until it moves. That is the
+cost of the ruling, and it is worth seeing once. If it reads as too expensive at a particular
+platform, say so: the remedy is a per-berth switch you set by hand, not a weaker rule.
+
+*What this is:* Adam, 2026-09-12: *"make a rule that parking berths cant block any other edges, but
+not make that check for active stations."*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude: step 4's figures were the ones that showed a defect, and it is fixed before you run it.**
+
+A validator noticed that the numbers this entry asks you to set - TunnelLongPark (10,9) = 2 and 10,10 = 2 - are exactly the arrangement that made the picture and the guard disagree, and that nothing here said so.
+
+**What was wrong.** Two walks work out where a standing train's body lies. `Layout.walkStandingTrains` is the GUARD - it decides what the railway refuses - and it spends the standing square first. `AutonomySession.walkBackFrom` is the PICTURE - the orange line and, since 2026-09-12, the grey as well - and it claimed the standing square for nothing and spent the far end of each hop instead. So the drawing reached `len(standing) - len(far end)` further back than the guard's own claim.
+
+On your step-4 figures that is one whole square: a two-unit train fits TunnelLongPark exactly, the guard claims 10,9 alone and accepts it, and the diagram drew the train lying across 10,10. You would have seen a train spilling out of a berth on the same screen that said "accepted".
+
+**Fixed 2026-09-12:** the picture spends the standing square first, like the guard. What the diagram draws and what the railway refuses are the same question and now give the same answer.
+
+So step 4 should read cleanly. If you DO see the shading reach a square past the one the train fits in, that is this defect returning and worth saying so.
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude, correcting the note above before you run this.**
+
+I said the picture/guard offset was "fixed 2026-09-12" and that step 4 should read cleanly. **I reverted that fix the same evening, and the note is wrong.**
+
+**What happened.** I made the drawing charge the square the train stands on, so that it and the guard would claim the same squares. The battery caught it: **nothing was shaded at all**. Two claims failed, one of them quoting you - `testATrainOfLengthOneCoversOneSquare` holds that *"the whole of the edge it arrived along is washed however short the train is"*, against your *"all of bottommaina stayed shaded ... as I set the length of EN57-203 to 1"*.
+
+The reason is that the two walks describe different sets **on purpose**. The guard claims the square the train is on and then the track behind it. The picture never draws that square at all - a train standing there is already shown standing there - so charging its length leaves a train shorter than its own square with nothing behind it to draw.
+
+**So there is a question here, and it is yours:**
+
+> When a train is shorter than the square it stands on, should any track behind it be shaded?
+
+  - **The guard says no.** Nothing behind such a train is blocked, so nothing behind it should be grey.
+  - **The picture says yes**, and washes the arrival edge however short the train is - which is what your EN57-203 report asked for.
+
+They cannot both hold. Say which and I will make the other follow it.
+
+**What this means for step 4.** With TunnelLongPark = 2 and 10,10 = 2, a two-unit train fits the berth exactly: the guard claims 10,9 alone and **accepts** the placement, and the diagram will draw the train reaching onto 10,10. That is today's behaviour, unchanged, and it is the disagreement above rather than a new fault. Everything else in this entry is unaffected - the acceptance, the refusal of a longer train, and the message - so the step is still worth running.
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: your allowance ruling is built, and it changes what step 4 should look like.**
+
+Adam, 2026-09-13: *"if the segment length is shorter, more should be blocked.  The station size is an allowance, not a length."*
+
+That settles PRW-B4, and it settles it against the GUARD rather than the picture - the opposite of what I guessed yesterday and then tried to build.
+
+**What was wrong.** `Layout.walkStandingTrains` claimed the square a train stands on and **spent its measurement** before walking back. So a train at a generously-sized platform had its body absorbed by the platform and blocked nothing behind it, however long it was. The picture - `walkBackFrom` - never charged that square, and was right not to.
+
+**What it does now.** The standing square is claimed, because the train is standing there, and its measurement is not spent: the body lies back over the track behind. Only the first square of the first hop; everything further back is ordinary track and is spent as before. The same number is still what the ROOM rule reads to answer "does this train fit here", which is the question an allowance is for - the two uses simply stop sharing an answer.
+
+**For step 4.** With TunnelLongPark = 2 and 10,10 = 2, a two-unit train now claims 10,9 **and reaches 10,10** - so more is blocked than before, which is what you asked for, and the shading and the guard agree about it. My note of yesterday said this was fixed, then said it was reverted; this is the third and final state, and it is the one you ruled.
+
+*Covered by* `core.testAStationsSizeIsAnAllowance` - six claims, each seen red first. Three of them arrived later, when two validation rounds pointed out that the live arithmetic on the permitting side was pinned by nothing: the hop budget reaching a second edge, a berth measured on an approach measured nowhere else, and the square under the train being claimed wherever it stands (SVZ-B1, a defect found while building the first of those).
+
+**Adam, 2026-09-13 (triage).** Could not run this.
+
+OK, I don't see a test here, close if no outstanding test or question.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: there IS something outstanding, so not closed yet - and it is small.**
+
+*"OK, I don't see a test here, close if no outstanding test or question."*
+
+The question this entry was waiting on is the one you answered today: *"if the segment length is shorter, more should be blocked.  The station size is an allowance, not a length."*
+
+That changed the behaviour this entry is about. `Layout.walkStandingTrains` used to claim the square a train stands on AND spend its measurement, so a train at a generously-sized platform had its body absorbed by the platform and blocked nothing behind it. It now claims that square without spending it, so the train's full length lands on the track behind - which is the "more should be blocked" you asked for.
+
+**What to look at**, and it is one screen: with a train standing at a platform measured LARGER than the train, the track behind it should now be marked. Before today it was not. Everything else in this entry - the acceptance, the refusal of a longer train, the message - is unchanged.
+
+If that reads right, this closes.
+
+*Covered by* `core.testAStationsSizeIsAnAllowance`, six claims, each seen red first; the mutations - spending the allowance in either budget - fail it.
+
+---
+
+<a id="mt-372"></a>
+
+### MT-372 - 2026-09-12 - Both destination lists refuse the same things, and the "..." means the list was cut short
+
+**Disposition:** fixed validated
+**From:** OB-210, OB-211
+
+**Written:** 2026-09-12
+
+**Take a train that cannot reverse** - EN57-947 was the one you found this with.
+
+**Steps**
+
+1. Open the **Locomotive commands** tab for it and read its destination list. Look for an ordinary
+   terminus - BottomMainC.
+2. Right-click the square it is standing on and read the diagram's menu.
+3. Find a parking berth that also turns trains round - one with **Can Be Chosen In Full Autonomy**
+   off - and look for that in both lists.
+4. Now mark the locomotive reversible and look at both again.
+5. Count the ordinary destinations the diagram menu shows, and compare with the "..." at the foot of
+   it.
+
+**Expected**
+
+- Steps 1 and 2: BottomMainC is on **neither** list. It used to be on the first one, with a dash
+  beside it, and a double click would still send the train there.
+- Step 3: the berth is on **both**, with the dash. That is what the dash is for, and putting a train
+  away by hand is what the exemption is for.
+- Step 4: BottomMainC comes back on both.
+- Step 5: the **"..." appears only when the list was actually cut short** - more ordinary destinations
+  than fitted. A switched-off square, a square that excludes this train, or a terminus this train
+  cannot leave must NOT bring it back: those are not destinations missing from the list.
+
+6. Last, a train with **nowhere at all** to go - 75 407 DB at Tunnel was the one that found this.
+
+- Step 6: **no "..." either.** The menu shows the train's name and nothing under it, which is the
+  answer. The first fix kept an escape here on the reasoning that a train with no route needs a way to
+  the tab that explains why; Adam: *"I still see ... for 74 407 DB at Tunnel, even though it has no
+  valid paths"*. The explanation lives in two better places - the "No available paths" tooltip in the
+  locomotive list names every station and why each was refused, and the setup editor's **Why not
+  Moving?** answers it on the diagram. A bare "..." said none of that.
+
+*What this is:* Adam, 2026-09-12: *"why can non-reversible EN57-947 be manually sent from
+BottomSecondary to BottomMainC (terminus, train is non reversible, not a berth)?  Also, why is the ...
+below the list of options visible?  shouldn't this be only shown if here are many more regular
+destinations than can be displayed?"*  Both were follow-ups to OB-205, and the second was caused by
+it.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude: steps 1 to 5 are held by a test now, so this is a shorter run than it reads.**
+
+Checked in the sweep of 2026-09-12 over every entry still waiting on you.
+
+`regression.testTheDestinationDoorsAgree` asserts the half that is model-level: both doors offer the same set, an ordinary terminus is on neither list for a train that cannot leave it, and a berth that turns trains round is on both with the dash. `gui.LayoutRightclickAutonomyMenu.theListWasCutShort` is asserted directly, and a claim counts the SITES that can draw the "..." - which is what step 6 is about, and is the claim that would have caught me keeping the escape on my own reasoning after you had reported it.
+
+So what still needs your eyes is the MENU: that the items sit where the test cannot see them, and that a double click actually sends the train. Steps 1 to 5 are a confirmation rather than a hunt.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-373"></a>
+
+### MT-373 - 2026-09-12 - What the grey should mean now that it marks the same squares as the orange
+
+**Disposition:** superseded
+**From:** OB-208
+
+**Written:** 2026-09-12
+
+**This is a DECISION, not a run**, and it is here rather than in the issue list because that list is
+not somewhere you can rule on anything.
+
+**What happened.** You asked for the wash to be narrowed to the train's own extent, saw it, and said
+*"the visuals look perfect now"*.  That narrowing made `tilesBlockedByStandingTrains` return the same
+squares as the orange line, so the middle category the drawing used to have - **grey, with no orange
+on it** - is now empty.  `ui.testBlockedTrackIsGreyWhileAutonomyRuns` asserts three kinds of square
+and is red because only two exist.
+
+**What routing actually refuses, after OB-207.**  A path is refused if it uses a covered edge at all,
+or if it shares metal with a place the tail lies on.  The second half now agrees with the picture
+exactly.  The first does not: an edge is refused over its whole length while only the train's part of
+it is drawn - though a path through that edge does run over the orange square, so the picture arguably
+says enough.
+
+**The two ways to go**
+
+1. **Leave the grey as it is** - the same squares as the orange, saying "unusable" where the line says
+   "train".  The test is then rewritten around two kinds of square instead of three.
+2. **Put the grey back to what routing refuses** - whole covered edges, plus the edges sharing the
+   tail's places.  The picture is then stricter than the train's extent again, which is what MT-309
+   moved away from, and the double-curve work stays as it is.
+
+**What to do:** say which, in a sentence.  Nothing to drive.  I have not picked one because it sits
+between a ruling of yours about the drawing and a ruling of yours about the guard.
+
+**Adam, 2026-09-12 (triage).** Works.
+
+grey out the blocked path only if on a double curve.  otherwise, greyed out means either edge locked or path blocked.
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 18:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+Your ruling taken, and it closes the red test.
+
+*"grey out the blocked path only if on a double curve.  otherwise, greyed out means either edge locked or path blocked."*
+
+**The meaning is unchanged and the drawing already matches it.**  The per-road narrowing fires only on a double curve - `LayoutLabel.theRoadToFade` answers null everywhere else, so an ordinary square is faded whole - and the grey has two sources: track a standing train is lying across, and track an active route is HOLDING (`TileOverlay`'s wash).  Either one greys the square; that is the sentence you just wrote.
+
+**What was wrong was the question this class asked.**  It hunted for a square that is grey and NOT orange, which existed when the grey came from the whole covered EDGE and the orange from the train's own extent.  Narrowing the wash to the train - the change you approved with *"the visuals look perfect now"* - made the two cover the same squares for a standing train, and the class went looking for a category that no longer arises that way.
+
+It arises the OTHER way, from a route lock, and that is where it is now tested: `ui.testTheWashDoesNotStack`.  `ui.testBlockedTrackIsGreyWhileAutonomyRuns` keeps its own name and its own claim - while autonomy runs, blocked track is grey - and makes it about the square the train is standing on.  All six green.
+
+No code changed for this; what changed is a test that had drifted from the drawing.
+
+---
+
+<a id="mt-374"></a>
+
+### MT-374 - 2026-09-12 - The timetable capture test under a loaded machine
+
+**Disposition:** needs test
+**From:** OB-209
+
+**Written:** 2026-09-12
+
+**Nothing for you to drive here either** - this is a note about a test that is not trustworthy, kept
+where you can see it rather than buried in the issue list.
+
+`core.testTimetableCaptureThroughARealRun.testARealRunCapturesNothingWithCaptureOff` fails
+intermittently under load.  Measured on 2026-09-12: red in the full battery, then red three times
+standalone while the machine was still busy, then **green three times running** once it settled, with
+identical source.  It appeared once before, on 2026-09-11, with the two batteries after it green.
+
+The failure says *"no locomotive moved in 480 seconds"* and reports all three destinations as
+`blockedWhileRunning` - which is a SUBSTITUTION rather than a diagnosis: `whyNothingMoved` replaces the
+real reason with that sentence whenever autonomy is running, so the failure cannot say which rule
+refused.  Adding a probe that printed the real reason made it pass, which is the usual sign of a timing
+window rather than a rule.
+
+**Not OB-207:** forcing `tailLiesOn` true, which restores the pre-2026-09-12 whole-edge sweep, leaves it
+red.
+
+**What it needs before anything can be said:** the real refusal reason visible on the failing path.
+That is the same gap OB-199 describes about `whyNothingMoved` being asked after the flag it reports has
+been cleared.
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude: the thing this entry says it needs is built, and the first measurement is in.**
+
+*"What it needs before anything can be said: the real refusal reason visible on the failing path."*
+
+**Done, two ways**, in `core.testTimetableCaptureThroughARealRun`:
+
+  - The reason is now read TWICE on the failing path - once with autonomy still running, which is the substituted answer an operator sees, and once after the stop, where `explainDestinations` no longer replaces it. Each reading says which one it is, because the two do not agree and several of `explainCannotStart`'s rules are fenced on the same flag.
+  - And it reports whether the Layout it was watching is the one the model still holds. `loadedConfiguration` names that hazard itself - *"every construction retires the earlier instances - a retired Layout refuses to dispatch, silently"* - and a test watching a retired instance sees a railway that is running, has trains, has open destinations, and never moves. Nothing printed before could tell that from a busy machine.
+
+**And a probe outside the harness has already ruled one thing out.** Built the same fixture, emptied it, stood one train at Station 1, and asked with the railway stopped: **all three destinations open**, and a dispatch inside three seconds. So the railway is not refusing, and "blocked" was the substitution the whole time.
+
+It failed again in the battery of 2026-09-13, which is why this is still open. The next failure will say which of the two it is.
+
+---
+
+<a id="mt-375"></a>
+
+### MT-375 - 2026-09-12 - A square is faded once, however many reasons there are to fade it
+
+**Disposition:** fixed validated
+**From:** OB-212
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Park a train so that its tail blocks a square - the square goes faint, with the orange line on it.
+2. Pick one that also carries autonomy arrows, and start a run that locks that edge.
+
+**Expected**
+
+The square is drawn at **one** level of fade, not two.  Before this it was faded twice - once by the
+diagram, because the railway refuses the square, and once by the annotation, which lays a wash under
+its arrows so they lift off busy tile art - and the two compounded.
+
+**What gave way and why:** the annotation's wash.  On a tile already drawn at 40% there is no busy art
+left for an arrow to compete with, so its whole purpose has been served.  Dropping the other would have
+lost what the fade is SAYING, which is that the railway will not use that square.
+
+*What this is:* Adam, OB-212: *"a parked (blocking in orange) train will be further shaded if an active
+autonomy route near it also locks that edge.  keep one level of opacity, dont stack."*
+
+**Adam, 2026-09-12 (triage).** Does not work.
+
+I still see two levels of fade when a train locks the same section a second time, i.e. if sending a train to bottommainb with the current bottommaina occupancy.  You can see the difference in the tone of 13,11 and 13,12
+
+*Run against commit ac960047, build\classes, compiled 12 Sep 18:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Not fixed the first time, and you were right to send it back - I silenced the wrong one of THREE washes.**
+
+*"I still see two levels of fade when a train locks the same section a second time, i.e. if sending a train to bottommainb with the current bottommaina occupancy.  You can see the difference in the tone of 13,11 and 13,12."*
+
+Three things can pale one square, and I found two of them:
+
+  1. `LayoutLabel` draws the tile art at `BLOCKED_ALPHA` where the railway refuses the square.
+  2. `TileAnnotation` lays a wash under its arrows so they lift off busy tile art - silenced in the first fix.
+  3. **`TileOverlay` pales out track an active route is HOLDING** - `LOCKED_WASH` at `LOCKED_WASH_ALPHA`, filling the whole tile - and this is the one your example is about.  A square that is both blocked by the train at BottomMainA and locked by the route to BottomMainB got (1) and (3).
+
+The third now gives way the same way the second does, on your MT-373 ruling that one grey covers either reason.
+
+**And the test now covers all three rather than the one I happened to fix**, which is the actual lesson: `ui.testTheWashDoesNotStack` paints onto a known ground and reads the corners back for the annotation wash AND the held-track wash, with a control each way.  Both mutations run - restoring either stack fails its own claim.
+
+That a class testing one source of a stacking bug reported clean about the other two is `guard-knows-only-what-it-lists`, and it is why the first fix shipped looking finished.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-376"></a>
+
+### MT-376 - 2026-09-12 - The Unavailable While Occupied list, sorted and shaded
+
+**Disposition:** fixed unvalidated
+**From:** FR-074
+
+**Written:** 2026-09-12
+
+**By eye rather than by test.**  Both halves are how a modal dialog looks, and the alternative to your
+glance is a harness that builds the dialog and reads its check boxes - disproportionate for a sort and
+a colour, and it would not tell you whether the shade is right.
+
+**Steps**
+
+1. Right-click a station in the autonomy editor and open **Unavailable While Occupied**.
+2. Read down the list.
+3. Find a square you have marked as NOT choosable in full autonomy - a parking berth - and one you
+   have switched out of service.
+4. Tick something, press OK, and open the dialog again.
+
+**Expected**
+
+- Step 2: alphabetical, by the text on each row.  Previously the order was whatever the setup happened
+  to store, with anything already ticked collected at the bottom.
+- Step 3: both are drawn in a **lighter grey** than the rest, and hovering one says why.  They are
+  still tickable - a berth holding a platform back is exactly what this dialog is for - so the shade
+  says what KIND of square it is, not that you may not pick it.
+- Step 4: the ticked entries are still ticked, and still in alphabetical order rather than moved.
+
+**Worth saying:** the grey covers two reasons at once - a square marked manual-only and one switched
+out of service - because both mean "autonomy will not send a train here", which is what the shade is
+for.  If you want those told apart, say so; it would want a second shade and I did not invent one.
+
+*What this is:* Adam, FR-074: *"sort unavailable while occupied list alphabetically.  lightly grey out
+stations that can't be chosen in full autonomy."*
+
+**Claude, 2026-09-12, 2026-09-12.**
+
+**Claude: which half of this is automated, and why the other half is not.**
+
+The sweep of 2026-09-12 asked whether this could be taken off your list.
+
+**The shading rule is already pinned.** Which squares are drawn lighter is `session.stationsAutonomyWillNotChoose()`, and `core.testACompulsoryTurnIsChosenLikeAnyOtherStation` asserts what that set holds - it is the finding that caught the rule adding a clause of its own. So the question "is the right square marked" has a test; only "is the shade right" needs your eye, which was always the case.
+
+**The sort is deliberately NOT automated, and this is the reason rather than an omission.** The only cheap guard available is a source-shape assertion - that a `Collections.sort` is present and that it sorts on `describeTile`. That is the exact shape of `testNonReversibleTrains.testTheRunAsksThatRule`, which asserted a buggy expression verbatim as a string, could not fail on behaviour, and broke when the line was corrected: a guard that argued FOR the defect. I am not adding a second one this week.
+
+A real guard wants the choice-list construction lifted out of `promptBlockingPoints`, and that method has a data-loss history - FBR-A2 deleted stored restrictions through it - so it is not a refactor to make in the middle of a review round. If the order goes wrong again, say so and I will do it properly then.
+
+**Adam, 2026-09-13 (triage).** Works, with notes.
+
+works, but exclude non-station points from the list entirely
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: done - the list is stations only.**
+
+*"works, but exclude non-station points from the list entirely."*
+
+A name is not a station: a caption square, an approach guard, or a plain piece of track somebody labelled all carry one, and the list offered every NAMED square. What this setting watches is whether somewhere is OCCUPIED, which is a question about a place trains stop.
+
+**One exception, and it is the one that would otherwise lose data.** An entry ALREADY stored is still offered even if it is not a station. This dialog is the only way to edit `blockedPoints`, and `chosen` is built from what the list shows - so hiding a stored entry would delete it the moment you pressed OK. That is FBR-A2, which this dialog has done once before.
+
+So: non-stations are gone from the list unless one is already ticked, in which case it stays visible so you can untick it.
+
+---
+
+<a id="mt-377"></a>
+
+### MT-377 - 2026-09-12 - A pasted train faces the way it drove in, and does so every time
+
+**Disposition:** fixed validated
+**From:** MT-368
+
+**Written:** 2026-09-12
+
+**Steps**
+
+1. Note which way **2-8-4 3505 SP** is facing - it is east on your railway - and where it is standing.
+2. Paste it onto **BottomMainB**.
+3. Open the facing menu and read the direction that was recorded.
+4. Undo, and do steps 2 and 3 again.  Four or five times.
+5. Now do the same with a train standing somewhere it cannot be DRIVEN to the target from, so there is
+   no path - a train you have just brought into autonomy is the easiest case.
+
+**Expected**
+
+- Step 3: **east**.  That is the way it is pointing now and the way the drive down the line would
+  leave it.
+- Step 4: **east every time**.  The same paste twice has to give the same railway.
+- Step 5: the direction it already has, if BottomMainB can hold it; and again, the same answer every
+  time.
+
+**What was wrong.**  Measured on a frozen copy of your railway, before the fix: **east 21 times out of
+40 and west the other 19**, from an unchanged setup, in one process.  Which way a pasted train ended
+up pointing was a coin toss.
+
+Two dice, and they compound:
+
+- **The walk raced a shuffle.**  `facingByPath` walks the running graph from where the train stands to
+  a copy of the target and answers with that copy's side - your rule of 2026-09-06, *"calculating the
+  simple bfs path from the current station to the paste target using the current direction"*.  It asks
+  `Layout.getNeighbors`, which shuffles its answer on purpose - *"Randomize order to allow for
+  variation in paths"* - which is right for autonomy choosing a journey and wrong for a question about
+  where one square lies relative to another.
+- **And half of what it could reach is not an arrival.**  A square trains may turn round at is two
+  Points per arrival side: the plain copy, where a train that drove in is standing, and the turning
+  copy, where it is after deciding to turn.  Both are reached by the same edge, so they are always
+  the same distance away, and **they face opposite ways**.  On BottomMainB the pair sits nine edges
+  from where 2-8-4 stands, and the shuffle picked between them.
+- **The no-path arm rolled a die outright**, `departable.get(new Random().nextInt(...))`.  That
+  wording was mine, on your earlier answer that nothing in the situation determines a direction; your
+  ruling below supersedes it.
+
+**What it does now.**  The walk runs to the end and the DISTANCES decide, which a shuffle cannot
+disturb; the nearest copy a train could simply be standing on wins over the turning copy at the same
+distance; and where there is no path at all the heading the train already has is kept if the landing
+can hold it, and otherwise the first legal copy is taken rather than a random one.
+
+A compulsory turn still turns - your rule of 2026-09-06, *"for terminuses, they must reverse on
+paste"* - because a square that turns every train has no plain copy to prefer, so the turning copy is
+the only answer and stays the answer.
+
+**One thing to know before you run it.**  The direction still depends on which way the train is
+pointing when you paste, because that is what decides where the drive would leave it.  Standing on
+TopMainR2 facing north, 2-8-4 lands on BottomMainB facing east; facing south, it lands facing west,
+by a route that turns it round.  Both are now stable and repeatable.  If you want BottomMainB to
+answer east whatever the train was doing, that is a different rule - a preferred facing per square -
+and I have not invented one.
+
+*What this is:* Adam, 2026-09-12: *"Option 1 is fine as long as the direction isnt flipped (which it
+was before).  So go with that if you've fixed the direction.  When 2-8-4 is pasted, it should always
+face east.  Does it?"*  It did not; it does now.
+
+*Covered by `core.testAPasteDoesNotTurnTheTrainRound`* - forty pastes of the same train onto the same
+square must agree, and must agree with the nearest copy a train could have driven to.  Both claims
+were seen red first, at `{W=19, E=21}` and `faces W`, and the no-path half was re-checked by putting
+the die back, which fails it at twenty squares.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 08:34 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-378"></a>
+
+### MT-378 - 2026-09-13 - Home every train where it stands, from Bulk Tools
+
+**Disposition:** fixed validated
+**From:** FR-075
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-075` with a disposition and no tag, which is not somewhere he can rule.
+
+Adam, 2026-09-13: *"to bulk tools in the autonomy editor, add an option to mass mark current train locations as their homes."*
+
+**Steps**
+
+1. Place trains on several squares, and give one of them a home somewhere ELSE.
+2. Right-click in the autonomy editor and open **Bulk Tools**.
+3. Read the new item's label and hover it.
+4. Choose it, and answer the confirmation with No. Then choose it again and answer Yes.
+5. Open the home picker on a couple of those squares, and on the square that used to be the home of the train you moved.
+
+**Expected**
+
+- Step 3: the label carries the COUNT of placed trains, and the tooltip is the same sentence the confirmation will show. With no trains placed the item is greyed and says so.
+- Step 4: No changes nothing. Yes reports how many were homed, on the hint line.
+- Step 5: each square is now home to the train standing on it, and the train that had a home elsewhere has LOST it - one locomotive, one station. A square that was another train's home has been reassigned.
+- And Return Home afterwards plans to the new arrangement rather than the old one.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+This works
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-379"></a>
+
+### MT-379 - 2026-09-13 - The editor grid is a toggle, and hovering does not resize a tile
+
+**Disposition:** fixed validated
+**From:** FR-006
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-006` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-006, built 2026-08-22. Reconstructed from the receipt: this entry is written from what the request records rather than at the time it was built, so if a step describes something that was never the intent, say so and it will be corrected rather than chased.
+
+**Steps**
+
+1. Open the track diagram editor and turn the **Grid** tick box on and off.
+2. Move the pointer across the tiles, slowly, on both settings.
+
+**Expected**
+
+- The grid is a toggle that stays where you put it.
+- Hovering a tile does not change its size - no jump or reflow as the pointer crosses it.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-380"></a>
+
+### MT-380 - 2026-09-13 - Autonomy can be set up by importing, from the menu, with nothing set up yet
+
+**Disposition:** fixed unvalidated
+**From:** FR-007
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-007` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-007, built 2026-08-22. Reconstructed from the receipt.
+
+**Steps**
+
+1. Start with a layout that has NO autonomy setup at all.
+2. Open the Autonomy menu.
+
+**Expected**
+
+- The import is offered there, and reachable - the menu does not require an existing setup before it will let you make one. That is the state a new or upgrading user is in.
+
+---
+
+<a id="mt-381"></a>
+
+### MT-381 - 2026-09-13 - The home locomotive picker filters, and offers the one being driven
+
+**Disposition:** fixed validated
+**From:** FR-010
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-010` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-010, built 2026-08-23. Reconstructed from the receipt.
+
+**Steps**
+
+1. Right-click a square and assign a home locomotive.
+2. Type part of a name into the picker.
+3. Look for the locomotive you are currently driving.
+
+**Expected**
+
+- The list filters as you type.
+- The one being driven is offered - there is a button for it, so it need not be hunted for.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-382"></a>
+
+### MT-382 - 2026-09-13 - Add to autonomy uses the same filtering picker
+
+**Disposition:** fixed validated
+**From:** FR-011
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-011` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-011, built 2026-08-23. Reconstructed from the receipt. Its point is that the two pickers are ONE picker: a filter that works in one dialog and not its neighbour is the thing this asked to end.
+
+**Steps**
+
+1. Right-click a square and choose the item that adds a locomotive to autonomy.
+2. Type part of a name.
+
+**Expected**
+
+- The same filtering picker as the home chooser, behaving the same way. Trains already in autonomy are marked as such and sorted to the top.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-383"></a>
+
+### MT-383 - 2026-09-13 - Fifty locomotive mapping pages, and the menu greys at the limit
+
+**Disposition:** fixed unvalidated
+**From:** FR-033
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-033` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-033, built 2026-08-27. Reconstructed from the receipt.
+
+**Steps**
+
+1. Add locomotive mapping pages until you reach fifty.
+2. Try to add one more, from the menu.
+
+**Expected**
+
+- Fifty are allowed.
+- At the limit the menu item is greyed, AND the method behind it refuses - the affordance and the guard both, which is the pairing this project keeps finding broken in one direction.
+
+**Adam, 2026-09-13 (triage).** Could not run this.
+
+too much manual effort.  add an automated test for this.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: automated, as you asked - and it took the manual counting with it.**
+
+*"too much manual effort.  add an automated test for this."*
+
+`regression.testFiftyLocomotiveMappingPages` fills the pages up through the same door the menu uses, then checks both halves of FR-033:
+
+  - **the affordance** - `canAddLocMappingPage` answers false at the ceiling, which is what greys the menu item;
+  - **the guard** - `addLocMappingPage` called directly adds nothing, which is a separate rule. Its own javadoc says why: *"the greying is one caller's manners, not the rule.  A guard that lives only in the interface is a guard the next caller does not have."* A test of the greying alone would pass with that refusal deleted.
+
+**What it deliberately does not assert:** that LOADING cannot exceed fifty. `setViewListener` grows the count past the ceiling on purpose, because a saved file may hold more pages than the preference admits to and clamping would throw away every mapping past the fiftieth. The two sides look inconsistent and must stay that way.
+
+It puts your page count and the stored preference back afterwards, because that is a preference rather than a layout and `LayoutSandbox` does not cover it.
+
+Nothing left for you to run here.
+
+---
+
+<a id="mt-384"></a>
+
+### MT-384 - 2026-09-13 - The label chooser opens on the nearest station, and the last one is spent
+
+**Disposition:** fixed unvalidated
+**From:** FR-034
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-034` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-034, built 2026-08-27. Reconstructed from the receipt.
+
+**Steps**
+
+1. Right-click a square with no caption and choose to show a station name on it.
+2. Note which station the chooser has selected when it opens.
+3. Pick one, then do the same on a square somewhere else entirely.
+
+**Expected**
+
+- Step 2: the nearest station is already selected - not the top of the list.
+- Step 3: the one you last picked is offered once and then stops being the default, so a second caption somewhere else does not inherit it.
+
+---
+
+<a id="mt-385"></a>
+
+### MT-385 - 2026-09-13 - Station labels can be dragged, by the label or by its square
+
+**Disposition:** fixed validated
+**From:** FR-035
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-035` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-035, built 2026-08-27. Reconstructed from the receipt.
+
+**Steps**
+
+1. In the autonomy editor, drag a station's caption to another square - by the caption itself.
+2. Do it again, dragging by the square the caption belongs to.
+
+**Expected**
+
+- Both work, and both move the same thing. The caption ends where you dropped it and the station it points at is unchanged.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-386"></a>
+
+### MT-386 - 2026-09-13 - Plus and minus walk through the pages
+
+**Disposition:** fixed validated
+**From:** FR-036
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-036` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-036, built 2026-08-27. Reconstructed from the receipt - the request notes it went through the page switch that already existed rather than adding a second way to change page.
+
+**Steps**
+
+1. With the diagram showing, press **+** and then **-**, several times each.
+2. Do it at the first page and at the last.
+
+**Expected**
+
+- The page steps forward and back.
+- At either end it does the same thing the page selector does there - it does not wrap unexpectedly or step onto a page that is not in the list.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-387"></a>
+
+### MT-387 - 2026-09-13 - Travel restrictions can be drawn on the ordinary track diagram
+
+**Disposition:** fixed validated
+**From:** FR-037
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-037` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-037, built 2026-08-28. Reconstructed from the receipt: on by default.
+
+**Steps**
+
+1. Look at the ordinary track diagram - not the autonomy editor - on a page carrying travel restrictions.
+2. Find the setting that turns them off, and turn it off and on again.
+
+**Expected**
+
+- They are drawn, and they are on by default.
+- The setting turns them off and back on, and the diagram follows immediately.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-388"></a>
+
+### MT-388 - 2026-09-13 - The Layout menu names its data source
+
+**Disposition:** fixed validated
+**From:** FR-040
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-040` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-040, built 2026-08-28. Reconstructed from the receipt: it names the source instead of offering to tell you.
+
+**Steps**
+
+1. Open the Layout menu with a layout read from the Central Station.
+2. Do the same with a local layout folder.
+
+**Expected**
+
+- The menu says where the diagram is coming from, in the menu itself - you do not have to open anything to find out.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-389"></a>
+
+### MT-389 - 2026-09-13 - A splash while the Central Station is reached
+
+**Disposition:** fixed validated
+**From:** FR-041
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-041` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-041, built 2026-08-28. Reconstructed from the receipt: it appears before there is a window to put a message in, which is the whole difficulty.
+
+**Steps**
+
+1. Start TrainControl pointed at a Central Station, and watch from the moment you launch it.
+2. Then start it with the station unreachable, and watch again.
+
+**Expected**
+
+- Something is on screen while the connection is being made - the gap before the main window exists is not silent.
+- It goes away when the window arrives, and it does not outlive a failed connection.
+
+**Adam, 2026-09-13 (triage).** Works, with notes.
+
+tested using the hourglass in the regular station sync.  advise if more testing is needed.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-13, 2026-09-13.**
+
+**Claude: no, nothing more is needed - what you did is the harder half.**
+
+*"tested using the hourglass in the regular station sync.  advise if more testing is needed."*
+
+The splash exists for the window that does not exist yet: the gap between launching and the main window appearing, while the Central Station is being reached. Watching the hourglass during a station sync covers the same machinery - something is on screen, it tracks progress, and it goes away - and it is the part that can actually break.
+
+The remaining case is a station that never answers, where the question is whether the splash outlives a failed connection. If you have ever started TrainControl with the station off and got to the main window without anything stuck on screen, that is covered too. If not, it is thirty seconds: start it with the station unreachable and check nothing is left behind.
+
+Not asking you to do it again deliberately - this is a start-up path, and the cost of being wrong is a stuck window at launch, which you would notice immediately.
+
+---
+
+<a id="mt-390"></a>
+
+### MT-390 - 2026-09-13 - A drawn placeholder for a locomotive with no picture
+
+**Disposition:** fixed validated
+**From:** FR-054
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-054` with a disposition and no tag, which is not somewhere he can rule.
+
+Adam, 2026-09-01, in his own words: *"for locomotives without an icon, add a placeholder rather than nothing.  the placeholder should be light gray and a simple electric locomotive consisting of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed pantographs, and 4 1/5 height circular wheels in sets of two on each side, spaced evenly apart."*
+
+**Steps**
+
+1. Find a locomotive with no picture, and look at it wherever icons are shown - the selector, the locomotive buttons, the editing dialogs.
+2. Compare it against one that HAS a picture.
+
+**Expected**
+
+- A drawn placeholder rather than a blank: light grey, a main rectangle, a trapezoid a third of its height, two small closed pantographs, and four wheels a fifth of its height in two pairs, evenly spaced.
+- It appears everywhere an icon would, at whatever size that place draws them.
+- A locomotive that has a picture is unaffected.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-391"></a>
+
+### MT-391 - 2026-09-13 - Right-clicking a tunnel flashes the square it joins
+
+**Disposition:** fixed validated
+**From:** FR-056
+
+**Written:** 2026-09-13
+
+**Migrated from the issue list** (Adam, 2026-09-13: *"migrate FR tests into MT's as I have no other way of triaging them"*). It was tracked directly on `FR-056` with a disposition and no tag, which is not somewhere he can rule.
+
+FR-056, built 2026-09-02. Reconstructed from the receipt: it flashes the joined square when that square is on the page you are looking at.
+
+**Steps**
+
+1. Right-click a tunnel whose pair is on the SAME page.
+2. Right-click one whose pair is on a different page.
+
+**Expected**
+
+- The first flashes the square it is joined to, so you can see which one it is.
+- The second does not flash anything on this page, and does not flash the wrong square.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-392"></a>
+
+### MT-392 - 2026-09-13 - The widened function buttons carry no label
+
+**Disposition:** fixed validated
+**From:** OB-213
+
+**Written:** 2026-09-13
+
+Adam, 2026-09-13: *"For the buttons on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print
+'F<x>' text labels on the function buttons - keep the label blank as is the default."*
+
+A tweak to MT-359's fix rather than a new rule. Those buttons are offered because the CONSIST can drive
+them - an MM2 head with an MFX member drives f6 through the member - and they carry no icon, because
+the icon and function-type tables are sized to the head's own decoder. The first cut filled the gap
+with the function's number; this takes it out again.
+
+**Steps**
+
+1. Drive a multi-unit whose head is **MM2** and which has an **mfx or DCC** member.
+2. Look at the function buttons past the head's own range - f5 upwards on a typical MM2.
+3. Press one and check the member does what it should.
+4. Now drive a multi-unit of two MM2 locomotives, and look at the same buttons.
+
+**Expected**
+
+- Step 2: those buttons are **live**, carry **no icon**, and carry **no text** - blank, like any other
+  function button with no picture for it.
+- Step 3: it works. The button being blank is about how it looks, not about what it does.
+- Step 4: past MM2's own range the buttons are greyed, as before - two MM2s do not gain functions
+  neither of them has.
+
+*Covered by* `regression.testTheFunctionButtonsFollowTheConsist.testTheWidenedButtonsCarryNoText`,
+which asserts the label is empty on a button the consist can drive; the enablement claim beside it
+passed happily while the label said "F6", which is why the two are separate.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-393"></a>
+
+### MT-393 - 2026-09-13 - The caption menu says what it does on a station square
+
+**Disposition:** fixed unvalidated
+
+**Written:** 2026-09-13
+
+Adam, 2026-09-13: *"nothing seems to happen when I say 'show a different station here', is it meant to
+reset the label?  we should make it clear what this does."*
+
+**It was not resetting anything, and it was not doing nothing.**  `promptStationLabel` takes a branch
+for a station square - caption it with ITSELF, and return, with no chooser - because a station
+labelling itself has nothing to ask about.  A station square captions itself by default, so
+re-applying that is invisible.  The item promised a dialog with its wording and its ellipsis and then
+did not open one.
+
+**Steps**
+
+1. Right-click a square that IS a station and already shows its own name. Read the caption item.
+2. Hover it.
+3. Right-click a square that is NOT a station - blank space beside a platform. Read the item, and
+   hover it.
+4. Choose it there and point it at a station.
+
+**Expected**
+
+- Step 1: the item reads **This Square Shows Its Own Station** and is **greyed**. It no longer offers a
+  dialog it will not open.
+- Step 2: the tooltip says a station square always shows itself, and tells you what to do instead -
+  Stop Showing to clear it, or caption another station on a free square nearby.
+- Step 3: the item is live and reads "Show a Station Name Here...", and its tooltip explains what a
+  caption IS: the square will show what is happening at the station you choose - the locomotive
+  standing there, an em dash when empty, an arrow while a train passes through. A live readout, not a
+  name plate.
+- Step 4: unchanged from before.
+
+*What this is:* the behaviour was right and the menu did not say so. `docs/reference/behaviour.md` now
+has a section on captions - it had three mentions in passing and no explanation, which is why the
+question could be asked at all.
+
+---
+
+<a id="mt-394"></a>
+
+### MT-394 - 2026-09-13 - Pasting onto a may-reverse square asks which way the train faces
+
+**Disposition:** fixed unvalidated
+**From:** your ruling of 2026-09-13
+
+**Written:** 2026-09-13
+
+Adam, 2026-09-13: *"If pasting at a 'may reverse' square, ask what direction the train should face."*
+
+Two questions are asked at a may-reverse square now and only there: **where the tail lies** (which side
+it came in by, which has been asked since 2026-09-07) and **which way it faces** (where it will go
+next).  Everywhere else the second follows from the first and the railway works it out - a train is
+walked from where it stands to where it is being put down, and the copy it arrives on says which way it
+points.  A may-reverse square is what turning round is FOR, so both headings are reachable and the
+walk's answer is whichever copy it landed on.
+
+**Steps**
+
+1. Cut a train with Control+X, or pick one up from a square.
+2. Paste it onto a **may-reverse** square that has track running both ways - one of your four.
+3. Answer the arrival-side question as you always have.
+4. Read the second dialog, and choose the heading you did NOT expect the train to take.
+5. Open the autonomy editor and look at the square's facing.
+6. Repeat, and dismiss the second dialog with the window's close button.
+7. Paste onto an ordinary platform, and onto a terminus.
+
+**Expected**
+
+- Step 4: a dialog asking which way the train should face, offering only the headings that square can
+  hold - never a compass point the square has no rail for, and never the same heading twice.  The
+  answer the railway would have chosen is the default button.
+- Step 5: the facing is the one you chose, not the one the walk suggested.
+- Step 6: nothing moves.  The train is still on the clipboard and the next square accepts the same
+  paste - the same rule the arrival-side question has followed since 2026-09-07.
+- Step 7: no facing question at all.  Those squares have one answer and it is not worth asking for.
+
+*What this is:* your ruling, built.  `FacingPrompt` is the dialog; `behaviour.md` section 4 has the
+rule and why the two questions are different questions.
+
+---
+
+<a id="mt-395"></a>
+
+### MT-395 - 2026-09-13 - Return Home stages a platform whose approach holds the train
+
+**Disposition:** fixed unvalidated
+**From:** your ruling of 2026-09-13 on PRW-B2 leg 2
+
+**Written:** 2026-09-13
+
+Your relaxation of 2026-09-12 - *"simply make a rule that parking berths cant block any other edges,
+but not make that check for active stations"* - let the railway accept a train at a station autonomy
+may choose when the whole approach is long enough for it, even though the stretch after the last switch
+is not.  **Return Home did not know about it.**  It carried its own narrower arithmetic, so it refused
+platforms the railway would have run - and a planner stricter than its railway drops the plan in
+silence: the train stays where it is and nothing says why.
+
+The relaxation is now one method both sides ask.  The first attempt at this handed the planner the
+whole room rule instead and made it stricter still, which failed every train on your railway - so this
+is worth watching on the real one rather than only in the tests.
+
+**Steps**
+
+1. Pick a platform reached over a run with a switch part way along it, and measure the whole run and
+   the platform - you need the stretch AFTER the switch to be shorter than the train.
+2. Give a train a length that fits the whole run in but not the part after the switch, and home it at
+   that platform.
+3. Move it somewhere else and press **Return Home**.
+4. Watch the run.
+5. Now shorten the run in so the train does not fit it end to end either, and try again.
+
+**Expected**
+
+- Step 3: a plan, and the train goes home.  Before this it would have been refused with no explanation
+  of what was missing.
+- Step 4: while it stands there it blocks the road through the points behind it - that is the cost you
+  accepted for a platform, and the diagram shows it as blocked track.
+- Step 5: refused.  The bound is the approach's own measured length, so a train longer than the whole
+  run in is still turned down; its back end would be where nothing has been measured.
+
+*What this is:* PRW-B2 leg 2, which you told me to do.  Also settled while building it: the planner was
+NOT missing the station's stated maximum length - `canRest` has always asked it - and a second copy of
+that test was added and taken out the same hour.
 
 ---

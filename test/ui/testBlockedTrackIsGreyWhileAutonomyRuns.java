@@ -237,9 +237,14 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test
     public void testBlockedTrackIsGreyedWhileAutonomyRuns()
     {
-        assertEquals(orangePixels(runningBlocked), 0,
-            "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
-            + "on rather than one merely blocked by it, and this test is asking about the wrong tile");
+        // THE ORANGE IS EXPECTED HERE NOW, and this used to assert its absence (MT-373).
+        //
+        // The square is the one the train is standing on, because since the wash was narrowed that is
+        // also the only kind of square a standing train greys.  The claim below is unchanged and is
+        // the one that matters: the tile is drawn FAINTER when the railway refuses it.
+        assertTrue(orangePixels(runningBlocked) > 0,
+            "the orange line is not drawn on " + blockedSquare + ", so the train is not shown where"
+            + " this class thinks it is and the fade below is about some other square");
 
         assertTrue(contrast(runningBlocked) < contrast(bareBlocked) - 2,
             "the square " + blockedSquare + " is drawn no fainter while a train blocks it ("
@@ -444,21 +449,36 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             Set<TileKey> blocked = blockedSquares();
 
             TileKey onTheTrain = null;
-            TileKey blockedOnly = null;
 
             for (TileKey square : everyTile())
             {
-                if (ui.isTrackCovered(square))
+                if (ui.isTrackCovered(square) && drawable(square))
                 {
-                    if (onTheTrain == null && drawable(square)) onTheTrain = square;
-                }
-                else if (blocked.contains(square))
-                {
-                    if (blockedOnly == null && drawable(square)) blockedOnly = square;
+                    onTheTrain = square;
+
+                    break;
                 }
             }
 
-            if (onTheTrain == null || blockedOnly == null) continue;
+            // A SQUARE THAT IS GREY AND NOT ORANGE NO LONGER EXISTS FOR A STANDING TRAIN, and that is
+            // Adam's ruling rather than a regression (MT-373, 2026-09-12).
+            //
+            // This class used to hunt for one: the grey came from the whole covered EDGE and the
+            // orange from the train's own extent, so a long run behind a short train was grey with no
+            // line on it.  He asked for the wash to be narrowed to the train - *"the visuals look
+            // perfect now"* - and the two marks then covered the same squares.
+            //
+            // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means
+            // either edge locked or path blocked."*  So the grey still has a meaning of its own, and
+            // it is EDGE LOCKED - a square an active route is holding, which carries no train.  That
+            // is `TileOverlay`'s wash and `ui.testTheWashDoesNotStack` is where it is tested; it needs
+            // a running route, which this class does not have.
+            //
+            // What this class still claims is its own name: while autonomy runs, blocked track is
+            // grey.  The square it claims it of is the one the train is on.
+            TileKey blockedOnly = onTheTrain;
+
+            if (onTheTrain == null) continue;
 
             TileKey free = null;
 

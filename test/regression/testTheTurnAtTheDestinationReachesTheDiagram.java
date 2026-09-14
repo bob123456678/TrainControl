@@ -110,6 +110,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
      * `!mayReverseAt(current) && !asksAbout(current)` exit at the plain copy and the train is never
      * turned, which would make every assertion below an assertion about a journey that did nothing.
      */
+    /** What the fixture's locomotive said about reversing before this class changed it. */
+    private static boolean reversibleWas;
+
     private static final Layout.ReversalPolicy TURN_IT_ROUND = new Layout.ReversalPolicy()
     {
         @Override
@@ -175,6 +178,25 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
         train = model.getLocByName(model.getLocList().get(0));
 
+        assertNotNull(train, "this fixture has no locomotive to drive");
+
+        // AND IT HAS TO BE ABLE TO TURN, or there is no turn to record (MT-368, 2026-09-13).
+        //
+        // This class asks what happens to the RECORD once the railway has turned a train: whether the
+        // setup is told, and whether a stale facing is written backwards. It is not about whether the
+        // turn happens.
+        //
+        // Since Adam's ruling that a train which cannot reverse is never turned where turning is
+        // OPTIONAL, the first locomotive in the database - `02 0314-1 DDR`, which is not reversible -
+        // can no longer be turned at BottomMainB, and `TURN_IT_ROUND` describes a state the interface
+        // cannot produce: such a train is not prompted, so nobody can answer "turn" for it.
+        //
+        // Saved and put back in the teardown, because the locomotive database is shared with the rest
+        // of the suite and this is a property of the locomotive rather than of this fixture.
+        reversibleWas = train.isReversible();
+
+        train.setReversible(true);
+
         assertNotNull(train, "there is no locomotive in the database to drive");
 
         trainLengthWas = train.getTrainLength();
@@ -194,6 +216,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             // PUT BACK, because `init` opens Adam's own locomotive database and the length above is
             // this class's convenience rather than a measurement of his train.
             if (train != null) train.setTrainLength(trainLengthWas == null ? 0 : trainLengthWas);
+
+            // And the reversing flag, for the same reason: this class made it true so that there
+            // would be a turn to record at all (MT-368).
+            if (train != null) train.setReversible(reversibleWas);
         }
         finally
         {

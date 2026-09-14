@@ -2678,7 +2678,22 @@ public class AutonomySession
 
             java.util.Set<TileKey> missing = new java.util.LinkedHashSet<>();
 
-            if (store.getTileLength(tile) <= 0) missing.add(tile);
+            // THE REVERSAL SQUARE IS PART OF THE STRETCH, not a separate thing to ask for (MT-364).
+            //
+            // Adam, 2026-09-12: *"I set the track at 10,10 to length 2, so now we know that the track
+            // to TunnelLongPark is 2.  But it is still asking for the tile at 10,9 (TunnelLongPark) to
+            // get a length."*
+            //
+            // 10,9 is the reversal square, and it was added HERE - before the walk below was consulted
+            // at all - so measuring the track behind it could never have silenced the notice.  The walk
+            // already includes the end tile in the stretch it measures, exactly as
+            // `roomAfterTheLastSwitch` does, so this line was both a second answer to the same question
+            // and the stricter of the two.
+            //
+            // Kept ONLY where no edge arrives, which the walk cannot speak for: a square with no
+            // approach has no stretch to measure, and saying nothing there would be silence about a
+            // square that genuinely has no number.
+            boolean anApproachExists = false;
 
             // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2, 2026-09-02).
             //
@@ -2707,8 +2722,12 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(tile)) continue;
 
+                anApproachExists = true;
+
                 missing.addAll(reducer.unmeasuredAfterTheLastSwitch(arriving));
             }
+
+            if (!anApproachExists && store.getTileLength(tile) <= 0) missing.add(tile);
 
             // A SET, so a square reached by two approaches is counted once - the notice says how many
             // squares need a number, and the same square twice is one square.
@@ -5395,6 +5414,24 @@ public class AutonomySession
 
         walked.add(at);
 
+        // THE STANDING SQUARE IS NOT SPENT HERE, AND THAT IS A QUESTION FOR ADAM (PRW-B4).
+        //
+        // The guard - `Layout.walkStandingTrains` - claims the square the train stands on and spends
+        // its length before walking back.  This walk never puts that square in `out` at all: "its
+        // square does not get drawn: a train standing there would be shown standing there", because
+        // the train mark is already on it.  So the two describe different sets by construction, and
+        // the picture reaches `len(standing) - len(far end)` further back than the guard's claim.
+        //
+        // Charging the standing square here was tried on 2026-09-12 and reverted the same day: it
+        // leaves a train shorter than its own square with nothing drawn behind it, which failed two
+        // validated claims - `testATrainOfLengthOneCoversOneSquare` ("the whole of the edge it arrived
+        // along is washed however short the train is", against Adam's *"all of bottommaina stayed
+        // shaded ... as I set the length of EN57-203 to 1"*) and `testTheShadingFollowsTheTrain`,
+        // which shaded nothing at all with every tile measured at 10.
+        //
+        // Whether a train shorter than the square it stands on should shade any track behind it is
+        // about what the operator wants to SEE, and two shipped claims already answer it one way.
+        // Left as it is until he rules.
         while (remaining > 0)
         {
             TileKey next = null;
@@ -5438,8 +5475,13 @@ public class AutonomySession
             }
 
             // The far end's own length counts, and its square does not get drawn: a train standing
-            // there would be shown standing there.  `GraphReducer` builds an edge's length the same
-            // way - the path plus the square it arrives at.
+            // there would be shown standing there.
+            //
+            // The sentence that used to justify this by analogy - `GraphReducer` builds an edge's
+            // length as "the path plus the square it arrives at" - is inverted, and is dropped rather
+            // than repaired: the square an arriving edge arrives at is the square the TRAIN stands on,
+            // not this one.  What is true is the line above: this square is the next one back, and the
+            // body lies over it.
             remaining -= store.getTileLength(next);
 
             walked.add(next);
@@ -5550,10 +5592,21 @@ public class AutonomySession
      *
      * **When there is no path.**  The two squares may genuinely be unconnected in the direction the
      * train faces - it would have to reverse somewhere first, and this is a placement, not a journey.
-     * Adam's answer is to pick at random from the copies a train could DEPART from, which is the honest
-     * one: nothing in the situation determines an answer, so it takes a legal one rather than inventing
-     * a reason. A copy with no way out is never chosen, because standing a train somewhere it cannot
-     * move from is the "nothing moves" fault the placement menu already refuses.
+     * The heading it already has is kept where the landing can hold it, and otherwise the first copy
+     * a train could DEPART from is taken.  A copy with no way out is never chosen, because standing a
+     * train somewhere it cannot move from is the "nothing moves" fault the placement menu already
+     * refuses.
+     *
+     * That arm used to pick at RANDOM among the departable copies, on Adam's earlier answer that
+     * nothing in the situation determines one so a legal one is the honest choice.  It is superseded
+     * by his ruling of 2026-09-12 - *"as long as the direction isnt flipped (which it was before)"* -
+     * because something does determine one: the way the train is already pointing.
+     *
+     * **Neither arm may answer twice differently.**  Both used to.  The walk raced
+     * `Layout.getNeighbors`' deliberate shuffle and this arm rolled a die, so putting the same train
+     * on the same square twice gave two railways: measured on the frozen snapshot, 2-8-4 3505 SP put
+     * down on BottomMainB faced east 21 times out of 40 and west the other 19.
+     * `core.testAPasteDoesNotTurnTheTrainRound` is that measurement, pinned.
      *
      * @param running the layout to walk, which is the only thing that knows the track
      * @param locomotive the train being placed
@@ -5594,29 +5647,101 @@ public class AutonomySession
 
         if (departable.isEmpty()) return copies.values().iterator().next();
 
-        return departable.get(new java.util.Random().nextInt(departable.size()));
+        // THE HEADING IT ALREADY HAS, WHERE THE LANDING CAN HOLD IT (Adam, 2026-09-12).
+        //
+        // *"Option 1 is fine as long as the direction isnt flipped (which it was before)."*  Option 1
+        // is `facingAfterAPaste`'s rule - the heading survives - and this arm was the one place a
+        // paste could still flip a train for no reason: it answered
+        // `departable.get(new Random().nextInt(...))`, so a train that could not be DRIVEN to its
+        // landing was turned round on about half of all attempts.
+        //
+        // The earlier wording of that was Adam's own - pick at random from the copies a train could
+        // depart from, "the honest one: nothing in the situation determines an answer" - and today's
+        // ruling supersedes it, because something in the situation does determine one: the way the
+        // train is already pointing.  Only when the landing cannot hold that is there nothing to go on.
+        Side already = facingOf(locomotive, running);
+
+        if (already != null && departable.contains(already)) return already;
+
+        // And then the first legal one rather than a random legal one.  Two pastes of the same train
+        // onto the same square have to give the same railway - Adam, 2026-09-07: "in all your
+        // simulations, state should never drift" - and a die rolled here is drift with nothing to
+        // blame it on.
+        return departable.get(0);
     }
 
     /**
-     * The breadth-first half: from wherever this train is standing, to any copy of the target.
+     * The breadth-first half: from wherever this train is standing, to the nearest copy of the target
+     * that a train could be STANDING on.
+     *
+     * **This used to answer with the first copy the walk touched, and that was a coin toss** (Adam,
+     * 2026-09-12: *"When 2-8-4 is pasted, it should always face east.  Does it?"* - measured, east 21
+     * times out of 40 and west the other 19).  Two things were wrong with "first touched wins", and
+     * they compound:
+     *
+     *   - `Layout.getNeighbors` SHUFFLES.  Its own comment says why - *"Randomize order to allow for
+     *     variation in paths"* - which is right for autonomy picking a journey and wrong for a
+     *     question about where one square lies relative to another.  Breadth-first still measures true
+     *     distances through a shuffled expansion, so the walk below runs to the end and the DISTANCES
+     *     decide; only ties are left for this method to break, and it breaks them by rule.
+     *   - A square trains may turn round at is two Points per arrival side - the plain copy, where a
+     *     train that drove in is standing, and the turning copy, where it is after deciding to turn.
+     *     Both are reached by the same edge, so they are always equally far away, and they face
+     *     OPPOSITE ways.  On BottomMainB those two sat nine edges off and the shuffle chose between
+     *     them.
+     *
+     * So the tie is broken towards the copy a train would simply be standing on.  Putting a train down
+     * is not a decision to reverse it, and the turning copy IS that decision - the facing menu is
+     * where an operator makes it.
+     *
+     * **And a compulsory turn still turns.**  Adam, 2026-09-06: *"for terminuses, they must reverse on
+     * paste"*.  Where turning is compulsory the builder emits no plain copy at all, so there is
+     * nothing to prefer and the turning copy is the answer - which is that reversal, falling out of
+     * the same rule rather than bolted beside it.
+     *
+     * A turning copy is told from a plain one by `isTerminus() || isReversing()`, which is what the
+     * builder writes on it (`stops ? "terminus" : "reversing"`).  That predicate cannot tell a turning
+     * copy from a real terminus on its own - the confusion behind OB-205's three claims and MT-368 -
+     * and it does not have to here: at a real terminus every copy answers it, so the preference finds
+     * nothing to prefer and the behaviour is the one a terminus wants anyway.
      *
      * @param running the layout
      * @param locomotive the train
      * @param target the square being walked to
-     * @param copies the target's copies, by name
-     * @return the side of the copy first reached, or null when none is
+     * @param copies the target's copies, by name, in the order the build made them - which is what
+     *        makes the last tie-break below repeatable
+     * @return the side of the nearest copy that can be driven to, or null when none can be
      */
     private Side walkTo(org.traincontrol.automation.Layout running, String locomotive,
         TileKey target, Map<String, Side> copies)
     {
         if (running == null || locomotive == null) return null;
 
+        // WHERE THE TRAIN IS, NOT WHERE IT IS MERELY RESERVED (PRV-C8).
+        //
+        // A locked path puts the locomotive on EVERY point of its route, so during a run this scan
+        // can stop at a junction the train has not reached - and the walk then starts from the wrong
+        // square, which is a wrong answer rather than a missing one.
+        //
+        // Nothing in the model separates a reservation from a train, so the tie-break is the
+        // railway's own feedback: an occupied square has something standing on it. Where none of the
+        // matches is occupied - the ordinary case, a stopped railway with a placed train - the first
+        // match stands, which is what this did before.
+        //
+        // The doors that reach here are gestures made with the railway stopped, so this is a
+        // narrowing of an already narrow case; it is done because the alternative is a silent wrong
+        // answer, and because `walkTo` is what decides which way a pasted train ends up facing.
         org.traincontrol.automation.Point from = null;
 
         for (org.traincontrol.automation.Point point : running.getPoints())
         {
-            if (point.getCurrentLocomotive() != null
-                && locomotive.equals(point.getCurrentLocomotive().getName()))
+            if (point.getCurrentLocomotive() == null) continue;
+
+            if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
+
+            if (from == null) from = point;
+
+            if (point.isOccupied())
             {
                 from = point;
 
@@ -5626,10 +5751,13 @@ public class AutonomySession
 
         if (from == null) return null;
 
-        java.util.Set<String> seen = new LinkedHashSet<>();
+        // THE WHOLE WALK, AND THEN THE CHOICE - not the first thing touched.  Breadth-first fills
+        // these in as true shortest distances whatever order the shuffle hands the edges back in, so
+        // everything decided below is decided by the railway.
+        Map<String, Integer> away = new LinkedHashMap<>();
         java.util.Deque<org.traincontrol.automation.Point> queue = new java.util.ArrayDeque<>();
 
-        seen.add(from.getName());
+        away.put(from.getName(), 0);
         queue.add(from);
 
         while (!queue.isEmpty())
@@ -5644,18 +5772,64 @@ public class AutonomySession
             {
                 org.traincontrol.automation.Point next = edge.getEnd();
 
-                if (next == null || !seen.add(next.getName())) continue;
+                if (next == null || away.containsKey(next.getName())) continue;
 
-                // Arrived, and the copy reached is the heading.  Checked on arrival rather than when
-                // queued, so the FIRST copy of the target the walk touches wins - which is the
-                // shortest way there, since the queue is breadth-first.
-                if (copies.containsKey(next.getName())) return copies.get(next.getName());
+                away.put(next.getName(), away.get(here.getName()) + 1);
+
+                // REACHED, BUT NOT DRIVEN THROUGH (PRV-B1).
+                //
+                // A turning copy is where a train is AFTER it has turned round, so a route that
+                // passes through one contains a reversal - and this method answers "where would it
+                // end up if it DROVE there".  The runtime refuses such a route mid-path for the same
+                // reason (`reversesAlongTheWay`), so a distance measured through one is a distance to
+                // somewhere the train cannot actually get, and it could win the nearest-copy contest
+                // against a copy it really can reach.
+                //
+                // The square is still recorded above, because arriving there and stopping is a
+                // perfectly good end to the journey; what it may not be is a corner to turn.
+                //
+                // The square the train sets off from is expanded normally: a train already standing
+                // on a turning copy faces the way that copy faces and its outgoing edges are the ones
+                // it can genuinely take.  Only copies REACHED by the walk are dead ends here.
+                if (next.isTerminus() || next.isReversing()) continue;
 
                 queue.add(next);
             }
         }
 
-        return null;
+        // HOW FAR THE NEAREST COPY IS.  Nothing reachable means no path, which is the caller's other
+        // arm rather than an answer of its own.
+        int nearest = Integer.MAX_VALUE;
+
+        for (String name : copies.keySet())
+        {
+            Integer at = away.get(name);
+
+            if (at != null && at < nearest) nearest = at;
+        }
+
+        if (nearest == Integer.MAX_VALUE) return null;
+
+        Side turning = null;
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
+        {
+            Integer at = away.get(copy.getKey());
+
+            if (at == null || at != nearest) continue;
+
+            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+
+            // STANDING BEATS TURNED ROUND, at the same distance.
+            if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
+
+            // And the first turning copy is remembered in case that is all there is, which is what a
+            // compulsory turn looks like from here.  First in the BUILD's order, so two runs of the
+            // same paste give the same railway.
+            if (turning == null) turning = copy.getValue();
+        }
+
+        return turning;
     }
 
     /**
@@ -5758,7 +5932,28 @@ public class AutonomySession
 
                 TileKey where = getStationIndex().squareOf(point.getName());
 
-                if (where != null && getFacing(where) != null) return getFacing(where);
+                if (where == null) continue;
+
+                // THE COPY IT IS STANDING ON, not the square's stored facing (PRW-B3).
+                //
+                // This asked `getFacing(where)`, which is ONE value per square - and a square is up to
+                // four Points facing two ways.  So the answer was the setup's last word about that
+                // platform rather than about this train: after a run, that word is the previous
+                // occupant's, because `captureFromLayout` writes it when the run ends and nothing does
+                // between.  A train standing on `BottomMainB (eastbound)` was reported facing west
+                // whenever the file happened to say west.
+                //
+                // Which copy a train stands on IS its direction here - the model has no train
+                // direction of its own, and one-way edges are how facing is written down - so the copy
+                // is the answer and the square's value is at best a summary of it.
+                Side onThisCopy = getStationIndex().facingsAt(where).get(point.getName());
+
+                if (onThisCopy != null) return onThisCopy;
+
+                // A copy the index has no facing for - a square with no named copies, or one built
+                // whole - falls back to what the setup says about the square, which is what this
+                // method always did and is right when there is only one copy to be on.
+                if (getFacing(where) != null) return getFacing(where);
             }
         }
 
@@ -5951,17 +6146,41 @@ public class AutonomySession
      */
     public void setHome(TileKey tile, String locomotive)
     {
+        writeHome(tile, locomotive);
+
+        deriveStationIndex();
+    }
+
+    /**
+     * The same rule, written without re-deriving, for a caller about to make several (SEV-C2).
+     *
+     * `setPointProperty` re-derives the station index on every call, which is a full builder
+     * construction - so a bulk gesture built out of `setHome` cost one per square, and one more per
+     * home it took away from somewhere else. That is the cost the bulk doors exist to avoid, and
+     * `homeEveryPlacedTrain` was paying it while its own comment said otherwise.
+     *
+     * The RULE stays in one place, which is the point of the split: one locomotive, one station,
+     * swept here rather than at each caller. Two doors writing `home` with only one of them sweeping
+     * is precisely how TD-8 arrived, and a bulk door that carried its own copy of the sweep would be
+     * that again.  `setHome` is this method plus the re-derive, and `homeEveryPlacedTrain` is this
+     * method in a loop plus one re-derive at the end - so there is one writer and two schedules.
+     *
+     * @param tile the square to make home
+     * @param locomotive the locomotive, or null to clear this square's home
+     */
+    private void writeHome(TileKey tile, String locomotive)
+    {
         if (tile == null) return;
 
         if (locomotive != null)
         {
             for (TileKey other : homesElsewhere(tile, locomotive))
             {
-                setPointProperty(other, "home", null);
+                writePointProperty(other, "home", null);
             }
         }
 
-        setPointProperty(tile, "home", locomotive);
+        writePointProperty(tile, "home", locomotive);
     }
 
     /**
@@ -5992,6 +6211,95 @@ public class AutonomySession
         deriveStationIndex();
 
         return homed.size();
+    }
+
+    /**
+     * Every placement the bulk doors will act on: square against locomotive (SEV-C3).
+     *
+     * `tilesWithALocomotive()` reads the configuration's points directly and so answers for every
+     * page; this is `placedLocomotives()`, which is what the bulk doors walk and which skips pages
+     * excluded from autonomy. On a layout with a page left out the two give different numbers, and a
+     * menu that COUNTS one while the action walks the other tells the operator a figure the gesture
+     * will not deliver - `guard-and-affordance-same-question`, which is this project's most repeated
+     * defect.
+     *
+     * A copy, because the caller is a menu and the map behind this is rebuilt from the configuration
+     * on every call anyway.
+     *
+     * @return the placements, by square
+     */
+    public Map<TileKey, String> placementsAutonomyWillWrite()
+    {
+        return new LinkedHashMap<>(placedLocomotives());
+    }
+
+    /**
+     * Makes every placed train's current square its home, re-deriving the station index once (FR-075).
+     *
+     * Adam: *"to bulk tools in the autonomy editor, add an option to mass mark current train locations
+     * as their homes."*
+     *
+     * **The same shape as `clearEveryHome` beside it**, and for its reason: `setPointProperty`
+     * rebuilds the station index on every call, which is a full builder construction on the event
+     * thread - so doing this through `setHome` cost one rebuild per train and another per home taken
+     * away from somewhere else, for the gesture that exists because doing it by hand is too many
+     * right-clicks.  It writes through `writeHome`, which is that rule without the re-derive (SEV-C2,
+     * where this comment was true of the intention and not of the code).
+     *
+     * **ONE LOCOMOTIVE, ONE STATION still holds**, which is why this cannot simply write the property.
+     * A train being homed HERE has to lose its home anywhere else, and `writeHome` is where that rule
+     * lives - the loop calls it per train and this method re-derives once at the end. Writing the
+     * property directly would be a second door with the sweep missing, which is exactly how TD-8
+     * arrived. (`setHome` is the same `writeHome` plus an immediate re-derive, for the single-square
+     * doors; naming it here as the method the loop calls was left over from before the split, and was
+     * SVX-C2.)
+     *
+     * **HOW FRESH THE PLACEMENTS ARE, asked and answered (SEV-C4).**  This writes from the SETUP's
+     * placements - the picture the editor is showing - rather than from the running layout, and the
+     * question was whether those can be stale by the time the gesture is used.
+     *
+     * Autonomy cannot be running: `TrainControlUI.whyAutonomyEditorCannotOpen` refuses to open this
+     * editor while `isAutonomyBusy()`, and the autonomy menu, the viewer and the layout editor all
+     * refuse the other way round with `autolayout.errorCannotEditWhileRunning`. So no run can have
+     * moved a train since the capture that opened the editor.
+     *
+     * What CAN move one is a hand on the throttle, which no fence in this program covers. There the
+     * setup and the railway disagree, and this deliberately follows the setup: the operator is looking
+     * at the editor's picture, the gesture says *"mark current train locations as their homes"*, and
+     * the locations it means are the ones on the screen. Writing a position they cannot see would be
+     * the surprising half of the two.
+     *
+     * **A square already homed to a DIFFERENT train is overwritten**, because that is what the gesture
+     * says: the trains are where the operator wants them, and this records that. The count returned is
+     * the number of squares this assigned, so the caller can say what happened; squares whose home was
+     * already this train are included in it, because "it is already right" and "I set it" are the same
+     * outcome to the operator and telling them apart would need a second number nobody asked for.
+     *
+     * Here rather than in the editor for the reason the single setter gives: a second way of setting a
+     * home is how two doors come to disagree.
+     *
+     * @return how many squares were given a home
+     */
+    public int homeEveryPlacedTrain()
+    {
+        int assigned = 0;
+
+        // `placedLocomotives` rather than `tilesWithALocomotive`, because it gives the square AND the
+        // train in one pass and is the map every other reader of "who is standing where" uses.
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            if (placed.getKey() == null || placed.getValue() == null) continue;
+
+            writeHome(placed.getKey(), placed.getValue());
+
+            assigned++;
+        }
+
+        // ONCE, at the end - see `clearEveryHome`.  Not skipped: the split names are computed from
+        // these properties, and a cached set of them is out of date the moment one changes.
+        deriveStationIndex();
+
+        return assigned;
     }
 
     /**

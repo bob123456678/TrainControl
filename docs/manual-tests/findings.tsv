@@ -1203,6 +1203,29 @@ PARITY-901	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-902	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-903	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-904	2026-09-03-parity-report.md	Closed	1 of 2 variant(s) gone
+PFX-A1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12: the replay asks Point.heldBackBy again; mutation fails four claims
+PFX-B1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12 as MT-377
+PFX-C1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12, later in the same round: thirteen sentences rather than the eight first 
+PRV-B1	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a turning copy may be reached and not driven through
+PRV-B2	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: the move happens after the unlock, and the redundant clear is gone
+PRV-C1	2026-09-12-PRV-fix-validation.md	Closed	Answered 2026-09-12: the emission-order assumption is asserted, so a change to it shows up
+PRV-C10	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: PRW-B4 repaired and MT-371 carries the note
+PRV-C2	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a claim uses a placed train that cannot be driven to the target
+PRV-C3	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: testTheTailComesWithIt
+PRV-C4	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a second plain copy on the other arrival side, and a claim for it
+PRV-C5	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12 with the rest of PFX-C1: thirteen sentences, eight languages
+PRV-C6	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12
+PRV-C7	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-13: the re-stand says so when it can find no plain copy at a square where tu
+PRV-C8	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-13: walkTo prefers a match the railway reports as OCCUPIED, so a locked path
+PRV-C9	2026-09-12-PRV-fix-validation.md	Closed	Answered 2026-09-12 alongside PRV-C1
+PRW-A1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: Layout.standOnTheCopyItDidNotTurnOn, red first in core.testTheArrivalHon
+PRW-B1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: an unmeasured approach is not judged. Measured 26 invented refusals -> 0
+PRW-B2	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-13 on Adam's instruction ("Do it"). Leg 1: the planner narrows shared metal 
+PRW-B3	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: it reads the copy, falling back to the square
+PRW-B4	2026-09-12-PRW-three-day-review.md	Closed	Closed 2026-09-13 by Adam's ruling: "the station size is an allowance, not a length". The 
+PRW-C1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: LayoutLabel passes the SHAPE already faded rather than a tile-wide flag,
+PRW-C2	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12 at both doors: AutoLocomotiveStatus and LayoutRightclickAutonomyMenu each
+PRW-C3	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-13: there is one budget now - what the places walk charges IS what the hop c
 PV-B1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C2	2026-07-27-post-cycle-verification.md	Closed	**Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope
@@ -1622,6 +1645,13 @@ SA-V5	2026-08-18-station-arrivals-review.md	Closed	NOT a defect - see below
 SA-V6	2026-08-18-station-arrivals-review.md	Closed	accepted, measured - see below
 SA-V7	2026-08-18-station-arrivals-review.md	Closed	accepted, matches findPath - see below
 SA-V8	2026-08-18-station-arrivals-review.md	Closed	recorded here, history left alone
+SEV-B1	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: the berth's own square is an allowance there too
+SEV-B2	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: fenced the way shouldReverseAt fences the same question - a plan is not 
+SEV-B3	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: the hop budget skips it too
+SEV-C1	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: harmless at both callers, a trap for the third
+SEV-C2	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: writeHome writes without deriving, one rule, both callers
+SEV-C3	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13, and swept to clearAllPlacements which had the same split unreported
+SEV-C4	2026-09-13-SEV-seven-day-review.md	Closed	Answered 2026-09-13: autonomy cannot run while this editor is open (whyAutonomyEditorCanno
 SF-B1	2026-08-01-simulation-feedback-race-review.md	Closed	Fixed - epoch-guarded clears (`simAnnounce`/`simClearBehind` in `Layout`); each announceme
 SF-C1	2026-08-01-simulation-feedback-race-review.md	Closed	Closed, remedy withdrawn - the recommendation inverted when reversing stations stopped bei
 SF-D1	2026-08-01-simulation-feedback-race-review.md	Closed	Withdrawn by the author before implementation - the `reversible` flag gates TERMINUS arriv
@@ -1727,6 +1757,52 @@ SVN-C7	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C8	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-03-c-sweep-report.md	Closed	Same class, same reason. Narrow: needs the editor, a curved feedback station, and shut
+SVV-B1	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: the guard's bound skips the berth's own place, and SVX-C5 restored the a
+SVV-B2	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: the measurement moved to the place behind the berth, and SVX-C5 put the 
+SVV-C1	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13, and pinned under SVX-C3: null means no caller has an opinion and the rai
+SVV-C2	2026-09-13-SVV-fix-validation.md	Closed	Answered 2026-09-13: the outcome is right and the reason was not; the dead-end case is nam
+SVV-C3	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: testTheTailReachesPastTheFirstEdgeBehindIt, on TopMainR1 - the park has 
+SVV-C4	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 on Adam's instruction ("make it public and add the tests"): hasAWayThroug
+SVV-C5	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 (stillLifted), and pinned under SVX-C4 as far as a private key handler al
+SVV-C6	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13, over-corrected the same day and repaired again under SVX-B2: a station s
+SVV-C7	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13; the second half was still wrong and is SVX-C2, now repaired
+SVV-C8	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 under SVX-C1: the javadoc describes the allowance, and Automation.md's be
+SVV-C9	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 across SVX-C6 and SVX-C7: the unbounded fill is gone, the accessors fail 
+SVV-D1	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D10	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D11	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D12	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D2	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D3	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D4	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D5	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D6	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D7	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D8	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVV-D9	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
+SVX-B1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: spendableAllowance is one definition and both the measurement test and t
+SVX-B2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: three states, and only a square already showing its own name is greyed
+SVX-C1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the javadoc says the berth's square is skipped and that the two walks ar
+SVX-C2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the javadoc names writeHome as the method the loop calls
+SVX-C3	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: a claim with a null policy at a may-turn square, red under the mutation.
+SVX-C4	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13 as far as is safe: the landing question is pinned on the railway and the 
+SVX-C5	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: both arrangements are kept - the tile behind the berth measured (refuse)
+SVX-C6	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the read goes through getNumLocMappings, a reflective miss fails rather 
+SVX-C7	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the stored count is read in setup and put back in the teardown, whatever
+SVX-C8	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the guard is back above the block
+SVX-C9	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: a places list with a hole is refused whole and the edge falls back to be
+SVX-D1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D10	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D3	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D4	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D5	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D6	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D7	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D8	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVX-D9	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
+SVZ-B1	2026-09-13-SVZ-fix-round-three.md	Closed	Fixed 2026-09-13: the first hop prefers the copy that arrives at the standing square. Pinn
+SVZ-C1	2026-09-13-SVZ-fix-round-three.md	Open	Open: nothing inside Layout can make the comparison - Edge carries tile ids and Point does
 SWC-B1	2026-07-29-switch-command-review.md	Closed	**Partly fixed.** The first-match `setDelay(address, ms)` is fixed; the three-way semantic
 SWC-B2	2026-07-29-switch-command-review.md	Closed	Fixed
 SWC-B3	2026-07-29-switch-command-review.md	Closed	**Fixed (ordering half); closed by decision (delay half.)** The dedup now keeps the last-w

@@ -2886,8 +2886,13 @@ public class testAutonomyDiagramSession
             "a layout that records no track lengths at all was asked to record one here, which is a "
             + "notice about something nobody on that railway is trying to do");
 
-        // One length, on a different square, and the layout is now one that measures track.
-        session.setTileLength(new TileKey("main", 2, 1), 7);
+        // ONE LENGTH, ON A SQUARE OUTSIDE THIS STRETCH, so the layout is one that measures track
+        // without that measurement being about the run-in under test.
+        //
+        // 4,1 is the sensor at the far end; the stretch behind the reversal at 1,1 is 3,1, 2,1 and
+        // 1,1 itself.  This used to measure 2,1, which IS in the stretch - harmless while the notice
+        // waited for every square, and the thing being measured once it waits for any (MT-364).
+        session.setTileLength(new TileKey("main", 4, 1), 7);
 
         assertTrue(session.reversalsWithoutLength().containsKey(turns),
             "the layout measures track now, and the square where a train turns round - the one place "
@@ -2903,22 +2908,35 @@ public class testAutonomyDiagramSession
             "one square trains turn at, and the notice is not one entry: "
             + session.reversalsWithoutLength());
 
-        // AND IT DOES NOT GO UNTIL THE WHOLE STRETCH IS MEASURED, which is the property the dedupe had
-        // to keep: the guard needs every square of the run-in before it can judge anything, so a notice
-        // that cleared when the reversal square alone was measured would be a list somebody can empty
-        // while the guard still judges nothing (D24-C7, TCX-B2).
+        // AND IT GOES ONCE THE STRETCH IS MEASURED AT ALL (Adam, MT-364, 2026-09-12).
+        //
+        // This used to assert the opposite - that the notice stays until EVERY square of the run-in
+        // has a number - on the reasoning that "the guard needs every square before it can judge
+        // anything".  That reasoning was true when it was written and stopped being true on
+        // 2026-09-06, when Adam ruled that a stretch is only indeterminate if ALL of it is zero: a
+        // half-measured run-in makes the guard PESSIMISTIC rather than blind, and it still binds.
+        //
+        // He met the consequence on his own railway: *"I set the track at 10,10 to length 2, so now we
+        // know that the track to TunnelLongPark is 2.  But it is still asking for the tile at 10,9
+        // (TunnelLongPark) to get a length."*  The reversal square was asked for on its own account,
+        // before the walk was consulted, so measuring the track behind it could never have helped.
         session.setTileLength(turns, 5);
 
-        assertTrue(session.reversalsWithoutLength().containsKey(turns),
-            "the notice went when the reversal square was measured, while the track leading into it "
-            + "still has no length - so the guard cannot judge anything and nothing says so");
-
-        // The rest of the run in, and now it goes.
-        session.setTileLength(new TileKey("main", 3, 1), 4);
-        session.setTileLength(new TileKey("main", 4, 1), 4);
-
         assertFalse(session.reversalsWithoutLength().containsKey(turns),
-            "the whole run in is measured and the square is still being asked about: "
+            "the stretch behind this square carries a measurement and the editor is still asking for "
+            + "the rest of it. Adam, MT-364: \"it is still asking for the tile at 10,9 to get a "
+            + "length\" - the guard judges what it can see, and a notice about a stretch it can "
+            + "already judge is a list you can never empty: " + session.reversalsWithoutLength());
+
+        // AND THE CASE THE NOTICE EXISTS FOR IS UNTOUCHED: nothing measured in the stretch at all.
+        //
+        // Without this the claim above is satisfied by a notice that has stopped firing entirely,
+        // which is the direction this change could most easily go wrong in.
+        session.setTileLength(turns, 0);
+
+        assertTrue(session.reversalsWithoutLength().containsKey(turns),
+            "the layout measures track elsewhere and NOTHING on this run-in has a number, so the guard "
+            + "is blind here rather than pessimistic - and the notice said nothing: "
             + session.reversalsWithoutLength());
     }
 

@@ -2168,7 +2168,7 @@ public class testAutoLayout
     }
 
     /**
-     * A terminus stays in the base list, and an excluded square leaves the menu (Adam, 2026-09-04).
+     * A BERTH stays in the base list, and an excluded square leaves the menu (Adam, 2026-09-04/12).
      *
      * Two rulings on one gesture, given after seeing `BottomMainB` and `BottomMainC` move out of the
      * base list for `2-8-4 3505 SP`: *"We should still show the same number of base options (unless
@@ -2176,15 +2176,26 @@ public class testAutoLayout
      *
      * The first undid `VD11-C2`, which had the menu ask `isChoosableByAutonomy(end, locomotive)` on
      * the strength of a comment I had written promising that a terminus a non-reversible train could
-     * not get out of belonged in More Destinations. It did not: his ruling of 2026-09-01, quoted at
-     * `isPathClear`, is that such a train may back into one by hand. Measured on `test/operator_layout`
-     * before changing anything - the fixture emits each of those squares twice, once as a through
-     * arrival and once as a reverse arrival that is a terminus, and it was the terminus copies that
-     * moved. Neither square excludes any locomotive, so the exclusion clause was never involved.
+     * not get out of belonged in More Destinations. Measured on `test/operator_layout` before changing
+     * anything - the fixture emits each of those squares twice, once as a through arrival and once as
+     * a reverse arrival that is a terminus, and it was the terminus copies that moved. Neither square
+     * excludes any locomotive, so the exclusion clause was never involved.
      *
-     * MUTATION, stated exactly: putting the terminus clause back into `isOfferableToOperator` fails
-     * the first assertion; dropping its exclusion clause fails the second; dropping its `isActive`
-     * clause fails the third.
+     * **NARROWED by his own ruling of 2026-09-12** (OB-205, MT-367), and this class read the older one
+     * as wider than he ever made it: *"75 407 DB can go from Tunnel to BottomMainC manually, even
+     * though it is not reversible and THIS IS NOT A PARKING BERTH (excluded from autonomy). it should
+     * not be allowed to be chosen."* The 2026-09-01 ruling that moved the terminus rule out of
+     * `isPathClear` said *"the operator asking for that BERTH by hand is no longer refused"* - the word
+     * doing the work was berth, and the rule written from it did not carry it.
+     *
+     * So the first claim below is now about a berth: a terminus autonomy will not choose is still
+     * offered to a train that cannot reverse. The claim beside it is the other half - an ORDINARY
+     * terminus, one autonomy may choose, is not - and the two together are what keep either from being
+     * satisfied by a rule that has simply stopped asking.
+     *
+     * MUTATION, stated exactly: dropping `isAutoDestination()` from `isOfferableToOperator`'s terminus
+     * clause fails the first assertion; dropping the clause entirely fails the second; dropping the
+     * exclusion clause fails the third; dropping `isActive` fails the fourth.
      *
      * **What this does NOT cover is the menu's choice of predicate** - the menu needs a window, and it
      * is package-private besides. That half is `MT-266`. What the rule having a name on `Layout` buys
@@ -2213,10 +2224,27 @@ public class testAutoLayout
         {
             plain.setReversible(false);
 
-            // THE RULING: a train that cannot turn round may still be backed into a terminus by hand.
+            // THE RULING: a train that cannot turn round may still be backed into a BERTH by hand -
+            // somewhere autonomy will never send it, which is what that exemption is for.
+            terminus.setAutoDestination(false);
+
             assertTrue(layout.isOfferableToOperator(terminus, plain),
-                "a terminus is being kept off the menu for a non-reversible train, which is the rule Adam "
-                + "overturned on 2026-09-04 - it belongs in the base list");
+                "a parking berth is being kept off the menu for a non-reversible train. Putting a train"
+                + " away by hand is exactly what Adam's 2026-09-01 exemption is for - \"the operator"
+                + " asking for that BERTH by hand is no longer refused\" - and it survived the"
+                + " narrowing of 2026-09-12");
+
+            // AND THE HALF HE NARROWED IT TO, 2026-09-12: an ordinary terminus, one autonomy may
+            // choose, is not offered to a train that could not get out of it again.
+            terminus.setAutoDestination(true);
+
+            assertFalse(layout.isOfferableToOperator(terminus, plain),
+                "an ordinary terminus is still offered to a train that cannot reverse. Adam, OB-205:"
+                + " \"75 407 DB can go from Tunnel to BottomMainC manually, even though it is not"
+                + " reversible and this is not a parking berth (excluded from autonomy). it should not"
+                + " be allowed to be chosen\"");
+
+            terminus.setAutoDestination(false);
 
             // AND THE OTHER RULING: an exclusion is not a demotion, it is a removal.
             MarklinFeedback barred = model.newFeedback(171, null);

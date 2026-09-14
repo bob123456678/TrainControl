@@ -147,17 +147,51 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         /** Offerable, but never chosen by autonomy: More Destinations. */
         final List<List<Edge>> other;
 
-        /** Everything possible, counted before anything at all was left out. */
-        final int possible;
+        // `possible` USED TO LIVE HERE and is deliberately gone (Adam, 2026-09-12).
+        //
+        // It counted everything the search returned, before this menu dropped the squares it never
+        // shows, and it existed only to decide whether to draw the "...".  Comparing against it made
+        // that item appear whenever anything at all had been filtered - which after `OB-205` is nearly
+        // every right-click for a train that cannot reverse.
+        //
+        // Removed rather than corrected, so the mistake is unavailable instead of merely fixed: with
+        // no such field there is no wrong number to hand the rule.
 
-        private PathOptions(Locomotive locomotive, List<List<Edge>> shown, List<List<Edge>> other,
-            int possible)
+        private PathOptions(Locomotive locomotive, List<List<Edge>> shown, List<List<Edge>> other)
         {
             this.locomotive = locomotive;
             this.shown = shown;
             this.other = other;
-            this.possible = possible;
         }
+    }
+
+    /**
+     * Whether the menu offers the way out to the autonomy tab - the "..." at the foot of the list.
+     *
+     * Named so that what it means can be argued with.  Adam asked for it originally as *"if there are
+     * more possible options than what is shown ... always show the ..."*, and the question is what
+     * "possible" counts.
+     *
+     * **What it does NOT count is the squares this menu never shows** (Adam, 2026-09-12: *"why is
+     * the ... below the list of options visible?  shouldn't this be only shown if there are many more
+     * regular destinations than can be displayed?"*).  It used to compare against `possible`, a count
+     * taken before the filter, so it fired whenever anything at all had been left out - a switched-off
+     * square, one that excludes this train, and, after `OB-205`, every ordinary terminus whenever the
+     * train cannot reverse.  On a non-reversible locomotive that is nearly every right-click, which is
+     * the complaint `FR-058` was filed about arriving from a new direction.
+     *
+     * So the ellipsis now means one thing: **there were more destinations than fitted**.  A square
+     * this menu deliberately hides is not something the operator is missing from this list - it is
+     * somewhere they went out of their way to switch off, and the autonomy tab lists it.
+     *
+     * @param offered how many ordinary destinations this menu has to show, after its own filtering
+     * @param shown how many of them are on screen
+     * @param inMoreDestinations how many are in the submenu
+     * @return whether to add the item
+     */
+    static boolean theListWasCutShort(int offered, int shown, int inMoreDestinations)
+    {
+        return offered > shown + inMoreDestinations;
     }
 
     /**
@@ -206,12 +240,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
 
-        // EVERYTHING THAT IS POSSIBLE, counted before anything is left out.
-        //
-        // What "more options than are shown" means has to include the ones this menu decides not to
-        // show, not only the ones the cap cuts off - otherwise the ellipsis is a statement about the
-        // cap rather than about the list.
-        final int possible = paths.size();
 
         // SWITCHED-OFF SQUARES ARE NOT ON THIS MENU (Adam, 2026-09-01).
         //
@@ -250,8 +278,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // package-private and a rule nothing can reach is a rule nothing can test - which is how
             // the terminus went in and out of it twice.  Its javadoc carries both rulings.
             //
-            // These still count towards `possible`, so the ellipsis offers the autonomy tab, which
-            // lists everything.
+            // They are not counted towards the ellipsis either: a square somebody switched off is
+            // not a destination missing from this list, it is one they went out of their way to take
+            // out of use, and the autonomy tab lists it.
             if (!ui.getModel().getAutoLayout().isOfferableToOperator(end, locomotive))
             {
                 continue;
@@ -274,7 +303,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             }
         }
 
-        return new PathOptions(locomotive, shownPaths, otherPaths, possible);
+        return new PathOptions(locomotive, shownPaths, otherPaths);
     }
 
     /**
@@ -490,7 +519,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     {
                         List<List<Edge>> paths = options.shown;
 
-                        final int possible = options.possible;
 
                         List<List<Edge>> otherPaths = options.other;
 
@@ -532,7 +560,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             // which is the complaint FR-058 was filed to fix, arriving from the other
                             // side.
                             if (++shown >= Math.min(MAX_PATHS, paths.size())
-                                && possible > shown + otherPaths.size())
+                                && theListWasCutShort(paths.size() + otherPaths.size(), shown,
+                                    otherPaths.size()))
                             {
                                 menuItem = new JMenuItem("...");
                                 menuItem.addActionListener(event -> 
@@ -605,55 +634,29 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         }
 
-                        // AND THE WAY OUT (ACC-C10; placed by OPV-C4, corrected by OV2-C1).
+                        // AND THERE IS NO SECOND WAY OUT, which is what this used to be.
                         //
-                        // Three placements before this one held.  Inside the loop over `paths` it
-                        // could never fire on an empty base list.  Above the separator it read as
-                        // belonging to whatever preceded the menu.  Inside the `otherPaths` branch it
-                        // vanished again in the one case `ACC-C10` is about: BOTH lists empty, every
-                        // destination filtered away, and no route to the tab that would explain why.
+                        // `ACC-C10` put an escape here for the case where BOTH lists are empty - every
+                        // destination filtered away, and no route to the tab that would explain why -
+                        // and `OPV-C4` and `FR3-C5` then corrected where it sat and what heading it
+                        // got.  Adam, 2026-09-12: *"I still see ... for 74 407 DB at Tunnel, even
+                        // though it has no valid paths"*.
                         //
-                        // Out here it fires whenever anything at all was left out, whichever list is
-                        // empty - and the heading above is added when the base list is empty, so it
-                        // still lands under this train's own name when there is one.
-                        if (paths.isEmpty() && possible > otherPaths.size())
-                        {
-                            // AND ITS OWN HEADING WHEN NOTHING ELSE ADDED ONE (FR3-C5).
-                            //
-                            // Both heading gates are skipped in exactly this case: the top-level
-                            // separator and name need a non-empty base list, and the submenu's need a
-                            // non-empty More Destinations.  With BOTH empty - which is the case this
-                            // escape exists for - it was added straight under the menu's action items,
-                            // with no separator and no locomotive name.  That is the presentation
-                            // `OPV-C4` was filed about, arriving at the fourth placement of this item.
-                            if (otherPaths.isEmpty())
-                            {
-                                addSeparator();
-
-                                javax.swing.JMenuItem whose =
-                                    new javax.swing.JMenuItem(locomotive.getName());
-
-                                whose.setEnabled(false);
-
-                                add(whose);
-                            }
-
-                            JMenuItem wayOut = new JMenuItem("...");
-
-                            wayOut.addActionListener(event ->
-                            {
-                                try
-                                {
-                                    ui.jumpToAutonomyLocTab();
-                                }
-                                catch (Exception e)
-                                {
-                                    JOptionPane.showMessageDialog(this, e.getMessage());
-                                }
-                            });
-
-                            add(wayOut);
-                        }
+                        // **His rule is the whole rule.**  The item means "there were more ordinary
+                        // destinations than fitted", and a train with none is not that - it is a train
+                        // with nowhere to go, which the menu says by having nothing under the
+                        // locomotive's name.  Keeping an escape here was my judgement and not his
+                        // instruction, and it left the reported symptom in place for the very train
+                        // that has the least to show.
+                        //
+                        // **Nothing is lost that is not said better elsewhere.**  "No available paths"
+                        // in the locomotive list names every station and the reason each was refused,
+                        // and the setup editor's *Why not Moving?* answers the same question on the
+                        // diagram.  A bare "..." said none of that.
+                        //
+                        // So the item is decided in exactly ONE place now - the loop above, through
+                        // `theListWasCutShort` - and `regression.testTheDestinationDoorsAgree` asserts
+                        // there is only one.
                     }
 
                     addSeparator();
@@ -1293,8 +1296,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // once and stays open while trains move and lengths are edited - and because the
                 // sentence is what Adam asked for.
                 //
-                // Only the length rule, deliberately.  Everything else `isPathClear` asks is about
-                // this minute and clears itself; refusing here on a busy sensor would turn a
+                // The STANDING rules only, deliberately.  Everything else `isPathClear` asks is
+                // about this minute and clears itself; refusing here on a busy sensor would turn a
                 // momentary block into a dialog.
                 String tooLong = org.traincontrol.automation.Layout.whyTooLongForThisRoute(path,
                     locomotive);
@@ -1302,6 +1305,29 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 if (tooLong != null)
                 {
                     JOptionPane.showMessageDialog(this, tooLong);
+
+                    return;
+                }
+
+                // AND THE BERTH RULE, WHICH IS ONE OF THEM (PRW-C2).
+                //
+                // It refuses a train whose tail would lie across another road at a parking berth, and
+                // it has a sentence of its own - `errorBerthWouldFoulAnotherRoad` - which reached the
+                // log and never the operator, because only the length rule was asked here and
+                // everything else fell through to "check the log".
+                //
+                // It belongs by the test the paragraph above sets: a berth that cannot hold this
+                // train cannot hold it in a minute either.  Length and geometry do not clear
+                // themselves, and those are the two standing refusals this door can explain.
+                //
+                // `error-must-have-a-remedy` is the rule being followed - the remedy is in the
+                // message - and `guard-and-affordance-same-question` is why both hand doors ask it.
+                String foulsARoad =
+                    org.traincontrol.automation.Layout.whyABerthCannotHoldIt(path, locomotive);
+
+                if (foulsARoad != null)
+                {
+                    JOptionPane.showMessageDialog(this, foulsARoad);
 
                     return;
                 }
