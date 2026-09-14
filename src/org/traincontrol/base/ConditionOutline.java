@@ -140,7 +140,8 @@ public final class ConditionOutline
      * settles it, which is the whole reason lines can be indented.
      *
      * The FIRST word at a level is taken as the one meant, so the ones flagged are the ones that
-     * differ from it. That is a guess about which is the mistake, but it is the useful way round: it
+     * differ from it.  A word deeper than a condition beside it is flagged too: it joins nothing at its
+     * own depth, and would otherwise be read as nothing. That is a guess about which is the mistake, but it is the useful way round: it
      * marks one line rather than all of them, and it is stable as more are added.
      *
      * @param rows the outline
@@ -185,6 +186,23 @@ public final class ConditionOutline
 
             if (already == null) settled.put(row.getDepth(), row.getJoiner());
             else if (already != row.getJoiner()) out.add(at);
+        }
+
+        // A WORD DEEPER THAN A CONDITION BESIDE IT JOINS NOTHING (Adam, 2026-09-14: "the first or is read as an
+        // and here").  A word sits at the level of what it joins.  One deeper than the condition on either side
+        // of it is, to `read`, a group holding a word and no condition - which is nothing - so the word vanished
+        // and the level's other word joined everything, with no two words side by side to flag.  Shallower than
+        // both neighbours is fine: that is how two groups are joined.
+        for (int at = 1; at + 1 < rows.size(); at++)
+        {
+            Row row = rows.get(at);
+
+            if (!row.isJoiner()) continue;
+
+            if (row.getDepth() > rows.get(at - 1).getDepth() || row.getDepth() > rows.get(at + 1).getDepth())
+            {
+                out.add(at);
+            }
         }
 
         return out;

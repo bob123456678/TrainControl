@@ -159,6 +159,54 @@ public class testConditionOutline
     }
 
     /**
+     * A joining word deeper than a condition beside it is flagged, rather than read as nothing (2026-09-14).
+     *
+     * Adam's route: *"the first or is read as an and here"*.  Its outline was `2 off`, then the OR one level
+     * in, then `3 on`, then AND, then `(1 on or 1 on)`.  The reader takes anything deeper than its level as a
+     * group - and a group holding a word and no condition is nothing, so the OR vanished and the level's only
+     * remaining word, AND, joined all three.  No two words disagreed side by side, so nothing was flagged, and
+     * the reading said "2 off and 3 on and (...)".
+     *
+     * A word sits at the level of what it joins, so one deeper than the condition on either side of it joins
+     * nothing at its own depth.  That is a line in red, not a silent change to when a route fires.
+     */
+    @Test
+    public void testAWordDeeperThanAConditionBesideItIsFlagged()
+    {
+        java.util.Set<Integer> flagged = ConditionOutline.problems(outline(
+            condition(0, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(0, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 4)));
+
+        assertTrue(flagged.contains(1),
+            "the OR one level deeper than both conditions it sits between was not flagged - so it is read as"
+            + " nothing, the AND joins all three, and the route fires on a different condition from the one"
+            + " on screen (Adam, 2026-09-14: \"the first or is read as an and here\"). Flagged: " + flagged);
+    }
+
+    /**
+     * The control: a word SHALLOWER than both its neighbours is how two groups are joined, and is not flagged.
+     */
+    @Test
+    public void testAWordJoiningTwoGroupsIsNotFlagged()
+    {
+        assertTrue(ConditionOutline.problems(outline(
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 4))).isEmpty(),
+            "(2 or 3) and (1 or 4) was flagged - the AND sits shallower than both its neighbours, which is exactly"
+            + " how an outline joins two groups");
+    }
+
+    /**
      * Indenting the part that was meant to group settles it.
      */
     @Test

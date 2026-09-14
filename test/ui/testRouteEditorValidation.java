@@ -468,6 +468,160 @@ public class testRouteEditorValidation
      * A condition outline that has gone wrong has gone wrong in its INDENTATION, and the meaning
      * alone does not say where.
      */
+    /**
+     * A condition that starts with a group can be built by indenting (2026-09-14).
+     *
+     * Adam: *"the first condition for some reason cannot be indented for proper grouping."*  The rule is that a
+     * line may be at most one level deeper than the line above it, and the first line has no line above it -
+     * so it was refused outright, and `(2 or 3) and (1 or 4)` could not be typed.  The first line now counts as
+     * having an unindented line above it.
+     *
+     * The gesture, from four conditions typed flat: the first condition in, then the OR after it, then the second
+     * condition; then the second pair the same way.  The word goes in before the condition after it, because
+     * indenting a line brings everything already indented under it along.
+     */
+    @Test
+    public void testAConditionThatStartsWithAGroupCanBeBuilt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> typed = flat(2, "OR", 3, "AND", 1, "OR", 4);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.indentConditionForTest(0, 1);
+                frame.indentConditionForTest(1, 1);
+                frame.indentConditionForTest(2, 1);
+                frame.indentConditionForTest(4, 1);
+                frame.indentConditionForTest(5, 1);
+                frame.indentConditionForTest(6, 1);
+            });
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the indented outline is still flagged: " + depths(frame));
+
+            assertEquals(reads(frame), "And(Group(Or(x,x)),Group(Or(x,x)))",
+                "(2 or 3) and (1 or 4) could not be built by indenting - the first condition cannot go in, so a"
+                + " condition cannot start with a group. Adam, 2026-09-14: \"the first condition for some reason"
+                + " cannot be indented for proper grouping\". Depths:" + depths(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * A joining word indented on its own is shown in red, not read silently as nothing (2026-09-14).
+     *
+     * The other half of Adam's report: an OR indented past the conditions either side of it was read as nothing,
+     * and "2 or 3" became "2 and 3" with nothing in red.  The indent is allowed - building a group one row at a
+     * time passes through exactly that state - but the word joins nothing at its depth, so it is flagged and Save
+     * refuses it until the conditions beside it are indented too.
+     */
+    @Test
+    public void testAWordIndentedAloneIsFlagged() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> typed = flat(2, "OR", 3);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionForTest(1, 1));
+
+            assertEquals(depths(frame), " 0? 1OR 0?",
+                "precondition: indenting the OR on its own did not put it one level in, so there is no stranded word"
+                + " to flag. Depths:" + depths(frame));
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).contains(1),
+                "the OR indented past the conditions either side of it is not flagged - so it is read as nothing and"
+                + " \"2 or 3\" is saved as \"2 and 3\" with nothing in red. Adam, 2026-09-14: \"the first or is read"
+                + " as an and here\". Depths:" + depths(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * "Reads as" says the joining words in bold and the settings in the colour of what they do (2026-09-14).
+     *
+     * Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red
+     * red?"*  Coloured by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
+     */
+    @Test
+    public void testReadsAsBoldsTheWordsAndColoursTheSettings() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                org.traincontrol.base.RouteCommand.RouteCommandFeedback(2, false)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.OR));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                org.traincontrol.base.RouteCommand.RouteCommandFeedback(3, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[] text = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> text[0] = frame.readsAsForTest());
+
+            String or = org.traincontrol.util.I18n.t("route.ui.joinOr");
+
+            assertTrue(text[0].contains("<b>" + or + "</b>"),
+                "the joining word is not bold in \"Reads as\": " + text[0]);
+
+            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorFrame.READS_STOP_COLOUR + "\">off</font>"),
+                "\"off\" is not red in \"Reads as\": " + text[0]);
+
+            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorFrame.READS_GO_COLOUR + "\">on</font>"),
+                "\"on\" is not green in \"Reads as\": " + text[0]);
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** Conditions on sensors joined by the given words, every line at the outermost level: what the plus types. */
+    private static java.util.List<org.traincontrol.base.ConditionOutline.Row> flat(Object... parts)
+    {
+        java.util.List<org.traincontrol.base.ConditionOutline.Row> out = new java.util.ArrayList<>();
+
+        for (Object part : parts)
+        {
+            if (part instanceof Integer)
+            {
+                out.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback((Integer) part)));
+            }
+            else
+            {
+                out.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                    org.traincontrol.base.ConditionOutline.Joiner.valueOf((String) part)));
+            }
+        }
+
+        return out;
+    }
+
     private static String depths(org.traincontrol.gui.RouteEditorFrame frame)
     {
         StringBuilder out = new StringBuilder();

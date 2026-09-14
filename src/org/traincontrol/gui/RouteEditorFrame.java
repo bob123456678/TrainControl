@@ -1492,6 +1492,22 @@ public class RouteEditorFrame extends JFrame
         conditions.indent(row, by);
     }
 
+    /**
+     * The "Reads as" line exactly as the label holds it, markup included - for tests.
+     *
+     * @return the label's text
+     */
+    public String readsAsForTest()
+    {
+        return readsAs.getText();
+    }
+
+    /** The colour "Reads as" gives on, straight and green - the settings that let a train go. */
+    public static final String READS_GO_COLOUR = "#1a7f37";
+
+    /** The colour "Reads as" gives off, turn and red. */
+    public static final String READS_STOP_COLOUR = "#c62828";
+
     /** The marks, so a test names them the way the table does */
     public static String markMoveUp() { return MOVE_UP; }
 
@@ -1572,8 +1588,10 @@ public class RouteEditorFrame extends JFrame
         // one rule the shape alone does not state: a run of rows joined by the same word is a group,
         // and a change of word starts a new one.  Reading it back settles that without anybody having
         // to be told.
-        readsAs.setText(I18n.f("route.ui.frameReadsAs",
-            describe(ConditionOutline.toExpression(conditions.rows))));
+        // BOLD WORDS AND COLOURED SETTINGS (Adam, 2026-09-14: "bold the operators, make on/straight/green green
+        // and off/turn/red red").  As markup, so everything the conditions carry is escaped on the way in.
+        readsAs.setText("<html>" + I18n.f("route.ui.frameReadsAs",
+            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>");
     }
 
     /**
@@ -1594,14 +1612,14 @@ public class RouteEditorFrame extends JFrame
         if (node instanceof org.traincontrol.base.NodeAnd)
         {
             return describe(((org.traincontrol.base.NodeAnd) node).getLeft())
-                + " " + I18n.t("route.ui.joinAnd") + " "
+                + " <b>" + marked(I18n.t("route.ui.joinAnd")) + "</b> "
                 + describe(((org.traincontrol.base.NodeAnd) node).getRight());
         }
 
         if (node instanceof org.traincontrol.base.NodeOr)
         {
             return describe(((org.traincontrol.base.NodeOr) node).getLeft())
-                + " " + I18n.t("route.ui.joinOr") + " "
+                + " <b>" + marked(I18n.t("route.ui.joinOr")) + "</b> "
                 + describe(((org.traincontrol.base.NodeOr) node).getRight());
         }
 
@@ -2120,6 +2138,38 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * Text from a route, made safe for the "Reads as" markup.
+     */
+    private static String marked(String text)
+    {
+        if (text == null) return "";
+
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
+     * A setting word in the colour of what it does: green for on, straight and green, red for off, turn and red
+     * (Adam, 2026-09-14).  By the WORD, because the same true or false is "on" for a sensor and "turn" for a switch.
+     * Any other word - a direction, a three-way position - is left as it is.
+     */
+    private static String setting(String word)
+    {
+        String safe = marked(word);
+
+        if ("on".equals(word) || "straight".equals(word) || "green".equals(word))
+        {
+            return "<font color=\"" + READS_GO_COLOUR + "\">" + safe + "</font>";
+        }
+
+        if ("off".equals(word) || "turn".equals(word) || "red".equals(word))
+        {
+            return "<font color=\"" + READS_STOP_COLOUR + "\">" + safe + "</font>";
+        }
+
+        return safe;
+    }
+
+    /**
      * A condition in as few words as possible, for the reading above.
      */
     private String shortly(RouteCommand command)
@@ -2130,7 +2180,7 @@ public class RouteEditorFrame extends JFrame
 
         // A kind this editor has no controls for.  Its own toString is the only description there is,
         // and printing it is better than printing nothing.
-        if (row == null) return String.valueOf(command);
+        if (row == null) return marked(String.valueOf(command));
 
         switch (row.getKind())
         {
@@ -2142,30 +2192,30 @@ public class RouteEditorFrame extends JFrame
             case SIGNAL:
                 return I18n.f(row.getKind() == CommandRow.Kind.SIGNAL
                         ? "route.reads.signal" : "route.reads.switch",
-                    row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
+                    marked(row.getTarget()), setting(settingWords(row)[command.getSetting() ? 1 : 0]));
 
             case FEEDBACK: return I18n.f("route.reads.sensor",
-                row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
+                marked(row.getTarget()), setting(settingWords(row)[command.getSetting() ? 1 : 0]));
 
-            case FUNCTION: return I18n.f("route.reads.function", row.getTarget(),
-                command.getFunction(), command.getSetting() ? "on" : "off");
+            case FUNCTION: return I18n.f("route.reads.function", marked(row.getTarget()),
+                command.getFunction(), setting(command.getSetting() ? "on" : "off"));
 
             case LOCOMOTIVE_SPEED: return I18n.f("route.reads.speed",
-                row.getTarget(), row.getSetting());
+                marked(row.getTarget()), marked(row.getSetting()));
 
             case LOCOMOTIVE_DIRECTION: return I18n.f("route.reads.direction",
-                row.getTarget(), row.getSetting());
+                marked(row.getTarget()), marked(row.getSetting()));
 
-            case ROUTE: return I18n.f("route.reads.route", row.getTarget());
+            case ROUTE: return I18n.f("route.reads.route", marked(row.getTarget()));
 
             // "Train X is standing at sensor 21" - the one kind that is a fact rather than an order,
             // which is why it is only ever a condition.
             case AUTO_LOCOMOTIVE: return I18n.f("route.reads.trainAt",
-                row.getTarget(), row.getSetting());
+                marked(row.getTarget()), marked(row.getSetting()));
 
             // Stop, all functions off, lights on: nothing to name and nothing to set, so the kind's
             // own label already says the whole thing.
-            default: return CommandRow.labelFor(row.getKind());
+            default: return marked(CommandRow.labelFor(row.getKind()));
         }
     }
 
@@ -3491,7 +3541,9 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == INDENT)
                 {
-                    if (line == 0) return "";
+                    // The rules `indent` applies, so the mark never offers a press that does nothing: the first line
+                    // may go one level in (2026-09-14), every other line one level past the line above it.
+                    if (line == 0) return rows.size() < 2 ? "" : row.getDepth() < 1 ? INDENT_ROW : INDENT_LIMIT;
 
                     return row.getDepth() <= rows.get(line - 1).getDepth()
                         ? INDENT_ROW : INDENT_LIMIT;
@@ -3900,7 +3952,15 @@ public class RouteEditorFrame extends JFrame
             // hole in the middle, which the outline has no way to draw and no way to mean.
             if (line > 0 && depth > rows.get(line - 1).getDepth() + 1) return;
 
-            if (line == 0 && depth > 0) return;
+            // THE FIRST LINE MAY GO ONE LEVEL IN (Adam, 2026-09-14: "the first condition for some reason cannot
+            // be indented for proper grouping").  It is measured against an unindented line above it, which is
+            // what a condition that starts with a group - "(2 or 3) and (1 or 4)" - needs, and what the
+            // one-level rule already allows every other line.
+            if (line == 0 && depth > 1) return;
+
+            // A word may be indented past the condition after it: building a group one row at a time does exactly
+            // that for a moment.  Left there, it joins nothing at its depth, and `ConditionOutline.problems` shows
+            // it in red and Save refuses it (2026-09-14) - what it must never be again is read silently as nothing.
 
             // Everything nested UNDER this line comes with it.
             //
@@ -3989,6 +4049,7 @@ public class RouteEditorFrame extends JFrame
                     }
                 }
             }
+
         }
 
         /**
