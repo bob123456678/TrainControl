@@ -63,17 +63,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-414](#mt-414) | 2026-09-14 | The locomotive dialog's arrival row matches the rows above it | fixed unvalidated | OB-203 |
 | [MT-415](#mt-415) | 2026-09-14 | Clearing every locomotive warns that Cancel will not bring them back | fixed unvalidated | OB-194 |
 | [MT-416](#mt-416) | 2026-09-14 | A route condition with a group that is not the first term can be built | fixed unvalidated | FR-068 |
-| [MT-417](#mt-417) | 2026-09-14 | A square that turns every train, switched off, is drawn as switched off | fixed unvalidated | OB-167 |
-| [MT-418](#mt-418) | 2026-09-14 | Destructive confirmations default to No | fixed unvalidated | OB-134 |
-| [MT-419](#mt-419) | 2026-09-14 | The greyed Edit Layout button says the real reason | fixed unvalidated | OB-126 |
-| [MT-420](#mt-420) | 2026-09-14 | Every window shows the TrainControl icon | fixed unvalidated | OB-124 |
-| [MT-421](#mt-421) | 2026-09-14 | The + row in a route's conditions is never greyed | fixed unvalidated | OB-121 |
-| [MT-422](#mt-422) | 2026-09-14 | Test a path does not draw into a station from a side it refuses | fixed unvalidated | OB-120 |
-| [MT-423](#mt-423) | 2026-09-14 | An empty station's name sits over the track | fixed unvalidated | OB-118 |
-| [MT-424](#mt-424) | 2026-09-14 | The left and right facing arrows are as tall as the up and down ones | fixed unvalidated | OB-116 |
+| [MT-425](#mt-425) | 2026-09-14 | A route condition can start with a group, and a stranded word is red | fixed unvalidated | OB-220 |
+| [MT-426](#mt-426) | 2026-09-14 | Reads as shows the joining words in bold and the settings in colour | fixed unvalidated | FR-081 |
 
-Everything else - 380 of 424 - needs nothing from you unless the area changes again:
-334 **fixed validated** and 46 **superseded**.
+Everything else - 388 of 426 - needs nothing from you unless the area changes again:
+342 **fixed validated** and 46 **superseded**.
 
 ---
 
@@ -21653,13 +21647,17 @@ The condition reads back exactly as built, and **Test** evaluates it as that exp
 
 #### Comments
 
+**Claude, 2026-09-14.**
+
+**Claude: the same editor changed underneath this test on 2026-09-14 (OB-220).**  The first line can now be indented, and a joining word deeper than a condition beside it is drawn in red and cannot be saved.  While you indent one line at a time a word can be red for a moment - indent the line after it and it clears.  Run the steps as written; if the finished `3 or (4 and (1 or 2))` shows anything in red, that fails.
+
 ---
 
 <a id="mt-417"></a>
 
 ### MT-417 - 2026-09-14 - A square that turns every train, switched off, is drawn as switched off
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-167
 
 **Written:** 2026-09-14
@@ -21686,7 +21684,7 @@ It is drawn with the out-of-service mark, not with the terminus icon.
 
 ### MT-418 - 2026-09-14 - Destructive confirmations default to No
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-134
 
 **Written:** 2026-09-14
@@ -21713,7 +21711,7 @@ From OB-134: *six destructive confirmations still pre-selected Yes.*
 
 ### MT-419 - 2026-09-14 - The greyed Edit Layout button says the real reason
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-126
 
 **Written:** 2026-09-14
@@ -21741,7 +21739,7 @@ Each time it is grey, the tooltip names the reason that is actually true at that
 
 ### MT-420 - 2026-09-14 - Every window shows the TrainControl icon
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-124
 
 **Written:** 2026-09-14
@@ -21768,7 +21766,7 @@ Every one shows the TrainControl icon, not the default Java cup.
 
 ### MT-421 - 2026-09-14 - The + row in a route's conditions is never greyed
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-121
 
 **Written:** 2026-09-14
@@ -21795,7 +21793,7 @@ The + row is drawn normally, never in the grey of the row above it.
 
 ### MT-422 - 2026-09-14 - Test a path does not draw into a station from a side it refuses
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-120
 
 **Written:** 2026-09-14
@@ -21822,7 +21820,7 @@ No route is drawn into it from that side - the test reports it cannot be reached
 
 ### MT-423 - 2026-09-14 - An empty station's name sits over the track
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-118
 
 **Written:** 2026-09-14
@@ -21849,7 +21847,7 @@ The name sits over its track, centred on the rails.  Captions have been reworked
 
 ### MT-424 - 2026-09-14 - The left and right facing arrows are as tall as the up and down ones
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-116
 
 **Written:** 2026-09-14
@@ -21869,5 +21867,64 @@ They are the same size.
 **Adam, 2026-09-14 (triage).** Works.
 
 *Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-425"></a>
+
+### MT-425 - 2026-09-14 - A route condition can start with a group, and a stranded word is red
+
+**Disposition:** fixed unvalidated
+**From:** OB-220
+
+**Written:** 2026-09-14
+
+Your OB-220: *"the first or is read as an and here. also, the first condition for some reason cannot be indented for proper grouping."*
+
+**Steps**
+
+1. In the route editor, type four conditions flat, joined as `2 or 3 and 1 or 4` - one condition or word per line, nothing indented.
+2. Indent line 1 (the first condition), then line 2 (the **or**), then line 3.
+3. Indent line 5, then line 6 (the second **or**), then line 7.
+4. Read **Reads as**, then save, close and reopen the route.
+5. Start a new condition `2 or 3`, all flat, and indent only the **or**.
+
+**Expected**
+
+- Step 2: line 1 goes in - it used to refuse.  The **or** may show in red for a moment after it goes in and before line 3 does; that is the editor saying it joins nothing yet.
+- Step 4: **Reads as** says `(2 ... or 3 ...) and (1 ... or 4 ...)`, nothing is red, Save is allowed, and it reopens the same.
+- Step 5: the **or** is red and Save refuses, and **Reads as** never says "and".
+
+*What this is:* the **or** in your screenshot sat deeper than the conditions beside it, where it joins nothing, and was read as nothing without being marked.  It is marked now rather than refused, because building a group one line at a time passes through exactly that state.  `core.testConditionOutline.testAWordDeeperThanAConditionBesideItIsFlagged`, `ui.testRouteEditorValidation.testAConditionThatStartsWithAGroupCanBeBuilt`, `testAWordIndentedAloneIsFlagged`.
+
+#### Comments
+
+---
+
+<a id="mt-426"></a>
+
+### MT-426 - 2026-09-14 - Reads as shows the joining words in bold and the settings in colour
+
+**Disposition:** fixed unvalidated
+**From:** FR-081
+
+**Written:** 2026-09-14
+
+Your FR-081: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red red?"*
+
+**Steps**
+
+1. In the route editor, build a condition with a sensor **off**, a sensor **on**, a switch **straight** and a switch **turn**, joined by both **and** and **or**.  Add a signal condition if you have one.
+2. Read the **Reads as** line.
+
+**Expected**
+
+- **and** and **or** are bold.
+- **on**, **straight** and **green** are green; **off**, **turn** and **red** are red.
+- Everything else - names, numbers, a locomotive's direction - is in the ordinary colour, and nothing shows as markup such as `<b>`.
+
+*What this is:* FR-081.  The colour follows the word, because the same setting is "on" for a sensor and "turn" for a switch.  `ui.testRouteEditorValidation.testReadsAsBoldsTheWordsAndColoursTheSettings`.
+
+#### Comments
 
 ---

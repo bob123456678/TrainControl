@@ -1167,6 +1167,26 @@ From MT-368, point 2 of Adam's run of 2026-09-13: *"If keep direction is selecte
 
 in the "why not moving" view in the autonomy editor, show all stations first, then show berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show it.
 
+### OB-220 - 2026-09-14 - a route condition's OR was read as AND, and the first line could not be indented
+
+**Kind:** bug  
+**Raised from:** Adam, in conversation (screenshot of the route editor)  
+**Filed:** 2026-09-14  
+
+Adam, 2026-09-14, with a screenshot of the route editor: *"the first or is read as an and here. also, the first condition for some reason cannot be indented for proper grouping."*
+
+**The OR.**  It sat one level deeper than the conditions either side of it.  A joining word joins the things at its own level, so at that depth it joined nothing, and the reading dropped it - the level's remaining AND then joined all three conditions.  No two words disagreed side by side, so nothing was drawn in red, and the route would have fired on a different condition from the one on screen.
+
+**The first line.**  A line may be at most one level deeper than the line above it, and the first line has none, so it was refused outright - a condition could not start with a group such as `(2 or 3) and (1 or 4)`.
+
+### FR-081 - 2026-09-14 - Reads as: bold joining words, coloured settings
+
+**Kind:** feature request  
+**Raised from:** Adam, in conversation  
+**Filed:** 2026-09-14  
+
+Adam, 2026-09-14: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red red?"*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1183,6 +1203,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-14 | OB-220 | bug | Adam: *"the first or is read as an and here. also, the first condition for some reason cannot be indented for proper grouping."*  The OR sat deeper than the conditions either side of it, where a word joins nothing, so the reader dropped it and the level's AND joined all three - with nothing in red.  `ConditionOutline.problems` now flags a word deeper than a condition beside it, which draws it red and makes Save refuse; the indent itself is still allowed, because building a group one line at a time passes through that state, and refusing it broke that gesture.  The first line may go one level in, so a condition can start with a group.  `core.testConditionOutline.testAWordDeeperThanAConditionBesideItIsFlagged` (with a control for a word joining two groups), `ui.testRouteEditorValidation.testAConditionThatStartsWithAGroupCanBeBuilt` and `testAWordIndentedAloneIsFlagged`, each seen red first; `a5a51ac3`. | - | `MT-425` |
+| 2026-09-14 | FR-081 | feature request | Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red red?"*  Reads as is markup now: the joining words bold, and the setting word coloured by the WORD - on, straight and green one colour, off, turn and red the other - because the same true or false is "on" for a sensor and "turn" for a switch.  Everything taken from the route is escaped on the way in.  `ui.testRouteEditorValidation.testReadsAsBoldsTheWordsAndColoursTheSettings`, seen red first; `a5a51ac3`. | - | `MT-426` |
 | 2026-09-14 | OB-218 | bug | From MT-368 point 2: the in-progress badge shows the turned facing until the train arrives. **Closed as accepted, 2026-09-14.** Adam: *"if the arrow gets updated upon arrival, then I am OK with it. validate that it does, then close the OB."* Validated: after arrival the train is stood on the copy that faces the way it really points - kept direction, `core.testTheArrivalHonoursTheAnswer` (`testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy`, `testItIsStoodOnTheCopyItsOwnApproachReaches`); turned, `regression.testTheTurnAtTheDestinationReachesTheDiagram`, which reads the facing the diagram draws from the setup and the running layout - both run green on 2026-09-14, and Adam saw the same on MT-368 point 3: *"Once the train arrives, the displayed direction is correct."* The route is still reserved on the copy the path ends on while it runs; that is the part accepted. | declined | - |
 | 2026-09-13 | OB-217 | bug | Adam: *"move 'one way run' and 'name everything' into the bulk tools menu, available only in the autonomy editor itself (not track diagram).  update 'path type' to use the blue label style, and move it below 'why not moving' as it belongs.  Also, add a 'page settings' label above 'exclude page'"*.  Both items are on Bulk Tools where the panel has a page - the autonomy editor - so the track diagram's menus, which are the same panel with no page, do not carry them; the two buttons still exist for the refresh and the disarm path and are simply no longer mounted.  Path Type is a blue group heading below Why Not Moving?, and a Page Settings heading, in eight languages, sits above Exclude Page.  `ui.testBulkToolsHoldsTheWholeLayoutTools` asks the real menu and the real column, mutation-checked | - | `MT-400` |
 | 2026-09-13 | OB-216 | bug | Adam: *"the orange lines over the switch at 12,13 are misaligned.  A small offset as on the other tiles is OK."*  Each further segment on a square was pushed aside by a ninth of the tile times its position in the square's list, and the route out from BottomMainB and the route back cross that switch four times between them - so the fourth, the straight rail again, went two and a half ninths off it.  The nudge is per RAIL now: a second pass along the same rail moves half a ninth, which is exactly the offset every ordinary square already had, and a different rail is not moved.  `core.testATestedPathStaysOnItsRail` paints the square and measures - 20px off the rail against 6px on an ordinary square before the change | - | `MT-399` |
