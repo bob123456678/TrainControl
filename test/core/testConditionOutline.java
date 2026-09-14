@@ -189,6 +189,34 @@ public class testConditionOutline
     }
 
     /**
+     * Each flagged line says which of the two things is wrong with it, because they are put right differently
+     * (Adam, 2026-09-14: "a warning triangle icon with a tooltip explaining what's wrong").
+     */
+    @Test
+    public void testEachFlagSaysWhy()
+    {
+        java.util.List<ConditionOutline.Row> rows = outline(
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(0, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(0, 5));
+
+        java.util.Map<Integer, ConditionOutline.Problem> why = ConditionOutline.whatIsWrong(rows);
+
+        assertEquals(why.get(3), ConditionOutline.Problem.DISAGREES,
+            "the AND after '2 or 3' is not reported as differing from its level's word: " + why);
+
+        assertEquals(why.get(5), ConditionOutline.Problem.JOINS_NOTHING,
+            "the OR indented past both its conditions is not reported as joining nothing: " + why);
+
+        assertEquals(why.keySet(), ConditionOutline.problems(rows),
+            "the reasons and the red lines disagree about which lines are wrong");
+    }
+
+    /**
      * The control: a word SHALLOWER than both its neighbours is how two groups are joined, and is not flagged.
      */
     @Test

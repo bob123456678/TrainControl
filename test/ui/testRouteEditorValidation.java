@@ -601,6 +601,181 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * Choosing the kind a condition line already is leaves it alone (2026-09-14).
+     *
+     * Adam: *"I start with Switch 1.  Then I set address to 40, which makes it a Signal.  Then, if I click on
+     * Kind -> Signal and exit out, it snaps back to Switch 1."*  A drop-down commits what it holds when it
+     * closes, chosen or not, and the condition table reset a line to its kind's starting address on every
+     * commit of the Kind cell - so any line, a sensor as much as a signal, went back to address 1.  At a
+     * signal's address it then showed as a Switch, because address 1 is not a signal.
+     *
+     * Without a layout every accessory reads as a switch, so the claim uses a switch and a sensor; the reset
+     * it pins did not look at the kind at all.
+     */
+    @Test
+    public void testChoosingTheKindALineAlreadyIsKeepsIt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAccessory(40, Accessory.accessoryDecoderType.MM2, true)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(5)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[] before = { shown(frame, 0), shown(frame, 2) };
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionKindForTest(0, CommandRow.Kind.ACCESSORY);
+                frame.setConditionKindForTest(2, CommandRow.Kind.FEEDBACK);
+            });
+
+            assertEquals(shown(frame, 0), before[0],
+                "choosing Switch on a Switch 40 line changed it - the Kind drop-down reset the line to its kind's"
+                + " starting address. Adam, 2026-09-14: 'if I click on Kind -> Signal and exit out, it snaps back to"
+                + " Switch 1'");
+
+            assertEquals(shown(frame, 2), before[1],
+                "choosing Sensor on a sensor 5 line changed it - the same reset, on a kind that has no layout question");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * Switch and Signal are one command, so moving a line between them keeps its address (2026-09-14).
+     *
+     * A condition is stored as an accessory command whichever of the two it is called, so resetting the
+     * address when the other word is chosen threw away the only thing the line said.
+     */
+    @Test
+    public void testSwitchingBetweenSwitchAndSignalKeepsTheAddress() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAccessory(40, Accessory.accessoryDecoderType.MM2, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String before = shown(frame, 0);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionKindForTest(0, CommandRow.Kind.SIGNAL));
+
+            assertEquals(shown(frame, 0), before,
+                "choosing Signal on a Switch 40 turn line lost its address or its setting - Switch and Signal are"
+                + " stored as the same accessory command, so the line should still be address 40, set the same way");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * A red word carries a warning triangle, and its tooltip says which of the two things is wrong (2026-09-14).
+     *
+     * Adam: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong
+     * next to it?"*  Two different reasons turn a word red and they are fixed differently, so the tooltip
+     * names the one that applies.  The cell is read as the table PAINTS it, and the renderer is one label
+     * reused down the column, so a line that is not flagged must carry neither.
+     */
+    @Test
+    public void testARedWordCarriesAWarningThatSaysWhy() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            // 2 or 3 and 4: the AND differs from the OR already joining the level.
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> mixed = flat(2, "OR", 3, "AND", 4);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(mixed));
+
+            // Each cell is read the moment it is painted: the renderer hands back ONE label for every cell, so
+            // holding two references and reading them afterwards reads the last cell painted twice.  The
+            // flagged line is painted first on purpose, so the second read is the one a stale warning shows in.
+            final Painted[] cell = new Painted[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                cell[0] = new Painted(frame.conditionCellForTest(3));
+                cell[1] = new Painted(frame.conditionCellForTest(1));
+            });
+
+            assertTrue(cell[0].icon != null, "the red AND in '2 or 3 and 4' has no warning triangle - painted '"
+                + cell[0].text + "'; the outline says "
+                + org.traincontrol.base.ConditionOutline.whatIsWrong(frame.conditionRowsForTest()) + ". Depths:" + depths(frame));
+
+            assertTrue(String.valueOf(cell[0].tooltip).contains(org.traincontrol.util.I18n.t("route.ui.conditionWordDisagrees")),
+                "the red AND's tooltip does not say that it differs from the word already joining its level: " + cell[0].tooltip);
+
+            assertNull(cell[1].icon, "the OR in '2 or 3 and 4' is not flagged and wears the triangle of the line painted before it");
+            assertNull(cell[1].tooltip, "the OR in '2 or 3 and 4' is not flagged and wears the tooltip of the line painted before it");
+
+            // 2 or 3 with the OR alone indented: it joins nothing.
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> stranded = flat(2, "OR", 3);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(stranded);
+                frame.indentConditionForTest(1, 1);
+                cell[0] = new Painted(frame.conditionCellForTest(1));
+            });
+
+            assertTrue(cell[0].icon != null, "the OR indented on its own has no warning triangle. Depths:" + depths(frame));
+
+            assertTrue(String.valueOf(cell[0].tooltip).contains(org.traincontrol.util.I18n.t("route.ui.conditionWordJoinsNothing")),
+                "the stranded OR's tooltip does not say that it joins nothing: " + cell[0].tooltip + ". Depths:" + depths(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** What one painted cell showed, copied out before the renderer's shared label paints the next one. */
+    private static final class Painted
+    {
+        final javax.swing.Icon icon;
+        final String tooltip;
+        final String text;
+
+        Painted(javax.swing.JLabel label)
+        {
+            icon = label.getIcon();
+            tooltip = label.getToolTipText();
+            text = label.getText();
+        }
+    }
+
+    /** A condition line's address and setting as stored, read the way the table reads them. */
+    private static String shown(org.traincontrol.gui.RouteEditorFrame frame, int line)
+    {
+        CommandRow row = CommandRow.of(frame.conditionRowsForTest().get(line).getCommand());
+
+        return row.getKind() + " " + row.getTarget() + " " + row.getSetting();
+    }
+
     /** Conditions on sensors joined by the given words, every line at the outermost level: what the plus types. */
     private static java.util.List<org.traincontrol.base.ConditionOutline.Row> flat(Object... parts)
     {

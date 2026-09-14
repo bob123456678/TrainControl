@@ -45,6 +45,18 @@ public final class ConditionOutline
     }
 
     /**
+     * Why a line is flagged.  The two are put right differently, so the editor says which (2026-09-14).
+     */
+    public enum Problem
+    {
+        /** A word that differs from the word already joining its level: the sentence has two meanings. */
+        DISAGREES,
+
+        /** A word deeper than a condition beside it: it joins nothing at its own depth. */
+        JOINS_NOTHING
+    }
+
+    /**
      * One line: either a condition, or the word joining what is either side of it.
      */
     public static final class Row
@@ -149,7 +161,22 @@ public final class ConditionOutline
      */
     public static Set<Integer> problems(List<Row> rows)
     {
-        Set<Integer> out = new LinkedHashSet<>();
+        return new LinkedHashSet<>(whatIsWrong(rows).keySet());
+    }
+
+    /**
+     * The lines `problems` flags, each with the reason (Adam, 2026-09-14: *"a warning triangle icon with a
+     * tooltip explaining what's wrong"*).
+     *
+     * A word deeper than a condition beside it is reported as joining nothing even where it also differs
+     * from its level's word: indenting a condition, the remedy for a disagreement, does not help it.
+     *
+     * @param rows the outline
+     * @return line index to reason, in the order the lines are found; empty when the outline reads
+     */
+    public static java.util.Map<Integer, Problem> whatIsWrong(List<Row> rows)
+    {
+        java.util.Map<Integer, Problem> out = new java.util.LinkedHashMap<>();
 
         if (rows == null) return out;
 
@@ -185,7 +212,7 @@ public final class ConditionOutline
             Joiner already = settled.get(row.getDepth());
 
             if (already == null) settled.put(row.getDepth(), row.getJoiner());
-            else if (already != row.getJoiner()) out.add(at);
+            else if (already != row.getJoiner()) out.put(at, Problem.DISAGREES);
         }
 
         // A WORD DEEPER THAN A CONDITION BESIDE IT JOINS NOTHING (Adam, 2026-09-14: "the first or is read as an
@@ -201,7 +228,7 @@ public final class ConditionOutline
 
             if (row.getDepth() > rows.get(at - 1).getDepth() || row.getDepth() > rows.get(at + 1).getDepth())
             {
-                out.add(at);
+                out.put(at, Problem.JOINS_NOTHING);
             }
         }
 

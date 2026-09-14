@@ -1502,6 +1502,31 @@ public class RouteEditorFrame extends JFrame
         return readsAs.getText();
     }
 
+    /**
+     * For tests: choose a kind in a condition line's Kind cell, as closing its drop-down does.
+     *
+     * Through the table MODEL, for `setCommandKindForTest`'s reason: what a line keeps when its kind is
+     * chosen is decided there.
+     *
+     * @param line which line
+     * @param kind what was chosen
+     */
+    public void setConditionKindForTest(int line, CommandRow.Kind kind)
+    {
+        conditions.getModel().setValueAt(CommandRow.labelFor(kind), line, 4);
+    }
+
+    /**
+     * For tests: a condition line's word-or-kind cell as the table paints it, icon and tooltip included.
+     *
+     * @param line which line
+     * @return the rendered label
+     */
+    public JLabel conditionCellForTest(int line)
+    {
+        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, 4), line, 4);
+    }
+
     /** The colour "Reads as" gives on, straight and green - the settings that let a train go. */
     public static final String READS_GO_COLOUR = "#1a7f37";
 
@@ -3491,6 +3516,9 @@ public class RouteEditorFrame extends JFrame
         /** The lines whose word disagrees with its level, refreshed whenever anything changes. */
         private java.util.Set<Integer> flagged = new java.util.LinkedHashSet<>();
 
+        /** Why each flagged line is flagged, for the warning beside it. */
+        private java.util.Map<Integer, ConditionOutline.Problem> why = new java.util.LinkedHashMap<>();
+
         private final AbstractTableModel model = new AbstractTableModel()
         {
             @Override
@@ -3638,6 +3666,13 @@ public class RouteEditorFrame extends JFrame
 
                     if (became == null) return;
 
+                    // CHOOSING THE KIND A LINE ALREADY IS CHANGES NOTHING (Adam, 2026-09-14: "I set address to
+                    // 40, which makes it a Signal.  Then, if I click on Kind -> Signal and exit out, it snaps back
+                    // to Switch 1").  A drop-down commits what it holds when it closes, chosen or not, and the
+                    // reset below ran on every commit - so opening the box and leaving it put any line back to its
+                    // kind's starting address, which for a signal is address 1, where the layout has a switch.
+                    if (became == term.getKind()) return;
+
                     // A different kind is a different condition, and it does not keep the old
                     // target.  A sensor number left behind in an accessory row is an address, and it
                     // would be a perfectly good one belonging to something else entirely.
@@ -3661,6 +3696,29 @@ public class RouteEditorFrame extends JFrame
 
                     edited = new CommandRow(became, starting, settingFor,
                         null, CommandRow.defaultDelayFor(became));
+
+                    // EXCEPT BETWEEN SWITCH AND SIGNAL, which are one command in two vocabularies (2026-09-14):
+                    // the line keeps its address and says the same setting in the other words - turn is red,
+                    // straight is green.  What it then SHOWS is still the layout's to say (`asShown`), because a
+                    // condition is stored as an accessory command, which has no room for which of the two it is.
+                    boolean switchOrSignal = (became == CommandRow.Kind.ACCESSORY || became == CommandRow.Kind.SIGNAL)
+                        && (term.getKind() == CommandRow.Kind.ACCESSORY || term.getKind() == CommandRow.Kind.SIGNAL);
+
+                    if (switchOrSignal)
+                    {
+                        String said = term.getSetting() == null
+                            ? "" : term.getSetting().trim().toLowerCase(java.util.Locale.ROOT);
+
+                        boolean stop = "turn".equals(said) || "red".equals(said);
+                        boolean go = "straight".equals(said) || "green".equals(said);
+                        boolean signal = became == CommandRow.Kind.SIGNAL;
+
+                        String inOtherWords = stop ? (signal ? "red" : "turn")
+                            : go ? (signal ? "green" : "straight") : CommandRow.defaultSettingFor(became);
+
+                        edited = new CommandRow(became, term.getTarget(), inOtherWords,
+                            term.getProtocol(), term.getDelay());
+                    }
                 }
                 else
                 {
@@ -3771,6 +3829,20 @@ public class RouteEditorFrame extends JFrame
                     out.setFont(joiner
                         ? new java.awt.Font("Segoe UI", java.awt.Font.ITALIC, 13)
                         : new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
+
+                    // A WARNING TRIANGLE AFTER A RED WORD, with the reason on its tooltip (Adam, 2026-09-14: "For
+                    // the red operators, can we add a warning triangle icon with a tooltip explaining what's
+                    // wrong next to it?").  This label is reused down the whole column, so a line that is not
+                    // flagged has both cleared, or it would wear the warning of the line painted before it.
+                    ConditionOutline.Problem problem = why.get(line);
+
+                    out.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
+                    out.setIconTextGap(6);
+                    out.setIcon(problem == null ? null : RowIcons.warning(14));
+                    out.setToolTipText(problem == null ? null : "<html><p style='width:300px'>"
+                        + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
+                            ? "route.ui.conditionWordDisagrees" : "route.ui.conditionWordJoinsNothing"))
+                        + "</p></html>");
 
                     if (!selected)
                     {
@@ -4057,7 +4129,8 @@ public class RouteEditorFrame extends JFrame
          */
         private void settle()
         {
-            flagged = ConditionOutline.problems(rows);
+            why = ConditionOutline.whatIsWrong(rows);
+            flagged = new java.util.LinkedHashSet<>(why.keySet());
 
             updateReadsAs();
         }

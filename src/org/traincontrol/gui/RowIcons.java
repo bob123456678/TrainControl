@@ -259,6 +259,43 @@ public final class RowIcons
     }
 
     /**
+     * A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon warning(final int size)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+
+                triangle.moveTo(width / 2f, 1f);
+                triangle.lineTo(width - 1f, height - 1.5f);
+                triangle.lineTo(1f, height - 1.5f);
+                triangle.closePath();
+
+                g.setColor(new Color(250, 190, 40));
+                g.fill(triangle);
+
+                g.setColor(new Color(150, 95, 0));
+                g.setStroke(new BasicStroke(1.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.draw(triangle);
+
+                float middle = width / 2f;
+
+                g.setColor(new Color(40, 30, 0));
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.draw(new java.awt.geom.Line2D.Float(middle, height * 0.38f, middle, height * 0.64f));
+                g.fill(new java.awt.geom.Ellipse2D.Float(middle - 0.95f, height * 0.73f, 1.9f, 1.9f));
+            }
+        };
+    }
+
+    /**
      * The faint vertical lines that show how deep a row sits.
      *
      * Indentation on its own is a distance, and a distance is hard to count - two levels and three
