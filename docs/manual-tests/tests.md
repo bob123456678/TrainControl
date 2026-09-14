@@ -14672,6 +14672,10 @@ So there is no FR to file, and offering you one would have had you ask for somet
 
 Set back to `fixed unvalidated` rather than left validated: your run was of the button, and nobody has run it where it now lives.  It is a one-minute check.
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-255"></a>
@@ -17998,6 +18002,12 @@ If step 4 is not orange after a genuine run with nothing from the list in betwee
 
 **Worth knowing:** carrying the route through a rebuild, the way the arrival side already is, is a small change - a restart would still forget it.  Say if you want it.
 
+**Adam, 2026-09-14 (triage).** Does not work.
+
+Regression, but not directly related to this test.  75 407 DB (len 2) can no longer go from tunnel to bottommaina because of the 1+1 length split around the switch between buttommainapre and bottommaina.  this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes.  Figure out when introduced the regression, fix it, and then re-file the protrosion test itself.  in that protrusion test, if we made 75 407 DB have len 3 and it is parked at bottommaina, other trains should be blocked from going tunnel->bottommainb and c.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-334"></a>
@@ -19787,6 +19797,12 @@ Popup correctly appears, but the direction does not follow the user's selection,
 
 **Still open:** point 2 of your earlier run, the in-progress badge showing the turned facing until the train arrives.  Filed as its own bug so it is not lost in this entry.
 
+**Adam, 2026-09-14 (triage).** Works.
+
+The reversal is now remembered correctly.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-369"></a>
@@ -20308,6 +20324,10 @@ The button could not simply be greyed on its own: a click on the diagram still a
 **Claude: one wording change since my note of yesterday** (TDR-C1).  The message beside the greyed **Pick on the
 Diagram** button now says **"No other stations have been named yet"** - it said "points", and the list is
 stations only.  Steps and the rest of the expected result are unchanged.
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21023,6 +21043,10 @@ The facing buttons also say **To the North (up)** now rather than From - OB-215.
 
 Run step 4 again; steps 3, 6 and 7 passed and nothing on their paths changed.
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-395"></a>
@@ -21164,6 +21188,10 @@ MT-394's step 4, and is not asked again here.  `core.testAPasteDoesNotTurnTheTra
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-399"></a>
@@ -21192,6 +21220,12 @@ line along the same rail is offset now, by the small amount every other square a
 `core.testATestedPathStaysOnItsRail` measures the pixels.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works, with notes.
+
+Works, but when changing the auto and manual radio buttons, make it update the shown route to the new selection without having to repeat the button press sequence.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21224,6 +21258,10 @@ Your OB-217: *"move 'one way run' and 'name everything' into the bulk tools menu
 *What this is:* OB-217 as you wrote it.  `ui.testBulkToolsHoldsTheWholeLayoutTools`.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21317,6 +21355,10 @@ redraw at the exact moment the request used to be lost.
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-404"></a>
@@ -21348,6 +21390,10 @@ Your instruction of 2026-09-14: *"refuse and close, but make sure the words are 
 setup are left alone.  `core.testANameCannotEndInAHeading`.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -22080,6 +22126,12 @@ Your FR-080: *"in the "why not moving" view in the autonomy editor, show all sta
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works, with notes.
+
+Works, but capitalize Page.  Update sorting to be by page then station name, rather than station name only, with the current page being first, then others sequentially later.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-430"></a>
@@ -22113,5 +22165,9 @@ Your note on MT-406: *"Escape works, but it seems a one-way run (or any other ed
 *What this is:* OB-223.  Every change you made in the editor was saved the moment it was made, because the railway is rebuilt after each one and that rebuild saves - so Cancel found nothing unsaved and did nothing.  Cancel now compares against the setup as the editor opened and puts that back.  `regression.testCancelUndoesAutonomyEdits`, seen red first.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
