@@ -91,7 +91,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `regression.testCutWithNothingHovered`
 - `regression.testDeleteForgetsTheWholeSquare`
 - `regression.testTheHoveredSquareIsForgotten`
-- `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt`
+- `regression.testTheBulkClearSaysWhatCancelDoes`
 - `regression.testControlSNamesOnlyASensor`
 - `regression.testEscapeClosesTheEditor`
 - `regression.testOneChangeSticks`

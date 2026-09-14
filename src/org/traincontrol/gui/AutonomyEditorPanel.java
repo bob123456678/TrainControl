@@ -8845,13 +8845,14 @@ public class AutonomyEditorPanel extends JPanel
      * undone by a cancel.  Make this clear in the popup."**  His ruling of 2026-09-09 was for the
      * warning rather than a real undo: *"Warning if using the bulk tool."*
      *
-     * **Why Cancel does not put them back**, which is the part worth saying out loud rather than
-     * simply asserting.  MT-311's own expectation reads *"neither writes to disk - Cancel puts
-     * everything back"*, and that was true until OB-183.  Adam, 2026-09-08: *"Where a train IS is a
-     * fact, and where the file thinks it is is a record."*  Placements are carried ACROSS a rebuild
-     * now (`TrainControlUI.putTheTrainsBack`) rather than regenerated from the setup, so Cancel
-     * restores the FILE and the railway is what the placements come from.  Nothing was broken; the
-     * two halves of one sentence stopped agreeing.
+     * **What Cancel does, which has changed twice.**  MT-311's expectation read *"neither writes to disk -
+     * Cancel puts everything back"*.  After OB-183 it did not - placements are carried across a rebuild
+     * (`TrainControlUI.putTheTrainsBack`), and the old discard re-read a file the per-gesture save had already
+     * written without them - so this warned that Cancel would not bring them back (OB-194).  Since OB-223
+     * Cancel restores the setup as the editor opened it, placements included, and the rebuild when the editor
+     * closes regenerates them from it: `putTheTrainsBack` only moves trains that were standing, which the
+     * cleared ones are not.  So they come back, and the warning says so (WK7-C2, 2026-09-14);
+     * `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it.
      *
      * **It names them**, because a bulk gesture is an answer about every one of them at once and a
      * count is not something anybody can check.  The same reason `placementChanged` is given the list
@@ -8892,10 +8893,9 @@ public class AutonomyEditorPanel extends JPanel
      * placement the editor can clear, and the 2.8.1 filter was about which squares the running model
      * would accept a MOVE to rather than about which ones may be emptied.
      *
-     * **Nothing is written to disk, AND CANCEL DOES NOT PUT THEM BACK** - which is not the same thing,
-     * and this said it was until OB-194.  A placement is read from the running railway rather than
-     * regenerated from the setup since OB-183, so Cancel restores the FILE and the trains stay lifted.
-     * `clearLocomotivesWarning` is what tells the operator that before they answer.
+     * **Cancel puts them back** (OB-223; WK7-C2): the discard restores the setup as the editor opened it and
+     * the rebuild regenerates the placements from it.  `clearLocomotivesWarning` says so before they answer,
+     * and why it once said the opposite.
      */
     private void clearAllPlacements()
     {

@@ -605,9 +605,10 @@ public class LayoutEditor extends PositionAwareJFrame
      * Throws the autonomy edits made in this window away: the setup as it opened, in memory and on disk.
      *
      * Not a re-read from disk, which is what `AutonomySession.discardEdits` does and all this used to be -
-     * the per-gesture save has already written the edit there (MT-406).  Placements then follow the
-     * railway, as on every rebuild (OB-183), which is why clearing every locomotive still warns that Cancel
-     * will not bring them back (OB-194).
+     * the per-gesture save has already written the edit there (MT-406).  Placements come back with it: the
+     * rebuild when the editor closes regenerates them from the restored setup, and `putTheTrainsBack` moves
+     * only trains that were standing - so a train a bulk clear lifted is put back, and the clear's warning
+     * says Cancel does that (WK7-C2).  A train that was MOVED, rather than lifted, stays where it was moved.
      *
      * @return null when it worked, or the reason it did not
      */

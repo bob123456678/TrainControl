@@ -259,6 +259,104 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * And the locomotives a bulk clear took off come back with Cancel (WK7-C2).
+     *
+     * Found by the seven-day review of 2026-09-14: the discard restores the setup as the editor opened it,
+     * placements included, and the rebuild when the editor closes regenerates placements from that setup -
+     * `putTheTrainsBack` only moves trains that were standing, which the cleared ones no longer are.  So the
+     * OB-194 warning, *"Cancel will not put them back"*, stopped being true when OB-223 made Cancel undo.  Asked
+     * through the real Bulk Tools door and the real Cancel, in the setup and on the running railway.
+     */
+    @Test
+    public void testCancelPutsBackTheLocomotivesABulkClearTook() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final LayoutEditor editor = opened();
+
+        Answerer answerer = null;
+
+        try
+        {
+            Map<String, String> before = placements();
+
+            assertFalse(before.isEmpty(), "precondition: no locomotive stands anywhere on the snapshot, so a bulk"
+                + " clear takes nothing and Cancel has nothing to put back");
+
+            final java.lang.reflect.Method clear =
+                editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
+
+            clear.setAccessible(true);
+
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    clear.invoke(editor.getAutonomyPanel());
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+
+            settle();
+
+            answerer.stop();
+
+            assertTrue(placements().isEmpty(), "precondition: the bulk clear left " + placements() + " on the setup,"
+                + " so there is nothing for Cancel to put back");
+
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+
+            cancel(editor);
+
+            answerer.stop();
+
+            settle();
+
+            assertEquals(placements(), before,
+                "Cancel did not put back the locomotives the bulk clear took off the setup");
+
+            java.util.Set<String> running = new java.util.TreeSet<>();
+
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() != null) running.add(point.getCurrentLocomotive().getName());
+            }
+
+            assertTrue(running.containsAll(before.values()),
+                "Cancel put the locomotives back in the setup but not on the running railway: standing now "
+                + running + ", before the clear " + before.values());
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /** Every placement the setup records, square by square. */
+    private static Map<String, String> placements()
+    {
+        Map<String, String> out = new java.util.TreeMap<>();
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            String name = session.getLocomotiveNameAt(tile);
+
+            if (name != null) out.put(tile.toString(), name);
+        }
+
+        return out;
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** A fresh autonomy editor on the frozen railway's first page. */

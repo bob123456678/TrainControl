@@ -458,7 +458,7 @@
         <test-one-class class="testARememberedNoneOpensWithTheCaptionsOff"/>
         <test-one-class class="testTheDestinationDoorsAgree"/>
         <test-one-class class="testTheFunctionButtonsFollowTheConsist"/>
-        <test-one-class class="testTheBulkClearWarnsThatCancelWillNotUndoIt"/>
+        <test-one-class class="testTheBulkClearSaysWhatCancelDoes"/>
         <test-one-class class="testTheWashIsNoLongerThanTheTrain"/>
         <test-one-class class="testTheDiagramIsNotRebuiltForAnArrow"/>
         <test-one-class class="testTheTrainIsShownAsALine"/>

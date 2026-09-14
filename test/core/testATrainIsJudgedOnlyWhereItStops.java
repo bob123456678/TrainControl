@@ -53,8 +53,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * would its tail be clear of the switch behind it".  That makes the destination check the last
  * iteration of the loop rather than a separate rule.
  *
- * **With one condition, and it is the whole of the difference between a rule and an artefact.**  A
- * square the train passes THROUGH is judged only where a switch bounds it.  The walk has a second
+ * **With one condition, as it then was (removed 2026-09-14 with the pass-through check itself, and its claim
+ * with it - WK7-C3).**  A square the train passes THROUGH was judged only where a switch bounds it.  The walk has a second
  * stopping condition - the start of the path - and at the destination that is harmless, because the
  * train comes to rest there and lies back over the route.  At a pass-through square it measures
  * nothing: a two-edge prefix answers "two edges of room" when the honest answer is that the track
@@ -70,8 +70,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * **The route this asserts on runs the OTHER way round the fixture**, from `BranchPlatform` to
  * `WestEnd`, because that is the direction in which the switch comes FIRST: a short stretch just past
  * it, and ten units of berth beyond that.  Going the other way there is no switch behind Approach at
- * all, so nothing bounds it and nothing should be refused - which is a claim in its own right, and
- * `testASquareWithNoSwitchBehindItIsNotJudged` is it.
+ * all, so nothing bounds it and nothing should be refused - which was a claim in its own right,
+ * `testASquareWithNoSwitchBehindItIsNotJudged`, until no passed square was judged at all and it could no longer
+ * fail (WK7-C3).
  *
  * `core.testTheLengthGuardsOnTheRealLayout.testWhyRampDownIsRefused` is the same ruling measured on
  * Adam's own layout, and it is the test this change turned round.
@@ -203,53 +204,6 @@ public class testATrainIsJudgedOnlyWhereItStops
         assertNull(Layout.whyTooLongForThisRoute(theRouteFromBranchPlatformToWestEnd(), train),
             "the room rule refuses the route to WestEnd: '"
             + Layout.whyTooLongForThisRoute(theRouteFromBranchPlatformToWestEnd(), train) + "'");
-    }
-
-    /**
-     * A square with no switch behind it is not judged at all, however short the route so far.
-     *
-     * The condition that separates the rule from the artefact.  Run the same railway the other way -
-     * WestEnd to MainPlatform - and Approach has no switch between it and where the train started, so
-     * the two measured units before it bound nothing: the track behind the train is track the train is
-     * standing on.
-     *
-     * Without this the first cut of the ruling refused a four-unit train four units of room, and the
-     * staging planner gave up on berths it could reach.
-     *
-     * @throws Exception on a failure to build
-     */
-    @Test
-    public void testASquareWithNoSwitchBehindItIsNotJudged() throws Exception
-    {
-        clearEveryLength();
-
-        // Two units before Approach, ten past the switch - the mirror of the measurement above.
-        scenario.getSession().setTileLength(scenario.tile(2, 3), 1);
-        scenario.getSession().setTileLength(scenario.tile(3, 3), 1);
-        scenario.getSession().setTileLength(scenario.tile(6, 3), 10);
-        scenario.getSession().setTileLength(scenario.tile(7, 3), 10);
-
-        Layout built = scenario.build();
-
-        Point from = built.getPoint("WestEnd");
-        Point to = built.getPoint("Approach (eastbound)");
-
-        assertNotNull(from, "there is no square called WestEnd on this railway");
-        assertNotNull(to, "there is no square called \"Approach (eastbound)\" on this railway");
-
-        List<Edge> route = built.bfs(from, to, new LinkedList<List<Edge>>());
-
-        assertNotNull(route, "there is no route from WestEnd to Approach, so this claim is about track"
-            + " that does not connect");
-
-        assertFalse(route.get(0).crossesASwitch(),
-            "the run from WestEnd to Approach crosses a switch now, so something DOES bound Approach"
-            + " and this claim is about a different railway");
-
-        assertTrue(destinationsFrom("WestEnd").contains("MainPlatform"),
-            "MainPlatform is refused to a " + TRAIN_LENGTH + "-unit train with ten units of room past"
-            + " the switch, because two measured units before an unbounded square were counted as its"
-            + " room. That is the artefact this condition exists to remove");
     }
 
     /**

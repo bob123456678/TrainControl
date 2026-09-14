@@ -8427,7 +8427,7 @@ public class Layout
      * **Lifted out of `whyTooLongForThisRoute` for PRW-B2 leg 2 (Adam, 2026-09-13: "Do it").**  The
      * staging planner needs this answer and cannot take the whole rule to get it - that was tried on
      * 2026-09-13 and reverted, because `whyTooLongForThisRoute` also carries the station's stated
-     * capacity and the room test at EVERY square on the way, and asking it made the planner stricter
+     * capacity and, as it then was, the room test at every square on the way, and asking it made the planner stricter
      * than the runtime it is planning for: five trains came back NO_PLAN_FOUND on the frozen railway.
      * A relaxation bundled with two refusals cannot be bought separately, so it is unbundled.
      *
@@ -8606,9 +8606,11 @@ public class Layout
     /**
      * Why this train does not fit anywhere this path would put it, or null when it does (MT-262).
      *
-     * **Every square on the route, not only the last one** (Adam, 2026-09-09).  See the walk below for
-     * his ruling and for what it costs; the short of it is that a route crossing a measured stretch
-     * too short for the train is refused even where the train would not have stopped there.
+     * **Where the train comes to rest: the destination, and any square it turns round at** (Adam, MT-333,
+     * 2026-09-14) - not a square it only drives past.  A train already standing still blocks other roads by
+     * its tail (`walkStandingTrains`), which is a different mechanism and not asked here.  From 2026-09-10 to
+     * 2026-09-14 this also judged squares a train only passes, reading the ruling of 2026-09-09 more widely
+     * than it was meant (WK7-C1).
      *
      * **ONE predicate for "it does not fit", so that no door writes a second copy.**  Adam, on being
      * able to send a four-unit train into two units of track: *"there is no notice that can help
@@ -8645,7 +8647,9 @@ public class Layout
             return I18n.f("autolayout.errorTrainLengthTooLong", placeNameOf(ending));
         }
 
-        // AND THE TRACK, AT EVERY SQUARE THE ROUTE RUNS THROUGH (Adam, 2026-09-09).
+        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (Adam, MT-333, 2026-09-14; the loop below skips a
+        // square it only passes).  What follows is the ruling of 2026-09-09 this walk was written for; its
+        // "every square" was the standing-train mechanic, which only exists where a train stands.
         //
         // He was asked whether "will the train fit" means at the destination or everywhere on the way,
         // with the cost of the second stated - it refuses through moves that a berth-only rule allows.
@@ -8772,8 +8776,9 @@ public class Layout
      *
      * **Asked of PREFIXES as well as of whole routes** (Adam, 2026-09-09).  "The end of this path" is
      * meant literally: hand it the first three edges of a nine-edge route and it answers about the
-     * square those three arrive at.  That is how `whyTooLongForThisRoute` asks the question at every
-     * square a train runs through without a second walk existing to disagree with this one, and it is
+     * square those three arrive at.  That is how `whyTooLongForThisRoute` asks the question at a square the
+     * train turns round at as well as at the destination without a second walk existing to disagree with this
+     * one, and it is
      * why the method is no longer called `measuredRoomAtTheBerth` - nothing here knows or cares
      * whether the square it lands on is where the train was going to stop.
      *

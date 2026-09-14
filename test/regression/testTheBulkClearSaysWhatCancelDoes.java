@@ -18,7 +18,13 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * OB-194: Bulk Tools says what it is about to clear, and that Cancel will not bring it back.
+ * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.
+ *
+ * **Renamed on 2026-09-14 from `testTheBulkClearWarnsThatCancelWillNotUndoIt` (WK7-C2).**  Since OB-223 Cancel in
+ * the autonomy editor restores the setup as it opened, and the locomotives a clear took off come back -
+ * `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it - so the
+ * warning says Cancel puts them back and Save keeps the change.  What follows is the class as it was written,
+ * when Cancel could not.
  *
  * Adam, on MT-311 (2026-09-08): **"It works, but bug: clearning locomotives in the autonomy editor
  * cannot be undone by a cancel.  Make this clear in the popup."**  And his ruling of 2026-09-09:
@@ -49,7 +55,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * @author Adam
  */
-public class testTheBulkClearWarnsThatCancelWillNotUndoIt
+public class testTheBulkClearSaysWhatCancelDoes
 {
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
@@ -176,21 +182,21 @@ public class testTheBulkClearWarnsThatCancelWillNotUndoIt
     }
 
     /**
-     * And it names the button that will NOT undo it.
+     * And it names Cancel, which since OB-223 is the button that DOES undo it (WK7-C2).
      *
      * Adam's sentence exactly - *"cannot be undone by a cancel.  Make this clear in the popup"* - and
      * asked in a way that is true in all eight languages: `ui.cancel` is the key the editor's own
      * Cancel button carries, so whatever that button says, this warning says it too.
      */
     @Test
-    public void testTheWarningNamesTheCancelThatWillNotUndoIt()
+    public void testTheWarningNamesCancel()
     {
         assertNotNull(warning, "the editor produced no warning at all");
 
         assertTrue(warning.contains(I18n.t("ui.cancel")),
             "the warning does not mention " + I18n.t("ui.cancel") + " - the editor's own button - so"
-            + " nothing tells the operator that closing without saving will not put the locomotives"
-            + " back, which is the whole of OB-194. It says: " + warning);
+            + " nothing tells the operator that Cancel puts the locomotives back and Save keeps them off"
+            + " (OB-194, WK7-C2). It says: " + warning);
     }
 
     /**
@@ -224,7 +230,7 @@ public class testTheBulkClearWarnsThatCancelWillNotUndoIt
         }
 
         assertTrue(carried,
-            "no item on the Bulk Tools menu warns that Cancel will not undo the clear, so the warning"
+            "no item on the Bulk Tools menu says what Cancel does about the clear, so the warning"
             + " arrives only after the item has been clicked. Tooltips: " + tips);
     }
 

@@ -1089,11 +1089,10 @@ public final class HomeStaging
                 // nor the dominance relation.  In practice a genuinely different approach sets some
                 // switch the other way, so its command map is not dominated and it survives - but a
                 // parallel run of track with identical ironwork would still be lost here.
-                // AT EVERY SQUARE, NOT ONLY AT THE BERTH (Adam, 2026-09-09, and see
-                // `Layout.whyTooLongForThisRoute`).  The runtime refuses a route that crosses a
-                // measured stretch too short for the train wherever that stretch is, so a plan that
-                // only checked its last square would be a plan whose first move the runtime then
-                // refuses - which is the failure this planner's own comments say it exists to avoid.
+                // WHEREVER THE RUNTIME ASKS, AND NOWHERE ELSE (see `Layout.whyTooLongForThisRoute`).  A plan
+                // that asked fewer squares than the runtime would be a plan whose first move the runtime
+                // then refuses, and one that asked more would drop plans that would have run - so this
+                // asks the destination and a square the train turns at, exactly as the runtime does.
                 //
                 // Pruning here is sound as well as cheap: the property is prefix-closed, so no
                 // extension of a route the train does not fit on can fit either.
@@ -1115,8 +1114,8 @@ public final class HomeStaging
                     //
                     // The room is still asked as `measuredRoomAtTheEndOf` rather than as the whole of
                     // `whyTooLongForThisRoute`, and that was tried the other way first: the whole rule
-                    // also carries the station's stated capacity and the room test at EVERY square the
-                    // route runs through, so substituting it made this planner STRICTER than the
+                    // also carries the station's stated capacity and - as it then was - the room test at
+                    // every square the route runs through, so substituting it made this planner STRICTER than the
                     // runtime it plans for and `core.testTrainsComeHomeToTheirPlatforms` came back
                     // NO_PLAN_FOUND for all five trains, bisected.
                     //
