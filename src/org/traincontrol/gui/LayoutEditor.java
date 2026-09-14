@@ -577,6 +577,52 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Whether the autonomy setup has changed since this window opened - what closing it has to ask (MT-406).
+     *
+     * NOT `AutonomySession.isDirty` alone, which is all this asked until 2026-09-14.  Every setup gesture in
+     * the editor rebuilds the running layout, so the railway follows the edit at once - and that rebuild
+     * loads the configuration, and loading saves it.  So the session's flag had always been cleared again
+     * by the time anybody closed the window.  Adam: *"a one-way run (or any other edits to arrows) persist
+     * after I press cancel.  They are not undone by cancelling."*  The question was never put, and a
+     * discard would have re-read a file that already held the edit.
+     *
+     * The snapshot taken when this window opened is the one record the per-gesture save does not touch,
+     * so it is what is compared.  The flag is still asked first, for an edit not yet saved.
+     *
+     * @return true when there is something Cancel would throw away
+     */
+    private boolean hasUnsavedAutonomyWork()
+    {
+        if (autonomyPanel.isDirty()) return true;
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        return this.autonomyAsOpened != null && autonomy != null
+            && !this.autonomyAsOpened.similar(autonomy.snapshotSetup());
+    }
+
+    /**
+     * Throws the autonomy edits made in this window away: the setup as it opened, in memory and on disk.
+     *
+     * Not a re-read from disk, which is what `AutonomySession.discardEdits` does and all this used to be -
+     * the per-gesture save has already written the edit there (MT-406).  Placements then follow the
+     * railway, as on every rebuild (OB-183), which is why clearing every locomotive still warns that Cancel
+     * will not bring them back (OB-194).
+     *
+     * @return null when it worked, or the reason it did not
+     */
+    private String discardAutonomyWork()
+    {
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (this.autonomyAsOpened == null || autonomy == null) return autonomyPanel.discardEdits();
+
+        if (!autonomy.restoreSetup(this.autonomyAsOpened)) return I18n.t("autosetup.log.restoreFailedAfterCancel");
+
+        return null;
+    }
+
+    /**
      * Puts the autonomy setup back the way it was when this window opened.
      *
      * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
@@ -5868,7 +5914,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         if (isAutonomyMode())
         {
-            if (!autonomyPanel.isDirty()) return true;
+            if (!hasUnsavedAutonomyWork()) return true;
 
             int result = JOptionPane.showOptionDialog(
                 this,
@@ -5883,7 +5929,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             if (result != JOptionPane.YES_OPTION) return false;
 
-            String failed = autonomyPanel.discardEdits();
+            String failed = discardAutonomyWork();
 
             if (failed != null)
             {
@@ -5991,7 +6037,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private boolean settleUnsavedWork()
     {
-        boolean unsaved = isAutonomyMode() ? autonomyPanel.isDirty() : canUndo();
+        boolean unsaved = isAutonomyMode() ? hasUnsavedAutonomyWork() : canUndo();
 
         // Cleared at the top, so a run that asks nothing cannot leave a Discard from last time behind.
         this.settledByDiscarding = false;
@@ -6038,7 +6084,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             if (answer == 1 && isAutonomyMode())
             {
-                String failed = autonomyPanel.discardEdits();
+                String failed = discardAutonomyWork();
 
                 if (failed != null)
                 {
