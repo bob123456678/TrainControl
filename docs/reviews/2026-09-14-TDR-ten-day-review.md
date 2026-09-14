@@ -1,6 +1,6 @@
 # Ten days of commits, reviewed after the MT sweep of 2026-09-13
 
-**Status:** open 2026-09-14 - the three fix and validation rounds Adam allowed are complete; TDR-B5 and TDR-C9 to C12 are open for him
+**Status:** closed 2026-09-14 - the three fix and validation rounds, then TDR-B5 and TDR-C9 to C12 on Adam's instruction
 
 **Prefix:** TDR (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -28,7 +28,7 @@ failing for the reason stated - unless it says otherwise.
 | TDR-B2 | fixed `785d913a` | `AutonomySession.moveOntoFacingCopy` - carried the arrival side across a re-stand, not the route |
 | TDR-B3 | fixed `785d913a` | `HomeStaging.whyNotHome` - a barred copy hid "too short" and said "no route" |
 | TDR-B4 | fixed `785d913a`, completed by TDR-B6 | `AutonomyCompanionStore.importBundle` - a page with an id in common was merged, then reported as left out |
-| TDR-B5 | Open | `TrainControlUI.repaintLoc` - a repaint asked for while the last is still rendering is dropped |
+| TDR-B5 | Fixed | `TrainControlUI.repaintLoc` - a repaint asked for while the last is still rendering was dropped |
 | TDR-A1 | fixed (round 2) | `AutonomyCompanionStore.importBundle` - the exporter's page record re-labelled this layout's own ids |
 | TDR-B7 | fixed (round 2) | `AutonomyCompanionStore.withoutPages` - filtered whole entries, and took a station named "2" for a page |
 
@@ -95,7 +95,7 @@ TDR-A1, below, and the claim "decided BY NAME" in the first fix's comment overst
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 Found while running the battery, not by the reviewer. `repaintLoc` returns without doing anything while an
 earlier render is still in flight, and a render goes to a worker and back through `invokeLater` - so a
@@ -107,6 +107,16 @@ drive it.
 **Not fixed in the product.** The test now waits for the window's own render before and after; the
 render path itself is the main window's busiest code and is left for Adam to prioritise. The shape of a
 repair is the one `askForReturnHomeTriage` already uses: coalesce, and let the last ask always land.
+
+
+**Fixed on Adam's instruction, 2026-09-14** ("Fix B5"). The render is an explicit in-flight flag rather than
+a check of the last future: a request made while a render is in flight is kept - forced if any was, for every
+locomotive if any asked for every one - and run when the painting finishes, which clears the flag in a
+`finally`. Direction changes are still followed once per request, not again when the deferred render runs.
+The window in which a request was dropped depends on the scheduler, so the claim holds the renderer there
+through a hook it calls after posting (`TrainControlUI.afterARenderIsPosted`, null in the program):
+`regression.testTheFunctionButtonsFollowTheConsist.testTheLastLocomotiveAskedForIsTheOneDrawn`, seen red
+against the old guard with only the hook added.
 
 ### TDR-A1 - an import from a layout numbered differently re-labels this layout's own pages
 
@@ -161,10 +171,10 @@ pieces go. `testOnlyTheForeignPiecesAreLeftOut`, seen red.
 | TDR-C6 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - with no page loaded, the exporter's page record was still adopted |
 | TDR-C7 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - a field this version does not model was saved in the exporter's ids |
 | TDR-C8 | fixed (round 3) | `HomeStaging` - Return Home's reasons named the builder's copies |
-| TDR-C9 | Open | `HomeStaging.Move.toString`, `logStagingAudit` - the plan's log lines still name copies |
-| TDR-C10 | Open | `AutonomyCompanionStore.importBundle` and neighbours - comments describing the merge before round 2 |
-| TDR-C11 | Open | `Layout.placeNameOf` - a heading typed into a name by hand makes two squares read alike |
-| TDR-C12 | Open | `core.testReturnHomeSaysWhy.testTheReasonsNameSquaresNotCopies` - pins one of eleven sites |
+| TDR-C9 | Fixed | `HomeStaging.Move.toString`, `logStagingAudit` - the plan's log lines still name copies |
+| TDR-C10 | Fixed | `AutonomyCompanionStore.importBundle` and neighbours - comments describing the merge before round 2 |
+| TDR-C11 | Fixed | `Layout.placeNameOf` - a heading typed into a name by hand makes two squares read alike |
+| TDR-C12 | Fixed | `core.testReturnHomeSaysWhy.testTheReasonsNameSquaresNotCopies` - pins one of eleven sites |
 
 ### TDR-C1 - the "nothing to choose" message named points, and the list is stations
 
@@ -249,7 +259,7 @@ round 2 having already fixed them.
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 Found by the third fix validation, the sibling TDR-C8 missed. `HomeStaging.Move.toString` is
 `loc.getName() + " -> " + getEnd().getName()`, and `Layout.planReturnToHome` logs it as "planned: ..." in the
@@ -258,11 +268,15 @@ audit's `logStagingAudit` does the same. The repair is `Layout.placeNameOf(getEn
 plan a train home onto a copy-named square and read the logged line. Left open because the three rounds were
 spent.
 
+
+**Fixed on Adam's instruction, 2026-09-14** ("Fix ... C9"). A planned move and both staging-audit lines name
+the square through `Layout.placeNameOf`. `core.testReturnHomeSaysWhy.testAPlannedMoveNamesTheSquare`, seen red.
+
 ### TDR-C10 - comments around the import still describe the merge before round 2
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 Found by the third fix validation. The comment on the `pages` branch of `importBundle` still presents "theirs
 wins per id" as the live rule - it is reachable now only for a store that knows no page by any number - and
@@ -275,11 +289,18 @@ before" describes an empty set: every modelled collection is a held field. Text 
 A decision rides on it and is Adam's: a field from a NEWER version is now dropped from an import silently.
 It could be named beside the pages left out.
 
+
+**Fixed on Adam's instruction, 2026-09-14** ("C10- no need to notify"). A newer build's field is left out of an
+import without a word, as ruled, and every comment now says what is true: `importBundle`'s javadoc names what an
+import keeps and what it leaves out; the pages branch says it is reachable only for a store that knows no page
+by any number; the unmodelled-field comment no longer describes an empty set; `intoThisLayoutsPages` and
+`knownShared` say that a load keeps an unknown field and a translating import does not. Text only.
+
 ### TDR-C11 - a heading typed into a station's name by hand makes two squares read alike
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 Found by the third fix validation; wider than this round, since `placeNameOf` came in round 1.
 `AutonomyBuilder.nodeName` renames a split copy that collides with a hand-named square to "Main (eastbound)
@@ -289,15 +310,47 @@ keeps its heading. It needs a heading word typed into a name deliberately. Worth
 refusing the four heading words in names would close it, and Adam has preferred allowing names before
 (OB-092).
 
+
+**Fixed on Adam's instruction, 2026-09-14** ("refuse and close, but make sure the words are uncommon"). A name
+ending in the builder's exact heading - a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or
+`(westbound)` in brackets at the very end, optionally with `, reverse` - is refused, and nothing wider: it is
+precisely the form `placeNameOf` strips, so it is precisely the form that makes two squares read alike.
+"Eastbound Platform", "Main Line (Northbound)", "Main (eastbound track)" and "Yard (old)" are all still
+allowed. The rule is `StationIndex.endsWithAnArrivalHeading`; `AutonomySession.whyNotAPointName` says why in
+eight languages; `setPointName` refuses it as the guard, and both doors a person types a name through - the
+rename prompt and Name Everything, which asks again for the same square - ask first. Names already in a setup,
+or brought in by an import, are left alone. `core.testANameCannotEndInAHeading`, with the allowed names as the
+control.
+
 ### TDR-C12 - the masking claim for Return Home's reasons pins one of eleven sites
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 Found by the third fix validation. `testTheReasonsNameSquaresNotCopies` reaches only the out-of-service home
 sentence; reverting any of the other ten sites, the two start-square sentences included, leaves it green.
 A start standing on an inactive copy-named square, and a home with no route, would reach two more.
+
+
+**Fixed on Adam's instruction, 2026-09-14** ("C12 expand the test").
+`testEveryReachableReasonNamesSquaresNotCopies` checks, on copy-named squares, seven sentences - start out of
+service, home excluding the train, home out of service, too short, no route, two homes on one section, and an
+occupied home - each for its own sentence as well as for the absence of a heading. Still not reached, and said
+in the test: "start not a station", "home not a station", "no arrangement found", and `whyNotHome`'s fallback,
+which these small railways decide before a reason is written.
+
+---
+
+## Stale decisions closed
+
+Adam, 2026-09-14: *"Clean up the stale decisions that are ruled."* Eight catalogued findings still read
+"Open - needs your decision" in `triage.db` although each had been ruled on or overtaken: RGN-C3 (overturned
+2026-09-04; MT-270 validated), SV2-A1 in two documents (ruled 2026-09-02, moot since 2026-09-04), D24-C7 and
+TCX-B2 ("20 warnings sounds OK", built), D24-C8 ("OK, because it will be set correctly later"), SVN-B3 (the
+room rule, built and pinned), and SVN-B5 (moot since the reversal state came out of `connected` on
+2026-09-04). Each is closed with its own note citing the ruling; what the documents said is left as it was.
+None remains waiting on a decision.
 
 ---
 

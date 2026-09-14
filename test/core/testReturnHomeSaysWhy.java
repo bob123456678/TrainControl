@@ -384,6 +384,151 @@ public class testReturnHomeSaysWhy
         }
     }
 
+    /**
+     * A planned move names the square it goes to, not the builder's copy of it (TDR-C9).
+     *
+     * The "planned" lines are logged in the same block as the reasons, and TDR-C8 masked the reasons only.
+     */
+    @Test
+    public void testAPlannedMoveNamesTheSquare()
+    {
+        HomeStaging.Plan plan = load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE
+            + ", 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW P (eastbound, reverse)', 'station': true, 's88': " + (S88_BASE + 9)
+            + ", 'home': '" + LOC + "'}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW P (eastbound, reverse)") + ","
+            + edge("RHW P (eastbound, reverse)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "precondition: a clear run to an empty home was not planned: " + plan.getReasons());
+
+        assertTrue(!plan.getMoves().isEmpty(), "precondition: the plan has no moves to name");
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            String line = move.toString();
+
+            assertTrue(line.contains("RHW P"), "precondition: the planned move does not name the home: " + line);
+
+            assertTrue(!line.contains("eastbound") && !line.contains("reverse"),
+                "the planned move, which the log shows as the plan, names the builder's copy of the home: \""
+                + line + "\" (TDR-C9)");
+        }
+    }
+
+    /**
+     * Every reason a plan gives names squares, across every sentence the refusals can reach (TDR-C12).
+     *
+     * `testTheReasonsNameSquaresNotCopies` reached one sentence, so reverting any of the other sites that
+     * name a square left it green.  Each fixture here is named the way the builder names copies, and each
+     * is checked for the sentence it must produce, so a site is only counted as covered when its own
+     * sentence was actually said.
+     *
+     * Not reached: "the start is not a station", "the home is not a station" and "no arrangement found" -
+     * the loader or the search decides those before a reason is written, on these small railways - and the
+     * fallback at the end of `whyNotHome`, which a refused train with no other reason would need.
+     */
+    @Test
+    public void testEveryReachableReasonNamesSquaresNotCopies()
+    {
+        Locomotive loc = model.getLocByName(LOC);
+
+        // A start switched out of service.
+        assertSaysWithoutHeadings(load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE + ", 'active': false,"
+            + " 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW H (eastbound)', 'station': true, 's88': " + (S88_BASE + 7) + ", 'home': '" + LOC + "'}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW H (eastbound)") + "," + edge("RHW H (eastbound)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome(),
+            loc, "autolayout.whyHomeStartOutOfService", "RHW A");
+
+        // A home that excludes the train.
+        assertSaysWithoutHeadings(load(copyNamedHome(", 'excludedLocs': ['" + LOC + "']")).planReturnToHome(),
+            loc, "autolayout.whyHomeExcludesIt", "RHW H");
+
+        // A home out of service.
+        assertSaysWithoutHeadings(load(copyNamedHome(", 'active': false")).planReturnToHome(),
+            loc, "autolayout.whyHomeOutOfService", "RHW H");
+
+        // A home too short for the train.
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setTrainLength(6);
+
+            assertSaysWithoutHeadings(load(copyNamedHome(", 'maxTrainLength': 2")).planReturnToHome(),
+                loc, "autolayout.whyHomeTooShort", "RHW H");
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas);
+        }
+
+        // A home with no way in.
+        assertSaysWithoutHeadings(load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE + ", 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW B (northbound)', 'station': true, 's88': " + (S88_BASE + 1) + "},"
+            + "{'name': 'RHW E (southbound)', 'station': true, 's88': " + (S88_BASE + 4) + ", 'home': '" + LOC + "'}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW B (northbound)") + "," + edge("RHW B (northbound)", "RHW A (westbound)") + ","
+            + edge("RHW E (southbound)", "RHW B (northbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome(),
+            loc, "autolayout.whyHomeNoRoute", "RHW A", "RHW E");
+
+        // Two homes on one detection section.
+        assertSaysWithoutHeadings(load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE + ", 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW B (northbound)', 'station': true, 's88': " + (S88_BASE + 1) + ", 'loc': {'name': '" + OTHER + "'}},"
+            + "{'name': 'RHW G (eastbound)', 'station': true, 's88': " + (S88_BASE + 6) + ", 'home': '" + LOC + "'},"
+            + "{'name': 'RHW J (southbound)', 'station': true, 's88': " + (S88_BASE + 6) + ", 'home': '" + OTHER + "'}"
+            + "],'edges': ["
+            + edge("RHW A (westbound)", "RHW G (eastbound)") + "," + edge("RHW G (eastbound)", "RHW A (westbound)") + ","
+            + edge("RHW B (northbound)", "RHW J (southbound)") + "," + edge("RHW J (southbound)", "RHW B (northbound)") + ","
+            + edge("RHW A (westbound)", "RHW B (northbound)") + "," + edge("RHW B (northbound)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome(),
+            loc, "autolayout.whyHomeSharesASection", "RHW G", "RHW J");
+
+        // A home another train stands on, where the search runs out.
+        assertSaysWithoutHeadings(load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE + ", 'loc': {'name': '" + OTHER + "'},"
+            + " 'home': '" + LOC + "'},"
+            + "{'name': 'RHW B (eastbound)', 'station': true, 's88': " + (S88_BASE + 1) + ", 'loc': {'name': '" + LOC + "'},"
+            + " 'home': '" + OTHER + "'}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW B (eastbound)") + "," + edge("RHW B (eastbound)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome(),
+            loc, "autolayout.whyHomeOccupied", "RHW A");
+    }
+
+    /** A copy-named start with a train on it, and a copy-named home carrying the given extra JSON. */
+    private static String copyNamedHome(String extra)
+    {
+        return json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE + ", 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW H (eastbound, reverse)', 'station': true, 's88': " + (S88_BASE + 7)
+            + ", 'home': '" + LOC + "'" + extra + "}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW H (eastbound, reverse)") + ","
+            + edge("RHW H (eastbound, reverse)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /** The sentence for this key was said, naming these squares, and no sentence carries a heading. */
+    private static void assertSaysWithoutHeadings(HomeStaging.Plan plan, Locomotive loc, String key, String... parts)
+    {
+        assertSays(plan, loc, key, parts);
+
+        for (String sentence : plan.getReasons().get(loc))
+        {
+            for (String heading : new String[] {"northbound", "southbound", "eastbound", "westbound"})
+            {
+                assertTrue(!sentence.contains("(" + heading),
+                    "a Return Home reason (" + key + ") names the builder's copy of a square: \"" + sentence
+                    + "\" (TDR-C12)");
+            }
+        }
+    }
+
     private static String aHomeWith(String extra)
     {
         return json("{'points': ["

@@ -302,7 +302,8 @@ public final class HomeStaging
         @Override
         public String toString()
         {
-            return this.loc.getName() + " -> " + getEnd().getName();
+            // The square, not the builder's copy of it - this is the "planned" line the log shows (TDR-C9).
+            return this.loc.getName() + " -> " + Layout.placeNameOf(getEnd());
         }
     }
 
@@ -678,7 +679,7 @@ public final class HomeStaging
                 if (!plannerSays.contains(p))
                 {
                     disagreements++;
-                    this.layout.logStagingAudit(loc.getName(), p.getName(), true);
+                    this.layout.logStagingAudit(loc.getName(), Layout.placeNameOf(p), true);
                 }
             }
 
@@ -687,7 +688,7 @@ public final class HomeStaging
                 if (!runtimeSays.contains(p))
                 {
                     disagreements++;
-                    this.layout.logStagingAudit(loc.getName(), p.getName(), false);
+                    this.layout.logStagingAudit(loc.getName(), Layout.placeNameOf(p), false);
                 }
             }
         }

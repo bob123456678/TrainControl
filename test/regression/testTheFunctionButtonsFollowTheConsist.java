@@ -165,6 +165,88 @@ public class testTheFunctionButtonsFollowTheConsist
      * @param head the consist's head, as this test built it
      * @return a description, ready to append
      */
+    /**
+     * The last locomotive asked for is the one the window draws, however quickly the two requests came
+     * (TDR-B5).
+     *
+     * The guard this pins against returned without doing anything while an earlier render was unfinished -
+     * and a render counts as unfinished on its own thread after it has already handed its painting to the
+     * event thread.  So a request made in that window was dropped, and the window went on showing the first
+     * locomotive's function buttons.  Which window the requests land in is up to the scheduler, so this
+     * holds the renderer there on purpose, through the hook it calls after posting.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = {"testAMixedConsistLightsTheWiderRange", "testAnAllMM2ConsistKeepsTheMM2Range"})
+    public void testTheLastLocomotiveAskedForIsTheOneDrawn() throws Exception
+    {
+        MarklinLocomotive mixed = model.getLocByName("MU head UI");
+        MarklinLocomotive plain = model.getLocByName("MU plain UI");
+
+        assertNotNull(mixed, "precondition: the mixed consist is gone");
+        assertNotNull(plain, "precondition: the all-MM2 consist is gone");
+
+        show(mixed);
+
+        assertTrue(button(6).isEnabled(), "precondition: f6 is not lit for the mixed consist even when asked for alone");
+
+        Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+        active.setAccessible(true);
+
+        final java.util.concurrent.CountDownLatch posted = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+
+        TrainControlUI.afterARenderIsPosted = () ->
+        {
+            posted.countDown();
+
+            try
+            {
+                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        try
+        {
+            // The all-MM2 consist first: its render is posted and drawn, and the renderer is held right there.
+            active.set(ui, plain);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+
+            assertTrue(posted.await(10, java.util.concurrent.TimeUnit.SECONDS),
+                "precondition: the first render never reached the event thread");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(button(6).isEnabled(),
+                "precondition: the all-MM2 consist's render was not drawn, so the window never showed it");
+
+            // ... and the mixed consist asked for while the renderer is still inside that render.
+            active.set(ui, mixed);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+        }
+        finally
+        {
+            TrainControlUI.afterARenderIsPosted = null;
+
+            release.countDown();
+        }
+
+        waitForTheRender();
+        waitForTheRender();
+
+        assertTrue(button(6).isEnabled(),
+            "the mixed consist was asked for while the window was finishing the all-MM2 one, and the window"
+            + " still shows the all-MM2 consist's buttons - f6 greyed for a consist that can drive it. The"
+            + " second request was dropped (TDR-B5)");
+    }
+
     private static String whatTheConsistIs(MarklinLocomotive head) throws Exception
     {
         StringBuilder said = new StringBuilder();

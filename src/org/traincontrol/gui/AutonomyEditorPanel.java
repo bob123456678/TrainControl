@@ -5350,6 +5350,16 @@ public class AutonomyEditorPanel extends JPanel
             name = name.replace("\"", "");
         }
 
+        // A name that ends like one of the builder's direction copies is refused, and said (TDR-C11).
+        String refused = AutonomySession.whyNotAPointName(name);
+
+        if (refused != null)
+        {
+            JOptionPane.showMessageDialog(owner(), wrapped(refused));
+
+            return;
+        }
+
         // Nothing can fail here any more.  A caption points at the station’s SQUARE, so renaming
         // one is a change to the setup and to nothing else - it used to rewrite every page showing the
         // old name, and could half-succeed.
@@ -8550,6 +8560,15 @@ public class AutonomyEditorPanel extends JPanel
 
             String name = askForName(I18n.f("autosetup.ui.promptNameEverything", i + 1,
                 unnamed.size()));
+
+            // Asked again, for the same square, until the name is one the session will take (TDR-C11).
+            while (name != null && !name.trim().isEmpty()
+                && AutonomySession.whyNotAPointName(name) != null)
+            {
+                JOptionPane.showMessageDialog(owner(), wrapped(AutonomySession.whyNotAPointName(name)));
+
+                name = askForName(I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size()));
+            }
 
             // Cancel stops the walk rather than skipping one square, because a walk of forty needs a
             // way out - and Skip is now a button of its own rather than a blank field and OK, which

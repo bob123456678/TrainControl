@@ -1939,9 +1939,15 @@ public class AutonomyCompanionStore
      * Brings in an exported file, in either the bundled form or the bare configuration written before.
      *
      * The shared half is merged rather than adopted: an entry the local setup already has is kept, and
-     * only the gaps are filled.  That way importing onto a fresh setup restores everything, importing
-     * onto a working one cannot silently rename somebody's stations, and either way the result is the
-     * union - which is what "the same layout, somebody else's configuration" means.
+     * only the gaps are filled.  That way importing onto a fresh setup restores everything this build
+     * models on the pages this layout has, importing onto a working one cannot silently rename somebody's
+     * stations, and either way the result is the union - which is what "the same layout, somebody else's
+     * configuration" means.
+     *
+     * Two things are left out on purpose.  Pages this layout does not have, which are named in
+     * `getPagesLeftOutOfLastImport` for the import door to say.  And a field a NEWER build wrote, which
+     * nothing here knows the shape of and so cannot put into this layout's page numbering - left out
+     * without a word, by Adam's ruling of 2026-09-14: *"no need to notify"* (TDR-C10).
      *
      * @param name what to call the configuration here
      * @param file the parsed export
@@ -2050,19 +2056,18 @@ public class AutonomyCompanionStore
             // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating (TDR-C7).  Nothing here
             // knows its shape, so it cannot be put into this layout's numbering - and merged as it came it
             // would be kept verbatim and saved in the EXPORTER's ids, possibly beside mine in one object.
-            // Fields this version does model and that name no square are merged exactly as before.
+            // Every collection this build models is a held field, so nothing it models is lost here; and
+            // the loss of a newer build's field is silent, by Adam's ruling: "no need to notify" (TDR-C10).
             if (theirIdToMine != null && !knownShared().contains(key)) continue;
 
             Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
-            // "pages" is not a setting being merged - it is the exporter's record of what each of
-            // THEIR ids was called, and it is the only evidence a renumber can be detected from.  Under
-            // the merge rule below, mine won for every id both files knew, so readShared read my own
-            // names back and compared them against my own index: the two could never disagree, and
-            // pageIdConflicts was empty after any import by construction.
-            //
-            // Theirs wins per id, and ids only I have are kept - those say what MY pages were called
-            // and nothing incoming refers to them.
+            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number
+            // (TDR-A1, TDR-C6, TDR-C10).  Everywhere else their record is how their ids were translated,
+            // and it was skipped above.  Here there is no record of mine for it to re-label, so theirs wins
+            // per id and ids only I have are kept.  It is kept rather than dropped because it is still the
+            // only evidence the keys it came with can be read by: a store given page ids later reads its
+            // held entries through this record.
             if ("pages".equals(key) && value instanceof JSONObject)
             {
                 JSONObject mine = merged.optJSONObject(key);
@@ -2194,7 +2199,8 @@ public class AutonomyCompanionStore
      *   page lists      each page id is translated, and a foreign one goes
      *
      * A square whose page part the file's record does not name is left exactly as it is - an old file keyed
-     * by name, say - and so is a field this store does not model.
+     * by name, say.  A field this store does not model never reaches here while translating: `importBundle`
+     * leaves it out first (TDR-C7, TDR-C10).
      *
      * @param field the field's name in the file
      * @param value the field as the file carries it
@@ -3984,7 +3990,9 @@ public class AutonomyCompanionStore
     /**
      * Every field name this build understands in the shared file.
      *
-     * Anything else is a field a NEWER build wrote, and is kept verbatim and written back untouched.
+     * Anything else is a field a NEWER build wrote.  A LOAD keeps it verbatim and writes it back untouched;
+     * an import that translates page ids leaves it out, because nothing here knows its shape (TDR-C7,
+     * TDR-C10).
      * That makes the list load-bearing in a direction that is easy to get backwards: a collection
      * MISSING from it is not read as unknown-and-preserved, it is read as unknown-and-preserved AND
      * also read into its own collection, so the next save writes both - and the stale copy wins.

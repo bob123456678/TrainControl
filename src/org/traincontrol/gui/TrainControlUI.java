@@ -12069,30 +12069,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
         
+    /**
+     * For tests only: run on the renderer thread just after a locomotive render has been handed to the
+     * event thread (TDR-B5).  Null in the program.  It lets a test hold the renderer at exactly the moment a
+     * second request used to be dropped, which otherwise depends on how the threads happen to be scheduled.
+     */
+    public static volatile Runnable afterARenderIsPosted;
+
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
     {     
-        // BEFORE the concurrency guard below, which returns early while a repaint is in flight - the
-        // graph has to follow every direction change, not only the ones that arrive when the renderer
-        // happens to be idle (Adam, 2026-09-06).
+        // BEFORE the render, which may be deferred - the graph has to follow every direction change,
+        // not only the ones that arrive when the renderer happens to be idle (Adam, 2026-09-06).  Asked
+        // once per request here, and not again when a deferred render is finally run.
         followDirectionChanges(updatedLocs);
 
-        // Prevent concurrent calls
-        for (Future<?> f : this.locFutures)
+        renderActiveLoc(force, updatedLocs);
+    }
+
+    /** Whether a locomotive render has been started and has not yet finished on the event thread (TDR-B5). */
+    private boolean locRenderInFlight;
+
+    /** Whether a render was asked for while one was in flight, and what it asked for (TDR-B5). */
+    private boolean locRenderPending;
+    private boolean locRenderPendingForce;
+    private boolean locRenderPendingEveryLoc;
+    private final java.util.Set<Locomotive> locRenderPendingLocs = new java.util.LinkedHashSet<>();
+
+    /**
+     * Renders the active locomotive, or - when a render is already in flight - remembers the request and
+     * runs it when that render finishes (TDR-B5).
+     *
+     * ONE RENDER AT A TIME, AND THE LAST ASK ALWAYS LANDS.  The guard this replaced returned without doing
+     * anything while an earlier render's future was unfinished - and a future finishes on the renderer
+     * thread, AFTER it has handed its painting to the event thread, which may already have run.  So a
+     * request made in that window was simply dropped: switch from one locomotive to another quickly and
+     * the window went on showing the first one's function buttons, greyed and lit for a decoder that was
+     * no longer selected.  `regression.testTheFunctionButtonsFollowTheConsist` went red on exactly that.
+     *
+     * The flag is cleared by the painting itself, in a `finally`, and a request made meanwhile is merged -
+     * forced if any was, and for every locomotive if any asked for every one - and run then.  The same
+     * shape `askForReturnHomeTriage` uses.
+     *
+     * @param force repaint even when nothing visible changed
+     * @param updatedLocs the locomotives that changed, or null for all of them
+     */
+    synchronized private void renderActiveLoc(final boolean force, final List<Locomotive> updatedLocs)
+    {
+        if (this.locRenderInFlight)
         {
-            if (!f.isDone()) 
-            {
-                return;
-            }
+            this.locRenderPending = true;
+            this.locRenderPendingForce |= force;
+
+            if (updatedLocs == null) this.locRenderPendingEveryLoc = true;
+            else this.locRenderPendingLocs.addAll(updatedLocs);
+
+            return;
         }
+
+        this.locRenderInFlight = true;
 
         this.locFutures.clear();
 
         this.locFutures.add(
-            this.LocRenderer.submit(() -> 
-            { 
+            this.LocRenderer.submit(() ->
+            {
+              try
+              {
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
+                  try
+                  {
                     if (this.activeLoc != null 
                             && this.model.getLocByName(this.activeLoc.getName()) != null // If this loc no longer exists, don't display it
                     )
@@ -12379,9 +12426,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         this.repaintMappings(updatedLocs, false);
                     }
+                  }
+                  finally
+                  {
+                    renderFinished();
+                  }
                 });
+              }
+              catch (RuntimeException notPosted)
+              {
+                // Nothing will run the painting, so nothing would ever clear the flag.
+                renderFinished();
+
+                throw notPosted;
+              }
+
+                Runnable hook = afterARenderIsPosted;
+
+                if (hook != null) hook.run();
             })
         );
+    }
+
+    /**
+     * The end of a render: clears the flag and runs whatever was asked for while it was in flight (TDR-B5).
+     */
+    synchronized private void renderFinished()
+    {
+        this.locRenderInFlight = false;
+
+        if (!this.locRenderPending) return;
+
+        boolean force = this.locRenderPendingForce;
+
+        List<Locomotive> locs = this.locRenderPendingEveryLoc ? null : new ArrayList<>(this.locRenderPendingLocs);
+
+        this.locRenderPending = false;
+        this.locRenderPendingForce = false;
+        this.locRenderPendingEveryLoc = false;
+        this.locRenderPendingLocs.clear();
+
+        renderActiveLoc(force, locs);
     }
     
     private Map<JButton, Locomotive> nextLocMapping()

@@ -4873,8 +4873,33 @@ public class AutonomySession
      */
     public void setPointName(TileKey tile, String name)
     {
+        // REFUSED, not stored (TDR-C11): the doors that take a typed name ask `whyNotAPointName` first and
+        // say so; this is the guard behind them, so a new door cannot forget.  Names already in a setup, or
+        // brought in by an import, go through the store and are left alone.
+        String why = whyNotAPointName(name);
+
+        if (why != null) throw new IllegalArgumentException(why);
+
         store.setPointName(tile, name);
         touched();
+    }
+
+    /**
+     * Why a typed name may not be given to a square, or null when it may (TDR-C11).
+     *
+     * A name ending in the builder's own direction heading - "Main (eastbound)" - reads as another square
+     * wherever a message names squares, because that heading is exactly what is stripped from a copy's name.
+     * Adam, 2026-09-14: *"refuse and close, but make sure the words are uncommon"* - so only the builder's
+     * exact form is refused; see `StationIndex.endsWithAnArrivalHeading`.
+     *
+     * @param name the name as typed
+     * @return the sentence to show, or null
+     */
+    public static String whyNotAPointName(String name)
+    {
+        if (!StationIndex.endsWithAnArrivalHeading(name)) return null;
+
+        return I18n.f("autosetup.ui.errorNameEndsWithAHeading", name.trim());
     }
 
     public void setStation(TileKey tile, boolean station)
