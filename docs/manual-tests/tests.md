@@ -52,23 +52,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-403](#mt-403) | 2026-09-14 | The function buttons follow the locomotive you switched to last | fixed unvalidated | TDR-B5 |
 | [MT-404](#mt-404) | 2026-09-14 | A square cannot be named with the editor's own direction heading | fixed unvalidated | TDR-C11 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-406](#mt-406) | 2026-09-14 | Escape puts the autonomy editor's tool down | fixed unvalidated | OB-119 |
-| [MT-407](#mt-407) | 2026-09-14 | Escape closes the autonomy and track editors, with the usual warning | fixed unvalidated | FR-065 |
-| [MT-408](#mt-408) | 2026-09-14 | The menus come back together when connecting finishes | fixed unvalidated | OB-187 |
-| [MT-409](#mt-409) | 2026-09-14 | The Autonomy menu is in the menu bar from the first moment | fixed unvalidated | OB-202 |
-| [MT-410](#mt-410) | 2026-09-14 | The two locomotive buttons in the home dialog do not touch | fixed unvalidated | OB-188 |
-| [MT-411](#mt-411) | 2026-09-14 | A hand-driven train reverses on arrival exactly as you answered | fixed unvalidated | OB-189 |
-| [MT-412](#mt-412) | 2026-09-14 | The diagram arrow turns when a hand-driven train reverses on arrival | fixed unvalidated | OB-190 |
-| [MT-413](#mt-413) | 2026-09-14 | Why Not Moving shows its reasons in the banner | fixed unvalidated | OB-191 |
-| [MT-414](#mt-414) | 2026-09-14 | The locomotive dialog's arrival row matches the rows above it | fixed unvalidated | OB-203 |
-| [MT-415](#mt-415) | 2026-09-14 | Clearing every locomotive warns that Cancel will not bring them back | fixed unvalidated | OB-194 |
-| [MT-425](#mt-425) | 2026-09-14 | A route condition can start with a group, and a stranded word is red | fixed unvalidated | OB-220 |
-| [MT-426](#mt-426) | 2026-09-14 | Reads as shows the joining words in bold and the settings in colour | fixed unvalidated | FR-081 |
-| [MT-427](#mt-427) | 2026-09-14 | Opening a condition's Kind box and leaving it changes nothing | fixed unvalidated | OB-221 |
-| [MT-428](#mt-428) | 2026-09-14 | A red word in a route's conditions has a warning triangle that says why | fixed unvalidated | FR-082 |
+| [MT-429](#mt-429) | 2026-09-14 | Why Not Moving lists stations, then berths, alphabetically, with other pages named | fixed unvalidated | FR-080 |
+| [MT-430](#mt-430) | 2026-09-14 | Cancel in the autonomy editor puts your edits back | fixed unvalidated | OB-223 |
 
-Everything else - 389 of 428 - needs nothing from you unless the area changes again:
-343 **fixed validated** and 46 **superseded**.
+Everything else - 403 of 430 - needs nothing from you unless the area changes again:
+357 **fixed validated** and 46 **superseded**.
 
 ---
 
@@ -21391,7 +21379,7 @@ Beside the ordinary layout files, the CS3's own files are there too - `CS3_mags.
 
 ### MT-406 - 2026-09-14 - Escape puts the autonomy editor's tool down
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-119
 
 **Written:** 2026-09-14
@@ -21415,13 +21403,17 @@ Escape works, but it seems a one-way run (or any other edits to arrows) persist 
 
 *Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude, 2026-09-14.** Closed on your verdict - Escape works, which is what this entry asks.  The Cancel problem in your note is **OB-223**, fixed, and **MT-430** asks you to check it: every setup edit in the autonomy editor was being saved the moment it was made, so Cancel had nothing to undo.
+
 ---
 
 <a id="mt-407"></a>
 
 ### MT-407 - 2026-09-14 - Escape closes the autonomy and track editors, with the usual warning
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-065
 
 **Written:** 2026-09-14
@@ -21451,7 +21443,7 @@ Your FR-065: *"escape closes autonomy/track editor - same as closing via button,
 
 ### MT-408 - 2026-09-14 - The menus come back together when connecting finishes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-187
 
 **Written:** 2026-09-14
@@ -21478,7 +21470,7 @@ Every menu that was greyed during the connect comes back at the same moment, not
 
 ### MT-409 - 2026-09-14 - The Autonomy menu is in the menu bar from the first moment
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-202
 
 **Written:** 2026-09-14
@@ -21505,7 +21497,7 @@ From OB-202: the Autonomy heading used to appear part-way through start-up, afte
 
 ### MT-410 - 2026-09-14 - The two locomotive buttons in the home dialog do not touch
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-188
 
 **Written:** 2026-09-14
@@ -21532,7 +21524,7 @@ The "use current" and "use active" buttons have a visible gap between them.
 
 ### MT-411 - 2026-09-14 - A hand-driven train reverses on arrival exactly as you answered
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-189
 
 **Written:** 2026-09-14
@@ -21563,7 +21555,7 @@ If the route to BottomMainPost passes a square that turns every train, a compuls
 
 ### MT-412 - 2026-09-14 - The diagram arrow turns when a hand-driven train reverses on arrival
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-190
 
 **Written:** 2026-09-14
@@ -21587,13 +21579,17 @@ Works.  But we should make a FR to track fixing this behavior so that the pre-ar
 
 *Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude, 2026-09-14.** Closed on your verdict.  The arrow matching before arrival is filed as **FR-083**, pending.
+
 ---
 
 <a id="mt-413"></a>
 
 ### MT-413 - 2026-09-14 - Why Not Moving shows its reasons in the banner
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-191
 
 **Written:** 2026-09-14
@@ -21620,7 +21616,7 @@ The banner opens with the reasons written in it - readable text, not an empty st
 
 ### MT-414 - 2026-09-14 - The locomotive dialog's arrival row matches the rows above it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-203
 
 **Written:** 2026-09-14
@@ -21647,7 +21643,7 @@ Its label reads **Train Arrived**, in the same style as the labels above it, and
 
 ### MT-415 - 2026-09-14 - Clearing every locomotive warns that Cancel will not bring them back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-194
 
 **Written:** 2026-09-14
@@ -21923,7 +21919,7 @@ They are the same size.
 
 ### MT-425 - 2026-09-14 - A route condition can start with a group, and a stranded word is red
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-220
 
 **Written:** 2026-09-14
@@ -21958,7 +21954,7 @@ Your OB-220: *"the first or is read as an and here. also, the first condition fo
 
 ### MT-426 - 2026-09-14 - Reads as shows the joining words in bold and the settings in colour
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-081
 
 **Written:** 2026-09-14
@@ -21990,7 +21986,7 @@ Your FR-081: *"In the 'reads as', can we also bold the operators, make on/straig
 
 ### MT-427 - 2026-09-14 - Opening a condition's Kind box and leaving it changes nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-221
 
 **Written:** 2026-09-14
@@ -22024,7 +22020,7 @@ Your OB-221: *"I start with Switch 1.  Then I set address to 40, which makes it 
 
 ### MT-428 - 2026-09-14 - A red word in a route's conditions has a warning triangle that says why
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-082
 
 **Written:** 2026-09-14
@@ -22053,5 +22049,69 @@ Your FR-082: *"For the red operators, can we add a warning triangle icon with a 
 **Adam, 2026-09-14 (triage).** Works.
 
 *Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-429"></a>
+
+### MT-429 - 2026-09-14 - Why Not Moving lists stations, then berths, alphabetically, with other pages named
+
+**Disposition:** fixed unvalidated
+**From:** FR-080
+
+**Written:** 2026-09-14
+
+Your FR-080: *"in the "why not moving" view in the autonomy editor, show all stations first, then show berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show it."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**, choose **Why Not Moving?**, and click a square with a train on it that has somewhere it cannot go.
+2. Read the list under the first line.
+3. Find a station on another page in it.
+4. For the same train, open the locomotive panel's why-window from its destination label.
+
+**Expected**
+
+- Step 2: a heading **Stations autonomy could choose, but cannot right now (n)** with its stations in alphabetical order, then **Stations autonomy will never choose (n)** with the berths in alphabetical order.  A group with nothing in it has no heading.  The "can go to" names at the top are alphabetical too.
+- Step 3: its page after its name - for example **TunnelLeftPark (page 2 - Bottom)**.  Stations on the train's own page carry no page.
+- Step 4: the same two groups, holding the same stations.
+
+*What this is:* FR-080.  The list came in the order autonomy tries stations in, with the two kinds mixed and no page anywhere.  It now groups them as the locomotive panel's window does, from the same single question to the railway.  `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway.testTheWhyAnswerListsStationsThenBerthsWithTheirPages`, seen red first.
+
+#### Comments
+
+---
+
+<a id="mt-430"></a>
+
+### MT-430 - 2026-09-14 - Cancel in the autonomy editor puts your edits back
+
+**Disposition:** fixed unvalidated
+**From:** OB-223
+
+**Written:** 2026-09-14
+
+Your note on MT-406: *"Escape works, but it seems a one-way run (or any other edits to arrows) persist after I press cancel.  They are not undone by cancelling."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main** and note the arrows on a stretch of track.
+2. Draw a **One-Way Run** over it, click an arrow on another square, and rename a station.
+3. Press **Cancel**.
+4. Open the autonomy editor again.
+5. Make one arrow change, and press **Save**.  Open the editor again.
+6. Open the editor, change nothing, and press **Cancel**.
+
+**Expected**
+
+- Step 3: TrainControl asks whether to close without saving; answer **Yes**.
+- Step 4: the arrows and the station name are as they were in step 1.
+- Step 5: the arrow change is kept.
+- Step 6: it closes without asking.
+- Placing or clearing locomotives is still not undone by Cancel - where a train is follows the railway (OB-194), and the clear's own confirmation says so.
+
+*What this is:* OB-223.  Every change you made in the editor was saved the moment it was made, because the railway is rebuilt after each one and that rebuild saves - so Cancel found nothing unsaved and did nothing.  Cancel now compares against the setup as the editor opened and puts that back.  `regression.testCancelUndoesAutonomyEdits`, seen red first.
+
+#### Comments
 
 ---

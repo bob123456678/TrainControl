@@ -1219,6 +1219,26 @@ Found by the battery of 2026-09-14 (commit `e4651cec`): `core.testTrainsComeHome
 
 **What closes it.**  Adam sets realistic lengths on the live layout; `test/operator_layout` is refrozen from it (copied over, and the commit says so); the class is run several times.  If it still fails with real lengths, the question becomes whether the planner should move a train that is already home out of the way.
 
+### OB-223 - 2026-09-14 - Cancel in the autonomy editor did not undo the setup edits made in it
+
+**Kind:** bug  
+**Raised from:** MT-406  
+**Filed:** 2026-09-14  
+
+Adam, on MT-406 (2026-09-14): *"Escape works, but it seems a one-way run (or any other edits to arrows) persist after I press cancel.  They are not undone by cancelling."*
+
+Not arrows only - every setup edit made in the autonomy editor.  Each gesture rebuilds the running layout so the railway follows the edit at once, and that rebuild loads the configuration, and loading SAVES it (`AutonomyViewerPanel.load`, "remembered for next start").  Saving clears the session's unsaved flag - so when Cancel asked whether there was unsaved work the answer was always no: nothing was asked, nothing was discarded, and the edit was already on disk.  The snapshot `LayoutEditor` takes when it opens, which the track editor's Cancel restores, was never consulted in autonomy mode.
+
+### FR-083 - 2026-09-14 - the arrow and badge of a train on its way should already face the way it will arrive
+
+**Kind:** feature request  
+**Raised from:** MT-412  
+**Filed:** 2026-09-14  
+
+Adam, on MT-412 (2026-09-14): *"Works.  But we should make a FR to track fixing this behavior so that the pre-arrival arrow just matches."*
+
+The behaviour is OB-218's, accepted on 2026-09-14 on the condition that the arrow is right once the train arrives, which it is: while a hand-driven train is on its way to a square it may turn at, the route is reserved on the copy the path ENDS on - routinely the turning copy - so the badge and arrow show the turned facing until arrival, when the train is re-stood on the copy that matches the answer.  The request is for them to match before arrival too: reserve the copy the train will actually end on, decided from the answer at dispatch - a change to the locking path, which is why OB-218 was accepted rather than changed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1235,6 +1255,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-14 | OB-223 | bug | Adam, on MT-406: *"a one-way run (or any other edits to arrows) persist after I press cancel.  They are not undone by cancelling."*  Every setup gesture in the autonomy editor rebuilds the running layout, and that rebuild loads the configuration, which saves it - clearing the session's unsaved flag, so Cancel never asked and a discard would have re-read a file that already held the edit.  Closing now compares the setup with the snapshot the window took when it opened, and discarding restores that snapshot and writes it; placements still follow the railway (OB-183, OB-194).  `regression.testCancelUndoesAutonomyEdits` - the arrow back in the setup and the file, the question asked, and Save keeping it - seen red first; `244b07c2`. | - | `MT-430` |
+| 2026-09-14 | FR-080 | feature request | why not moving clarity - Adam: *"show all stations first, then show berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show it."*  The autonomy editor's answer asks `explainDestinationsGrouped` - the locomotive panel's own call, one lock - and lists the refused stations under that window's two headings, each alphabetical, filing a station as choosable when any copy of it is; the "can go to" names are alphabetical too, and a station on a page other than the train's carries its page, in eight languages.  `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway.testTheWhyAnswerListsStationsThenBerthsWithTheirPages`, seen red first; `89d3156d`. | - | `MT-429` |
+| 2026-09-14 | FR-083 | feature request | Adam, on MT-412: *"we should make a FR to track fixing this behavior so that the pre-arrival arrow just matches."*  OB-218's accepted behaviour - the route reserved on the copy the path ends on, so the arrow and badge show the turned facing until arrival - asked to match before arrival too: reserve the copy the train will end on, from the answer at dispatch.  **Claude, 2026-09-14.** Picked up and not built. | pending | - |
 | 2026-09-14 | OB-222 | bug | `core.testTrainsComeHomeToTheirPlatforms` fails intermittently: after the random run two trains are boxed in on TopMainR1Inter and TopMainR2Inter and the planner answers NO_PLAN_FOUND after its whole budget.  Adam: *"I think the test will always fail until the railway has realistic track lengths set ... Shall we leave this open pending updates to the live layout that you can then freeze?"*  **Claude, 2026-09-14.** Pending Adam's lengths on the live layout; then `test/operator_layout` is refrozen and the class rerun.  The frozen copy sets a length on 6 tiles only, and every maxTrainLength is 0. | pending | - |
 | 2026-09-14 | OB-221 | bug | Adam: *"I set address to 40, which makes it a Signal.  Then, if I click on Kind -> Signal and exit out, it snaps back to Switch 1."*  The condition table reset a line to its kind's starting address on every commit of the Kind cell, and a drop-down commits when it closes whether or not anything was chosen - so any line went back to address 1, and a signal line then read as the switch at 1.  Choosing the kind a line already is now changes nothing; moving between Switch and Signal, which are stored as one accessory command, keeps the address and says the setting in the other words (turn is red, straight is green).  `ui.testRouteEditorValidation.testChoosingTheKindALineAlreadyIsKeepsIt` and `testSwitchingBetweenSwitchAndSignalKeepsTheAddress`, seen red first; `e4651cec`. | - | `MT-427` |
 | 2026-09-14 | FR-082 | feature request | Adam: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong next to it?"*  `ConditionOutline.whatIsWrong` gives each flagged line its reason - a word that differs from its level's word, or one indented past a condition beside it, which are put right differently - and the editor paints a triangle after the red word with that reason as its tooltip, in eight languages.  The renderer is one label reused down the column, so the triangle is cleared on every other line.  `core.testConditionOutline.testEachFlagSaysWhy`, `ui.testRouteEditorValidation.testARedWordCarriesAWarningThatSaysWhy` - seen red first and mutation-checked both ways; `e4651cec`. | - | `MT-428` |
