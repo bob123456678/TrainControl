@@ -17965,6 +17965,32 @@ Checked on a sandbox copy of your railway as it stands: with the arrival from Tu
 2. **The refusal names squares** (TDR-C5): expect "standing across Tunnel -> BottomMainAPre", with no "(southbound)"
    or "(eastbound)".
 
+**Claude, 2026-09-14.**
+
+**Claude: why Tunnel to BottomMainAPre is not orange for 75 407 DB right now, and how to force it.**
+
+**Yes - it is because the railway does not know how the train got there.**  Past a junction the blocked track follows the route the train actually DROVE, and that route is remembered only in memory, on the running layout.  A train placed by hand has none.  And every one of these rebuilds the running layout, which keeps the side the train came in by and forgets the route:
+
+- restarting TrainControl
+- closing the autonomy editor
+- editing the track diagram, or a layout refresh from the Central Station
+- ticking a page in or out of autonomy
+- choosing a configuration from the Autonomy menu
+
+Without a route the tail stops at the first fork behind the platform, which at BottomMainA is BottomMainAPre - exactly the orange you are seeing.
+
+**To force it**
+
+1. Check 75 407 DB still has length 5 and the segment lengths are as in the original steps.
+2. Stand it at a station from which its way to BottomMainA runs through Tunnel and BottomMainAPre.
+3. Send it to **BottomMainA** by hand from the right-click menu, and let it arrive.
+4. Without doing anything in the list above, look at the diagram: the track from **Tunnel** to **BottomMainAPre** is orange.
+5. Try to send **EN57-947** to **BottomMainB**: refused, and the message says it is standing across **Tunnel -> BottomMainAPre**, with no "(southbound)" or "(eastbound)".
+
+If step 4 is not orange after a genuine run with nothing from the list in between, that is a defect - say so here.
+
+**Worth knowing:** carrying the route through a rebuild, the way the arrival side already is, is a small change - a restart would still forget it.  Say if you want it.
+
 ---
 
 <a id="mt-334"></a>
@@ -18111,6 +18137,10 @@ The same caveat as MT-333: a train placed by hand, or after a restart, has no re
 **Claude: the same two changes as MT-333's latest note** - the route survives a re-stand at a may-turn square
 (TDR-B1, TDR-B2), and refusals and Return Home reasons name squares (TDR-C5, TDR-C8, TDR-C9).  The log now says
 why Return Home could not bring each train home (MT-402).
+
+**Claude, 2026-09-14.**
+
+**Claude: how to force the covered track for this test is in MT-333's latest note.**  Short version: the train has to DRIVE to BottomMainA, and nothing may rebuild the running layout between its arrival and Return Home - no restart, closing the autonomy editor, diagram edit or refresh, page toggle or configuration load.
 
 ---
 
