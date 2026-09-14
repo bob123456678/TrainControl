@@ -7030,9 +7030,32 @@ public class AutonomyEditorPanel extends JPanel
         // its priority order, which is what `pickPath` walks and not how anybody reads a list.  Grouped as
         // `AutoLocomotiveStatus.whyNotReport` groups its window - a station with any copy autonomy could
         // choose is filed with the choosable ones - so the two answers to one question read alike.
-        java.util.Set<String> available = new java.util.TreeSet<>();
-        java.util.Map<String, String> choosable = new java.util.TreeMap<>();
-        java.util.Map<String, String> neverChosen = new java.util.TreeMap<>();
+        // AND BY PAGE FIRST (Adam, MT-429: "Update sorting to be by page then station name, rather than
+        // station name only, with the current page being first, then others sequentially later").  The
+        // current page is the one this editor is showing - or, where the panel has no page, as on the track
+        // diagram's own menu, the page the train stands on.  The others follow in page-name order, which is
+        // the order the page list itself is in.  Each shown name's key is recorded before it is filed.
+        final String currentPage = page != null ? page : tile.getPage();
+
+        final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
+
+        java.util.Comparator<String> byPageThenName = (a, b) ->
+        {
+            String[] x = sortKey.get(a);
+            String[] y = sortKey.get(b);
+
+            int byPage = x[0].compareTo(y[0]);
+
+            if (byPage != 0) return byPage;
+
+            int byName = x[1].compareTo(y[1]);
+
+            return byName != 0 ? byName : a.compareTo(b);
+        };
+
+        java.util.Set<String> available = new java.util.TreeSet<>(byPageThenName);
+        java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
+        java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
@@ -7053,13 +7076,17 @@ public class AutonomyEditorPanel extends JPanel
 
             String station = where == null ? entry.getKey() : describeTile(where);
 
-            // AND ITS PAGE, where that is not the page the train stands on (FR-080: "If a point is on
-            // another page, show it").  A setup can span several pages, and a name with no page is a name
-            // somebody has to go and look for - or two different squares that read as one.
-            if (where != null && where.getPage() != null && !where.getPage().equals(tile.getPage()))
-            {
-                station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
-            }
+            // AND ITS PAGE, where that is not the current page (FR-080: "If a point is on another page, show
+            // it"; MT-429).  A setup can span several pages, and a name with no page is a name somebody has to
+            // go and look for - or two different squares that read as one.
+            String nameOnly = station;
+
+            boolean elsewhere = where != null && where.getPage() != null && !where.getPage().equals(currentPage);
+
+            if (elsewhere) station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
+
+            sortKey.put(station, new String[] {
+                where == null || where.getPage() == null ? "2" : elsewhere ? "1" + where.getPage() : "0", nameOnly });
 
             if (entry.getValue() == null)
             {

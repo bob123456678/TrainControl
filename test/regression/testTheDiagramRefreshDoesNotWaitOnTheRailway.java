@@ -728,12 +728,16 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
     /**
      * The why answer lists the stations autonomy could choose first and the ones it never will after, each
-     * alphabetical, and names the page of a station that is on another one (FR-080).
+     * by page and then by name with the train's own page first, and names the page of a station that is on
+     * another one (FR-080; MT-429).
      *
      * Adam: *"in the 'why not moving' view in the autonomy editor, show all stations first, then show
      * berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show
      * it."*  The list came in the railway's priority order - what `pickPath` walks - with the two kinds
-     * mixed and no page anywhere, on a snapshot of five pages.
+     * mixed and no page anywhere, on a snapshot of five pages.  And on MT-429: *"capitalize Page.  Update
+     * sorting to be by page then station name, rather than station name only, with the current page being
+     * first, then others sequentially later."*  This panel has no page of its own - it is built the way the
+     * track diagram's menu builds it - so the current page is the one the train stands on.
      *
      * The grouping is the railway's (`explainDestinationsGrouped`) and the names are the session's
      * (`describeTile`); the answer is read back and checked against both.
@@ -780,6 +784,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // could choose - true when ANY of its copies is choosable, which is how both why-windows file it.
         java.util.Map<String, Boolean> expected = new java.util.LinkedHashMap<>();
 
+        // Each shown name's place in the order: its page - the train's own first, the rest by page name -
+        // then the session's name for the square.  Keyed as the answer writes the name, escaped.
+        java.util.Map<String, String[]> rank = new java.util.HashMap<>();
+
         String elsewhere = null;
 
         for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
@@ -794,6 +802,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
             org.traincontrol.automationui.TileGraph.TileKey square =
                 session.getStationIndex().squareOf(entry.getKey());
+
+            rank.put(shown.replace("&", "&amp;").replace("<", "&lt;"), new String[] {
+                square == null ? "2" : square.getPage().equals(occupied.getPage()) ? "0" : "1" + square.getPage(),
+                square == null ? shown : session.describeTile(square) });
 
             if (elsewhere == null && square != null && !square.getPage().equals(occupied.getPage()))
             {
@@ -822,10 +834,16 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             < said.indexOf(heading("autolayout.ui.whyHeaderBarred")),
             "the berths are listed before the stations autonomy could choose. It says: " + said);
 
-        assertEquals(candidates, sorted(candidates),
-            "the stations autonomy could choose are not in alphabetical order");
+        assertEquals(candidates, inPageOrder(candidates, rank),
+            "the stations autonomy could choose are not by page and then by name, with the train's page first."
+            + "  Adam, MT-429: 'by page then station name, rather than station name only, with the current page"
+            + " being first'");
 
-        assertEquals(never, sorted(never), "the stations autonomy will never choose are not in alphabetical order");
+        assertEquals(never, inPageOrder(never, rank),
+            "the stations autonomy will never choose are not by page and then by name, with the train's page first");
+
+        assertTrue(org.traincontrol.util.I18n.t("autosetup.ui.whyStationOnPage").contains("(Page "),
+            "the page is not written with a capital P. Adam, MT-429: 'capitalize Page'");
 
         for (java.util.Map.Entry<String, Boolean> station : expected.entrySet())
         {
@@ -907,12 +925,25 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return out;
     }
 
-    /** A copy in natural order, which is the order both why-windows sort by. */
-    private static java.util.List<String> sorted(java.util.List<String> names)
+    /** A copy in the order MT-429 asks for: page (the train's own first, then by name), then station name. */
+    private static java.util.List<String> inPageOrder(java.util.List<String> names,
+        final java.util.Map<String, String[]> rank)
     {
         java.util.List<String> copy = new java.util.ArrayList<>(names);
 
-        java.util.Collections.sort(copy);
+        java.util.Collections.sort(copy, (a, b) ->
+        {
+            String[] x = rank.containsKey(a) ? rank.get(a) : new String[] { "3", a };
+            String[] y = rank.containsKey(b) ? rank.get(b) : new String[] { "3", b };
+
+            int byPage = x[0].compareTo(y[0]);
+
+            if (byPage != 0) return byPage;
+
+            int byName = x[1].compareTo(y[1]);
+
+            return byName != 0 ? byName : a.compareTo(b);
+        });
 
         return copy;
     }
