@@ -103,6 +103,10 @@ DISPOSITION_COLORS = {
 # from DISPOSITION_COLORS on purpose, so tests.md's three-word rule stays exactly three words.
 ISSUE_STATE_COLORS = dict(DISPOSITION_COLORS)
 ISSUE_STATE_COLORS["declined"] = "#8a3a3a"         # closed, deliberately not built - not grey (=validated)
+# PICKED UP, NOT BUILT (Adam, 2026-09-14: "FR-002 should show as pending").  "needs test" said the
+# wrong thing about a request nobody has coded - there is nothing to test - and "pending" was a word
+# only an Inbox item could show.  Open, and coloured the way a pending Inbox item already is.
+ISSUE_STATE_COLORS["pending"] = DISPOSITION_COLORS["needs-test"]
 
 # README.md rule 4's four documented words, and no others - derived from DISPOSITION_COLORS
 # rather than re-typed, so the two cannot say something different from each other.  Nothing

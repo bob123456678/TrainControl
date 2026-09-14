@@ -29,8 +29,10 @@ gives it a receipt row here. A **bug** also gets an `MT-###` tag in `tests.md`, 
 test** - a fix needs a repeatable hands-on check that the regression stays fixed, so that tag is
 handed out immediately, not earned. A **feature request** is tracked directly instead, by default:
 its receipt row gets a **State** in three of the four words `tests.md`'s disposition uses (not
-**superseded**, which has no meaning for a request nobody has coded yet), plus one of its own,
-**declined**, for something cancelled - see below - set by Claude and only by Claude. It
+**superseded**, which has no meaning for a request nobody has coded yet), plus two of its own,
+**pending** for picked up and not built yet, and **declined** for something cancelled - see below -
+set by Claude and only by Claude.  Once an `MT-###` tests it, the row names that tag in **Became**
+instead, so its state follows the test. It
 only gets promoted to an `MT-###` tag if the eventual work turns out to need a genuine hands-on
 test the way a bug fix does.
 
@@ -1163,8 +1165,8 @@ Newest first. This is a receipt for something promoted into `tests.md` - **Becam
 feature requests, going forward - has no `MT-###` tag to point at; **State** is its disposition,
 in three of the four words `tests.md` uses (`needs test` / `fixed unvalidated` / `fixed
 validated` - not `superseded`, which has no meaning for something nobody has coded yet), plus
-**declined** for something cancelled, set by Claude and only by Claude, the same rule as
-everywhere else it appears. Exactly one of
+**pending** for picked up and not built yet and **declined** for something cancelled, set by Claude
+and only by Claude, the same rule as everywhere else it appears. Exactly one of
 State or Became is filled in for any row - a feature request either gets its own tag, or it does
 not, never both.
 

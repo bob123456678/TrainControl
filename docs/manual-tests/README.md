@@ -121,8 +121,15 @@ repeatable hands-on check that the regression stays fixed, which is exactly what
 
 A **feature request** is tracked directly in the receipt table instead: a **State** column, in
 three of the four words `tests.md`'s disposition uses (not **superseded**, which has no meaning
-for a request nobody has coded yet), plus a fourth of its own - see cancelling, below - set by
-Claude the same way. It gets an `MT-###` tag only if the eventual work turns out to need a genuine repeatable
+for a request nobody has coded yet), plus two of its own - **pending**, picked up and not built yet,
+and **declined**, see cancelling, below - set by Claude the same way.
+
+**Anything an `MT-###` tests is tracked through that test, not through its own State** (Adam,
+2026-09-14: *"make sure other FR's get updated once their MT's are implemented"*). Its receipt names
+every such tag in **Became** and leaves State empty, so the row's state is the worst of those tests'
+and moves the moment Adam validates them. A State typed beside a Became, or a "fixed unvalidated"
+that nobody revisits after its test passes, is how 41 receipts came to say "fixed unvalidated" long
+after the work was confirmed. It gets an `MT-###` tag only if the eventual work turns out to need a genuine repeatable
 hands-on test the way a bug fix does - not as the default. `MT-094` is what the default used to
 produce: a feature nobody had even designed yet, filed the moment it was picked up as if it were a
 regression test, sitting in the Tests ledger indistinguishable from one. See its own entry for the
@@ -205,7 +212,7 @@ test - which is exactly backwards, since "does this behave correctly" and "shoul
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
 items of that kind: pending ones, and picked-up ones tracked directly by their own **State** -
 colored the same way the Tests tab colors a disposition, three of its four words (not
-**superseded**) plus **declined**.
+**superseded**) plus **pending** and **declined**.
 
 **A picked-up item promoted to an `MT-###` tag hides under the `open` filters and reappears under
 `everything, validated included`.** While it's active work its home is the Tests tab, not here - the
