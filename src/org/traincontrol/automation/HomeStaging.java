@@ -1,5 +1,6 @@
 package org.traincontrol.automation;
 
+import org.traincontrol.util.I18n;
 import java.util.ArrayList;
 import org.traincontrol.base.Accessory;
 
@@ -314,11 +315,43 @@ public final class HomeStaging
         private final List<Move> moves;
         private final List<Locomotive> blocked;
 
+        /**
+         * Why each locomotive could not be brought home, in words, or empty when nothing was found
+         * wrong with any one of them (FR-078).  See `getReasons`.
+         */
+        private final Map<Locomotive, List<String>> reasons;
+
         Plan(Outcome outcome, List<Move> moves, List<Locomotive> blocked)
+        {
+            this(outcome, moves, blocked, Collections.<Locomotive, List<String>>emptyMap());
+        }
+
+        Plan(Outcome outcome, List<Move> moves, List<Locomotive> blocked,
+            Map<Locomotive, List<String>> reasons)
         {
             this.outcome = outcome;
             this.moves = moves;
             this.blocked = blocked;
+            this.reasons = reasons;
+        }
+
+        /**
+         * Why each locomotive the plan could not bring home was refused, one sentence per fact found.
+         *
+         * Adam, FR-078, 2026-09-13: *"if a return home plan fails, state the reason why the layout
+         * doesn't allow a locomotive to go to its home in the log (length, blocked, etc.)"*.  The
+         * outcome names the trains; this names the rule each one fell foul of, which is what says
+         * what to change - a length, a switch, a train in the way.
+         *
+         * For IMPOSSIBLE it is a proof, one entry per locomotive on `getBlocked`.  For NO_PLAN_FOUND it
+         * is only what can be SEEN from where everything stands - a home somebody else is standing on
+         * - because that outcome proves nothing and its sentences must not pretend to.
+         *
+         * @return the sentences, keyed by locomotive, in the order the planner found them
+         */
+        public Map<Locomotive, List<String>> getReasons()
+        {
+            return Collections.unmodifiableMap(this.reasons);
         }
 
         public Outcome getOutcome()
@@ -405,6 +438,9 @@ public final class HomeStaging
         // entirely in order as impossible.
         List<Locomotive> unreachable = new ArrayList<>();
 
+        // One sentence per fact, per locomotive, for the log (FR-078).
+        Map<Locomotive, List<String>> reasons = new java.util.LinkedHashMap<>();
+
         for (Locomotive l : this.start.values())
         {
             Point home = this.homes.get(l);
@@ -475,7 +511,14 @@ public final class HomeStaging
             // and this is about where a run may BEGIN.
             if (!locationOf(this.start, l).isActive()
                 || !locationOf(this.start, l).isDestination()
-                || !canGetHome(l, locationOf(this.start, l), home)) unreachable.add(l);
+                || !canGetHome(l, locationOf(this.start, l), home))
+            {
+                unreachable.add(l);
+
+                // AND WHY (FR-078).  Asked of the same three conditions as the line above, so the
+                // sentence cannot describe a rule other than the one that refused.
+                reasons.put(l, whyNotHome(l, locationOf(this.start, l), home));
+            }
         }
 
         // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on
@@ -523,6 +566,9 @@ public final class HomeStaging
 
                 if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
                 if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
+
+                reason(reasons, a.getKey(), I18n.f("autolayout.whyHomeSharesASection",
+                    a.getValue().getName(), b.getKey().getName(), b.getValue().getName()));
             }
         }
 
@@ -545,11 +591,17 @@ public final class HomeStaging
         // that relation.  The pairwise scan above stays, because it is about two homes on ONE
         // DETECTION SECTION - a fact about the track that no ruling about tiers touches.
 
-        if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable);
+        if (!unreachable.isEmpty())
+        {
+            return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable, reasons);
+        }
 
         List<Move> moves = search();
 
-        if (moves == null) return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs());
+        if (moves == null)
+        {
+            return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs(), whatCanBeSeen());
+        }
 
         return new Plan(Outcome.READY, moves, noLocs());
     }
@@ -1546,6 +1598,154 @@ public final class HomeStaging
      * @param home its home, or any copy of the home square
      * @return true when some copy of that square would take it and can be reached
      */
+    /**
+     * Why one locomotive cannot get home, in words - one sentence per rule it breaks (FR-078).
+     *
+     * The same questions `plan` asks before it calls a train unreachable, broken into their parts, so
+     * the log can say which part: the square it stands on, the home itself, or the way between.  A
+     * home is a SQUARE, so a home rule is reported only when NO copy of the square would take the
+     * train - the answer `canRestOnSquare` gives, taken apart.
+     *
+     * @param loc the locomotive
+     * @param from where it stands
+     * @param home its home
+     * @return at least one sentence
+     */
+    private List<String> whyNotHome(Locomotive loc, Point from, Point home)
+    {
+        List<String> out = new ArrayList<>();
+
+        if (!from.isActive())
+        {
+            out.add(I18n.f("autolayout.whyHomeStartOutOfService", from.getName()));
+        }
+
+        if (!from.isDestination())
+        {
+            out.add(I18n.f("autolayout.whyHomeStartNotAStation", from.getName()));
+        }
+
+        List<Point> copies = copiesOf(home);
+
+        boolean anyActive = false, anyAdmits = false, anyLongEnough = false, anyStation = false;
+
+        for (Point copy : copies)
+        {
+            anyStation |= copy.isDestination();
+            anyActive |= copy.isActive();
+            anyAdmits |= !copy.getExcludedLocs().contains(loc);
+            anyLongEnough |= copy.validateTrainLength(loc);
+        }
+
+        if (!anyStation) out.add(I18n.f("autolayout.whyHomeNotAStation", home.getName()));
+
+        if (!anyActive) out.add(I18n.f("autolayout.whyHomeOutOfService", home.getName()));
+
+        if (!anyAdmits) out.add(I18n.f("autolayout.whyHomeExcludesIt", home.getName()));
+
+        if (!anyLongEnough)
+        {
+            out.add(I18n.f("autolayout.whyHomeTooShort", home.getName(),
+                String.valueOf(loc.getTrainLength()), String.valueOf(home.getMaxTrainLength())));
+        }
+
+        // THE ROUTE, asked only when the home itself would take the train: "no way there" about a
+        // square the train could not stand on anyway is a second sentence about the first problem.
+        if (out.isEmpty())
+        {
+            boolean reachable = false;
+
+            for (Point copy : copies)
+            {
+                if (canRest(loc, copy) && connected(from, copy)) reachable = true;
+            }
+
+            if (!reachable)
+            {
+                out.add(I18n.f("autolayout.whyHomeNoRoute", from.getName(), home.getName()));
+            }
+        }
+
+        // Never an empty answer for a train the plan refused: that would read as "nothing is wrong".
+        if (out.isEmpty()) out.add(I18n.f("autolayout.whyHomeNoRoute", from.getName(), home.getName()));
+
+        return out;
+    }
+
+    /**
+     * What can be seen to stand in the way when the search found no arrangement (FR-078).
+     *
+     * NO_PLAN_FOUND proves nothing - the search only ran out of room - so this says only what is TRUE
+     * of the railway as it stands: which homes another train is standing on.  That is the commonest
+     * reason and the one the operator can act on; anything subtler is the search's, and is not
+     * guessed at.
+     *
+     * @return sentences keyed by locomotive; a locomotive with nothing visible in its way gets the
+     *     plain statement that no arrangement was found, so every train away from home is mentioned
+     */
+    private Map<Locomotive, List<String>> whatCanBeSeen()
+    {
+        Map<Locomotive, List<String>> out = new java.util.LinkedHashMap<>();
+
+        for (Locomotive l : this.start.values())
+        {
+            Point home = this.homes.get(l);
+
+            if (home == null || out.containsKey(l) || atHome(home, locationOf(this.start, l))) continue;
+
+            for (Point copy : copiesOf(home))
+            {
+                Locomotive there = this.start.get(copy);
+
+                if (there != null && !there.equals(l))
+                {
+                    reason(out, l, I18n.f("autolayout.whyHomeOccupied", home.getName(),
+                        there.getName()));
+
+                    break;
+                }
+            }
+
+            if (!out.containsKey(l))
+            {
+                reason(out, l, I18n.f("autolayout.whyHomeNoArrangement", home.getName()));
+            }
+        }
+
+        return out;
+    }
+
+    /** The copies of a square: itself when it has no block, else every point sharing its block. */
+    private static List<Point> copiesOf(Point square)
+    {
+        List<Point> out = new ArrayList<>();
+
+        if (square.getBlock() != null && square.getLayout() != null)
+        {
+            for (Point copy : square.getLayout().getPoints())
+            {
+                if (square.getBlock().equals(copy.getBlock())) out.add(copy);
+            }
+        }
+
+        if (out.isEmpty()) out.add(square);
+
+        return out;
+    }
+
+    private static void reason(Map<Locomotive, List<String>> into, Locomotive loc, String sentence)
+    {
+        List<String> list = into.get(loc);
+
+        if (list == null)
+        {
+            list = new ArrayList<>();
+            into.put(loc, list);
+        }
+
+        if (!list.contains(sentence)) list.add(sentence);
+    }
+
     private boolean canGetHome(Locomotive loc, Point from, Point home)
     {
         if (home == null) return false;

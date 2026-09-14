@@ -272,6 +272,26 @@ public class AutonomyEditorPanel extends JPanel
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
     /**
+     * The keys `LayoutEditor` binds to this panel's actions, as their tooltips name them (OB-214).
+     *
+     * Adam, 2026-09-13: *"Set Segment Length needs a tooltip that says 'Control+E'.  change for other
+     * missing tooltip hints."*  A key nobody is told about is a key nobody uses - and the one thing a
+     * reader cannot find out by opening a dialog is that a shortcut for it exists.  Literal, as the Text
+     * Labels, Addresses and Grid toggles already write theirs.  Public so a test can ask for the same
+     * words the tooltip was given rather than a second spelling of them.
+     */
+    public static final String SHORTCUT_HOME = "Control+H";
+
+    /** Names the square under the pointer - see `SHORTCUT_HOME`. */
+    public static final String SHORTCUT_NAME = "Control+S";
+
+    /** Sets the segment length of the square under the pointer - see `SHORTCUT_HOME`. */
+    public static final String SHORTCUT_LENGTH = "Control+E";
+
+    /** Shows or hides the track lengths - see `SHORTCUT_HOME`. */
+    public static final String SHORTCUT_LENGTHS = "Control+G";
+
+    /**
      * Names the parked train instead of the station (FR-030).
      *
      * Off by default, which is the change: this editor is where a railway is NAMED, and a caption that
@@ -696,6 +716,10 @@ public class AutonomyEditorPanel extends JPanel
         // frame is what the editor's keyboard shortcuts are bound to - so ticking this box quietly
         // turned Ctrl+Z and Delete off until something else was clicked.
         showLengths.setFocusable(false);
+
+        // Control+G, which `LayoutEditor` binds to this toggle (OB-214) - written as the Text Labels,
+        // Addresses and Grid toggles beside it write theirs.
+        showLengths.setToolTipText(SHORTCUT_LENGTHS);
 
         directions.addActionListener(e ->
         {
@@ -1267,15 +1291,27 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     String home = homeOf(target);
 
-                    menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
-                                               : I18n.f("autosetup.ui.menuHomeFor", home),
-                        () -> promptHome(target)));
+                    javax.swing.JMenuItem homeItem = item(home == null
+                        ? I18n.t("autosetup.ui.menuHomeNone") : I18n.f("autosetup.ui.menuHomeFor", home),
+                        () -> promptHome(target));
+
+                    // THE KEY THAT DOES THIS WITHOUT THE MENU (Adam, OB-214: "change for other missing
+                    // tooltip hints").  See `SHORTCUT_HOME`.
+                    homeItem.setToolTipText(SHORTCUT_HOME);
+
+                    menu.add(homeItem);
                 }
             }
 
             if (standing != null || isStation) menu.addSeparator();
 
-            menu.add(item(I18n.t("autosetup.ui.menuRename"), () -> promptName(target)));
+            javax.swing.JMenuItem renameItem =
+                item(I18n.t("autosetup.ui.menuRename"), () -> promptName(target));
+
+            // And Control+S, the key that names the square under the pointer (OB-214).
+            renameItem.setToolTipText(SHORTCUT_NAME);
+
+            menu.add(renameItem);
 
             menu.addSeparator();
 
@@ -1786,8 +1822,13 @@ public class AutonomyEditorPanel extends JPanel
         // adds the only thing that keeps the two doors together, which is that there is one of them.
         if (offersALength(tile))
         {
-            menu.add(item(I18n.t("autosetup.ui.menuSetLength"),
-                () -> applyLength(squareTheLengthWouldGoOn(tile))));
+            javax.swing.JMenuItem lengthItem = item(I18n.t("autosetup.ui.menuSetLength"),
+                () -> applyLength(squareTheLengthWouldGoOn(tile)));
+
+            // Adam, OB-214: "Set Segment Length needs a tooltip that says Control+E".
+            lengthItem.setToolTipText(SHORTCUT_LENGTH);
+
+            menu.add(lengthItem);
         }
 
 
@@ -4145,17 +4186,33 @@ public class AutonomyEditorPanel extends JPanel
             // only way to answer was to read a list of names. A click needs no name, so on a railway
             // where nothing else has been named yet - which is most railways early on - this message
             // would now be hiding the only way in. That is the shape of half the defects in this file.
-            String pickNow = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
+            //
+            // GREYED, NOW THAT THERE IS NOTHING A CLICK COULD FIND (Adam, MT-376, 2026-09-13: "if there
+            // are no stations on the diagram yet, the 'choose on diagram' button should be greyed out to
+            // match the message").
+            //
+            // The reasoning above held while a click could pick any square autonomy routes over.  Since
+            // the list became stations only, `whyNotABlocker` refuses a square that is not one - so on a
+            // diagram with no other station a click can find nothing either, and an enabled button would
+            // offer a gesture that can only be refused.  Shown greyed rather than left out, so the
+            // operator learns the way in exists for when there are stations to pick.
+            javax.swing.JButton pickNow = nothingToPickButton();
 
-            Object[] either = { pickNow,
-                javax.swing.UIManager.getString("OptionPane.cancelButtonText") };
+            final javax.swing.JButton close = new javax.swing.JButton(
+                javax.swing.UIManager.getString("OptionPane.cancelButtonText"));
 
-            int answer = JOptionPane.showOptionDialog(owner(),
+            final JOptionPane pane = new JOptionPane(
                 wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
-                I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
-                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, either, pickNow);
+                JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
+                new Object[] { pickNow, close }, close);
 
-            if (answer == 0) armBlockerPick(station);
+            close.addActionListener(e -> pane.setValue(close));
+
+            javax.swing.JDialog dialog =
+                pane.createDialog(owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
+
+            dialog.setVisible(true);
+            dialog.dispose();
 
             return;
         }
@@ -4299,6 +4356,34 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param station the station being held back
      */
+    /**
+     * The Pick on the Diagram button as the "nothing to list" message shows it: present and greyed
+     * (MT-376).  Its own method so a test can read what the operator is shown without a modal dialog.
+     *
+     * @return a disabled button carrying the option's own words
+     */
+    public static javax.swing.JButton nothingToPickButton()
+    {
+        javax.swing.JButton button =
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionPickBlockerOnDiagram"));
+
+        button.setEnabled(false);
+
+        return button;
+    }
+
+    /**
+     * `whyNotABlocker`, for a test - the rule a click on the diagram is judged by (MT-376).
+     *
+     * @param station the station being held back
+     * @param tile the square that would be clicked
+     * @return the refusal, or null when the square would be accepted
+     */
+    public String whyNotABlockerForTest(TileKey station, TileKey tile)
+    {
+        return whyNotABlocker(station, tile);
+    }
+
     private void armBlockerPick(TileKey station)
     {
         // In the deep menu the diagram is not this panel's to be clicked on - the same reason the
@@ -4347,6 +4432,17 @@ public class AutonomyEditorPanel extends JPanel
             || !session.getReducer().getPoints().containsKey(tile))
         {
             return I18n.t("autosetup.ui.errorNotABlockablePoint");
+        }
+
+        // A STATION, as the list offers (Adam, MT-376, 2026-09-13: "exclude non-station points from the
+        // list entirely").  The click and the list are two doors onto one setting and must refuse the
+        // same squares - otherwise the greyed button beside "nothing to choose" would be a lie the
+        // first time somebody clicked a plain sensor.  An entry already stored is accepted, for the
+        // list's own reason: it is how an old restriction is found again, not a new one added.
+        if (!session.getStore().isStation(tile)
+            && !session.getStore().getBlockingPoints(station).contains(tile))
+        {
+            return I18n.f("autosetup.ui.errorBlockerNotAStation", describeTile(tile));
         }
 
         return null;

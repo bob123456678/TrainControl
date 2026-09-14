@@ -275,6 +275,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // written by setNetworkCommState from the menu and read by exec() from every command thread,
     // with no monitor on either side.
     private volatile boolean on;
+
+    /**
+     * Who is told about every command handed to `exec`, sent or not (MT-359).
+     *
+     * What a locomotive ASKS the station to do is the behaviour worth pinning, and in a test nothing is
+     * ever sent: the network is off, so `exec` discards the message and the command is visible nowhere.
+     * Null unless a test sets it, and read once per call, so it costs one field read in the program.
+     */
+    private volatile java.util.function.Consumer<CS2Message> sentMessageObserver;
     
     // IS THE POWER TURNED ON, AND volatile BECAUSE THE READER DOES NOT TAKE THE MONITOR (S14-C6).
     //
@@ -2704,6 +2713,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public void exec(CS2Message m)
     {
+        // Told first, whether or not the message is then sent - see `setSentMessageObserver`.
+        java.util.function.Consumer<CS2Message> observer = this.sentMessageObserver;
+
+        if (observer != null) observer.accept(m);
+
         if (on)
         {
             this.NetworkInterface.sendMessage(m);
@@ -2736,6 +2750,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
         
+    /**
+     * Sets who is told about every command handed to `exec`, whether or not it is then sent (MT-359).
+     *
+     * @param observer the listener, or null to stop listening
+     */
+    public void setSentMessageObserver(java.util.function.Consumer<CS2Message> observer)
+    {
+        this.sentMessageObserver = observer;
+    }
+
     /**
      * Enables or disables network communication
      * @param on 

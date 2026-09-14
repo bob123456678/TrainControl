@@ -412,6 +412,112 @@ public class testMultiUnitMembership
     }
 
     /**
+     * A function inside the consist's range is SENT to every locomotive in it, head included.
+     *
+     * Adam, MT-359, 2026-09-13: *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply
+     * propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out
+     * whether that means anything."*  And, asked whether the range stays: **"Send to all, keep the cap."**
+     *
+     * The first repair of S14-B1 passed the number to each member through the member's own `setF`, whose
+     * `validF` refused anything its own decoder does not list - so an MM2 member of an MFX-headed consist
+     * never heard f6, and neither did the MM2 head of an MFX member.  Whether a decoder does something
+     * with f6 is the station's business, not a guess made from a function count.
+     *
+     * **Read off what the locomotives asked the station to send**, through the observer on `exec`: in a
+     * test the network is off and a discarded command is otherwise visible nowhere, and the recorded
+     * function state cannot show a command for a function the decoder does not list.
+     */
+    @Test
+    public void testAFunctionInTheConsistsRangeIsSentToEveryLocomotive()
+    {
+        MarklinLocomotive head = model.newMFXLocomotive("MU head K", 83);
+        MarklinLocomotive member = model.newMM2Locomotive("MU member K1", 84);
+
+        MarklinLocomotive mm2Head = model.newMM2Locomotive("MU head K2", 85);
+        MarklinLocomotive mfxMember = model.newMFXLocomotive("MU member K3", 86);
+
+        final java.util.List<int[]> sent = java.util.Collections.synchronizedList(new java.util.ArrayList<int[]>());
+
+        model.setSentMessageObserver(m ->
+        {
+            byte[] data = m.getData();
+
+            if (m.getCommand() == org.traincontrol.marklin.udp.CS2Message.CMD_LOCO_FUNCTION
+                && data != null && data.length >= 6)
+            {
+                int uid = ((data[0] & 0xFF) << 24) | ((data[1] & 0xFF) << 16)
+                    | ((data[2] & 0xFF) << 8) | (data[3] & 0xFF);
+
+                sent.add(new int[] {uid, data[4] & 0xFF, data[5] & 0xFF});
+            }
+        });
+
+        try
+        {
+            assertEquals(member.getNumF(), 5, "precondition: an MM2 member has five functions of its own");
+
+            link(head, member);
+            link(mm2Head, mfxMember);
+
+            head.setF(6, true);
+
+            assertTrue(wasSent(sent, head, 6),
+                "precondition: the MFX head was not sent its own f6, so nothing here is about the members");
+
+            assertTrue(wasSent(sent, member, 6),
+                "f6 pressed on an MFX head was not sent to its MM2 member, because the member's own"
+                + " function count has no f6. Adam, MT-359: \"should simply propagate a F6 command to all"
+                + " the consist's locomotives as per normal. The CS will figure out whether that means"
+                + " anything.\"");
+
+            sent.clear();
+
+            mm2Head.setF(6, true);
+
+            assertTrue(wasSent(sent, mfxMember, 6),
+                "precondition: the MFX member of an MM2 head was not sent f6");
+
+            assertTrue(wasSent(sent, mm2Head, 6),
+                "f6 pressed on an MM2 head with an MFX member was sent to the member and not to the head"
+                + " itself. Adam, MT-359: \"propagate a F6 command to ALL the consist's locomotives\"");
+
+            // AND THE CAP STAYS: a function beyond every member is sent to nobody.
+            sent.clear();
+
+            int beyond = mfxMember.getNumF() + 5;
+
+            mm2Head.setF(beyond, true);
+
+            assertTrue(sent.isEmpty(),
+                "f" + beyond + ", which no locomotive of the consist has, was sent anyway - Adam kept the"
+                + " cap: \"Send to all, keep the cap.\" Sent: " + sent.size());
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            for (String name : new String[] {"MU head K", "MU member K1", "MU head K2", "MU member K3"})
+            {
+                model.deleteLoc(name);
+            }
+        }
+    }
+
+    /** Whether a function command for this locomotive and number was handed to the station. */
+    private static boolean wasSent(java.util.List<int[]> sent, MarklinLocomotive loc, int f)
+    {
+        synchronized (sent)
+        {
+            for (int[] one : sent)
+            {
+                if (one[0] == loc.getIntUID() && one[1] == f) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Links the given members to the head, all at full speed.  Addresses must differ - canBeLinkedTo
      * refuses a member sharing an address with the head or with an existing member.
      */

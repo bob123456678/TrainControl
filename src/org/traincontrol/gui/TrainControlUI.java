@@ -23820,6 +23820,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // it too - including the sync deferral, which no UI predicate can reach
         layout.setStagingInProgress(true);
         this.returnHomeButton.setEnabled(false);
+
+        // A TURNING MARK ON THE BUTTON WHILE THE PLAN IS WORKED OUT (Adam, FR-077: "there needs to be a
+        // spinner on the return home button while it is calculating").  The search can take seconds on
+        // a full railway, and a greyed button with nothing moving reads as a click that did nothing.
+        this.showReturnHomeWorking(true);
         this.executeTimetable.setEnabled(false);
 
         // And the capture toggle (OB-101).
@@ -23848,6 +23853,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // replaced and the first decided whether to run.  Disagreeing meant executing the
                 // operator's own timetable because "Return Home" had been pressed.
                 HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
+
+                // The plan is known, whatever it says - the run that follows has its own marks.
+                javax.swing.SwingUtilities.invokeLater(() -> this.showReturnHomeWorking(false));
 
                 if (!plan.isPossible())
                 {
@@ -23903,6 +23911,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
+                // And here as well, for a plan that threw: the mark must never outlive the flow.
+                javax.swing.SwingUtilities.invokeLater(() -> this.showReturnHomeWorking(false));
+
                 // Released before the buttons come back, so no surface can offer the action while this
                 // worker is still unwinding
                 this.stagingFlowActive = false;
@@ -24315,6 +24326,116 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param reason
      */
+    /**
+     * The turning mark on Return Home while its plan is being worked out, or null (FR-077).
+     *
+     * A turning arc rather than the hourglass: the hourglass is the mark for a modal wait, and this is a
+     * busy mark on one control in a window that stays usable - the same distinction the route table's
+     * play button draws.  The 60ms frame is `LoadingSpinner`'s, so the two turn at the same rate.
+     */
+    private javax.swing.Timer returnHomeSpinner;
+
+    /**
+     * Shows or clears the turning mark on the Return Home button (FR-077).
+     *
+     * Set as the DISABLED icon as well as the icon, because the button is greyed for the whole of the
+     * wait, and a greyed button paints its disabled icon - which for an icon that is not an image is
+     * nothing at all.  Event thread only.
+     *
+     * @param working true while the plan is being worked out
+     */
+    void showReturnHomeWorking(boolean working)
+    {
+        if (this.returnHomeButton == null) return;
+
+        if (working)
+        {
+            if (this.returnHomeSpinner != null) return;
+
+            final TurningArc arc = new TurningArc(
+                Math.max(10, this.returnHomeButton.getFontMetrics(this.returnHomeButton.getFont()).getAscent()));
+
+            this.returnHomeButton.setIcon(arc);
+            this.returnHomeButton.setDisabledIcon(arc);
+
+            this.returnHomeSpinner = new javax.swing.Timer(60, e ->
+            {
+                arc.advance();
+                this.returnHomeButton.repaint();
+            });
+
+            this.returnHomeSpinner.start();
+        }
+        else
+        {
+            if (this.returnHomeSpinner != null) this.returnHomeSpinner.stop();
+
+            this.returnHomeSpinner = null;
+
+            this.returnHomeButton.setIcon(null);
+            this.returnHomeButton.setDisabledIcon(null);
+        }
+    }
+
+    /**
+     * Whether the Return Home button is showing that its plan is being worked out (FR-077).
+     *
+     * @return true while the turning mark is on the button
+     */
+    public boolean isReturnHomeShowingWork()
+    {
+        return this.returnHomeButton != null && this.returnHomeButton.getIcon() instanceof TurningArc;
+    }
+
+    /** A three-quarter circle that turns a step each frame (FR-077). */
+    private static final class TurningArc implements javax.swing.Icon
+    {
+        private final int size;
+        private int angle;
+
+        TurningArc(int size)
+        {
+            this.size = size;
+        }
+
+        void advance()
+        {
+            this.angle = (this.angle + 330) % 360;
+        }
+
+        @Override
+        public void paintIcon(Component c, java.awt.Graphics g, int x, int y)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setStroke(new java.awt.BasicStroke(Math.max(2f, size / 6f),
+                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.setColor(new java.awt.Color(90, 90, 90));
+                g2.drawArc(x + 1, y + 1, size - 2, size - 2, angle, 270);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        public int getIconWidth()
+        {
+            return size;
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return size;
+        }
+    }
+
     private void disableReturnHome(String reason)
     {
         this.returnHomeButton.setEnabled(false);

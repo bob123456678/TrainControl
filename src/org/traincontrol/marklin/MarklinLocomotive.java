@@ -909,6 +909,36 @@ public class MarklinLocomotive extends Locomotive
         return this;
     }
     
+    /**
+     * Records a function and sends its command to the station, whatever this decoder's function count
+     * says (MT-359).
+     *
+     * The count bounds what is RECORDED - `_setF` ignores a number past it - and nothing else: the
+     * command goes to the station either way, which decides what it means for the decoder it reaches.
+     * Called for the head and each member by `setF`, after `setF` has refused anything beyond the whole
+     * consist's range.
+     *
+     * @param fNumber the function
+     * @param state on or off
+     */
+    private synchronized void sendFunction(int fNumber, boolean state)
+    {
+        super._setF(fNumber, state);
+
+        this.network.exec(new CS2Message(
+            CS2Message.CMD_LOCO_FUNCTION,
+            new byte[]
+            {
+              (byte) (UID >> 24),
+              (byte) (UID >> 16),
+              (byte) (UID >> 8),
+              (byte) UID,
+              (byte) fNumber,
+              (byte) (state ? 1 : 0)
+            }
+        ));
+    }
+
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
@@ -929,40 +959,39 @@ public class MarklinLocomotive extends Locomotive
         // worth a finding.
         if (fNumber < 0 || fNumber >= this.drivableFunctionCount()) return this;
 
-        // Every member is asked; each one's own validF refuses what its decoder does not have, on the
-        // recursive call.  That is the direction that was always safe.
+        // EVERY LOCOMOTIVE IN THE CONSIST IS SENT THE COMMAND, HEAD INCLUDED (Adam, MT-359, 2026-09-13).
+        //
+        // *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply propagate a F6 command
+        // to all the consist's locomotives as per normal.  The CS will figure out whether that means
+        // anything."*  Asked whether the range above stays: **"Send to all, keep the cap."**
+        //
+        // This asked each member through its own `setF`, whose `validF` refused a number its decoder does
+        // not list - so the MM2 member of an MFX-headed consist never heard f6, and an MM2 head skipped
+        // its own copy.  Whether a decoder does anything with f6 is the station's business, and a
+        // function count is a guess at it.  What is recorded locally is still bounded by each
+        // locomotive's own count (`_setF`), so no state appears for a function nothing has; `getF` on
+        // the head answers for the consist, as before.
         for (Locomotive l : this.linkedLocomotives.keySet())
         {
-            l.setF(fNumber, state);
+            if (l instanceof MarklinLocomotive)
+            {
+                ((MarklinLocomotive) l).sendFunction(fNumber, state);
+            }
+            else
+            {
+                l.setF(fNumber, state);
+            }
         }
 
-        // AND THE HEAD ITSELF ONLY IF IT HAS THE FUNCTION.  An MM2 head physically cannot do f6; what
-        // it must not do is pretend it did.
-        if (this.validF(fNumber))
+        // Force last known direction if this is the first command to move
+        if (this.lastStartTime == 0)
         {
-            // Force last known direction if this is the first command to move
-            if (this.lastStartTime == 0)
-            {
-                this.setDirection(this.getDirection());
-            }
-            
-            super._setF(fNumber, state);
-        
-            this.network.exec(new CS2Message(
-                CS2Message.CMD_LOCO_FUNCTION,
-                new byte[]
-                {
-                  (byte) (UID >> 24), 
-                  (byte) (UID >> 16), 
-                  (byte) (UID >> 8), 
-                  (byte) UID,
-                  (byte) fNumber,
-                  (byte) (state ? 1 : 0)
-                }
-            ));
+            this.setDirection(this.getDirection());
         }
-        
-        return this;        
+
+        this.sendFunction(fNumber, state);
+
+        return this;
     }
     
     @Override

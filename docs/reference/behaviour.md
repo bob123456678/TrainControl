@@ -383,9 +383,16 @@ and the runtime chose one quite happily:
 | the marking | the question it answers |
 |---|---|
 | **Changing Direction - Never / May / Must** | what happens when a train ARRIVES here |
-| **Can Be Chosen in Full Autonomy** | who may SEND a train here |
+| **Can Be Chosen in Full Autonomy** | whether autonomy may choose it as a STOP - off, it is used only by a train being parked there, by Return Home or by hand |
 
 They are independent, and only the second decides whether autonomy picks a square:
+
+**Why the second reads as "may it stop here" (Adam, MT-348, 2026-09-13).** Full autonomy never
+turns a train part-way through a run - `pickPath` refuses a route that `reversesAlongTheWay`, and
+`testFullAutonomyDoesNotDriveThroughAReversingPoint` pins it - so a may-turn square is never a place
+autonomy reverses at on its way somewhere else. What the switch decides in practice is whether a train
+may END a run there in autonomy, or only while it is being parked, by Return Home or by hand. The
+editor's hint says it that way.
 
 - A **compulsory turn** with the switch on is a station autonomy may choose, and the train turns round
   when it gets there. `Layout.isSendableDestination` accepts it - a must-turn station is built as a

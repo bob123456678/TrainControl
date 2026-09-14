@@ -9407,6 +9407,16 @@ public class Layout
             this.control.logf("autolayout.infoReturnToHomeMove", move.toString());
         }
 
+        // AND WHY NOT, for each train it could not bring home (Adam, FR-078: "state the reason why
+        // the layout doesn't allow a locomotive to go to its home in the log").
+        for (Map.Entry<Locomotive, List<String>> entry : plan.getReasons().entrySet())
+        {
+            for (String why : entry.getValue())
+            {
+                this.control.logf("autolayout.infoReturnToHomeWhy", entry.getKey().getName(), why);
+            }
+        }
+
         return plan;
     }
 
