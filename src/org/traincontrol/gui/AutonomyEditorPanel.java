@@ -6962,8 +6962,10 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The old body of `applyWhy`, on a worker thread, composing an answer rather than painting one.
      *
-     * NOTHING ABOUT THE ANSWER CHANGES - the same stations, the same reasons, the same traces, in the
-     * same order, from the same one pass over `explainDestinations`.  What changes is that the report
+     * NOTHING ABOUT THE ANSWER CHANGED when it moved - the same stations, the same reasons, the same
+     * traces, from one pass over the railway's answer.  The ORDER has changed since, on purpose (FR-080):
+     * the stations autonomy could choose, then the ones it never will, each alphabetical, with the page
+     * named for a station that is not on the train's.  What changes is that the report
      * and the lines are built into a value object and handed over, instead of being written into the
      * banner and into `traces` from here.  `traces` is read by the paint, so a worker writing into it
      * would be drawing on the diagram from the wrong thread.
@@ -7015,10 +7017,22 @@ public class AutonomyEditorPanel extends JPanel
                 escape(standing.getName()), escape(cannotStart)) + unsavedWarning(), true, drawn);
         }
 
-        java.util.Map<String, String> reasons = layout.explainDestinations(standing);
+        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock (FBR-C6) so a
+        // station cannot be printed under the wrong heading - the question the locomotive panel's own
+        // why-window asks, and in the same call.
+        org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing);
 
-        java.util.List<String> available = new java.util.LinkedList<>();
-        StringBuilder blocked = new StringBuilder();
+        java.util.Map<String, String> reasons = grouped.getReasons();
+        java.util.Set<String> neverChosenPoints = grouped.getBarred();
+
+        // STATIONS FIRST, THEN BERTHS, EACH ALPHABETICAL (Adam, FR-080: "show all stations first, then
+        // show berths (non-autonomy stations), both in alphabetical order").  The railway reports them in
+        // its priority order, which is what `pickPath` walks and not how anybody reads a list.  Grouped as
+        // `AutoLocomotiveStatus.whyNotReport` groups its window - a station with any copy autonomy could
+        // choose is filed with the choosable ones - so the two answers to one question read alike.
+        java.util.Set<String> available = new java.util.TreeSet<>();
+        java.util.Map<String, String> choosable = new java.util.TreeMap<>();
+        java.util.Map<String, String> neverChosen = new java.util.TreeMap<>();
 
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
@@ -7033,19 +7047,23 @@ public class AutonomyEditorPanel extends JPanel
         // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
         // keyed by the running graph's Points, and a square is several of those - so a derived-graph
         // station appeared three times over, under generated names the user never chose.
-        java.util.Set<String> listed = new java.util.LinkedHashSet<>();
-
         for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
         {
             TileKey where = index.squareOf(entry.getKey());
 
             String station = where == null ? entry.getKey() : describeTile(where);
 
+            // AND ITS PAGE, where that is not the page the train stands on (FR-080: "If a point is on
+            // another page, show it").  A setup can span several pages, and a name with no page is a name
+            // somebody has to go and look for - or two different squares that read as one.
+            if (where != null && where.getPage() != null && !where.getPage().equals(tile.getPage()))
+            {
+                station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
+            }
+
             if (entry.getValue() == null)
             {
-                if (!listed.add("ok:" + station)) continue;
-
-                available.add(station);
+                if (!available.add(station)) continue;
 
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && session.getReducer() != null)
@@ -7060,10 +7078,20 @@ public class AutonomyEditorPanel extends JPanel
             {
                 // One line per station.  The first reason is the one that would have stopped it; the
                 // others are the same square's other arrival sides saying the same thing.
-                if (!listed.add("no:" + station)) continue;
+                if (neverChosenPoints.contains(entry.getKey()))
+                {
+                    // Only when no copy of it has already gone into the other group.
+                    if (!choosable.containsKey(station) && !neverChosen.containsKey(station))
+                    {
+                        neverChosen.put(station, entry.getValue());
+                    }
+                }
+                else
+                {
+                    neverChosen.remove(station);
 
-                blocked.append("<br>").append(escape(station)).append(": ")
-                       .append(escape(entry.getValue()));
+                    if (!choosable.containsKey(station)) choosable.put(station, entry.getValue());
+                }
             }
         }
 
@@ -7078,7 +7106,12 @@ public class AutonomyEditorPanel extends JPanel
         // So when nothing was considered, say what the setup actually holds.
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
-            : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(available)));
+            : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(new java.util.ArrayList<>(available))));
+
+        StringBuilder blocked = new StringBuilder();
+
+        whyGroup(blocked, I18n.f("autolayout.ui.whyHeaderCandidates", choosable.size()), choosable);
+        whyGroup(blocked, I18n.f("autolayout.ui.whyHeaderBarred", neverChosen.size()), neverChosen);
 
         String detail = blocked.toString();
 
@@ -7347,6 +7380,28 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return count;
+    }
+
+    /**
+     * One headed group of "station: reason" lines for the why answer, left out entirely when it is empty.
+     *
+     * The headings are the locomotive panel's window's own, for FR-080: the same two groups under the
+     * same two names.  An empty heading reads as a group that failed to load, so there is none.
+     *
+     * @param into the answer being built
+     * @param heading the group's heading, already translated
+     * @param lines station to reason, in the order to show them
+     */
+    private static void whyGroup(StringBuilder into, String heading, java.util.Map<String, String> lines)
+    {
+        if (lines.isEmpty()) return;
+
+        into.append("<br><b>").append(escape(heading)).append("</b>");
+
+        for (java.util.Map.Entry<String, String> line : lines.entrySet())
+        {
+            into.append("<br>").append(escape(line.getKey())).append(": ").append(escape(line.getValue()));
+        }
     }
 
     /**

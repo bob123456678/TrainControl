@@ -727,6 +727,197 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
+     * The why answer lists the stations autonomy could choose first and the ones it never will after, each
+     * alphabetical, and names the page of a station that is on another one (FR-080).
+     *
+     * Adam: *"in the 'why not moving' view in the autonomy editor, show all stations first, then show
+     * berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show
+     * it."*  The list came in the railway's priority order - what `pickPath` walks - with the two kinds
+     * mixed and no page anywhere, on a snapshot of five pages.
+     *
+     * The grouping is the railway's (`explainDestinationsGrouped`) and the names are the session's
+     * (`describeTile`); the answer is read back and checked against both.
+     */
+    @Test
+    public void testTheWhyAnswerListsStationsThenBerthsWithTheirPages() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+
+        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
+
+        final java.lang.reflect.Method why = theWhyTool();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                why.invoke(panel, occupied, drawn);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(awaitWhy(panel), "the why answer never landed");
+
+        pump();
+
+        String said = whatTheEditorSays(panel);
+
+        org.traincontrol.base.Locomotive train = trainOn(occupied);
+
+        assertNotNull(train, "no train stands on " + occupied + ", so there is no answer to read");
+
+        assertNull(layout.explainCannotStart(train), "precondition: " + train.getName()
+            + " cannot start at all, so the answer has no list of stations to put in order: " + said);
+
+        org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(train);
+
+        // Each refused station as the answer should show it, and whether it belongs with the ones autonomy
+        // could choose - true when ANY of its copies is choosable, which is how both why-windows file it.
+        java.util.Map<String, Boolean> expected = new java.util.LinkedHashMap<>();
+
+        String elsewhere = null;
+
+        for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
+        {
+            if (entry.getValue() == null) continue;
+
+            String shown = shownAs(entry.getKey(), occupied);
+
+            boolean couldChoose = !grouped.getBarred().contains(entry.getKey());
+
+            expected.put(shown, Boolean.TRUE.equals(expected.get(shown)) || couldChoose);
+
+            org.traincontrol.automationui.TileGraph.TileKey square =
+                session.getStationIndex().squareOf(entry.getKey());
+
+            if (elsewhere == null && square != null && !square.getPage().equals(occupied.getPage()))
+            {
+                elsewhere = shown;
+            }
+        }
+
+        assertTrue(expected.containsValue(true) && expected.containsValue(false),
+            "precondition: " + train.getName() + " needs refused stations of both kinds for the order to"
+            + " mean anything, and has " + expected);
+
+        assertNotNull(elsewhere, "precondition: none of the stations refused to " + train.getName()
+            + " is on a page other than " + occupied.getPage() + ", so a page could never be shown");
+
+        java.util.List<String> candidates = section(said, "autolayout.ui.whyHeaderCandidates");
+        java.util.List<String> never = section(said, "autolayout.ui.whyHeaderBarred");
+
+        assertFalse(candidates.isEmpty(),
+            "the answer has no group of stations autonomy could choose - the stations and the berths are"
+            + " mixed in one list. Adam, FR-080: 'show all stations first, then show berths'. It says: " + said);
+
+        assertFalse(never.isEmpty(),
+            "the answer has no group of stations autonomy will never choose. It says: " + said);
+
+        assertTrue(said.indexOf(heading("autolayout.ui.whyHeaderCandidates"))
+            < said.indexOf(heading("autolayout.ui.whyHeaderBarred")),
+            "the berths are listed before the stations autonomy could choose. It says: " + said);
+
+        assertEquals(candidates, sorted(candidates),
+            "the stations autonomy could choose are not in alphabetical order");
+
+        assertEquals(never, sorted(never), "the stations autonomy will never choose are not in alphabetical order");
+
+        for (java.util.Map.Entry<String, Boolean> station : expected.entrySet())
+        {
+            String name = station.getKey().replace("&", "&amp;").replace("<", "&lt;");
+
+            assertTrue((station.getValue() ? candidates : never).contains(name),
+                station.getKey() + " should be listed with the stations autonomy "
+                + (station.getValue() ? "could choose" : "will never choose") + ", by that name - a station"
+                + " on another page carries its page, as " + elsewhere + " should.  Could choose: " + candidates
+                + ".  Never: " + never);
+        }
+    }
+
+    /** The locomotive standing on a square, whichever of its Points holds it. */
+    private static org.traincontrol.base.Locomotive trainOn(org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        for (String pointName : session.getStationIndex().pointNamesAt(square))
+        {
+            org.traincontrol.automation.Point at = layout.getPoint(pointName);
+
+            if (at != null && at.getCurrentLocomotive() != null) return at.getCurrentLocomotive();
+        }
+
+        return null;
+    }
+
+    /**
+     * What the why answer should call a Point: the session's name for its square, with the page when that
+     * is not the page the train stands on.
+     */
+    private static String shownAs(String pointName, org.traincontrol.automationui.TileGraph.TileKey from)
+    {
+        org.traincontrol.automationui.TileGraph.TileKey square = session.getStationIndex().squareOf(pointName);
+
+        if (square == null) return pointName;
+
+        String name = session.describeTile(square);
+
+        return square.getPage() != null && !square.getPage().equals(from.getPage())
+            ? org.traincontrol.util.I18n.f("autosetup.ui.whyStationOnPage", name, square.getPage()) : name;
+    }
+
+    /** A heading's words up to its count, as the answer writes them, for finding it there. */
+    private static String heading(String key)
+    {
+        String template = org.traincontrol.util.I18n.t(key);
+
+        int count = template.indexOf("{0}");
+
+        return (count < 0 ? template : template.substring(0, count)).replace("&", "&amp;").replace("<", "&lt;");
+    }
+
+    /** The station names under one heading of the answer, in the order shown; empty when there is no such heading. */
+    private static java.util.List<String> section(String said, String key)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        boolean inside = false;
+
+        for (String line : said.split("<br>"))
+        {
+            if (line.startsWith("<b>"))
+            {
+                inside = line.contains(heading(key));
+                continue;
+            }
+
+            int colon = line.indexOf(": ");
+
+            if (!inside || colon < 0)
+            {
+                inside = inside && colon >= 0;
+                continue;
+            }
+
+            out.add(line.substring(0, colon));
+        }
+
+        return out;
+    }
+
+    /** A copy in natural order, which is the order both why-windows sort by. */
+    private static java.util.List<String> sorted(java.util.List<String> names)
+    {
+        java.util.List<String> copy = new java.util.ArrayList<>(names);
+
+        java.util.Collections.sort(copy);
+
+        return copy;
+    }
+
+    /**
      * An autonomy editor panel wired to this fixture's railway, built on the event thread.
      *
      * A null page, which is how `TrainControlUI` builds this panel for the tile menus: the square is
