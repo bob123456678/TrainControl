@@ -19,7 +19,20 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train must fit at every square its route runs through, not only at the one it stops at.
+ * A train is judged for room where it stops, and not at a square it only passes (Adam, MT-333, 2026-09-14).
+ *
+ * **THIS CLASS USED TO SAY THE OPPOSITE**, as `testATrainMustFitEverySquareOnItsRoute`, and the history is kept
+ * below because it is the reason the fixture is shaped as it is.  Adam, 2026-09-14, on 75 407 DB refused from
+ * Tunnel to BottomMainA at a square it only runs past: *"this SHOULD be allowed per the standing rule that this
+ * switch blocking should only affect berthes."*  The standing rule is his of 2026-09-12 - *"make a rule that
+ * parking berths cant block any other edges, but not make that check for active stations"* - and a train passing
+ * a square stands across nothing there.  So the pass-through half of the ruling below is withdrawn, and the same
+ * railway now claims the reverse: one measured unit past the switch at a square the train only passes does NOT
+ * refuse it.  The destination and a square the train turns at are still judged.
+ *
+ * `regression.testAPassingTrainMayStandAcrossThePoints` is the same ruling on Adam's own railway.
+ *
+ * What follows is the class as it was written for the ruling of 2026-09-09.
  *
  * **Adam's ruling of 2026-09-09**, answering the question of what "will the train fit" means, put to
  * him as a choice between the destination only and the whole route:
@@ -62,7 +75,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  *
  * @author Adam
  */
-public class testATrainMustFitEverySquareOnItsRoute
+public class testATrainIsJudgedOnlyWhereItStops
 {
     private static support.Scenario scenario;
 
@@ -164,55 +177,29 @@ public class testATrainMustFitEverySquareOnItsRoute
     }
 
     /**
-     * The refusal itself: room enough at the berth, not enough past the switch, so the route is out.
+     * One measured unit past the switch at a square the train only passes does not refuse it (MT-333).
      *
-     * This is Adam's ruling in one assertion.  Before it the destination was the only square asked
-     * about, and this route was offered.
+     * The reverse of what this claim said until 2026-09-14.  Approach is not where the train stops: it runs
+     * through it to WestEnd, which has ten units of room.
      *
-     * MUTATION: asking `measuredRoomAtTheEndOf` of the whole path instead of each prefix - which is
-     * what the rule did until 2026-09-09 - offers WestEnd again and fails this.
-     *
-     * @throws Exception on a failure to build
-     */
-    @Test
-    public void testARoomyBerthDoesNotExcuseATightStretchPastTheSwitch() throws Exception
-    {
-        oneUnitPastTheSwitchAndTenAtWestEnd();
-
-        assertFalse(destinationsFrom("BranchPlatform").contains("WestEnd"),
-            "WestEnd is still offered to a " + TRAIN_LENGTH + "-unit train whose route crosses one"
-            + " measured unit at Approach. The berth has room and the way to it does not, which is the"
-            + " case Adam's ruling of 2026-09-09 is about");
-    }
-
-    /**
-     * And the sentence says which square, not just that something was too long.
-     *
-     * A refusal naming the destination when the destination is not the problem is worse than no
-     * refusal: it sends the operator to measure the one stretch that was already long enough.  Adam,
-     * on the berth rule: *"there is no notice that can help state/debug this."*
+     * MUTATION: judge a passed square again - drop the `if (!comesToRest) continue;` in
+     * `Layout.whyTooLongForThisRoute` - and WestEnd is refused and this fails.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testTheRefusalNamesTheSquareThatIsTooShort() throws Exception
+    public void testATightStretchTheTrainOnlyPassesDoesNotRefuseIt() throws Exception
     {
         oneUnitPastTheSwitchAndTenAtWestEnd();
 
-        List<Edge> route = theRouteFromBranchPlatformToWestEnd();
+        assertTrue(destinationsFrom("BranchPlatform").contains("WestEnd"),
+            "WestEnd is refused to a " + TRAIN_LENGTH + "-unit train because its route passes one measured unit"
+            + " at Approach, where it does not stop.  Adam, MT-333: 'this switch blocking should only affect"
+            + " berthes'");
 
-        String why = Layout.whyTooLongForThisRoute(route, train);
-
-        assertNotNull(why, "the route is refused when the railway is asked for destinations and"
-            + " accepted when the rule is asked directly, so the two doors disagree");
-
-        assertTrue(why.contains("Approach"),
-            "the refusal is \"" + why + "\", which does not name Approach - the square the train does"
-            + " not fit at. WestEnd has room and measuring it again will not help anybody");
-
-        assertTrue(why.contains(String.valueOf(TRAIN_LENGTH)),
-            "the refusal is \"" + why + "\" and does not carry the length of the train, so there is"
-            + " nothing in it to measure against");
+        assertNull(Layout.whyTooLongForThisRoute(theRouteFromBranchPlatformToWestEnd(), train),
+            "the room rule refuses the route to WestEnd: '"
+            + Layout.whyTooLongForThisRoute(theRouteFromBranchPlatformToWestEnd(), train) + "'");
     }
 
     /**
@@ -256,47 +243,10 @@ public class testATrainMustFitEverySquareOnItsRoute
             "the run from WestEnd to Approach crosses a switch now, so something DOES bound Approach"
             + " and this claim is about a different railway");
 
-        assertNull(Layout.roomAfterASwitchOnTheWay(route, train),
-            "the rule measured " + Layout.roomAfterASwitchOnTheWay(route, train) + " units of room at"
-            + " a square with no switch between it and where the train started. Nothing bounds it -"
-            + " the track behind the train is track the train is standing on - so the only honest"
-            + " answer is that the question cannot be asked here");
-
         assertTrue(destinationsFrom("WestEnd").contains("MainPlatform"),
             "MainPlatform is refused to a " + TRAIN_LENGTH + "-unit train with ten units of room past"
             + " the switch, because two measured units before an unbounded square were counted as its"
             + " room. That is the artefact this condition exists to remove");
-    }
-
-    /**
-     * Unmeasured is unknown, not zero: clear the stretch past the switch and the train is welcome.
-     *
-     * Adam's other half - *"this should only apply if lengths are specified"* - and the strongest form
-     * of the control: one railway, one train, one number changed, opposite answers.
-     *
-     * @throws Exception on a failure to build
-     */
-    @Test
-    public void testAnUnmeasuredStretchStillAdmitsTheTrain() throws Exception
-    {
-        oneUnitPastTheSwitchAndTenAtWestEnd();
-
-        Set<String> whenTight = destinationsFrom("BranchPlatform");
-
-        // The one number: the square past the switch goes back to unmeasured.
-        scenario.getSession().setTileLength(scenario.tile(4, 3), 0);
-
-        Set<String> whenUnmeasured = destinationsFrom("BranchPlatform");
-
-        assertFalse(whenTight.contains("WestEnd"),
-            "the one-unit stretch did not refuse WestEnd, so the comparison below is between two"
-            + " railways that both admit it and says nothing");
-
-        assertTrue(whenUnmeasured.contains("WestEnd"),
-            "WestEnd is refused on a railway where the stretch past the switch is not measured at all,"
-            + " so the rule is refusing on the ABSENCE of a measurement rather than on one - which"
-            + " makes every unmeasured layout unusable and is the failure the walk's own comment says"
-            + " was removed once already");
     }
 
     /**
