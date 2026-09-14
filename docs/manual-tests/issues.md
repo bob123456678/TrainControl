@@ -1205,6 +1205,20 @@ A drop-down commits whatever it holds when it closes, chosen or not, and the con
 
 Adam, 2026-09-14: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong next to it?"*
 
+### OB-222 - 2026-09-14 - the five-train Return Home test fails on the frozen layout's missing track lengths
+
+**Kind:** bug  
+**Raised from:** the battery of 2026-09-14  
+**Filed:** 2026-09-14  
+
+Found by the battery of 2026-09-14 (commit `e4651cec`): `core.testTrainsComeHomeToTheirPlatforms` red once in the battery and once of two runs on its own, green in the seven batteries before it.
+
+**What fails.**  After the twenty-second autonomy run, two trains were left on TopMainR1Inter and TopMainR2Inter (southbound), boxed in by the trains already home on TopMainR1 and TopMainR2: a route home exists on the graph, but no path is clear and there is no square to stage through.  The planner spent its whole 15-second budget and answered NO_PLAN_FOUND, with nobody blocked.
+
+**Why it is left open.**  Adam: *"I think the test will always fail until the railway has realistic track lengths set.  The random lengths of 1 to force edge cases will block things that shouldn't really be blocked."*  Measured on the frozen copy: `test/operator_layout` sets a length on only 6 tiles (2 to 4), every `maxTrainLength` is 0, and the test's locomotives have no train length - so a tail is measured against track that is mostly unmeasured.  Since the MT-335 fix of the same day a tail follows the route it came in on past a fork rather than stopping there, which makes that matter more.
+
+**What closes it.**  Adam sets realistic lengths on the live layout; `test/operator_layout` is refrozen from it (copied over, and the commit says so); the class is run several times.  If it still fails with real lengths, the question becomes whether the planner should move a train that is already home out of the way.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1221,6 +1235,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-14 | OB-222 | bug | `core.testTrainsComeHomeToTheirPlatforms` fails intermittently: after the random run two trains are boxed in on TopMainR1Inter and TopMainR2Inter and the planner answers NO_PLAN_FOUND after its whole budget.  Adam: *"I think the test will always fail until the railway has realistic track lengths set ... Shall we leave this open pending updates to the live layout that you can then freeze?"*  **Claude, 2026-09-14.** Pending Adam's lengths on the live layout; then `test/operator_layout` is refrozen and the class rerun.  The frozen copy sets a length on 6 tiles only, and every maxTrainLength is 0. | pending | - |
 | 2026-09-14 | OB-221 | bug | Adam: *"I set address to 40, which makes it a Signal.  Then, if I click on Kind -> Signal and exit out, it snaps back to Switch 1."*  The condition table reset a line to its kind's starting address on every commit of the Kind cell, and a drop-down commits when it closes whether or not anything was chosen - so any line went back to address 1, and a signal line then read as the switch at 1.  Choosing the kind a line already is now changes nothing; moving between Switch and Signal, which are stored as one accessory command, keeps the address and says the setting in the other words (turn is red, straight is green).  `ui.testRouteEditorValidation.testChoosingTheKindALineAlreadyIsKeepsIt` and `testSwitchingBetweenSwitchAndSignalKeepsTheAddress`, seen red first; `e4651cec`. | - | `MT-427` |
 | 2026-09-14 | FR-082 | feature request | Adam: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong next to it?"*  `ConditionOutline.whatIsWrong` gives each flagged line its reason - a word that differs from its level's word, or one indented past a condition beside it, which are put right differently - and the editor paints a triangle after the red word with that reason as its tooltip, in eight languages.  The renderer is one label reused down the column, so the triangle is cleared on every other line.  `core.testConditionOutline.testEachFlagSaysWhy`, `ui.testRouteEditorValidation.testARedWordCarriesAWarningThatSaysWhy` - seen red first and mutation-checked both ways; `e4651cec`. | - | `MT-428` |
 | 2026-09-14 | OB-220 | bug | Adam: *"the first or is read as an and here. also, the first condition for some reason cannot be indented for proper grouping."*  The OR sat deeper than the conditions either side of it, where a word joins nothing, so the reader dropped it and the level's AND joined all three - with nothing in red.  `ConditionOutline.problems` now flags a word deeper than a condition beside it, which draws it red and makes Save refuse; the indent itself is still allowed, because building a group one line at a time passes through that state, and refusing it broke that gesture.  The first line may go one level in, so a condition can start with a group.  `core.testConditionOutline.testAWordDeeperThanAConditionBesideItIsFlagged` (with a control for a word joining two groups), `ui.testRouteEditorValidation.testAConditionThatStartsWithAGroupCanBeBuilt` and `testAWordIndentedAloneIsFlagged`, each seen red first; `a5a51ac3`. | - | `MT-425` |
