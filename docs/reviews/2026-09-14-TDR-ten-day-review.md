@@ -1,6 +1,6 @@
 # Ten days of commits, reviewed after the MT sweep of 2026-09-13
 
-**Status:** open 2026-09-14 - round 3 fixed, third fix validation running
+**Status:** open 2026-09-14 - the three fix and validation rounds Adam allowed are complete; TDR-B5 and TDR-C9 to C12 are open for him
 
 **Prefix:** TDR (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -161,6 +161,10 @@ pieces go. `testOnlyTheForeignPiecesAreLeftOut`, seen red.
 | TDR-C6 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - with no page loaded, the exporter's page record was still adopted |
 | TDR-C7 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - a field this version does not model was saved in the exporter's ids |
 | TDR-C8 | fixed (round 3) | `HomeStaging` - Return Home's reasons named the builder's copies |
+| TDR-C9 | Open | `HomeStaging.Move.toString`, `logStagingAudit` - the plan's log lines still name copies |
+| TDR-C10 | Open | `AutonomyCompanionStore.importBundle` and neighbours - comments describing the merge before round 2 |
+| TDR-C11 | Open | `Layout.placeNameOf` - a heading typed into a name by hand makes two squares read alike |
+| TDR-C12 | Open | `core.testReturnHomeSaysWhy.testTheReasonsNameSquaresNotCopies` - pins one of eleven sites |
 
 ### TDR-C1 - the "nothing to choose" message named points, and the list is stations
 
@@ -240,6 +244,60 @@ square in those sentences goes through `Layout.placeNameOf`, now visible to the 
 `testTheReasonsNameSquaresNotCopies`, seen red. The two refusal shapes the C5 claims had not reached - track
 held the other way, and track within one square - have claims of their own now; both passed when written,
 round 2 having already fixed them.
+
+### TDR-C9 - Return Home's plan lines still name the builder's copies
+
+| | |
+|---|---|
+| **Disposition** | Open |
+
+Found by the third fix validation, the sibling TDR-C8 missed. `HomeStaging.Move.toString` is
+`loc.getName() + " -> " + getEnd().getName()`, and `Layout.planReturnToHome` logs it as "planned: ..." in the
+same block as the masked reasons - so the plan's own lines still read "X (eastbound, reverse)". The staging
+audit's `logStagingAudit` does the same. The repair is `Layout.placeNameOf(getEnd())` in both; a claim would
+plan a train home onto a copy-named square and read the logged line. Left open because the three rounds were
+spent.
+
+### TDR-C10 - comments around the import still describe the merge before round 2
+
+| | |
+|---|---|
+| **Disposition** | Open |
+
+Found by the third fix validation. The comment on the `pages` branch of `importBundle` still presents "theirs
+wins per id" as the live rule - it is reachable now only for a store that knows no page by any number - and
+three javadocs say things that stopped being true: `importBundle`'s "importing onto a fresh setup restores
+everything", `knownShared`'s "kept verbatim and written back untouched" (true for a load, not an import), and
+`intoThisLayoutsPages`'s "so is a field this store does not model", which is unreachable while translating.
+Round 3's own comment that "fields this version does model and that name no square are merged exactly as
+before" describes an empty set: every modelled collection is a held field. Text only; nothing pins it.
+
+A decision rides on it and is Adam's: a field from a NEWER version is now dropped from an import silently.
+It could be named beside the pages left out.
+
+### TDR-C11 - a heading typed into a station's name by hand makes two squares read alike
+
+| | |
+|---|---|
+| **Disposition** | Open |
+
+Found by the third fix validation; wider than this round, since `placeNameOf` came in round 1.
+`AutonomyBuilder.nodeName` renames a split copy that collides with a hand-named square to "Main (eastbound)
+(2)", and `placeNameOf` strips a heading only when it is the last parenthesis. So a square somebody named
+"Main (eastbound)" by hand reads as "Main" - the same as the split square's copies - while the renamed copy
+keeps its heading. It needs a heading word typed into a name deliberately. Worth a ruling rather than a fix:
+refusing the four heading words in names would close it, and Adam has preferred allowing names before
+(OB-092).
+
+### TDR-C12 - the masking claim for Return Home's reasons pins one of eleven sites
+
+| | |
+|---|---|
+| **Disposition** | Open |
+
+Found by the third fix validation. `testTheReasonsNameSquaresNotCopies` reaches only the out-of-service home
+sentence; reverting any of the other ten sites, the two start-square sentences included, leaves it green.
+A start standing on an inactive copy-named square, and a home with no route, would reach two more.
 
 ---
 
