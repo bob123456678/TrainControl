@@ -1739,7 +1739,12 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Importing a bundle can tell a page RENUMBER from a rename.
+     * Importing a bundle from a layout numbered differently puts each setting on the page it names.
+     *
+     * **This used to claim only that the renumber was DETECTED** (UR-10, below), and it was - while the
+     * settings it warned about went onto the wrong page regardless.  Since TDR-A1 an import translates the
+     * exporter's page ids into this layout's by page name before it merges, so there is no renumber left
+     * to warn about, and the claim is the outcome the warning existed to protect.  The history follows.
      *
      * UR-10, from the uninformed review. `exportBundle` writes the exporter's `pages` map - which id
      * was called what when they wrote it - beside keys built from the exporter's page ids. The merge
@@ -1788,7 +1793,7 @@ public class testAutonomyDiagramStore
 
         store.importBundle("Imported", bundle);
 
-        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-B6, 2026-09-14).
+        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-A1, 2026-09-14).
         //
         // This asserted that the renumber was DETECTED - and it was, while the settings it warned about
         // went onto the wrong page anyway: their id 2 overwrote my record of id 2, so my own Main was read
@@ -1796,10 +1801,10 @@ public class testAutonomyDiagramStore
         // there is nothing left to warn about - and the claim is the outcome the warning existed to protect.
         assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
             "importing from a layout that calls id 2 Yard moved MY Main's settings: my id 2 was re-read"
-            + " through their name for it (TDR-B6, UR-10)");
+            + " through their name for it (TDR-A1, UR-10)");
 
         assertEquals(store.getPointName(new TileKey("Yard", 3, 3)), "Their siding",
-            "their Yard's siding did not land on my Yard, which carries a different id here (TDR-B6)");
+            "their Yard's siding did not land on my Yard, which carries a different id here (TDR-A1)");
     }
 
     /**

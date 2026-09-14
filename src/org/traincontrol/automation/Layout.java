@@ -3351,7 +3351,7 @@ public class Layout
      * @param point the Point being named
      * @return its name without an arrival suffix
      */
-    private static String placeNameOf(Point point)
+    static String placeNameOf(Point point)
     {
         if (point == null) return "";
 

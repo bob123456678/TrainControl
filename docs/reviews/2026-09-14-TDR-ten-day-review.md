@@ -1,6 +1,6 @@
 # Ten days of commits, reviewed after the MT sweep of 2026-09-13
 
-**Status:** open 2026-09-14 - round 2 fixed, second fix validation running
+**Status:** open 2026-09-14 - round 3 fixed, third fix validation running
 
 **Prefix:** TDR (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -158,6 +158,9 @@ pieces go. `testOnlyTheForeignPiecesAreLeftOut`, seen red.
 | TDR-C3 | fixed `785d913a` | `ui.testTheEditorNamesItsShortcuts` - raw NUL characters made git treat it as binary |
 | TDR-C4 | fixed `785d913a` | three javadocs orphaned by members inserted beneath them |
 | TDR-C5 | fixed `6c36d262`, completed in round 2 | path refusals printed the builder's direction copies, not squares |
+| TDR-C6 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - with no page loaded, the exporter's page record was still adopted |
+| TDR-C7 | fixed (round 3) | `AutonomyCompanionStore.importBundle` - a field this version does not model was saved in the exporter's ids |
+| TDR-C8 | fixed (round 3) | `HomeStaging` - Return Home's reasons named the builder's copies |
 
 ### TDR-C1 - the "nothing to choose" message named points, and the list is stations
 
@@ -195,6 +198,48 @@ the manual send's held-back explanation, and the four length refusals - and an e
 "X -> X". **Completed in round 2:** all six name squares, an edge within one square is named once, and a
 length refusal has a claim of its own. No code parses these messages; the cost, accepted with the ruling, is
 that the log no longer says which copy refused.
+
+---
+
+### TDR-C6 - an import made while no page is loaded still adopted the exporter's page record
+
+| | |
+|---|---|
+| **Disposition** | Fixed |
+
+Found by the second fix validation. Round 2 translated ids only when the store had an INDEX, and a OneDrive
+start with every page still a placeholder has none - `AutonomySession.open` skips pages that will not read.
+The store still knows its pages then, by the record it was written with, but the import fell back to
+"theirs wins per id": their "7 is Main" was saved over "7 is Away", and on the next ordinary open Away's
+settings were read onto Main. **Fixed:** the translation runs whenever this setup knows its pages by any
+record, loaded or written; only a store that knows no page by any number merges the old way.
+`testAnImportWithNoPageLoadedStillKeepsEachPagesSettings`, seen red.
+
+### TDR-C7 - a field this version does not model was saved in the exporter's numbering
+
+| | |
+|---|---|
+| **Disposition** | Fixed |
+
+Found by the second fix validation. The translation is by each field's declared shape, and a field from a
+newer version has none - so it was merged as it came, kept verbatim, and written into this layout's file
+keyed by the exporter's page ids. **Fixed:** while translating, a field this version does not model is left
+out; fields it does model that name no square merge as before. `testAnUnmodelledFieldIsNotSavedInTheirNumbering`,
+seen red.
+
+### TDR-C8 - Return Home's reasons named the builder's copies
+
+| | |
+|---|---|
+| **Disposition** | Fixed |
+
+Found by the second fix validation. FR-078's sentences named the square a train stands on and its home by
+`getName()`, and both are copies - so the log read "its home X (eastbound, reverse) is switched out of
+service". Adam's ruling that the copy machinery is masked from the user covers the log. **Fixed:** every
+square in those sentences goes through `Layout.placeNameOf`, now visible to the package.
+`testTheReasonsNameSquaresNotCopies`, seen red. The two refusal shapes the C5 claims had not reached - track
+held the other way, and track within one square - have claims of their own now; both passed when written,
+round 2 having already fixed them.
 
 ---
 

@@ -245,7 +245,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the
-     * unloaded page keeps its settings and its protection (TDR-B6).
+     * unloaded page keeps its settings and its protection (TDR-A1).
      *
      * The page record merged "theirs wins per id", so their "Main" with id 7 overwrote this layout's record
      * that id 7 is "Away" - a OneDrive page still downloading.  Away's held settings then resolved to Main
@@ -286,11 +286,11 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
         assertEquals(store.getPointName(new TileKey("Main", 3, 3)), null,
             "the unloaded page Away's own station name was read onto Main, because their Main carries Away's"
-            + " id and the page record merged by id (TDR-B6)");
+            + " id and the page record merged by id (TDR-A1)");
 
         assertTrue(store.pagesNotLoaded(Collections.singletonList("Main")).contains("Away"),
             "Away, a page this layout has and cannot load right now, stopped being reported as not loaded -"
-            + " the protection for a OneDrive page still downloading is gone (TDR-B6)");
+            + " the protection for a OneDrive page still downloading is gone (TDR-A1)");
 
         // And it is all still there for Away when Away comes back.
         store.save();
@@ -301,12 +301,12 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         reopened.load();
 
         assertEquals(reopened.getPointName(new TileKey("Away", 3, 3)), "Waiting To Download",
-            "Away's own setting did not survive the import and a save (TDR-B6)");
+            "Away's own setting did not survive the import and a save (TDR-A1)");
     }
 
     /**
      * Their copy of a page this layout has but cannot load right now is held for that page, not put on the
-     * loaded page that happens to share their id for it (TDR-B6).
+     * loaded page that happens to share their id for it (TDR-A1).
      *
      * @throws IOException from the temporary folders
      */
@@ -338,7 +338,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
         assertEquals(store.getPointName(new TileKey("Main", 5, 5)), null,
             "their Away's station name was read onto this layout's Main, because their Away and this Main"
-            + " both carry id 1 (TDR-B6)");
+            + " both carry id 1 (TDR-A1)");
 
         store.save();
 
@@ -348,7 +348,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         reopened.load();
 
         assertEquals(reopened.getPointName(new TileKey("Away", 5, 5)), "Their Away",
-            "their Away's setting was not held for this layout's Away, which is the page it names (TDR-B6)");
+            "their Away's setting was not held for this layout's Away, which is the page it names (TDR-A1)");
     }
 
     /**
@@ -388,6 +388,100 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             Collections.singletonList(new TileKey("Main", 2, 2)),
             "the station's hold-back list lost its member on this layout's Main along with the one on the"
             + " foreign Yard - only the foreign member should go (TDR-B7)");
+    }
+
+    /**
+     * With NO page loaded - every page still downloading - an import still translates by the record this
+     * setup was written with, and a page's settings stay on that page (TDR-C6).
+     *
+     * The translation ran only when the store had an index, and a OneDrive start where every page is still
+     * a placeholder has none: the exporter's page record was adopted "theirs wins per id" again, the save
+     * wrote their "7 is Main" over "7 is Away", and on the next ordinary open Away's settings were read onto
+     * Main.
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testAnImportWithNoPageLoadedStillKeepsEachPagesSettings() throws IOException
+    {
+        Map<String, String> both = pages("Main", "1");
+
+        both.put("Away", "7");
+
+        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+
+        before.setPageIds(both);
+        before.setPointName(new TileKey("Main", 1, 1), "Mine");
+        before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
+        before.save();
+
+        // Opened with nothing loaded at all: no index, only the file's own record.
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.load();
+
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Main", "7"));
+        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
+        source.createConfiguration("Theirs", null);
+
+        store.importBundle("Theirs", source.exportBundle("Theirs"));
+
+        store.save();
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
+
+        reopened.setPageIds(both);
+        reopened.load();
+
+        assertEquals(reopened.getPointName(new TileKey("Main", 4, 4)), "Theirs On Main",
+            "precondition: their Main did not land on Main once the pages were back, so nothing below is"
+            + " about an import that did anything");
+
+        assertEquals(reopened.getPointName(new TileKey("Away", 3, 3)), "Waiting To Download",
+            "an import made while no page was loaded wrote the exporter's page record over this setup's, so"
+            + " Away's own setting no longer belongs to Away (TDR-C6)");
+
+        assertEquals(reopened.getPointName(new TileKey("Main", 3, 3)), null,
+            "Away's setting was read onto Main after an import made while no page was loaded (TDR-C6)");
+    }
+
+    /**
+     * A field this version does not model is not saved in the exporter's page numbering (TDR-C7).
+     *
+     * @throws IOException from the temporary folders
+     */
+    @Test
+    public void testAnUnmodelledFieldIsNotSavedInTheirNumbering() throws IOException
+    {
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Main", "7"));
+        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
+        source.createConfiguration("Theirs", null);
+
+        org.json.JSONObject bundle = source.exportBundle("Theirs");
+
+        bundle.getJSONObject(AutonomyCompanionStore.EXPORT_SHARED)
+            .put("aFieldFromANewerVersion", new org.json.JSONObject().put("7:1,1", "theirs"));
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages("Main", "1"));
+
+        store.importBundle("Theirs", bundle);
+
+        assertEquals(store.getPointName(new TileKey("Main", 4, 4)), "Theirs On Main",
+            "precondition: the modelled setting did not come across, so nothing below is about an import that"
+            + " did anything");
+
+        store.save();
+
+        assertFalse(everySetupFileUnder(mine).contains("aFieldFromANewerVersion"),
+            "a field this version does not model was saved exactly as it came - keyed by the exporter's page"
+            + " id 7, which is not a page here - so this layout's file now carries somebody else's numbering"
+            + " (TDR-C7)");
     }
 
     // ---------------------------------------------------------------------------------------------

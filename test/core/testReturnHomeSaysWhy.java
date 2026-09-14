@@ -350,6 +350,40 @@ public class testReturnHomeSaysWhy
         assertSays(plan, model.getLocByName(LOC), "autolayout.whyHomeOccupied", "RHW A", OTHER);
     }
 
+    /**
+     * The reasons name squares, not the direction copies the builder made of them (TDR-C8).
+     *
+     * Adam's ruling that the copy machinery is masked from the user covers the log as much as a dialog, and
+     * a home is stood on as one of its copies - so "its home X (eastbound, reverse) is switched out of
+     * service" was what the log said.
+     */
+    @Test
+    public void testTheReasonsNameSquaresNotCopies()
+    {
+        HomeStaging.Plan plan = load(json("{'points': ["
+            + "{'name': 'RHW A (westbound)', 'station': true, 's88': " + S88_BASE
+            + ", 'loc': {'name': '" + LOC + "'}},"
+            + "{'name': 'RHW K (eastbound, reverse)', 'station': true, 's88': " + (S88_BASE + 8)
+            + ", 'active': false, 'home': '" + LOC + "'}"
+            + "],'edges': [" + edge("RHW A (westbound)", "RHW K (eastbound, reverse)") + ","
+            + edge("RHW K (eastbound, reverse)", "RHW A (westbound)")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}")).planReturnToHome();
+
+        List<String> why = plan.getReasons().get(model.getLocByName(LOC));
+
+        assertNotNull(why, "precondition: the plan (" + plan.getOutcome() + ") kept no reason: " + plan.getReasons());
+
+        assertTrue(anyMentions(why, "RHW K"), "precondition: no reason names the home: " + why);
+
+        for (String sentence : why)
+        {
+            assertTrue(!sentence.contains("eastbound") && !sentence.contains("westbound")
+                && !sentence.contains("reverse"),
+                "a Return Home reason names the builder's copy of a square, heading and all: \"" + sentence
+                + "\" (TDR-C8)");
+        }
+    }
+
     private static String aHomeWith(String extra)
     {
         return json("{'points': ["

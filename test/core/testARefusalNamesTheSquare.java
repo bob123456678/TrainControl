@@ -142,6 +142,61 @@ public class testARefusalNamesTheSquare
     }
 
     /**
+     * The same track held the other way names squares too (TDR-C5, the opposite-direction refusal).
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheOppositeDirectionHeldIsNamedBySquares() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RN West (eastbound)", true, model.newFeedback(2350, null).getName());
+        layout.createPoint("RN East (westbound)", true, model.newFeedback(2351, null).getName());
+        layout.createEdge("RN West (eastbound)", "RN East (westbound)");
+        layout.createEdge("RN East (westbound)", "RN West (eastbound)");
+
+        layout.getEdge("RN East (westbound)", "RN West (eastbound)").setOccupied();
+
+        String said = refusalOf(layout, "RN West (eastbound)", "RN East (westbound)");
+
+        assertTrue(said.contains("RN East") && said.contains("RN West"),
+            "precondition: the refusal does not name the held track: " + said);
+
+        assertFalse(said.contains("eastbound") || said.contains("westbound"),
+            "the refusal for track held the other way names the builder's copies: \"" + said + "\"");
+    }
+
+    /**
+     * Track between two copies of ONE square is named as that square, once (TDR-C5).
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTrackWithinOneSquareIsNamedOnce() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RN Turn (eastbound)", true, model.newFeedback(2360, null).getName());
+        layout.createPoint("RN Turn (westbound)", true, model.newFeedback(2360, null).getName());
+
+        layout.getPoint("RN Turn (eastbound)").setBlock("RN-TURN");
+        layout.getPoint("RN Turn (westbound)").setBlock("RN-TURN");
+
+        layout.createEdge("RN Turn (eastbound)", "RN Turn (westbound)");
+
+        layout.getEdge("RN Turn (eastbound)", "RN Turn (westbound)").setOccupied();
+
+        String said = refusalOf(layout, "RN Turn (eastbound)", "RN Turn (westbound)");
+
+        assertTrue(said.contains("RN Turn"), "precondition: the refusal does not name the square: " + said);
+
+        assertFalse(said.contains("RN Turn -> RN Turn"),
+            "track between two copies of one square was named as a journey from that square to itself: \""
+            + said + "\"");
+    }
+
+    /**
      * The control: a name with a parenthesis that is not a heading keeps it.
      *
      * @throws Exception from the railway

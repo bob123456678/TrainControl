@@ -1979,7 +1979,7 @@ public class AutonomyCompanionStore
 
         if (incoming == null) return 0;
 
-        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged (TDR-B4, TDR-B6).
+        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged (TDR-B4, TDR-A1).
         //
         // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same
         // start on every railway - so their id means nothing here until it is turned back into the page it
@@ -1989,18 +1989,23 @@ public class AutonomyCompanionStore
         //   - their "Yard" as id 1 read onto my "Main" as id 1, and was then reported as left out (TDR-B4);
         //   - their "Yard" as id 2 re-labelled my own id 2, so MY Main's settings were read back as Yard's;
         //   - their "Main" as id 7 overwrote my record that 7 is "Away", a page still downloading, so Away's
-        //     held settings landed on Main and Away stopped being protected (TDR-B6).
+        //     held settings landed on Main and Away stopped being protected (TDR-A1).
         //
         // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id
         // this setup recorded for a page it knows and cannot load right now.  A name that is neither is a
         // page this layout does not have - Adam, 2026-09-13: "keep only the pages, and alert the user" - and
         // maps to nothing.  Their page record is never merged: the translated keys are in MY numbering.
         //
-        // Only when both sides have a numbering at all.  A file with no page record, or a store with no
-        // index, is keyed however it is keyed, and is merged as it always was.
+        // Only when both sides have a numbering at all.  A file with no page record is keyed however it is
+        // keyed, and so is a store that knows no page by any number - nothing of mine can be re-labelled
+        // there.  A store with no page LOADED still knows its pages by the record it was written with
+        // (TDR-C6): a OneDrive start with every page still a placeholder has an empty index and a full
+        // record, and adopting their record then re-labelled mine exactly as TDR-A1 describes.
         JSONObject theirPages = incoming.optJSONObject("pages");
 
-        Map<String, String> theirIdToMine = theirPages == null || pageIdToName.isEmpty()
+        boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
+
+        Map<String, String> theirIdToMine = theirPages == null || !iKnowMyPages
             ? null : new java.util.HashMap<String, String>();
 
         if (theirIdToMine != null)
@@ -2039,8 +2044,14 @@ public class AutonomyCompanionStore
         {
             if ("version".equals(key)) continue;
 
-            // Their page record is how their ids were translated, not a setting to adopt (TDR-B6).
+            // Their page record is how their ids were translated, not a setting to adopt (TDR-A1).
             if (theirIdToMine != null && "pages".equals(key)) continue;
+
+            // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating (TDR-C7).  Nothing here
+            // knows its shape, so it cannot be put into this layout's numbering - and merged as it came it
+            // would be kept verbatim and saved in the EXPORTER's ids, possibly beside mine in one object.
+            // Fields this version does model and that name no square are merged exactly as before.
+            if (theirIdToMine != null && !knownShared().contains(key)) continue;
 
             Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
@@ -2169,7 +2180,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One incoming shared field, rewritten from the exporter's page ids into this layout's (TDR-B6), with
+     * One incoming shared field, rewritten from the exporter's page ids into this layout's (TDR-A1), with
      * only the PIECES naming a page this layout does not have taken out (TDR-B7).
      *
      * Read by the field's declared shape in `HELD_FIELDS` - the same map the hold and the merge read - so a

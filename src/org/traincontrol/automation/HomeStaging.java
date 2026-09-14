@@ -568,7 +568,7 @@ public final class HomeStaging
                 if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
 
                 reason(reasons, a.getKey(), I18n.f("autolayout.whyHomeSharesASection",
-                    a.getValue().getName(), b.getKey().getName(), b.getValue().getName()));
+                    Layout.placeNameOf(a.getValue()), b.getKey().getName(), Layout.placeNameOf(b.getValue())));
             }
         }
 
@@ -1587,7 +1587,8 @@ public final class HomeStaging
      * Why one locomotive cannot get home, in words - one sentence per rule it breaks (FR-078).
      *
      * The same questions `plan` asks before it calls a train unreachable, broken into their parts, so
-     * the log can say which part: the square it stands on, the home itself, or the way between.  A
+     * the log can say which part: the square it stands on, the home itself, or the way between - each
+     * named as the square it is, never as the builder's direction copy (TDR-C8).  A
      * home is a SQUARE, so a home rule is reported only when no copy of it a train can STOP at would
      * take the train - a copy that is not a destination has no say in it (TDR-B3).
      *
@@ -1602,12 +1603,12 @@ public final class HomeStaging
 
         if (!from.isActive())
         {
-            out.add(I18n.f("autolayout.whyHomeStartOutOfService", from.getName()));
+            out.add(I18n.f("autolayout.whyHomeStartOutOfService", Layout.placeNameOf(from)));
         }
 
         if (!from.isDestination())
         {
-            out.add(I18n.f("autolayout.whyHomeStartNotAStation", from.getName()));
+            out.add(I18n.f("autolayout.whyHomeStartNotAStation", Layout.placeNameOf(from)));
         }
 
         List<Point> copies = copiesOf(home);
@@ -1633,17 +1634,17 @@ public final class HomeStaging
         {
             // Nothing else about the home is worth a sentence: the other three rules are about a place a
             // train could stop, and there is none.
-            out.add(I18n.f("autolayout.whyHomeNotAStation", home.getName()));
+            out.add(I18n.f("autolayout.whyHomeNotAStation", Layout.placeNameOf(home)));
         }
         else
         {
-            if (!anyActive) out.add(I18n.f("autolayout.whyHomeOutOfService", home.getName()));
+            if (!anyActive) out.add(I18n.f("autolayout.whyHomeOutOfService", Layout.placeNameOf(home)));
 
-            if (!anyAdmits) out.add(I18n.f("autolayout.whyHomeExcludesIt", home.getName()));
+            if (!anyAdmits) out.add(I18n.f("autolayout.whyHomeExcludesIt", Layout.placeNameOf(home)));
 
             if (!anyLongEnough)
             {
-                out.add(I18n.f("autolayout.whyHomeTooShort", home.getName(),
+                out.add(I18n.f("autolayout.whyHomeTooShort", Layout.placeNameOf(home),
                     String.valueOf(loc.getTrainLength()), String.valueOf(home.getMaxTrainLength())));
             }
         }
@@ -1661,12 +1662,12 @@ public final class HomeStaging
 
             if (!reachable)
             {
-                out.add(I18n.f("autolayout.whyHomeNoRoute", from.getName(), home.getName()));
+                out.add(I18n.f("autolayout.whyHomeNoRoute", Layout.placeNameOf(from), Layout.placeNameOf(home)));
             }
         }
 
         // Never an empty answer for a train the plan refused: that would read as "nothing is wrong".
-        if (out.isEmpty()) out.add(I18n.f("autolayout.whyHomeNoRoute", from.getName(), home.getName()));
+        if (out.isEmpty()) out.add(I18n.f("autolayout.whyHomeNoRoute", Layout.placeNameOf(from), Layout.placeNameOf(home)));
 
         return out;
     }
@@ -1698,7 +1699,7 @@ public final class HomeStaging
 
                 if (there != null && !there.equals(l))
                 {
-                    reason(out, l, I18n.f("autolayout.whyHomeOccupied", home.getName(),
+                    reason(out, l, I18n.f("autolayout.whyHomeOccupied", Layout.placeNameOf(home),
                         there.getName()));
 
                     break;
@@ -1707,7 +1708,7 @@ public final class HomeStaging
 
             if (!out.containsKey(l))
             {
-                reason(out, l, I18n.f("autolayout.whyHomeNoArrangement", home.getName()));
+                reason(out, l, I18n.f("autolayout.whyHomeNoArrangement", Layout.placeNameOf(home)));
             }
         }
 
