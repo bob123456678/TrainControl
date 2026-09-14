@@ -339,6 +339,101 @@ public class testManualOnlyPathsAreADifferentColour
     }
 
     /**
+     * Switching Path Type redraws the tested route for the new tier, without testing it again (MT-399).
+     *
+     * Adam, 2026-09-14: *"when changing the auto and manual radio buttons, make it update the shown route to the
+     * new selection without having to repeat the button press sequence."*  What the tier changes is the verdict
+     * written under the route: on Auto, a route to a station autonomy will never choose says so; on Manual it
+     * does not.  Before this, the radio changed nothing on screen until the two squares were clicked again.
+     *
+     * Through the real two-click gesture and the real radio button.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testSwitchingPathTypeRedrawsTheTestedRoute() throws Exception
+    {
+        TileKey[] pair = aConnectedPairOfStations();
+
+        parked = pair[1];
+
+        session.setAutoDestination(parked, false);
+
+        try
+        {
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
+
+            // ARMED AS A PERSON ARMS IT, with the Test a Path button: the tier only matters to a tool in use.
+            ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
+
+            java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
+                TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
+
+            applyTest.setAccessible(true);
+
+            applyTest.invoke(panel, pair[0], graph.getTiles().get(pair[0]));
+            applyTest.invoke(panel, pair[1], graph.getTiles().get(pair[1]));
+
+            String onAuto = said(panel);
+
+            String note = org.traincontrol.util.I18n.t("autosetup.ui.testNotAnAutoDestination");
+
+            String noteStart = note.substring(0, note.indexOf("{0}"));
+
+            assertTrue(onAuto.contains(noteStart),
+                "precondition: on Auto the tested route to a station autonomy will never choose does not say so, so"
+                + " there is no difference for the radio to make: " + onAuto);
+
+            javax.swing.JRadioButton manual = (javax.swing.JRadioButton) field(panel, "pathTypeManual");
+
+            manual.doClick();
+
+            String onManual = said(panel);
+
+            assertFalse(onManual.contains(noteStart),
+                "switching Path Type to Manual left the Auto verdict on screen - the tested route was not redrawn for"
+                + " the new tier.  Adam, MT-399: 'make it update the shown route to the new selection without having"
+                + " to repeat the button press sequence'.  It says: " + onManual);
+
+            String route = org.traincontrol.util.I18n.t("autosetup.ui.testBothWays");
+
+            assertTrue(onManual.contains(route.substring(route.indexOf("</b> to <b>") >= 0 ? route.indexOf("</b> to <b>") : 0,
+                route.indexOf("</b> to <b>") >= 0 ? route.indexOf("</b> to <b>") + 11 : 0)),
+                "switching Path Type cleared the tested route instead of redrawing it: " + onManual);
+
+            javax.swing.JRadioButton auto = (javax.swing.JRadioButton) field(panel, "pathTypeAuto");
+
+            auto.doClick();
+
+            assertTrue(said(panel).contains(noteStart),
+                "switching back to Auto did not put the Auto verdict back: " + said(panel));
+        }
+        finally
+        {
+            session.setAutoDestination(parked, true);
+
+            parked = null;
+        }
+    }
+
+    /** What the panel's hint line says, mark-up included. */
+    private static String said(AutonomyEditorPanel panel) throws Exception
+    {
+        String text = ((javax.swing.JLabel) field(panel, "hint")).getText();
+
+        return text == null ? "" : text;
+    }
+
+    private static Object field(AutonomyEditorPanel panel, String name) throws Exception
+    {
+        java.lang.reflect.Field f = AutonomyEditorPanel.class.getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(panel);
+    }
+
+    /**
      * Two stations of the sample layout with a route between them in both directions.
      *
      * Chosen by asking the reduction rather than named, so the fixture cannot rot when the sample

@@ -351,6 +351,14 @@ public class AutonomyEditorPanel extends JPanel
     private TileKey testFrom;
 
     /**
+     * The two squares the last path test was between, so switching Path Type can redraw it (MT-399).
+     *
+     * Cleared wherever the drawn route is, so a radio click never brings back a route that was put away.
+     */
+    private TileKey lastTestFrom;
+    private TileKey lastTestTo;
+
+    /**
      * Which tier the routing check answers for, and the label that names the pair.
      *
      * Auto is the default because it is the question that gets asked: somebody opens this panel
@@ -610,6 +618,12 @@ public class AutonomyEditorPanel extends JPanel
         pathTypeAuto.setFont(FONT_CONTROL);
         pathTypeManual.setFont(FONT_CONTROL);
 
+        // THE ROUTE ON SCREEN FOLLOWS THE TIER (Adam, MT-399: "when changing the auto and manual radio buttons,
+        // make it update the shown route to the new selection without having to repeat the button press
+        // sequence").  The same two squares, through the same door the second click uses.
+        pathTypeAuto.addActionListener(e -> retestForTheNewTier());
+        pathTypeManual.addActionListener(e -> retestForTheNewTier());
+
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
         whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
@@ -813,6 +827,8 @@ public class AutonomyEditorPanel extends JPanel
 
         tool = Tool.NONE;
         testFrom = null;
+        lastTestFrom = null;
+        lastTestTo = null;
         oneWayFrom = null;
         pendingPortal = null;
         signalFor = null;
@@ -892,6 +908,8 @@ public class AutonomyEditorPanel extends JPanel
         pendingPortal = null;
         selection.clear();
         testFrom = null;
+        lastTestFrom = null;
+        lastTestTo = null;
         traces.clear();
         oneWayFrom = null;
         signalFor = null;
@@ -7598,7 +7616,30 @@ public class AutonomyEditorPanel extends JPanel
             escape(describeTile(testFrom)), escape(describeTile(tile)),
             leg(there), escape(via(there)), leg(back)) + tierNote);
 
+        lastTestFrom = testFrom;
+        lastTestTo = tile;
+
         testFrom = null;
+    }
+
+    /**
+     * Runs the last path test again, for the tier the radio now says (MT-399).
+     *
+     * Only while the test tool is still what is armed and no new test is half-way through - a radio click is
+     * not a reason to draw a route over whatever the user moved on to.
+     */
+    private void retestForTheNewTier()
+    {
+        if (tool != Tool.TEST || testFrom != null || lastTestFrom == null || lastTestTo == null) return;
+
+        TileKey from = lastTestFrom;
+        TileKey to = lastTestTo;
+
+        testFrom = from;
+
+        applyTest(to, componentAt(to));
+
+        refresh();
     }
 
     private static String escape(String text)
