@@ -69,7 +69,7 @@ find the field null is short, not "until the next message".  The fix stands on t
 not on a long stall; and the lazy build was never load-bearing - every reset is followed by an event-thread rebuild.
 
 
-**Fixed, round 1.** The guard reads the `autonomySession` field instead of the lazy getter; with no session there is nothing to follow, and the event thread builds one when something there needs it.  `testADirectionEchoDoesNotBuildTheSession` first proves the fixture can build a session, clears the field as `initializeTrackDiagram` leaves it, sends the repaint from an ordinary thread, and asserts nothing was built - red before the fix, green after.
+**Fixed, round 1.** The guard reads the `autonomySession` field instead of the lazy getter; with no session there is nothing to follow, and the event thread builds one when something there needs it.  `testADirectionEchoDoesNotBuildTheSession` first gets the session the window already holds, clears the field as it stands between a reset and the event thread's rebuild, sends the repaint from an ordinary thread, asserts nothing was built, and puts the session back - red before the fix, green after.
 
 ---
 
