@@ -8690,12 +8690,9 @@ public class Layout
             // and if the approach is shorter than the train it is hanging off the end of the measured
             // track while it waits to change direction.
             //
-            // **Why it cannot be left to `roomAfterASwitchOnTheWay`.**  That judges a pass-through
-            // square only where a switch lies behind it on the route, because at a square the train
-            // merely rolls over, "the path ran out" is not a measurement of anything (see its javadoc).
-            // A reversing square is not one the train rolls over - it is one the train STOPS on - so
-            // the route behind it is what the train lies back across, which is exactly the condition
-            // that makes the question answerable at the destination.
+            // A reversing square is not one the train rolls over - it is one the train STOPS on - so the
+            // route behind it is what the train lies back across, which is exactly the condition that
+            // makes the question answerable at the destination.
             //
             // So `berth` became `comesToRest`, and the two cases ask the identical question of their
             // own prefix.  `measuredRoomAtTheEndOf(ordered, loc)` and
@@ -8703,8 +8700,18 @@ public class Layout
             // destination is still the last iteration rather than a second rule.
             boolean comesToRest = berth || (here != null && here.isReversing());
 
-            Integer room = comesToRest ? measuredRoomAtTheEndOf(ordered.subList(0, i + 1), loc)
-                : roomAfterASwitchOnTheWay(ordered.subList(0, i + 1), loc);
+            // A SQUARE THE TRAIN ONLY PASSES IS NOT JUDGED (Adam, MT-333, 2026-09-14: "75 407 DB (len 2) can
+            // no longer go from tunnel to bottommaina ... this SHOULD be allowed per the standing rule that
+            // this switch blocking should only affect berthes").  The room rule asks whether a train would be
+            // left standing across the points, and a train passing a square does not stand there.  From
+            // 2026-09-10 until this ruling a passed square was judged wherever a switch lay behind it (the
+            // ruling of 2026-09-09), and the relaxation of 2026-09-12 was built at the destination only - so
+            // a two-unit train was refused at BottomMainAPre, which it never stops at, once one unit was
+            // measured on the run before it.  What is still judged is where a train comes to rest: the
+            // destination, and a square it turns round at.
+            if (!comesToRest) continue;
+
+            Integer room = measuredRoomAtTheEndOf(ordered.subList(0, i + 1), loc);
 
             if (room == null || loc.getTrainLength() <= room) continue;
 
@@ -8758,64 +8765,6 @@ public class Layout
         }
 
         return null;
-    }
-
-    /**
-     * The room at a square the train runs THROUGH, and only where a switch bounds it (Adam, 2026-09-09).
-     *
-     * The same walk as `measuredRoomAtTheEndOf` with one condition added, and the condition is the
-     * difference between a rule and an artefact.
-     *
-     * **The walk has three stopping conditions and only one of them is a rule.**  It stops at the last
-     * switch, which is Adam's ruling of 2026-09-02 - *"between the switch and the station, the length
-     * must be >= length of the train"*.  It also stops when it meets an unmeasured edge, and when it
-     * runs out of path.  That last one is not a measurement of anything: a two-edge prefix answers
-     * "two edges of room" when the honest answer is "the track behind where the train started has not
-     * been looked at, and the train is standing on it".
-     *
-     * At the DESTINATION that is harmless and long-standing - the train comes to rest there and the
-     * route behind it is what it lies back over.  At a square it merely passes through it refuses
-     * trains that fit: measured, a four-unit train refused four units of room, an eight-unit train
-     * refused a nine-unit run in, and the staging planner giving up on a berth it could reach.
-     *
-     * So a pass-through square is judged only where a switch is **somewhere behind it on this route**.
-     * That is exactly the case the ruling was made about - *"we pass the track of length 1 at 22,7"*,
-     * which is one measured unit after a switch.
-     *
-     * **THE UNMEASURED STOP IS NOT EXCLUDED, and that is a known looseness rather than an oversight.**
-     * A prefix whose switch lies behind an unmeasured stretch passes the test here while the number
-     * the walk returns was bounded by the unmeasured edge instead - so such a square is judged on a
-     * count of measured track with unlooked-at track behind it.  Excluding it would mean the walk
-     * reporting WHICH condition stopped it, which is a second return value on a method four call sites
-     * share.
-     *
-     * What IS re-measured on every run is the other loose stop:
-     * `core.testTheRoomRuleCensusOnTheRealLayout` counts the refusals that would come from the walk
-     * running off the start of the route and asserts there are none.  Nothing counts the
-     * unmeasured-edge stops, so this paragraph is a statement about the code and not a measurement -
-     * said plainly, because an earlier version of it quoted a figure no test produces.
-     *
-     * @param prefix the route so far, ending at the square being judged
-     * @param loc the train
-     * @return the room, or null when no switch bounds this square and the question cannot be answered
-     */
-    public static Integer roomAfterASwitchOnTheWay(List<Edge> prefix, Locomotive loc)
-    {
-        if (prefix == null || prefix.isEmpty()) return null;
-
-        boolean bounded = false;
-
-        for (Edge edge : prefix)
-        {
-            if (edge.crossesASwitch())
-            {
-                bounded = true;
-
-                break;
-            }
-        }
-
-        return bounded ? measuredRoomAtTheEndOf(prefix, loc) : null;
     }
 
     /**

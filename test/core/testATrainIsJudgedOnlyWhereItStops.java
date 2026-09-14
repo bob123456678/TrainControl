@@ -58,7 +58,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * nothing: a two-edge prefix answers "two edges of room" when the honest answer is that the track
  * behind where the train started has not been looked at and the train is standing on it.  The first
  * cut of this change did not have that condition and the battery came back with a four-unit train
- * refused four units of room.  `Layout.roomAfterASwitchOnTheWay` is where it lives.
+ * refused four units of room.  It lived in `Layout.roomAfterASwitchOnTheWay`, removed with the pass-through
+ * check on 2026-09-14.
  *
  * **Only where lengths are specified**, which is the other half of his ruling and was already the
  * doctrine of the walk: unmeasured is unknown rather than zero, and unknown is not a refusal - *"an

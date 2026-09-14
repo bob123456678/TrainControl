@@ -1097,10 +1097,9 @@ public final class HomeStaging
                 //
                 // Pruning here is sound as well as cheap: the property is prefix-closed, so no
                 // extension of a route the train does not fit on can fit either.
-                // THE BERTH IS JUDGED ON THE WHOLE ROUTE BEHIND IT; A SQUARE ON THE WAY ONLY WHERE A
-                // SWITCH BOUNDS IT.  `Layout.roomAfterASwitchOnTheWay` carries the why - the short of
-                // it is that the walk's other stopping condition is the start of the route, which
-                // measures nothing and refused berths this planner could reach.
+                // THE BERTH IS JUDGED ON THE WHOLE ROUTE BEHIND IT, A SQUARE THE TRAIN TURNS AT ON ITS OWN
+                // APPROACH, AND A SQUARE IT ONLY PASSES NOT AT ALL (MT-333, 2026-09-14) - exactly as
+                // `Layout.whyTooLongForThisRoute` does.
                 if (next.equals(to))
                 {
                     // AT THE DESTINATION, THE BERTH RULE AS WELL AS THE ROOM (PRW-B2 leg 3).
@@ -1155,9 +1154,14 @@ public final class HomeStaging
 
                     if (Layout.whyABerthCannotHoldIt(route, loc) != null) continue;
                 }
-                else
+                else if (next.isReversing())
                 {
-                    Integer room = Layout.roomAfterASwitchOnTheWay(route, loc);
+                    // ONLY A SQUARE THE TRAIN TURNS AT, as the runtime judges it (Adam, MT-333, 2026-09-14).
+                    // A square it only passes is not asked about at all - it does not stand there - and a
+                    // turning square is, on the same walk the runtime uses for it.  This used to ask the
+                    // pass-through walk instead, which refused passing trains the runtime now admits and did
+                    // not ask the question the runtime does ask at a turn.
+                    Integer room = Layout.measuredRoomAtTheEndOf(route, loc);
 
                     if (room != null && loc.getTrainLength() > room) continue;
                 }

@@ -38,6 +38,9 @@ import org.traincontrol.marklin.file.CS2File;
  * So this asks the door the operator asks - `Layout.getPossiblePaths(loc, true)` - from every square
  * a train can stand on, for each of the census's six lengths, on a railway with nothing else on it.
  *
+ * **Since MT-333 (2026-09-14) both numbers are ZERO**, and that is the claim now: with a passed square no longer
+ * judged, no square is closed to a longer train.  What follows is the finding that stood until then.
+ *
  * **Measured on 2026-09-10, and both claims below are red.**  A one-unit train is offered somewhere
  * to go from all 45 squares.  A train of TWO units or more is offered nothing at all from seven of
  * them - `BottomMainA (eastbound)`, `BottomMainB (eastbound)`, `BottomMainB (eastbound, reverse)`,
@@ -159,8 +162,11 @@ public class testWhichSquaresTheRoomRuleClosesOff
      *
      * Measured on `test/layouts/live-snapshot` with the three tight tiles this class sets itself.
      * **A pin, not an endorsement**: it says nobody changes the number without saying so.
+     *
+     * **0 since MT-333 (2026-09-14)**, 35 before it.  Every one of the 35 was closed by a square the train only
+     * passed, and Adam withdrew that: *"this switch blocking should only affect berthes"*.
      */
-    private static final int CLOSED_BY_THE_RULING = 35;
+    private static final int CLOSED_BY_THE_RULING = 0;
 
     /**
      * How many routes between one pair the search will look at.
@@ -179,13 +185,16 @@ public class testWhichSquaresTheRoomRuleClosesOff
      * (square, length) pairs that offer a train nothing at all where a one-unit train has somewhere
      * to go - so the square is closed by the room rule rather than by the shape of the track.
      *
+     * **0 since MT-333 (2026-09-14)**: no square offers a longer train nothing where a one-unit train has
+     * somewhere, because the squares that did it were squares on the way.  35 until then.
+     *
      * **40 until 2026-09-10, and five of those forty were this class's own leftover train.**  The
      * railway was cleared once, before the sweep over lengths, and `whereItMayGo` lifts only the train
      * it is about to place - so from two units on, the previous pass's probe was still standing on the
      * last square it had been put on.  It made `ParkingTrack12` read as closed at every length, which
      * is where the eighth square in the published figures came from.  A review found it.
      */
-    private static final int STRANDED = 35;
+    private static final int STRANDED = 0;
 
     @Test
     public void testHowManySquaresTheRulingClosedCompletely() throws Exception

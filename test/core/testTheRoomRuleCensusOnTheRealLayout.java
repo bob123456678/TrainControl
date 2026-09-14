@@ -316,7 +316,15 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * Journeys Adam's ruling of 2026-09-09 refuses that the berth-only rule admitted.
+     * Journeys refused on the way that the berth-only rule admitted: NONE since MT-333 (2026-09-14).
+     *
+     * Adam withdrew the pass-through half of the ruling below - *"this switch blocking should only affect
+     * berthes"* - so a square a train only passes refuses nothing, and a journey whose berth has room is refused
+     * on the way only if EVERY route to it turns at a square too short, which on the snapshot is never: measured
+     * 0 on the first run after the change.  Pinned at exactly zero, so the pass-through check coming back is
+     * caught here as well as in `core.testATrainIsJudgedOnlyWhereItStops`.
+     *
+     * What follows is the figure as it was under the ruling of 2026-09-09.
      *
      * Measured on `test/layouts/live-snapshot` over 1848 routable pairs and this class's six trains -
      * **11088 journeys, of which the berth rule already refuses 1760 and this ruling refuses about
@@ -336,15 +344,21 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * doubling its reach, or being quietly taken out, moves the number by hundreds.  The exact figure
      * is printed on every run.
      */
-    private static final int REFUSED_ON_THE_WAY_AT_LEAST = 1450;
+    private static final int REFUSED_ON_THE_WAY_AT_LEAST = 0;
 
     /**
      * The other end of the band.  See `REFUSED_ON_THE_WAY_AT_LEAST` for why there is one.
      */
-    private static final int REFUSED_ON_THE_WAY_AT_MOST = 1800;
+    private static final int REFUSED_ON_THE_WAY_AT_MOST = 0;
 
     /**
      * Route-journeys refused at a square the train turns at (Adam, 2026-09-11).
+     *
+     * **825 on the first run after MT-333 (2026-09-14), where it had been 15000 to 23000.**  The counter was
+     * raised for any refusal before the destination, and until then that included squares the train only
+     * passes - so the old band counted the withdrawn pass-through refusals as turns.  825 is the turn bound
+     * alone; the band allows the couple of per cent route order moves between JVMs, and the figures below are
+     * the history.
      *
      * 19045 when the bound was measured, against 1848 routable pairs and six census trains - so it is
      * met on most routes that pass a reversing point, which on this railway is most long routes.
@@ -361,12 +375,12 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * unmeasured berth beyond the turn, and the honest answer about them is that nobody knows; the way
      * to a real answer is to measure that berth, which is what the editor's notice now asks for.
      */
-    private static final int AT_A_TURN_AT_LEAST = 15000;
+    private static final int AT_A_TURN_AT_LEAST = 600;
 
     /**
      * The other end of that band.  See `AT_A_TURN_AT_LEAST`.
      */
-    private static final int AT_A_TURN_AT_MOST = 23000;
+    private static final int AT_A_TURN_AT_MOST = 1100;
 
     /**
      * Journeys refused at the destination, which is what the rule did before the ruling.
@@ -377,7 +391,9 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int REFUSED_AT_THE_BERTH = 1760;
 
     /**
-     * The squares that do the refusing on the way, which is the half worth reading.
+     * The squares that refuse on the way: none since MT-333 (2026-09-14), so the list is empty and any square at
+     * all appearing is the pass-through check back.  Eleven, every one a copy of the four berths below, under the
+     * ruling of 2026-09-09:
      *
      * **Every one of them measures ONE unit**, and every one is a copy of the four berths the MT-262
      * census already names - the same tiles, now refusing a train running THROUGH them as well as one
@@ -388,14 +404,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * three units in his UNCOMMITTED working copy and nothing at all in the repository - a pinned list
      * that was really a photograph of somebody's desk, which is the whole of the review's B8.
      */
-    private static final String[] ON_THE_WAY =
-    {
-        "BottomMainA (eastbound)", "BottomMainA (westbound)", "BottomMainB (eastbound)",
-        "BottomMainB (eastbound, reverse)", "BottomMainB (westbound)",
-        "BottomMainB (westbound, reverse)", "BottomMainBCPre (westbound)", "BottomMainC (westbound)",
-        "BottomMainC (westbound, reverse)", "BottomMainPost (northbound)",
-        "BottomMainPost (northbound, reverse)"
-    };
+    private static final String[] ON_THE_WAY = {};
 
     /**
      * How many routes to one destination the census will look at.
@@ -498,8 +507,11 @@ public class testTheRoomRuleCensusOnTheRealLayout
                             // production that is missing a condition counts a railway nobody runs.
                             boolean comesToRest = last || route.get(i).getEnd().isReversing();
 
-                            Integer here = comesToRest ? Layout.measuredRoomAtTheEndOf(prefix, train)
-                                : Layout.roomAfterASwitchOnTheWay(prefix, train);
+                            // AND A SQUARE IT ONLY PASSES IS NOT ASKED AT ALL (MT-333, 2026-09-14), as
+                            // production does not ask it.
+                            if (!comesToRest) continue;
+
+                            Integer here = Layout.measuredRoomAtTheEndOf(prefix, train);
 
                             if (here == null || train.getTrainLength() <= here) continue;
 
@@ -571,7 +583,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // WHAT THIS MEASURES IS THE RAILWAY, NOT THE GUARD, and the message used to say otherwise.
         //
         // The counter is built from `measuredRoomAtTheEndOf` and this class's own `crossesASwitch`;
-        // it never calls `roomAfterASwitchOnTheWay`, so weakening that condition cannot move it.  What
+        // it never called the pass-through walk (removed 2026-09-14), so that condition could not move it.  What
         // it says is that on THIS railway every refusal the ruling adds has a switch behind it - which
         // is the sentence behaviour.md section 5a leans on, and the reason the condition costs nothing
         // here.
@@ -600,7 +612,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             offTheEndOfTheRoute + " of the refusals on the way would come from the walk running off"
             + " the start of the route rather than from a switch behind the square. behaviour.md"
             + " section 5a states that none of them do on this railway, which is what makes the"
-            + " condition in `Layout.roomAfterASwitchOnTheWay` free here - so the railway has changed"
+            + " condition the pass-through walk carried until 2026-09-14 free here - so the railway has changed"
             + " shape, and that sentence needs re-measuring");
 
         assertEquals(refusedAtTheBerth, REFUSED_AT_THE_BERTH,

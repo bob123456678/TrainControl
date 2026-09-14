@@ -217,9 +217,8 @@ public class testTheLengthGuardsOnTheRealLayout
      * returns the best route's tightest square.
      *
      * **NOT EXACTLY WHAT THE GUARD COMPARES AGAINST, and the difference is in the safe direction.**
-     * It asks `measuredRoomAtTheEndOf` of every prefix; the guard asks `roomAfterASwitchOnTheWay` for
-     * a square the train passes through, which answers null where no switch lies behind it.  So this
-     * can report a SMALLER number than the guard uses.  Its one caller,
+     * It asks `measuredRoomAtTheEndOf` of every prefix; the guard asks nothing at a square the train
+     * only passes (MT-333, 2026-09-14).  So this can report a SMALLER number than the guard uses.  Its one caller,
      * `testExactlyFitsIsAdmittedAndOneMoreIsNot`, searches for a berth where the guard binds and then
      * verifies the refusal itself before using the number, so being wrong that way costs a candidate
      * rather than a verdict.  Said out loud because this codebase's characteristic defect is a
@@ -349,6 +348,11 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * A nine-unit train is refused RampDown, and the one unit at 22,7 is why.
      *
+     * **REVERSED ON 2026-09-14, and kept for the record of why.**  Adam, MT-333: *"this SHOULD be allowed per
+     * the standing rule that this switch blocking should only affect berthes."*  A square a train only passes
+     * is no longer judged for room, so BottomMainPost - which the route to RampDown only runs past - no longer
+     * refuses it, and RampDown is offered.  What follows is the ruling this test was written for.
+     *
      * Adam, 2026-09-09, on being shown that a nine-unit train standing at BottomMainB was offered
      * `RampDown (southbound, reverse)`: **"technically incorrect to say there is a path since we pass
      * the track of length 1 at 22,7 to get there, then nothing."**
@@ -388,7 +392,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * @throws Exception on a failure to build
      */
     @Test
-    public void testWhyRampDownIsRefused() throws Exception
+    public void testRampDownIsOfferedPastTheOneUnitItOnlyPasses() throws Exception
     {
         ourTrain.setTrainLength(9);
 
@@ -402,10 +406,10 @@ public class testTheLengthGuardsOnTheRealLayout
             "the nine-unit train is not standing alone at BottomMainB, so what follows is about some"
             + " other journey");
 
-        assertFalse(reaches(destinationsFromBottomMainB(), "RampDown"),
-            "RampDown is still offered to a nine-unit train standing at BottomMainB with 22,7 measured"
-            + " at one unit. That is the case Adam ruled on: the route crosses that tile and the train"
-            + " does not fit on it");
+        assertTrue(reaches(destinationsFromBottomMainB(), "RampDown"),
+            "RampDown is refused to a nine-unit train standing at BottomMainB with 22,7 measured at one unit."
+            + "  The route only PASSES BottomMainPost, where that unit is, and stops at RampDown, which nothing"
+            + " bounds.  Adam, MT-333, 2026-09-14: 'this switch blocking should only affect berthes'");
 
         // THE ROUTE IS STILL THERE, and still has the shape the reasoning above describes - it is the
         // LENGTH RULE that refuses it, not the graph having changed underneath this test.
@@ -467,16 +471,10 @@ public class testTheLengthGuardsOnTheRealLayout
             + " at RampDown where it used to decline to judge, so the refusal above may be coming from"
             + " the destination and this test would no longer be about the route");
 
-        // THE SENTENCE NAMES THE SQUARE THAT IS SHORT.
-        String why = Layout.whyTooLongForThisRoute(route, ourTrain);
-
-        assertNotNull(why, "the railway offers no route to RampDown and the rule accepts the one BFS"
-            + " finds, so the two doors disagree about the same journey");
-
-        assertTrue(why.contains("BottomMainPost"),
-            "the refusal is \"" + why + "\", which does not name BottomMainPost - the square with the"
-            + " one unit. RampDown has nothing to measure and sending anybody there is the notice"
-            + " getting in the way");
+        // AND THE RULE ITSELF GIVES NO REASON, so the offer above is the room rule's answer and not luck.
+        assertNull(Layout.whyTooLongForThisRoute(route, ourTrain),
+            "the room rule refuses the route to RampDown: '" + Layout.whyTooLongForThisRoute(route, ourTrain)
+            + "' - it is still judging BottomMainPost, a square the train only passes");
 
         // AND ADAM'S TWO CASES: unmeasured and at nine, the route is offered again.
         measureOnlyTheSnapshotsThreeAs(0);
@@ -804,6 +802,14 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (String candidate : offeredDestinations(train))
             {
+                // A STATION AUTONOMY MAY CHOOSE, because at one it may not the berth rule refuses a long train
+                // for fouling a road - a different rule, which would select a berth where BOTH lengths are
+                // refused and make the exactly-fits claim about the wrong thing (found 2026-09-14, when the
+                // room rule stopped judging passed squares and the search reached ParkingTrack6).
+                Point asked = rebuild().getPoint(candidate);
+
+                if (asked == null || !asked.isAutoDestination()) continue;
+
                 int here = roomTheGuardSees(train, candidate);
 
                 if (here <= 1) continue;
@@ -867,8 +873,9 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * The largest train the guard will let into a station from where this one is standing.
      *
-     * **The tightest measured stretch on the best route there**, which is what the rule compares a
-     * train against since Adam's ruling of 2026-09-09 (`Layout.whyTooLongForThisRoute`).  Read off the
+     * **The tightest measured stretch where the train comes to rest on the best route there** - the
+     * destination and any square it turns at, which is what the rule compares a train against since MT-333
+     * (2026-09-14; from 2026-09-09 until then it was every square, `Layout.whyTooLongForThisRoute`).  Read off the
      * built railway rather than worked out here: which tiles fall inside a stretch depends on where
      * the switches are, and a test that decides that for itself is a test that has to know the
      * geometry.  This one used to name two tiles, they stopped being the run in when the fixture began
@@ -917,6 +924,10 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (int i = 0; i < path.size(); i++)
             {
+                // WHERE THE TRAIN COMES TO REST, as the guard asks since 2026-09-14: the destination and a
+                // square it turns at, not one it only passes.
+                if (i < path.size() - 1 && !path.get(i).getEnd().isReversing()) continue;
+
                 Integer room = Layout.measuredRoomAtTheEndOf(path.subList(0, i + 1), loc);
 
                 if (room != null) tightest = Math.min(tightest, room);
