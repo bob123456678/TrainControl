@@ -35,8 +35,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * expectation reads *"neither writes to disk - Cancel puts everything back"*, which was true when it
  * was written.  OB-183 changed where a placement comes from - Adam, 2026-09-08: *"Where a train IS is
  * a fact, and where the file thinks it is is a record"* - so placements are carried across a rebuild
- * rather than regenerated from the setup, and Cancel restores the FILE while the railway is what the
- * placements are read from.  Two halves of one sentence stopped agreeing, and nothing on screen said
+ * rather than regenerated from the setup, and Cancel then restored the FILE while the railway was what the
+ * placements were read from.  Two halves of one sentence stopped agreeing, and nothing on screen said
  * so.
  *
  * **Asserted by asking the editor, not by reading its source.**  The panel is stood up over the frozen
@@ -44,9 +44,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * tooltip already shows - one builder, so the two cannot say different things.
  *
  * **Two claims that are not about English.**  The warning must name every locomotive it is about to
- * lift - a count is not something anybody can check - and it must name the button that will NOT undo
- * it, asked as `I18n.t("ui.cancel")`, which is the same key the editor's own Cancel button carries.
- * Both hold in whichever of the eight languages the run happens to be in.
+ * lift - a count is not something anybody can check - and it must name Cancel, which since OB-223 is the
+ * button that undoes it, asked as `I18n.t("ui.cancel")`, the same key the editor's own Cancel button
+ * carries.  Both hold in whichever of the eight languages the run happens to be in.  And on the track
+ * diagram's own menu, where there is no Cancel, it must not name one (WKV-B1).
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
@@ -232,6 +233,68 @@ public class testTheBulkClearSaysWhatCancelDoes
         assertTrue(carried,
             "no item on the Bulk Tools menu says what Cancel does about the clear, so the warning"
             + " arrives only after the item has been clicked. Tooltips: " + tips);
+    }
+
+    /**
+     * The track diagram's own right-click menu does not promise a Cancel it does not have (WKV-B1).
+     *
+     * The same Bulk Tools item is on the diagram's tile menu - this panel's menus served with no page - and
+     * there the clear is saved the moment it is made: the diagram's panel saves the setup on every change, and
+     * its menu is not offered at all while an editor is open (`TrainControlUI.buildAutonomyTileMenu`), so no
+     * editor's Cancel can reach it.  A warning saying Cancel puts the locomotives back is false on that door.
+     * Asked of the real diagram menu, through `buildAutonomyTileMenu`.
+     */
+    @Test
+    public void testTheDiagramsOwnMenuDoesNotPromiseACancel() throws Exception
+    {
+        TileKey square = null;
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getLocomotiveNameAt(tile) != null) square = tile;
+        }
+        assertNotNull(square, "precondition: no locomotive stands on " + PAGE + " to right-click");
+        final TileKey at = square;
+        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+        final String[] said = new String[1];
+        final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
+        panel.setAccessible(true);
+        SwingUtilities.invokeAndWait(() ->
+        {
+            menu[0] = ui.buildAutonomyTileMenu(at);
+            try
+            {
+                Object built = panel.get(ui);
+                if (built != null) said[0] = ((org.traincontrol.gui.AutonomyEditorPanel) built).clearLocomotivesWarning();
+            }
+            catch (IllegalAccessException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+        assertNotNull(menu[0], "precondition: the track diagram offered no menu on " + at);
+        assertNotNull(said[0], "precondition: the diagram's menu panel was not built");
+        assertFalse(said[0].contains(I18n.t("ui.cancel")),
+            "the track diagram's Clear All Locomotives warns that " + I18n.t("ui.cancel") + " puts them back,"
+            + " and that door has no Cancel - the clear is saved as it is made. It says: " + said[0]);
+        final java.util.List<String> tips = new java.util.ArrayList<>();
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Component child : menu[0].getComponents())
+            {
+                if (child instanceof javax.swing.JMenu) collect((javax.swing.JMenu) child, tips);
+            }
+        });
+        String count = String.valueOf(session.tilesWithALocomotive().size());
+        boolean found = false;
+        for (String tip : tips)
+        {
+            if (tip == null || !tip.contains(count)) continue;
+            found = true;
+            assertFalse(tip.contains(I18n.t("ui.cancel")),
+                "a tooltip on the track diagram's menu promises " + I18n.t("ui.cancel") + ": " + tip);
+        }
+        assertTrue(found, "precondition: no tooltip on the track diagram's menu names the " + count
+            + " squares the clear would empty, so the menu has changed shape. Tooltips: " + tips);
     }
 
     /**

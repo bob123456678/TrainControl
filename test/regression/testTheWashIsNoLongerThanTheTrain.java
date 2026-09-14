@@ -149,10 +149,10 @@ public class testTheWashIsNoLongerThanTheTrain
 
         // SHORT ENOUGH TO GO SOMEWHERE, on a railway measured at one unit a tile.
         //
-        // The length was whatever Adam's database says, and since his ruling of 2026-09-09 the room
-        // rule is asked at every square a route runs through - so a long train on a railway this
-        // tightly measured is refused everywhere, the one real run below never starts, and every
-        // claim after it skips.  A class that skips everything reads as a green one.
+        // The length was whatever Adam's database says, and the room rule is asked wherever a train
+        // comes to rest - its destination and any square it turns at (behaviour.md 5a) - so a long train
+        // on a railway this tightly measured is refused everywhere, the one real run below never starts,
+        // and every claim after it skips.  A class that skips everything reads as a green one.
         //
         // This is the class's to set: each claim sets its own length, and `tearDownClass` puts the
         // real one back.

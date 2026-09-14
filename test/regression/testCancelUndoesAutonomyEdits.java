@@ -342,6 +342,143 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * Discard on the way out of the application puts back the locomotives a bulk clear took, as Cancel does
+     * (WKV-B2).
+     *
+     * Closing TrainControl with the autonomy editor open asks Save / Discard / Cancel through
+     * `LayoutEditor.maySettleBeforeExit`, and Discard restores the setup as the editor opened it - but the
+     * running layout was rebuilt after the clear and still has no trains on those squares, and the save on the
+     * way out folds the running layout back over the setup (`captureFromLayout`).  Cancel does not have this
+     * problem because the editor closing rebuilds from the restored setup first.
+     *
+     * The exit itself ends in `System.exit`, so it is asked in its two parts: the real settle, answered
+     * Discard, and then the fold the exit's save does - `captureRunningLayout` runs the same
+     * `captureFromLayout` and `saveWithoutReconciling` under the same conditions, without writing the
+     * operator's `UIState.data`.
+     */
+    @Test
+    public void testDiscardOnTheWayOutPutsBackTheLocomotivesABulkClearTook() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor editor = opened();
+        Answerer answerer = null;
+        try
+        {
+            Map<String, String> before = placements();
+            assertFalse(before.isEmpty(), "precondition: no locomotive stands anywhere on the snapshot");
+            final java.lang.reflect.Method clear =
+                editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
+            clear.setAccessible(true);
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    clear.invoke(editor.getAutonomyPanel());
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            answerer.stop();
+            assertTrue(placements().isEmpty(), "precondition: the bulk clear left " + placements() + " on the setup");
+            answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
+            final boolean[] mayExit = new boolean[1];
+            SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
+            settle();
+            answerer.stop();
+            assertTrue(answerer.answered(), "precondition: the exit did not ask about the unsaved clear");
+            assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
+            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            fold.setAccessible(true);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    fold.invoke(ui);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            assertEquals(placements(), before,
+                "Discard on the way out restored the setup, and the save on the way out then folded the running"
+                + " layout - still without the cleared locomotives - back over it");
+            Map<String, String> onDisk = new java.util.TreeMap<>();
+            AutonomySession reread = fromDisk();
+            for (TileKey tile : reread.getReducer().getPoints().keySet())
+            {
+                String name = reread.getLocomotiveNameAt(tile);
+                if (name != null) onDisk.put(tile.toString(), name);
+            }
+            assertEquals(onDisk, before, "the file does not hold the locomotives Discard put back, so the next start"
+                + " opens without them");
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+            dispose(editor);
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
+     * And an arrow changed in the editor is put back by Discard on the way out - the control for the claim above.
+     *
+     * The validator named point settings beside placements; run on 2026-09-14 this was green BEFORE the fix, so
+     * the exit's fold does not carry arrows and only placements were lost.  Kept so that the rebuild the fix
+     * added cannot bring an arrow back without this saying so.
+     */
+    @Test
+    public void testDiscardOnTheWayOutPutsTheArrowsBack() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor editor = opened();
+        Answerer answerer = null;
+        try
+        {
+            TileKey square = aSquareWithOneRoute();
+            Map<String, String> before = directions(session);
+            click(editor, square);
+            assertNotEquals(directions(session), before, "precondition: clicking " + square + " changed no arrow");
+            answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
+            final boolean[] mayExit = new boolean[1];
+            SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
+            settle();
+            answerer.stop();
+            assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
+            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            fold.setAccessible(true);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    fold.invoke(ui);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            assertEquals(directions(session).toString(), before.toString(),
+                "Discard on the way out did not keep the arrow put back in the setup");
+            assertEquals(directions(fromDisk()).toString(), before.toString(),
+                "Discard on the way out did not keep the arrow put back in the file");
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+            dispose(editor);
+            session.restoreSetup(asFound);
+        }
+    }
+
     /** Every placement the setup records, square by square. */
     private static Map<String, String> placements()
     {

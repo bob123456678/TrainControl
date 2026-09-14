@@ -1,6 +1,6 @@
 # Seven days of commits, reviewed after the MT-333 ruling and today's fixes
 
-**Status:** open 2026-09-14 - round 1 fixed (C1, C2, C3), validation running; WK7-B1 held for MT-432
+**Status:** open 2026-09-14 - round 1 fixed (C1, C2, C3); validated (`2026-09-14-WKV-fix-validation.md`), C1 and C2 completed in round 2; WK7-B1 held for MT-432
 
 **Prefix:** WK7 (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, and every declaration spelling in `docs/reviews/*.md`)
 
@@ -32,7 +32,7 @@
 
 **Scenario.**  75 407 DB, length 3, driven from Tunnel to BottomMainA: a second train at Tunnel is refused BottomMainB and C, as `regression.testAPassingTrainMayStandAcrossThePoints.testThreeUnitsAtBottomMainAClosesTunnelToBAndC` pins.  Set a home or a caption from the diagram's right-click menu, or open and close the autonomy editor: the train is put back with its side and no route, the walk stops at BottomMainAPre, and B and C are offered again over a tail still lying on the Tunnel run.
 
-Introduced with the route-following tail in `d4f09f5d`, whose javadoc says a rebuild loses it; MT-333's note of 2026-09-14 listed the gestures and offered to carry the route through a rebuild.  **Held, not changed:** it touches MT-432, the protrusion test Adam has not run, whose steps and warning are written around this behaviour.
+Introduced with the route-following tail in `d4f09f5d`, whose javadoc says a rebuild loses it; MT-333's note of 2026-09-14 listed the gestures and offered to carry the route through a rebuild.  **Held, not changed:** it touches MT-432, the protrusion test Adam has not run.  Stated more exactly after validation: MT-432's steps drive and look and do not rebuild, and its warning names opening the editor but not a home or caption set from the diagram's menu - carrying the route through a rebuild would change what its tail looks like after any of those.
 
 ---
 
@@ -54,6 +54,8 @@ The javadoc of `Layout.whyTooLongForThisRoute` ("Every square on the route, not 
 
 **Fixed, round 1.**  The five comments say where the train comes to rest - the destination and a square it turns at - and that a standing train's blocking is a different mechanism; the planner's note says it asks exactly where the runtime asks.  Comments only.
 
+**Round 2, after validation (WKV).**  The test comments that still gave the old reading: `testTheWashIsNoLongerThanTheTrain`, `testHomeStaging`'s leg-2 note, and `testTheLengthGuardsOnTheRealLayout`'s RampDown claim - summary, reasoning, a comment, three assertion messages, and a MUTATION paragraph now naming `if (!comesToRest) continue;`, run.
+
 ### WK7-C2 - Cancel now brings bulk-cleared locomotives back, and the warning says it does not
 
 | | |
@@ -63,6 +65,8 @@ The javadoc of `Layout.whyTooLongForThisRoute` ("Every square on the route, not 
 `discardAutonomyWork` restores the snapshot taken when the editor opened, placements included; `autonomyEditorClosed` rebuilds the running layout from it, and `putTheTrainsBack` only moves trains that were standing, which the cleared ones are not - so they come back where the setup puts them, and `captureRunningLayout` writes that.  Before OB-223 the discard re-read a file the per-gesture save had already written without them.  The OB-194 warning - *"Cancel will not bring them back"* - and OB-223's own javadoc now say the reverse of what happens; `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` pins only the wording.  In Adam's favour, but the sentence he asked for is false.
 
 **Fixed, round 1, after confirming it by running.**  `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` clears every locomotive through the real Bulk Tools door, presses the real Cancel, and asserts the placements are back in the setup and on the running railway - green before any wording changed, which is the reviewer's reading confirmed.  Mutation: make the discard re-read the file instead of restoring the snapshot, and it goes red.  The warning now says Cancel puts them back and Save keeps the change, in eight languages; the javadocs in `AutonomyEditorPanel` and `LayoutEditor` say why it once said the opposite; `testTheBulkClearWarnsThatCancelWillNotUndoIt` is renamed `testTheBulkClearSaysWhatCancelDoes`.
+
+**Round 2, after validation (WKV).**  The old class name in `testSwitchingToACentralStationLayout`, the renamed class's javadoc, and OB-194 and OB-223 in `issues.md` (dated notes).  The validation also found round 1's sentence false on the track diagram's own menu, which has no Cancel (WKV-B1), and the application's exit Discard not undoing a bulk clear (WKV-B2) - both fixed there.
 
 ### WK7-C3 - a claim in `testATrainIsJudgedOnlyWhereItStops` can no longer fail for what it names
 

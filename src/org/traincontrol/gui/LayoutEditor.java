@@ -5978,7 +5978,24 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     public boolean maySettleBeforeExit()
     {
-        return settleUnsavedWork();
+        if (!settleUnsavedWork()) return false;
+
+        // THE RUNNING LAYOUT FOLLOWS A DISCARD ON THE WAY OUT (WKV-B2).
+        //
+        // Discard in autonomy mode restores the setup as the editor opened it, inside settleUnsavedWork.  The
+        // running layout does not follow: it was rebuilt after each edit, so it still has the edit - a bulk
+        // clear's empty squares, a changed arrow - and the save on the way out folds the running layout back
+        // over the setup (`captureFromLayout`), writing the discarded edit to the file.  Cancel never had this,
+        // because the editor closing rebuilds from the restored setup before it captures
+        // (`TrainControlUI.autonomyEditorClosed`).  So the exit asks for the same rebuild.
+        //
+        // Here and not in completeExitDiscard, because the exit's save runs before that.  Not early in the sense
+        // the track-mode undo would be: the setup is already put back at this point, and if the exit is then
+        // refused the setup and the railway agree, as after a Cancel.  The rebuild declines while autonomy is
+        // running, and so does the capture.
+        if (this.settledByDiscarding && isAutonomyMode()) parent.rebuildRunningLayoutFromSetup();
+
+        return true;
     }
 
     /**

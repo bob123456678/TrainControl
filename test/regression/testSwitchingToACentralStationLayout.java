@@ -715,8 +715,8 @@ public class testSwitchingToACentralStationLayout
         // window for the same reason: what they ask about is a property of a menu ITEM or of the
         // editor's own state rather than of the panel, so the only way to ask is to build one.
         //
-        //   - `testTheBulkClearWarnsThatCancelWillNotUndoIt` (OB-194), the warning on the Bulk Tools
-        //     menu;
+        //   - `testTheBulkClearSaysWhatCancelDoes` (OB-194; `testTheBulkClearWarnsThatCancelWillNotUndoIt`
+        //     until 2026-09-14), the warning on the Bulk Tools menu;
         //   - `testClearAllTrackLengths` (FR-069), the item beside it;
         //   - `testTheHoveredSquareIsForgotten` (OB-198), which square the editor thinks the pointer
         //     is over.

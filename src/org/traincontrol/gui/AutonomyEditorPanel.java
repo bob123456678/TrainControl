@@ -8861,6 +8861,11 @@ public class AutonomyEditorPanel extends JPanel
      * One builder, used by the confirmation AND by the menu item's tooltip, so the warning cannot be
      * shown in one place and not the other.
      *
+     * **On the track diagram's own menu there is no Cancel (WKV-B1).**  That menu is this panel served with no
+     * page, its changes are saved as they are made, and it is not offered at all while an editor is open
+     * (`TrainControlUI.buildAutonomyTileMenu`) - so no Cancel can reach a clear made there, and the warning says
+     * it is saved at once instead.  `regression.testTheBulkClearSaysWhatCancelDoes` asks both doors.
+     *
      * @return the warning, already translated
      */
     public String clearLocomotivesWarning()
@@ -8874,6 +8879,12 @@ public class AutonomyEditorPanel extends JPanel
             if (names.length() > 0) names.append(", ");
 
             names.append(name);
+        }
+
+        if (page == null)
+        {
+            return I18n.f("autolayout.ui.confirmClearLocomotivesAtOnce",
+                session.tilesWithALocomotive().size(), names.toString());
         }
 
         return I18n.f("autolayout.ui.confirmClearLocomotives",

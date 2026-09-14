@@ -554,7 +554,8 @@ public class testHomeStaging
      * stations."*
      *
      * The relaxation that came out of that ruling lived inside `whyTooLongForThisRoute`, bundled with
-     * the station's stated capacity and the room test at every square on the way. The planner could
+     * the station's stated capacity and the room test on the way (then at every square; since MT-333,
+     * 2026-09-14, only where the train comes to rest). The planner could
      * not take the whole rule to get it - tried on 2026-09-13, and five trains came back
      * NO_PLAN_FOUND, because the bundle is strictly stricter than the planner's own arithmetic. So the
      * relaxation is now `Layout.theApproachItselfHoldsIt` and both sides ask it.

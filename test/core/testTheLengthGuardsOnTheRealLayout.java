@@ -346,7 +346,7 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * A nine-unit train is refused RampDown, and the one unit at 22,7 is why.
+     * A nine-unit train is offered RampDown, past the one unit at 22,7 that it only drives through.
      *
      * **THE CLAIM TURNED ROUND ON 2026-09-14, the ruling read as meant rather than reversed, and the old reasoning kept
      * for the record.**  Adam, MT-333: *"this SHOULD be allowed per
@@ -374,21 +374,23 @@ public class testTheLengthGuardsOnTheRealLayout
      *   - The last of those nine crosses no switch at all and is eighteen tiles long, so there is
      *     nothing at the berth to bound the train with - the *"then nothing"* in his ruling.
      *
-     * All of that is still true.  What changed is the question: until his ruling of the same day the
-     * rule asked only whether the train fitted where it STOPPED, so the walk started at RampDown, hit
-     * a switch seven edges short of 22,7, and never saw it.  It now asks at every square the route
-     * runs through, and the answer at BottomMainPost - the FIRST square, one measured unit - refuses
-     * the route before the berth is ever reached.
+     * All of that is still true.  What changed is the question, twice.  Until his ruling of the same day
+     * the rule asked only whether the train fitted where it STOPPED, so the walk started at RampDown, hit
+     * a switch seven edges short of 22,7, and never saw it.  From then until 2026-09-14 it asked at every
+     * square the route ran through, and the answer at BottomMainPost - the FIRST square, one measured
+     * unit - refused the route before the berth was reached.  Since MT-333 it asks only where the train
+     * comes to rest - the destination and a square it turns at - so BottomMainPost is not judged and
+     * RampDown is offered.
      *
-     * **The refusal names BottomMainPost, not RampDown**, which is the point of the second message:
-     * RampDown has no measurement to fix and sending him there to make one would help nobody.
+     * **Under that reading the refusal named BottomMainPost, not RampDown** - RampDown has no measurement
+     * to fix.  Now the rule gives no reason at all for this route, which the last assertion checks.
      *
      * The route is taken from `bfs` rather than from what the railway offers, because what the railway
      * offers is the thing under test - asking it for the route would make every assertion below
-     * conditional on the refusal not happening.
+     * conditional on the answer under test.
      *
-     * MUTATION: asking the room walk of the whole path rather than of each prefix - the rule as it
-     * stood on 2026-09-08 - offers RampDown again and fails this.
+     * MUTATION, run 2026-09-14: taking `if (!comesToRest) continue;` out of `Layout.whyTooLongForThisRoute`,
+     * so every square the route runs through is judged again, refuses RampDown and fails the first assertion.
      *
      * @throws Exception on a failure to build
      */
@@ -413,7 +415,7 @@ public class testTheLengthGuardsOnTheRealLayout
             + " bounds.  Adam, MT-333, 2026-09-14: 'this switch blocking should only affect berthes'");
 
         // THE ROUTE IS STILL THERE, and still has the shape the reasoning above describes - it is the
-        // LENGTH RULE that refuses it, not the graph having changed underneath this test.
+        // LENGTH RULE that decides it, not the graph having changed underneath this test.
         List<Edge> route = null;
 
         for (Point candidate : built.getPoints())
@@ -427,7 +429,7 @@ public class testTheLengthGuardsOnTheRealLayout
 
         assertNotNull(route,
             "there is no route at all from BottomMainB to RampDown any more, so this test is recording"
-            + " a refusal that the geometry makes moot and the reasoning above is about track that no"
+            + " an offer that the geometry makes moot and the reasoning above is about track that no"
             + " longer connects");
 
         assertEquals(route.get(0).getEnd().getName().split(" ")[0], "BottomMainPost",
@@ -446,7 +448,7 @@ public class testTheLengthGuardsOnTheRealLayout
 
         assertFalse(last.crossesASwitch(),
             "the last edge into RampDown crosses a switch now, so it DOES bound where the train may"
-            + " come to rest and the refusal above could be the berth rule rather than the route rule."
+            + " come to rest and the offer above is a question about the berth rather than about 22,7."
             + " That is a different railway from the one this test was measured on");
 
         assertEquals(last.getLength(), 0,
@@ -469,8 +471,8 @@ public class testTheLengthGuardsOnTheRealLayout
 
         assertNull(Layout.measuredRoomAtTheEndOf(route, ourTrain),
             "the berth walk now measures " + Layout.measuredRoomAtTheEndOf(route, ourTrain) + " units"
-            + " at RampDown where it used to decline to judge, so the refusal above may be coming from"
-            + " the destination and this test would no longer be about the route");
+            + " at RampDown where it used to decline to judge, so the offer above depends on the"
+            + " destination and this test would no longer be about the square the train only passes");
 
         // AND THE RULE ITSELF GIVES NO REASON, so the offer above is the room rule's answer and not luck.
         assertNull(Layout.whyTooLongForThisRoute(route, ourTrain),
