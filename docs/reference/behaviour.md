@@ -698,20 +698,34 @@ The rest of this section is about the **first** rule.
   capacity rule above, and it is asked separately. A train can fit the platform and still be refused
   because it would be left standing on the switch behind it.
 
-- **A square the train only PASSES is not judged** (Adam, MT-333, 2026-09-14). On 75 407 DB, two units,
-  refused from Tunnel to BottomMainA at BottomMainAPre - a square it runs past - once one unit was measured on
-  the run before it: *"this SHOULD be allowed per the standing rule that this switch blocking should only
-  affect berthes."* The rule asks whether a train would be left standing across the points, and a passing
-  train stands nowhere. What is still judged is where it comes to rest: the destination (with the platform
-  relaxation and the berth rule below) and a square it turns round at. This withdraws the pass-through half of
-  the ruling of 2026-09-09 that follows, which is kept as the record of why the rule was once wider:
-  from 2026-09-10 (`5948a88a`) to 2026-09-14 a passed square was judged wherever a switch lay behind it, and
-  the relaxation of 2026-09-12 was built at the destination only. `regression.testAPassingTrainMayStandAcrossThePoints`
-  is the test, on his own measurements; `core.testATrainIsJudgedOnlyWhereItStops` is the same on a fixture.
+- **It is asked where the train comes to rest, and not at a square it only passes** (Adam, MT-333,
+  2026-09-14). Two different mechanisms are about a train overhanging the points, and only the second is
+  this rule:
 
-- **(Withdrawn 2026-09-14, above.) The question was asked at EVERY square on the route, not only at the
-  destination.** Adam, 2026-09-09, having been asked which of the two it should be and told what the second
-  costs:
+  1. **A train already standing still blocks other roads** - stopped at a station or parked - wherever the
+     segments under it are measured. Its tail claims the places it lies on and no route is cleared over them
+     (§5c; `OB-207`; a driven train's tail follows the road it came in on, a placed one stops at the fork), and
+     a parking berth refuses a train that would foul a road that is not its own (below). **Unchanged.**
+  2. **Whether a train being SENT fits** is asked where it will halt: the destination, and a square it turns
+     round at, because it stops and reverses at every such square on its way. A square it only drives past is
+     not asked - it stands nowhere there, and a moving train holds the track it runs on, so nothing is routed
+     across it meanwhile.
+
+  This is the ruling of 2026-09-09 below read as it was meant, not reversed: *"edges are already locked as
+  trains pass through ... it's really about implementing the same mechanic"* - the mechanic of point 1, which
+  exists only where a train stands. From 2026-09-10 (`5948a88a`) to 2026-09-14 the rule applied it at squares a
+  train only passes too, wherever a switch lay behind them, and the platform relaxation of 2026-09-12 was built
+  at the destination only; so 75 407 DB, two units, was refused Tunnel to BottomMainA at BottomMainAPre once
+  one unit was measured on the run before it - *"this SHOULD be allowed per the standing rule that this switch
+  blocking should only affect berthes."* Adam, confirming both points: *"This is all correct as stated ... No
+  separate rule."* So a route is no longer refused for passing a short measured stretch after a switch, his
+  RampDown example below included. `regression.testAPassingTrainMayStandAcrossThePoints` is the test, each
+  scenario on its own diagram with his measurements, point 1 included; `core.testATrainIsJudgedOnlyWhereItStops`
+  is the same on a fixture.
+
+- **(The reading from 2026-09-09 to 2026-09-14, kept for the record; the figures in it are from then.)** The
+  question was asked at EVERY square on the route, not only at the destination. Adam, 2026-09-09, having been
+  asked which of the two it should be and told what the second costs:
 
   > *"For 1, it's b. This should only apply if lengths are specified - and edges are already locked as
   > trains pass through in non-dynamic mode. So it's really about implementing the same mechanic."*
@@ -751,7 +765,7 @@ The rest of this section is about the **first** rule.
   than for the berth. Naming the destination when the destination has room sends the operator to
   measure the one stretch that was already long enough.
 
-- **(Withdrawn with it.) A square the train passed THROUGH was judged only where a switch was behind it.** The walk has two
+- **(Same period, same record.) A square the train passed THROUGH was judged only where a switch was behind it.** Since 2026-09-14 such a square is not judged at all, and the censuses report none refused on the way. The walk has two
   stopping conditions and only one of them is a measurement: it stops at the last switch, which is the
   rule, and at the start of the route, which is the walk running out of track to look at.
 

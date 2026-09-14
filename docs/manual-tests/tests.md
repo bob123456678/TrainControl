@@ -22206,7 +22206,7 @@ Your OB-224, from MT-333: *"75 407 DB (len 2) can no longer go from tunnel to bo
 - Step 3: it runs and arrives.
 - Step 4: BottomMainA is refused, naming BottomMainA itself: three units do not fit its two-unit approach.
 
-*What this is:* OB-224.  A square a train only passes is no longer judged for standing across the points - only where it comes to rest: the destination, and a square it turns round at.  This withdraws the pass-through half of your ruling of 2026-09-09, which refused your 9 Sep example (a nine-unit train past 22,7 to RampDown) - that is now offered too.  `regression.testAPassingTrainMayStandAcrossThePoints`, seen red first; `core.testATrainIsJudgedOnlyWhereItStops`; commit `e677cbab`.
+*What this is:* OB-224.  Whether a train being sent fits is asked where it will halt - the destination, and a square it turns round at - and not at a square it only drives past.  A train already standing still blocks other roads exactly as before, wherever the track under it is measured (MT-432 is that half).  This is your ruling of 2026-09-09 read as meant - the standing-train mechanic, which only exists where a train stands - and you confirmed it, with no separate rule for a running train; so your 9 Sep example (a nine-unit train past 22,7 to RampDown) is now offered too.  `regression.testAPassingTrainMayStandAcrossThePoints`, seen red first; `core.testATrainIsJudgedOnlyWhereItStops`; commit `e677cbab`.
 
 #### Comments
 
