@@ -1158,6 +1158,15 @@ autonomy station labels should be deduped per page, not globally- that way, othe
 
 From MT-368, point 2 of Adam's run of 2026-09-13: *"If keep direction is selected, the 'in progress' badge on bottommainb shows the wrong direction until after the train arrives."*  Diagnosed on 2026-09-13 and not yet repaired: `configureAndLockPath` reserves every point on the route, including the destination, and the destination it reserves is the copy the path ENDS on - routinely the turning copy of a may-turn square (measured: the path offered to BottomMainC ends on its eastbound reverse copy five runs out of five).  The caption reads that copy's facing, which is the turned one; on arrival the train is re-stood on the plain copy and the badge becomes right.  The repair is to reserve the copy the train will actually end on, decided from the answer at dispatch - a change to the locking path, so it is filed rather than slipped in.
 
+### FR-080 - 2026-09-14 - why not moving clarity
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-14 08:01  
+**Build:** commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the "why not moving" view in the autonomy editor, show all stations first, then show berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

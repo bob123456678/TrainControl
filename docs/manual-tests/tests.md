@@ -21676,6 +21676,10 @@ It is drawn with the out-of-service mark, not with the terminus icon.
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-418"></a>
@@ -21698,6 +21702,10 @@ From OB-134: *six destructive confirmations still pre-selected Yes.*
 **No** (or Cancel) is the highlighted default every time, so pressing Enter changes nothing.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21723,6 +21731,10 @@ Each time it is grey, the tooltip names the reason that is actually true at that
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-420"></a>
@@ -21745,6 +21757,10 @@ From OB-124: *four windows had no application icon.*
 Every one shows the TrainControl icon, not the default Java cup.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21769,6 +21785,10 @@ The + row is drawn normally, never in the grey of the row above it.
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-422"></a>
@@ -21791,6 +21811,10 @@ From OB-120: *Test a path drew routes into stations that refuse arrivals from th
 No route is drawn into it from that side - the test reports it cannot be reached that way.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21815,6 +21839,10 @@ The name sits over its track, centred on the rails.  Captions have been reworked
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-424"></a>
@@ -21837,5 +21865,9 @@ From OB-116: *the left and right facing arrows were half the height of the up an
 They are the same size.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit f3b3b55e, build\classes, compiled 14 Sep 07:59 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
