@@ -37,8 +37,10 @@ public class testANameCannotEndInAHeading
     @Test
     public void testTheBuildersFormsAreRefused()
     {
+        // "Depot (eastbound, old)" as well: the stripping reads the heading up to the comma and ignores the
+        // rest, so that name reads as "Depot" in every message - refusing it is what keeps the two agreeing (FTN-C1).
         for (String name : new String[] {"Main (eastbound)", "Main (westbound)", "Yard (northbound)",
-            "Yard (southbound)", "Main (eastbound, reverse)", "  Main (westbound)  "})
+            "Yard (southbound)", "Main (eastbound, reverse)", "  Main (westbound)  ", "Depot (eastbound, old)"})
         {
             assertTrue(StationIndex.endsWithAnArrivalHeading(name),
                 "\"" + name + "\" ends the way the builder names one direction of a square and was not"

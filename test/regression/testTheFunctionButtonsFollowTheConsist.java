@@ -167,13 +167,19 @@ public class testTheFunctionButtonsFollowTheConsist
      */
     /**
      * The last locomotive asked for is the one the window draws, however quickly the two requests came
-     * (TDR-B5).
+     * (TDR-B5, FTN-B1).
      *
-     * The guard this pins against returned without doing anything while an earlier render was unfinished -
-     * and a render counts as unfinished on its own thread after it has already handed its painting to the
-     * event thread.  So a request made in that window was dropped, and the window went on showing the first
-     * locomotive's function buttons.  Which window the requests land in is up to the scheduler, so this
-     * holds the renderer there on purpose, through the hook it calls after posting.
+     * The guard this pins against returned without doing anything while an earlier render was unfinished, so a
+     * request made in that window was dropped and the window went on showing the first locomotive's function
+     * buttons.  The repair keeps such a request and runs it when the painting finishes.
+     *
+     * **Only that re-run can make this pass.**  The renderer is held BEFORE it posts a render asked for a
+     * locomotive that is not the one shown - so when that painting runs it leaves the panel alone - and the
+     * mixed consist is asked for while the render is certainly in flight.  Nothing but the deferred re-run in
+     * `renderFinished` then draws the mixed consist.  The first version of this held the renderer after posting,
+     * by which time the painting could already have cleared the flag, and the deferral went untested (FTN-B1).
+     *
+     * MUTATION, run: delete the `renderActiveLoc(force, locs)` at the end of `renderFinished` and this goes red.
      *
      * @throws Exception from the window
      */
@@ -182,24 +188,26 @@ public class testTheFunctionButtonsFollowTheConsist
     {
         MarklinLocomotive mixed = model.getLocByName("MU head UI");
         MarklinLocomotive plain = model.getLocByName("MU plain UI");
+        MarklinLocomotive notShown = model.getLocByName("MU member UI");
 
         assertNotNull(mixed, "precondition: the mixed consist is gone");
         assertNotNull(plain, "precondition: the all-MM2 consist is gone");
+        assertNotNull(notShown, "precondition: the mixed consist's member is gone");
 
-        show(mixed);
+        show(plain);
 
-        assertTrue(button(6).isEnabled(), "precondition: f6 is not lit for the mixed consist even when asked for alone");
+        assertFalse(button(6).isEnabled(), "precondition: f6 is lit for the all-MM2 consist even when shown alone");
 
         Field active = TrainControlUI.class.getDeclaredField("activeLoc");
 
         active.setAccessible(true);
 
-        final java.util.concurrent.CountDownLatch posted = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
         final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
 
-        TrainControlUI.afterARenderIsPosted = () ->
+        TrainControlUI.beforeARenderIsPosted = () ->
         {
-            posted.countDown();
+            held.countDown();
 
             try
             {
@@ -213,27 +221,21 @@ public class testTheFunctionButtonsFollowTheConsist
 
         try
         {
-            // The all-MM2 consist first: its render is posted and drawn, and the renderer is held right there.
-            active.set(ui, plain);
+            // A render about a locomotive that is not shown: when it paints, it leaves the panel as it is.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                ui.repaintLoc(false, java.util.Collections.<Locomotive>singletonList(notShown)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            assertTrue(held.await(10, java.util.concurrent.TimeUnit.SECONDS),
+                "precondition: the renderer never reached the hook, so no render is in flight");
 
-            assertTrue(posted.await(10, java.util.concurrent.TimeUnit.SECONDS),
-                "precondition: the first render never reached the event thread");
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
-
-            assertFalse(button(6).isEnabled(),
-                "precondition: the all-MM2 consist's render was not drawn, so the window never showed it");
-
-            // ... and the mixed consist asked for while the renderer is still inside that render.
+            // ... and, while that render is certainly in flight, the mixed consist.
             active.set(ui, mixed);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
         }
         finally
         {
-            TrainControlUI.afterARenderIsPosted = null;
+            TrainControlUI.beforeARenderIsPosted = null;
 
             release.countDown();
         }
@@ -242,9 +244,83 @@ public class testTheFunctionButtonsFollowTheConsist
         waitForTheRender();
 
         assertTrue(button(6).isEnabled(),
-            "the mixed consist was asked for while the window was finishing the all-MM2 one, and the window"
-            + " still shows the all-MM2 consist's buttons - f6 greyed for a consist that can drive it. The"
-            + " second request was dropped (TDR-B5)");
+            "the mixed consist was asked for while a render was in flight, and the window still shows the"
+            + " all-MM2 consist's buttons - f6 greyed for a consist that can drive it. The request was not kept"
+            + " and run when that render finished (TDR-B5, FTN-B1)");
+    }
+
+    /**
+     * A locomotive's direction echo does not build the autonomy session on the thread it arrives on (FTN-B2).
+     *
+     * `followDirectionChanges` runs inside the window's monitor, from `repaintLoc`, on whatever thread the
+     * Central Station's message came in on - and it asked `getAutonomySession()`, the lazy builder that parses
+     * every page and can rewrite files.  The rule written for exactly this, at `repaintTimetable`, is to read
+     * the field.  Since TDR-B5 the event thread takes that monitor at the end of every locomotive render, so a
+     * session built there held the whole window up for the length of a parse.
+     *
+     * @throws Exception from the window or reflection
+     */
+    @Test
+    public void testADirectionEchoDoesNotBuildTheSession() throws Exception
+    {
+        MarklinLocomotive anyone = model.newMM2Locomotive("MU echo UI", 95);
+
+        try
+        {
+            Field session = TrainControlUI.class.getDeclaredField("autonomySession");
+
+            session.setAccessible(true);
+
+            // The railway graph exists, so the guard gets as far as asking about the session.
+            model.getAutoLayout();
+
+            if (!model.hasAutoLayout()) throw new org.testng.SkipException("no autonomy layout to follow directions on");
+
+            // What the getter WOULD build here, asked on purpose, so the claim below is not about a fixture that
+            // could never build one.
+            java.lang.reflect.Method getter = TrainControlUI.class.getDeclaredMethod("getAutonomySession");
+
+            getter.setAccessible(true);
+
+            final Object[] built = new Object[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    built[0] = getter.invoke(ui);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            if (built[0] == null) throw new org.testng.SkipException("this sandbox builds no autonomy session at all");
+
+            // As `initializeTrackDiagram` leaves it: the session reset, the railway graph still there.
+            session.set(ui, null);
+
+            // On an ordinary thread, the way a locomotive message arrives.
+            Thread message = new Thread(() -> ui.repaintLoc(false,
+                java.util.Collections.<Locomotive>singletonList(anyone)), "a locomotive message");
+
+            message.start();
+            message.join(30000);
+
+            assertFalse(message.isAlive(), "precondition: the repaint never returned");
+
+            assertNull(session.get(ui),
+                "a direction echo arriving on a message thread built the autonomy session - every page parsed,"
+                + " inside the window's monitor - where the rule is to read the field and leave the building to"
+                + " the event thread (FTN-B2, SV-B2)");
+        }
+        finally
+        {
+            waitForTheRender();
+
+            model.deleteLoc("MU echo UI");
+        }
     }
 
     private static String whatTheConsistIs(MarklinLocomotive head) throws Exception

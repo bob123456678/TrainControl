@@ -313,8 +313,9 @@ refusing the four heading words in names would close it, and Adam has preferred 
 
 **Fixed on Adam's instruction, 2026-09-14** ("refuse and close, but make sure the words are uncommon"). A name
 ending in the builder's exact heading - a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or
-`(westbound)` in brackets at the very end, optionally with `, reverse` - is refused, and nothing wider: it is
-precisely the form `placeNameOf` strips, so it is precisely the form that makes two squares read alike.
+`(westbound)` in brackets at the very end, with anything after a comma inside the bracket (`, reverse` is the
+builder's own; see FTN-C1) - is refused, and nothing wider: it is precisely the form `placeNameOf` strips, so it
+is precisely the form that makes two squares read alike.
 "Eastbound Platform", "Main Line (Northbound)", "Main (eastbound track)" and "Yard (old)" are all still
 allowed. The rule is `StationIndex.endsWithAnArrivalHeading`; `AutonomySession.whyNotAPointName` says why in
 eight languages; `setPointName` refuses it as the guard, and both doors a person types a name through - the

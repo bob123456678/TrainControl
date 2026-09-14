@@ -711,9 +711,9 @@ FSR-D5	2026-08-24-fable-second-round.md	Closed	`testHomeStaging`: 60 tests, no d
 FSR-D6	2026-08-24-fable-second-round.md	Closed	`testEditorSurfaceRules`: well-formed after the deletion, nothing else depends on line end
 FSR-D7	2026-08-24-fable-second-round.md	Closed	MT-164's supersession follows the README, and the ledger is clean
 FSR-D8	2026-08-24-fable-second-round.md	Closed	The null-name path behind carried entries is unchanged, and still untraced
-FTN-B1	2026-09-14-FTN-fourteen-day-review.md	-	Open
-FTN-B2	2026-09-14-FTN-fourteen-day-review.md	-	Open
-FTN-C1	2026-09-14-FTN-fourteen-day-review.md	-	Open
+FTN-B1	2026-09-14-FTN-fourteen-day-review.md	-	Fixed
+FTN-B2	2026-09-14-FTN-fourteen-day-review.md	-	Fixed
+FTN-C1	2026-09-14-FTN-fourteen-day-review.md	-	Fixed
 FTN-C2	2026-09-14-FTN-fourteen-day-review.md	-	Held
 FV-A1	2026-08-24-fix-verification.md	Closed	**Fixed** in `38ccbfc8`
 FV-A2	2026-08-24-fix-verification.md	Closed	Fixed (stated in the body)

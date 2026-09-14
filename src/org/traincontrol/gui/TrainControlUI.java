@@ -11993,9 +11993,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The ordering this comment defends is still exactly right, and for the same reason: the
             // window must not RECORD having acted on something it declined to act on.  What changed is
             // that declining is now the intended answer rather than the fault.
+            // THE FIELD, NEVER THE GETTER (FTN-B2).  This runs inside the window's monitor, on whatever thread
+            // the Central Station's message arrived on, and `getAutonomySession()` is the lazy builder - every
+            // page parsed, files possibly rewritten.  `repaintTimetable` states the rule (SV-B2).  No session
+            // yet means nothing to follow; the event thread builds one when something there needs it.
             if (this.model == null || !this.model.hasAutoLayout()
                 || this.model.getAutoLayout().isRunning()
-                || getAutonomySession() == null)
+                || this.autonomySession == null)
             {
                 // A BASELINE for a train never seen before, and nothing more.  Without this a
                 // locomotive first met mid-journey has no recorded direction at all, and the first
@@ -12070,11 +12074,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     /**
-     * For tests only: run on the renderer thread just after a locomotive render has been handed to the
-     * event thread (TDR-B5).  Null in the program.  It lets a test hold the renderer at exactly the moment a
-     * second request used to be dropped, which otherwise depends on how the threads happen to be scheduled.
+     * For tests only: run on the renderer thread just BEFORE a locomotive render is handed to the event
+     * thread (TDR-B5, FTN-B1).  Null in the program.
+     *
+     * Before, and not after, because what it has to hold open is the render being IN FLIGHT: a request made
+     * while the renderer is held here certainly finds a render in flight and is kept, and can only be drawn by
+     * the re-run `renderFinished` makes.  Held after posting, the painting could run and clear the flag first,
+     * so the second request took the ordinary path and the deferral went untested (FTN-B1).
      */
-    public static volatile Runnable afterARenderIsPosted;
+    public static volatile Runnable beforeARenderIsPosted;
 
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
@@ -12134,6 +12142,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.locFutures.add(
             this.LocRenderer.submit(() ->
             {
+                Runnable hook = beforeARenderIsPosted;
+
+                if (hook != null) hook.run();
+
               try
               {
                 javax.swing.SwingUtilities.invokeLater(() ->
@@ -12440,10 +12452,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 throw notPosted;
               }
-
-                Runnable hook = afterARenderIsPosted;
-
-                if (hook != null) hook.run();
             })
         );
     }

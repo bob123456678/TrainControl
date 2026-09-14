@@ -186,8 +186,10 @@ public final class StationIndex
      * Whether a name ends the way the builder names one direction of a square, and so cannot be told from
      * one in anything that reads it back (TDR-C11).
      *
-     * EXACTLY the builder's form and nothing wider: a lowercase `(northbound)`, `(southbound)`,
-     * `(eastbound)` or `(westbound)` at the very end, optionally with `, reverse` inside the bracket.  That is
+     * The builder's form: a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or `(westbound)` at the very
+     * end - and, inside the bracket, a comma and ANYTHING after it, of which `, reverse` is the builder's own.
+     * "Depot (eastbound, old)" is refused too: `withoutArrivalSuffix` reads the heading up to the comma, so that
+     * name reads as "Depot" in every message just the same (FTN-C1).  Loosen this and the two stop agreeing.  That is
      * the only form `withoutArrivalSuffix` - and `Layout.placeNameOf`, which mirrors it - strips, so it is the
      * only form that makes two squares read alike.  Adam, 2026-09-14: *"refuse and close, but make sure the
      * words are uncommon."*  So "Eastbound Platform", "Main Line (Northbound)" and "Yard (old)" are all names

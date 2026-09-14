@@ -1,6 +1,6 @@
 # Fourteen days of commits, reviewed while the MT sweep of 2026-09-14 waits for its run
 
-**Status:** open 2026-09-14 - fixes in progress
+**Status:** open 2026-09-14 - round 1 fixed, validation running
 
 **Prefix:** FTN (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -25,14 +25,14 @@ and held, not changed underneath his run.
 
 | id | status | where |
 |---|---|---|
-| FTN-B1 | Open | `regression.testTheFunctionButtonsFollowTheConsist.testTheLastLocomotiveAskedForIsTheOneDrawn` - never runs the deferred render it pins |
-| FTN-B2 | Open | `TrainControlUI.followDirectionChanges` - builds the autonomy session on the message thread inside the window monitor |
+| FTN-B1 | Fixed | `regression.testTheFunctionButtonsFollowTheConsist.testTheLastLocomotiveAskedForIsTheOneDrawn` - never runs the deferred render it pins |
+| FTN-B2 | Fixed | `TrainControlUI.followDirectionChanges` - builds the autonomy session on the message thread inside the window monitor |
 
 ### FTN-B1 - the TDR-B5 claim never runs the deferral it was written to pin
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 The hook `afterARenderIsPosted` runs on the renderer thread AFTER the painting has been handed to the event
 thread.  The claim waits for that painting to be drawn - its precondition asserts the all-MM2 consist's buttons
@@ -45,11 +45,14 @@ between submission and the end of the painting, the commonest window in the prog
 Touches MT-403 only in that it is the test of the behaviour MT-403 checks by hand; the repair is to the claim and
 to where the test hook sits, and changes nothing a person can see.
 
+
+**Fixed, round 1.** The test hook moved to BEFORE the render is posted (`beforeARenderIsPosted`), and the claim now holds a render about a locomotive that is not shown - so its painting leaves the panel alone - while the mixed consist is asked for.  Only the deferred re-run in `renderFinished` can then draw it.  Mutation run: with that re-run deleted, the claim goes red; restored, green.
+
 ### FTN-B2 - the direction follower builds the autonomy session on the message thread, inside the window's monitor
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 `followDirectionChanges`, called from the `synchronized` `repaintLoc`, guards on `getAutonomySession() == null`.
 That getter is the lazy builder - it parses every page, can rewrite `.cs2` files and raise a dialog - and the rule
@@ -60,25 +63,31 @@ Central Station builds the session on `locMessageProcessor` while holding the wi
 whole parse; and a message-thread build can race an event-thread build of the same session.  No deadlock traced.
 Introduced `03f58b29`, 2026-09-06.
 
+
+**Fixed, round 1.** The guard reads the `autonomySession` field instead of the lazy getter; with no session there is nothing to follow, and the event thread builds one when something there needs it.  `testADirectionEchoDoesNotBuildTheSession` first proves the fixture can build a session, clears the field as `initializeTrackDiagram` leaves it, sends the repaint from an ordinary thread, and asserts nothing was built - red before the fix, green after.
+
 ---
 
 ## C - documentation, tests and minor
 
 | id | status | where |
 |---|---|---|
-| FTN-C1 | Open | `StationIndex.endsWithAnArrivalHeading` - refuses more than its documentation and claim say |
+| FTN-C1 | Fixed | `StationIndex.endsWithAnArrivalHeading` - refuses more than its documentation and claim say |
 | FTN-C2 | Held for MT-376 | `AutonomyEditorPanel` - the blocker list and the click still differ on an unnamed station |
 
 ### FTN-C1 - the name refusal is wider than it says
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed |
 
 `withoutArrivalSuffix` reads the heading up to the first comma and ignores the rest, so "Depot (eastbound, old)"
 is refused.  That is CONSISTENT - `placeNameOf` strips it to "Depot" too, so refusing it is right - but the
 javadoc, `whyNotAPointName`, the TDR review and `core.testANameCannotEndInAHeading` all say "optionally with
 `, reverse`" and nothing wider, which invites somebody to loosen it.
+
+
+**Fixed, round 1.** The javadoc says what is refused - a heading, then anything after a comma inside the bracket - and why loosening it would break agreement with the stripping; the TDR record says the same; `testANameCannotEndInAHeading` pins "Depot (eastbound, old)".  Text and claim only.
 
 ### FTN-C2 - the Unavailable While Occupied list and the click differ on a station with no name
 
